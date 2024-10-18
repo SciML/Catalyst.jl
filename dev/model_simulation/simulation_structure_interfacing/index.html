@@ -22,51 +22,51 @@ integrator[:C]</code></pre><pre class="documenter-example-output"><code class="n
 integrator.ps[:k₂]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1.0</code></pre><p>Note that here, species-interfacing yields (or changes) a simulation&#39;s current value for a species, not its initial condition.</p><p>If you are interfacing with jump simulation integrators, you must always call <code>reset_aggregated_jumps!(integrator)</code> afterwards.</p><h2 id="simulation_structure_interfacing_solutions"><a class="docs-heading-anchor" href="#simulation_structure_interfacing_solutions">Interfacing solution objects</a><a id="simulation_structure_interfacing_solutions-1"></a><a class="docs-heading-anchor-permalink" href="#simulation_structure_interfacing_solutions" title="Permalink"></a></h2><p>Finally, we consider solution objects. First, we simulate our problem:</p><pre><code class="language-julia hljs">sol = solve(oprob)</code></pre><p>Next, we can access the simulation&#39;s values using the same notation as previously. When we access a species&#39;s, its values across the full simulation is returned as a vector:</p><pre><code class="language-julia hljs">sol[:P]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">35-element Vector{Float64}:
  0.0
  1.3651420021457203e-6
- 1.0166391640289578e-5
- 4.188193654417424e-5
- 0.00011206358506331915
- 0.0002576886591702236
- 0.0005208394442996937
- 0.0010027995433458132
- 0.0018884127177000696
- 0.0033885929696661956
+ 1.0166391697742144e-5
+ 4.188193875627302e-5
+ 0.00011206359307382687
+ 0.0002576886673548398
+ 0.0005208394705150738
+ 0.0010027996211427969
+ 0.0018884129071335698
+ 0.0033885932613197927
  ⋮
- 0.05866754927902497
- 0.07693831413591393
- 0.10677409264152654
- 0.1537971243372291
- 0.20003610171169176
- 0.2574048776792876
- 0.3115871643826293
- 0.37128546983648275
- 0.38410010626390445</code></pre><p>Parameter values can also be accessed (however, here we only get a single value):</p><pre><code class="language-julia hljs">sol.ps[:k₃]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">100.0</code></pre><p>Unlike for problems and integrators, species or parameter values of solutions cannot be changed. </p><p>A vector with the time values for all simulation time steps can be retrieved using</p><pre><code class="language-julia hljs">sol.t</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">35-element Vector{Float64}:
+ 0.0586675516990096
+ 0.07693832040202661
+ 0.10677410583216353
+ 0.15379716781884795
+ 0.20003614024865402
+ 0.25740491574841884
+ 0.31158719558602677
+ 0.3712854981121656
+ 0.3841001062673936</code></pre><p>Parameter values can also be accessed (however, here we only get a single value):</p><pre><code class="language-julia hljs">sol.ps[:k₃]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">100.0</code></pre><p>Unlike for problems and integrators, species or parameter values of solutions cannot be changed. </p><p>A vector with the time values for all simulation time steps can be retrieved using</p><pre><code class="language-julia hljs">sol.t</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">35-element Vector{Float64}:
   0.0
   0.006877636354249612
-  0.014210993669818608
-  0.024450347276417764
-  0.036514606089576816
-  0.05233869111700301
-  0.07224209474520779
-  0.09921856425748168
-  0.1373011943981841
-  0.1889117509493629
+  0.014210993699717425
+  0.024450347788096356
+  0.036514607185921165
+  0.052338691857594696
+  0.07224209645803888
+  0.09921856809310595
+  0.1373012016855661
+  0.1889117601147819
   ⋮
-  1.4376556001051821
-  1.845837977735035
-  2.527482148927748
-  3.6422997708118325
-  4.791089097885053
-  6.296859915671295
-  7.811136781623641
-  9.59825913085362
+  1.4376556537237282
+  1.8458381189020985
+  2.5274824545625334
+  3.642300825687644
+  4.791090078361452
+  6.296860946731496
+  7.811137681763415
+  9.598260009779786
  10.0</code></pre><p>To find simulation values at a specific time point, simply use this time point as input to your solution object (treating it as a function). I.e. here we get our simulation&#39;s values at time <span>$t = 1.0$</span></p><pre><code class="language-julia hljs">sol(1.0)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">6-element Vector{Float64}:
- 0.9213023143408282
- 0.010051896067270033
- 0.039489589591590143
- 1.1607919039324184
- 0.0004585143411398163
- 0.038749581726441794</code></pre><p>This works whenever the simulations actually stopped at time <span>$t = 1.0$</span> (if not, an interpolated value is returned). To get the simulation&#39;s values for a specific subset of species, we can use the <code>idxs</code> optional argument. I.e. here we get the value of <span>$C$</span> at time <span>$t = 1.0$</span></p><pre><code class="language-julia hljs">sol(1.0; idxs = [:C])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1-element Vector{Float64}:
- 0.010051896067270033</code></pre><h2 id="simulation_structure_interfacing_functions"><a class="docs-heading-anchor" href="#simulation_structure_interfacing_functions">Interfacing using specialised getter/setter functions</a><a id="simulation_structure_interfacing_functions-1"></a><a class="docs-heading-anchor-permalink" href="#simulation_structure_interfacing_functions" title="Permalink"></a></h2><p>Internally, species and parameter values are stored in vectors. Whenever e.g. <code>oprob[:C]</code> is called, Julia must first find which index in the storage vector <span>$C$</span> is stored in. Next, its value can be retrieved. If <code>oprob[:C]</code> is called a large number of times, this index must be found in each call. If a large number of such accesses are carried out, and performance is essential, it can be worthwhile to pre-compute a function to carry this out.</p><p>There exist four different functions, each returning a function for performing a specific type of interfacing:</p><ul><li><code>ModelingToolkit.getu</code>: For accessing species values.</li><li><code>ModelingToolkit.getp</code>: For accessing parameter values.</li><li><code>ModelingToolkit.setu</code>: For changing species values.</li><li><code>ModelingToolkit.setp</code>: For changing parameter values.</li></ul><p>For each species (or parameter) we wish to interface with, a new interfacing function must be created. Here we first creates a function for retrieving the value of <span>$C$</span>, and then use it for this purpose:</p><pre><code class="language-julia hljs">get_C = ModelingToolkit.getu(oprob, :C)
+ 0.9213023143397079
+ 0.010051896065878438
+ 0.03948958959297709
+ 1.1607919039326844
+ 0.00045851434114446655
+ 0.03874958172617079</code></pre><p>This works whenever the simulations actually stopped at time <span>$t = 1.0$</span> (if not, an interpolated value is returned). To get the simulation&#39;s values for a specific subset of species, we can use the <code>idxs</code> optional argument. I.e. here we get the value of <span>$C$</span> at time <span>$t = 1.0$</span></p><pre><code class="language-julia hljs">sol(1.0; idxs = [:C])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1-element Vector{Float64}:
+ 0.010051896065878438</code></pre><h2 id="simulation_structure_interfacing_functions"><a class="docs-heading-anchor" href="#simulation_structure_interfacing_functions">Interfacing using specialised getter/setter functions</a><a id="simulation_structure_interfacing_functions-1"></a><a class="docs-heading-anchor-permalink" href="#simulation_structure_interfacing_functions" title="Permalink"></a></h2><p>Internally, species and parameter values are stored in vectors. Whenever e.g. <code>oprob[:C]</code> is called, Julia must first find which index in the storage vector <span>$C$</span> is stored in. Next, its value can be retrieved. If <code>oprob[:C]</code> is called a large number of times, this index must be found in each call. If a large number of such accesses are carried out, and performance is essential, it can be worthwhile to pre-compute a function to carry this out.</p><p>There exist four different functions, each returning a function for performing a specific type of interfacing:</p><ul><li><code>ModelingToolkit.getu</code>: For accessing species values.</li><li><code>ModelingToolkit.getp</code>: For accessing parameter values.</li><li><code>ModelingToolkit.setu</code>: For changing species values.</li><li><code>ModelingToolkit.setp</code>: For changing parameter values.</li></ul><p>For each species (or parameter) we wish to interface with, a new interfacing function must be created. Here we first creates a function for retrieving the value of <span>$C$</span>, and then use it for this purpose:</p><pre><code class="language-julia hljs">get_C = ModelingToolkit.getu(oprob, :C)
 get_C(oprob)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.05</code></pre><p>Here, <code>getu</code> (as well as <code>getp</code>, <code>setu</code>, and <code>setp</code>) first takes the structure we wish to interface with, and then the target quantity. When using <code>setu</code> and <code>setp</code>, in the second step, we must also provide the update value:</p><pre><code class="language-julia hljs">set_C = ModelingToolkit.setu(oprob, :C)
 set_C(oprob, 0.2)
 get_C(oprob)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.2</code></pre><p>Like when indexing-based interfacing is used, these functions also work with vectors:</p><pre><code class="language-julia hljs">get_S = ModelingToolkit.getu(oprob, [:S₁, :S₂])
@@ -89,4 +89,4 @@ ps = [k1 =&gt; 1.0, k2 =&gt; 2.0]
 oprob = ODEProblem(two_state_model, u0, tspan, ps)
 
 oprob = remake(oprob; u0 = [X1 =&gt; 5.0])
-oprob[X1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.0</code></pre><p>Symbolic variables can be used to access or update species or parameters for all the cases when <code>Symbol</code>s can (including when using <code>remake</code> or e.g. <code>getu</code>).</p><p>An advantage when quantities are represented as symbolic variables is that symbolic expressions can be formed and used to index a structure. E.g. here we check the combined initial concentration of <span>$X$</span> (<span>$X1 + X2$</span>) in our two-state problem:</p><pre><code class="language-julia hljs">oprob[X1 + X2]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.0</code></pre><p>Just like symbolic variables can be used to directly interface with a structure, symbolic variables stored in <code>ReactionSystem</code> models can be used:</p><pre><code class="language-julia hljs">oprob[two_state_model.X1 + two_state_model.X2]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.0</code></pre><p>This can be used to form symbolic expressions using model quantities when a model has been created using the DSL (as an alternative to @unpack). Alternatively, <a href="../../model_creation/dsl_advanced/#dsl_advanced_options_observables">creating an observable</a>, and then interface using its <code>Symbol</code> representation, is also possible.</p><div class="admonition is-warning"><header class="admonition-header">Warning</header><div class="admonition-body"><p>When accessing a simulation structure using symbolic variables from a <code>ReactionSystem</code> model, such as <code>rn.A</code> for <code>rn</code> a <code>ReactionSystem</code> and <code>A</code> a species within it, ensure that the model is complete.</p></div></div></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../simulation_plotting/">« Simulation plotting</a><a class="docs-footer-nextpage" href="../ensemble_simulations/">Ensemble/Monte Carlo Simulations »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Thursday 17 October 2024 12:59">Thursday 17 October 2024</span>. Using Julia version 1.11.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+oprob[X1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.0</code></pre><p>Symbolic variables can be used to access or update species or parameters for all the cases when <code>Symbol</code>s can (including when using <code>remake</code> or e.g. <code>getu</code>).</p><p>An advantage when quantities are represented as symbolic variables is that symbolic expressions can be formed and used to index a structure. E.g. here we check the combined initial concentration of <span>$X$</span> (<span>$X1 + X2$</span>) in our two-state problem:</p><pre><code class="language-julia hljs">oprob[X1 + X2]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.0</code></pre><p>Just like symbolic variables can be used to directly interface with a structure, symbolic variables stored in <code>ReactionSystem</code> models can be used:</p><pre><code class="language-julia hljs">oprob[two_state_model.X1 + two_state_model.X2]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.0</code></pre><p>This can be used to form symbolic expressions using model quantities when a model has been created using the DSL (as an alternative to @unpack). Alternatively, <a href="../../model_creation/dsl_advanced/#dsl_advanced_options_observables">creating an observable</a>, and then interface using its <code>Symbol</code> representation, is also possible.</p><div class="admonition is-warning"><header class="admonition-header">Warning</header><div class="admonition-body"><p>When accessing a simulation structure using symbolic variables from a <code>ReactionSystem</code> model, such as <code>rn.A</code> for <code>rn</code> a <code>ReactionSystem</code> and <code>A</code> a species within it, ensure that the model is complete.</p></div></div></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../simulation_plotting/">« Simulation plotting</a><a class="docs-footer-nextpage" href="../ensemble_simulations/">Ensemble/Monte Carlo Simulations »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Friday 18 October 2024 20:43">Friday 18 October 2024</span>. Using Julia version 1.11.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
