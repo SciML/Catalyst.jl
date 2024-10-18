@@ -164,7 +164,7 @@ end
 
 We next define the voltage dynamics with unspecified values for the currents
 ```@example hh1
-hhmodel2 = @reaction_network hhmodel begin
+hhmodel2 = @reaction_network hhmodel2 begin
     @parameters C = 1.0 I₀ = 0.0
     @variables V(t) Iₖ(t) Iₙₐ(t) Iₗ(t)
     @equations D(V) ~ -1/C * (Iₖ + Iₙₐ + Iₗ) + Iapp(t,I₀)
