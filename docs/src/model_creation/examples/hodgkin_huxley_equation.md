@@ -2,7 +2,7 @@
 
 This tutorial shows how to construct a
 [Catalyst](http://docs.sciml.ai/Catalyst/stable/) [`ReactionSystem`](@ref) that
-is coupled to a constraint ODE, corresponding to the [Hodgkin–Huxley
+includes a coupled ODE, corresponding to the [Hodgkin–Huxley
 model](https://en.wikipedia.org/wiki/Hodgkin%E2%80%93Huxley_model) for an
 excitable cell. The Hodgkin–Huxley model is a mathematical model that describes
 how action potentials in neurons are initiated and propagated. It is a
@@ -11,20 +11,19 @@ differential equations that model the electrical characteristics of excitable
 cells such as neurons and muscle cells.
 
 We'll present two different approaches for constructing the model. The first
-will show how it can be built entirely within the DSL, while the second
-illustrates another work flow, showing how separate models containing the
-chemistry and the dynamics of the transmembrane potential can be combined.
+will show how it can be built entirely within a single DSL model, while the
+second illustrates another work flow, showing how separate models containing the
+chemistry and the dynamics of the transmembrane potential can be combined into a
+complete model.
 
 We begin by importing some necessary packages:
 ```@example hh1
-using ModelingToolkit, Catalyst, NonlinearSolve
-using OrdinaryDiffEq, Symbolics
-using Plots
+using ModelingToolkit, Catalyst, NonlinearSolve, Plots, OrdinaryDiffEq
 ```
 
 ## Building the model via the Catalyst DSL
 Let's build a simple Hodgkin-Huxley model for a single neuron, with the voltage,
-$V(t)$, included as a constraint ODE. We first specify the transition rates for
+$V(t)$, included as a coupled ODE. We first specify the transition rates for
 three gating variables, $m(t)$, $n(t)$ and $h(t)$.
 
 $$s' \xleftrightarrow[\beta_s(V(t))]{\alpha_s(V(t))} s, \quad s \in \{m,n,h\}$$
@@ -53,7 +52,8 @@ end
 nothing # hide
 ```
 
-We also declare a function to represent an applied current in our model
+We also declare a function to represent an applied current in our model, which we
+will use to perturb the system and create action potentials. 
 ```@example hh1
 Iapp(t,I₀) = I₀ * sin(2*pi*t/30)^2
 ```
@@ -64,7 +64,7 @@ constructing the model to avoid having to specify them later on via parameter
 maps.
 
 ```@example hh1
-hhrn = @reaction_network hhmodel begin
+hhmodel = @reaction_network hhmodel begin
     @parameters begin
         C = 1.0 
         ḡNa = 120.0 
@@ -83,36 +83,11 @@ hhrn = @reaction_network hhmodel begin
     (αₕ(V), βₕ(V)), h′ <--> h
     
     @equations begin
-        D(V) ~ -1/C * (ḡK*n^4*(V-EK) + ḡNa*m^3*h*(V-ENa) + ḡL*(V-EL)) + Iapp/C
-        Iapp ~ I₀ * sin(2*pi*t/30)^2
+        D(V) ~ -1/C * (ḡK*n^4*(V-EK) + ḡNa*m^3*h*(V-ENa) + ḡL*(V-EL)) + Iapp(t,I₀)
     end
 end
 ```
-
-Next we create a `ModelingToolkit.ODESystem` to store the equation for `dV/dt`
-
-```@example hh1
-@parameters C=1.0 ḡNa=120.0 ḡK=36.0 ḡL=.3 ENa=45.0 EK=-82.0 EL=-59.0 I₀=0.0
-I = I₀ * sin(2*pi*t/30)^2
-
-# get the gating variables to use in the equation for dV/dt
-@unpack m,n,h = hhrn
-
-Dₜ = default_time_deriv()
-eqs = [Dₜ(V) ~ -1/C * (ḡK*n^4*(V-EK) + ḡNa*m^3*h*(V-ENa) + ḡL*(V-EL)) + I/C]
-@named voltageode = ODESystem(eqs, t)
-nothing # hide
-```
-
-Notice, we included an applied current, `I`, that we will use to perturb the system and create action potentials. For now we turn this off by setting its amplitude, `I₀`, to zero.
-
-Finally, we add this ODE into the reaction model as
-
-```@example hh1
-@named hhmodel = extend(voltageode, hhrn)
-hhmodel = complete(hhmodel)
-nothing # hide
-```
+For now we turn off the applied current by setting its amplitude, `I₀`, to zero.
 
 `hhmodel` is now a `ReactionSystem` that is coupled to an internal constraint
 ODE for $dV/dt$. Let's now solve to steady-state, as we can then use these
@@ -132,14 +107,16 @@ From the artificial initial condition we specified, the solution approaches the
 physiological steady-state via firing one action potential:
 
 ```@example hh1
-plot(hhsssol, idxs = V)
+plot(hhsssol, idxs = hhmodel.V)
 ```
 
 We now save this steady-state to use as the initial condition for simulating how
-a resting neuron responds to an applied current.
+a resting neuron responds to an applied current. We save the steady-state values
+as a mapping from the symbolic variables to their steady-states that we can
+later use as an initial condition:
 
 ```@example hh1
-u_ss = hhsssol.u[end]
+u_ss = unknowns(hhmodel) .=> hhsssol(tspan[2], idxs = unknowns(hhmodel))
 nothing # hide
 ```
 
@@ -148,134 +125,70 @@ amplitude of the stimulus is non-zero and see if we get action potentials
 
 ```@example hh1
 tspan = (0.0, 50.0)
-@unpack I₀ = hhmodel
+@unpack V,I₀ = hhmodel
 oprob = ODEProblem(hhmodel, u_ss, tspan, [I₀ => 10.0])
 sol = solve(oprob)
-plot(sol, vars = V, legend = :outerright)
+plot(sol, idxs = V, legend = :outerright)
 ```
 
 We observe three action potentials due to the steady applied current.
 
 ## Building the model via composition of separate systems for the ion channel and transmembrane voltage dynamics 
 
-We first import some symbolic variables we will need in specifying our model
+As an illustration of how one can construct models from individual components,
+we now separately construct and compose the model components.
+
+We start by defining systems to model each ionic current:
 ```@example hh1
-t = default_t()
-D = default_time_deriv()
-```
-
-We'll build a simple Hodgkin-Huxley model for a single neuron, with the voltage,
-V(t), included as a constraint ODE. We first specify the transition rates for
-three gating variables, $m(t)$, $n(t)$ and $h(t)$.
-
-$$s' \xleftrightarrow[\beta_s(V(t))]{\alpha_s(V(t))} s, \quad s \in \{m,n,h\}$$
-
-Here each gating variable is used in determining the fraction of active (i.e.
-open) or inactive ($m' = 1 - m$, $n' = 1 -n$, $h' = 1 - h$) sodium ($m$ and $h$)
-and potassium ($n$) channels.
-
-The transition rate functions, which depend on the voltage, $V(t)$, are given by
-
-```@example hh1
-function αₘ(V)
-    theta = (V + 45) / 10
-    ifelse(theta == 0.0, 1.0, theta/(1 - exp(-theta)))
+IKmodel = @reaction_network IKmodel begin
+    @parameters ḡK = 36.0 EK = -82.0 
+    @variables V(t) Iₖ(t)
+    (αₙ(V), βₙ(V)), n′ <--> n
+    @equations Iₖ ~ ḡK*n^4*(V-EK)
 end
-βₘ(V) = 4*exp(-(V + 70)/18)
 
-αₕ(V) = .07 * exp(-(V + 70)/20)
-βₕ(V) = 1/(1 + exp(-(V + 40)/10))
-
-function αₙ(V)
-    theta = (V + 60) / 10
-    ifelse(theta == 0.0, .1, .1*theta / (1 - exp(-theta)))
+INamodel = @reaction_network INamodel begin
+    @parameters ḡNa = 120.0 ENa = 45.0 
+    @variables V(t) Iₙₐ(t)
+    (αₘ(V), βₘ(V)), m′ <--> m
+    (αₕ(V), βₕ(V)), h′ <--> h
+    @equations Iₙₐ ~ ḡNa*m^3*h*(V-ENa) 
 end
-βₙ(V) = .125 * exp(-(V + 70)/80)
-nothing # hide
-```
 
-We now declare the symbolic variable, `V(t)`, that will represent the
-transmembrane potential
-
-```@example hh1
-@variables V(t)
-nothing # hide
-```
-
-and a `ReactionSystem` that models the opening and closing of receptors
-
-```@example hh1
-hhrn = @reaction_network hhmodel begin
-    (αₙ($V), βₙ($V)), n′ <--> n
-    (αₘ($V), βₘ($V)), m′ <--> m
-    (αₕ($V), βₕ($V)), h′ <--> h
+ILmodel = @reaction_network ILmodel begin
+    @parameters ḡL = .3 EL = -59.0 
+    @variables V(t) Iₗ(t)
+    @equations Iₗ ~ ḡL*(V-EL)
 end
-nothing # hide
 ```
 
-Next we create a `ModelingToolkit.ODESystem` to store the equation for `dV/dt`
-
+We next define the voltage dynamics with unspecified values for the currents
 ```@example hh1
-@parameters C=1.0 ḡNa=120.0 ḡK=36.0 ḡL=.3 ENa=45.0 EK=-82.0 EL=-59.0 I₀=0.0
-I = I₀ * sin(2*pi*t/30)^2
-
-# get the gating variables to use in the equation for dV/dt
-@unpack m,n,h = hhrn
-
-Dₜ = default_time_deriv()
-eqs = [Dₜ(V) ~ -1/C * (ḡK*n^4*(V-EK) + ḡNa*m^3*h*(V-ENa) + ḡL*(V-EL)) + I/C]
-@named voltageode = ODESystem(eqs, t)
-nothing # hide
+hhmodel2 = @reaction_network hhmodel begin
+    @parameters C = 1.0 I₀ = 0.0
+    @variables V(t) Iₖ(t) Iₙₐ(t) Iₗ(t)
+    @equations D(V) ~ -1/C * (Iₖ + Iₙₐ + Iₗ) + Iapp(t,I₀)
+end
 ```
-
-Notice, we included an applied current, `I`, that we will use to perturb the system and create action potentials. For now we turn this off by setting its amplitude, `I₀`, to zero.
-
-Finally, we add this ODE into the reaction model as
-
-```@example hh1
-@named hhmodel = extend(voltageode, hhrn)
-hhmodel = complete(hhmodel)
-nothing # hide
+Finally, we extend the `hhmodel` with the systems defining the ion channel currents
+```julia
+for sys in (IKmodel, INamodel, ILmodel)
+    @named hhmodel2 = extend(sys, hhmodel2)
+end 
+hhmodel2 = complete(hhmodel2)
 ```
-
-`hhmodel` is now a `ReactionSystem` that is coupled to an internal constraint
-ODE for $dV/dt$. Let's now solve to steady-state, as we can then use these
-resting values as an initial condition before applying a current to create an
-action potential.
+Starting from the resting state, let's again solve the system when the amplitude
+of the stimulus is non-zero and check we get the same figure as above. Note, we
+now run `structural_simplify` from ModelingToolkit as part of building the
+`ODEProblem` to eliminate the algebraic equations for the currents
 
 ```@example hh1
 tspan = (0.0, 50.0)
-u₀ = [:V => -70, :m => 0.0, :h => 0.0, :n => 0.0,
-	  :m′ => 1.0, :n′ => 1.0, :h′ => 1.0]
-oprob = ODEProblem(hhmodel, u₀, tspan)
-hhsssol = solve(oprob, Rosenbrock23())
-nothing # hide
-```
-
-From the artificial initial condition we specified, the solution approaches the
-physiological steady-state via firing one action potential:
-
-```@example hh1
-plot(hhsssol, idxs = V)
-```
-
-We now save this steady-state to use as the initial condition for simulating how
-a resting neuron responds to an applied current.
-
-```@example hh1
-u_ss = hhsssol.u[end]
-nothing # hide
-```
-
-Finally, starting from this resting state let's solve the system when the
-amplitude of the stimulus is non-zero and see if we get action potentials
-
-```@example hh1
-tspan = (0.0, 50.0)
-@unpack I₀ = hhmodel
-oprob = ODEProblem(hhmodel, u_ss, tspan, [I₀ => 10.0])
+@unpack I₀,V = hhmodel2
+oprob = ODEProblem(hhmodel2, u_ss, tspan, [I₀ => 10.0]; 
+    structural_simplify = true)
 sol = solve(oprob)
-plot(sol, vars = V, legend = :outerright)
+plot(sol, idxs = V, legend = :outerright)
 ```
 
-We observe three action potentials due to the steady applied current.
+We observe the same solutions as from our original model.
