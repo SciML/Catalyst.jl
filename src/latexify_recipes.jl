@@ -28,16 +28,15 @@ const LATEX_DEFS = CatalystLatexParams()
 end
 
 function Latexify.infer_output(env, rs::ReactionSystem, args...)
-    env in [:arrows, :chem, :chemical, :arrow] && return chemical_arrows
-
-    error("The environment $env is not defined.")
-    latex_function = Latexify.get_latex_function(rs, args...)
-
-    return latex_function
+    if env in (:arrows, :chem, :chemical, :arrow)
+        return chemical_arrows
+    else
+        error("The environment $env is not defined.")
+    end
 end
 
 function processsym(s)
-    args = Symbolics.sorted_arguments(s)
+    args = sorted_arguments(s)
     name = MT.getname(s)
     if length(args) <= 1
         var = value(Symbolics.variable(name))

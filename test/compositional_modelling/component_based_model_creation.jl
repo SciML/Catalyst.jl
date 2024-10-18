@@ -46,8 +46,8 @@ let
         sys₂.μ => (log(2) / 600), sys₃.α₀ => 5e-4, sys₃.α => 0.5, sys₃.K => 40.0,
         sys₃.n => 2, sys₃.δ => (log(2) / 120), sys₃.β => (20 * log(2) / 120),
         sys₃.μ => (log(2) / 600)]
-    u₀ = [sys₁.m => 0.0, sys₁.P => 20.0, sys₁.R => 0.0, sys₂.m => 0.0, sys₂.P => 0.0,
-        sys₂.R => 0.0, sys₃.m => 0.0, sys₃.P => 0.0, sys₃.R => 0.0]
+    u₀ = [sys₁.m => 0.0, sys₁.P => 20.0, sys₂.m => 0.0, sys₂.P => 0.0,
+        sys₃.m => 0.0, sys₃.P => 0.0]
     tspan = (0.0, 100000.0)
     oprob = ODEProblem(oderepressilator, u₀, tspan, pvals)
     sol = solve(oprob, Tsit5())
@@ -94,13 +94,15 @@ let
     @test all(isapprox.(sol(tvs, idxs = sys₁.P), sol2(tvs, idxs = 4), atol = 1e-4))
 
     # Test conversion to nonlinear system.
+    u₀_nl = [sys₁.m => 0.0, sys₁.P => 20.0, sys₁.R => 0.0, sys₂.m => 0.0, sys₂.P => 0.0,
+        sys₂.R => 0.0, sys₃.m => 0.0, sys₃.P => 0.0, sys₃.R => 0.0]
     @named nsys = NonlinearSystem(connections, [], [])
     @named ssrepressilator = ReactionSystem(t; systems = [nsys, sys₁, sys₂, sys₃])
     ssrepressilator = complete(ssrepressilator)
     @named nlrepressilator = convert(NonlinearSystem, ssrepressilator, include_zero_odes = false)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
-    nlprob = NonlinearProblem(sys2, u₀, pvals)
+    nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
     sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
@@ -113,7 +115,7 @@ let
     @named nlrepressilator = convert(NonlinearSystem, fsys, include_zero_odes = false)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
-    nlprob = NonlinearProblem(sys2, u₀, pvals)
+    nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
     sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
@@ -131,7 +133,7 @@ let
     @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes = false)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
-    nlprob = NonlinearProblem(sys2, u₀, pvals)
+    nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
     sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
@@ -252,7 +254,7 @@ let
     @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes = false)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
-    nlprob = NonlinearProblem(sys2, u₀, pvals)
+    nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
     sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
@@ -280,7 +282,7 @@ let
     @named ns = ODESystem(nseqs, t, [A2, B2, D], [β])
     rs = compose(rs, [ns])
     rs = complete(rs)
-    osys = complete(convert(ODESystem, rs; include_zero_odes = false))
+    osys = convert(ODESystem, rs; include_zero_odes = false)
     p = [r₊ => 1.0, r₋ => 2.0, ns.β => 3.0]
     u₀ = [A => 1.0, B => 2.0, C => 0.0]
     oprob = ODEProblem(structural_simplify(osys), u₀, (0.0, 10.0), p)

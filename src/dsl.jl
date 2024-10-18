@@ -297,7 +297,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Get macro options.
     if length(unique(arg.args[1] for arg in option_lines)) < length(option_lines)
-        error("Some options where given multiple times.")
+        error("Some options were given multiple times.")
     end
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
         option_lines))
@@ -315,12 +315,12 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     parameters_declared = extract_syms(options, :parameters)
     variables_declared = extract_syms(options, :variables)
 
-    # Reads more options.
+    # Reads equations. 
     vars_extracted, add_default_diff, equations = read_equations_options(
         options, variables_declared)
     variables = vcat(variables_declared, vars_extracted)
 
-    # handle independent variables
+    # Handle independent variables
     if haskey(options, :ivs)
         ivs = Tuple(extract_syms(options, :ivs))
         ivexpr = copy(options[:ivs])
@@ -339,14 +339,16 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         combinatoric_ratelaws = true
     end
 
-    # Reads more options.
+    # Reads observables.
     observed_vars, observed_eqs, obs_syms = read_observed_options(
         options, [species_declared; variables], all_ivs)
 
+    # Collect species and parameters, including ones inferred from the reactions. 
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
         variables)))
-    species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
-        declared_syms)
+    species_extracted, parameters_extracted = extract_species_and_parameters!(
+        reactions, declared_syms)
+
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
@@ -367,36 +369,45 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     sexprs = get_sexpr(species_extracted, options; iv_symbols = ivs)
     vexprs = get_sexpr(vars_extracted, options, :variables; iv_symbols = ivs)
     pexprs = get_pexpr(parameters_extracted, options)
-    ps, pssym = scalarize_macro(!isempty(parameters), pexprs, "ps")
-    vars, varssym = scalarize_macro(!isempty(variables), vexprs, "vars")
-    sps, spssym = scalarize_macro(!isempty(species), sexprs, "specs")
-    comps, compssym = scalarize_macro(!isempty(compound_species), compound_expr, "comps")
-    rxexprs = :(Catalyst.CatalystEqType[])
+    ps, pssym = assign_expr_to_var(!isempty(parameters), pexprs, "ps")
+    vars, varssym = assign_expr_to_var(!isempty(variables), vexprs, "vars";
+        scalarize = true)
+    sps, spssym = assign_expr_to_var(!isempty(species), sexprs, "specs"; scalarize = true)
+    comps, compssym = assign_expr_to_var(!isempty(compound_species), compound_expr,
+        "comps"; scalarize = true)
+    rxexprs = :(CatalystEqType[])
     for reaction in reactions
         push!(rxexprs.args, get_rxexprs(reaction))
     end
     for equation in equations
+        equation = escape_equation_RHS!(equation)
         push!(rxexprs.args, equation)
     end
 
+    # Output code corresponding to the reaction system. 
     quote
-        $ps
         $ivexpr
+        $ps
         $vars
         $sps
         $observed_vars
         $comps
         $diffexpr
 
-        Catalyst.remake_ReactionSystem_internal(
-            Catalyst.make_ReactionSystem_internal(
-                $rxexprs, $tiv, setdiff(union($spssym, $varssym, $compssym), $obs_syms),
-                $pssym; name = $name, spatial_ivs = $sivs, observed = $observed_eqs,
-                continuous_events = $continuous_events_expr,
-                discrete_events = $discrete_events_expr,
+        sivs_vec = $sivs
+        rx_eq_vec = $rxexprs
+        vars = setdiff(union($spssym, $varssym, $compssym), $obs_syms)
+        obseqs = $observed_eqs
+        cevents = $continuous_events_expr
+        devents = $discrete_events_expr
+
+        remake_ReactionSystem_internal(
+            make_ReactionSystem_internal(
+                rx_eq_vec, $tiv, vars, $pssym;
+                name = $name, spatial_ivs = sivs_vec, observed = obseqs,
+                continuous_events = cevents, discrete_events = devents,
                 combinatoric_ratelaws = $combinatoric_ratelaws);
-            default_reaction_metadata = $default_reaction_metadata
-        )
+            default_reaction_metadata = $default_reaction_metadata)
     end
 end
 
@@ -567,7 +578,7 @@ function get_rxexprs(rxstruct)
     subs_stoich_init = deepcopy(subs_init)
     prod_init = isempty(rxstruct.products) ? nothing : :([])
     prod_stoich_init = deepcopy(prod_init)
-    reaction_func = :(Reaction($(recursive_expand_functions!(rxstruct.rate)), $subs_init,
+    reaction_func = :(Reaction($(recursive_escape_functions!(rxstruct.rate)), $subs_init,
         $prod_init, $subs_stoich_init, $prod_stoich_init,
         metadata = $(rxstruct.metadata)))
     for sub in rxstruct.substrates
@@ -582,14 +593,21 @@ function get_rxexprs(rxstruct)
 end
 
 # takes a ModelingToolkit declaration macro like @parameters and returns an expression
-# that calls the macro and then scalarizes all the symbols created into a vector of Nums
-function scalarize_macro(nonempty, ex, name)
+# that calls the macro and saves it in a variable given by namesym based on name.
+# scalarizes if desired
+function assign_expr_to_var(nonempty, ex, name; scalarize = false)
     namesym = gensym(name)
     if nonempty
-        symvec = gensym()
-        ex = quote
-            $symvec = $ex
-            $namesym = reduce(vcat, Symbolics.scalarize($symvec))
+        if scalarize
+            symvec = gensym()
+            ex = quote
+                $symvec = $ex
+                $namesym = reduce(vcat, Symbolics.scalarize($symvec))
+            end
+        else
+            ex = quote
+                $namesym = $ex
+            end
         end
     else
         ex = :($namesym = Num[])
@@ -776,7 +794,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 dep_var_expr = :(filter(!MT.isparameter,
                     Symbolics.get_variables($(obs_eq.args[3]))))
                 ivs_get_expr = :(unique(reduce(
-                    vcat, [arguments(MT.unwrap(dep))
+                    vcat, [sorted_arguments(MT.unwrap(dep))
                            for dep in $dep_var_expr])))
                 ivs_get_expr_sorted = :(sort($(ivs_get_expr);
                     by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $ivs_sorted)))
@@ -899,15 +917,22 @@ end
 
 ### Generic Expression Manipulation ###
 
-# Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.
-function recursive_expand_functions!(expr::ExprValues)
+# Recursively traverses an expression and escapes all the user-defined functions. Special function calls like "hill(...)" are not expanded. 
+function recursive_escape_functions!(expr::ExprValues)
     (typeof(expr) != Expr) && (return expr)
-    foreach(i -> expr.args[i] = recursive_expand_functions!(expr.args[i]),
+    foreach(i -> expr.args[i] = recursive_escape_functions!(expr.args[i]),
         1:length(expr.args))
     if expr.head == :call
         !isdefined(Catalyst, expr.args[1]) && (expr.args[1] = esc(expr.args[1]))
     end
     expr
+end
+
+# Recursively escape functions in the right-hand-side of an equation written using user-defined functions. Special function calls like "hill(...)" are not expanded.
+function escape_equation_RHS!(eqexpr::Expr)
+    rhs = recursive_escape_functions!(eqexpr.args[3])
+    eqexpr.args[3] = rhs
+    eqexpr
 end
 
 # Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a Symbol/Numerical).
