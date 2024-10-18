@@ -171,22 +171,29 @@ hhmodel2 = @reaction_network hhmodel2 begin
 end
 ```
 Finally, we extend the `hhmodel` with the systems defining the ion channel currents
-```julia
+```@example hh1
 for sys in (IKmodel, INamodel, ILmodel)
     @named hhmodel2 = extend(sys, hhmodel2)
 end 
 hhmodel2 = complete(hhmodel2)
 ```
-Starting from the resting state, let's again solve the system when the amplitude
-of the stimulus is non-zero and check we get the same figure as above. Note, we
-now run `structural_simplify` from ModelingToolkit as part of building the
-`ODEProblem` to eliminate the algebraic equations for the currents
+Let's again solve the system for the resting state, and then solve with the same
+applied current as above (to verify we get the same figure). Note, we now
+explicitly convert to an `ODESystem` and then run `structural_simplify` from
+ModelingToolkit to eliminate the algebraic equations for the ionic currents
 
 ```@example hh1
+osys = convert(ODESystem, hhmodel2)
+osys = structural_simplify(osys)
+
 tspan = (0.0, 50.0)
+u₀ = symmap_to_varmap(osys, [:V => -70, :m => 0.0, :h => 0.0, :n => 0.0,
+	  :m′ => 1.0, :n′ => 1.0, :h′ => 1.0])
+oprob = ODEProblem(osys, u₀, tspan)
+hhsssol = solve(oprob, Rosenbrock23())
+u_ss = unknowns(osys) .=> hhsssol(tspan[2], idxs = unknowns(osys))
 @unpack I₀,V = hhmodel2
-oprob = ODEProblem(hhmodel2, u_ss, tspan, [I₀ => 10.0]; 
-    structural_simplify = true)
+oprob = ODEProblem(osys, u_ss, tspan, [I₀ => 10.0])
 sol = solve(oprob)
 plot(sol, idxs = V, legend = :outerright)
 ```
