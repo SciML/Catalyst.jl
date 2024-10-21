@@ -172,28 +172,20 @@ end
 ```
 Finally, we extend the `hhmodel` with the systems defining the ion channel currents
 ```@example hh1
-for sys in (IKmodel, INamodel, ILmodel)
-    @named hhmodel2 = extend(sys, hhmodel2)
-end 
+@named hhmodel2 = extend(IKmodel, hhmodel2)
+@named hhmodel2 = extend(INamodel, hhmodel2)
+@named hhmodel2 = extend(ILmodel, hhmodel2)
 hhmodel2 = complete(hhmodel2)
 ```
-Let's again solve the system for the resting state, and then solve with the same
-applied current as above (to verify we get the same figure). Note, we now
-explicitly convert to an `ODESystem` and then run `structural_simplify` from
-ModelingToolkit to eliminate the algebraic equations for the ionic currents
+Let's again solve the system starting from the previously calculated resting
+state, using the same applied current as above (to verify we get the same
+figure). Note, we now run `structural_simplify` from ModelingToolkit to
+eliminate the algebraic equations for the ionic currents when constructing the
+`ODEProblem`:
 
 ```@example hh1
-osys = convert(ODESystem, hhmodel2)
-osys = structural_simplify(osys)
-
-tspan = (0.0, 50.0)
-u₀ = symmap_to_varmap(osys, [:V => -70, :m => 0.0, :h => 0.0, :n => 0.0,
-	  :m′ => 1.0, :n′ => 1.0, :h′ => 1.0])
-oprob = ODEProblem(osys, u₀, tspan)
-hhsssol = solve(oprob, Rosenbrock23())
-u_ss = unknowns(osys) .=> hhsssol(tspan[2], idxs = unknowns(osys))
 @unpack I₀,V = hhmodel2
-oprob = ODEProblem(osys, u_ss, tspan, [I₀ => 10.0])
+oprob = ODEProblem(hhmodel2, u_ss, tspan, [I₀ => 10.0]; structural_simplify = true)
 sol = solve(oprob)
 plot(sol, idxs = V, legend = :outerright)
 ```
