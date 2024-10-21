@@ -160,6 +160,7 @@ ILmodel = @reaction_network ILmodel begin
     @variables V(t) Iₗ(t)
     @equations Iₗ ~ ḡL*(V-EL)
 end
+nothing # hide
 ```
 
 We next define the voltage dynamics with unspecified values for the currents
@@ -169,6 +170,7 @@ hhmodel2 = @reaction_network hhmodel2 begin
     @variables V(t) Iₖ(t) Iₙₐ(t) Iₗ(t)
     @equations D(V) ~ -1/C * (Iₖ + Iₙₐ + Iₗ) + Iapp(t,I₀)
 end
+nothing # hide
 ```
 Finally, we extend the `hhmodel` with the systems defining the ion channel currents
 ```@example hh1
