@@ -7,6 +7,10 @@ on:
     tags: '*'
   pull_request:
 
+permissions:
+  actions: write  # Allows the workflow to delete old caches created by previous runs, ensuring efficient cache management and preventing the cache from growing indefinitely. https://github.com/julia-actions/cache?tab=readme-ov-file#cache-retention
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -29,23 +33,15 @@ jobs:
         with:
           version: '1'
 
-      # Cache compiled artifacts and precompiled packages to speed up subsequent runs
-      # This caching configuration targets the most computationally expensive parts of Julia's environment:
-      # 1. ~/.julia/artifacts - Stores binary dependencies (e.g., external libraries) needed by Julia packages.
-      # 2. ~/.julia/compiled - Contains precompiled code for faster loading of Julia packages.
-      # We do not cache ~/.julia/environments or ~/.julia/packages to avoid caching potential outdated package sources.
+      # Cache to speed up subsequent runs
       - uses: julia-actions/cache@v2
         with:
-          key: "julia-deps-${{ runner.os }}-${{ hashFiles('**/Project.toml') }}-${{ hashFiles('**/Manifest.toml') }}"
-          restore-keys: |
-            julia-deps-${{ runner.os }}-
-          paths:
-            - ~/.julia/artifacts
-            - ~/.julia/compiled
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          cache-name: "docs-cache"
 
       # Install Julia package dependencies for the documentation project
       - name: Install dependencies
-        run: julia --project=docs/ -e 'ENV["JULIA_PKG_SERVER"] = ""; using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+        run: julia --project=docs/ -e 'ENV["JULIA_PKG_SERVER"] = "https://pkg.julialang.org"; using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
 
       # Build and deploy the documentation using xvfb to simulate a display for GLMakie
       # xvfb-run: Runs Julia with a virtual display to support OpenGL rendering
@@ -53,8 +49,8 @@ jobs:
       - name: Build and deploy
         env:
           GKSwstype: "100" # Specifies the workstation type for GR framework rendering, https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988/7
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Required for permissions to deploy documentation
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # For authentication with SSH deploy key
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # For authentication with GitHub Actions token
         run: >
           DISPLAY=:0 xvfb-run --server-args="-screen 0 1024x768x24" \
           julia --project=docs/ --code-coverage=user docs/make.jl
@@ -72,4 +68,3 @@ jobs:
           file: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
-
