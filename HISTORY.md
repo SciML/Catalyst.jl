@@ -1,7 +1,14 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
-- Due to changes in upstream packages, the structural identifiability extension is currently broken.
+- Array symbolics support is more consistent with ModelingToolkit v9. Parameter arrays are no longer scalarized by Catalyst, while species and variables arrays still are (as in ModelingToolkit). As such, parameter arrays should now be specified as arrays in value mappings, i.e.
+  ```julia
+  @parameters k[1:4]
+  pmap = [k => rand(4)]
+  ```
+  While one can still manually scalarize a parameter array, it is recommended *not* to do this as it has signifcant performance costs with ModelingToolkit v9.
+- The structural identifiability extension is currently disabled due to issues StructuralIdentifiability has with Julia 1.10.5 and 1.11.
+- A tutorial on making interactive plot displays using Makie has been added.
 
 ## Catalyst 14.4.1
 - Support for user-defined functions on the RHS when providing coupled equations 
