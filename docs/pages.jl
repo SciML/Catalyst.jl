@@ -5,7 +5,7 @@ pages = Any[
         "introduction_to_catalyst/introduction_to_catalyst.md",
         "introduction_to_catalyst/math_models_intro.md"
     ],
-    "Model Creation and Properties" => Any[
+    "Model creation and properties" => Any[
         "model_creation/dsl_basics.md",
         "model_creation/dsl_advanced.md",
         "model_creation/programmatic_CRN_construction.md",
@@ -18,21 +18,21 @@ pages = Any[
         "model_creation/reactionsystem_content_accessing.md",
         "model_creation/network_analysis.md",
         "model_creation/chemistry_related_functionality.md",
-        "Model creation examples" => Any[
+        "Examples" => Any[
             "model_creation/examples/basic_CRN_library.md",
             "model_creation/examples/programmatic_generative_linear_pathway.md",
             "model_creation/examples/hodgkin_huxley_equation.md",
             "model_creation/examples/smoluchowski_coagulation_equation.md"
         ]
     ],
-    "Model simulation" => Any[
+    "Model simulation and visualization" => Any[
         "model_simulation/simulation_introduction.md",
         "model_simulation/simulation_plotting.md",
         "model_simulation/simulation_structure_interfacing.md",
         "model_simulation/ensemble_simulations.md",
         "model_simulation/ode_simulation_performance.md",
         "model_simulation/sde_simulation_performance.md",
-        "Model simulation examples" => Any[
+        "Examples" => Any[
             "model_simulation/examples/periodic_events_simulation.md",
             "model_simulation/examples/interactive_brusselator_simulation.md"
         ]
@@ -44,17 +44,17 @@ pages = Any[
         "steady_state_functionality/bifurcation_diagrams.md",
         "steady_state_functionality/dynamical_systems.md"
     ],
-    "Inverse Problems" => Any[
+    "Inverse problems" => Any[
         "inverse_problems/optimization_ode_param_fitting.md",
         # "inverse_problems/petab_ode_param_fitting.md",
         "inverse_problems/behaviour_optimisation.md",
         # "inverse_problems/structural_identifiability.md",
         "inverse_problems/global_sensitivity_analysis.md",
-        "Inverse problem examples" => Any[
+        "Examples" => Any[
             "inverse_problems/examples/ode_fitting_oscillation.md"
         ]
     ],
-    "Spatial Modelling" => Any[
+    "Spatial modelling" => Any[
         "spatial_modelling/lattice_reaction_systems.md",
         "spatial_modelling/lattice_simulation_structure_ interaction.md",
         "spatial_modelling/lattice_simulation_plotting.md",

@@ -348,6 +348,30 @@ end
 MT.is_diff_equation(rx::Reaction) = false
 MT.is_alg_equation(rx::Reaction) = false
 
+# MTK functions for extracting variables within equation type object
+MT.eqtype_supports_collect_vars(rx::Reaction) = true
+function MT.collect_vars!(unknowns, parameters, rx::Reaction, iv; depth = 0,
+        op = MT.Differential)
+    MT.collect_vars!(unknowns, parameters, rx.rate, iv; depth, op)
+    for sub in rx.substrates
+        MT.collect_vars!(unknowns, parameters, sub, iv; depth, op)
+    end
+    for prod in rx.products
+        MT.collect_vars!(unknowns, parameters, prod, iv; depth, op)
+    end
+    for substoich in rx.substoich
+        MT.collect_vars!(unknowns, parameters, substoich, iv; depth, op)
+    end
+    for prodstoich in rx.prodstoich
+        MT.collect_vars!(unknowns, parameters, prodstoich, iv; depth, op)
+    end
+    if hasnoisescaling(rx)
+        ns = getnoisescaling(rx)
+        MT.collect_vars!(unknowns, parameters, ns, iv; depth, op)
+    end
+    return nothing
+end
+
 """
     get_symbolics(set, rx::Reaction)
 

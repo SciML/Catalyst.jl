@@ -31,7 +31,8 @@ using ModelingToolkit: Symbolic, value, get_unknowns, get_ps, get_iv, get_system
 import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!,
                         modified_unknowns!, validate, namespace_variables,
                         namespace_parameters, rename, renamespace, getname, flatten,
-                        is_alg_equation, is_diff_equation
+                        is_alg_equation, is_diff_equation, collect_vars!,
+                        eqtype_supports_collect_vars
 
 # internal but needed ModelingToolkit functions
 import ModelingToolkit: check_variables,
