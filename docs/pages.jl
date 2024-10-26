@@ -46,7 +46,7 @@ pages = Any[
     ],
     "Inverse problems" => Any[
         "inverse_problems/optimization_ode_param_fitting.md",
-        # "inverse_problems/petab_ode_param_fitting.md",
+        "inverse_problems/petab_ode_param_fitting.md",
         "inverse_problems/behaviour_optimisation.md",
         # "inverse_problems/structural_identifiability.md",
         "inverse_problems/global_sensitivity_analysis.md",
