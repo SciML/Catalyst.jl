@@ -41,7 +41,8 @@ jobs:
 
       # Install Julia package dependencies for the documentation project
       - name: Install dependencies
-        run: julia --project=docs/ -e 'ENV["JULIA_PKG_SERVER"] = ""; using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+        run: >
+          DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --project=docs/ -e 'ENV["JULIA_PKG_SERVER"] = ""; using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
 
       # Build and deploy the documentation using xvfb to simulate a display for GLMakie
       # xvfb-run: Runs Julia with a virtual display to support OpenGL rendering
