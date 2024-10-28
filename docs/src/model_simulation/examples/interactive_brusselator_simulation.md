@@ -67,7 +67,6 @@ axislegend(ax, position = :rt)
 
 # Display the figure
 fig
-nothing # hide
 ```
 
 The plot shows the concentrations of species X and Y over time. Notice the oscillatory behavior characteristic of the Brusselator model.
@@ -148,7 +147,6 @@ axislegend(ax, position = :rt)
 
 # Display the figure
 fig
-nothing # hide
 ```
 
 This plot will now update in real-time as you move the sliders, allowing for interactive exploration of the Brusselator's behavior under different conditions. (Note the figure above is not interactive, but for illustrative purposes to show what you should see locally.)

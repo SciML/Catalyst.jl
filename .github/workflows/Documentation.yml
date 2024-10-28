@@ -36,8 +36,7 @@ jobs:
       # Cache to speed up subsequent runs
       - uses: julia-actions/cache@v2
         with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
-          cache-name: "docs-cache"
+          cache-name: docs-cache
 
       # Install Julia package dependencies for the documentation project
       - name: Install dependencies
@@ -59,8 +58,11 @@ jobs:
       - name: Upload site as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Docs build
+          name: docs-artifact
           path: ./docs/build
+          retention-days: 2
+          compression-level: 9
+          overwrite: true
 
       - uses: julia-actions/julia-processcoverage@v1
 
@@ -69,3 +71,4 @@ jobs:
           file: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+
