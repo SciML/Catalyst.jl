@@ -60,7 +60,7 @@ jobs:
         with:
           name: docs-artifact
           path: ./docs/build
-          retention-days: 2
+          retention-days: 3
           compression-level: 9
           overwrite: true
 
