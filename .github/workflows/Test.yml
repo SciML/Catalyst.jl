@@ -1,0 +1,38 @@
+name: "Tests"
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+concurrency:
+  # Skip intermediate builds: always, but for the master branch.
+  # Cancel intermediate builds: always, but for the master branch.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  tests:
+    name: "Tests"
+    strategy:
+      matrix:
+        version:
+          - "1"
+          - "lts"
+          - "pre"
+        group:
+          - Core
+          - Spatial
+          - Extensions
+    uses: "SciML/.github/.github/workflows/tests.yml@v1"
+    with:
+      julia-version: "${{ matrix.version }}"
+      group: "${{ matrix.group }}"
+    secrets: "inherit"
+    uses: coverallsapp/github-action@master
+    with:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+      path-to-lcov: ./lcov.info
