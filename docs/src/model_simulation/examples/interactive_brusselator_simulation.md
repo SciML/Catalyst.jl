@@ -11,7 +11,7 @@ Let's again use the oscillating Brusselator model, extending the basic simulatio
 using Catalyst
 using OrdinaryDiffEq
 using GLMakie
-GLMakie.activate!() # hide
+GLMakie.activate!(inline = true) # hide
 
 # Define the Brusselator model
 brusselator = @reaction_network begin
