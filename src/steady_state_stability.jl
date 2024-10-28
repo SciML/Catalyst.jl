@@ -60,6 +60,9 @@ function steady_state_stability(u::Vector, rs::ReactionSystem, ps;
 
     # Generates the Jacobian at the steady state (technically, `ss_jac` is an `ODEProblem` with dummy values for `u0` and `p`).
     J = zeros(length(u), length(u))
+    @show u
+    @show ps
+    @show parameters(ss_jac)
     ss_jac = remake(ss_jac; u0 = u, p = ps)
     ss_jac.f.jac(J, ss_jac.u0, ss_jac.p, Inf)
 

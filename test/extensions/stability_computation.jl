@@ -73,6 +73,7 @@ let
     # Computes stability using various input forms, and checks that the output is correct. 
     sss = hc_steady_states(rn, ps_1; u0 = u0_1, show_progress = false)
     for u0 in [u0_1, u0_2, u0_3, u0_4], ps in [ps_1, ps_2, ps_3]
+        @show eltype(first(u0)),eltype(first(ps))
         stab_1 =  [steady_state_stability(ss, rn, ps) for ss in sss]
         ss_jac = steady_state_jac(rn; u0 = u0)
         stab_2 =  [steady_state_stability(ss, rn, ps; ss_jac = ss_jac) for ss in sss]
