@@ -30,6 +30,7 @@ jobs:
           - "pre"
         group:
           - Core
+          - IO
           - Spatial
           - Extensions
     uses: "SciML/.github/.github/workflows/tests.yml@v1"
