@@ -30,14 +30,14 @@ ode = ODEProblem(model, u0, tspan, ps)
 
 # Simulate ODE and plot results.
 sol = solve(ode)
-plot(sol; lw = 5)</code></pre><img src="index-45f7008d.svg" alt="Example block output"/><h4 id="doc_index_example_jump"><a class="docs-heading-anchor" href="#doc_index_example_jump">Stochastic jump simulations</a><a id="doc_index_example_jump-1"></a><a class="docs-heading-anchor-permalink" href="#doc_index_example_jump" title="Permalink"></a></h4><p>The same model can be used as input to other types of simulations. E.g. here we instead generate and simulate a stochastic chemical kinetics jump process model.</p><pre><code class="language-julia hljs"># Create and simulate a jump process (here using Gillespie&#39;s direct algorithm).
+plot(sol; lw = 5)</code></pre><img src="index-eb47a867.svg" alt="Example block output"/><h4 id="doc_index_example_jump"><a class="docs-heading-anchor" href="#doc_index_example_jump">Stochastic jump simulations</a><a id="doc_index_example_jump-1"></a><a class="docs-heading-anchor-permalink" href="#doc_index_example_jump" title="Permalink"></a></h4><p>The same model can be used as input to other types of simulations. E.g. here we instead generate and simulate a stochastic chemical kinetics jump process model.</p><pre><code class="language-julia hljs"># Create and simulate a jump process (here using Gillespie&#39;s direct algorithm).
 # The initial conditions are now integers as we track exact populations for each species.
 using JumpProcesses
 u0_integers = [:S =&gt; 50, :E =&gt; 10, :SE =&gt; 0, :P =&gt; 0]
 jinput = JumpInputs(model, u0_integers, tspan, ps)
 jprob = JumpProblem(jinput)
 jump_sol = solve(jprob)
-plot(jump_sol; lw = 2)</code></pre><img src="index-2c9944a3.svg" alt="Example block output"/><h2 id="doc_index_elaborate_example"><a class="docs-heading-anchor" href="#doc_index_elaborate_example">More elaborate example</a><a id="doc_index_elaborate_example-1"></a><a class="docs-heading-anchor-permalink" href="#doc_index_elaborate_example" title="Permalink"></a></h2><p>In the above example, we used basic Catalyst workflows to simulate a simple model. Here we instead show how various Catalyst features can compose to create a much more advanced model. Our model describes how the volume of a cell (<span>$V$</span>) is affected by a growth factor (<span>$G$</span>). The growth factor only promotes growth while in its phosphorylated form (<span>$G^P$</span>). The phosphorylation of <span>$G$</span> (<span>$G \to G^P$</span>) is promoted by sunlight (modeled as the cyclic sinusoid <span>$k_a (\sin(t) + 1)$</span>), which phosphorylates the growth factor (producing <span>$G^P$</span>). When the cell reaches a critical volume (<span>$V_m$</span>) it undergoes cell division. First, we declare our model:</p><pre><code class="language-julia hljs">using Catalyst
+plot(jump_sol; lw = 2)</code></pre><img src="index-5308334c.svg" alt="Example block output"/><h2 id="doc_index_elaborate_example"><a class="docs-heading-anchor" href="#doc_index_elaborate_example">More elaborate example</a><a id="doc_index_elaborate_example-1"></a><a class="docs-heading-anchor-permalink" href="#doc_index_elaborate_example" title="Permalink"></a></h2><p>In the above example, we used basic Catalyst workflows to simulate a simple model. Here we instead show how various Catalyst features can compose to create a much more advanced model. Our model describes how the volume of a cell (<span>$V$</span>) is affected by a growth factor (<span>$G$</span>). The growth factor only promotes growth while in its phosphorylated form (<span>$G^P$</span>). The phosphorylation of <span>$G$</span> (<span>$G \to G^P$</span>) is promoted by sunlight (modeled as the cyclic sinusoid <span>$k_a (\sin(t) + 1)$</span>), which phosphorylates the growth factor (producing <span>$G^P$</span>). When the cell reaches a critical volume (<span>$V_m$</span>) it undergoes cell division. First, we declare our model:</p><pre><code class="language-julia hljs">using Catalyst
 cell_model = @reaction_network begin
     @parameters Vₘ g
     @equations begin
@@ -66,7 +66,7 @@ dG^P(t) &amp;= \left( \frac{k_p(\sin(t)+1)}{V(t)} G(t) - \frac{k_i}{V(t)} G^P(t)
 dV(t) &amp;= \left(g \, G^P(t)\right) dt
 \end{align*}\]</p><p>where the <span>$dW_1(t)$</span> and <span>$dW_2(t)$</span> terms represent independent Brownian Motions, encoding the noise added by the Chemical Langevin Equation. Finally, we can simulate and plot the results.</p><pre><code class="language-julia hljs">using StochasticDiffEq, Plots
 sol = solve(sprob, EM(); dt = 0.05)
-plot(sol; xguide = &quot;Time (au)&quot;, lw = 2)</code></pre><img src="index-b2f785b9.svg" alt="Example block output"/><h2 id="doc_index_help"><a class="docs-heading-anchor" href="#doc_index_help">Getting Help</a><a id="doc_index_help-1"></a><a class="docs-heading-anchor-permalink" href="#doc_index_help" title="Permalink"></a></h2><p>Catalyst developers are active on the <a href="https://discourse.julialang.org/">Julia Discourse</a> and the <a href="https://julialang.slack.com">Julia Slack</a> channels #sciml-bridged and #sciml-sysbio. For bugs or feature requests, <a href="https://github.com/SciML/Catalyst.jl/issues">open an issue</a>.</p><h2 id="doc_index_citation"><a class="docs-heading-anchor" href="#doc_index_citation">Supporting and Citing Catalyst.jl</a><a id="doc_index_citation-1"></a><a class="docs-heading-anchor-permalink" href="#doc_index_citation" title="Permalink"></a></h2><p>The software in this ecosystem was developed as part of academic research. If you would like to help support it, please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part of your research, teaching, or other activities, we would be grateful if you could cite our work:</p><pre><code class="nohighlight hljs">@article{CatalystPLOSCompBio2023,
+plot(sol; xguide = &quot;Time (au)&quot;, lw = 2)</code></pre><img src="index-ebced795.svg" alt="Example block output"/><h2 id="doc_index_help"><a class="docs-heading-anchor" href="#doc_index_help">Getting Help</a><a id="doc_index_help-1"></a><a class="docs-heading-anchor-permalink" href="#doc_index_help" title="Permalink"></a></h2><p>Catalyst developers are active on the <a href="https://discourse.julialang.org/">Julia Discourse</a> and the <a href="https://julialang.slack.com">Julia Slack</a> channels #sciml-bridged and #sciml-sysbio. For bugs or feature requests, <a href="https://github.com/SciML/Catalyst.jl/issues">open an issue</a>.</p><h2 id="doc_index_citation"><a class="docs-heading-anchor" href="#doc_index_citation">Supporting and Citing Catalyst.jl</a><a id="doc_index_citation-1"></a><a class="docs-heading-anchor-permalink" href="#doc_index_citation" title="Permalink"></a></h2><p>The software in this ecosystem was developed as part of academic research. If you would like to help support it, please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part of your research, teaching, or other activities, we would be grateful if you could cite our work:</p><pre><code class="nohighlight hljs">@article{CatalystPLOSCompBio2023,
  doi = {10.1371/journal.pcbi.1011530},
  author = {Loman, Torkel E. AND Ma, Yingbo AND Ilin, Vasily AND Gowda, Shashi AND Korsbo, Niklas AND Yewale, Nikhil AND Rackauckas, Chris AND Isaacson, Samuel A.},
  journal = {PLOS Computational Biology},
@@ -78,45 +78,45 @@ plot(sol; xguide = &quot;Time (au)&quot;, lw = 2)</code></pre><img src="index-b2
  url = {https://doi.org/10.1371/journal.pcbi.1011530},
  pages = {1-19},
  number = {10},
-}</code></pre><h2 id="doc_index_reproducibility"><a class="docs-heading-anchor" href="#doc_index_reproducibility">Reproducibility</a><a id="doc_index_reproducibility-1"></a><a class="docs-heading-anchor-permalink" href="#doc_index_reproducibility" title="Permalink"></a></h2><details><summary>The documentation of this SciML package was built using these direct dependencies,</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Status `~/work/Catalyst.jl/Catalyst.jl/docs/Project.toml`
-  [6e4b80f9] BenchmarkTools v1.5.0
-⌅ [0f109fa4] BifurcationKit v0.3.6
-  [13f3f980] CairoMakie v0.12.15
-  [479239e8] Catalyst v14.4.1 `~/work/Catalyst.jl/Catalyst.jl`
-  [a93c6f00] DataFrames v1.7.0
-  [1130ab10] DiffEqParamEstim v2.2.0
-  [31c24e10] Distributions v0.25.112
-  [e30172f5] Documenter v1.7.0
-  [61744808] DynamicalSystems v3.3.22
-  [e9467ef8] GLMakie v0.10.15
-  [af5da776] GlobalSensitivity v2.7.0
-  [1ecd5474] GraphMakie v0.5.12
-  [86223c79] Graphs v1.12.0
-  [f213a82b] HomotopyContinuation v2.11.1
-  [40713840] IncompleteLU v0.2.1
-  [ccbc3e58] JumpProcesses v9.14.0
-  [23fbe1c1] Latexify v0.16.5
-  [7ed4a6bd] LinearSolve v2.36.1
-⌃ [961ee093] ModelingToolkit v9.47.0
-  [8913a72c] NonlinearSolve v3.15.1
-  [429524aa] Optim v1.9.4
-  [7f7a1694] Optimization v4.0.4
-  [3e6eede4] OptimizationBBO v0.4.0
-  [4e6fcdb7] OptimizationNLopt v0.3.1
-  [36348300] OptimizationOptimJL v0.4.1
-  [42dfb2eb] OptimizationOptimisers v0.3.4
-  [1dea7af3] OrdinaryDiffEq v6.89.0
-  [91a5bcdd] Plots v1.40.8
-  [8a4e6c94] QuasiMonteCarlo v0.3.3
-  [0bca4576] SciMLBase v2.57.2
-  [1ed8b502] SciMLSensitivity v7.69.0
-  [276daf66] SpecialFunctions v2.4.0
-  [90137ffa] StaticArrays v1.9.8
-  [9672c7b4] SteadyStateDiffEq v2.4.1
-  [789caeaf] StochasticDiffEq v6.70.0
-  [0c5d862f] Symbolics v6.16.0
-  [56ddb016] Logging v1.11.0
-Info Packages marked with ⌃ and ⌅ have new versions available. Those with ⌃ may be upgradable, but those with ⌅ are restricted by compatibility constraints from upgrading. To see why use `status --outdated`</code></pre></details><details><summary>and using this machine and Julia version.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Julia Version 1.11.1
+}</code></pre><h2 id="doc_index_reproducibility"><a class="docs-heading-anchor" href="#doc_index_reproducibility">Reproducibility</a><a id="doc_index_reproducibility-1"></a><a class="docs-heading-anchor-permalink" href="#doc_index_reproducibility" title="Permalink"></a></h2><details><summary>The documentation of this SciML package was built using these direct dependencies,</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32"><span class="sgr1">Status</span></span> `~/work/Catalyst.jl/Catalyst.jl/docs/Project.toml`
+  <span class="sgr90">[6e4b80f9] </span>BenchmarkTools v1.5.0
+<span class="sgr33">⌅</span> <span class="sgr90">[0f109fa4] </span>BifurcationKit v0.3.6
+  <span class="sgr90">[13f3f980] </span>CairoMakie v0.12.15
+  <span class="sgr90">[479239e8] </span>Catalyst v14.4.1 `~/work/Catalyst.jl/Catalyst.jl`
+  <span class="sgr90">[a93c6f00] </span>DataFrames v1.7.0
+  <span class="sgr90">[1130ab10] </span>DiffEqParamEstim v2.2.0
+  <span class="sgr90">[31c24e10] </span>Distributions v0.25.112
+  <span class="sgr90">[e30172f5] </span>Documenter v1.7.0
+  <span class="sgr90">[61744808] </span>DynamicalSystems v3.3.22
+  <span class="sgr90">[e9467ef8] </span>GLMakie v0.10.15
+  <span class="sgr90">[af5da776] </span>GlobalSensitivity v2.7.0
+  <span class="sgr90">[1ecd5474] </span>GraphMakie v0.5.12
+  <span class="sgr90">[86223c79] </span>Graphs v1.12.0
+  <span class="sgr90">[f213a82b] </span>HomotopyContinuation v2.11.1
+  <span class="sgr90">[40713840] </span>IncompleteLU v0.2.1
+  <span class="sgr90">[ccbc3e58] </span>JumpProcesses v9.14.0
+  <span class="sgr90">[23fbe1c1] </span>Latexify v0.16.5
+  <span class="sgr90">[7ed4a6bd] </span>LinearSolve v2.36.1
+<span class="sgr32">⌃</span> <span class="sgr90">[961ee093] </span>ModelingToolkit v9.47.0
+  <span class="sgr90">[8913a72c] </span>NonlinearSolve v3.15.1
+  <span class="sgr90">[429524aa] </span>Optim v1.9.4
+  <span class="sgr90">[7f7a1694] </span>Optimization v4.0.5
+  <span class="sgr90">[3e6eede4] </span>OptimizationBBO v0.4.0
+  <span class="sgr90">[4e6fcdb7] </span>OptimizationNLopt v0.3.1
+  <span class="sgr90">[36348300] </span>OptimizationOptimJL v0.4.1
+  <span class="sgr90">[42dfb2eb] </span>OptimizationOptimisers v0.3.4
+  <span class="sgr90">[1dea7af3] </span>OrdinaryDiffEq v6.89.0
+  <span class="sgr90">[91a5bcdd] </span>Plots v1.40.8
+  <span class="sgr90">[8a4e6c94] </span>QuasiMonteCarlo v0.3.3
+  <span class="sgr90">[0bca4576] </span>SciMLBase v2.57.2
+  <span class="sgr90">[1ed8b502] </span>SciMLSensitivity v7.69.0
+  <span class="sgr90">[276daf66] </span>SpecialFunctions v2.4.0
+  <span class="sgr90">[90137ffa] </span>StaticArrays v1.9.8
+  <span class="sgr90">[9672c7b4] </span>SteadyStateDiffEq v2.4.1
+  <span class="sgr90">[789caeaf] </span>StochasticDiffEq v6.70.0
+  <span class="sgr90">[0c5d862f] </span>Symbolics v6.16.0
+  <span class="sgr90">[56ddb016] </span>Logging v1.11.0
+<span class="sgr36"><span class="sgr1">Info</span></span> Packages marked with <span class="sgr32">⌃</span> and <span class="sgr33">⌅</span> have new versions available. Those with <span class="sgr32">⌃</span> may be upgradable, but those with <span class="sgr33">⌅</span> are restricted by compatibility constraints from upgrading. To see why use `status --outdated`</code></pre></details><details><summary>and using this machine and Julia version.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Julia Version 1.11.1
 Commit 8f5b7ca12ad (2024-10-16 10:53 UTC)
 Build Info:
   Official https://julialang.org/ release
@@ -125,4 +125,4 @@ Platform Info:
   CPU: 4 × AMD EPYC 7763 64-Core Processor
   WORD_SIZE: 64
   LLVM: libLLVM-16.0.6 (ORCJIT, znver3)
-Threads: 1 default, 0 interactive, 1 GC (on 4 virtual cores)</code></pre></details></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="introduction_to_catalyst/catalyst_for_new_julia_users/">Introduction to Catalyst and Julia for New Julia users »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Monday 28 October 2024 18:01">Monday 28 October 2024</span>. Using Julia version 1.11.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Threads: 1 default, 0 interactive, 1 GC (on 4 virtual cores)</code></pre></details></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="introduction_to_catalyst/catalyst_for_new_julia_users/">Introduction to Catalyst and Julia for New Julia users »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Tuesday 29 October 2024 01:02">Tuesday 29 October 2024</span>. Using Julia version 1.11.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

@@ -2055,9 +2055,9 @@ version = "0.1.2"
 
 [[deps.MathTeXEngine]]
 deps = ["AbstractTrees", "Automa", "DataStructures", "FreeTypeAbstraction", "GeometryBasics", "LaTeXStrings", "REPL", "RelocatableFolders", "UnicodeFun"]
-git-tree-sha1 = "e1641f32ae592e415e3dbae7f4a188b5316d4b62"
+git-tree-sha1 = "f45c8916e8385976e1ccd055c9874560c257ab13"
 uuid = "0a4f8689-d25c-4efe-a92b-7142dfc1aa53"
-version = "0.6.1"
+version = "0.6.2"
 
 [[deps.MaybeInplace]]
 deps = ["ArrayInterface", "LinearAlgebra", "MacroTools"]
@@ -2412,9 +2412,9 @@ version = "0.3.3"
 
 [[deps.Optimization]]
 deps = ["ADTypes", "ArrayInterface", "ConsoleProgressMonitor", "DocStringExtensions", "LBFGSB", "LinearAlgebra", "Logging", "LoggingExtras", "OptimizationBase", "Printf", "ProgressLogging", "Reexport", "SciMLBase", "SparseArrays", "TerminalLoggers"]
-git-tree-sha1 = "a5e0dff44b7bcb5f5f0b8717918b7169839a3b6e"
+git-tree-sha1 = "4b59eef21418fbdf28afbe2d7e945d8efbe5057d"
 uuid = "7f7a1694-90dd-40f0-9382-eb1efda571ba"
-version = "4.0.4"
+version = "4.0.5"
 
 [[deps.OptimizationBBO]]
 deps = ["BlackBoxOptim", "Optimization", "Reexport"]
