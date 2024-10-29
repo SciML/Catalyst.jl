@@ -86,7 +86,7 @@ end
         # @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
 
         # Tests stability computation (but requires the HomotopyContinuation extension).
-        # @time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
+        @time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
 
         # Test spatial plotting, using CarioMakie and GraphMakie
         @time @safetestset "Lattice Simulation Plotting" begin include("extensions/lattice_simulation_plotting.jl") end
