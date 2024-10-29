@@ -11,7 +11,7 @@ Let's again use the oscillating Brusselator model, extending the basic simulatio
 using Catalyst
 using OrdinaryDiffEq
 using GLMakie
-GLMakie.activate!(inline = true, visible = false) # hide
+GLMakie.activate!(inline = true) # hide
 
 # Define the Brusselator model
 brusselator = @reaction_network begin
@@ -155,7 +155,7 @@ This plot will now update in real-time as you move the sliders, allowing for int
 
 To gain more insight into the system's behavior, let's enhance our visualization by adding a phase plot, along with some other improvements:
 
-```@example interactive_brusselator
+```julia
 # Create the main figure
 fig = Figure(size = (1200, 800), fontsize = 18);
 
@@ -231,7 +231,7 @@ colgap!(param_grid, 10)
 colgap!(ic_grid, 10)
 
 # Display the figure
-#fig
+fig
 ```
 
 This will create a visualization with both time series and phase plots:

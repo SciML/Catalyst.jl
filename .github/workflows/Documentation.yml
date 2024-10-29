@@ -7,28 +7,68 @@ on:
     tags: '*'
   pull_request:
 
+permissions:
+  actions: write  # Allows the workflow to delete old caches created by previous runs, ensuring efficient cache management and preventing the cache from growing indefinitely. https://github.com/julia-actions/cache?tab=readme-ov-file#cache-retention
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@latest
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Install binary dependencies needed for GLMakie to run in a headless environment
+      # xvfb: Creates a virtual frame buffer to simulate a display
+      # libgl1, mesa-utils, freeglut3-dev, xorg-dev, libxrandr-dev, libxinerama-dev, libxcursor-dev, libxi-dev, libxext-dev: Required libraries for OpenGL rendering
+      - name: Install binary dependencies
+        run: sudo apt-get update && sudo apt-get install -y xvfb libgl1 mesa-utils freeglut3-dev xorg-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
+
+      - name: Install Julia
+        uses: julia-actions/setup-julia@latest
         with:
           version: '1'
-      - name: Install xvfb and OpenGL libraries
-        run: sudo apt-get update && sudo apt-get install -y xorg-dev mesa-utils xvfb libgl1 freeglut3-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
+
+      # Cache to speed up subsequent runs
+      - uses: julia-actions/cache@v2
+        with:
+          cache-name: docs-cache
+
+      # Install Julia package dependencies for the documentation project
       - name: Install dependencies
-        run: julia --project=docs/ -e 'ENV["JULIA_PKG_SERVER"] = ""; using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+        run: >
+          DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --project=docs/ -e 'ENV["JULIA_PKG_SERVER"] = ""; using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+
+      # Build and deploy the documentation using xvfb to simulate a display for GLMakie
+      # xvfb-run: Runs Julia with a virtual display to support OpenGL rendering
+      # --server-args: Configures the virtual display resolution and color depth
       - name: Build and deploy
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # For authentication with GitHub Actions token
+          GKSwstype: "100" # Specifies the workstation type for GR framework rendering, https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988/7
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Required for permissions to deploy documentation
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # For authentication with SSH deploy key
-          GKSwstype: "100" # https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988
-        run: |
-          DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --project=docs/ --code-coverage=user docs/make.jl
+        run: >
+          DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' 
+          julia --project=docs --color=yes --code-coverage=user docs/make.jl
+
+      - name: Upload site as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-artifact
+          path: ./docs/build
+          retention-days: 3
+          compression-level: 9
+          overwrite: true
+
       - uses: julia-actions/julia-processcoverage@v1
+
       - uses: codecov/codecov-action@v4
         with:
           file: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+
