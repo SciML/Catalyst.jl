@@ -64,35 +64,35 @@ begin
         # Vectors not providing default values.
         [kp => 1.0, kd => 0.1, k1 => 0.25, Z0 => 10],
         [model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.Z0 => 10],
-        #[:kp => 1.0, :kd => 0.1, :k1 => 0.25, :Z0 => 10],
+        [:kp => 1.0, :kd => 0.1, :k1 => 0.25, :Z0 => 10],
         # Vectors providing default values.
         [kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5, Z0 => 10],
         [model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.k2 => 0.5, model.Z0 => 10],
-        #[:kp => 1.0, :kd => 0.1, :k1 => 0.25, :k2 => 0.5, :Z0 => 10],
+        [:kp => 1.0, :kd => 0.1, :k1 => 0.25, :k2 => 0.5, :Z0 => 10],
         # Static vectors not providing default values.
         SA[kp => 1.0, kd => 0.1, k1 => 0.25, Z0 => 10],
         SA[model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.Z0 => 10],
-        #SA[:kp => 1.0, :kd => 0.1, :k1 => 0.25, :Z0 => 10],
+        SA[:kp => 1.0, :kd => 0.1, :k1 => 0.25, :Z0 => 10],
         # Static vectors providing default values.
         SA[kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5, Z0 => 10],
         SA[model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.k2 => 0.5, model.Z0 => 10],
-        #SA[:kp => 1.0, :kd => 0.1, :k1 => 0.25, :k2 => 0.5, :Z0 => 10],
+        SA[:kp => 1.0, :kd => 0.1, :k1 => 0.25, :k2 => 0.5, :Z0 => 10],
         # Dicts not providing default values.
         Dict([kp => 1.0, kd => 0.1, k1 => 0.25, Z0 => 10]),
         Dict([model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.Z0 => 10]),
-        #Dict([:kp => 1.0, :kd => 0.1, :k1 => 0.25, :Z0 => 10]),
+        Dict([:kp => 1.0, :kd => 0.1, :k1 => 0.25, :Z0 => 10]),
         # Dicts providing default values.
         Dict([kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5, Z0 => 10]),
         Dict([model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.k2 => 0.5, model.Z0 => 10]),
-        #Dict([:kp => 1.0, :kd => 0.1, :k1 => 0.25, :k2 => 0.5, :Z0 => 10]),
+        Dict([:kp => 1.0, :kd => 0.1, :k1 => 0.25, :k2 => 0.5, :Z0 => 10]),
         # Tuples not providing default values.
         (kp => 1.0, kd => 0.1, k1 => 0.25, Z0 => 10),
         (model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.Z0 => 10),
-        #(:kp => 1.0, :kd => 0.1, :k1 => 0.25, :Z0 => 10),
+        (:kp => 1.0, :kd => 0.1, :k1 => 0.25, :Z0 => 10),
         # Tuples providing default values.
         (kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5, Z0 => 10),
         (model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.k2 => 0.5, model.Z0 => 10),
-        #(:kp => 1.0, :kd => 0.1, :k1 => 0.25, :k2 => 0.5, :Z0 => 10),
+        (:kp => 1.0, :kd => 0.1, :k1 => 0.25, :k2 => 0.5, :Z0 => 10),
     ]
 end
 
