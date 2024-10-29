@@ -38,7 +38,6 @@ end
         @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end
         @time @safetestset "Compound Species" begin include("miscellaneous_tests/compound_macro.jl") end
         @time @safetestset "Reaction Balancing" begin include("miscellaneous_tests/reaction_balancing.jl") end
-        @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
 
         # Tests reaction network analysis features.
         @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end
@@ -54,9 +53,13 @@ end
         # Tests upstream SciML and DiffEq stuff.
         @time @safetestset "MTK Structure Indexing" begin include("upstream/mtk_structure_indexing.jl") end
         @time @safetestset "MTK Problem Inputs" begin include("upstream/mtk_problem_inputs.jl") end
+    end
+
+    if GROUP == "All" || GROUP == "IO"
+        # @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
+        # @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
 
         # Tests network visualisation.
-        # @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
         # Disable on Macs as can't install GraphViz via jll
         if !Sys.isapple()
             @time @safetestset "Graphs Visualisations" begin include("visualisation/graphs.jl") end

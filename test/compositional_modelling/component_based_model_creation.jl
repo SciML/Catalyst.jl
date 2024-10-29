@@ -267,7 +267,8 @@ end
 # Adding algebraic constraints.
 let
     @parameters t, r₊, r₋, β
-    @species A(t), B(t), C(t), D(t)
+    @species A(t), B(t), C(t)
+    @variables D(t)
     rxs1 = [Reaction(r₊, [A, B], [C])]
     rxs2 = [Reaction(r₋, [C], [A, B])]
     @named rs1 = ReactionSystem(rxs1, t, [A, B, C], [r₊])
