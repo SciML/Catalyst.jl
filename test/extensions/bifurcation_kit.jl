@@ -251,7 +251,7 @@ let
 
     xs = getfield.(bif_dia.γ.branch, :x)
     ks = getfield.(bif_dia.γ.branch, :param)
-    # @test @. 8 * (ks / (ks + ks^2)) ≈ xs
+    @test_broken @. 8 * (ks / (ks + ks^2)) ≈ xs
 
     # Test that parameter updating happens correctly in ODESystem
     t = default_t()
