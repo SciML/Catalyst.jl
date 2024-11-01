@@ -1398,6 +1398,37 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
 end
 
 """
+    ModelingToolkit.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
+
+Compose the indicated [`ReactionSystem`](@ref) with one or more `AbstractSystem`s.
+
+"""
+function compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
+    nsys = length(systems)
+    nsys == 0 && return sys
+    @set! sys.name = name
+    @set! sys.systems = [get_systems(sys); systems]
+    newunknowns = OrderedSet{BasicSymbolic{Real}}()
+    newparams = OrderedSet()
+    iv = has_iv(sys) ? get_iv(sys) : nothing
+    for ssys in systems
+        collect_scoped_vars!(newunknowns, newparams, ssys, iv)
+    end
+
+    if !isempty(newunknowns) 
+        @set! sys.unknowns = union(get_unknowns(sys), newunknowns)
+        sort!(get_unknowns(sys), by = !isspecies)
+        @set! sys.species = filter(isspecies, get_unknowns(sys))
+    end
+
+    if !isempty(newparams)
+        @set! sys.ps = union(get_ps(sys), newparams)
+    end
+
+    return sys
+end
+
+"""
     ModelingToolkit.extend(sys::AbstractSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
 
 Extends the indicated [`ReactionSystem`](@ref) with another `AbstractSystem`.
