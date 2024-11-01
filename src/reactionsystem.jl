@@ -1415,7 +1415,7 @@ function ModelingToolkit.compose(sys::ReactionSystem, systems::AbstractArray; na
     @set! sys.systems = [get_systems(sys); systems]
     newunknowns = OrderedSet{BasicSymbolic{Real}}()
     newparams = OrderedSet()
-    iv = has_iv(sys) ? get_iv(sys) : nothing
+    iv = MT.has_iv(sys) ? MT.get_iv(sys) : nothing
     for ssys in systems
         collect_scoped_vars!(newunknowns, newparams, ssys, iv)
     end
