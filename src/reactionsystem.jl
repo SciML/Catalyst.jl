@@ -1403,7 +1403,7 @@ end
 Compose the indicated [`ReactionSystem`](@ref) with one or more `AbstractSystem`s.
 
 """
-function compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
+function ModelingToolkit.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
     nsys = length(systems)
     nsys == 0 && return sys
     @set! sys.name = name
