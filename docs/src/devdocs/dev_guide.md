@@ -6,10 +6,11 @@ continuing stability of releases. Before making a release one should
 
 1. Create a new release branch, i.e. "release-15.0.0"
 2. On this branch, cap major dependencies to their latest version that works and
-   passes test.
+   for which tests pass.
    - Caps need to be included in both Project.toml and docs/Project.toml.
    - Do not cap the master branch as this can prevent upstream libraries from
-     properly testing against Catalyst.
+     properly testing against Catalyst, and hide breaking changes that impact
+     Catalyst.
 3. Check docs build with the capped dependencies. Visually verify via checking
    the artifact in the doc build that the docs actually look ok (since sometimes
    issues can arise that do not lead to actual errors in the doc CI).
