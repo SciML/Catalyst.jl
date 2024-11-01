@@ -512,24 +512,8 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     eqs = Equation[eq for eq in rxs_and_eqs if eq isa Equation]
 
     # Loops through all reactions, adding encountered quantities to the unknown and parameter vectors.
-    # Starts by looping through substrates + products only (so these are added to the vector first).
-    # Next, the other components of reactions (e.g. rates and stoichiometries) are added.
     for rx in rxs
-        for reactants in (rx.substrates, rx.products), spec in reactants
-            MT.isparameter(spec) ? push!(ps, spec) : push!(us, spec)
-        end
-    end
-    for rx in rxs
-        # Adds all quantities encountered in the reaction's rate.
-        findvars!(ps, us, rx.rate, ivs, vars)
-
-        # Extracts all quantities encountered within stoichiometries.
-        for stoichiometry in (rx.substoich, rx.prodstoich), sym in stoichiometry
-            (sym isa Symbolic) && findvars!(ps, us, sym, ivs, vars)
-        end
-
-        # Extract all quantities encountered in relevant `Reaction` metadata.
-        hasnoisescaling(rx) && findvars!(ps, us, getnoisescaling(rx), ivs, vars)
+        MT.collect_vars!(us, ps, rx, iv)
     end
 
     # Extracts any species, variables, and parameters that occur in (non-reaction) equations.
@@ -541,6 +525,11 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
         union!(ps, parameters(osys))
     else
         fulleqs = rxs
+    end
+
+    # get variables in subsystems with scope at this level
+    for ssys in get(kwargs, :systems, [])
+        MT.collect_scoped_vars!(us, ps, ssys, iv)
     end
 
     # Loops through all events, adding encountered quantities to the unknown and parameter vectors.
