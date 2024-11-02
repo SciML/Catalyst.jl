@@ -24,10 +24,10 @@ continuing stability of releases. Before making a release one should
 
 If there is subsequently a need to increment the version of a dependency, this
 should be done via a new release that follows the above process, and modifies
-the patch, minor, or major Catalyst version (as appropriate for the potential
-impact of the dependency change on Catalyst users). If the dependency being
-updated is a non-breaking release, and would have automatically been installed
-by the package resolver had it not been capped, a patch release should be
-preferred. If the new release branch is branched from master, *it needs to
-ensure Project.toml caps are all ≥ to those listed in the previous Catalyst
-release branch*.
+the [patch, minor, or major Catalyst version (as appropriate for the potential
+impact of the dependency change on Catalyst users)](https://semver.org/). If the
+dependency being updated is a non-breaking release, and would have automatically
+been installed by the package resolver had it not been capped, a patch release
+should be preferred. If the new release branch is branched from master, *it
+needs to ensure Project.toml caps are all ≥ to those listed in the previous
+Catalyst release branch*.
