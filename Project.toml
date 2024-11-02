@@ -32,14 +32,12 @@ BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 GraphMakie = "1ecd5474-83a3-4783-bb4f-06765db800d2"
 HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
-# StructuralIdentifiability = "220ca800-aa68-49bb-acd8-6037fa93a544"
 
 [extensions]
 CatalystBifurcationKitExtension = "BifurcationKit"
 CatalystCairoMakieExtension = "CairoMakie"
 CatalystGraphMakieExtension = "GraphMakie"
 CatalystHomotopyContinuationExtension = "HomotopyContinuation"
-# CatalystStructuralIdentifiabilityExtension = "StructuralIdentifiability"
 
 [compat]
 BifurcationKit = "0.3"
@@ -62,9 +60,8 @@ Parameters = "0.12"
 Reexport = "0.2, 1.0"
 Requires = "1.0"
 RuntimeGeneratedFunctions = "0.5.12"
-SciMLBase = "< 2.57.2"
+SciMLBase = "< 2.57.2, 2"
 Setfield = "1"
-# StructuralIdentifiability = "0.5.8"
 SymbolicUtils = "2.1.2, 3.3.0"
 Symbolics = "5.30.1, 6"
 Unitful = "1.12.4"
@@ -93,7 +90,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [targets]
-test = ["DiffEqCallbacks", "DomainSets", "Graphviz_jll", "Logging", "NonlinearSolve", 
-        "OrdinaryDiffEq", "Pkg", "Plots", "Random", "SafeTestsets", "SciMLBase", "SciMLNLSolve", 
-        "StableRNGs", "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", 
-        "Test", "Unitful"]
+test = ["DiffEqCallbacks", "DomainSets", "Graphviz_jll", "Logging", "NonlinearSolve", "OrdinaryDiffEq", "Pkg", "Plots", "Random", "SafeTestsets", "SciMLBase", "SciMLNLSolve", "StableRNGs", "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "Unitful"]
