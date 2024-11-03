@@ -17,9 +17,11 @@ continuing stability of releases. Before making a release one should
 4. Release via the [registration
    issue](https://github.com/SciML/JumpProcesses.jl/issues/73) with the
    command:
-    ```julia
+   
+    ```
     @JuliaRegistrator register branch=release-15.0.0
     ```
+    
     modifying as appropriate for the version you are releasing.
 
 If there is subsequently a need to increment the version of a dependency, this
