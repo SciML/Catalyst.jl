@@ -848,9 +848,9 @@ version = "1.2.0"
 
 [[deps.DynamicalSystems]]
 deps = ["Attractors", "ChaosTools", "ComplexityMeasures", "DataStructures", "DelayEmbeddings", "DynamicalSystemsBase", "FractalDimensions", "PredefinedDynamicalSystems", "RecurrenceAnalysis", "Reexport", "StateSpaceSets", "TimeseriesSurrogates"]
-git-tree-sha1 = "4a9aa6aaded64dcac476dc19be027166eaa47dba"
+git-tree-sha1 = "b72ff003aedc4ab56063306fe1a91d14b24b5e7d"
 uuid = "61744808-ddfa-5f27-97ff-6e42cc95d634"
-version = "3.3.24"
+version = "3.3.25"
 weakdeps = ["Makie"]
 
     [deps.DynamicalSystems.extensions]
