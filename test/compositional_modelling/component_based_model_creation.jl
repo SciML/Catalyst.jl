@@ -46,8 +46,8 @@ let
         sys₂.μ => (log(2) / 600), sys₃.α₀ => 5e-4, sys₃.α => 0.5, sys₃.K => 40.0,
         sys₃.n => 2, sys₃.δ => (log(2) / 120), sys₃.β => (20 * log(2) / 120),
         sys₃.μ => (log(2) / 600)]
-    u₀ = [sys₁.m => 0.0, sys₁.P => 20.0, sys₁.R => 0.0, sys₂.m => 0.0, sys₂.P => 0.0,
-        sys₂.R => 0.0, sys₃.m => 0.0, sys₃.P => 0.0, sys₃.R => 0.0]
+    u₀ = [sys₁.m => 0.0, sys₁.P => 20.0, sys₂.m => 0.0, sys₂.P => 0.0,
+        sys₃.m => 0.0, sys₃.P => 0.0]
     tspan = (0.0, 100000.0)
     oprob = ODEProblem(oderepressilator, u₀, tspan, pvals)
     sol = solve(oprob, Tsit5())
@@ -94,13 +94,15 @@ let
     @test all(isapprox.(sol(tvs, idxs = sys₁.P), sol2(tvs, idxs = 4), atol = 1e-4))
 
     # Test conversion to nonlinear system.
+    u₀_nl = [sys₁.m => 0.0, sys₁.P => 20.0, sys₁.R => 0.0, sys₂.m => 0.0, sys₂.P => 0.0,
+        sys₂.R => 0.0, sys₃.m => 0.0, sys₃.P => 0.0, sys₃.R => 0.0]
     @named nsys = NonlinearSystem(connections, [], [])
     @named ssrepressilator = ReactionSystem(t; systems = [nsys, sys₁, sys₂, sys₃])
     ssrepressilator = complete(ssrepressilator)
     @named nlrepressilator = convert(NonlinearSystem, ssrepressilator, include_zero_odes = false)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
-    nlprob = NonlinearProblem(sys2, u₀, pvals)
+    nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
     sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
@@ -113,7 +115,7 @@ let
     @named nlrepressilator = convert(NonlinearSystem, fsys, include_zero_odes = false)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
-    nlprob = NonlinearProblem(sys2, u₀, pvals)
+    nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
     sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
@@ -131,7 +133,7 @@ let
     @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes = false)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
-    nlprob = NonlinearProblem(sys2, u₀, pvals)
+    nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
     sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
@@ -252,7 +254,7 @@ let
     @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes = false)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
-    nlprob = NonlinearProblem(sys2, u₀, pvals)
+    nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
     sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
@@ -265,7 +267,8 @@ end
 # Adding algebraic constraints.
 let
     @parameters t, r₊, r₋, β
-    @species A(t), B(t), C(t), D(t)
+    @species A(t), B(t), C(t)
+    @variables D(t)
     rxs1 = [Reaction(r₊, [A, B], [C])]
     rxs2 = [Reaction(r₋, [C], [A, B])]
     @named rs1 = ReactionSystem(rxs1, t, [A, B, C], [r₊])
@@ -280,7 +283,7 @@ let
     @named ns = ODESystem(nseqs, t, [A2, B2, D], [β])
     rs = compose(rs, [ns])
     rs = complete(rs)
-    osys = complete(convert(ODESystem, rs; include_zero_odes = false))
+    osys = convert(ODESystem, rs; include_zero_odes = false)
     p = [r₊ => 1.0, r₋ => 2.0, ns.β => 3.0]
     u₀ = [A => 1.0, B => 2.0, C => 0.0]
     oprob = ODEProblem(structural_simplify(osys), u₀, (0.0, 10.0), p)
@@ -497,4 +500,47 @@ let
     defs[rn2.q] == 20.0
     defs[rn2.X] == 30.0
     defs[rn2.Z] == 40.0
+end
+
+# test scoping in compose
+# code adapted from ModelingToolkit.jl tests
+let
+    t = default_t()
+    D = default_time_deriv()
+    @species x1(t) x2(t) 
+    @variables x3(t) x4(t) x5(t)
+    x2 = ParentScope(x2)
+    x3 = ParentScope(ParentScope(x3))
+    x4 = DelayParentScope(x4, 2)
+    x5 = GlobalScope(x5)
+    @parameters p1 p2 p3 p4 p5
+    p2 = ParentScope(p2)
+    p3 = ParentScope(ParentScope(p3))
+    p4 = DelayParentScope(p4, 2)
+    p5 = GlobalScope(p5)
+    rxs = [Reaction(p1, nothing, [x1]), Reaction(p2, [x2], nothing), 
+           D(x3) ~ p3, D(x4) ~ p4, D(x5) ~ p5]
+    @named sys1 = ReactionSystem(rxs, t)
+    @test isequal(x1, only(unknowns(sys1)))
+    @test isequal(x1, only(species(sys1)))
+    @test isequal(p1, only(parameters(sys1)))
+    @named sys2 = ReactionSystem([], t; systems = [sys1])
+    @test length(unknowns(sys2)) == 2
+    @test any(isequal(x2), unknowns(sys2))
+    @test any(isequal(x2), species(sys2))
+    @test length(parameters(sys2)) == 2
+    @test any(isequal(p2), parameters(sys2))
+    @named sys3 = ReactionSystem(Equation[], t)
+    sys3 = sys3 ∘ sys2
+    @test length(unknowns(sys3)) == 4
+    @test any(isequal(x3), unknowns(sys3))
+    @test any(isequal(x4), unknowns(sys3))
+    @test length(species(sys3)) == 2
+    @test length(parameters(sys3)) == 4
+    @test any(isequal(p3), parameters(sys3))
+    @test any(isequal(p4), parameters(sys3))
+    sys4 = complete(sys3)
+    @test length(unknowns(sys3)) == 4
+    @test length(parameters(sys4)) == 5
+    @test any(isequal(p5), parameters(sys4))
 end

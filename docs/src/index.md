@@ -41,7 +41,7 @@ etc).
 - Model steady states can be [computed through homotopy continuation](@ref homotopy_continuation) using [HomotopyContinuation.jl](https://github.com/JuliaHomotopyContinuation/HomotopyContinuation.jl) (which can find *all* steady states of systems with multiple ones), by [forward ODE simulations](@ref steady_state_solving_simulation) using [SteadyStateDiffEq.jl)](https://github.com/SciML/SteadyStateDiffEq.jl), or by [numerically solving steady-state nonlinear equations](@ref steady_state_solving_nonlinear) using [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl).
 - [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl) can be used to [compute bifurcation diagrams](@ref bifurcation_diagrams) of model steady states (including finding periodic orbits).
 - [DynamicalSystems.jl](https://github.com/JuliaDynamics/DynamicalSystems.jl) can be used to compute model [basins of attraction](@ref dynamical_systems_basins_of_attraction), [Lyapunov spectrums](@ref dynamical_systems_lyapunov_exponents), and other dynamical system properties.
-- [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) can be used to [perform structural identifiability analysis](@ref structural_identifiability).
+<!--- [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) can be used to perform structural identifiability analysis.-->
 - [Optimization.jl](https://github.com/SciML/Optimization.jl), [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl), and [PEtab.jl](https://github.com/sebapersson/PEtab.jl) can all be used to [fit model parameters to data](https://sebapersson.github.io/PEtab.jl/stable/Define_in_julia/).
 - [GlobalSensitivity.jl](https://github.com/SciML/GlobalSensitivity.jl) can be used to perform [global sensitivity analysis](@ref global_sensitivity_analysis) of model behaviors.
 - [SciMLSensitivity.jl](https://github.com/SciML/SciMLSensitivity.jl) can be used to compute local sensitivities of functions containing forward model simulations.
@@ -97,6 +97,23 @@ Pkg.add("Plots")
 ```
 is also needed.
 
+It is **strongly** recommended to run Catalyst in its own environment with the
+minimal set of needed packages. For example, to install Catalyst and Plots in a
+new environment named `catalyst_project` (saved in the current directory) one
+can say
+```julia
+Pkg.activate("catalyst_project")
+Pkg.add("Catalyst")
+Pkg.add("Plots")
+```
+If one would rather just create a temporary environment that is not saved when
+exiting Julia you can say
+```julia
+Pkg.activate(; temp = true)
+Pkg.add("Catalyst")
+Pkg.add("Plots")
+```
+
 A more thorough guide for setting up Catalyst and installing Julia packages can be found [here](@ref catalyst_for_new_julia_users_packages).
 
 ## [Illustrative example](@id doc_index_example)
@@ -134,10 +151,10 @@ The same model can be used as input to other types of simulations. E.g. here we 
 # The initial conditions are now integers as we track exact populations for each species.
 using JumpProcesses
 u0_integers = [:S => 50, :E => 10, :SE => 0, :P => 0]
-dprob = DiscreteProblem(model, u0_integers, tspan, ps)
-jprob = JumpProblem(model, dprob, Direct())
-jump_sol = solve(jprob, SSAStepper())
-jump_sol = solve(jprob, SSAStepper(); seed = 1234) # hide
+jinput = JumpInputs(model, u0_integers, tspan, ps)
+jprob = JumpProblem(jinput)
+jump_sol = solve(jprob)
+jump_sol = solve(jprob; seed = 1234) # hide
 plot(jump_sol; lw = 2)
 ```
 

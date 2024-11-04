@@ -23,15 +23,16 @@ using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
 import Symbolics: BasicSymbolic
-using Symbolics: iscall
+using Symbolics: iscall, sorted_arguments
 using ModelingToolkit: Symbolic, value, get_unknowns, get_ps, get_iv, get_systems,
                        get_eqs, get_defaults, toparam, get_var_to_name, get_observed,
-                       getvar
+                       getvar, has_iv
 
 import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!,
                         modified_unknowns!, validate, namespace_variables,
                         namespace_parameters, rename, renamespace, getname, flatten,
-                        is_alg_equation, is_diff_equation
+                        is_alg_equation, is_diff_equation, collect_vars!,
+                        eqtype_supports_collect_vars
 
 # internal but needed ModelingToolkit functions
 import ModelingToolkit: check_variables,
@@ -45,6 +46,7 @@ import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 import Symbolics: occursin, wrap
 import Symbolics.RewriteHelpers: hasnode, replacenode
+import SymbolicUtils: getmetadata, hasmetadata, setmetadata
 
 # globals for the modulate
 function default_time_deriv()
@@ -112,9 +114,8 @@ export params, numparams
 
 # Conversions of the `ReactionSystem` structure.
 include("reactionsystem_conversions.jl")
-export ODEProblem,
-       SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem,
-       SteadyStateProblem
+export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem,
+       SteadyStateProblem, JumpInputs
 export ismassaction, oderatelaw, jumpratelaw
 export symmap_to_varmap
 

@@ -32,6 +32,9 @@ data_vals = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 using Plots
 plot(true_sol; idxs = :P, label = "True solution", lw = 8)
 plot!(data_ts, data_vals; label = "Measurements", seriestype=:scatter, ms = 6, color = :blue)
+plt = plot(true_sol; idxs = :P, label = "True solution", lw = 8) # hide
+plot!(plt, data_ts, data_vals; label = "Measurements", seriestype=:scatter, ms = 6, color = :blue) # hide
+Catalyst.PNG(plot(plt; fmt = :png, dpi = 200)) # hide
 ```
 
 Next, we will use DiffEqParamEstim to build a loss function to measure how well our model's solutions fit the data.
@@ -75,10 +78,12 @@ We can now simulate our model for the corresponding parameter set, checking that
 oprob_fitted = remake(oprob; p = optsol.u)
 fitted_sol = solve(oprob_fitted, Tsit5())
 plot!(fitted_sol; idxs = :P, label = "Fitted solution", linestyle = :dash, lw = 6, color = :lightblue)
+plot!(plt, fitted_sol; idxs = :P, label = "Fitted solution", linestyle = :dash, lw = 6, color = :lightblue) # hide
+Catalyst.PNG(plot(plt; fmt = :png, dpi = 200)) # hide
 ```
 
 !!! note
-    Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. [Identifiability](@ref structural_identifiability) is a concept that studies how to deal with this problem.
+    Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. Identifiability is a concept that studies how to deal with this problem.<!--NTS: re-add ref when identifiablity works again-->
 
 Say that we instead would like to use the [Broyden–Fletcher–Goldfarb–Shannon](https://en.wikipedia.org/wiki/Broyden%E2%80%93Fletcher%E2%80%93Goldfarb%E2%80%93Shanno_algorithm) algorithm, as implemented by the [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl) package. In this case we would run:
 ```@example diffeq_param_estim_1 
@@ -96,6 +101,10 @@ data_vals_P = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 plot(true_sol; idxs=[:S, :P], label=["True S" "True P"], lw=8)
 plot!(data_ts, data_vals_S; label="Measured S", seriestype=:scatter, ms=6, color=:blue)
 plot!(data_ts, data_vals_P; label="Measured P", seriestype=:scatter, ms=6, color=:red)
+plt2 = plot(true_sol; idxs=[:S, :P], label=["True S" "True P"], lw=8)  # hide
+plot!(plt2, data_ts, data_vals_S; label="Measured S", seriestype=:scatter, ms=6, color=:blue)  # hide
+plot!(plt2, data_ts, data_vals_P; label="Measured P", seriestype=:scatter, ms=6, color=:red)  # hide
+Catalyst.PNG(plot(plt2; fmt = :png, dpi = 200)) # hide
 ```
 
 In this case we would have to use the `L2Loss(data_ts, hcat(data_vals_S, data_vals_P))` and `save_idxs=[1, 4]` arguments in `loss_function`:
@@ -112,6 +121,8 @@ optsol_S_P = solve(optprob_S_P, Optim.NelderMead())
 oprob_fitted_S_P = remake(oprob; p = optsol_S_P.u)
 fitted_sol_S_P = solve(oprob_fitted_S_P)
 plot!(fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle = :dash, lw = 6, color = [:lightblue :pink])
+plot!(plt2, fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle = :dash, lw = 6, color = [:lightblue :pink]) # hide
+Catalyst.PNG(plot(plt2; fmt = :png, dpi = 200)) # hide
 ```
 
 ## [Setting parameter constraints and boundaries](@id optimization_parameter_fitting_constraints)

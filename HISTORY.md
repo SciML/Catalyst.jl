@@ -1,10 +1,113 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+- The Catalyst release process is changing; certain core dependencies of
+  Catalyst will now be capped to ensure Catalyst releases are only installed
+  with versions of dependencies for which Catalyst CI and doc build tests pass
+  (at the time the release is made). If you need a dependency version increased,
+  please open an issue and we can update it and make a new Catalyst release once
+  testing against the newer dependency version is complete. 
+- Array symbolics support is more consistent with ModelingToolkit v9. Parameter
+  arrays are no longer scalarized by Catalyst, while species and variables
+  arrays still are (as in ModelingToolkit). As such, parameter arrays should now
+  be specified as arrays in value mappings, i.e.
+  ```julia
+  @parameters k[1:4]
+  pmap = [k => rand(4)]
+  ```
+  While one can still manually scalarize a parameter array, it is recommended
+  *not* to do this as it has signifcant performance costs with ModelingToolkit
+  v9. Note, scalarized parameter arrays passed to the two-argument
+  `ReactionSystem` constructor may become unscalarized.
+- Scoped species/variables/parameters are now treated similar to the latest MTK
+  releases (≥ 9.49).
+- The structural identifiability extension is currently disabled due to issues
+  StructuralIdentifiability has with Julia 1.10.5 and 1.11.
+- A tutorial on making interactive plot displays using Makie has been added.
+- The BifurcationKit extension has been updated to v.4.
 
+## Catalyst 14.4.1
+- Support for user-defined functions on the RHS when providing coupled equations 
+  for CRNs using the @equations macro. For example, the following now works: 
+  ```julia
+  using Catalyst
+  f(A, t) = 2*A*t
+  rn = @reaction_network begin
+    @equations D(A) ~ f(A,t)
+  end
+  ```
+  Note that user-defined functions will not work on the LHS of equations. 
+
+## Catalyst 14.4
+- Symbolics 6 support.
+
+
+
+## Catalyst 14.3
+- Support for simulating stochastic chemical kinetics models with explicitly
+  time-dependent propensities (i.e. where the resulting `JumpSystem` contains
+  `VariableRateJump`s). As such `JumpProblem`s need to be defined over
+  `ODEProblem`s or `SDEProblem`s instead of `DiscreteProblem`s we have
+  introduced a new input struct, `JumpInputs`, that handles selecting via
+  analysis of the generated `JumpSystem`, i.e. one can now say
+  ```julia
+  using Catalyst, OrdinaryDiffEq, JumpProcesses, Plots
+  rn = @reaction_network begin
+      k*(1 + sin(t)), 0 --> A
+  end
+  jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+  # note that jinput.prob isa ODEProblem
+  jprob = JumpProblem(jinput)
+  sol = solve(jprob, Tsit5())
+  plot(sol, idxs = :A)
+
+  rn = @reaction_network begin
+      k, 0 --> A
+  end
+  jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+  # note that jinput.prob isa DiscreteProblem
+  jprob = JumpProblem(jinput)
+  sol = solve(jprob)
+  plot(sol, idxs = :A)
+  ```
+  When calling solve for problems with explicit time-dependent propensities,
+  i.e. where `jinput.prob isa ODEProblem`, note that one must currently
+  explicitly select an ODE solver to handle time-stepping and integrating the
+  time-dependent propensities.
+- Note that solutions to jump problems with explicit time-dependent
+  propensities, i.e. a `JumpProblem` over an `ODEProblem`, require manual
+  selection of the variables to plot. That is, currently `plot(sol)` will error
+  in this case due to limitations in the SciMLBase plot recipe.
+
+## Catalyst 14.2
+- Support for auto-algorithm selection in `JumpProblem`s. For systems with only
+  propensities that do not have an explicit time-dependence (i.e. that are not
+  `VariableRateJump`s in JumpProcesses), one can now run model simulations via
+  ```julia
+  using Catalyst, JumpProcesses
+  model = @reaction_network begin
+    kB, S + E --> SE
+    kD, SE --> S + E
+    kP, SE --> P + E
+  end
+  u0 = [:S => 50, :E => 10, :SE => 0, :P => 0]
+  tspan = (0., 200.)
+  ps = [:kB => 0.01, :kD => 0.1, :kP => 0.1]
+  dprob = DiscreteProblem(model, u0, tspan, ps)
+  jprob = JumpProblem(model, dprob)
+  sol = solve(jprob)
+  ```
+  For small systems this will just use Gillespie's `Direct` method, transitioning to using `RSSA` and `RSSACR` as system size increase. Once can still manually select a given SSA, but no longer needs to specify `SSAStepper` when calling `solve`, i.e.
+  ```julia
+  # use the SortingDirect method instead
+  jprob = JumpProblem(model, dprob, SortingDirect())
+  sol = solve(jprob)
+  ```
+- Latexify recipe improvements including display fixes for array symbolics.
+- Deficiency one and concentration robustness checks.
 
 ## Catalyst 14.1.1
-The expansion of `ReactionSystem` models to spatial lattices has been enabled. Here follows a 
+The expansion of `ReactionSystem` models to spatial lattices has been enabled. Here follows a
 simple example where a Brusselator model is expanded to a 20x20 grid of compartments, with diffusion
 for species X, and then simulated using ODEs. Finally, an animation of the simulation is created.
 ```julia
@@ -35,8 +138,8 @@ The addition of spatial modelling in Catalyst contains a large number of new fea
 described in the [corresponding documentation](https://docs.sciml.ai/Catalyst/stable/spatial_modelling/lattice_reaction_systems/).
 
 ## Catalyst 14.0.1
-Bug fix to address that independent variables, like time, should now be `@parameters` 
-according to MTKv9. Converted internal time variables to consistently use `default_t()` 
+Bug fix to address that independent variables, like time, should now be `@parameters`
+according to MTKv9. Converted internal time variables to consistently use `default_t()`
 to hopefully avoid such issues going forward.
 
 ## Catalyst 14.0

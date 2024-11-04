@@ -40,17 +40,18 @@ rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
     Reaction(k[19] * t, [A], [B]),                                # A -> B with non constant rate.
     Reaction(k[20] * t * A, [B, C], [D], [2, 1], [2]),                  # 2A +B -> 2C with non constant rate.
 ]
-@named rs = ReactionSystem(rxs, t, [A, B, C, D], k)
+@named rs = ReactionSystem(rxs, t, [A, B, C, D], [k])
 rs = complete(rs)
 odesys = complete(convert(ODESystem, rs))
 sdesys = complete(convert(SDESystem, rs))
 
 # Hard coded ODE rhs.
-function oderhs(u, k, t)
+function oderhs(u, kv, t)
     A = u[1]
     B = u[2]
     C = u[3]
     D = u[4]
+    k = kv[1]
     du = zeros(eltype(u), 4)
     du[1] = k[1] - k[3] * A + k[4] * C + 2 * k[5] * C - k[6] * A * B + k[7] * B^2 / 2 -
             k[9] * A * B - k[10] * A^2 - k[11] * A^2 / 2 - k[12] * A * B^3 * C^4 / 144 -
@@ -68,11 +69,12 @@ function oderhs(u, k, t)
 end
 
 # SDE noise coefs.
-function sdenoise(u, k, t)
+function sdenoise(u, kv, t)
     A = u[1]
     B = u[2]
     C = u[3]
     D = u[4]
+    k = kv[1]
     G = zeros(eltype(u), length(k), length(u))
     z = zero(eltype(u))
 
@@ -109,11 +111,12 @@ end
 
 # Defaults test.
 let
-    def_p = [ki => float(i) for (i, ki) in enumerate(k)]
+    kvals = Float64.(1:length(k))
+    def_p = [k => kvals]
     def_u0 = [A => 0.5, B => 1.0, C => 1.5, D => 2.0]
     defs = merge(Dict(def_p), Dict(def_u0))
 
-    @named rs = ReactionSystem(rxs, t, [A, B, C, D], k; defaults = defs)
+    @named rs = ReactionSystem(rxs, t, [A, B, C, D], [k]; defaults = defs)
     rs = complete(rs)
     odesys = complete(convert(ODESystem, rs))
     sdesys = complete(convert(SDESystem, rs))
@@ -126,15 +129,11 @@ let
           defs
 
     u0map = [A => 5.0]
-    pmap = [k[1] => 5.0]
+    kvals[1] = 5.0
+    pmap = [k => kvals]
     prob = ODEProblem(rs, u0map, (0, 10.0), pmap)
     @test prob.ps[k[1]] == 5.0
     @test prob.u0[1] == 5.0
-    u0 = [10.0, 11.0, 12.0, 13.0]
-    ps = [float(x) for x in 100:119]
-    prob = ODEProblem(rs, u0, (0, 10.0), ps)
-    @test  [prob.ps[k[i]] for i in 1:20] == ps
-    @test prob.u0 == u0
 end
 
 ### Check ODE, SDE, and Jump Functions ###
@@ -181,7 +180,7 @@ let
         Reaction(k[19] * t, [D], [E]),                                # D -> E with non constant rate.
         Reaction(k[20] * t * A, [D, E], [F], [2, 1], [2]),                  # 2D + E -> 2F with non constant rate.
     ]
-    @named rs = ReactionSystem(rxs, t, [A, B, C, D, E, F], k)
+    @named rs = ReactionSystem(rxs, t, [A, B, C, D, E, F], [k])
     rs = complete(rs)
     js = complete(convert(JumpSystem, rs))
 
@@ -193,7 +192,7 @@ let
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.VariableRateJump, vidxs))
 
     p = rand(rng, length(k))
-    pmap = parameters(js) .=> p
+    pmap = [k => p]
     u0 = rand(rng, 2:10, 6)
     u0map = unknowns(js) .=> u0
     ttt = rand(rng)
@@ -268,7 +267,7 @@ end
 # Checks that it works for programmatic/dsl-based modelling.
 # Checks that all forms of model input (parameter/initial condition and vector/non-vector) are
 # handled properly.
-let 
+let
     # Declares programmatic model.
     @parameters p[1:2] k d1 d2
     @species (X(t))[1:2] Y1(t) Y2(t)
@@ -284,7 +283,7 @@ let
 
     # Declares DSL-based model.
     rs_dsl = @reaction_network rs begin
-        @parameters p[1:2] k d1 d2 
+        @parameters p[1:2] k d1 d2
         @species (X(t))[1:2] Y1(t) Y2(t)
         (p[1],p[2]), 0 --> (X[1],X[2])
         k, (X[1],X[2]) --> (Y1,Y2)
@@ -392,7 +391,7 @@ end
 # Needs fix for https://github.com/JuliaSymbolics/Symbolics.jl/issues/842.
 let
     @parameters a
-    @species A(t) B(t) C(t)[1:2]
+    @species A(t) B(t) (C(t))[1:2]
     rx1 = Reaction(a, [A, C[1]], [C[2], B], [1, 2], [2, 3])
     io = IOBuffer()
     show(io, rx1)
@@ -632,15 +631,15 @@ end
 let
     # Stores a parameter, a species, and a variable (with identical names) in different variables.
     x_p = let
-        only(@parameters x) 
+        only(@parameters x)
     end
     x_sp = let
-        only(@species x(t)) 
+        only(@species x(t))
     end
     x_v = let
-        only(@variables x(t)) 
+        only(@variables x(t))
     end
-    
+
     # Checks that creating systems with different in combination produces errors.
     # Currently broken on MTK, potentially fix in Catalyst once sorted out there (https://github.com/SciML/ModelingToolkit.jl/issues/2883).
     @parameters d
@@ -868,11 +867,9 @@ end
 let
     @species (A(t))[1:20]
     using ModelingToolkit: value
-    @test isspecies(value(A))
-    @test isspecies(value(A[2]))
-    Av = value.(ModelingToolkit.scalarize(A))
-    @test isspecies(Av[2])
-    @test isequal(value(Av[2]), value(A[2]))
+    Av = value(A)
+    @test isspecies(Av)
+    @test all(i -> isspecies(Av[i]), 1:length(Av))
 end
 
 # Test mixed models are formulated correctly.
@@ -991,7 +988,7 @@ let
     Catalyst.reset!(nps)
     δ = deficiency(rn)
     @test size(nps.incidencemat) == (3,3)
-    
+
     Catalyst.reset!(nps)
     δ_l = linkagedeficiencies(rn)
     @test size(nps.incidencemat) == (3,3)
@@ -1003,4 +1000,25 @@ let
     Catalyst.reset!(nps)
     weakrev = isweaklyreversible(rn, sns)
     @test size(nps.incidencemat) == (3,3)
+end
+
+# test JumpInputs function auto problem selection
+let
+    rn = @reaction_network begin
+        k*(1 + sin(t)), 0 --> A
+    end
+    jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+    @test jinput.prob isa ODEProblem
+    jprob = JumpProblem(jinput; rng)
+    sol = solve(jprob, Tsit5())
+    @test sol(10.0; idxs = :A) > 0
+
+    rn = @reaction_network begin
+        k, 0 --> A
+    end
+    jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+    @test jinput.prob isa DiscreteProblem
+    jprob = JumpProblem(jinput; rng)
+    sol = solve(jprob)
+    @test sol(10.0; idxs = :A) > 0
 end

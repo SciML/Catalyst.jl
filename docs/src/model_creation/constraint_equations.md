@@ -23,7 +23,7 @@ There are several ways we can create our Catalyst model with the two reactions
 and ODE for $V(t)$. One approach is to use compositional modeling, create
 separate `ReactionSystem`s and `ODESystem`s with their respective components,
 and then extend the `ReactionSystem` with the `ODESystem`. Let's begin by
-creating these two systems. 
+creating these two systems.
 
 Here, to create differentials with respect to time (for our differential equations), we must import the time differential operator from Catalyst. We do this through `D = default_time_deriv()`. Here, `D(V)` denotes the differential of the variable `V` with respect to time.
 
@@ -129,9 +129,10 @@ rs = complete(rs)
 
 oprob = ODEProblem(rs, [], (0.0, 10.0))
 sol = solve(oprob, Tsit5())
-plot(sol; plotdensity = 1000)
+plot(sol)
+Catalyst.PNG(plot(sol; fmt = :png, dpi = 200)) # hide
 ```
-We can also model discrete events. Similar to our example with continuous events, we start by creating reaction equations, parameters, variables, and unknowns. 
+We can also model discrete events. Similar to our example with continuous events, we start by creating reaction equations, parameters, variables, and unknowns.
 ```@example ceq3
 t = default_t()
 @parameters k_on switch_time k_off
@@ -139,7 +140,7 @@ t = default_t()
 
 rxs = [(@reaction k_on, A --> B), (@reaction k_off, B --> A)]
 ```
-Now we add an event such that at time `t` (`switch_time`), `k_on` is set to zero. 
+Now we add an event such that at time `t` (`switch_time`), `k_on` is set to zero.
 ```@example ceq3
 discrete_events = (t == switch_time) => [k_on ~ 0.0]
 
@@ -147,13 +148,28 @@ u0 = [:A => 10.0, :B => 0.0]
 tspan = (0.0, 4.0)
 p = [k_on => 100.0, switch_time => 2.0, k_off => 10.0]
 ```
-Simulating our model, 
+Simulating our model,
 ```@example ceq3
-@named osys = ReactionSystem(rxs, t, [A, B], [k_on, k_off, switch_time]; discrete_events)
-osys = complete(osys)
+@named rs2 = ReactionSystem(rxs, t, [A, B], [k_on, k_off, switch_time]; discrete_events)
+rs2 = complete(rs2)
 
-oprob = ODEProblem(osys, u0, tspan, p)
+oprob = ODEProblem(rs2, u0, tspan, p)
 sol = solve(oprob, Tsit5(); tstops = 2.0)
 plot(sol)
 ```
-Note that for discrete events we need to set a stop time, `tstops`, so that the ODE solver can step exactly to the specific time of our event. For a detailed discussion on how to directly use the lower-level but more flexible DifferentialEquations.jl event/callback interface, see the [tutorial](https://docs.sciml.ai/Catalyst/stable/catalyst_applications/advanced_simulations/#Event-handling-using-callbacks) on event handling using callbacks. 
+Note that for discrete events we need to set a stop time via `tstops` so that
+the ODE solver can step exactly to the specific time of our event. In the
+previous example we just manually set the numeric value of the parameter in the
+`tstops` kwarg to `solve`, however, it can often be convenient to instead get
+the value of the parameter from `oprob` and pass this numeric value. This helps
+ensure consistency between the value passed via `p` and/or symbolic defaults and
+what we pass as a `tstop` to `solve`. We can do this as
+```julia
+switch_time_val = oprob.ps[:switch_time]
+sol = solve(oprob, Tsit5(); tstops = switch_time_val)
+plot(sol)
+```
+For a detailed discussion on how to directly use the lower-level but more
+flexible DifferentialEquations.jl event/callback interface, see the
+[tutorial](https://docs.sciml.ai/Catalyst/stable/catalyst_applications/advanced_simulations/#Event-handling-using-callbacks)
+on event handling using callbacks.

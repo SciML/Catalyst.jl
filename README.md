@@ -114,15 +114,18 @@ plot(sol; lw = 5)
 ![ODE simulation](docs/src/assets/readme_ode_plot.svg)
 
 #### Stochastic jump simulations
-The same model can be used as input to other types of simulations. E.g. here we instead generate and simulate a stochastic chemical kinetics jump process model.
+The same model can be used as input to other types of simulations. E.g. here we
+instead generate and simulate a stochastic chemical kinetics jump process model
+for the reaction network. An exact realization of the jump process is sampled
+using an auto-selected stochastic simulation algorithm (SSA) (which for the
+small network in the current example ends up being Gillespie's Direct method):
 ```julia
-# Create and simulate a jump process (here using Gillespie's direct algorithm).
 # The initial conditions are now integers as we track exact populations for each species.
 using JumpProcesses
 u0_integers = [:S => 50, :E => 10, :SE => 0, :P => 0]
-dprob = DiscreteProblem(model, u0_integers, tspan, ps)
-jprob = JumpProblem(model, dprob, Direct())
-jump_sol = solve(jprob, SSAStepper())
+jinput = JumpInputs(model, u0_integers, tspan, ps)
+jprob = JumpProblem(jinput)
+jump_sol = solve(jprob)
 plot(jump_sol; lw = 2)
 ```
 ![Jump simulation](docs/src/assets/readme_jump_plot.svg)

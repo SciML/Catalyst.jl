@@ -1,5 +1,5 @@
 # [Model Simulation Introduction](@id simulation_intro)
-Catalyst's core functionality is the creation of *chemical reaction network* (CRN) models that can be simulated using ODE, SDE, and jump simulations. How such simulations are carried out has already been described in [Catalyst's introduction](@ref introduction_to_catalyst). This page provides a deeper introduction, giving some additional background and introducing various simulation-related options. 
+Catalyst's core functionality is the creation of *chemical reaction network* (CRN) models that can be simulated using ODE, SDE, and jump simulations. How such simulations are carried out has already been described in [Catalyst's introduction](@ref introduction_to_catalyst). This page provides a deeper introduction, giving some additional background and introducing various simulation-related options.
 
 Here we will focus on the basics, with other sections of the simulation documentation describing various specialised features, or giving advice on performance. Anyone who plans on using Catalyst's simulation functionality extensively is recommended to also read the documentation on [solution plotting](@ref simulation_plotting), and on how to [interact with simulation problems, integrators, and solutions](@ref simulation_structure_interfacing). Anyone with an application for which performance is critical should consider reading the corresponding page on performance advice for [ODEs](@ref ode_simulation_performance) or [SDEs](@ref sde_simulation_performance).
 
@@ -133,7 +133,7 @@ Here follows a list of solver options which might be of interest to the user.
 - `adaptive`: Toggles adaptive time stepping for valid methods. Default to `true`.
 - `dt`: For non-adaptive simulations, sets the step size (also sets the initial step size for adaptive methods).
 - `saveat`: Determines the time points at which the simulation is saved. E.g. for `saveat = 2.0` the simulation is saved every second time unit. If not given, the solution is saved after each time step.
-- `save_idxs`: Provides a vector of species whose values should be saved during the simulation. E.g. for `save_idxs = [:X1]`, only the value of species $X1$ is saved. 
+- `save_idxs`: Provides a vector of species whose values should be saved during the simulation. E.g. for `save_idxs = [:X1]`, only the value of species $X1$ is saved.
 - `maxiters`: The maximum number of time steps of the simulation. If this number is reached, the simulation is terminated.
 - `seed`: Sets a seed for stochastic simulations. Stochastic simulations with the same seed generate identical results.
 
@@ -156,7 +156,7 @@ ps = Dict([:k1 => 2.0, :k2 => 5.0])
 oprob = ODEProblem(two_state_model, u0, tspan, ps)
 nothing # hide
 ```
-The forms used for `u0` and `ps` does not need to be the same (but can e.g. be a vector and a tuple). 
+The forms used for `u0` and `ps` does not need to be the same (but can e.g. be a vector and a tuple).
 
 !!! note
     It is possible to [designate specific types for parameters](@ref dsl_advanced_options_parameter_types). When this is done, the tuple form for providing parameter values should be preferred.
@@ -186,7 +186,7 @@ sol = solve(sprob, STrapezoid())
 sol = solve(sprob, STrapezoid(); seed = 123) # hide
 plot(sol)
 ```
-we can see that while this simulation (unlike the ODE ones) exhibits some fluctuations. 
+we can see that while this simulation (unlike the ODE ones) exhibits some fluctuations.
 
 !!! note
     Unlike for ODE and jump simulations, there are no good heuristics for automatically selecting suitable SDE solvers. Hence, for SDE simulations a solver must be provided. `STrapezoid` will work for a large number of cases. When this is not the case, however, please check the list of [available SDE solvers](https://docs.sciml.ai/DiffEqDocs/stable/solvers/sde_solve/) for a suitable alternative (making sure to select one compatible with non-diagonal noise and the [Ito interpretation]https://en.wikipedia.org/wiki/It%C3%B4_calculus).
@@ -292,7 +292,7 @@ While the `@default_noise_scaling` option is unavailable for [programmatically c
 
 Catalyst uses the [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) package to perform jump simulations. This section provides a brief introduction, with [JumpProcesses's documentation](https://docs.sciml.ai/JumpProcesses/stable/) providing a more extensive description.
 
-Jump simulations are performed using so-called `JumpProblem`s. Unlike ODEs and SDEs (for which the corresponding problem types can be created directly), jump simulations require first creating an intermediary `DiscreteProblem`. In this example, we first declare our two-state model and its initial conditions, time span, and parameter values.
+Jump simulations are performed using so-called `JumpProblem`s. Unlike ODEs and SDEs (for which the corresponding problem types can be created directly), jump simulations require first processing inputs into a correct format creating an intermediary `JumpInputs`. In this example, we first declare our two-state model and its initial conditions, time span, and parameter values.
 ```@example simulation_intro_jumps
 using Catalyst, JumpProcesses, Plots
 two_state_model = @reaction_network begin
@@ -306,19 +306,19 @@ nothing # hide
 !!! note
     Since jump simulations typically simulate the integer copy-numbers of each species present in the system, we designate our initial conditions for jump simulations as integers. Decimal-numbered initial conditions (and thus jump simulations) are, however, also possible. While ODE and SDE simulations accept integer initial conditions, these will be converted to decimal numbers.
 
-Next, we bundle these into a `DiscreteProblem` (similarly to how `ODEProblem`s and `SDEProblem`s are created):
+Next, we process these into a `JumpInputs`:
 ```@example simulation_intro_jumps
-dprob = DiscreteProblem(two_state_model, u0, tspan, ps)
+jinput = JumpInputs(two_state_model, u0, tspan, ps)
 nothing # hide
 ```
-This is then used as input to a `JumpProblem`. The `JumpProblem` also requires the CRN model and [an aggregator](@ref simulation_intro_jumps_solver_designation) as input.
+This is then used as input to a `JumpProblem`:
 ```@example simulation_intro_jumps
-jprob = JumpProblem(two_state_model, dprob, Direct())
+jprob = JumpProblem(jinput)
 nothing # hide
 ```
 The `JumpProblem` can now be simulated using `solve` (just like any other problem type).
 ```@example simulation_intro_jumps
-sol = solve(jprob, SSAStepper())
+sol = solve(jprob)
 nothing # hide
 ```
 If we plot the solution we can see how the system's state does not change continuously, but instead in discrete jumps (due to the occurrence of the individual reactions of the system).
@@ -328,27 +328,35 @@ plot(sol)
 ```
 
 ### [Designating aggregators and simulation methods for jump simulations](@id simulation_intro_jumps_solver_designation)
-Jump simulations (just like ODEs and SDEs) are performed using solver methods. Unlike ODEs and SDEs, jump simulations are carried out by two different types of methods acting in tandem. First, an *aggregator* method is used to (after each reaction) determine the time to, and type of, the next reaction. Next, a simulation method is used to actually carry out the simulation.
+Jump simulations (just like ODEs and SDEs) are performed using stochastic simulation algorithms (SSAs) to generate exact samples of the underlying jump process. In JumpProcesses.jl and Catalyst, we call SSAs *aggregators*. These methods determine the time until, and type of, the next reaction in a system. A separate time-stepping method is then used to actually step from one reaction instance to the next.
 
-Several different aggregators are available (a full list is provided [here](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-for-Exact-Simulation)). To designate a specific one, provide it as the third argument to the `JumpProblem`. E.g. to designate that the sorting direct method (`SortingDirect`) should be used, use:
+Several different aggregators are available (a full list is provided [here](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-for-Exact-Simulation)). To designate a specific one, provide it as the second argument to the `JumpProblem`. E.g. to designate that the sorting direct method (`SortingDirect`) should be used, use:
 ```@example simulation_intro_jumps
-jprob = JumpProblem(two_state_model, dprob, SortingDirect())
+jprob = JumpProblem(jinput, SortingDirect())
 nothing # hide
 ```
-Especially for large systems, the choice of aggregator is relevant to simulation performance.
-
-Next, a simulation method can be provided (like for ODEs and SDEs) as the second argument to `solve`. Currently, the only relevant solver is `SSAStepper()` (which is the one used throughout Catalyst's documentation). Other choices are primarily relevant to combined ODE/SDE + jump simulations, or inexact simulations. These situations are described in more detail [here](https://docs.sciml.ai/JumpProcesses/stable/jump_solve/).
+Especially for large systems, the choice of aggregator can dramatically impact
+simulation performance.
 
 ### [Jump simulations where some rate depends on time](@id simulation_intro_jumps_variableratejumps)
-For some models, the rate of some reactions depend on time. E.g. consider the following [circadian model](https://en.wikipedia.org/wiki/Circadian_rhythm), where the production rate of some protein ($P$) depends on a sinusoid function:
+For some models, the rate terms of reactions may explicitly depend on time. E.g. consider the following [circadian clock (inspired) model](https://en.wikipedia.org/wiki/Circadian_rhythm), where the production rate of some protein ($P$) depends on a sinusoid function:
 ```@example simulation_intro_jumps
 circadian_model = @reaction_network begin
     A*(sin(2π*f*t - ϕ)+1)/2, 0 --> P
     d, P --> 0
 end
 ```
-This type of model will generate so called *variable rate jumps*. Simulation of such model is non-trivial (and Catalyst currently lacks a good interface for this). A detailed description of how to carry out jump simulations for models with time-dependant rates can be found [here](https://docs.sciml.ai/JumpProcesses/stable/tutorials/simple_poisson_process/#VariableRateJumps-for-processes-that-are-not-constant-between-jumps).
-
+This type of model will generate so called *variable rate jumps* (`VariableRateJump`s in JumpProcesses.jl). Such models can be simulated in Catalyst too, but note that now a method for time-stepping the solver must be provided to `solve`. Here ODE solvers should be given as they are used to handle integrating the explicitly time-dependent propensities for problems with variable rates, i.e. the proceeding example can be solved like
+```@example simulation_intro_jumps
+using OrdinaryDiffEq
+u0map = [:P => 0]
+pmap = [:f => 1.0, :A => 2.0, :ϕ => 0.0, :d => 1.0]
+tspan = (0.0, 24.0)
+jinputs = JumpInputs(circadian_model, u0map, tspan, pmap)
+jprob = JumpProblem(jinputs)
+sol = solve(jprob, Tsit5())  # use the Tsit5 ODE solver to time-step
+plot(sol; idxs = :P, lw = 2)
+```
 
 ---
 ## [Citation](@id simulation_intro_citation)

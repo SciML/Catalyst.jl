@@ -202,23 +202,31 @@ using JumpProcesses
 # redefine the initial condition to be integer valued
 u₀map = [:m₁ => 0, :m₂ => 0, :m₃ => 0, :P₁ => 20, :P₂ => 0, :P₃ => 0]
 
-# next we create a discrete problem to encode that our species are integer-valued:
-dprob = DiscreteProblem(rn, u₀map, tspan, pmap)
+# next we process the inputs for the jump problem
+jinputs = JumpInputs(rn, u₀map, tspan, pmap)
 
-# now, we create a JumpProblem, and specify Gillespie's Direct Method as the solver:
-jprob = JumpProblem(rn, dprob, Direct())
+# now, we create a JumpProblem, and let a solver be chosen for us automatically
+# in this case Gillespie's Direct Method will be selected
+jprob = JumpProblem(jinputs)
 
 # now, let's solve and plot the jump process:
-sol = solve(jprob, SSAStepper())
+sol = solve(jprob)
 plot(sol)
 Catalyst.PNG(plot(sol; fmt = :png, dpi = 200)) # hide
 ```
 
 We see that oscillations remain, but become much noisier. Note, in constructing
-the `JumpProblem` we could have used any of the SSAs that are part of JumpProcesses
-instead of the `Direct` method, see the list of SSAs (i.e., constant rate jump
-aggregators) in the
+the `JumpProblem` we could have specified any of the SSAs that are part of
+JumpProcesses instead of letting JumpProcesses auto-select a solver, see the
+list of SSAs (i.e., constant rate jump aggregators) in the
 [documentation](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-for-Exact-Simulation).
+For example, to choose the `SortingDirect` method we would instead say
+```@example tut1
+jprob = JumpProblem(jinputs, SortingDirect())
+sol = solve(jprob)
+plot(sol)
+Catalyst.PNG(plot(sol; fmt = :png, dpi = 200)) # hide
+```
 
 Common questions that arise in using the JumpProcesses SSAs (i.e. Gillespie methods)
 are collated in the [JumpProcesses FAQ](https://docs.sciml.ai/JumpProcesses/stable/faq/).

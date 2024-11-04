@@ -98,16 +98,15 @@ for n = 1:nr
                            [1, 1], [1]))
     end
 end
-@named rs = ReactionSystem(rx, t, collect(X), collect(k))
+@named rs = ReactionSystem(rx, t, collect(X), [k])
 rs = complete(rs)
 ```
 We now convert the [`ReactionSystem`](@ref) into a `ModelingToolkit.JumpSystem`, and solve it using Gillespie's direct method. For details on other possible solvers (SSAs), see the [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/types/jump_types/) documentation
 ```@example smcoag1
 # solving the system
-jumpsys = complete(convert(JumpSystem, rs))
-dprob   = DiscreteProblem(rs, u₀map, tspan)
-jprob   = JumpProblem(jumpsys, dprob, Direct(), save_positions = (false, false))
-jsol    = solve(jprob, SSAStepper(), saveat = tspan[2] / 30)
+jinputs = JumpInputs(rs, u₀map, tspan)
+jprob = JumpProblem(jinputs, Direct(); save_positions = (false, false))
+jsol = solve(jprob; saveat = tspan[2] / 30)
 nothing #hide
 ```
 Lets check the results for the first three polymers/cluster sizes. We compare to the analytical solution for this system:
