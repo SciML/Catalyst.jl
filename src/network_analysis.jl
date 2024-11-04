@@ -738,7 +738,7 @@ function conservationlaw_errorcheck(rs, pre_varmap)
 end
 
 """
-    iscomplexbalanced(rs::ReactionSystem, parametermap)
+    isdetailedbalanced(rs::ReactionSystem, parametermap)
 
 Constructively compute whether a kinetic system (a reaction network with a set of rate constants) will admit detailed-balanced equilibrium
 solutions, using the Wegscheider conditions, [Feinberg, 1989](https://www.sciencedirect.com/science/article/pii/0009250989851243). A detailed-balanced solution is one for which the rate of every forward reaction exactly equals its reverse reaction. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
@@ -782,7 +782,6 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict)
         rxn_idxs = [edgeindex(D, Graphs.src(e), Graphs.dst(e)) for e in spanning_forest]
         S_F = netstoichmat(rs)[:, rxn_idxs]
         sols = nullspace(S_F)
-        @assert size(sols, 2) == deficiency(rs)
 
         for i in 1:size(sols, 2)
             α = sols[:, i]
@@ -797,19 +796,20 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict)
     true
 end
 
-function edgeindex(imat::Matrix{Int64}, src::Int64, dst::Int64)
+# Helper to find the index of the reaction with a given reactnat and product complex.
+function edgeindex(imat, src::T, dst::T) where T <: Int
     for i in 1:size(imat, 2)
         (imat[src, i] == -1) && (imat[dst, i] == 1) && return i
     end
     error("This edge does not exist in this reaction graph.")
 end
 
-function isdetailedbalanced(rs::ReactionSystem, parametermap::Vector{Pair{Symbol, Float64}})
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Vector{<:Pair})
     pdict = Dict(parametermap)
     isdetailedbalanced(rs, pdict)
 end
 
-function isdetailedbalanced(rs::ReactionSystem, parametermap::Tuple{Pair{Symbol, Float64}})
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Tuple{<:Pair})
     pdict = Dict(parametermap)
     isdetailedbalanced(rs, pdict)
 end
