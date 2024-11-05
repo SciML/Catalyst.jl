@@ -5,23 +5,29 @@ Using the symbolic interface, we will create our states/species, define our reac
 
 We begin by importing some necessary packages. 
 ```julia
-using ModelingToolkit, Catalyst, DifferentialEquations
+using ModelingToolkit, Catalyst
 using Optimization, OptimizatizationOptimJL
 using Plots
 ```
 In this example, the concentration of antigen,`\beta` is varied to determine the constant of proportionality, `\alpha`, `k_{on}`(association rate constant), and `k_{off}` (dissociation rate constant) which characterized the binding interaction between the antigen and the immobilized receptor molecules on the sensor slide. We start by defining our reaction equations, parameters, variables, event, and states. 
 ```julia
-@variables t 
-@parameters k_on k_off α
-@species A(t) B(t)
+osys = @reaction_network begin
+    @variables t 
+    @parameters k_on=100.0 k_off α
+    @species A(t)B(t)
+    
+    @discrete_events begin
+        t == switch_time => [k_on ~ 0.0] 
+    end
 
-rxs = [(@reaction α*k_on, A --> B), (@reaction k_off, B --> A)]
+    α*k_on, A --> B
+    k_off, B --> A
+end
 
 switch_time = 2.0
-discrete_events = (t == switch_time) => [k_on ~ 0.0]
 
 tspan = (0.0, 4.0)
-alpha_list = [0.1,0.2,0.3,0.4] #list of concentrations 
+alpha_list = [0.1, 0.2, 0.3, 0.4] #list of concentrations 
 ```
 Iterating over values of `\alpha`, now we create a list of ODE solutions and set the initial conditions of our states and parameters. 
 ```julia 
@@ -29,7 +35,6 @@ results_list = []
 
 u0 = [:A => 10.0, :B => 0.0]
 p_real = [k_on => 100.0, k_off => 10.0, α => 1.0]
-@named osys = ReactionSystem(rxs, t, [A, B], [k_on, k_off, α]; discrete_events)
 oprob = ODEProblem(osys, u0, tspan, p_real)
 sample_times = range(tspan[1]; stop = tspan[2], length = 1001) 
 
