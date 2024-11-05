@@ -738,13 +738,13 @@ function conservationlaw_errorcheck(rs, pre_varmap)
 end
 
 """
-    isdetailedbalanced(rs::ReactionSystem, parametermap)
+    isdetailedbalanced(rs::ReactionSystem, parametermap; reltol=1e-9, abstol)
 
 Constructively compute whether a kinetic system (a reaction network with a set of rate constants) will admit detailed-balanced equilibrium
 solutions, using the Wegscheider conditions, [Feinberg, 1989](https://www.sciencedirect.com/science/article/pii/0009250989851243). A detailed-balanced solution is one for which the rate of every forward reaction exactly equals its reverse reaction. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
 
-function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict)
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol=0, reltol=1e-9)
     if length(parametermap) != numparams(rs)
         error("Incorrect number of parameters specified.")
     elseif !isreversible(rs)
@@ -773,7 +773,7 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict)
         ic = Graphs.cycle_basis(g)[1]
         fwd = prod([K[ic[r], ic[r + 1]] for r in 1:(length(ic) - 1)]) * K[ic[end], ic[1]]
         rev = prod([K[ic[r + 1], ic[r]] for r in 1:(length(ic) - 1)]) * K[ic[1], ic[end]]
-        fwd ≈ rev ? continue : return false
+        isapprox(fwd, rev; atol = abstol, rtol = reltol) ? continue : return false
     end
 
     # Spanning Forest Conditions: for non-deficiency 0 networks, we get an additional δ equations. Choose an orientation for each reaction pair in the spanning forest (we will take the one given by default from kruskal_mst).  
@@ -781,7 +781,7 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict)
     if deficiency(rs) > 0
         rxn_idxs = [edgeindex(D, Graphs.src(e), Graphs.dst(e)) for e in spanning_forest]
         S_F = netstoichmat(rs)[:, rxn_idxs]
-        sols = nullspace(S_F)
+        sols = positive_nullspace(S_F)
 
         for i in 1:size(sols, 2)
             α = sols[:, i]
@@ -789,14 +789,14 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict)
                         for (e, i) in zip(spanning_forest, 1:length(α))])
             rev = prod([K[Graphs.dst(e), Graphs.src(e)]^α[i]
                         for (e, i) in zip(spanning_forest, 1:length(α))])
-            fwd ≈ rev ? continue : return false
+            isapprox(fwd, rev; atol = abstol, rtol = reltol) ? continue : return false
         end
     end
 
     true
 end
 
-# Helper to find the index of the reaction with a given reactnat and product complex.
+# Helper to find the index of the reaction with a given reactant and product complex.
 function edgeindex(imat, src::T, dst::T) where T <: Int
     for i in 1:size(imat, 2)
         (imat[src, i] == -1) && (imat[dst, i] == 1) && return i
