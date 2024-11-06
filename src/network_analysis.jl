@@ -398,6 +398,19 @@ function isterminal(lc::Vector, rn::ReactionSystem)
     true
 end
 
+function isforestlike(rn::ReactionSystem)
+    subnets = subnetworks(rn)
+    nps = get_networkproperties(rn)
+
+    isempty(nps.incidencemat) && reactioncomplexes(rn)
+    sparseig = issparse(nps.incidencemat)
+    for subnet in subnets
+        nps = get_networkproperties(subnet)
+        isempty(nps.incidencemat) && reactioncomplexes(subnet; sparse = sparseig)
+    end
+    all(Graphs.is_tree ∘ SimpleGraph ∘ incidencematgraph, subnets)
+end
+
 @doc raw"""
     deficiency(rn::ReactionSystem)
 
@@ -722,6 +735,87 @@ function conservationlaw_errorcheck(rs, pre_varmap)
     any(s -> s in vars_with_vals, species(rs)) && return
     isempty(conservedequations(Catalyst.flatten(rs))) ||
         error("The system has conservation laws but initial conditions were not provided for some species.")
+end
+
+"""
+    isdetailedbalanced(rs::ReactionSystem, parametermap; reltol=1e-9, abstol)
+
+Constructively compute whether a kinetic system (a reaction network with a set of rate constants) will admit detailed-balanced equilibrium
+solutions, using the Wegscheider conditions, [Feinberg, 1989](https://www.sciencedirect.com/science/article/pii/0009250989851243). A detailed-balanced solution is one for which the rate of every forward reaction exactly equals its reverse reaction. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
+"""
+
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol=0, reltol=1e-9)
+    if length(parametermap) != numparams(rs)
+        error("Incorrect number of parameters specified.")
+    elseif !isreversible(rs)
+        return false
+    elseif !all(r -> ismassaction(r, rs), reactions(rs))
+        error("The supplied ReactionSystem has reactions that are not ismassaction. Testing for being complex balanced is currently only supported for pure mass action networks.")
+    end
+
+    isforestlike(rs) && deficiency(rs) == 0 && return true
+
+    pmap = symmap_to_varmap(rs, parametermap)
+    pmap = Dict(ModelingToolkit.value(k) => v for (k, v) in pmap)
+
+    # Construct reaction-complex graph 
+    complexes, D = reactioncomplexes(rs)
+    img = incidencematgraph(rs)
+    undir_img = SimpleGraph(incidencematgraph(rs))
+    K = ratematrix(rs, pmap)
+
+    spanning_forest = Graphs.kruskal_mst(undir_img)
+    outofforest_edges = setdiff(collect(edges(undir_img)), spanning_forest)
+
+    # Independent Cycle Conditions: for any cycle we create by adding in an out-of-forest reaction, the product of forward reaction rates over the cycle must equal the product of reverse reaction rates over the cycle.  
+    for edge in outofforest_edges
+        g = SimpleGraph([spanning_forest..., edge])
+        ic = Graphs.cycle_basis(g)[1]
+        fwd = prod([K[ic[r], ic[r + 1]] for r in 1:(length(ic) - 1)]) * K[ic[end], ic[1]]
+        rev = prod([K[ic[r + 1], ic[r]] for r in 1:(length(ic) - 1)]) * K[ic[1], ic[end]]
+        isapprox(fwd, rev; atol = abstol, rtol = reltol) ? continue : return false
+    end
+
+    # Spanning Forest Conditions: for non-deficiency 0 networks, we get an additional δ equations. Choose an orientation for each reaction pair in the spanning forest (we will take the one given by default from kruskal_mst).  
+
+    if deficiency(rs) > 0
+        rxn_idxs = [edgeindex(D, Graphs.src(e), Graphs.dst(e)) for e in spanning_forest]
+        S_F = netstoichmat(rs)[:, rxn_idxs]
+        sols = positive_nullspace(S_F)
+
+        for i in 1:size(sols, 2)
+            α = sols[:, i]
+            fwd = prod([K[Graphs.src(e), Graphs.dst(e)]^α[i]
+                        for (e, i) in zip(spanning_forest, 1:length(α))])
+            rev = prod([K[Graphs.dst(e), Graphs.src(e)]^α[i]
+                        for (e, i) in zip(spanning_forest, 1:length(α))])
+            isapprox(fwd, rev; atol = abstol, rtol = reltol) ? continue : return false
+        end
+    end
+
+    true
+end
+
+# Helper to find the index of the reaction with a given reactant and product complex.
+function edgeindex(imat, src::T, dst::T) where T <: Int
+    for i in 1:size(imat, 2)
+        (imat[src, i] == -1) && (imat[dst, i] == 1) && return i
+    end
+    error("This edge does not exist in this reaction graph.")
+end
+
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Vector{<:Pair})
+    pdict = Dict(parametermap)
+    isdetailedbalanced(rs, pdict)
+end
+
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Tuple{<:Pair})
+    pdict = Dict(parametermap)
+    isdetailedbalanced(rs, pdict)
+end
+
+function isdetailedbalanced(rs::ReactionSystem, parametermap)
+    error("Parameter map must be a dictionary, tuple, or vector of symbol/value pairs.")
 end
 
 """
