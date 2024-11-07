@@ -52,7 +52,7 @@ To modify a problem, the `remake` function should be used. It takes an already c
 
 Here we modify our problem to increase the initial condition concentrations of the two substrates ($S₁$ and $S₂$), and also confirm that the new problem is different from the old (unchanged) one:
 ```@example structure_indexing
-using OrdinaryDiffEqTsit5
+using OrdinaryDiffEqDefault
 oprob_new = remake(oprob; u0 = [:S₁ => 5.0, :S₂ => 2.5])
 oprob_new != oprob
 ```
@@ -93,7 +93,7 @@ If you are interfacing with jump simulation integrators, you must always call `r
 
 Finally, we consider solution objects. First, we simulate our problem:
 ```@example structure_indexing
-sol = solve(oprob, Tsit5())
+sol = solve(oprob)
 nothing # hide
 ```
 Next, we can access the simulation's values using the same notation as previously. When we access a species's, its values across the full simulation is returned as a vector:
@@ -150,7 +150,7 @@ get_S(oprob)
 ## [Interfacing using symbolic representations](@id simulation_structure_interfacing_symbolic_representation)
 When e.g. [programmatic modelling is used](@ref programmatic_CRN_construction), species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like symbol-based representations can. Here we create a simple [two-state model](@ref basic_CRN_library_two_states) programmatically, and use its symbolic variables to check, and update, an initial condition:
 ```@example structure_indexing_symbolic_variables
-using Catalyst, OrdinaryDiffEq
+using Catalyst, OrdinaryDiffEqDefault
 t = default_t()
 @species X1(t) X2(t)
 @parameters k1 k2

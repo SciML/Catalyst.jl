@@ -69,7 +69,14 @@ oprob = ODEProblem(bd_model, u0, tspan, ps)
 solve(oprob, Tsit5())
 nothing # hide
 ```
-!!! note If the top-level `OrdinaryDiffEq` package or `DifferentialEquations` is imported and no solver argument is provided to `solve`, one is automatically selected. 
+If no solver argument is provided to `solve`, and the `OrdinaryDiffEqDefault` sub-library or top-level `OrdinaryDiffEq` library is installed, then one is automatically selected:
+```@example 
+using OrdinaryDiffEqDefault
+ode_simulation_performance_2solve(oprob)
+nothing # hide
+```
+
+
 
 While the default choice is typically enough for most single simulations, if performance is important, it can be worthwhile exploring the available solvers to find one that is especially suited for the given problem. A complete list of possible ODE solvers, with advice on optimal selection, can be found [here](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/). This section will give some general advice.
 

@@ -55,15 +55,15 @@ To import a Julia package into a session, you can use the `using PackageName` co
 using Pkg
 Pkg.add("Catalyst")
 ```
-Here, the Julia package manager package (`Pkg`) is by default installed on your computer when Julia is installed, and can be activated directly. Next, we also wish to install the needed sub-libraries of `OrdinaryDiffEqTsit5` and `Plots` packages (for numeric simulation of models, and plotting, respectively). We will import the default recommende dsolver, `Tsit5()`, which is in the `OrdinaryDiffEqTsit5` sub-library. A full list of `OrdinaryDiffEq` solver sublibraries can be found on the sidebar of [this page](https://docs.sciml.ai/OrdinaryDiffEq/stable/).
+Here, the Julia package manager package (`Pkg`) is by default installed on your computer when Julia is installed, and can be activated directly. Next, we also wish to install the needed sub-libraries of `OrdinaryDiffEq` and `Plots` packages (for numeric simulation of models, and plotting, respectively). We will import the default recommended solver from the `OrdinaryDiffEqDefault` sub-library. A full list of `OrdinaryDiffEq` solver sublibraries can be found on the sidebar of [this page](https://docs.sciml.ai/OrdinaryDiffEq/stable/).
 ```julia
-Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("OrdinaryDiffEqDefault")
 Pkg.add("Plots")
 ```
 Once a package has been installed through the `Pkg.add` command, this command does not have to be repeated if we restart our Julia session. We can now import all three packages into our current session with:
 ```@example ex2
 using Catalyst
-using OrdinaryDiffEqTsit5
+using OrdinaryDiffEqDefault
 using Plots
 ```
 Here, if we restart Julia, these `using` commands *must be rerun*.

@@ -80,10 +80,10 @@ Here, .net files not only contain information regarding the reaction network its
 
 A parsed reaction network's content can then be provided to various problem types for simulation. E.g. here we perform an ODE simulation of our repressilator model:
 ```julia
-using Catalyst, OrdinaryDiffEqTsit5, Plots
+using Catalyst, OrdinaryDiffEqDefault, Plots
 tspan = (0.0, 10000.0)
 oprob = ODEProblem(prn.rn, Float64[], tspan, Float64[])
-sol = solve(oprob, Tsit5())
+sol = solve(oprob)
 plot(sol; idxs = [:mTetR, :mLacI, :mCI])
 ```
 ![Repressilator Simulation](../assets/repressilator_sim_ReactionNetworkImporters.svg)
@@ -106,10 +106,10 @@ prn, cbs = load_SBML("brusselator.xml", massaction = true)
 ```
 Here, while [ReactionNetworkImporters generates a `ParsedReactionSystem` only](@ref model_file_import_export_sbml_rni_net), SBMLImporter generates a `ParsedReactionSystem` (here stored in `prn`) and a [so-called `CallbackSet`](https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/#CallbackSet) (here stored in `cbs`). While `prn` can be used to create various problems, when we simulate them, we must also supply `cbs`. E.g. to simulate our brusselator we use:
 ```julia
-using Catalyst, OrdinaryDiffEqTsit5, Plots
+using Catalyst, OrdinaryDiffEqDefault, Plots
 tspan = (0.0, 50.0)
 oprob = ODEProblem(prn.rn, prn.u0, tspan, prn.p)
-sol = solve(oprob, Tsit5(); callback = cbs)
+sol = solve(oprob; callback = cbs)
 plot(sol)
 ```
 ![Brusselator Simulation](../assets/brusselator_sim_SBMLImporter.svg)

@@ -18,9 +18,9 @@ nothing # hide
 ```
 We can now simulate our model using all three interpretations. First, we perform a reaction rate equation-based ODE simulation:
 ```@example crn_library_birth_death
-using OrdinaryDiffEqTsit5
+using OrdinaryDiffEqDefault
 oprob = ODEProblem(bd_process, u0, tspan, ps)
-osol = solve(oprob, Tsit5())
+osol = solve(oprob)
 nothing # hide
 ```
 Next, a chemical Langevin equation-based SDE simulation:
@@ -52,7 +52,7 @@ plot(oplt, splt, jplt; lw = 3, size=(800,700), layout = (3,1))
 ## [Two-state model](@id basic_CRN_library_two_states)
 The two-state model describes a component (here called $X$) which can exist in two different forms (here called $X₁$ and $X₂$). It switches between these forms at linear rates. First, we simulate the model using both ODEs and SDEs:
 ```@example crn_library_two_states
-using Catalyst, OrdinaryDiffEqTsit5, StochasticDiffEq, Plots
+using Catalyst, OrdinaryDiffEqDefault, StochasticDiffEq, Plots
 two_state_model = @reaction_network begin
     (k₁,k₂), X₁ <--> X₂
 end
@@ -62,7 +62,7 @@ tspan = (0.0, 1.0)
 ps = [:k₁ => 2.0, :k₂ => 3.0]
 
 oprob = ODEProblem(two_state_model, u0, tspan, ps)
-osol = solve(oprob, Tsit5())
+osol = solve(oprob)
 oplt = plot(osol; title = "Reaction rate equation (ODE)")
 
 sprob = SDEProblem(two_state_model, u0, tspan, ps)
@@ -96,9 +96,9 @@ u0 = [:S => 301, :E => 100, :SE => 0, :P => 0]
 tspan = (0., 100.)
 ps = [:kB => 0.00166, :kD => 0.0001, :kP => 0.1]
 
-using OrdinaryDiffEqTsit5
+using OrdinaryDiffEqDefault
 oprob = ODEProblem(mm_system, u0, tspan, ps)
-osol  = solve(oprob, Tsit5())
+osol  = solve(oprob)
 
 using StochasticDiffEq
 sprob = SDEProblem(mm_system, u0, tspan, ps)
@@ -132,14 +132,14 @@ end
 ```
 First, we perform a deterministic ODE simulation:
 ```@example crn_library_sir
-using OrdinaryDiffEqTsit5, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [:S => 99, :I => 1, :R => 0]
 tspan = (0.0, 500.0)
 ps = [:α => 0.001, :β => 0.01]
 
 # Solve ODEs.
 oprob = ODEProblem(sir_model, u0, tspan, ps)
-osol = solve(oprob, Tsit5())
+osol = solve(oprob)
 plot(osol; title = "Reaction rate equation (ODE)", size=(800,350))
 ```
 Next, we perform 3 different Jump simulations. Note that for the stochastic model, the occurrence of an outbreak is not certain. Rather, there is a possibility that it fizzles out without a noteworthy peak.
@@ -179,14 +179,14 @@ Below, we perform a simple deterministic ODE simulation of the system. Next, we 
 
 In two separate plots.
 ```@example crn_library_cc
-using OrdinaryDiffEqTsit5, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [:S₁ => 1.0, :C => 0.05, :S₂ => 1.2, :S₁C => 0.0, :CP => 0.0, :P => 0.0]
 tspan = (0., 15.)
 ps = [:k₁ => 5.0, :k₂ => 5.0, :k₃ => 100.0]
 
 # solve ODEs
 oprob = ODEProblem(cc_system, u0, tspan, ps)
-osol  = solve(oprob, Tsit5())
+osol  = solve(oprob)
 
 plt1 = plot(osol; idxs = [:S₁, :S₂, :P], title = "Substrate and product dynamics")
 plt2 = plot(osol; idxs = [:C, :S₁C, :CP], title = "Catalyst and intermediaries dynamics")
@@ -206,7 +206,7 @@ end
 ```
 We can simulate the model for two different initial conditions, demonstrating the existence of two different stable steady states.
 ```@example crn_library_wilhelm
-using OrdinaryDiffEqTsit5, Plots
+using OrdinaryDiffEqDefault, Plots
 u0_1 = [:X => 1.5, :Y => 0.5]
 u0_2 = [:X => 2.5, :Y => 0.5]
 tspan = (0., 10.)
@@ -214,8 +214,8 @@ ps = [:k1 => 8.0, :k2 => 2.0, :k3 => 1.0, :k4 => 1.5]
 
 oprob1 = ODEProblem(wilhelm_model, u0_1, tspan, ps)
 oprob2 = ODEProblem(wilhelm_model, u0_2, tspan, ps)
-osol1 = solve(oprob1, Tsit5())
-osol2 = solve(oprob2, Tsit5())
+osol1 = solve(oprob1)
+osol2 = solve(oprob2)
 plot(osol1; lw = 4, idxs = :X, label = "X(0) = 1.5")
 plot!(osol2; lw = 4, idxs = :X, label = "X(0) = 2.5", yguide = "X", size = (800,350))
 plot!(bottom_margin = 3Plots.Measures.mm) # hide
@@ -234,13 +234,13 @@ A simple example of such a loop is a transcription factor which activates its ow
 
 We simulate the self-activation loop from a single initial condition using both deterministic (ODE) and stochastic (jump) simulations. We note that while the deterministic simulation reaches a single steady state, the stochastic one switches between two different states.
 ```@example crn_library_self_activation
-using JumpProcesses, OrdinaryDiffEqTsit5, Plots
+using JumpProcesses, OrdinaryDiffEqDefault, Plots
 u0 = [:X => 4]
 tspan = (0.0, 1000.0)
 ps = [:v₀ => 0.1, :v => 2.0, :K => 10.0, :n => 2, :d => 0.1]
 
 oprob = ODEProblem(sa_loop, u0, tspan, ps)
-osol = solve(oprob, Tsit5())
+osol = solve(oprob)
 
 jinput = JumpInputs(sa_loop, u0, tspan, ps)
 jprob = JumpProblem(jinput)
@@ -267,7 +267,7 @@ end
 ```
 It is generally known to (for reaction rate equation-based ODE simulations) produce oscillations when $B > 1 + A^2$. However, this result is based on models generated when *combinatorial adjustment of rates is not performed*. Since Catalyst [automatically perform these adjustments](@ref introduction_to_catalyst_ratelaws), and one reaction contains a stoichiometric constant $>1$, the threshold will be different. Here, we trial two different values of $B$. In both cases, $B < 1 + A^2$, however, in the second case the system can generate oscillations.
 ```@example crn_library_brusselator
-using OrdinaryDiffEqTsit5, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [:X => 1.0, :Y => 1.0]
 tspan = (0., 50.)
 ps1 = [:A => 1.0, :B => 1.0]
@@ -275,8 +275,8 @@ ps2 = [:A => 1.0, :B => 1.8]
 
 oprob1 = ODEProblem(brusselator, u0, tspan, ps1)
 oprob2 = ODEProblem(brusselator, u0, tspan, ps2)
-osol1  = solve(oprob1, Tsit5())
-osol2  = solve(oprob2, Tsit5())
+osol1  = solve(oprob1)
+osol2  = solve(oprob2)
 oplt1 = plot(osol1; title = "No Oscillation")
 oplt2 = plot(osol2; title = "Oscillation")
 
@@ -296,7 +296,7 @@ end
 ```
 Whether the Repressilator oscillates or not depends on its parameter values. Here, we will perform deterministic (ODE) simulations for two different values of $K$, showing that it oscillates for one value and not the other one. Next, we will perform stochastic (SDE) simulations for both $K$ values, showing that the stochastic model can sustain oscillations in both cases. This is an example of the phenomena of *noise-induced oscillation*.
 ```@example crn_library_brusselator
-using OrdinaryDiffEqTsit5, StochasticDiffEq, Plots
+using OrdinaryDiffEqDefault, StochasticDiffEq, Plots
 u0 = [:X => 50.0, :Y => 15.0, :Z => 15.0]
 tspan = (0., 200.)
 ps1 = [:v => 10.0, :K => 20.0, :n => 3, :d => 0.1]
@@ -304,8 +304,8 @@ ps2 = [:v => 10.0, :K => 50.0, :n => 3, :d => 0.1]
 
 oprob1 = ODEProblem(repressilator, u0, tspan, ps1)
 oprob2 = ODEProblem(repressilator, u0, tspan, ps2)
-osol1  = solve(oprob1, Tsit5())
-osol2  = solve(oprob2, Tsit5())
+osol1  = solve(oprob1)
+osol2  = solve(oprob2)
 oplt1 = plot(osol1; title = "Oscillation (ODE, K = 20)")
 oplt2 = plot(osol2; title = "No oscillation (ODE, K = 50)")
 
@@ -337,12 +337,12 @@ end
 ```
 Here we simulate the model for a single initial condition, showing both time-state space and phase space how it reaches a [*strange attractor*](https://www.dynamicmath.xyz/strange-attractors/).
 ```@example crn_library_chaos
-using OrdinaryDiffEqTsit5, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [:X => 1.5, :Y => 1.5, :Z => 1.5]
 tspan = (0.0, 50.0)
 p = [:k1 => 2.1, :k2 => 0.7, :k3 => 2.9, :k4 => 1.1, :k5 => 1.0, :k6 => 0.5, :k7 => 2.7]
 oprob = ODEProblem(wr_model, u0, tspan, p)
-sol = solve(oprob, Tsit5())
+sol = solve(oprob)
 
 plt1 = plot(sol; title = "Time-state space")
 plt2 = plot(sol; idxs = (:X, :Y, :Z), title = "Phase space")

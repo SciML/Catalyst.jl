@@ -40,12 +40,12 @@ Catalyst.iscomplete(rs)
 ```
 We can now go on and use our model for e.g. simulations:
 ```@example v14_migration_1
-using OrdinaryDiffEqTsit5, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [X => 0.1]
 tspan = (0.0, 10.0)
 ps = [p => 1.0, d => 0.2]
 oprob = ODEProblem(rs, u0, tspan, ps)
-sol = solve(oprob, Tsit5())
+sol = solve(oprob)
 plot(sol)
 ```
 
@@ -60,7 +60,7 @@ If we now wish to create an `ODEProblem` from our `ODESystem`, we must first mar
 ```@example v14_migration_1
 osys = complete(osys)
 oprob = ODEProblem(osys, u0, tspan, ps)
-sol = solve(oprob, Tsit5())
+sol = solve(oprob)
 plot(sol)
 ```
 
@@ -186,20 +186,20 @@ For more details on how to query various structures for parameter and species va
 #### Modification of problems with conservation laws broken
 While it is possible to update e.g. `ODEProblem`s using the [`remake`](@ref simulation_structure_interfacing_problems_remake) function, this is currently not possible if the `remove_conserved = true` option was used. E.g. while
 ```@example v14_migration_5
-using Catalyst, OrdinaryDiffEqTsit5
+using Catalyst, OrdinaryDiffEqDefault
 rn = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 u0 = [:X1 => 1.0, :X2 => 2.0]
 ps = [:k1 => 0.5, :k2 => 3.0]
 oprob = ODEProblem(rn, u0, (0.0, 10.0), ps; remove_conserved = true)
-solve(oprob, Tsit5())
+solve(oprob)
 # hide
 ```
 is perfectly fine, attempting to then modify any initial conditions or the value of the conservation constant in `oprob` will likely silently fail:
 ```@example v14_migration_5
 oprob_remade = remake(oprob; u0 = [:X1 => 5.0]) # NEVER do this.
-solve(oprob_remade, Tsit5())
+solve(oprob_remade)
 # hide
 ```
 This might generate a silent error, where the remade problem is different from the intended one (the value of the conserved constant will not be updated correctly).

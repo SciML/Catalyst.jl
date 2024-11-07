@@ -47,8 +47,8 @@ In this example we used non-uniform values for $X1$'s initial condition, but uni
 
 We can now simulate our model:
 ```@example spatial_intro_basics
-using OrdinaryDiffEqTsit5
-sol = solve(oprob, Tsit5())
+using OrdinaryDiffEqDefault
+sol = solve(oprob)
 nothing # hide
 ```
 We note that simulations of spatial models are often computationally expensive. Advice on the performance of spatial ODE simulations is provided [here](@ref spatial_lattice_ode_simulations_solvers). 

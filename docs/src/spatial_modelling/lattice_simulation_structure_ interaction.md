@@ -17,7 +17,7 @@ Furthermore, there are some cases of interfacing which are currently not support
 ## [Retrieving values from lattice simulations](@id lattice_simulation_structure_interaction_simulation_species)
 Let us consider a simulation of a [`LatticeReactionSystem`](@ref):
 ```@example lattice_struct_interaction_sims
-using Catalyst, OrdinaryDiffEqTsit5
+using Catalyst, OrdinaryDiffEqDefault
 two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
@@ -29,7 +29,7 @@ u0 = [:X1 => [0.0 0.0 0.0; 2.0 2.0 2.0], :X2 => 0.0]
 tspan = (0.0, 1.0)
 ps = [:k1 => 2.0, :k2 => 1.0, :D => 0.1]
 oprob = ODEProblem(lrs, u0, tspan, ps)
-sol = solve(oprob, Tsit5())
+sol = solve(oprob)
 nothing # hide
 ```
 To retrieve the values of $X1$ across the simulation we use the `lat_getu` function. It takes three arguments:

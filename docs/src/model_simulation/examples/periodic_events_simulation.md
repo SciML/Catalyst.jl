@@ -14,12 +14,12 @@ end
 ```
 We can now simulate this model, observing how a 24-hour cycle is reached
 ```@example periodic_event_example
-using OrdinaryDiffEqTsit5, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [:X => 150.0, :Xᴾ => 50.0]
 ps = [:kₚ => 0.1, :kᵢ => 0.1, :l => 1.0]
 tspan = (0.0, 100.0)
 oprob = ODEProblem(circadian_model, u0, tspan, ps)
-sol = solve(oprob, Tsit5())
+sol = solve(oprob)
 plot(sol)
 ```
 
@@ -98,7 +98,7 @@ Next, we simulate our model like before (but providing $l$'s value as an initial
 u0 = [:X => 150.0, :Xᴾ => 50.0, :l => 1.0]
 ps = [:kₚ => 0.1, :kᵢ => 0.1]
 oprob = ODEProblem(circadian_model, u0, (0.0, 100.0), ps)
-sol = solve(oprob, Tsit5())
+sol = solve(oprob)
 nothing # hide
 ```
 If we directly plot $l$'s value, it will be too small (compared to $X$ and $Xᴾ$ to be discernible). We instead [`@unpack` our variables](@ref dsl_advanced_options_symbolics_and_DSL_unpack), and then plot a re-scaled version:

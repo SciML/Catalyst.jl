@@ -18,7 +18,7 @@ complete model.
 
 We begin by importing some necessary packages:
 ```@example hh1
-using ModelingToolkit, Catalyst, NonlinearSolve, Plots, OrdinaryDiffEqRosenbrock
+using ModelingToolkit, Catalyst, NonlinearSolve, Plots, OrdinaryDiffEqDefault
 ```
 
 ## Building the model via the Catalyst DSL
@@ -127,7 +127,7 @@ amplitude of the stimulus is non-zero and see if we get action potentials
 tspan = (0.0, 50.0)
 @unpack V,I₀ = hhmodel
 oprob = ODEProblem(hhmodel, u_ss, tspan, [I₀ => 10.0])
-sol = solve(oprob, Rosenbrock23())
+sol = solve(oprob)
 plot(sol, idxs = V, legend = :outerright)
 ```
 
@@ -188,7 +188,7 @@ eliminate the algebraic equations for the ionic currents when constructing the
 ```@example hh1
 @unpack I₀,V = hhmodel2
 oprob = ODEProblem(hhmodel2, u_ss, tspan, [I₀ => 10.0]; structural_simplify = true)
-sol = solve(oprob, Rosenbrock23())
+sol = solve(oprob)
 plot(sol, idxs = V, legend = :outerright)
 ```
 

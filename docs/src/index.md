@@ -92,7 +92,7 @@ Pkg.add("Catalyst")
 
 Many Catalyst features require the installation of additional packages. E.g. for ODE-solving and simulation plotting
 ```julia
-Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("OrdinaryDiffEqDefault")
 Pkg.add("Plots")
 ```
 is also needed.
@@ -124,7 +124,7 @@ an ordinary differential equation.
 
 ```@example home_simple_example
 # Fetch required packages.
-using Catalyst, OrdinaryDiffEqTsit5, Plots
+using Catalyst, OrdinaryDiffEqDefault, Plots
 
 # Create model.
 model = @reaction_network begin
@@ -140,7 +140,7 @@ ps = [:kB => 0.01, :kD => 0.1, :kP => 0.1]
 ode = ODEProblem(model, u0, tspan, ps)
 
 # Simulate ODE and plot results.
-sol = solve(ode, Tsit5())
+sol = solve(ode)
 plot(sol; lw = 5)
 ```
 

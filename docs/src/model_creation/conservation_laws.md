@@ -10,11 +10,11 @@ end
 ```
 If we simulate it, we note that while the concentrations of $X₁$ and $X₂$ change throughout the simulation, the total concentration of $X$ ($= X₁ + X₂$) is constant:
 ```@example conservation_laws
-using OrdinaryDiffEqTsit5, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [:X₁ => 80.0, :X₂ => 20.0]
 ps = [:k₁ => 10.0, :k₂ => 2.0]
 oprob = ODEProblem(rs, u0, (0.0, 1.0), ps)
-sol = solve(oprob, Tsit5())
+sol = solve(oprob)
 plot(sol; idxs = [rs.X₁, rs.X₂, rs.X₁ + rs.X₂], label = ["X₁" "X₂" "X₁ + X₂ (a conserved quantity)"])
 ```
 This makes sense, as while $X$ is converted between two different forms ($X₁$ and $X₂$), it is neither produced nor degraded. That is, it is a *conserved quantity*. Next, if we consider the ODE that our model generates:
@@ -47,7 +47,7 @@ Here, Catalyst encodes all conserved quantities in a single, [vector-valued](@re
 
 Practically, the `remove_conserved = true` argument can be provided when a `ReactionSystem` is converted to an `ODEProblem`:
 ```@example conservation_laws
-using OrdinaryDiffEqTsit5, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [:X₁ => 80.0, :X₂ => 20.0]
 ps = [:k₁ => 10.0, :k₂ => 2.0]
 oprob = ODEProblem(rs, u0, (0.0, 1.0), ps; remove_conserved = true)
@@ -55,7 +55,7 @@ nothing # hide
 ```
 Here, while `Γ[1]` becomes a parameter of the new system, it has a [default value](@ref dsl_advanced_options_default_vals) equal to the corresponding conservation law. Hence, its value is computed from the initial condition `[:X₁ => 80.0, :X₂ => 20.0]`, and does not need to be provided in the parameter vector. Next, we can simulate and plot our model using normal syntax:
 ```@example conservation_laws
-sol = solve(oprob, Tsit5())
+sol = solve(oprob)
 plot(sol)
 ```
 !!! note

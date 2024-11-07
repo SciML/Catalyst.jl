@@ -99,8 +99,8 @@ nothing # hide
 ```
 Next, we can simulate the model (requires loading the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package). Simulations are performed using the `solve` function.
 ```@example simulation_intro_ode
-using OrdinaryDiffEqTsit5
-sol = solve(oprob, Tsit5())
+using OrdinaryDiffEqDefault
+sol = solve(oprob)
 nothing # hide
 ```
 Finally, the result can be plotted using the [Plots.jl](https://github.com/JuliaPlots/Plots.jl) package's `plot` function:
@@ -126,7 +126,7 @@ A full list of available solvers is provided [here](https://docs.sciml.ai/DiffEq
 
 Additional options can be provided as keyword arguments. E.g. the `maxiters` arguments determines the maximum number of simulation time steps (before the simulation is terminated). This defaults to `1e5`, but can be modified through:
 ```@example simulation_intro_ode
-sol = solve(oprob, Tsit5(); maxiters = 1e4)
+sol = solve(oprob; maxiters = 1e4)
 nothing # hide
 ```
 
