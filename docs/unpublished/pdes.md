@@ -12,7 +12,7 @@ parameters in (Kim et al., J. Chem. Phys., 146, 2017).
 First we load the packages we'll use
 ```julia
 using Catalyst, MethodOfLines, DomainSets, OrdinaryDiffEq, Plots, Random, Distributions
-using ModelingToolkit: scalarize, unwrap, operation, nameof, defaults
+using ModelingToolkit: scalarize, unwrap, operation, defaults
 ```
 
 Next let's specify our default parameter values
@@ -42,7 +42,8 @@ end
 
 We now define the reaction model
 ```julia
-@variables t x y
+t = default_t()
+@parameters x y
 @species U(x,y,t) V(x,y,t) W(x,y,t)
 rxs = [Reaction(k[1], [U, W], [V, W]),
        Reaction(k[2], [V], [W], [2], [1]),
@@ -58,7 +59,7 @@ pars = vcat(scalarize(k), scalarize(D), scalarize(n0), [A])
 We now put together the symbolic PDE model
 ```julia
 # get the reaction terms
-rxeqs = Catalyst.assemble_oderhs(bpm, states(bpm), combinatoric_ratelaws=false)
+rxeqs = Catalyst.assemble_oderhs(bpm, unknowns(bpm), combinatoric_ratelaws=false)
 
 # get the ordering of the variables within rxeqs
 smap = speciesmap(bpm)
@@ -73,7 +74,7 @@ evalat(u, a, b, t) = (operation(ModelingToolkit.unwrap(u)))(a, b, t)
 Δ(u) = (∂x^2)(u) + (∂y^2)(u)
 eqs = Vector{Equation}(undef, 3)
 bcs = Vector{Equation}()
-for (i,st) in enumerate(states(bpm))
+for (i,st) in enumerate(unknowns(bpm))
     idx = smap[st]
     eqs[i] = ∂t(st) ~ D[idx] * Δ(st) + rxeqs[idx]
     newbcs = [evalat(st, x, y, 0.0) ~ icfun(n0[idx], x, y, A),

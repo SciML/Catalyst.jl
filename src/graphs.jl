@@ -1,7 +1,7 @@
 #######################################################################
 # Contains code from  Catlab.jl:
 # https://raw.githubusercontent.com/AlgebraicJulia/Catlab.jl/master/src/graphics/Graphviz.jl
-# 
+#
 # That license for that code is:
 #
 # The MIT License
@@ -34,8 +34,7 @@ References:
 - DOT language guide: http://www.graphviz.org/pdf/dotguide.pdf
 """
 
-# AST
-#####
+### AST ###
 
 abstract type Expression end
 abstract type Statement <: Expression end
@@ -123,8 +122,7 @@ Edge(path::Vector{String}, attrs::AbstractDict) = Edge(map(NodeID, path), attrs)
 Edge(path::Vector{String}; attrs...) = Edge(map(NodeID, path), attrs)
 Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), attrs)
 
-# Bindings
-##########
+### Bindings ###
 
 """ Run a Graphviz program.
 
@@ -137,7 +135,7 @@ For bindings to the Graphviz C API, see the the package
 GraphViz.jl is unmaintained.
 """
 function run_graphviz(io::IO, graph::Graph; prog::Union{String, Nothing} = nothing,
-                      format::String = "json0")
+        format::String = "json0")
     if isnothing(prog)
         prog = graph.prog
     end
@@ -165,8 +163,7 @@ function Base.show(io::IO, ::MIME"image/svg+xml", graph::Graph)
     run_graphviz(io, graph, format = "svg")
 end
 
-# Pretty-print
-##############
+### Pretty-print ###
 
 """ Pretty-print the Graphviz expression.
 """
@@ -241,7 +238,7 @@ function pprint(io::IO, edge::Edge, n::Int; directed::Bool = false)
 end
 
 function pprint_attrs(io::IO, attrs::Attributes, n::Int = 0;
-                      pre::String = "", post::String = "")
+        pre::String = "", post::String = "")
     if !isempty(attrs)
         indent(io, n)
         print(io, pre)
@@ -275,7 +272,7 @@ const edge_attrs = Attributes(:splines => "splines")
 function edgify(δ, i, reverse::Bool)
     attr = Attributes()
     return map(δ) do p
-        val = String(p[1].f.name)
+        val = String(getname(p[1]))
         weight = "$(p[2])"
         attr = Attributes(:label => weight, :labelfontsize => "6")
         return Edge(reverse ? ["rx_$i", "$val"] :
@@ -289,7 +286,7 @@ function edgifyrates(rxs, specs)
     for (i, rx) in enumerate(rxs)
         deps = rx.rate isa Number ? Any[] : get_variables(rx.rate, specs)
         for dep in deps
-            val = String(dep.f.name)
+            val = String(getname(dep))
             attr = Attributes(:color => "#d91111", :style => "dashed")
             e = Edge(["$val", "rx_$i"], attr)
             push!(es, e)
@@ -320,11 +317,13 @@ function modifystrcomp(strcomp::Vector{String})
     strcomp = "<" .* strcomp .* ">"
 end
 
+### Public-facing API ###
+
 """
     complexgraph(rn::ReactionSystem; complexdata=reactioncomplexes(rn))
 
 Creates a Graphviz graph of the [`ReactionComplex`](@ref)s in `rn`. Reactions
-correspond to arrows and reaction complexes to blue circles. 
+correspond to arrows and reaction complexes to blue circles.
 
 Notes:
 - Black arrows from complexes to complexes indicate reactions whose rate is a
@@ -364,7 +363,7 @@ function complexgraph(rn::ReactionSystem; complexdata = reactioncomplexes(rn))
     append!(stmts2, compnodes)
     append!(stmts2, collect(Iterators.flatten(edges)))
     g = Digraph("G", stmts2; graph_attrs = graph_attrs, node_attrs = node_attrs,
-                edge_attrs = edge_attrs)
+        edge_attrs = edge_attrs)
     return g
 end
 
@@ -389,16 +388,16 @@ Notes:
 function Graph(rn::ReactionSystem)
     rxs = reactions(rn)
     specs = species(rn)
-    statenodes = [Node(string(s.f.name),
-                       Attributes(:shape => "circle", :color => "#6C9AC3")) for s in specs]
+    statenodes = [Node(string(getname(s)),
+                      Attributes(:shape => "circle", :color => "#6C9AC3")) for s in specs]
     transnodes = [Node(string("rx_$i"),
-                       Attributes(:shape => "point", :color => "#E28F41", :width => ".1"))
+                      Attributes(:shape => "point", :color => "#E28F41", :width => ".1"))
                   for (i, r) in enumerate(rxs)]
 
     stmts = vcat(statenodes, transnodes)
     edges = map(enumerate(rxs)) do (i, r)
         vcat(edgify(zip(r.substrates, r.substoich), i, false),
-             edgify(zip(r.products, r.prodstoich), i, true))
+            edgify(zip(r.products, r.prodstoich), i, true))
     end
     es = edgifyrates(rxs, specs)
     (!isempty(es)) && push!(edges, es)
@@ -407,7 +406,7 @@ function Graph(rn::ReactionSystem)
     append!(stmts2, stmts)
     append!(stmts2, collect(Iterators.flatten(edges)))
     g = Digraph("G", stmts2; graph_attrs = graph_attrs, node_attrs = node_attrs,
-                edge_attrs = edge_attrs)
+        edge_attrs = edge_attrs)
     return g
 end
 

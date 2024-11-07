@@ -32,9 +32,14 @@ gives
 ```
 
 Notes:
+- Homotopy-based steady state finding only works when all rates are rational polynomials (e.g. constant, linear, mm, or hill functions).
 ```
   """
-function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative=true, neg_thres=-1e-20, u0=[], kwargs...)
+function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative = true,
+        neg_thres = -1e-20, u0 = [], kwargs...)
+    if !isautonomous(rs)
+        error("Attempting to compute steady state for a non-autonomous system (e.g. where some rate depend on $(get_iv(rs))). This is not possible.")
+    end
     ss_poly = steady_state_polynomial(rs, ps, u0)
     sols = HC.real_solutions(HC.solve(ss_poly; kwargs...))
     reorder_sols!(sols, ss_poly, rs)
@@ -43,56 +48,32 @@ end
 
 # For a given reaction system, parameter values, and initial conditions, find the polynomial that HC solves to find steady states.
 function steady_state_polynomial(rs::ReactionSystem, ps, u0)
-    ns = convert(NonlinearSystem, rs; remove_conserved = true)
-    pre_varmap = [symmap_to_varmap(rs,u0)..., symmap_to_varmap(rs,ps)...]
-    conservationlaw_errorcheck(rs, pre_varmap)
-    p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns); defaults = ModelingToolkit.defaults(ns))
-    p_dict  = Dict(parameters(ns) .=> p_vals)
+    rs = Catalyst.expand_registered_functions(rs)
+    ns = complete(convert(NonlinearSystem, rs;
+        remove_conserved = true, remove_conserved_warn = false))
+    pre_varmap = [symmap_to_varmap(rs, u0)..., symmap_to_varmap(rs, ps)...]
+    Catalyst.conservationlaw_errorcheck(rs, pre_varmap)
+    p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns);
+        defaults = ModelingToolkit.defaults(ns))
+    p_dict = Dict(parameters(ns) .=> p_vals)
     eqs_pars_funcs = vcat(equations(ns), conservedequations(rs))
-    eqs_funcs = map(eq -> substitute(eq.rhs - eq.lhs, p_dict), eqs_pars_funcs)
-    eqs = [deregister([mm, mmr, hill, hillr, hillar], eq) for eq in eqs_funcs]
+    eqs = map(eq -> substitute(eq.rhs - eq.lhs, p_dict), eqs_pars_funcs)
     eqs_intexp = make_int_exps.(eqs)
-    return Catalyst.to_multivariate_poly(remove_denominators.(eqs_intexp))
-end
-
-# If u0s are not given while conservation laws are present, throws an error.
-function conservationlaw_errorcheck(rs, pre_varmap)
-    vars_with_vals = Set(p[1] for p in pre_varmap)
-    any(s -> s in vars_with_vals, species(rs)) && return
-    isempty(conservedequations(rs)) || 
-        error("The system has conservation laws but initial conditions were not provided for some species.")
-end
-
-# Unfolds a function (like mm or hill). 
-function deregister(fs::Vector{T}, expr) where T
-    for f in fs
-        expr = deregister(f, expr) 
-    end
-    return expr
-end
-# Provided by Shashi Gowda.
-deregister(f, expr) = wrap(Rewriters.Postwalk(Rewriters.PassThrough(___deregister(f)))(unwrap(expr)))
-function ___deregister(f)
-    (expr) ->
-    if istree(expr) && operation(expr) == f
-        args = arguments(expr)
-        invoke_with = map(args) do a
-            t = typeof(a)
-            issym(a) || istree(a) ? wrap(a) => symtype(a) : a => typeof(a)
-        end 
-        invoke(f, Tuple{last.(invoke_with)...}, first.(invoke_with)...)
-    end
+    ss_poly = Catalyst.to_multivariate_poly(remove_denominators.(eqs_intexp))
+    return poly_type_convert(ss_poly)
 end
 
 # Parses and expression and return a version where any exponents that are Float64 (but an int, like 2.0) are turned into Int64s.
-make_int_exps(expr) = wrap(Rewriters.Postwalk(Rewriters.PassThrough(___make_int_exps))(unwrap(expr))).val
+function make_int_exps(expr)
+    wrap(Rewriters.Postwalk(Rewriters.PassThrough(___make_int_exps))(unwrap(expr))).val
+end
 function ___make_int_exps(expr)
-    !istree(expr) && return expr
-    if (operation(expr) == ^) 
-        if isinteger(arguments(expr)[2])
-            return arguments(expr)[1] ^ Int64(arguments(expr)[2])
+    !iscall(expr) && return expr
+    if (operation(expr) == ^)
+        if isinteger(sorted_arguments(expr)[2])
+            return sorted_arguments(expr)[1]^Int64(sorted_arguments(expr)[2])
         else
-            error("An non integer ($(arguments(expr)[2])) was found as a variable exponent. Non-integer exponents are not supported for homotopy continuation based steady state finding.")
+            error("An non integer ($(sorted_arguments(expr)[2])) was found as a variable exponent. Non-integer exponents are not supported for homotopy continuation based steady state finding.")
         end
     end
 end
@@ -100,9 +81,9 @@ end
 # If the input is a fraction, removes the denominator.
 function remove_denominators(expr)
     s_expr = simplify_fractions(expr)
-    !istree(expr) && return expr
+    !iscall(expr) && return expr
     if operation(s_expr) == /
-        return remove_denominators(arguments(s_expr)[1])
+        return remove_denominators(sorted_arguments(s_expr)[1])
     end
     if operation(s_expr) == +
         return sum(remove_denominators(arg) for arg in arguments(s_expr))
@@ -114,14 +95,27 @@ end
 function reorder_sols!(sols, ss_poly, rs::ReactionSystem)
     var_names_extended = String.(Symbol.(HC.variables(ss_poly)))
     var_names = [Symbol(s[1:prevind(s, findlast('_', s))]) for s in var_names_extended]
-    sort_pattern = indexin(MT.getname.(species(rs)), var_names)
+    sort_pattern = indexin(MT.getname.(unknowns(rs)), var_names)
     foreach(sol -> permute!(sol, sort_pattern), sols)
 end
 
 # Filters away solutions with negative species concentrations (and for neg_thres < val < 0.0, sets val=0.0).
-function filter_negative_f(sols; neg_thres=-1e-20)
+function filter_negative_f(sols; neg_thres = -1e-20)
     for sol in sols, idx in 1:length(sol)
         (neg_thres < sol[idx] < 0) && (sol[idx] = 0)
     end
     return filter(sol -> all(>=(0), sol), sols)
+end
+
+# Sometimes (when polynomials are created from coupled CRN/DAEs), the steady state polynomial have the wrong type.
+# This converts it to the correct type, which homotopy continuation can handle.
+const WRONG_POLY_TYPE = Vector{DynamicPolynomials.Polynomial{
+    DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder},
+    DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}}}
+const CORRECT_POLY_TYPE = Vector{DynamicPolynomials.Polynomial{
+    DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder},
+    DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}, Float64}}
+function poly_type_convert(ss_poly)
+    (typeof(ss_poly) == WRONG_POLY_TYPE) && return convert(CORRECT_POLY_TYPE, ss_poly)
+    return ss_poly
 end

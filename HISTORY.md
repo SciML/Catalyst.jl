@@ -1,9 +1,334 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+- The Catalyst release process is changing; certain core dependencies of
+  Catalyst will now be capped to ensure Catalyst releases are only installed
+  with versions of dependencies for which Catalyst CI and doc build tests pass
+  (at the time the release is made). If you need a dependency version increased,
+  please open an issue and we can update it and make a new Catalyst release once
+  testing against the newer dependency version is complete. 
+- Array symbolics support is more consistent with ModelingToolkit v9. Parameter
+  arrays are no longer scalarized by Catalyst, while species and variables
+  arrays still are (as in ModelingToolkit). As such, parameter arrays should now
+  be specified as arrays in value mappings, i.e.
+  ```julia
+  @parameters k[1:4]
+  pmap = [k => rand(4)]
+  ```
+  While one can still manually scalarize a parameter array, it is recommended
+  *not* to do this as it has signifcant performance costs with ModelingToolkit
+  v9. Note, scalarized parameter arrays passed to the two-argument
+  `ReactionSystem` constructor may become unscalarized.
+- Scoped species/variables/parameters are now treated similar to the latest MTK
+  releases (≥ 9.49).
+- The structural identifiability extension is currently disabled due to issues
+  StructuralIdentifiability has with Julia 1.10.5 and 1.11.
+- A tutorial on making interactive plot displays using Makie has been added.
+- The BifurcationKit extension has been updated to v.4.
+
+## Catalyst 14.4.1
+- Support for user-defined functions on the RHS when providing coupled equations 
+  for CRNs using the @equations macro. For example, the following now works: 
+  ```julia
+  using Catalyst
+  f(A, t) = 2*A*t
+  rn = @reaction_network begin
+    @equations D(A) ~ f(A,t)
+  end
+  ```
+  Note that user-defined functions will not work on the LHS of equations. 
+
+## Catalyst 14.4
+- Symbolics 6 support.
+
+
+
+## Catalyst 14.3
+- Support for simulating stochastic chemical kinetics models with explicitly
+  time-dependent propensities (i.e. where the resulting `JumpSystem` contains
+  `VariableRateJump`s). As such `JumpProblem`s need to be defined over
+  `ODEProblem`s or `SDEProblem`s instead of `DiscreteProblem`s we have
+  introduced a new input struct, `JumpInputs`, that handles selecting via
+  analysis of the generated `JumpSystem`, i.e. one can now say
+  ```julia
+  using Catalyst, OrdinaryDiffEq, JumpProcesses, Plots
+  rn = @reaction_network begin
+      k*(1 + sin(t)), 0 --> A
+  end
+  jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+  # note that jinput.prob isa ODEProblem
+  jprob = JumpProblem(jinput)
+  sol = solve(jprob, Tsit5())
+  plot(sol, idxs = :A)
+
+  rn = @reaction_network begin
+      k, 0 --> A
+  end
+  jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+  # note that jinput.prob isa DiscreteProblem
+  jprob = JumpProblem(jinput)
+  sol = solve(jprob)
+  plot(sol, idxs = :A)
+  ```
+  When calling solve for problems with explicit time-dependent propensities,
+  i.e. where `jinput.prob isa ODEProblem`, note that one must currently
+  explicitly select an ODE solver to handle time-stepping and integrating the
+  time-dependent propensities.
+- Note that solutions to jump problems with explicit time-dependent
+  propensities, i.e. a `JumpProblem` over an `ODEProblem`, require manual
+  selection of the variables to plot. That is, currently `plot(sol)` will error
+  in this case due to limitations in the SciMLBase plot recipe.
+
+## Catalyst 14.2
+- Support for auto-algorithm selection in `JumpProblem`s. For systems with only
+  propensities that do not have an explicit time-dependence (i.e. that are not
+  `VariableRateJump`s in JumpProcesses), one can now run model simulations via
+  ```julia
+  using Catalyst, JumpProcesses
+  model = @reaction_network begin
+    kB, S + E --> SE
+    kD, SE --> S + E
+    kP, SE --> P + E
+  end
+  u0 = [:S => 50, :E => 10, :SE => 0, :P => 0]
+  tspan = (0., 200.)
+  ps = [:kB => 0.01, :kD => 0.1, :kP => 0.1]
+  dprob = DiscreteProblem(model, u0, tspan, ps)
+  jprob = JumpProblem(model, dprob)
+  sol = solve(jprob)
+  ```
+  For small systems this will just use Gillespie's `Direct` method, transitioning to using `RSSA` and `RSSACR` as system size increase. Once can still manually select a given SSA, but no longer needs to specify `SSAStepper` when calling `solve`, i.e.
+  ```julia
+  # use the SortingDirect method instead
+  jprob = JumpProblem(model, dprob, SortingDirect())
+  sol = solve(jprob)
+  ```
+- Latexify recipe improvements including display fixes for array symbolics.
+- Deficiency one and concentration robustness checks.
+
+## Catalyst 14.1.1
+The expansion of `ReactionSystem` models to spatial lattices has been enabled. Here follows a
+simple example where a Brusselator model is expanded to a 20x20 grid of compartments, with diffusion
+for species X, and then simulated using ODEs. Finally, an animation of the simulation is created.
+```julia
+using Catalyst, CairoMakie, OrdinaryDiffEq
+
+# Create `LatticeReactionSystem` model.
+brusselator = @reaction_network begin
+    A, ∅ --> X
+    1, 2X + Y --> 3X
+    B, X --> Y
+    1, X --> ∅
+end
+diffusion_rx = @transport_reaction D X
+lattice = CartesianGrid((20,20))
+lrs = LatticeReactionSystem(brusselator, [diffusion_rx], lattice)
+
+# Create a spatial `ODEProblem`.
+u0 = [:X => rand(20, 20), :Y => 10.0]
+tspan = (0.0, 40.0)
+ps = [:A => 1.0, :B => 4.0, :D => 0.2]
+oprob = ODEProblem(lrs, u0, tspan, ps)
+
+# Simulate the ODE and plot the results.
+sol = solve(oprob, FBDF())
+lattice_animation(sol, :X, lrs, "brusselator.mp4")
+```
+The addition of spatial modelling in Catalyst contains a large number of new features, all of which are
+described in the [corresponding documentation](https://docs.sciml.ai/Catalyst/stable/spatial_modelling/lattice_reaction_systems/).
+
+## Catalyst 14.0.1
+Bug fix to address that independent variables, like time, should now be `@parameters`
+according to MTKv9. Converted internal time variables to consistently use `default_t()`
+to hopefully avoid such issues going forward.
+
+## Catalyst 14.0
+
+#### Breaking changes
+Catalyst v14 was prompted by the (breaking) release of ModelingToolkit v9, which
+introduced several breaking changes to Catalyst. A summary of these (and how to
+handle them) can be found
+[here](https://docs.sciml.ai/Catalyst/stable/v14_migration_guide/). These are
+briefly summarised in the following bullet points:
+- `ReactionSystem`s must now be marked *complete* before they are exposed to
+  most forms of simulation and analysis. With the exception of `ReactionSystem`s
+  created through the `@reaction_network` macro, all `ReactionSystem`s are *not*
+  marked complete upon construction. The `complete` function can be used to mark
+  `ReactionSystem`s as complete. To construct a `ReactionSystem` that is not
+  marked complete via the DSL the new `@network_component` macro can be used.
+- The `states` function has been replaced with `unknowns`. The `get_states`
+  function has been replaced with `get_unknowns`.
+- Support for most units (with the exception of `s`, `m`, `kg`, `A`, `K`, `mol`,
+  and `cd`) has currently been dropped by ModelingToolkit, and hence they are
+  unavailable via Catalyst too. Its is expected that eventually support for
+  relevant chemical units such as molar will return to ModelingToolkit (and
+  should then immediately work in Catalyst too).
+- Problem parameter values are now accessed through `prob.ps[p]` (rather than
+  `prob[p]`).
+-  ModelingToolkit currently does not support the safe application of the
+   `remake` function, or safe direct mutation, for problems for which
+   `remove_conserved = true` was used when updating the values of initial
+   conditions. Instead, the values of each conserved constant must be directly
+   specified.
+- The `reactionparams`, `numreactionparams`, and `reactionparamsmap` functions
+  have been deprecated and removed.
+- To be more consistent with ModelingToolkit's immutability requirement for
+  systems, we have removed API functions that mutate `ReactionSystem`s such as
+  `addparam!`, `addreaction!`, `addspecies`, `@add_reactions`, and `merge!`.
+  Please use `ModelingToolkit.extend` and `ModelingToolkit.compose` to generate
+  new merged and/or composed `ReactionSystem`s from multiple component systems.
+
+#### General changes
+- `default_t()` and `default_time_deriv()` functions should be used for creating
+  the default time independent variable and its differential. i.e.
+  ```julia
+  # do
+  t = default_t()
+  @species A(t)
+
+  # avoid
+  @variables t
+  @species A(t)
+- It is now possible to add metadata to individual reactions, e.g. using:
+  ```julia
+  rn = @reaction_network begin
+      @parameters η
+      k, 2X --> X2, [description="Dimerisation"]
+  end
+  getdescription(rn)
+  ```
+  a more detailed description can be found [here](https://docs.sciml.ai/Catalyst/dev/model_creation/dsl_advanced/#dsl_advanced_options_reaction_metadata).
+- `SDEProblem` no longer takes the `noise_scaling` argument. Noise scaling is
+  now handled through the `noise_scaling` metadata (described in more detail
+  [here](https://docs.sciml.ai/Catalyst/stable/model_simulation/simulation_introduction/#simulation_intro_SDEs_noise_saling))
+- Fields of the internal `Reaction` structure have been changed.
+  `ReactionSystems`s saved using `serialize` on previous Catalyst versions
+  cannot be loaded using this (or later) versions.
+- A new function, `save_reactionsystem`, which permits the writing of
+  `ReactionSystem` models to files, has been created. A thorough description of
+  this function can be found
+  [here](https://docs.sciml.ai/Catalyst/stable/model_creation/model_file_loading_and_export/#Saving-Catalyst-models-to,-and-loading-them-from,-Julia-files)
+- Updated how compounds are created. E.g. use
+  ```julia
+  @variables t C(t) O(t)
+  @compound CO2 ~ C + 2O
+  ```
+  to create a compound species `CO2` that consists of `C` and two `O`.
+- Added documentation for chemistry-related functionality (compound creation and
+  reaction balancing).
+- Added function `isautonomous` to check if a `ReactionSystem` is autonomous.
+- Added function `steady_state_stability` to compute stability for steady
+  states. Example:
+  ```julia
+  # Creates model.
+  rn = @reaction_network begin
+      (p,d), 0 <--> X
+  end
+  p = [:p => 1.0, :d => 0.5]
+
+  # Finds (the trivial) steady state, and computes stability.
+  steady_state = [2.0]
+  steady_state_stability(steady_state, rn, p)
+  ```
+  Here, `steady_state_stability` takes an optional keyword argument `tol =
+  10*sqrt(eps())`, which is used to check that the real part of all eigenvalues
+  are at least `tol` away from zero. Eigenvalues within `tol` of zero indicate
+  that stability may not be reliably calculated.
+- Added a DSL option, `@combinatoric_ratelaws`, which can be used to toggle
+  whether to use combinatorial rate laws within the DSL (this feature was
+  already supported for programmatic modelling). Example:
+  ```julia
+  # Creates model.
+  rn = @reaction_network begin
+      @combinatoric_ratelaws false
+      (kB,kD), 2X <--> X2
+  end
+  ```
+- Added a DSL option, `@observables` for [creating
+  observables](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_advanced/#dsl_advanced_options_observables)
+  (this feature was already supported for programmatic modelling).
+- Added DSL options `@continuous_events` and `@discrete_events` to add events to
+  a model as part of its creation (this feature was already supported for
+  programmatic modelling). Example:
+  ```julia
+  rn = @reaction_network begin
+      @continuous_events begin
+          [X ~ 1.0] => [X ~ X + 1.0]
+      end
+      d, X --> 0
+  end
+  ```
+- Added DSL option `@equations` to add (algebraic or differential) equations to
+  a model as part of its creation (this feature was already supported for
+  programmatic modelling). Example:
+  ```julia
+  rn = @reaction_network begin
+      @equations begin
+          D(V) ~ 1 - V
+      end
+      (p/V,d/V), 0 <--> X
+  end
+  ```
+  couples the ODE $dV/dt = 1 - V$ to the reaction system.
+- Coupled reaction networks and differential equation (or algebraic differential
+  equation) systems can now be converted to `SDESystem`s and `NonlinearSystem`s.
+
+#### Structural identifiability extension
+- Added CatalystStructuralIdentifiabilityExtension, which permits
+  StructuralIdentifiability.jl to be applied directly to Catalyst systems. E.g.
+  use
+  ```julia
+  using Catalyst, StructuralIdentifiability
+  goodwind_oscillator = @reaction_network begin
+      (mmr(P,pₘ,1), dₘ), 0 <--> M
+      (pₑ*M,dₑ), 0 <--> E
+      (pₚ*E,dₚ), 0 <--> P
+  end
+  assess_identifiability(goodwind_oscillator; measured_quantities=[:M])
+  ```
+  to assess (global) structural identifiability for all parameters and variables
+  of the `goodwind_oscillator` model (under the presumption that we can measure
+  `M` only).
+- Automatically handles conservation laws for structural identifiability
+  problems (eliminates these internally to speed up computations).
+- A more detailed of how this extension works can be found
+  [here](https://docs.sciml.ai/Catalyst/stable/inverse_problems/structural_identifiability/).
+
+#### Bifurcation analysis extension
+- Add a CatalystBifurcationKitExtension, permitting BifurcationKit's
+  `BifurcationProblem`s to be created from Catalyst reaction networks. Example
+  usage:
+  ```julia
+  using Catalyst
+  wilhelm_2009_model = @reaction_network begin
+      k1, Y --> 2X
+      k2, 2X --> X + Y
+      k3, X + Y --> Y
+      k4, X --> 0
+      k5, 0 --> X
+  end
+
+  using BifurcationKit
+  bif_par = :k1
+  u_guess = [:X => 5.0, :Y => 2.0]
+  p_start = [:k1 => 4.0, :k2 => 1.0, :k3 => 1.0, :k4 => 1.5, :k5 => 1.25]
+  plot_var = :X
+  bprob = BifurcationProblem(wilhelm_2009_model, u_guess, p_start, bif_par; plot_var = plot_var)
+
+  p_span = (2.0, 20.0)
+  opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2], max_steps = 1000)
+
+  bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside = true)
+
+  using Plots
+  plot(bif_dia; xguide = "k1", guide = "X")
+  ```
+- Automatically handles elimination of conservation laws for computing
+  bifurcation diagrams.
+- Updated Bifurcation documentation with respect to this new feature.
 
 ## Catalyst 13.5
-- Added a CatalystHomotopyContinuationExtension extension, which exports the `hc_steady_state` function if HomotopyContinuation is exported. `hc_steady_state` finds the steady states of a reactin system using the homotopy continuation method. This feature is only available for julia versions 1.9+. Example: 
+- Added a CatalystHomotopyContinuationExtension extension, which exports the `hc_steady_state` function if HomotopyContinuation is exported. `hc_steady_state` finds the steady states of a reaction system using the homotopy continuation method. This feature is only available for julia versions 1.9+. Example:
 ```julia
 wilhelm_2009_model = @reaction_network begin
     k1, Y --> 2X
@@ -559,7 +884,7 @@ hc_steady_states(wilhelm_2009_model, ps)
   field has been changed (only when created through the `@reaction_network`
   macro). Previously they were ordered according to the order with which they
   appeared in the macro. Now they are ordered according the to order with which
-  they appeard after the `end` part. E.g. in
+  they appeared after the `end` part. E.g. in
   ```julia
   rn = @reaction_network begin
     (p,d), 0 <--> X
@@ -664,7 +989,7 @@ which gives
 ![rn_complexes](https://user-images.githubusercontent.com/9385167/130252763-4418ba5a-164f-47f7-b512-a768e4f73834.png)
 
 *2.* Support for units via ModelingToolkit and
-[Uniftul.jl](https://github.com/PainterQubits/Unitful.jl) in directly constructed
+[Unitful.jl](https://github.com/PainterQubits/Unitful.jl) in directly constructed
 `ReactionSystem`s:
 ```julia
 # ]add Unitful
@@ -740,7 +1065,7 @@ rn = @reaction_network Reversible_Reaction begin
   k1, A --> B
   k2, B --> A
   end k1 k2
-nameof(rn) == :Reversible_Reaction
+ModelingToolkit.nameof(rn) == :Reversible_Reaction
 ```
 Note, empty networks can no longer be created with parameters, i.e. only
 ```julia
