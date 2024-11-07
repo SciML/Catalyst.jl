@@ -15,7 +15,7 @@ Generally, ODE problems can be categorised into [*stiff ODEs* and *non-stiff ODE
 
 Here we simulate the (stiff) [Brusselator](@ref basic_CRN_library_brusselator) model using the `Tsit5` solver (which is designed for non-stiff ODEs):
 ```@example ode_simulation_performance_1
-using Catalyst, OrdinaryDiffEq, Plots
+using Catalyst, OrdinaryDiffEqTsit5, Plots
 
 brusselator = @reaction_network begin
     A, ∅ --> X
