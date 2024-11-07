@@ -23,7 +23,7 @@ pages = Any[
             "model_creation/examples/programmatic_generative_linear_pathway.md",
             "model_creation/examples/hodgkin_huxley_equation.md",
             "model_creation/examples/smoluchowski_coagulation_equation.md",
-            "model_creation/examples/SPR_fitting.md"
+            "model_creation/examples/SPR_fitting.md"]
     ],
     "Model simulation and visualization" => Any[
         "model_simulation/simulation_introduction.md",
