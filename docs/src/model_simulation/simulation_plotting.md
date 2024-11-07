@@ -7,7 +7,7 @@ Catalyst uses the [Plots.jl](https://github.com/JuliaPlots/Plots.jl) package for
 ## [Common plotting options](@id simulation_plotting_options)
 Let us consider the oscillating [Brusselator](@ref basic_CRN_library_brusselator) model. We have previously shown how model simulation solutions can be plotted using the `plot` function. Here we plot an ODE simulation from the Brusselator:
 ```@example simulation_plotting
-using Catalyst, OrdinaryDiffEq, Plots
+using Catalyst, OrdinaryDiffEqTsit5, Plots
 
 brusselator = @reaction_network begin
     A, ∅ --> X
@@ -20,7 +20,7 @@ tspan = (0.0, 50.0)
 ps = [:A => 1.0, :B => 4.0]
 
 oprob = ODEProblem(brusselator, u0, tspan, ps)
-sol = solve(oprob)
+sol = solve(oprob, Tsit5())
 plot(sol)
 ```
 

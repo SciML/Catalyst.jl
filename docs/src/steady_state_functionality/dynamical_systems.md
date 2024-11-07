@@ -22,7 +22,7 @@ nothing # hide
 ```
 Next, for any application of DynamicalSystems.jl, our `ODEProblem` must be converted into a so-called `CoupledODEs` structure. This is done by combining the ODE with the solver (and potential solver options) with which we wish to simulate it (just like when it is simulated using `solve`). Here, we will simply designate the `Tsit5` numeric solver (but provide no other options).
 ```@example dynamical_systems_basins
-using DynamicalSystems, OrdinaryDiffEq
+using DynamicalSystems, OrdinaryDiffEqTsit5
 ds = CoupledODEs(oprob, (alg = Tsit5(),))
 ```
 We can now compute the basins of attraction. This is done by first creating a grid that designates which subspace of phase-space we wish to investigate (here, the corresponding basin of attraction is found for every point on the grid). Next, we create a `AttractorsViaRecurrences` struct, that maps initial conditions to attractors, and then use that as input to the `basins_of_attraction` function.
@@ -69,7 +69,7 @@ end
 ```
 We can simulate the model, noting that its behaviour seems chaotic.
 ```@example dynamical_systems_lyapunov
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqRosenbrock, Plots
 
 u0 = [:X => 1.5, :Y => 1.5, :Z => 1.5]
 tspan = (0.0, 100.0)

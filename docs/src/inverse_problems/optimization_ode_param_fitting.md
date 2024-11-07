@@ -21,10 +21,10 @@ u0 = [:S => 1.0, :E => 1.0, :SE => 0.0, :P => 0.0]
 ps_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
 
 # Generate synthetic data.
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 oprob_true = ODEProblem(rn, u0, (0.0, 10.0), ps_true)
-true_sol = solve(oprob_true)
-data_sol = solve(oprob_true; saveat=1.0)
+true_sol = solve(oprob_true, Tsit5())
+data_sol = solve(oprob_true, Tsit5(); saveat=1.0)
 data_ts = data_sol.t[2:end]
 data_vals = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 

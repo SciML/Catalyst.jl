@@ -19,7 +19,7 @@ The first two functions can be applied to [graph](@ref spatial_lattice_modelling
 ## [Animation and plotting of 1d Cartesian or masked lattice simulations](@id lattice_simulation_plotting_1d_grids)
 Let us consider a spatial simulation on a 1d Cartesian grid lattice:
 ```@example lattice_plotting_1d
-using Catalyst, OrdinaryDiffEq
+using Catalyst, OrdinaryDiffEqTsit5
 two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
@@ -33,7 +33,7 @@ u0 = [:X1 => X1_0, :X2 => 1.0]
 tspan = (0.0, 5.0)
 ps = [:k1 => 1.0, :k2 => 2.0, :D => 0.5]
 oprob = ODEProblem(lrs, u0, tspan, ps)
-sol = solve(oprob)
+sol = solve(oprob, Tsit5())
 nothing # hide
 ```
 To plot the simulation at a specific time point we use the `lattice_plot` function. In addition to the simulation we wish to plot, it takes the species we wish to plot and the [`LatticeReactionSystem`](@ref) which generated the simulation as arguments. It also takes the time point at which we wish to plot the simulation as an additional argument (if not provided, the simulation will be plotted at the final time point). To use the [`lattice_plot`](@ref) function (or any other of Catalyst's spatial plotting functions) we also need to load the [CairoMakie](https://github.com/MakieOrg/Makie.jl) package (here, `import CairoMakie` is enough, and `using CairoMakie` is not required).
@@ -62,7 +62,7 @@ For more information of either function, and additional optional arguments, plea
 ## [Animation and plotting of 2d Cartesian or masked lattice simulations](@id lattice_simulation_plotting_2d_grids)
 Two-dimensional lattice simulations can be plotted in the same manner as one-dimensional ones. However, instead of displaying a species's value as a line plot, it is displayed as a heatmap. E.g. here we simulate a spatial [Brusselator](@ref basic_CRN_library_brusselator) model and display the value of $X$ at a designated time point.
 ```@example lattice_plotting_2d
-using Catalyst, OrdinaryDiffEq
+using Catalyst, OrdinaryDiffEqBDF
 brusselator = @reaction_network begin
     A, ∅ --> X
     1, 2X + Y --> 3X
@@ -95,7 +95,7 @@ Again, please check the API pages for the [`lattice_plot`](@ref) and [`lattice_a
 ## [Animation and plotting of graph lattice simulations](@id lattice_simulation_plotting_graphs)
 Finally, we consider lattice simulations on graph lattices. We first simulate a simple [birth-death process](@ref basic_CRN_library_bd) on a (6-node cyclic) graph lattice.
 ```@example lattice_plotting_graphs
-using Catalyst, Graphs, OrdinaryDiffEq
+using Catalyst, Graphs, OrdinaryDiffEqTsit5
 rs = @reaction_network begin
     (p,d), 0 <--> X
 end
@@ -107,7 +107,7 @@ u0 = [:X => rand(6)]
 tspan = (0.0, 1.0)
 ps = [:p => 1.0, :d => 0.5, :D => 0.1]
 oprob = ODEProblem(lrs, u0, tspan, ps)
-osol = solve(oprob)
+osol = solve(oprob, Tsit5())
 nothing # hide
 ```
 As for Cartesian and masked lattice-based simulations we can plot this simulation using the `lattice_plot` function. In this case, however, we need to first load *both* [CairoMakie](https://github.com/MakieOrg/Makie.jl) and the [GraphMakie](https://github.com/MakieOrg/GraphMakie.jl) packages.

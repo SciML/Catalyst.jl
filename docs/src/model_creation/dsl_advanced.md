@@ -100,12 +100,12 @@ end
 ```
 Next, if we simulate the model, we do not need to provide values for species or parameters that have default values. In this case all have default values, so both `u0` and `ps` can be empty vectors:
 ```@example dsl_advanced_defaults
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqTsit5, Plots
 u0 = []
 tspan = (0.0, 10.0)
 p = []
 oprob = ODEProblem(rn, u0, tspan, p)
-sol = solve(oprob)
+sol = solve(oprob, Tsit5())
 plot(sol)
 ```
 It is still possible to provide values for some (or all) initial conditions/parameters in `u0`/`ps` (in which case these overrides the default values):
@@ -113,7 +113,7 @@ It is still possible to provide values for some (or all) initial conditions/para
 u0 = [:X => 4.0]
 p = [:d => 0.5]
 oprob = ODEProblem(rn, u0, tspan, p)
-sol = solve(oprob)
+sol = solve(oprob, Tsit5())
 plot(sol)
 ```
 It is also possible to declare a model with default values for only some initial conditions/parameters:
@@ -127,7 +127,7 @@ end
 tspan = (0.0, 10.0)
 p = [:p => 1.0, :d => 0.2]
 oprob = ODEProblem(rn, u0, tspan, p)
-sol = solve(oprob)
+sol = solve(oprob, Tsit5())
 plot(sol)
 ```
 
@@ -262,12 +262,12 @@ end
 ```
 Now, we can also declare our initial conditions and parameter values as vectors as well:
 ```@example dsl_advanced_vector_variables
-using OrdinaryDiffEq, Plots # hide
+using OrdinaryDiffEqTsit5, Plots # hide
 u0 = [:X => [0.0, 2.0]]
 tspan = (0.0, 1.0)
 ps = [:k => [1.0, 2.0]]
 oprob = ODEProblem(two_state_model, u0, tspan, ps)
-sol = solve(oprob)
+sol = solve(oprob, Tsit5())
 plot(sol)
 ```
 
@@ -332,7 +332,7 @@ end
 ```
 We can now simulate our model using normal syntax (initial condition values for observables should not, and can not, be provided):
 ```@example dsl_advanced_observables
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 u0 = [:X => 1.0, :Y => 2.0, :XY => 0.0]
 tspan = (0.0, 10.0)
 ps = [:kB => 1.0, :kD => 1.5]
@@ -489,12 +489,12 @@ X
 ```
 Next, we can now use these to e.g. designate initial conditions and parameter values for model simulations:
 ```@example dsl_advanced_programmatic_unpack
-using OrdinaryDiffEq, Plots # hide
+using OrdinaryDiffEqTsit5, Plots # hide
 u0 = [X => 0.1]
 tspan = (0.0, 10.0)
 ps = [p => 1.0, d => 0.2]
 oprob = ODEProblem(bd_model, u0, tspan, ps)
-sol = solve(oprob)
+sol = solve(oprob, Tsit5())
 plot(sol)
 ```
 

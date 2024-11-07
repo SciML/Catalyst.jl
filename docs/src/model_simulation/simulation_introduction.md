@@ -99,8 +99,8 @@ nothing # hide
 ```
 Next, we can simulate the model (requires loading the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package). Simulations are performed using the `solve` function.
 ```@example simulation_intro_ode
-using OrdinaryDiffEq
-sol = solve(oprob)
+using OrdinaryDiffEqTsit5
+sol = solve(oprob, Tsit5())
 nothing # hide
 ```
 Finally, the result can be plotted using the [Plots.jl](https://github.com/JuliaPlots/Plots.jl) package's `plot` function:
@@ -118,6 +118,7 @@ Some additional considerations:
 ### [Designating solvers and solver options](@id simulation_intro_solver_options)
 While good defaults are generally selected, OrdinaryDiffEq enables the user to customise simulations through a long range of options that can be provided to the `solve` function. This includes specifying a [solver algorithm](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations), which can be provided as a second argument to `solve` (if none is provided, a suitable choice is automatically made). E.g. here we specify that the `Rodas5P` method should be used:
 ```@example simulation_intro_ode
+using OrdinaryDiffEqRosenbrock
 sol = solve(oprob, Rodas5P())
 nothing # hide
 ```
@@ -125,7 +126,7 @@ A full list of available solvers is provided [here](https://docs.sciml.ai/DiffEq
 
 Additional options can be provided as keyword arguments. E.g. the `maxiters` arguments determines the maximum number of simulation time steps (before the simulation is terminated). This defaults to `1e5`, but can be modified through:
 ```@example simulation_intro_ode
-sol = solve(oprob; maxiters = 1e4)
+sol = solve(oprob, Tsit5(); maxiters = 1e4)
 nothing # hide
 ```
 
@@ -348,7 +349,7 @@ end
 ```
 This type of model will generate so called *variable rate jumps* (`VariableRateJump`s in JumpProcesses.jl). Such models can be simulated in Catalyst too, but note that now a method for time-stepping the solver must be provided to `solve`. Here ODE solvers should be given as they are used to handle integrating the explicitly time-dependent propensities for problems with variable rates, i.e. the proceeding example can be solved like
 ```@example simulation_intro_jumps
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 u0map = [:P => 0]
 pmap = [:f => 1.0, :A => 2.0, :ϕ => 0.0, :d => 1.0]
 tspan = (0.0, 24.0)

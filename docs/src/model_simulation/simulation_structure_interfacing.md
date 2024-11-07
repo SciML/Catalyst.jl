@@ -52,7 +52,7 @@ To modify a problem, the `remake` function should be used. It takes an already c
 
 Here we modify our problem to increase the initial condition concentrations of the two substrates ($S₁$ and $S₂$), and also confirm that the new problem is different from the old (unchanged) one:
 ```@example structure_indexing
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 oprob_new = remake(oprob; u0 = [:S₁ => 5.0, :S₂ => 2.5])
 oprob_new != oprob
 ```
@@ -93,7 +93,7 @@ If you are interfacing with jump simulation integrators, you must always call `r
 
 Finally, we consider solution objects. First, we simulate our problem:
 ```@example structure_indexing
-sol = solve(oprob)
+sol = solve(oprob, Tsit5())
 nothing # hide
 ```
 Next, we can access the simulation's values using the same notation as previously. When we access a species's, its values across the full simulation is returned as a vector:

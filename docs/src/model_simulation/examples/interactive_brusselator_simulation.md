@@ -9,7 +9,7 @@ Let's again use the oscillating Brusselator model, extending the basic simulatio
 
 ```@example interactive_brusselator; continued = true
 using Catalyst
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 using GLMakie
 GLMakie.activate!(inline = true) # hide
 

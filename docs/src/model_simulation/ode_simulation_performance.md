@@ -56,7 +56,7 @@ Finally, we should note that stiffness is not tied to the model equations only. 
 ## [ODE solver selection](@id ode_simulation_performance_solvers)
 OrdinaryDiffEq implements an unusually large number of ODE solvers, with the performance of the simulation heavily depending on which one is chosen. These are provided as the second argument to the `solve` command, e.g. here we use the `Tsit5` solver to simulate a simple [birth-death process](@ref basic_CRN_library_bd):
 ```@example ode_simulation_performance_2
-using Catalyst, OrdinaryDiffEq
+using Catalyst, OrdinaryDiffEqTsit5
 
 bd_model = @reaction_network begin
     (p,d), 0 <--> X
@@ -69,16 +69,14 @@ oprob = ODEProblem(bd_model, u0, tspan, ps)
 solve(oprob, Tsit5())
 nothing # hide
 ```
-If no solver argument is provided to `solve`, one is automatically selected:
-```@example ode_simulation_performance_2
-solve(oprob)
-nothing # hide
-```
+!!! note If the top-level `OrdinaryDiffEq` package or `DifferentialEquations` is imported and no solver argument is provided to `solve`, one is automatically selected. 
+
 While the default choice is typically enough for most single simulations, if performance is important, it can be worthwhile exploring the available solvers to find one that is especially suited for the given problem. A complete list of possible ODE solvers, with advice on optimal selection, can be found [here](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/). This section will give some general advice.
 
 The most important part of solver selection is to select one appropriate for [the problem's stiffness](@ref ode_simulation_performance_stiffness). Generally, the `Tsit5` solver is good for non-stiff problems, and `Rodas5P` for stiff problems. For large stiff problems (with many species), `FBDF` can be a good choice. We can illustrate the impact of these choices by simulating our birth-death process using the `Tsit5`, `Vern7` (an explicit solver yielding [low error in the solution](@ref ode_simulation_performance_error)), `Rodas5P`, and `FBDF` solvers (benchmarking their respective performance using [BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl)):
 ```julia
-using BenchmarkTools
+using BenchmarkTools 
+using OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, OrdinaryDiffEqVerner, OrdinaryDiffEqBDF
 @btime solve(oprob, Tsit5())
 @btime solve(oprob, Vern7())
 @btime solve(oprob, Rodas5P())
@@ -185,7 +183,7 @@ end
 u0 = [:X₁ => 2.0, :X₂ => 3.0]
 ps = [:k₁ => 1.0, :k₂ => 2.0]
 oprob = ODEProblem(rs, u0, (0.0, 10.0), ps; remove_conserved = true)
-sol = solve(oprob)
+sol = solve(oprob, Tsit5())
 nothing # hide
 ```
 Conservation law elimination is not expected to ever impact performance negatively; it simply results in a (possibly) lower-dimensional system of ODEs to solve. However, eliminating conserved species may have minimal performance benefits; it is model-dependent whether elimination results in faster ODE solving times and/or increased solution accuracy.

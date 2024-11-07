@@ -22,7 +22,7 @@ end
 ```
 We will study the peak number of infected cases's ($max(I(t))$) sensitivity to the system's three parameters. We create a function which simulates the system from a given initial condition and measures this property:
 ```@example gsa_1
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 
 u0 = [:S => 999.0, :I => 1.0, :E => 0.0, :R => 0.0]
 p_dummy = [:β => 0.0, :a => 0.0, :γ => 0.0]
@@ -31,7 +31,7 @@ oprob_base = ODEProblem(seir_model, u0, (0.0, 10000.0), p_dummy)
 function peak_cases(p)
     ps = [:β => p[1], :a => p[2], :γ => p[3]]
     oprob = remake(oprob_base; p = ps)
-    sol = solve(oprob; maxiters = 100000, verbose = false)
+    sol = solve(oprob, Tsit5(); maxiters = 100000, verbose = false)
     SciMLBase.successful_retcode(sol) || return Inf
     return maximum(sol[:I])
 end

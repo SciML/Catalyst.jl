@@ -20,11 +20,11 @@ rs.X1
 ```
 to access e.g. `X1`. This symbolic variable can be used just like those [declared using `@parameters` and `@species`](@ref programmatic_CRN_construction):
 ```@example model_accessing_symbolic_variables
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 u0 = [rs.X1 => 1.0, rs.X2 => 2.0]
 ps = [rs.k1 => 2.0, rs.k2 => 4.0]
 oprob = ODEProblem(rs, u0, (0.0, 10.0), ps)
-sol = solve(oprob)
+sol = solve(oprob, Tsit5())
 nothing # hide
 ```
 We can also use them to form symbolic expressions:
@@ -204,11 +204,11 @@ rs.kₜ
 
 Practically, when we simulate our hierarchical model, we use all of this to designate initial conditions and parameters. I.e. below we designate values for the two `Xᵢ` species and `d` parameters separately:
 ```@example model_accessing_hierarchical
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqTsit5, Plots
 u0 = [rs.nucleus.Xᵢ => 0.0, rs.cytoplasm.Xᵢ => 0.0, rs.cytoplasm.Xₐ => 0.0]
 ps = [rs.nucleus.p => 1.0, rs.nucleus.d => 0.2, rs.cytoplasm.kₐ => 5.0, rs.cytoplasm.d => 0.2, rs.kₜ => 0.1]
 oprob = ODEProblem(rs, u0, (0.0, 10.0), ps)
-sol = solve(oprob)
+sol = solve(oprob, Tsit5())
 plot(sol)
 ```
 

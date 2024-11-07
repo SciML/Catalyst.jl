@@ -102,11 +102,11 @@ Next, we provide these as an input to a `SteadyStateProblem`
 ssprob = SteadyStateProblem(dimer_production, u0, p)
 nothing # hide
 ```
-Finally, we can find the steady states using the `solver` command. Since `SteadyStateProblem`s are solved through forward ODE simulation, we must load the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package, and [select an ODE solver](@ref simulation_intro_solver_options). Any available ODE solver can be used, however, it has to be encapsulated by the `DynamicSS()` function. E.g. here we designate the `Rodas5P` solver:
+Finally, we can find the steady states using the `solver` command. Since `SteadyStateProblem`s are solved through forward ODE simulation, we must load the sublibrary of the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package that corresponds to the [selected ODE solver](@ref simulation_intro_solver_options). Any available ODE solver can be used, however, it has to be encapsulated by the `DynamicSS()` function. E.g. here we designate the `Rodas5P` solver and import the `OrdinaryDiffEqRosenbrock` sublibrary:
 
 (which requires loading the SteadyStateDiffEq package).
 ```@example steady_state_solving_simulation
-using SteadyStateDiffEq, OrdinaryDiffEq
+using SteadyStateDiffEq, OrdinaryDiffEqRosenbrock
 solve(ssprob, DynamicSS(Rodas5P()))
 ```
 Note that, unlike for nonlinear system solving, `u0` is not just an initial guess of the solution, but the initial conditions from which the steady state simulation is carried out. This means that, for a system with multiple steady states, we can determine the steady states associated with specific initial conditions (which is not possible when the nonlinear solving approach is used). This also permits us to easily [handle the presence of conservation laws](@ref steady_state_solving_nonlinear_conservation_laws). The forward ODE simulation approach (unlike homotopy continuation and nonlinear solving) cannot find unstable steady states.

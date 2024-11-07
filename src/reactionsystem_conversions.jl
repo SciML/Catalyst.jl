@@ -262,6 +262,19 @@ function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
     return true
 end
 
+function ispowerlaw() 
+    
+end
+
+"""
+    ismassaction(rn::ReactionSystem)
+
+    Returns `true` if the reaction network is a mass-action reaction network.
+"""
+function ismassaction(rn::ReactionSystem) 
+    all(r -> ismassaction(r, rn), reactions(rn))
+end
+
 @inline function makemajump(rx; combinatoric_ratelaw = true)
     @unpack rate, substrates, substoich, netstoich = rx
     zeroorder = (length(substoich) == 0)
