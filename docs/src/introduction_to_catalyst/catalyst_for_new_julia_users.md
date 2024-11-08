@@ -55,7 +55,7 @@ To import a Julia package into a session, you can use the `using PackageName` co
 using Pkg
 Pkg.add("Catalyst")
 ```
-Here, the Julia package manager package (`Pkg`) is by default installed on your computer when Julia is installed, and can be activated directly. Next, we also wish to install the needed sub-libraries of `OrdinaryDiffEq` and `Plots` packages (for numeric simulation of models, and plotting, respectively). We will import the default recommended solver from the `OrdinaryDiffEqDefault` sub-library. A full list of `OrdinaryDiffEq` solver sublibraries can be found on the sidebar of [this page](https://docs.sciml.ai/OrdinaryDiffEq/stable/).
+Here, the Julia package manager package (`Pkg`) is by default installed on your computer when Julia is installed, and can be activated directly. Next, we install an ODE solver from a sub-library of the larger `OrdinaryDiffEq` package, and install the `Plots` package for making graphs. We will import the recommended default solver from the `OrdinaryDiffEqDefault` sub-library. A full list of `OrdinaryDiffEq` solver sublibraries can be found on the sidebar of [this page](https://docs.sciml.ai/OrdinaryDiffEq/stable/).
 ```julia
 Pkg.add("OrdinaryDiffEqDefault")
 Pkg.add("Plots")
