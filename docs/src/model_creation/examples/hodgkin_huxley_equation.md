@@ -18,7 +18,7 @@ complete model.
 
 We begin by importing some necessary packages:
 ```@example hh1
-using ModelingToolkit, Catalyst, NonlinearSolve, Plots, OrdinaryDiffEqDefault
+using ModelingToolkit, Catalyst, NonlinearSolve, Plots, OrdinaryDiffEqRosenbrock
 ```
 
 ## Building the model via the Catalyst DSL

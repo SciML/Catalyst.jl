@@ -93,6 +93,7 @@ Here, the largest exponent is positive, suggesting that the model is chaotic (or
 
 Next, we consider the [Brusselator] model. First we simulate the model for two similar initial conditions, confirming that they converge to the same limit cycle:
 ```@example dynamical_systems_lyapunov
+using OrdinaryDiffEqTsit5
 brusselator = @reaction_network begin
     A, ∅ --> X
     1, 2X + Y --> 3X

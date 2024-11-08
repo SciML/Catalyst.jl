@@ -40,6 +40,7 @@ sol1.retcode
 ```
 Next, we instead try the `Rodas5P` solver (which is designed for stiff problems):
 ```@example ode_simulation_performance_1
+using OrdinaryDiffEqRosenbrock
 sol2 = solve(oprob, Rodas5P())
 plot(sol2)
 ```
@@ -69,14 +70,13 @@ oprob = ODEProblem(bd_model, u0, tspan, ps)
 solve(oprob, Tsit5())
 nothing # hide
 ```
+
 If no solver argument is provided to `solve`, and the `OrdinaryDiffEqDefault` sub-library or top-level `OrdinaryDiffEq` library is installed, then one is automatically selected:
-```@example 
+```@example ode_simulation_performance_2
 using OrdinaryDiffEqDefault
-ode_simulation_performance_2solve(oprob)
+solve(oprob)
 nothing # hide
 ```
-
-
 
 While the default choice is typically enough for most single simulations, if performance is important, it can be worthwhile exploring the available solvers to find one that is especially suited for the given problem. A complete list of possible ODE solvers, with advice on optimal selection, can be found [here](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/). This section will give some general advice.
 
@@ -111,7 +111,7 @@ By default, OrdinaryDiffEq computes the Jacobian using [*automatic differentiati
 
 To use this option, simply set `jac = true` when constructing an `ODEProblem`:
 ```@example ode_simulation_performance_3
-using Catalyst, OrdinaryDiffEq
+using Catalyst, OrdinaryDiffEqDefault
 
 brusselator = @reaction_network begin
     A, ∅ --> X
@@ -179,7 +179,7 @@ Generally, the use of preconditioners is only recommended for advanced users who
 ## [Elimination of system conservation laws](@id ode_simulation_performance_conservation_laws)
 Previously, we have described how Catalyst, when it generates ODEs, is able to [detect and eliminate conserved quantities](@ref conservation_laws). In certain cases, doing this can improve performance. E.g. in the following example we will eliminate the single conserved quantity in a [two-state model](@ref basic_CRN_library_two_states). This results in a differential algebraic equation with a single differential equation and a single algebraic equation (as opposed to two differential equations). However, as the algebraic equation is fully determined by the ODE solution, Catalyst moves it to be an observable and our new system therefore only contains one ODE that must be solved numerically. Conservation laws can be eliminated by providing the `remove_conserved = true` option to `ODEProblem`:
 ```@example ode_simulation_performance_conservation_laws
-using Catalyst, OrdinaryDiffEq
+using Catalyst, OrdinaryDiffEqTsit5
 
 # Declare model.
 rs = @reaction_network begin
@@ -214,7 +214,7 @@ end
 ```
 The model can be simulated, showing how $P$ is produced from $S$:
 ```@example ode_simulation_performance_4
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqTsit5, Plots
 u0 = [:S => 1.0, :E => 1.0, :SE => 0.0, :P => 0.0]
 tspan = (0.0, 50.0)
 ps = [:kB => 1.0, :kD => 0.1, :kP => 0.5, :d => 0.1]
@@ -301,7 +301,7 @@ Which backend package you should use depends on your available hardware, with th
 
 Next, we declare our model and `ODEProblem`. However, we make all values `Float64` (by appending `f0` to them) and all vectors static (by adding `@SVector` before their declaration, something which requires the [StaticArrays](https://github.com/JuliaArrays/StaticArrays.jl) package).
 ```@example ode_simulation_performance_5
-using Catalyst, OrdinaryDiffEq, StaticArrays
+using Catalyst, OrdinaryDiffEqDefault, StaticArrays
 
 mm_model = @reaction_network begin
     kB, S + E --> SE
@@ -311,7 +311,7 @@ mm_model = @reaction_network begin
 end
 @unpack S, E, SE, P, kB, kD, kP, d = mm_model
 
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = @SVector [S => 1.0f0, E => 1.0f0, SE => 0.0f0, P => 0.0f0]
 tspan = (0.0f0, 50.0f0)
 p = @SVector [kB => 1.0f0, kD => 0.1f0, kP => 0.5f0, d => 0.1f0]
