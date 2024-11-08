@@ -71,7 +71,7 @@ solve(oprob, Tsit5())
 nothing # hide
 ```
 If no solver argument is provided to `solve`, and the `OrdinaryDiffEqDefault` sub-library or meta `OrdinaryDiffEq` library are loaded, then one is automatically selected:
-```@example 
+```@example ode_simulation_performance_2
 using OrdinaryDiffEqDefault
 solve(oprob)
 nothing # hide
@@ -136,7 +136,7 @@ nothing # hide
 ### [Linear solver selection](@id ode_simulation_performance_symbolic_jacobian_linear_solver)
 When implicit solvers use e.g. the Newton-Raphson method to (at each simulation time step) solve a (typically non-linear) equation, they actually solve a linearised version of this equation. For this, they use a linear solver, the choice of which can impact performance. To specify one, we use the `linsolve` option (given to the solver function, *not* the `solve` command). E.g. to use the `KLUFactorization` linear solver (which requires loading the [LinearSolve.jl](https://github.com/SciML/LinearSolve.jl) package) we run
 ```@example ode_simulation_performance_3
-using LinearSolve
+using LinearSolve, OrdinaryDiffEqRosenbrock
 solve(oprob, Rodas5P(linsolve = KLUFactorization()))
 nothing # hide
 ```
