@@ -102,7 +102,7 @@ Next, we provide these as an input to a `SteadyStateProblem`
 ssprob = SteadyStateProblem(dimer_production, u0, p)
 nothing # hide
 ```
-Finally, we can find the steady states using the `solver` command. Since `SteadyStateProblem`s are solved through forward ODE simulation, we must load the sublibrary of the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package that corresponds to the [selected ODE solver](@ref simulation_intro_solver_options). Any available ODE solver can be used, however, it has to be encapsulated by the `DynamicSS()` function. E.g. here we designate the `Rodas5P` solver and import the `OrdinaryDiffEqRosenbrock` sublibrary:
+Finally, we can find the steady states using the `solver` command. Since `SteadyStateProblem`s are solved through forward ODE simulation, we must load the sublibrary of the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package that corresponds to the [selected ODE solver](@ref simulation_intro_solver_options). Any available ODE solver can be used, however, it has to be encapsulated by the `DynamicSS()` function. E.g. here we use the `Rodas5P` solver which is loaded from the `OrdinaryDiffEqRosenbrock` sublibrary:
 
 (which requires loading the SteadyStateDiffEq package).
 ```@example steady_state_solving_simulation

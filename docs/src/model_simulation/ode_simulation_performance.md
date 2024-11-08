@@ -70,9 +70,8 @@ oprob = ODEProblem(bd_model, u0, tspan, ps)
 solve(oprob, Tsit5())
 nothing # hide
 ```
-
-If no solver argument is provided to `solve`, and the `OrdinaryDiffEqDefault` sub-library or top-level `OrdinaryDiffEq` library is installed, then one is automatically selected:
-```@example ode_simulation_performance_2
+If no solver argument is provided to `solve`, and the `OrdinaryDiffEqDefault` sub-library or meta `OrdinaryDiffEq` library are loaded, then one is automatically selected:
+```@example 
 using OrdinaryDiffEqDefault
 solve(oprob)
 nothing # hide
@@ -190,7 +189,7 @@ end
 u0 = [:X₁ => 2.0, :X₂ => 3.0]
 ps = [:k₁ => 1.0, :k₂ => 2.0]
 oprob = ODEProblem(rs, u0, (0.0, 10.0), ps; remove_conserved = true)
-sol = solve(oprob, Tsit5())
+sol = solve(oprob)
 nothing # hide
 ```
 Conservation law elimination is not expected to ever impact performance negatively; it simply results in a (possibly) lower-dimensional system of ODEs to solve. However, eliminating conserved species may have minimal performance benefits; it is model-dependent whether elimination results in faster ODE solving times and/or increased solution accuracy.
