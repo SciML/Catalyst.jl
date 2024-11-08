@@ -69,7 +69,7 @@ oprob = ODEProblem(bd_model, u0, tspan, ps)
 solve(oprob, Tsit5())
 nothing # hide
 ```
-If no solver argument is provided to `solve`, and the `OrdinaryDiffEqDefault` sub-library or top-level `OrdinaryDiffEq` library is installed, then one is automatically selected:
+If no solver argument is provided to `solve`, and the `OrdinaryDiffEqDefault` sub-library or meta `OrdinaryDiffEq` library are loaded, then one is automatically selected:
 ```@example 
 using OrdinaryDiffEqDefault
 ode_simulation_performance_2solve(oprob)
