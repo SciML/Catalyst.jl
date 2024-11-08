@@ -743,7 +743,6 @@ end
 Constructively compute whether a kinetic system (a reaction network with a set of rate constants) will admit detailed-balanced equilibrium
 solutions, using the Wegscheider conditions, [Feinberg, 1989](https://www.sciencedirect.com/science/article/pii/0009250989851243). A detailed-balanced solution is one for which the rate of every forward reaction exactly equals its reverse reaction. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
-
 function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol=0, reltol=1e-9)
     if length(parametermap) != numparams(rs)
         error("Incorrect number of parameters specified.")
@@ -825,7 +824,6 @@ Constructively compute whether a network will have complex-balanced equilibrium
 solutions, following the method in van der Schaft et al., [2015](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). 
 Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
-
 function iscomplexbalanced(rs::ReactionSystem, parametermap::Dict)
     if length(parametermap) != numparams(rs)
         error("Incorrect number of parameters specified.")
@@ -902,7 +900,6 @@ end
     constant of the reaction between complex i and complex j. Accepts a dictionary, vector, or tuple 
     of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
-
 function ratematrix(rs::ReactionSystem, rates::Vector{Float64})
     complexes, D = reactioncomplexes(rs)
     n = length(complexes)
@@ -997,7 +994,6 @@ end
     Returns the matrix of a basis of cycles (or flux vectors), or a basis for reaction fluxes for which the system is at steady state. 
     These correspond to right eigenvectors of the stoichiometric matrix. Equivalent to [`fluxmodebasis`](@ref). 
 """
-
 function cycles(rs::ReactionSystem)
     nps = get_networkproperties(rs)
     nsm = netstoichmat(rs)
@@ -1032,7 +1028,6 @@ end
 
     See documentation for [`cycles`](@ref). 
 """
-
 function fluxvectors(rs::ReactionSystem)
     cycles(rs)
 end
@@ -1044,7 +1039,6 @@ end
 
     Check if a reaction network obeys the conditions of the deficiency one theorem, which ensures that there is only one equilibrium for every positive stoichiometric compatibility class.
 """
-
 function satisfiesdeficiencyone(rn::ReactionSystem)
     all(r -> ismassaction(r, rn), reactions(rn)) ||
         error("The deficiency one theorem is only valid for reaction networks that are mass action.")
@@ -1067,7 +1061,6 @@ end
 
     Check if a reaction network obeys the conditions of the deficiency zero theorem, which ensures that there is only one equilibrium for every positive stoichiometric compatibility class, this equilibrium is asymptotically stable, and this equilibrium is complex balanced.
 """
-
 function satisfiesdeficiencyzero(rn::ReactionSystem)
     all(r -> ismassaction(r, rn), reactions(rn)) ||
         error("The deficiency zero theorem is only valid for reaction networks that are mass action.")
@@ -1082,7 +1075,6 @@ end
 
     Note: This function currently only works for networks of deficiency one, and is not currently guaranteed to return *all* the concentration-robust species in the network. Any species returned by the function will be robust, but this may not include all of them. Use with caution. Support for higher deficiency networks and necessary conditions for robustness will be coming in the future.  
 """
-
 function robustspecies(rn::ReactionSystem)
     complexes, D = reactioncomplexes(rn)
     nps = get_networkproperties(rn)
