@@ -20,7 +20,7 @@ u0 = [:S => 1.0, :E => 1.0, :SE => 0.0, :P => 0.0]
 p_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
 
 # Generate synthetic data.
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 oprob_true = ODEProblem(rn, u0, (0.0, 10.0), p_true)
 true_sol = solve(oprob_true, Tsit5())
 data_sol = solve(oprob_true, Tsit5(); saveat=1.0)
@@ -238,7 +238,7 @@ u0 = [:E => 1.0, :SE => 0.0, :P => 0.0]
 p_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
 
 # Simulate data.
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 t1, d1 = let 
     oprob_true = ODEProblem(rn, [:S=>1.0; u0], (0.0, 10.0), p_true)
     data_sol = solve(oprob_true, Tsit5(); saveat=1.0)
@@ -384,6 +384,7 @@ While in our basic example, we do not provide any additional information to our 
 
 Here is an example, taken from the [more detailed PEtab.jl documentation](https://sebapersson.github.io/PEtab.jl/dev/Boehm/#Creating-a-PEtabODEProblem)
 ```@example petab1
+using OrdinaryDiffEqRosenbrock
 PEtabODEProblem(petab_model, ode_solver=ODESolver(Rodas5P(), abstol=1e-8, reltol=1e-8), gradient_method=:ForwardDiff, hessian_method=:ForwardDiff, verbose=false); nothing # hide
 ```
 ```julia

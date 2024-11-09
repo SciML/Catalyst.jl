@@ -21,7 +21,7 @@ u0 = [:S => 1.0, :E => 1.0, :SE => 0.0, :P => 0.0]
 ps_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
 
 # Generate synthetic data.
-using OrdinaryDiffEq
+using OrdinaryDiffEqDefault
 oprob_true = ODEProblem(rn, u0, (0.0, 10.0), ps_true)
 true_sol = solve(oprob_true)
 data_sol = solve(oprob_true; saveat=1.0)
@@ -39,7 +39,7 @@ Catalyst.PNG(plot(plt; fmt = :png, dpi = 200)) # hide
 
 Next, we will use DiffEqParamEstim to build a loss function to measure how well our model's solutions fit the data.
 ```@example diffeq_param_estim_1 
-using DiffEqParamEstim, Optimization
+using DiffEqParamEstim, Optimization, OrdinaryDiffEqTsit5
 ps_dummy = [:kB => 0.0, :kD => 0.0, :kP => 0.0]
 oprob = ODEProblem(rn, u0, (0.0, 10.0), ps_dummy)
 loss_function = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, data_vals), Optimization.AutoForwardDiff(); 

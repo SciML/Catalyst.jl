@@ -10,7 +10,7 @@ end
 ```
 If we simulate it, we note that while the concentrations of $X₁$ and $X₂$ change throughout the simulation, the total concentration of $X$ ($= X₁ + X₂$) is constant:
 ```@example conservation_laws
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [:X₁ => 80.0, :X₂ => 20.0]
 ps = [:k₁ => 10.0, :k₂ => 2.0]
 oprob = ODEProblem(rs, u0, (0.0, 1.0), ps)
@@ -47,7 +47,7 @@ Here, Catalyst encodes all conserved quantities in a single, [vector-valued](@re
 
 Practically, the `remove_conserved = true` argument can be provided when a `ReactionSystem` is converted to an `ODEProblem`:
 ```@example conservation_laws
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [:X₁ => 80.0, :X₂ => 20.0]
 ps = [:k₁ => 10.0, :k₂ => 2.0]
 oprob = ODEProblem(rs, u0, (0.0, 1.0), ps; remove_conserved = true)

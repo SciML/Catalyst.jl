@@ -17,7 +17,7 @@ end
 ```
 To demonstrate this pulsing behaviour we will simulate the system for an example parameter set. We select an initial condition (`u0`) so the system begins in a steady state.
 ```@example behaviour_optimization
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqTsit5, Plots
 example_p = [:pX => 0.1, :pY => 1.0, :pZ => 1.0]
 tspan = (0.0, 50.0)
 example_u0 = [:X => 0.1, :Y => 0.1, :Z => 1.0]
