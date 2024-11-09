@@ -20,7 +20,7 @@ Pkg.activate("catalyst_introduction")
 
 # packages we will use in this tutorial
 Pkg.add("Catalyst")
-Pkg.add("OrdinaryDiffEq")
+Pkg.add("OrdinaryDiffEqTsit5")
 Pkg.add("Plots")
 Pkg.add("Latexify")
 Pkg.add("JumpProcesses")
@@ -29,7 +29,7 @@ Pkg.add("StochasticDiffEq")
 
 We next load the basic packages we'll need for our first example:
 ```@example tut1
-using Catalyst, OrdinaryDiffEq, Plots, Latexify
+using Catalyst, OrdinaryDiffEqTsit5, Plots, Latexify
 ```
 
 Let's start by using the Catalyst [`@reaction_network`](@ref) macro to specify a

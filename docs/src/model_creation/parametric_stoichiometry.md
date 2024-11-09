@@ -7,7 +7,7 @@ use symbolic stoichiometries, and discuss several caveats to be aware of.
 Let's first consider a simple reversible reaction where the number of reactants
 is a parameter, and the number of products is the product of two parameters.
 ```@example s1
-using Catalyst, Latexify, OrdinaryDiffEq, ModelingToolkit, Plots
+using Catalyst, Latexify, OrdinaryDiffEqTsit5, ModelingToolkit, Plots
 revsys = @reaction_network revsys begin
     @parameters m::Int64 n::Int64
     k₊, m*A --> (m*n)*B

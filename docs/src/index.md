@@ -32,7 +32,7 @@ etc).
 - [Steady states](@ref homotopy_continuation) (and their [stabilities](@ref steady_state_stability)) can be computed for model ODE representations.
 
 #### [Features of Catalyst composing with other packages](@id doc_index_features_composed)
-- [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) Can be used to numerically solver generated reaction rate equation ODE models.
+- [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) Can be used to numerically solve generated reaction rate equation ODE models.
 - [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) can be used to numerically solve generated Chemical Langevin Equation SDE models.
 - [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) can be used to numerically sample generated Stochastic Chemical Kinetics Jump Process models.
 - Support for [parallelization of all simulations](@ref ode_simulation_performance_parallelisation), including parallelization of [ODE simulations on GPUs](@ref ode_simulation_performance_parallelisation_GPU) using [DiffEqGPU.jl](https://github.com/SciML/DiffEqGPU.jl).
@@ -92,7 +92,7 @@ Pkg.add("Catalyst")
 
 Many Catalyst features require the installation of additional packages. E.g. for ODE-solving and simulation plotting
 ```julia
-Pkg.add("OrdinaryDiffEq")
+Pkg.add("OrdinaryDiffEqDefault")
 Pkg.add("Plots")
 ```
 is also needed.
@@ -124,7 +124,7 @@ an ordinary differential equation.
 
 ```@example home_simple_example
 # Fetch required packages.
-using Catalyst, OrdinaryDiffEq, Plots
+using Catalyst, OrdinaryDiffEqDefault, Plots
 
 # Create model.
 model = @reaction_network begin
