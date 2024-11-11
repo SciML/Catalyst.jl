@@ -673,7 +673,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = nothing, checks = false,
         default_u0 = Dict(), default_p = Dict(),
-        defaults = _merge(Dict(default_u0), Dict(default_p)),
+        defaults = _merge(Dict(default_u0), Dict(default_p)), physical_scales = nothing
         kwargs...)
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, JumpSystem)
@@ -683,9 +683,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     flatrs = Catalyst.flatten(rs)
     error_if_constraints(JumpSystem, flatrs)
 
-    (length(MT.continuous_events(flatrs)) > 0) &&
-        (@warn "continuous_events will be dropped as they are not currently supported by JumpSystems.")
-
+    physical_scales = merge_physical_scales(reactions(rs), physical_scales)
     eqs = assemble_jumps(flatrs; combinatoric_ratelaws)
 
     # handle BC species
@@ -769,6 +767,16 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         noise_rate_prototype = p_matrix, kwargs...)
 end
 
+function merge_physical_scales(rxs, physical_scales)
+    scales = get_physical_scale.(rxs)
+    if physical_scales !== nothing
+        for (idx, scale) in physical_scales
+            scales[idx] = scale
+        end
+    end
+    scales
+end
+
 """
 $(TYPEDEF)
 
@@ -817,11 +825,14 @@ plot(sol, idxs = :A)
 """
 function JumpInputs(rs::ReactionSystem, u0, tspan, p = DiffEqBase.NullParameters();
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        checks = false, kwargs...)
+        checks = false, physical_scales = nothing, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
-    jsys = complete(convert(JumpSystem, rs; name, combinatoric_ratelaws, checks))
-    if MT.has_variableratejumps(jsys)
+    jsys = complete(convert(JumpSystem, rs; name, combinatoric_ratelaws, checks, 
+        physical_scales))
+
+    if MT.has_variableratejumps(jsys) || MT.has_equations(jsys) || 
+            !isempty(MT.continuous_events(jsys))
         prob = ODEProblem(jsys, u0map, tspan, pmap; kwargs...)
     else
         prob = DiscreteProblem(jsys, u0map, tspan, pmap; kwargs...)
