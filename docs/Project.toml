@@ -1,6 +1,6 @@
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
-BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
+# BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Catalyst = "479239e8-5488-4da2-87a7-35f2df7eef83"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
@@ -45,7 +45,7 @@ Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
 BenchmarkTools = "1.5"
-BifurcationKit = "0.3.4"
+# BifurcationKit = "0.3.4"
 CairoMakie = "0.12"
 Catalyst = "14.4"
 DataFrames = "1.6"
