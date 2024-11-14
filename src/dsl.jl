@@ -71,7 +71,7 @@ const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔
 # Declares the keys used for various options.
 const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables,
     :default_noise_scaling, :differentials, :equations,
-    :continuous_events, :discrete_events, :combinatoric_ratelaws)
+    :continuous_events, :discrete_events, :combinatoric_ratelaws, :no_infer)
 
 ### `@species` Macro ###
 
@@ -517,11 +517,12 @@ end
 
 # Function looping through all reactions, to find undeclared symbols (species or
 # parameters), and assign them to the right category.
-function extract_species_and_parameters!(reactions, excluded_syms)
+function extract_species_and_parameters!(reactions, excluded_syms; noinfer = noinfer)
     species = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(species, reactant.reactant, excluded_syms)
+            (!isempty(species) && noinfer) && error("Unrecognized variables $(species) detected in reaction $(reaction). Since the flag @no_infer is declared, all species must be explicitly declared with the @species macro.")
         end
     end
 
@@ -529,8 +530,10 @@ function extract_species_and_parameters!(reactions, excluded_syms)
     parameters = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
         add_syms_from_expr!(parameters, reaction.rate, excluded_syms)
+        (!isempty(parameters) && noinfer) && error("Unrecognized parameter $(parameters) detected in reaction $(reaction.rate). Since the flag @no_infer is declared, all parameters must be explicitly declared with the @parameters macro.")
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(parameters, reactant.stoichiometry, excluded_syms)
+            (!isempty(parameters) && noinfer) && error("Unrecognized parameter $(parameters) detected in reactant $(reactant). Since the flag @no_infer is declared, all parameters must be explicitly declared with the @parameters macro.")
         end
     end
 
@@ -717,9 +720,12 @@ function read_equations_options(options, variables_declared; noinfer = false)
             diff_var = lhs.args[2]
             if in(diff_var, forbidden_symbols_error)
                 error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
+            elseif (!in(diff_var, variables_declared)) && noinfer
+                error("Unrecognized symbol $(diff_var) was used as a variable in this differential equation. Since the @no_infer flag is set, all variables in equations must be explicitly declared via @variables, @species, or @parameters.")
+            else
+                add_default_diff = true
+                in(diff_var, variables_declared) || push!(vars_extracted, diff_var)
             end
-            add_default_diff = true
-            in(diff_var, variables_declared) || push!(vars_extracted, diff_var)
         end
     end
 
@@ -769,6 +775,9 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted; noi
         for (idx, obs_eq) in enumerate(observed_eqs.args)
             # Extract the observable, checks errors, and continues the loop if the observable has been declared.
             obs_name, ivs, defaults, metadata = find_varinfo_in_declaration(obs_eq.args[2])
+            if (noinfer && !in(obs_name, species_n_vars_declared))
+                error("An undeclared variable ($obs_name) was declared as an observable. Since the flag @no_infer is set, all variables must be declared with the @species, @parameters, or @variables macros.")
+            end
             isempty(ivs) ||
                 error("An observable ($obs_name) was given independent variable(s). These should not be given, as they are inferred automatically.")
             isnothing(defaults) ||
