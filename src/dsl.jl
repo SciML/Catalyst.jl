@@ -286,6 +286,11 @@ end
 ### DSL Internal Master Function ###
 
 # Function for creating a ReactionSystem structure (used by the @reaction_network macro).
+# What should no_infer do? We currently infer in:
+#   equations
+#   observables
+#   differentials
+# make it so that we no longer do so. 
 function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Handle interpolation of variables
@@ -308,6 +313,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     compound_expr, compound_species = read_compound_options(options)
     continuous_events_expr = read_events_option(options, :continuous_events)
     discrete_events_expr = read_events_option(options, :discrete_events)
+    noinfer = haskey(options, :no_infer)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
@@ -317,7 +323,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Reads equations. 
     vars_extracted, add_default_diff, equations = read_equations_options(
-        options, variables_declared)
+        options, variables_declared; noinfer = noinfer)
     variables = vcat(variables_declared, vars_extracted)
 
     # Handle independent variables
@@ -341,13 +347,13 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Reads observables.
     observed_vars, observed_eqs, obs_syms = read_observed_options(
-        options, [species_declared; variables], all_ivs)
+        options, [species_declared; variables], all_ivs; noinfer = noinfer)
 
     # Collect species and parameters, including ones inferred from the reactions. 
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
         variables)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(
-        reactions, declared_syms)
+        reactions, declared_syms; noinfer = noinfer)
 
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
@@ -682,7 +688,7 @@ end
 # `vars_extracted`: A vector with extracted variables (lhs in pure differential equations only).
 # `dtexpr`: If a differential equation is defined, the default derivative (D ~ Differential(t)) must be defined.
 # `equations`: a vector with the equations provided.
-function read_equations_options(options, variables_declared)
+function read_equations_options(options, variables_declared; noinfer = false)
     # Prepares the equations. First, extracts equations from provided option (converting to block form if required).
     # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
     eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
@@ -752,7 +758,7 @@ function create_differential_expr(options, add_default_diff, used_syms, tiv)
 end
 
 # Reads the observables options. Outputs an expression ofr creating the observable variables, and a vector of observable equations.
-function read_observed_options(options, species_n_vars_declared, ivs_sorted)
+function read_observed_options(options, species_n_vars_declared, ivs_sorted; noinfer = false)
     if haskey(options, :observables)
         # Gets list of observable equations and prepares variable declaration expression.
         # (`options[:observables]` includes `@observables`, `.args[3]` removes this part)

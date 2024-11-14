@@ -1022,3 +1022,8 @@ let
     @parameters v n
     @test isequal(Catalyst.expand_registered_functions(equations(rn4)[1]), D(A) ~ v*(A^n))
 end
+
+### test that @no_infer properly throws errors when undeclared variables are written
+
+let
+end
