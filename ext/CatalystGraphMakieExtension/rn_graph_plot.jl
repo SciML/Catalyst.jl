@@ -24,7 +24,18 @@ Graphs.vertices(g::SRGraphWrap) = vertices(g.g)
 Graphs.is_directed(g::SRGraphWrap) = is_directed(g.g)
 
 function Graphs.edges(g::SRGraphWrap)
-    return vcat(collect(Graphs.edges(g.g)), g.rateedges)
+    edgelist = vcat(collect(Graphs.edges(g.g)), g.rateedges)
+    edgeorder = sortperm(edgelist)
+    edgelist = edgelist[edgeorder]
+end
+
+function gen_distances(g::SRGraphWrap; inc = 0.2) 
+    edgelist = edges(g)
+    distances = zeros(length(edgelist))
+    for i in 2:Base.length(edgelist)
+        edgelist[i] == edgelist[i-1] && (distances[i] = inc)
+    end
+    distances
 end
 
 """
@@ -37,7 +48,7 @@ function PetriNet(rn::ReactionSystem)
 end
 
 """
-    SRGraph(rn::ReactionSystem)
+    SRGraph(rn::ReactionSystem; interactive=false)
 
 Converts a [`ReactionSystem`](@ref) into a GraphMakie plot of the species reaction graph.
 Reactions correspond to small green circles, and species to blue circles.
@@ -51,8 +62,10 @@ Notes:
   rate expression. For example, in the reaction `k*A, B --> C`, there would be a
   red arrow from `A` to the reaction node. In `k*A, A+B --> C`, there would be
   red and black arrows from `A` to the reaction node.
+- The `interactive` flag sets the ability to interactively drag nodes and edges in the generated plot. 
+    Only allowed if `GLMakie` is the loaded Makie backend.
 """  
-function SRGraph(rn::ReactionSystem; interactive = true) 
+function SRGraph(rn::ReactionSystem; interactive = false) 
     srg = SRGraphWrap(rn)
     ns = length(species(rn))
     nodecolors = vcat([:skyblue3 for i in 1:ns], 
@@ -69,9 +82,15 @@ function SRGraph(rn::ReactionSystem; interactive = true)
             psm[dst(e), src(e)-ns] :
             ssm[src(e), dst(e)-ns]) 
     end 
-    edgelabels = vcat(edgelabels, fill("", ne(srg) - ne(srg.g)))
-    edgecolors = vcat([:black for i in 1:ne(srg.g)],
-                      [:red for i in ne(srg.g)+1:ne(srg)])
+    edgecolors = [:black for i in 1:ne(srg)]
+
+    elist = Graphs.edges(srg)
+    for i in 2:length(elist)
+        elist[i] == elist[i-1] && begin
+            edgecolors[i] = :red
+            insert!(edgelabels, i, "")
+        end
+    end
 
     f, ax, p = graphplot(srg; 
              edge_color = edgecolors,
@@ -82,7 +101,8 @@ function SRGraph(rn::ReactionSystem; interactive = true)
              node_size = nodesizes,
              arrow_shift = :end,
              arrow_size = 20,
-             curve_distance = 0.1
+             curve_distance_usage = true,
+             curve_distance = gen_distances(srg)
             )
 
     interactive && begin
@@ -91,6 +111,7 @@ function SRGraph(rn::ReactionSystem; interactive = true)
         register_interaction!(ax, :edrag, EdgeDrag(p))
     end
     display(f)
+    f
 end
 
 # Create the SimpleDiGraph corresponding to the species and reactions
@@ -112,7 +133,7 @@ function SRGraphWrap(rn::ReactionSystem)
 end
 
 """
-    ComplexGraph(rn::ReactionSystem)
+    ComplexGraph(rn::ReactionSystem; interactive=false)
 
     Creates a GraphMakie plot of the [`ReactionComplex`](@ref)s in `rn`. Reactions
     correspond to arrows and reaction complexes to blue circles.
@@ -120,10 +141,12 @@ end
     Notes:
     - Black arrows from complexes to complexes indicate reactions whose rate is a
       parameter or a `Number`. i.e. `k, A --> B`.
-    - Red dashed arrows from complexes to complexes indicate reactions whose rate
+    - Red arrows from complexes to complexes indicate reactions whose rate
     depends on species. i.e. `k*C, A --> B` for `C` a species.
+    - The `interactive` flag sets the ability to interactively drag nodes and edges in the generated plot.
+    Only allowed if `GLMakie` is the loaded Makie backend.
 """
-function ComplexGraph(rn::ReactionSystem; interactive = true) 
+function ComplexGraph(rn::ReactionSystem; interactive = false) 
     img = incidencematgraph(rn)
     specs = species(rn); rxs = reactions(rn)
     edgecolors = [:black for i in 1:ne(img)]
@@ -153,6 +176,7 @@ function ComplexGraph(rn::ReactionSystem; interactive = true)
         register_interaction!(ax, :edrag, EdgeDrag(p))
     end
     display(f)
+    f
 end
 
 function complexelemtostr(e::Catalyst.ReactionComplexElement, specstrs) 
