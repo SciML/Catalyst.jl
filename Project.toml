@@ -42,7 +42,7 @@ CatalystHomotopyContinuationExtension = "HomotopyContinuation"
 # CatalystStructuralIdentifiabilityExtension = "StructuralIdentifiability"
 
 [compat]
-BifurcationKit = "0.4.3"
+BifurcationKit = "0.4.4"
 CairoMakie = "0.12"
 Combinatorics = "1.0.2"
 DataStructures = "0.18"
