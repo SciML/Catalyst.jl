@@ -7,15 +7,16 @@
 
 Wrapper for the species-reaction graph containing edges for rate-dependence on species. Intended to allow plotting of multiple edges. 
 """
-struct SRGraphWrap{T} <: AbstractGraph{T}
+struct SRGraphWrap{T} <: Graphs.AbstractGraph{T}
    g::SimpleDiGraph{T}
-   rateedges::Vector{SimpleEdge}
+   rateedges::Vector{Graphs.SimpleEdge{T}}
+   edgeorder::Vector{Int64}
 end
 
 # Create the SimpleDiGraph corresponding to the species and reactions
 function SRGraphWrap(rn::ReactionSystem) 
-    srg = speciesreactiongraph(rn)
-    rateedges = Vector{SimpleEdge}()
+    srg = species_reaction_graph(rn)
+    rateedges = Vector{Graphs.SimpleEdge{Int}}()
     sm = speciesmap(rn); specs = species(rn)
 
     deps = Set()
@@ -25,11 +26,13 @@ function SRGraphWrap(rn::ReactionSystem)
         if !isempty(deps)
             for spec in deps 
                 specidx = sm[spec]
-                push!(rateedges, SimpleEdge(specidx, i + length(specs)))
+                push!(rateedges, Graphs.SimpleEdge(specidx, i + length(specs)))
             end
         end
     end
-    SRGraphWrap(srg, rateedges)
+    edgelist = vcat(collect(Graphs.edges(srg)), rateedges)
+    edgeorder = sortperm(edgelist)
+    SRGraphWrap(srg, rateedges, edgeorder)
 end
 
 Base.eltype(g::SRGraphWrap) = eltype(g.g)
@@ -44,8 +47,7 @@ Graphs.vertices(g::SRGraphWrap) = vertices(g.g)
 Graphs.is_directed(g::SRGraphWrap) = is_directed(g.g)
 
 function Graphs.edges(g::SRGraphWrap)
-    edgelist = vcat(collect(Graphs.edges(g.g)), g.rateedges)
-    edgelist = sort!(edgelist)
+    edgelist = vcat(collect(Graphs.edges(g.g)), g.rateedges)[g.edgeorder]
 end
 
 function gen_distances(g::SRGraphWrap; inc = 0.2) 
@@ -60,14 +62,14 @@ end
 """
     PetriNet(rn::ReactionSystem)
 
-    See the documentation for [`SRGraph`](@ref).
+    See the documentation for [`plot_network`](@ref).
 """
-function PetriNet(rn::ReactionSystem) 
-    SRGraph(rn)
+function Catalyst.plot_petrinet(rn::ReactionSystem) 
+    plot_network(rn)
 end
 
 """
-    SRGraph(rn::ReactionSystem; interactive=false)
+    plot_network(rn::ReactionSystem; interactive=false)
 
 Converts a [`ReactionSystem`](@ref) into a GraphMakie plot of the species reaction graph.
 Reactions correspond to small green circles, and species to blue circles.
@@ -81,10 +83,9 @@ Notes:
   rate expression. For example, in the reaction `k*A, B --> C`, there would be a
   red arrow from `A` to the reaction node. In `k*A, A+B --> C`, there would be
   red and black arrows from `A` to the reaction node.
-- The `interactive` flag sets the ability to interactively drag nodes and edges in the generated plot. 
-    Only allowed if `GLMakie` is the loaded Makie backend.
 """  
-function plot_speciesreaction_graph(rn::ReactionSystem; interactive = false) 
+# TODO: update docs for interacting with plots. The `interactive` flag sets the ability to interactively drag nodes and edges in the generated plot. Only allowed if `GLMakie` is the loaded Makie backend.
+function Catalyst.plot_network(rn::ReactionSystem)
     srg = SRGraphWrap(rn)
     ns = length(species(rn))
     nodecolors = vcat([:skyblue3 for i in 1:ns], 
@@ -103,19 +104,19 @@ function plot_speciesreaction_graph(rn::ReactionSystem; interactive = false)
     end 
     edgecolors = [:black for i in 1:ne(srg)]
 
-    elist = Graphs.edges(srg)
-    for i in 2:length(elist)
-        if elist[i] == elist[i-1]
+    num_e = ne(srg.g)
+    for i in 1:length(srg.edgeorder)
+        if srg.edgeorder[i] > num_e
             edgecolors[i] = :red
             insert!(edgelabels, i, "")
         end
     end
 
-    f, ax, p = graphplot(srg; 
+    graphplot(srg; 
              edge_color = edgecolors,
-             elabels = edgelabels, 
+             elabels = edgelabels,
              elabels_rotation = 0,
-             ilabels = ilabels, 
+             ilabels = ilabels,
              node_color = nodecolors,
              node_size = nodesizes,
              arrow_shift = :end,
@@ -123,18 +124,10 @@ function plot_speciesreaction_graph(rn::ReactionSystem; interactive = false)
              curve_distance_usage = true,
              curve_distance = gen_distances(srg)
             )
-
-    interactive && begin
-        deregister_interaction!(ax, :rectanglezoom)
-        register_interaction!(ax, :ndrag, NodeDrag(p))
-        register_interaction!(ax, :edrag, EdgeDrag(p))
-    end
-    display(f)
-    f
 end
 
 """
-    ComplexGraph(rn::ReactionSystem; interactive=false)
+    plot_complexes(rn::ReactionSystem; interactive=false)
 
     Creates a GraphMakie plot of the [`ReactionComplex`](@ref)s in `rn`. Reactions
     correspond to arrows and reaction complexes to blue circles.
@@ -144,10 +137,8 @@ end
       parameter or a `Number`. i.e. `k, A --> B`.
     - Red arrows from complexes to complexes indicate reactions whose rate
     depends on species. i.e. `k*C, A --> B` for `C` a species.
-    - The `interactive` flag sets the ability to interactively drag nodes and edges in the generated plot.
-    Only allowed if `GLMakie` is the loaded Makie backend.
 """
-function plot_complex_graph(rn::ReactionSystem; interactive = false) 
+function Catalyst.plot_complexes(rn::ReactionSystem)
     img = incidencematgraph(rn)
     specs = species(rn); rxs = reactions(rn)
     edgecolors = [:black for i in 1:ne(img)]
@@ -161,7 +152,7 @@ function plot_complex_graph(rn::ReactionSystem; interactive = false)
         (!isempty(deps)) && (edgecolors[i] = :red)
     end
 
-    f, ax, p = graphplot(img; 
+    graphplot(img; 
              edge_color = edgecolors,
              elabels = edgelabels, 
              ilabels = complexlabels(rn), 
@@ -170,14 +161,6 @@ function plot_complex_graph(rn::ReactionSystem; interactive = false)
              arrow_shift = :end, 
              curve_distance = 0.2
             )
-
-    interactive && begin
-        deregister_interaction!(ax, :rectanglezoom)
-        register_interaction!(ax, :ndrag, NodeDrag(p))
-        register_interaction!(ax, :edrag, EdgeDrag(p))
-    end
-    display(f)
-    f
 end
 
 function complexelem_tostr(e::Catalyst.ReactionComplexElement, specstrs) 
@@ -199,9 +182,9 @@ function complexlabels(rn::ReactionSystem)
         if isempty(complex) 
             push!(labels, "∅")
         elseif length(complex) == 1
-            push!(labels, complexelemtostr(complex[1], specstrs))
+            push!(labels, complexelem_tostr(complex[1], specstrs))
         else
-            elems = map(c -> complexelemtostr(c, specstrs), complex)
+            elems = map(c -> complexelem_tostr(c, specstrs), complex)
             str = reduce((e1, e2) -> *(e1, " + ", e2), @view elems[2:end]; init = elems[1])
             push!(labels, str)
         end

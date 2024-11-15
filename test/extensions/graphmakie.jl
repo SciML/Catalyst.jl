@@ -1,5 +1,6 @@
-using Catalyst, GraphMakie, GLMakie
+using Catalyst, GraphMakie, GLMakie, Graphs
 include("../test_networks.jl")
+
 # Test that speciesreactiongraph is generated correctly
 let
     brusselator = @reaction_network begin
@@ -11,7 +12,7 @@ let
 
     srg = Catalyst.species_reaction_graph(brusselator)
     s = length(species(brusselator))
-    edgel = Edge.([(s+1, 1),
+    edgel = Graphs.Edge.([(s+1, 1),
                    (1, s+2),
                    (2, s+2),
                    (s+2, 1),
@@ -45,19 +46,61 @@ let
     srg = Catalyst.species_reaction_graph(MAPK)
     @test nv(srg) == length(species(MAPK)) + length(reactions(MAPK))
     @test ne(srg) == 90
+
+    # Test that figures are generated properly. 
+    f = plot_network(MAPK)
+    save("fig.png", f)
+    @test isfile("fig.png")
+    rm("fig.png")
+    f = plot_network(brusselator)
+    save("fig.png", f)
+    @test isfile("fig.png")
+    rm("fig.png")
+
+    f = plot_complexes(MAPK); save("fig.png", f)
+    @test isfile("fig.png")
+    rm("fig.png")
+    f = plot_complexes(brusselator); save("fig.png", f)
+    @test isfile("fig.png")
+    rm("fig.png")
 end
 
-# Test that rate edges are inferred correctly
+CGME = Base.get_extension(parentmodule(ReactionSystem), :CatalystGraphMakieExtension)
+# Test that rate edges are inferred correctly. We should see two for the following reaction network. 
 let
+    # Two rate edges, one to species and one to product
     rn = @reaction_network begin
         k, A --> B
         k * C, A --> C
         k * B, B --> C
     end
-    srg = SRGraphWrap(rn)
+    srg = CGME.SRGraphWrap(rn)
     s = length(species(rn))
-    @test Edge(3, s+2) ∈ srg.rateedges 
-    @test Edge(2, s+3) ∈ srg.rateedges 
+    @test ne(srg) == 8
+    @test Graphs.Edge(3, s+2) ∈ srg.rateedges 
+    @test Graphs.Edge(2, s+3) ∈ srg.rateedges 
     # Since B is both a dep and a reactant
-    @test count(==(Edge(2, s+3)), edges(srg)) == 2
+    @test count(==(Graphs.Edge(2, s+3)), edges(srg)) == 2
+
+    f = plot_network(rn)
+    save("fig.png", f)
+    @test isfile("fig.png")
+    rm("fig.png")
+    f = plot_complexes(rn); save("fig.png", f)
+    @test isfile("fig.png")
+    rm("fig.png")
+
+    # Two rate edges, both to reactants 
+    rn = @reaction_network begin
+        k, A --> B
+        k * A, A --> C
+        k * B, B --> C
+    end
+    srg = CGME.SRGraphWrap(rn)
+    s = length(species(rn))
+    @test ne(srg) == 8
+    # Since A, B is both a dep and a reactant
+    @test count(==(Graphs.Edge(1, s+2)), edges(srg)) == 2
+    @test count(==(Graphs.Edge(2, s+3)), edges(srg)) == 2
 end
+
