@@ -325,11 +325,16 @@ struct ReactionSystem{V <: NetworkProperties} <:
     complete: if a model `sys` is complete, then `sys.x` no longer performs namespacing.
     """
     complete::Bool
+    """
+    The hierarchical parent system before simplification that MTK now seems to require for
+    hierarchical namespacing to work in indexing.
+    """
+    parent::Any
 
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, connection_type, nps, cls, cevs, devs,
-            metadata = nothing, complete = false; checks::Bool = true)
+            metadata = nothing, complete = false, parent = nothing; checks::Bool = true)
 
         # Checks that all parameters have the appropriate Symbolics type.
         for p in ps
@@ -358,7 +363,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
         rs = new{typeof(nps)}(
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, connection_type, nps, cls, cevs,
-            devs, metadata, complete)
+            devs, metadata, complete, parent)
         checks && validate(rs)
         rs
     end
