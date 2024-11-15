@@ -181,7 +181,7 @@ function plot_complex_graph(rn::ReactionSystem; interactive = false)
     f
 end
 
-function complexelemtostr(e::Catalyst.ReactionComplexElement, specstrs) 
+function complexelem_tostr(e::Catalyst.ReactionComplexElement, specstrs) 
     if e.speciesstoich == 1
         return "$(specstrs[e.speciesid])"  
     else
