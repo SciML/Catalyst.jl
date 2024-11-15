@@ -4,7 +4,7 @@ module CatalystBifurcationKitExtension
 using Catalyst
 import BifurcationKit as BK
 
-# Creates and exports hc_steady_states function.
+# Extends BifurcationProblem to work for ReactionSystem.
 include("CatalystBifurcationKitExtension/bifurcation_kit_extension.jl")
 
 end
