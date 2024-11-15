@@ -242,12 +242,12 @@ function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
             if (ivset === nothing)
                 ivs = Set(get_sivs(rs))
                 push!(ivs, get_iv(rs))
-                ivdep = any(var -> var ∈ ivs, rxvars)
+                ivdep = any(in(ivs), rxvars)
             else
-                ivdep = any(var -> var ∈ ivset, rxvars)
+                ivdep = any(in(ivset), rxvars)
             end
         else
-            ivdep = any(var -> isequal(get_iv(rs), var), rxvars)
+            ivdep = any(isequal(get_iv(rs)), rxvars)
         end
         ivdep && return false
     else
@@ -313,23 +313,19 @@ function get_depgraph(rs)
     eqeq_dependencies(jdeps, vdeps).fadjlist
 end
 
-function assemble_jumps(rs; combinatoric_ratelaws = true)
-    meqs = MassActionJump[]
-    ceqs = ConstantRateJump[]
-    veqs = VariableRateJump[]
-    unknownset = Set(get_unknowns(rs))
-    all(isspecies, unknownset) ||
-        error("Conversion to JumpSystem currently requires all unknowns to be species.")
-    rxvars = []
-
-    isempty(get_rxs(rs)) &&
-        error("Must give at least one reaction before constructing a JumpSystem.")
-
+function classify_vrjs(rs, physcales)
     # first we determine vrjs with an explicit time-dependent rate
     rxs = get_rxs(rs)
     isvrjvec = falses(length(rxs))
     havevrjs = false
+    rxvars = Set()
     for (i, rx) in enumerate(rxs)
+        if physcales[i] == PhysicalScale.VariableRateJump
+            isvrjvec[i] = true
+            havevrjs = true
+            continue
+        end
+
         empty!(rxvars)
         (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
         @inbounds for rxvar in rxvars
@@ -353,6 +349,27 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
         end
     end
 
+    isvrjvec
+end
+
+function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = nothing)
+    meqs = MassActionJump[]
+    ceqs = ConstantRateJump[]
+    veqs = VariableRateJump[]
+    unknownset = Set(get_unknowns(rs))
+    rxs = get_rxs(rs)
+
+    if physical_scales === nothing 
+        physcales = [PhysicalScale.Jump for _ in enumerate(rxs)]
+    else
+        physcales = physical_scales
+    end
+    jump_scales = (PhysicalScale.Jump, PhysicalScale.VariableRateJump)
+    (isempty(get_rxs(rs)) || !any(in(jump_scales), physcales)) &&
+        error("Must have at least one reaction that will be represented as a jump when constructing a JumpSystem.")
+    isvrjvec = classify_vrjs(rs, physcales)
+
+    rxvars = []
     for (i, rx) in enumerate(rxs)
         empty!(rxvars)
         (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
@@ -651,13 +668,34 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
         kwargs...)
 end
 
-function merge_physical_scales(rxs, physical_scales)
+"""
+    merge_physical_scales(rxs, physical_scales; default = PhysicalScale.Auto)
+
+Merge physical scales for a set of reactions.
+
+# Arguments
+- `rxs`, a vector of `Reaction`s.
+- `physical_scales`, an iterable of pairs mapping integer reaction indices to
+  `PhysicalScale`s.
+- `default`, the default physical scale to use for reactions that set PhysicalScale.Auto.
+"""
+function merge_physical_scales(rxs, physical_scales, default)
     scales = get_physical_scale.(rxs)
+
+    # override metadata attached scales 
     if physical_scales !== nothing
-        for (idx, scale) in physical_scales
-            scales[idx] = scale
+        for (key, scale) in physical_scales
+            scales[key] = scale
         end
     end
+
+    # transform any "Auto" scales to the default
+    for (idx, scale) in enumerate(scales)
+        if scale == PhysicalScale.Auto
+            scales[idx] = default
+        end
+    end
+    
     scales
 end
 
@@ -693,8 +731,16 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     flatrs = Catalyst.flatten(rs)
     error_if_constraints(JumpSystem, flatrs)
 
-    physical_scales = merge_physical_scales(reactions(rs), physical_scales)
-    eqs = assemble_jumps(flatrs; combinatoric_ratelaws)
+    physical_scales = merge_physical_scales(reactions(rs), physical_scales, 
+        PhysicalScale.Jump)
+    admissible_scales = (PhysicalScale.ODE, PhysicalScale.Jump, 
+        PhysicalScale.VariableRateJump)
+    unique_scales = unique(physical_scales)
+    (unique_scales ⊆ admissible_scales) || 
+        error("Physical scales must currently be one of $admissible_scales for hybrid systems.")
+    hasodes = (PhysicalScale.ODE in unique_scales) || has_nonreactions(flatrs)
+
+    eqs = assemble_jumps(flatrs; combinatoric_ratelaws, physical_scales)
 
     # handle BC species
     sts, ispcs = get_indep_sts(flatrs)
