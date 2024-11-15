@@ -50,7 +50,7 @@ Previously, we assumed that each simulation used the same initial conditions and
 
 Here, we first create an `ODEProblem` of our previous self-activation loop:
 ```@example ensemble
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 oprob = ODEProblem(sa_model, u0, tspan, ps)
 nothing # hide
 ```

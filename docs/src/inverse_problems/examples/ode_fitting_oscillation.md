@@ -4,7 +4,7 @@ In this example we will use [Optimization.jl](https://github.com/SciML/Optimizat
 First, we fetch the required packages.
 ```@example pe_osc_example
 using Catalyst
-using OrdinaryDiffEq
+using OrdinaryDiffEqRosenbrock
 using Optimization
 using OptimizationOptimisers # Required for the ADAM optimizer.
 using SciMLSensitivity # Required for `Optimization.AutoZygote()` automatic differentiation option.

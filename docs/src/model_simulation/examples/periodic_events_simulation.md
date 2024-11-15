@@ -14,7 +14,7 @@ end
 ```
 We can now simulate this model, observing how a 24-hour cycle is reached
 ```@example periodic_event_example
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [:X => 150.0, :Xᴾ => 50.0]
 ps = [:kₚ => 0.1, :kᵢ => 0.1, :l => 1.0]
 tspan = (0.0, 100.0)

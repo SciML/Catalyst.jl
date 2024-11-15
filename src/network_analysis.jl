@@ -398,6 +398,19 @@ function isterminal(lc::Vector, rn::ReactionSystem)
     true
 end
 
+function isforestlike(rn::ReactionSystem)
+    subnets = subnetworks(rn)
+    nps = get_networkproperties(rn)
+
+    isempty(nps.incidencemat) && reactioncomplexes(rn)
+    sparseig = issparse(nps.incidencemat)
+    for subnet in subnets
+        nps = get_networkproperties(subnet)
+        isempty(nps.incidencemat) && reactioncomplexes(subnet; sparse = sparseig)
+    end
+    all(Graphs.is_tree ∘ SimpleGraph ∘ incidencematgraph, subnets)
+end
+
 @doc raw"""
     deficiency(rn::ReactionSystem)
 
@@ -725,13 +738,92 @@ function conservationlaw_errorcheck(rs, pre_varmap)
 end
 
 """
+    isdetailedbalanced(rs::ReactionSystem, parametermap; reltol=1e-9, abstol)
+
+Constructively compute whether a kinetic system (a reaction network with a set of rate constants) will admit detailed-balanced equilibrium
+solutions, using the Wegscheider conditions, [Feinberg, 1989](https://www.sciencedirect.com/science/article/pii/0009250989851243). A detailed-balanced solution is one for which the rate of every forward reaction exactly equals its reverse reaction. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
+"""
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol=0, reltol=1e-9)
+    if length(parametermap) != numparams(rs)
+        error("Incorrect number of parameters specified.")
+    elseif !isreversible(rs)
+        return false
+    elseif !all(r -> ismassaction(r, rs), reactions(rs))
+        error("The supplied ReactionSystem has reactions that are not ismassaction. Testing for being complex balanced is currently only supported for pure mass action networks.")
+    end
+
+    isforestlike(rs) && deficiency(rs) == 0 && return true
+
+    pmap = symmap_to_varmap(rs, parametermap)
+    pmap = Dict(ModelingToolkit.value(k) => v for (k, v) in pmap)
+
+    # Construct reaction-complex graph 
+    complexes, D = reactioncomplexes(rs)
+    img = incidencematgraph(rs)
+    undir_img = SimpleGraph(incidencematgraph(rs))
+    K = ratematrix(rs, pmap)
+
+    spanning_forest = Graphs.kruskal_mst(undir_img)
+    outofforest_edges = setdiff(collect(edges(undir_img)), spanning_forest)
+
+    # Independent Cycle Conditions: for any cycle we create by adding in an out-of-forest reaction, the product of forward reaction rates over the cycle must equal the product of reverse reaction rates over the cycle.  
+    for edge in outofforest_edges
+        g = SimpleGraph([spanning_forest..., edge])
+        ic = Graphs.cycle_basis(g)[1]
+        fwd = prod([K[ic[r], ic[r + 1]] for r in 1:(length(ic) - 1)]) * K[ic[end], ic[1]]
+        rev = prod([K[ic[r + 1], ic[r]] for r in 1:(length(ic) - 1)]) * K[ic[1], ic[end]]
+        isapprox(fwd, rev; atol = abstol, rtol = reltol) ? continue : return false
+    end
+
+    # Spanning Forest Conditions: for non-deficiency 0 networks, we get an additional δ equations. Choose an orientation for each reaction pair in the spanning forest (we will take the one given by default from kruskal_mst).  
+
+    if deficiency(rs) > 0
+        rxn_idxs = [edgeindex(D, Graphs.src(e), Graphs.dst(e)) for e in spanning_forest]
+        S_F = netstoichmat(rs)[:, rxn_idxs]
+        sols = positive_nullspace(S_F)
+
+        for i in 1:size(sols, 2)
+            α = sols[:, i]
+            fwd = prod([K[Graphs.src(e), Graphs.dst(e)]^α[i]
+                        for (e, i) in zip(spanning_forest, 1:length(α))])
+            rev = prod([K[Graphs.dst(e), Graphs.src(e)]^α[i]
+                        for (e, i) in zip(spanning_forest, 1:length(α))])
+            isapprox(fwd, rev; atol = abstol, rtol = reltol) ? continue : return false
+        end
+    end
+
+    true
+end
+
+# Helper to find the index of the reaction with a given reactant and product complex.
+function edgeindex(imat, src::T, dst::T) where T <: Int
+    for i in 1:size(imat, 2)
+        (imat[src, i] == -1) && (imat[dst, i] == 1) && return i
+    end
+    error("This edge does not exist in this reaction graph.")
+end
+
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Vector{<:Pair})
+    pdict = Dict(parametermap)
+    isdetailedbalanced(rs, pdict)
+end
+
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Tuple{<:Pair})
+    pdict = Dict(parametermap)
+    isdetailedbalanced(rs, pdict)
+end
+
+function isdetailedbalanced(rs::ReactionSystem, parametermap)
+    error("Parameter map must be a dictionary, tuple, or vector of symbol/value pairs.")
+end
+
+"""
     iscomplexbalanced(rs::ReactionSystem, parametermap)
 
 Constructively compute whether a network will have complex-balanced equilibrium
 solutions, following the method in van der Schaft et al., [2015](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). 
 Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
-
 function iscomplexbalanced(rs::ReactionSystem, parametermap::Dict)
     if length(parametermap) != numparams(rs)
         error("Incorrect number of parameters specified.")
@@ -808,7 +900,6 @@ end
     constant of the reaction between complex i and complex j. Accepts a dictionary, vector, or tuple 
     of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
-
 function ratematrix(rs::ReactionSystem, rates::Vector{Float64})
     complexes, D = reactioncomplexes(rs)
     n = length(complexes)
@@ -903,7 +994,6 @@ end
     Returns the matrix of a basis of cycles (or flux vectors), or a basis for reaction fluxes for which the system is at steady state. 
     These correspond to right eigenvectors of the stoichiometric matrix. Equivalent to [`fluxmodebasis`](@ref). 
 """
-
 function cycles(rs::ReactionSystem)
     nps = get_networkproperties(rs)
     nsm = netstoichmat(rs)
@@ -938,7 +1028,6 @@ end
 
     See documentation for [`cycles`](@ref). 
 """
-
 function fluxvectors(rs::ReactionSystem)
     cycles(rs)
 end
@@ -950,7 +1039,6 @@ end
 
     Check if a reaction network obeys the conditions of the deficiency one theorem, which ensures that there is only one equilibrium for every positive stoichiometric compatibility class.
 """
-
 function satisfiesdeficiencyone(rn::ReactionSystem)
     all(r -> ismassaction(r, rn), reactions(rn)) ||
         error("The deficiency one theorem is only valid for reaction networks that are mass action.")
@@ -973,7 +1061,6 @@ end
 
     Check if a reaction network obeys the conditions of the deficiency zero theorem, which ensures that there is only one equilibrium for every positive stoichiometric compatibility class, this equilibrium is asymptotically stable, and this equilibrium is complex balanced.
 """
-
 function satisfiesdeficiencyzero(rn::ReactionSystem)
     all(r -> ismassaction(r, rn), reactions(rn)) ||
         error("The deficiency zero theorem is only valid for reaction networks that are mass action.")
@@ -988,7 +1075,6 @@ end
 
     Note: This function currently only works for networks of deficiency one, and is not currently guaranteed to return *all* the concentration-robust species in the network. Any species returned by the function will be robust, but this may not include all of them. Use with caution. Support for higher deficiency networks and necessary conditions for robustness will be coming in the future.  
 """
-
 function robustspecies(rn::ReactionSystem)
     complexes, D = reactioncomplexes(rn)
     nps = get_networkproperties(rn)

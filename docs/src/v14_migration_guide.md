@@ -40,7 +40,7 @@ Catalyst.iscomplete(rs)
 ```
 We can now go on and use our model for e.g. simulations:
 ```@example v14_migration_1
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [X => 0.1]
 tspan = (0.0, 10.0)
 ps = [p => 1.0, d => 0.2]
@@ -186,7 +186,7 @@ For more details on how to query various structures for parameter and species va
 #### Modification of problems with conservation laws broken
 While it is possible to update e.g. `ODEProblem`s using the [`remake`](@ref simulation_structure_interfacing_problems_remake) function, this is currently not possible if the `remove_conserved = true` option was used. E.g. while
 ```@example v14_migration_5
-using Catalyst, OrdinaryDiffEq
+using Catalyst, OrdinaryDiffEqDefault
 rn = @reaction_network begin
     (k1,k2), X1 <--> X2
 end

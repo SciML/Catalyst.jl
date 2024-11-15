@@ -41,11 +41,11 @@ CatalystGraphMakieExtension = "GraphMakie"
 CatalystHomotopyContinuationExtension = "HomotopyContinuation"
 
 [compat]
-BifurcationKit = "0.3"
+BifurcationKit = "0.4.4"
 CairoMakie = "0.12"
 Combinatorics = "1.0.2"
 DataStructures = "0.18"
-DiffEqBase = "6.83.0"
+DiffEqBase = "< 6.159.0"
 DocStringExtensions = "0.8, 0.9"
 DynamicPolynomials = "0.5, 0.6"
 DynamicQuantities = "0.13.2, 1"
