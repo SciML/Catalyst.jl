@@ -155,11 +155,11 @@ function plot_complex_graph(rn::ReactionSystem; interactive = false)
     nodelabels = complexlabels(rn)
     edgelabels = [repr(rx.rate) for rx in rxs]
 
+    deps = Set()
     for (i, rx) in enumerate(rxs)
-        deps = get_variables(rx.rate, specs)
-        if deps != Any[]
-            edgecolors[i] = :red
-        end
+        empty!(deps)
+        get_variables!(deps, rx.rate, specs)
+        (!isempty(deps)) && (edgecolors[i] = :red)
     end
 
     f, ax, p = graphplot(img; 
