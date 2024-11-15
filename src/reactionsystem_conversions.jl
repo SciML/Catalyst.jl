@@ -651,6 +651,16 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
         kwargs...)
 end
 
+function merge_physical_scales(rxs, physical_scales)
+    scales = get_physical_scale.(rxs)
+    if physical_scales !== nothing
+        for (idx, scale) in physical_scales
+            scales[idx] = scale
+        end
+    end
+    scales
+end
+
 """
 ```julia
 Base.convert(::Type{<:JumpSystem},rs::ReactionSystem; combinatoric_ratelaws=true)
@@ -765,16 +775,6 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
     p_matrix = zeros(length(get_unknowns(sde_sys)), numreactions(rs))
     return SDEProblem(sde_sys, u0map, tspan, pmap, args...; check_length,
         noise_rate_prototype = p_matrix, kwargs...)
-end
-
-function merge_physical_scales(rxs, physical_scales)
-    scales = get_physical_scale.(rxs)
-    if physical_scales !== nothing
-        for (idx, scale) in physical_scales
-            scales[idx] = scale
-        end
-    end
-    scales
 end
 
 """
