@@ -331,7 +331,7 @@ sir = @reaction_network SIR begin
 end
 speciesreactiongraph(sir)
 """
-function speciesreactiongraph(rn::ReactionSystem) 
+function species_reaction_graph(rn::ReactionSystem) 
     specs = species(rn)
     rxs = reactions(rn)
     sm = speciesmap(rn)
