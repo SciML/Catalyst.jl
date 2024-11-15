@@ -120,9 +120,11 @@ function SRGraphWrap(rn::ReactionSystem)
     rateedges = Vector{SimpleEdge}()
     sm = speciesmap(rn); specs = species(rn)
 
+    deps = Set()
     for (i, rx) in enumerate(reactions(rn)) 
-        deps = get_variables(rx.rate, specs)
-        if deps != Any[]
+        empty!(deps)
+        get_variables!(deps, rx.rate, specs)
+        if !isempty(deps)
             for spec in deps 
                 specidx = sm[spec]
                 push!(rateedges, SimpleEdge(specidx, i + length(specs)))
