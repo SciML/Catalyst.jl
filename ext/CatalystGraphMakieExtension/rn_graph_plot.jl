@@ -201,7 +201,7 @@ function complexlabels(rn::ReactionSystem)
             push!(labels, complexelemtostr(complex[1], specstrs))
         else
             elems = map(c -> complexelemtostr(c, specstrs), complex)
-            str = reduce((e1, e2) -> *(e1, " + ", e2), elems[2:end]; init = elems[1])
+            str = reduce((e1, e2) -> *(e1, " + ", e2), @view elems[2:end]; init = elems[1])
             push!(labels, str)
         end
     end
