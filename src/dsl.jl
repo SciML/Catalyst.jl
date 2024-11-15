@@ -522,7 +522,7 @@ function extract_species_and_parameters!(reactions, excluded_syms; noinfer = noi
     for reaction in reactions
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(species, reactant.reactant, excluded_syms)
-            (!isempty(species) && noinfer) && error("Unrecognized variables $(species) detected in reaction $(reaction). Since the flag @no_infer is declared, all species must be explicitly declared with the @species macro.")
+            (!isempty(species) && noinfer) && error("Unrecognized variables $(species[1]) detected in reaction reaction expression. Since the flag @no_infer is declared, all species must be explicitly declared with the @species macro.")
         end
     end
 
@@ -530,10 +530,10 @@ function extract_species_and_parameters!(reactions, excluded_syms; noinfer = noi
     parameters = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
         add_syms_from_expr!(parameters, reaction.rate, excluded_syms)
-        (!isempty(parameters) && noinfer) && error("Unrecognized parameter $(parameters) detected in reaction $(reaction.rate). Since the flag @no_infer is declared, all parameters must be explicitly declared with the @parameters macro.")
+        (!isempty(parameters) && noinfer) && error("Unrecognized parameter $(parameters[1]) detected in rate expression $(reaction.rate). Since the flag @no_infer is declared, all parameters must be explicitly declared with the @parameters macro.")
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(parameters, reactant.stoichiometry, excluded_syms)
-            (!isempty(parameters) && noinfer) && error("Unrecognized parameter $(parameters) detected in reactant $(reactant). Since the flag @no_infer is declared, all parameters must be explicitly declared with the @parameters macro.")
+            (!isempty(parameters) && noinfer) && error("Unrecognized parameters $(parameters[1]) detected in the stoichiometry for reactant $(reactant.reactant). Since the flag @no_infer is declared, all parameters must be explicitly declared with the @parameters macro.")
         end
     end
 

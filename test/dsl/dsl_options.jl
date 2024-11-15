@@ -1056,12 +1056,13 @@ let
     # Test error when a parameter in stoichiometry is inferred
     @test_throws LoadError @eval rn = @reaction_network begin
         @no_infer
+        @parameters k
         @species A(t) B(t)
         k, n*A --> B
     end
     @test_nowarn @eval rn = @reaction_network begin
         @no_infer
-        @parameters n
+        @parameters k n
         @species A(t) B(t)
         k, n*A --> B
     end
