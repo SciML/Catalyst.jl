@@ -316,12 +316,12 @@ end
 
 
 """
-    speciesreactiongraph(rn::ReactionSystem)
+    species_reaction_graph(rn::ReactionSystem)
 
 Construct a directed simple graph where there are two types of nodes: species and reactions. 
-An edge from a species to reaction indicates that it is a reactant, and an edge from a reaction
-to a species indicates that it is a product. By default, the species vertices are listed
-first, so the first n indices correspond to species nodes. 
+An edge from a species *s* to reaction *r* indicates that *s* is a reactant for *r*, and an edge from a reaction
+r to a species s indicates that *s* is a product of *r*. By default, the species vertices are listed
+first, so the first *n* indices correspond to species nodes. 
 
 For example,
 ```julia
@@ -329,24 +329,24 @@ sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-speciesreactiongraph(sir)
+species_reaction_graph(sir)
 """
 function species_reaction_graph(rn::ReactionSystem) 
     specs = species(rn)
     rxs = reactions(rn)
     sm = speciesmap(rn)
-    s = length(specs); r = length(rxs); nv = s + r
+    s = length(specs)
     
-    adjmat = zeros(Int64, nv, nv)
+    edgelist = Graphs.Edge[]
     for (i, rx) in enumerate(rxs) 
-        for (spec, stoich) in zip(rx.substrates, rx.substoich)
-            adjmat[sm[spec], s+i] = stoich
+        for spec in rx.substrates
+            push!(edgelist, Graphs.Edge(sm[spec], s+i))
         end
-        for (spec, stoich) in zip(rx.products, rx.prodstoich)
-            adjmat[s+i, sm[spec]] = stoich
+        for spec in rx.products
+            push!(edgelist, Graphs.Edge(s+i, sm[spec]))
         end
     end
-    srg = SimpleDiGraph(adjmat)
+    srg = Graphs.SimpleDiGraphFromIterator(edgelist)
 end
 
 ### Linkage, Deficiency, Reversibility ###

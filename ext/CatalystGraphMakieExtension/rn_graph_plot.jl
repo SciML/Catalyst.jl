@@ -12,6 +12,26 @@ struct SRGraphWrap{T} <: AbstractGraph{T}
    rateedges::Vector{SimpleEdge}
 end
 
+# Create the SimpleDiGraph corresponding to the species and reactions
+function SRGraphWrap(rn::ReactionSystem) 
+    srg = speciesreactiongraph(rn)
+    rateedges = Vector{SimpleEdge}()
+    sm = speciesmap(rn); specs = species(rn)
+
+    deps = Set()
+    for (i, rx) in enumerate(reactions(rn)) 
+        empty!(deps)
+        get_variables!(deps, rx.rate, specs)
+        if !isempty(deps)
+            for spec in deps 
+                specidx = sm[spec]
+                push!(rateedges, SimpleEdge(specidx, i + length(specs)))
+            end
+        end
+    end
+    SRGraphWrap(srg, rateedges)
+end
+
 Base.eltype(g::SRGraphWrap) = eltype(g.g)
 Graphs.edgetype(g::SRGraphWrap) = edgetype(g.g)
 Graphs.has_edge(g::SRGraphWrap, s, d) = has_edge(g.g, s, d)
@@ -25,8 +45,7 @@ Graphs.is_directed(g::SRGraphWrap) = is_directed(g.g)
 
 function Graphs.edges(g::SRGraphWrap)
     edgelist = vcat(collect(Graphs.edges(g.g)), g.rateedges)
-    edgeorder = sortperm(edgelist)
-    edgelist = edgelist[edgeorder]
+    edgelist = sort!(edgelist)
 end
 
 function gen_distances(g::SRGraphWrap; inc = 0.2) 
@@ -112,26 +131,6 @@ function plot_speciesreaction_graph(rn::ReactionSystem; interactive = false)
     end
     display(f)
     f
-end
-
-# Create the SimpleDiGraph corresponding to the species and reactions
-function SRGraphWrap(rn::ReactionSystem) 
-    srg = speciesreactiongraph(rn)
-    rateedges = Vector{SimpleEdge}()
-    sm = speciesmap(rn); specs = species(rn)
-
-    deps = Set()
-    for (i, rx) in enumerate(reactions(rn)) 
-        empty!(deps)
-        get_variables!(deps, rx.rate, specs)
-        if !isempty(deps)
-            for spec in deps 
-                specidx = sm[spec]
-                push!(rateedges, SimpleEdge(specidx, i + length(specs)))
-            end
-        end
-    end
-    SRGraphWrap(srg, rateedges)
 end
 
 """
