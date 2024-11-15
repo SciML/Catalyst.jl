@@ -60,7 +60,7 @@ function gen_distances(g::SRGraphWrap; inc = 0.2)
 end
 
 """
-    PetriNet(rn::ReactionSystem)
+    plot_petrinet(rn::ReactionSystem)
 
     See the documentation for [`plot_network`](@ref).
 """
