@@ -65,7 +65,7 @@ Notes:
 - The `interactive` flag sets the ability to interactively drag nodes and edges in the generated plot. 
     Only allowed if `GLMakie` is the loaded Makie backend.
 """  
-function SRGraph(rn::ReactionSystem; interactive = false) 
+function plot_speciesreaction_graph(rn::ReactionSystem; interactive = false) 
     srg = SRGraphWrap(rn)
     ns = length(species(rn))
     nodecolors = vcat([:skyblue3 for i in 1:ns], 
