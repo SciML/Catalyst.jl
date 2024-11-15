@@ -86,7 +86,7 @@ function plot_speciesreaction_graph(rn::ReactionSystem; interactive = false)
 
     elist = Graphs.edges(srg)
     for i in 2:length(elist)
-        elist[i] == elist[i-1] && begin
+        if elist[i] == elist[i-1]
             edgecolors[i] = :red
             insert!(edgelabels, i, "")
         end
