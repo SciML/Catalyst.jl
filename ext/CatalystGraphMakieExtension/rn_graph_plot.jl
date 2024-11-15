@@ -146,7 +146,7 @@ end
     - The `interactive` flag sets the ability to interactively drag nodes and edges in the generated plot.
     Only allowed if `GLMakie` is the loaded Makie backend.
 """
-function ComplexGraph(rn::ReactionSystem; interactive = false) 
+function plot_complex_graph(rn::ReactionSystem; interactive = false) 
     img = incidencematgraph(rn)
     specs = species(rn); rxs = reactions(rn)
     edgecolors = [:black for i in 1:ne(img)]
