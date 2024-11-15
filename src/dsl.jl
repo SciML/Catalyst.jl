@@ -517,12 +517,12 @@ end
 
 # Function looping through all reactions, to find undeclared symbols (species or
 # parameters), and assign them to the right category.
-function extract_species_and_parameters!(reactions, excluded_syms; noinfer = noinfer)
+function extract_species_and_parameters!(reactions, excluded_syms; noinfer = false)
     species = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(species, reactant.reactant, excluded_syms)
-            (!isempty(species) && noinfer) && error("Unrecognized variables $(species[1]) detected in reaction reaction expression. Since the flag @no_infer is declared, all species must be explicitly declared with the @species macro.")
+            (!isempty(species) && noinfer) && error("Unrecognized variables $(species[1]) detected in reaction expression. Since the flag @no_infer is declared, all species must be explicitly declared with the @species macro.")
         end
     end
 
