@@ -1026,63 +1026,64 @@ end
 ### test that @no_infer properly throws errors when undeclared variables are written
 
 let
-    @test_throws LoadError rn = @reaction_network begin
+    # Test error when species are inferred
+    @test_throws LoadError @eval rn = @reaction_network begin
         @no_infer
-        (k, k1), A <--> B
+        @parameters k 
+        k, A --> B
     end
-
-    @test_nowarn rn = @reaction_network begin
+    @test_nowarn @eval rn = @reaction_network begin
         @no_infer
         @species A(t) B(t)
         @parameters k
         k, A --> B
     end
 
-    @test_throws LoadError rn = @reaction_network begin
+    # Test error when a parameter in rate is inferred
+    @test_throws LoadError @eval rn = @reaction_network begin
         @no_infer
         @species A(t) B(t)
         @parameters k
         k*n, A --> B
     end
-
-    @test_nowarn rn = @reaction_network begin
+    @test_nowarn @eval rn = @reaction_network begin
         @no_infer
         @parameters n k
         @species A(t) B(t)
         k*n, A --> B
     end
 
-    @test_throws LoadError rn = @reaction_network begin
+    # Test error when a parameter in stoichiometry is inferred
+    @test_throws LoadError @eval rn = @reaction_network begin
         @no_infer
         @species A(t) B(t)
         k, n*A --> B
     end
-
-    @test_nowarn rn = @reaction_network begin
+    @test_nowarn @eval rn = @reaction_network begin
         @no_infer
         @parameters n
         @species A(t) B(t)
         k, n*A --> B
     end
 
-    @test_throws LoadError rn = @reaction_network begin
+    # Test error when a variable in an equation is inferred
+    @test_throws LoadError @eval rn = @reaction_network begin
         @no_infer
         @equations D(V) ~ V^2
     end
-
-    @test_nowarn rn = @reaction_network begin
+    @test_nowarn @eval rn = @reaction_network begin
         @no_infer
         @variables V(t)
         @equations D(V) ~ V^2
     end
 
-    @test_throws LoadError rn = @reaction_network begin
+    # Test error when a variable in an observable is inferred
+    @test_throws LoadError @eval rn = @reaction_network begin
         @no_infer
         @variables X1(t)
         @observables X2 ~ X1
     end
-
-    @test_nowarn rn = @reaction_network begin
+    @test_nowarn @eval rn = @reaction_network begin
         @no_infer
         @variables X1(t) X2(t)
         @observables X2 ~ X1
