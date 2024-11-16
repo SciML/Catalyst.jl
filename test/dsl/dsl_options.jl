@@ -1027,65 +1027,65 @@ end
 
 let
     # Test error when species are inferred
-    @test_throws LoadError @eval rn = @reaction_network begin
-        @no_infer
+    @test_throws UndeclaredSymbolicError @macroexpand rn = @reaction_network begin
+        @require_declaration
         @parameters k 
         k, A --> B
     end
-    @test_nowarn @eval rn = @reaction_network begin
-        @no_infer
+    @test_nowarn @macroexpand rn = @reaction_network begin
+        @require_declaration
         @species A(t) B(t)
         @parameters k
         k, A --> B
     end
 
     # Test error when a parameter in rate is inferred
-    @test_throws LoadError @eval rn = @reaction_network begin
-        @no_infer
+    @test_throws UndeclaredSymbolicError @macroexpand rn = @reaction_network begin
+        @require_declaration
         @species A(t) B(t)
         @parameters k
         k*n, A --> B
     end
-    @test_nowarn @eval rn = @reaction_network begin
-        @no_infer
+    @test_nowarn @macroexpand rn = @reaction_network begin
+        @require_declaration
         @parameters n k
         @species A(t) B(t)
         k*n, A --> B
     end
 
     # Test error when a parameter in stoichiometry is inferred
-    @test_throws LoadError @eval rn = @reaction_network begin
-        @no_infer
+    @test_throws UndeclaredSymbolicError @macroexpand rn = @reaction_network begin
+        @require_declaration
         @parameters k
         @species A(t) B(t)
         k, n*A --> B
     end
-    @test_nowarn @eval rn = @reaction_network begin
-        @no_infer
+    @test_nowarn @macroexpand rn = @reaction_network begin
+        @require_declaration
         @parameters k n
         @species A(t) B(t)
         k, n*A --> B
     end
 
     # Test error when a variable in an equation is inferred
-    @test_throws LoadError @eval rn = @reaction_network begin
-        @no_infer
+    @test_throws UndeclaredSymbolicError @macroexpand rn = @reaction_network begin
+        @require_declaration
         @equations D(V) ~ V^2
     end
-    @test_nowarn @eval rn = @reaction_network begin
-        @no_infer
+    @test_nowarn @macroexpand rn = @reaction_network begin
+        @require_declaration
         @variables V(t)
         @equations D(V) ~ V^2
     end
 
     # Test error when a variable in an observable is inferred
-    @test_throws LoadError @eval rn = @reaction_network begin
-        @no_infer
+    @test_throws UndeclaredSymbolicError @macroexpand rn = @reaction_network begin
+        @require_declaration
         @variables X1(t)
         @observables X2 ~ X1
     end
-    @test_nowarn @eval rn = @reaction_network begin
-        @no_infer
+    @test_nowarn @macroexpand rn = @reaction_network begin
+        @require_declaration
         @variables X1(t) X2(t)
         @observables X2 ~ X1
     end

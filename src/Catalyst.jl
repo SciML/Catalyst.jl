@@ -122,7 +122,7 @@ export symmap_to_varmap
 # reaction_network macro
 include("expression_utils.jl")
 include("dsl.jl")
-export @reaction_network, @network_component, @reaction, @species
+export @reaction_network, @network_component, @reaction, @species, UndeclaredSymbolicError
 
 # Network analysis functionality.
 include("network_analysis.jl")
