@@ -336,7 +336,7 @@ function classify_vrjs(rs, physcales)
         empty!(rxvars)
         (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
         @inbounds for rxvar in rxvars
-            if isequal(rxvar, get_iv(rs))
+            if isequal(rxvar, get_iv(rs)) || (!MT.isparameter(rxvar) && !isspecies(rxvar))
                 isvrjvec[i] = true
                 havevrjs = true
                 break
@@ -401,7 +401,7 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
             end
         end
     end
-    vcat(meqs, ceqs, veqs)
+    reduce(vcat, (meqs, ceqs, veqs); init = Any[])
 end
 
 ### Equation Coupling ###

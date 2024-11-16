@@ -1021,4 +1021,18 @@ let
     jprob = JumpProblem(jinput; rng)
     sol = solve(jprob)
     @test sol(10.0; idxs = :A) > 0
+
+    rn = @reaction_network begin
+        @parameters λ
+        k*V, 0 --> A
+        @equations D(V) ~ λ*V
+        @continuous_events begin
+            [V ~ 2.0] => [V ~ V/2, A ~ rand()*A]
+        end
+    end        
+    jinput = JumpInputs(rn, [:A => 0, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .2])
+    @test jinput.prob isa ODEProblem
+    jprob = JumpProblem(jinput; rng)
+    sol = solve(jprob, Tsit5()) 
+
 end
