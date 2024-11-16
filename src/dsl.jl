@@ -318,7 +318,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Reads equations. 
     vars_extracted, add_default_diff, equations = read_equations_options(
-        options, variables_declared; noinfer = noinfer)
+        options, variables_declared; noinfer)
     variables = vcat(variables_declared, vars_extracted)
 
     # Handle independent variables
