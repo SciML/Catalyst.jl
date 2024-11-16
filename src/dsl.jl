@@ -286,11 +286,6 @@ end
 ### DSL Internal Master Function ###
 
 # Function for creating a ReactionSystem structure (used by the @reaction_network macro).
-# What should no_infer do? We currently infer in:
-#   equations
-#   observables
-#   differentials
-# make it so that we no longer do so. 
 function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Handle interpolation of variables
