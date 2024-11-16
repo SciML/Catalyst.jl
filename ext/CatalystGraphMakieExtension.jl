@@ -3,7 +3,7 @@ module CatalystGraphMakieExtension
 # Fetch packages.
 using Catalyst, GraphMakie, Graphs, Symbolics
 using Symbolics: get_variables!
-import Catalyst: species_reaction_graph, incidencematgraph
+import Catalyst: species_reaction_graph, incidencematgraph, lattice_plot, lattice_animation
 
 # Creates and exports graph plotting functions.
 include("CatalystGraphMakieExtension/graph_makie_extension_spatial_modelling.jl")
