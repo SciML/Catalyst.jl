@@ -169,7 +169,6 @@ export make_si_ode
 
 # GraphMakie
 function plot_network end
-function plot_petrinet end
 function plot_complexes end
 export plot_network, plot_complexes, plot_petrinet
 
