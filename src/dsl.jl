@@ -141,17 +141,17 @@ ReactionSystems generated through `@reaction_network` are complete.
 """
 macro reaction_network(name::Symbol, ex::Expr)
     :(complete($(make_reaction_system(
-        MacroTools.striplines(ex); name = :($(QuoteNode(name)))))))
+        striplines(ex); name = :($(QuoteNode(name)))))))
 end
 
 # Allows @reaction_network $name begin ... to interpolate variables storing a name.
 macro reaction_network(name::Expr, ex::Expr)
     :(complete($(make_reaction_system(
-        MacroTools.striplines(ex); name = :($(esc(name.args[1])))))))
+        striplines(ex); name = :($(esc(name.args[1])))))))
 end
 
 macro reaction_network(ex::Expr)
-    ex = MacroTools.striplines(ex)
+    ex = striplines(ex)
 
     # no name but equations: @reaction_network begin ... end ...
     if ex.head == :block
@@ -179,16 +179,16 @@ Equivalent to `@reaction_network` except the generated `ReactionSystem` is not m
 complete.
 """
 macro network_component(name::Symbol, ex::Expr)
-    make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name))))
+    make_reaction_system(striplines(ex); name = :($(QuoteNode(name))))
 end
 
 # Allows @network_component $name begin ... to interpolate variables storing a name.
 macro network_component(name::Expr, ex::Expr)
-    make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1]))))
+    make_reaction_system(striplines(ex); name = :($(esc(name.args[1]))))
 end
 
 macro network_component(ex::Expr)
-    ex = MacroTools.striplines(ex)
+    ex = striplines(ex)
 
     # no name but equations: @network_component begin ... end ...
     if ex.head == :block
@@ -315,7 +315,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     parameters_declared = extract_syms(options, :parameters)
     variables_declared = extract_syms(options, :variables)
 
-    # Reads equations. 
+    # Reads equations.
     vars_extracted, add_default_diff, equations = read_equations_options(
         options, variables_declared)
     variables = vcat(variables_declared, vars_extracted)
@@ -343,7 +343,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     observed_vars, observed_eqs, obs_syms = read_observed_options(
         options, [species_declared; variables], all_ivs)
 
-    # Collect species and parameters, including ones inferred from the reactions. 
+    # Collect species and parameters, including ones inferred from the reactions.
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
         variables)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(
@@ -384,7 +384,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args, equation)
     end
 
-    # Output code corresponding to the reaction system. 
+    # Output code corresponding to the reaction system.
     quote
         $ivexpr
         $ps
@@ -435,7 +435,7 @@ function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(u
             push_reactions!(reactions, reaction.args[3], reaction.args[2],
                 rate, metadata, arrow)
         else
-            throw("Malformed reaction, invalid arrow type used in: $(MacroTools.striplines(line))")
+            throw("Malformed reaction, invalid arrow type used in: $(striplines(line))")
         end
     end
     return reactions
@@ -651,7 +651,7 @@ function read_events_option(options, event_type::Symbol)
         error("Trying to read an unsupported event type.")
     end
     events_input = haskey(options, event_type) ? options[event_type].args[3] :
-                   MacroTools.striplines(:(begin end))
+                   striplines(:(begin end))
     events_input = option_block_form(events_input)
 
     # Goes through the events, checks for errors, and adds them to the output vector.
@@ -727,7 +727,7 @@ function create_differential_expr(options, add_default_diff, used_syms, tiv)
     # If differentials was provided as options, this is used as the initial expression.
     # If the default differential (D(...)) was used in equations, this is added to the expression.
     diffexpr = (haskey(options, :differentials) ? options[:differentials].args[3] :
-                MacroTools.striplines(:(begin end)))
+                striplines(:(begin end)))
     diffexpr = option_block_form(diffexpr)
 
     # Goes through all differentials, checking that they are correctly formatted and their symbol is not used elsewhere.
@@ -783,11 +783,6 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
             # For Observables that have already been declared using @species/@variables,
             # or are interpolated, this parts should not be carried out.
             if !((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2]))
-                # Appends (..) to the observable (which is later replaced with the extracted ivs).
-                # Adds the observable to the first line of the output expression (starting with `@variables`).
-                obs_expr = insert_independent_variable(obs_eq.args[2], :(..))
-                push!(observed_vars.args[1].args, obs_expr)
-
                 # Adds a line to the `observed_vars` expression, setting the ivs for this observable.
                 # Cannot extract directly using e.g. "getfield.(dependants_structs, :reactant)" because
                 # then we get something like :([:X1, :X2]), rather than :([X1, X2]).
@@ -798,8 +793,11 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                            for dep in $dep_var_expr])))
                 ivs_get_expr_sorted = :(sort($(ivs_get_expr);
                     by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $ivs_sorted)))
-                push!(observed_vars.args,
-                    :($obs_name = $(obs_name)($(ivs_get_expr_sorted)...)))
+
+                ivs_get_expr_sorted = :([τ, x])
+                println(ivs_get_expr_sorted)
+                obs_expr = insert_independent_variable(obs_eq.args[2], :(([τ, x])...))
+                push!(observed_vars.args[1].args, obs_expr)
             end
 
             # In case metadata was given, this must be cleared from `observed_eqs`.
@@ -813,7 +811,8 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
         end
 
         # If nothing was added to `observed_vars`, it has to be modified not to throw an error.
-        (length(observed_vars.args) == 1) && (observed_vars = :())
+        (striplines(observed_vars) == striplines(Expr(:block, :(@variables)))) &&
+            (observed_vars = :())
     else
         # If option is not used, return empty expression and vector.
         observed_vars = :()
@@ -917,7 +916,7 @@ end
 
 ### Generic Expression Manipulation ###
 
-# Recursively traverses an expression and escapes all the user-defined functions. Special function calls like "hill(...)" are not expanded. 
+# Recursively traverses an expression and escapes all the user-defined functions. Special function calls like "hill(...)" are not expanded.
 function recursive_escape_functions!(expr::ExprValues)
     (typeof(expr) != Expr) && (return expr)
     foreach(i -> expr.args[i] = recursive_escape_functions!(expr.args[i]),
