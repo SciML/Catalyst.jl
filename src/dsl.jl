@@ -71,7 +71,7 @@ const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔
 # Declares the keys used for various options.
 const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables,
     :default_noise_scaling, :differentials, :equations,
-    :continuous_events, :discrete_events, :combinatoric_ratelaws, :no_infer)
+    :continuous_events, :discrete_events, :combinatoric_ratelaws, :require_declaration)
 
 ### `@species` Macro ###
 
@@ -230,6 +230,9 @@ struct ReactionStruct
     end
 end
 
+#function Base.show(io::IO, rx::ReactionStruct) #    
+#end
+
 # Recursive function that loops through the reaction line and finds the reactants and their
 # stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
 function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
@@ -283,6 +286,12 @@ function extract_metadata(metadata_line::Expr)
     return metadata
 end
 
+
+
+struct UndeclaredSymbolicError <: Exception
+    msg::String
+end
+
 ### DSL Internal Master Function ###
 
 # Function for creating a ReactionSystem structure (used by the @reaction_network macro).
@@ -308,7 +317,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     compound_expr, compound_species = read_compound_options(options)
     continuous_events_expr = read_events_option(options, :continuous_events)
     discrete_events_expr = read_events_option(options, :discrete_events)
-    noinfer = haskey(options, :no_infer)
+    requiredec = haskey(options, :require_declaration)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
@@ -318,7 +327,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Reads equations. 
     vars_extracted, add_default_diff, equations = read_equations_options(
-        options, variables_declared; noinfer)
+        options, variables_declared; requiredec)
     variables = vcat(variables_declared, vars_extracted)
 
     # Handle independent variables
@@ -342,13 +351,13 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Reads observables.
     observed_vars, observed_eqs, obs_syms = read_observed_options(
-        options, [species_declared; variables], all_ivs; noinfer)
+        options, [species_declared; variables], all_ivs; requiredec)
 
     # Collect species and parameters, including ones inferred from the reactions. 
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
         variables)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(
-        reactions, declared_syms)
+        reactions, declared_syms; requiredec)
 
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
@@ -512,12 +521,12 @@ end
 
 # Function looping through all reactions, to find undeclared symbols (species or
 # parameters), and assign them to the right category.
-function extract_species_and_parameters!(reactions, excluded_syms; noinfer = false)
+function extract_species_and_parameters!(reactions, excluded_syms; requiredec = false)
     species = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(species, reactant.reactant, excluded_syms)
-            (!isempty(species) && noinfer) && error("Unrecognized variables $(species[1]) detected in reaction expression. Since the flag @no_infer is declared, all species must be explicitly declared with the @species macro.")
+            (!isempty(species) && requiredec) && error("Unrecognized variables $(species[1]) detected in reaction expression. Since the flag @no_infer is declared, all species must be explicitly declared with the @species macro.")
         end
     end
 
@@ -525,10 +534,10 @@ function extract_species_and_parameters!(reactions, excluded_syms; noinfer = fal
     parameters = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
         add_syms_from_expr!(parameters, reaction.rate, excluded_syms)
-        (!isempty(parameters) && noinfer) && error("Unrecognized parameter $(parameters[1]) detected in rate expression $(reaction.rate). Since the flag @no_infer is declared, all parameters must be explicitly declared with the @parameters macro.")
+        (!isempty(parameters) && requiredec) && error("Unrecognized parameter $(parameters[1]) detected in rate expression $(reaction.rate). Since the flag @no_infer is declared, all parameters must be explicitly declared with the @parameters macro.")
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(parameters, reactant.stoichiometry, excluded_syms)
-            (!isempty(parameters) && noinfer) && error("Unrecognized parameters $(parameters[1]) detected in the stoichiometry for reactant $(reactant.reactant). Since the flag @no_infer is declared, all parameters must be explicitly declared with the @parameters macro.")
+            (!isempty(parameters) && requiredec) && error("Unrecognized parameters $(parameters[1]) detected in the stoichiometry for reactant $(reactant.reactant). Since the flag @no_infer is declared, all parameters must be explicitly declared with the @parameters macro.")
         end
     end
 
@@ -686,7 +695,7 @@ end
 # `vars_extracted`: A vector with extracted variables (lhs in pure differential equations only).
 # `dtexpr`: If a differential equation is defined, the default derivative (D ~ Differential(t)) must be defined.
 # `equations`: a vector with the equations provided.
-function read_equations_options(options, variables_declared; noinfer = false)
+function read_equations_options(options, variables_declared; requiredec = false)
     # Prepares the equations. First, extracts equations from provided option (converting to block form if required).
     # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
     eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
@@ -715,7 +724,7 @@ function read_equations_options(options, variables_declared; noinfer = false)
             diff_var = lhs.args[2]
             if in(diff_var, forbidden_symbols_error)
                 error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
-            elseif (!in(diff_var, variables_declared)) && noinfer
+            elseif (!in(diff_var, variables_declared)) && requiredec
                 error("Unrecognized symbol $(diff_var) was used as a variable in an equation. Since the @no_infer flag is set, all variables in equations must be explicitly declared via @variables, @species, or @parameters.")
             else
                 add_default_diff = true
@@ -759,7 +768,7 @@ function create_differential_expr(options, add_default_diff, used_syms, tiv)
 end
 
 # Reads the observables options. Outputs an expression ofr creating the observable variables, and a vector of observable equations.
-function read_observed_options(options, species_n_vars_declared, ivs_sorted; noinfer = false)
+function read_observed_options(options, species_n_vars_declared, ivs_sorted; requiredec = false)
     if haskey(options, :observables)
         # Gets list of observable equations and prepares variable declaration expression.
         # (`options[:observables]` includes `@observables`, `.args[3]` removes this part)
@@ -770,7 +779,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted; noi
         for (idx, obs_eq) in enumerate(observed_eqs.args)
             # Extract the observable, checks errors, and continues the loop if the observable has been declared.
             obs_name, ivs, defaults, metadata = find_varinfo_in_declaration(obs_eq.args[2])
-            if (noinfer && !in(obs_name, species_n_vars_declared))
+            if (requiredec && !in(obs_name, species_n_vars_declared))
                 error("An undeclared variable ($obs_name) was declared as an observable. Since the flag @no_infer is set, all variables must be declared with the @species, @parameters, or @variables macros.")
             end
             isempty(ivs) ||
