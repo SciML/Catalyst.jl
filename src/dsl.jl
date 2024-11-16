@@ -716,7 +716,7 @@ function read_equations_options(options, variables_declared; noinfer = false)
             if in(diff_var, forbidden_symbols_error)
                 error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
             elseif (!in(diff_var, variables_declared)) && noinfer
-                error("Unrecognized symbol $(diff_var) was used as a variable in this differential equation. Since the @no_infer flag is set, all variables in equations must be explicitly declared via @variables, @species, or @parameters.")
+                error("Unrecognized symbol $(diff_var) was used as a variable in an equation. Since the @no_infer flag is set, all variables in equations must be explicitly declared via @variables, @species, or @parameters.")
             else
                 add_default_diff = true
                 in(diff_var, variables_declared) || push!(vars_extracted, diff_var)
