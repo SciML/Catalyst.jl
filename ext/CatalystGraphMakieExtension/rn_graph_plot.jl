@@ -60,19 +60,11 @@ function gen_distances(g::SRGraphWrap; inc = 0.2)
 end
 
 """
-    plot_petrinet(rn::ReactionSystem)
-
-    See the documentation for [`plot_network`](@ref).
-"""
-function Catalyst.plot_petrinet(rn::ReactionSystem) 
-    plot_network(rn)
-end
-
-"""
     plot_network(rn::ReactionSystem; interactive=false)
 
-Converts a [`ReactionSystem`](@ref) into a GraphMakie plot of the species reaction graph.
-Reactions correspond to small green circles, and species to blue circles.
+Converts a [`ReactionSystem`](@ref) into a GraphMakie plot of the species reaction graph
+(or Petri net representation). Reactions correspond to small green circles, and 
+species to blue circles.
 
 Notes:
 - Black arrows from species to reactions indicate reactants, and are labelled

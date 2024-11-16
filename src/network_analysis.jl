@@ -319,9 +319,12 @@ end
     species_reaction_graph(rn::ReactionSystem)
 
 Construct a directed simple graph where there are two types of nodes: species and reactions. 
-An edge from a species *s* to reaction *r* indicates that *s* is a reactant for *r*, and an edge from a reaction
-r to a species s indicates that *s* is a product of *r*. By default, the species vertices are listed
-first, so the first *n* indices correspond to species nodes. 
+An edge from a species *s* to reaction *r* indicates that *s* is a reactant for *r*, and 
+an edge from a reaction *r* to a species *s* indicates that *s* is a product of *r*. By 
+default, the species vertices are listed first, so the first *n* indices correspond to 
+species nodes. 
+
+Note: this is equivalent to the Petri net representation of a chemical reaction network.
 
 For example,
 ```julia
