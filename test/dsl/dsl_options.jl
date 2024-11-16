@@ -901,6 +901,26 @@ let
     @test 5*sol[:Y][end] ≈ sol[:S][end] + sol[:X][end]
 end
 
+# Tests that the correct symbolic variables are infered as species, variables, and paraemters.
+let
+    rn = @reaction_network begin
+        @parameters p1 p2
+        @species X1(t) X2(t)
+        @variables W(t)
+        @equations begin
+            D(V1) ~ p1 * X1 - k1 * V1 + W
+            k2 * V2 ~ D(V2) + p2 * X2
+            V3 + X3 ~ V1^2 + X2^2
+        end
+        (k1, k2), X1 <--> X2
+        (k3, k4), X2 <--> X3
+    end
+
+    @test issetequal(species(rn), @species X1(t) X2(t) X3(t))
+    @test issetequal(parameters(rn), @parameters p1 p2 k1 k2 k3 k4)
+    @test issetequal(nonspecies(rn), @variables V1(t) V2(t) V3(t) W(t))
+end
+
 # Tests that various erroneous declarations throw errors.
 let
     # Using = instead of ~ (for equation).
@@ -951,7 +971,7 @@ let
     @test isequal(rl, k1*A^2)
 end
 
-# Test whether user-defined functions are properly expanded in equations. 
+# Test whether user-defined functions are properly expanded in equations.
 let
     f(A, t) = 2*A*t
 
@@ -965,7 +985,7 @@ let
     @test isequal(equations(rn)[1], D(A) ~ 2*A*t)
 
 
-    # Test whether expansion happens properly for unregistered/registered functions. 
+    # Test whether expansion happens properly for unregistered/registered functions.
     hill_unregistered(A, v, K, n) = v*(A^n) / (A^n + K^n)
     rn2 = @reaction_network begin
         @parameters v K n
@@ -978,7 +998,7 @@ let
 
     hill2(A, v, K, n) = v*(A^n) / (A^n + K^n)
     @register_symbolic hill2(A, v, K, n)
-    # Registered symbolic function should not expand. 
+    # Registered symbolic function should not expand.
     rn2r = @reaction_network begin
         @parameters v K n
         @equations D(A) ~ hill2(A, v, K, n)
@@ -1009,9 +1029,9 @@ let
     @named rn3_sym = ReactionSystem(eq, t)
     rn3_sym = complete(rn3_sym)
     @test isequivalent(rn3, rn3_sym)
-    
-    
-    # Test more complicated expression involving both registered function and a user-defined function. 
+
+
+    # Test more complicated expression involving both registered function and a user-defined function.
     g(A, K, n) = A^n + K^n
     rn4 = @reaction_network begin
         @parameters v K n
