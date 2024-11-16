@@ -348,7 +348,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
         variables)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(
-        reactions, declared_syms; noinfer = noinfer)
+        reactions, declared_syms)
 
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
