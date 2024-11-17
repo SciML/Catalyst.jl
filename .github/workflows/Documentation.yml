@@ -37,19 +37,25 @@ jobs:
           # Start Xvfb on display :99
           /usr/bin/Xvfb :99 -screen 0 1024x768x24 &
           echo "Waiting for Xvfb to start..."
-          sleep 3
           
-          # Test if Xvfb is accepting connections
-          echo "Testing Xvfb connection..."
-          if xdpyinfo -display :99 >/dev/null 2>&1; then
-            echo "✓ Xvfb is running and accepting connections"
-            echo "DISPLAY=:99" >> $GITHUB_ENV
-          else
-            echo "✗ Failed to connect to Xvfb"
-            echo "Xvfb status:"
-            ps aux | grep Xvfb
-            exit 1
-          fi
+          # Try to connect to Xvfb for up to 10 seconds
+          max_attempts=10
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "Connection attempt $attempt of $max_attempts..."
+            if xdpyinfo -display :99 >/dev/null 2>&1; then
+              echo "✓ Xvfb is running and accepting connections"
+              echo "DISPLAY=:99" >> $GITHUB_ENV
+              exit 0
+            fi
+            attempt=$((attempt+1))
+            sleep 1
+          done
+          
+          echo "✗ Failed to connect to Xvfb after $max_attempts seconds"
+          echo "Xvfb status:"
+          ps aux | grep Xvfb
+          exit 1
 
       - name: Install Julia
         uses: julia-actions/setup-julia@latest
