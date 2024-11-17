@@ -794,9 +794,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 ivs_get_expr_sorted = :(sort($(ivs_get_expr);
                     by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $ivs_sorted)))
 
-                ivs_get_expr_sorted = :([τ, x])
-                println(ivs_get_expr_sorted)
-                obs_expr = insert_independent_variable(obs_eq.args[2], :(([τ, x])...))
+                obs_expr = insert_independent_variable(obs_eq.args[2], :($ivs_get_expr_sorted...))
                 push!(observed_vars.args[1].args, obs_expr)
             end
 
