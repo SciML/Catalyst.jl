@@ -47,7 +47,7 @@ In this example we used non-uniform values for $X1$'s initial condition, but uni
 
 We can now simulate our model:
 ```@example spatial_intro_basics
-using OrdinaryDiffEq
+using OrdinaryDiffEqDefault
 sol = solve(oprob)
 nothing # hide
 ```

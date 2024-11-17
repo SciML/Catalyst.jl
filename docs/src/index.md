@@ -32,14 +32,14 @@ etc).
 - [Steady states](@ref homotopy_continuation) (and their [stabilities](@ref steady_state_stability)) can be computed for model ODE representations.
 
 #### [Features of Catalyst composing with other packages](@id doc_index_features_composed)
-- [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) Can be used to numerically solver generated reaction rate equation ODE models.
+- [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) Can be used to numerically solve generated reaction rate equation ODE models.
 - [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) can be used to numerically solve generated Chemical Langevin Equation SDE models.
 - [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) can be used to numerically sample generated Stochastic Chemical Kinetics Jump Process models.
 - Support for [parallelization of all simulations](@ref ode_simulation_performance_parallelisation), including parallelization of [ODE simulations on GPUs](@ref ode_simulation_performance_parallelisation_GPU) using [DiffEqGPU.jl](https://github.com/SciML/DiffEqGPU.jl).
 - [Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to [generate LaTeX expressions](@ref visualisation_latex) corresponding to generated mathematical models or the underlying set of reactions.
 - [Graphviz](https://graphviz.org/) can be used to generate and [visualize reaction network graphs](@ref visualisation_graphs) (reusing the Graphviz interface created in [Catlab.jl](https://algebraicjulia.github.io/Catlab.jl/stable/)).
 - Model steady states can be [computed through homotopy continuation](@ref homotopy_continuation) using [HomotopyContinuation.jl](https://github.com/JuliaHomotopyContinuation/HomotopyContinuation.jl) (which can find *all* steady states of systems with multiple ones), by [forward ODE simulations](@ref steady_state_solving_simulation) using [SteadyStateDiffEq.jl)](https://github.com/SciML/SteadyStateDiffEq.jl), or by [numerically solving steady-state nonlinear equations](@ref steady_state_solving_nonlinear) using [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl).
-- [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl) can be used to [compute bifurcation diagrams](@ref bifurcation_diagrams) of model steady states (including finding periodic orbits).
+[BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl) can be used to compute bifurcation diagrams of model steady states (including finding periodic orbits).
 - [DynamicalSystems.jl](https://github.com/JuliaDynamics/DynamicalSystems.jl) can be used to compute model [basins of attraction](@ref dynamical_systems_basins_of_attraction), [Lyapunov spectrums](@ref dynamical_systems_lyapunov_exponents), and other dynamical system properties.
 <!--- [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) can be used to perform structural identifiability analysis.-->
 - [Optimization.jl](https://github.com/SciML/Optimization.jl), [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl), and [PEtab.jl](https://github.com/sebapersson/PEtab.jl) can all be used to [fit model parameters to data](https://sebapersson.github.io/PEtab.jl/stable/Define_in_julia/).
@@ -92,10 +92,27 @@ Pkg.add("Catalyst")
 
 Many Catalyst features require the installation of additional packages. E.g. for ODE-solving and simulation plotting
 ```julia
-Pkg.add("OrdinaryDiffEq")
+Pkg.add("OrdinaryDiffEqDefault")
 Pkg.add("Plots")
 ```
 is also needed.
+
+It is **strongly** recommended to run Catalyst in its own environment with the
+minimal set of needed packages. For example, to install Catalyst and Plots in a
+new environment named `catalyst_project` (saved in the current directory) one
+can say
+```julia
+Pkg.activate("catalyst_project")
+Pkg.add("Catalyst")
+Pkg.add("Plots")
+```
+If one would rather just create a temporary environment that is not saved when
+exiting Julia you can say
+```julia
+Pkg.activate(; temp = true)
+Pkg.add("Catalyst")
+Pkg.add("Plots")
+```
 
 A more thorough guide for setting up Catalyst and installing Julia packages can be found [here](@ref catalyst_for_new_julia_users_packages).
 
@@ -107,7 +124,7 @@ an ordinary differential equation.
 
 ```@example home_simple_example
 # Fetch required packages.
-using Catalyst, OrdinaryDiffEq, Plots
+using Catalyst, OrdinaryDiffEqDefault, Plots
 
 # Create model.
 model = @reaction_network begin

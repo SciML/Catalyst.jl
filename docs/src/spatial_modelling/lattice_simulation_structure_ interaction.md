@@ -17,7 +17,7 @@ Furthermore, there are some cases of interfacing which are currently not support
 ## [Retrieving values from lattice simulations](@id lattice_simulation_structure_interaction_simulation_species)
 Let us consider a simulation of a [`LatticeReactionSystem`](@ref):
 ```@example lattice_struct_interaction_sims
-using Catalyst, OrdinaryDiffEq
+using Catalyst, OrdinaryDiffEqDefault
 two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
@@ -57,7 +57,7 @@ lat_getu(sol, :X1, lrs; t = [0.5, 0.75])
 ## [Retrieving and updating species values in problems and integrators](@id lattice_simulation_structure_interaction_prob_int_species)
 Let us consider a spatial `ODEProblem`
 ```@example lattice_struct_interaction_prob_ints
-using Catalyst, OrdinaryDiffEq
+using Catalyst, OrdinaryDiffEqDefault
 two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end

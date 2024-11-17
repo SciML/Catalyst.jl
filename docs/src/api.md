@@ -35,7 +35,7 @@ corresponding chemical reaction ODE models, chemical Langevin equation SDE
 models, and stochastic chemical kinetics jump process models.
 
 ```@example ex1
-using Catalyst, OrdinaryDiffEq, StochasticDiffEq, JumpProcesses, Plots
+using Catalyst, OrdinaryDiffEqTsit5, StochasticDiffEq, JumpProcesses, Plots
 t = default_t()
 @parameters β γ
 @species S(t) I(t) R(t)
