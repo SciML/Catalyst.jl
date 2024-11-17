@@ -300,7 +300,7 @@ Sometimes, the parameters that are used vary between the different conditions. C
 ## [Additional features: Initial conditions](@id petab_simulation_initial_conditions)
 
 ### [Fitting initial conditions](@id petab_simulation_initial_conditions_fitted)
-Sometimes, initial conditions are uncertain quantities which we wish to fit to the data. This is possible by [defining an initial condition as a parameter](@ref dsl_description_parametric_initial_conditions):
+Sometimes, initial conditions are uncertain quantities which we wish to fit to the data. This is possible by defining an initial condition as a parameter:
 ```@example petab4
 using Catalyst, PEtab # hide
 rn = @reaction_network begin
@@ -333,7 +333,7 @@ Often, while an initial condition has been reported for an experiment, its exact
 
 Let us consider our initial example, but where we want to add uncertainty to the initial conditions of `S` and `E`. We will add priors on these, assuming normal distributions with mean `1.0` and standard deviation `0.1`. For the synthetic measured data we will use the true values $S(0) = E(0) = 1.0$.
 ```@example petab5
-using Catalyst, PEtab
+using Catalyst, Distributions, PEtab 
 
 rn = @reaction_network begin
     @parameters S0 E0
@@ -459,7 +459,7 @@ nothing # hide
 By default, `which_run` loads the first run saved to that directory.
 
 ## [Events](@id petab_events)
-So far, we have assumed that all experiments, after initiation, run without interference. Experiments where conditions change, or where species are added/removed during the time course, can be represented through events (related to [callbacks](@ref advanced_simulations_callbacks)). In PEtab, an event is represented through the `PEtabEvent` structure. It takes three arguments:
+So far, we have assumed that all experiments, after initiation, run without interference. Experiments where conditions change, or where species are added/removed during the time course, can be represented through events. In PEtab, an event is represented through the `PEtabEvent` structure. It takes three arguments:
 1. The condition for triggering the event. This can either indicate a point in time, or a boolean condition.
 2. A rule for updating the event's target
 3. The event's target (either a species or parameter).
@@ -486,10 +486,10 @@ nothing # hide
 More details on how to use events, including how to create events with multiple targets, can be found in [PEtab.jl's documentation](https://sebapersson.github.io/PEtab.jl/stable/petab_event/).
 
 !!! note
-    PEtab currently ignores events [created as a part of a Catalyst `ReactionSystem` model](@ref constraint_equations_events), and does not support SciML-style events [implemented through `callbacks` to `solve`](@ref advanced_simulations_callbacks). Instead, events have to use the preceding interface.
+    PEtab currently ignores events [created as a part of a Catalyst `ReactionSystem` model](@ref constraint_equations_events), and does not support SciML-style events. Instead, events have to use the preceding interface.
 
 ## [Plot recipes](@id petab_plotting)
-There exist various types of graphs that can be used to evaluate the parameter fitting process. These can be plotted using the `plot` command, where the input is either the result of a `calibrate` or a  `calibrate_multistart` run. To be able to use this functionality, you have to ensure that PEtab.jl [records the optimisation process](@ref petab_optimisation_path_recording) by providing the `save_trace=true` argument to the calibration functions.
+There exist various types of graphs that can be used to evaluate the parameter fitting process. These can be plotted using the `plot` command, where the input is either the result of a `calibrate` or a `calibrate_multistart` run. To be able to use this functionality, you have to ensure that PEtab.jl [records the optimisation process](@ref petab_optimisation_path_recording) by providing the `save_trace=true` argument to the calibration functions.
 
 To, for a single start calibration run, plot, for each iteration of the optimization process, the best objective value achieved so far, run:
 ```@example petab1
