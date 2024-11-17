@@ -12,8 +12,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
+  group: docs-${{ github.ref }} # Group name for concurrency control
+  cancel-in-progress: true # Ensures only one doc build runs at a time for each branch/ref, regardless of the trigger
 
 jobs:
   build:
