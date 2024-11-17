@@ -566,6 +566,7 @@ let
 end
 
 # Checks that models created w/o specifying `@variables` for observables are identical.
+# Compares both to model with explicit declaration, and programmatically created model.
 let
     # With default ivs.
     rn1 = @reaction_network rn begin
@@ -576,22 +577,31 @@ let
         @variables X1(t) X2(t)
         @observables X ~ X1 + X2
     end
+    @variables X(t) X1(t) X2(t)
+    rn3 = complete(ReactionSystem([], t, [X1, X2], []; name = :rn, observed = [X ~ X1 + X2]))
     @test isequal(rn1, rn2)
+    @test isequal(rn1, rn3)
     @test isequal(rn1.X, rn2.X)
+    @test isequal(rn1.X, rn3.X)
 
     # With non-default ivs.
-    rn3 = @reaction_network rn begin
+    rn4 = @reaction_network rn begin
         @ivs τ x
         @variables X(τ,x) X1(τ,x) X2(τ,x)
         @observables X ~ X1 + X2
     end
-    rn4 = @reaction_network rn begin
+    rn5 = @reaction_network rn begin
         @ivs τ x
         @variables X1(τ,x) X2(τ,x)
         @observables X ~ X1 + X2
     end
-    @test isequal(rn3, rn4)
-    @test isequal(rn3.X, rn4.X)
+    @parameters τ x
+    @variables X(τ,x) X1(τ,x) X2(τ,x)
+    rn6 = complete(ReactionSystem([], τ, [X1, X2], []; name = :rn, observed = [X ~ X1 + X2], spatial_ivs = [x]))
+    @test isequal(rn4, rn5)
+    @test isequal(rn4, rn6)
+    @test isequal(rn4.X, rn5.X)
+    @test isequal(rn4.X, rn6.X)
 end
 
 # Checks that ivs are correctly found.
