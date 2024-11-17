@@ -783,9 +783,8 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
             # For Observables that have already been declared using @species/@variables,
             # or are interpolated, this parts should not be carried out.
             if !((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2]))
-                # Adds a line to the `observed_vars` expression, setting the ivs for this observable.
-                # Cannot extract directly using e.g. "getfield.(dependants_structs, :reactant)" because
-                # then we get something like :([:X1, :X2]), rather than :([X1, X2]).
+                # Creates an expression which extracts the ivs of the species & variables the
+                # observable depends on, and splats them out in the correct order.
                 dep_var_expr = :(filter(!MT.isparameter,
                     Symbolics.get_variables($(obs_eq.args[3]))))
                 ivs_get_expr = :(unique(reduce(
