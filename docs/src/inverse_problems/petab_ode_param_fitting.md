@@ -300,7 +300,7 @@ Sometimes, the parameters that are used vary between the different conditions. C
 ## [Additional features: Initial conditions](@id petab_simulation_initial_conditions)
 
 ### [Fitting initial conditions](@id petab_simulation_initial_conditions_fitted)
-Sometimes, initial conditions are uncertain quantities which we wish to fit to the data. This is possible by defining an initial condition as a parameter:
+Sometimes, initial conditions are uncertain quantities which we wish to fit to the data. This is possible [by defining an initial condition as a parameter](@ref dsl_advanced_options_parametric_initial_conditions):
 ```@example petab4
 using Catalyst, PEtab # hide
 rn = @reaction_network begin
