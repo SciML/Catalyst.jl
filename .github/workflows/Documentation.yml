@@ -12,8 +12,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
+  group: docs-${{ github.ref }} # Group name for concurrency control
+  cancel-in-progress: true # Ensures only one doc build runs at a time for each branch/ref, regardless of the trigger
 
 jobs:
   build:
@@ -22,11 +22,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Install binary dependencies needed for GLMakie to run in a headless environment
-      # xvfb: Creates a virtual frame buffer to simulate a display
-      # libgl1, mesa-utils, freeglut3-dev, xorg-dev, libxrandr-dev, libxinerama-dev, libxcursor-dev, libxi-dev, libxext-dev: Required libraries for OpenGL rendering
+      # Install all required X11 and OpenGL libraries
+      # These are needed for GLMakie to work in a headless environment
       - name: Install binary dependencies
-        run: sudo apt-get update && sudo apt-get install -y xvfb libgl1 mesa-utils freeglut3-dev xorg-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgl1 mesa-utils freeglut3-dev xorg-dev \
+            libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
+
+      # # Start Xvfb explicitly instead of using xvfb-run
+      # # This gives us more control and visibility into the virtual display setup
+      # - name: Setup virtual framebuffer
+      #   run: |
+      #     # Start Xvfb and wait for it to be ready
+      #     /usr/bin/Xvfb :99 -screen 0 1024x768x24
+      #     echo "DISPLAY=:99" >> $GITHUB_ENV
 
       - name: Install Julia
         uses: julia-actions/setup-julia@latest
@@ -38,22 +48,22 @@ jobs:
         with:
           cache-name: docs-cache
 
-      # Install Julia package dependencies for the documentation project
+      # Install dependencies with the virtual display already running
       - name: Install dependencies
-        run: >
-          DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --project=docs/ -e 'ENV["JULIA_PKG_SERVER"] = ""; using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+        run: |
+          julia --project=docs/ -e '
+            ENV["JULIA_PKG_SERVER"] = "";
+            using Pkg;
+            Pkg.develop(PackageSpec(path=pwd()));
+            Pkg.instantiate()'
 
-      # Build and deploy the documentation using xvfb to simulate a display for GLMakie
-      # xvfb-run: Runs Julia with a virtual display to support OpenGL rendering
-      # --server-args: Configures the virtual display resolution and color depth
+      # Build documentation with the stable virtual display
       - name: Build and deploy
         env:
-          GKSwstype: "100" # Specifies the workstation type for GR framework rendering, https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988/7
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Required for permissions to deploy documentation
-          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # For authentication with SSH deploy key
-        run: >
-          DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' 
-          julia --project=docs --color=yes --code-coverage=user docs/make.jl
+          GKSwstype: "100"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+        run: xvfb-run julia --project=docs --color=yes --code-coverage=user docs/make.jl
 
       - name: Upload site as artifact
         uses: actions/upload-artifact@v4
