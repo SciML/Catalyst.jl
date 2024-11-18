@@ -543,7 +543,7 @@ function extract_species_and_parameters!(reactions, excluded_syms; requiredec = 
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(parameters, reactant.stoichiometry, excluded_syms)
             (!isempty(parameters) && requiredec) && throw(UndeclaredSymbolicError(
-                                                                                  "Unrecognized parameters $(join(parameters, ", ")) detected in the stoichiometry for reactant $(reactant.reactant) in the following reaction expression: \"$(string(reaction.rxpexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
+                                                                                  "Unrecognized parameters $(join(parameters, ", ")) detected in the stoichiometry for reactant $(reactant.reactant) in the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
         end
     end
 
