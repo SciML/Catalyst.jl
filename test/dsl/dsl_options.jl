@@ -1025,6 +1025,7 @@ end
 
 ### test that @no_infer properly throws errors when undeclared variables are written
 
+import Catalyst: UndeclaredSymbolicError
 let
     # Test error when species are inferred
     @test_throws UndeclaredSymbolicError @macroexpand rn = @reaction_network begin

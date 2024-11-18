@@ -220,18 +220,16 @@ struct ReactionStruct
     products::Vector{ReactantStruct}
     rate::ExprValues
     metadata::Expr
+    rxexpr::Expr
 
     function ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues,
-            metadata_line::ExprValues)
+            metadata_line::ExprValues, rx_line::Expr)
         sub = recursive_find_reactants!(sub_line, 1, Vector{ReactantStruct}(undef, 0))
         prod = recursive_find_reactants!(prod_line, 1, Vector{ReactantStruct}(undef, 0))
         metadata = extract_metadata(metadata_line)
-        new(sub, prod, rate, metadata)
+        new(sub, prod, rate, metadata, rx_line)
     end
 end
-
-#function Base.show(io::IO, rx::ReactionStruct) #    
-#end
 
 # Recursive function that loops through the reaction line and finds the reactants and their
 # stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
@@ -440,15 +438,15 @@ function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(u
                 error("Error: Must provide a tuple of reaction rates when declaring a bi-directional reaction.")
             end
             push_reactions!(reactions, reaction.args[2], reaction.args[3],
-                rate.args[1], metadata.args[1], arrow)
+                rate.args[1], metadata.args[1], arrow, line)
             push_reactions!(reactions, reaction.args[3], reaction.args[2],
-                rate.args[2], metadata.args[2], arrow)
+                rate.args[2], metadata.args[2], arrow, line)
         elseif in(arrow, fwd_arrows)
             push_reactions!(reactions, reaction.args[2], reaction.args[3],
-                rate, metadata, arrow)
+                rate, metadata, arrow, line)
         elseif in(arrow, bwd_arrows)
             push_reactions!(reactions, reaction.args[3], reaction.args[2],
-                rate, metadata, arrow)
+                rate, metadata, arrow, line)
         else
             throw("Malformed reaction, invalid arrow type used in: $(MacroTools.striplines(line))")
         end
@@ -482,7 +480,7 @@ end
 # Takes a reaction line and creates reaction(s) from it and pushes those to the reaction array.
 # Used to create multiple reactions from, for instance, `k, (X,Y) --> 0`.
 function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues,
-        prod_line::ExprValues, rate::ExprValues, metadata::ExprValues, arrow::Symbol)
+        prod_line::ExprValues, rate::ExprValues, metadata::ExprValues, arrow::Symbol, line::Expr)
     # The rates, substrates, products, and metadata may be in a tupple form (e.g. `k, (X,Y) --> 0`).
     # This finds the length of these tuples (or 1 if not in tuple forms). Errors if lengs inconsistent.
     lengs = (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate), tup_leng(metadata))
@@ -505,7 +503,7 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
 
         push!(reactions,
             ReactionStruct(get_tup_arg(sub_line, i),
-                get_tup_arg(prod_line, i), get_tup_arg(rate, i), metadata_i))
+                get_tup_arg(prod_line, i), get_tup_arg(rate, i), metadata_i, line))
     end
 end
 
@@ -532,7 +530,7 @@ function extract_species_and_parameters!(reactions, excluded_syms; requiredec = 
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(species, reactant.reactant, excluded_syms)
             (!isempty(species) && requiredec) && throw(UndeclaredSymbolicError(
-                                                                               "Unrecognized variables $(species[1]) detected in reaction expression. Since the flag @require_declaration is declared, all species must be explicitly declared with the @species macro."))
+                                                                               "Unrecognized variables $(join(species, ", ")) detected in reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all species must be explicitly declared with the @species macro."))
         end
     end
 
@@ -541,11 +539,11 @@ function extract_species_and_parameters!(reactions, excluded_syms; requiredec = 
     for reaction in reactions
         add_syms_from_expr!(parameters, reaction.rate, excluded_syms)
         (!isempty(parameters) && requiredec) && throw(UndeclaredSymbolicError(
-                                                                              "Unrecognized parameter $(parameters[1]) detected in rate expression $(reaction.rate). Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
+                                                                              "Unrecognized parameter $(join(parameters, ", ")) detected in rate expression: $(reaction.rate) for the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(parameters, reactant.stoichiometry, excluded_syms)
             (!isempty(parameters) && requiredec) && throw(UndeclaredSymbolicError(
-                                                                                  "Unrecognized parameters $(parameters[1]) detected in the stoichiometry for reactant $(reactant.reactant). Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
+                                                                                  "Unrecognized parameters $(join(parameters, ", ")) detected in the stoichiometry for reactant $(reactant.reactant) in the following reaction expression: \"$(string(reaction.rxpexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
         end
     end
 
@@ -734,7 +732,7 @@ function read_equations_options(options, variables_declared; requiredec = false)
                 error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
             elseif (!in(diff_var, variables_declared)) && requiredec
                 throw(UndeclaredSymbolicError(
-                                              "Unrecognized symbol $(diff_var) was used as a variable in an equation. Since the @require_declaration flag is set, all variables in equations must be explicitly declared via @variables, @species, or @parameters."))
+                                              "Unrecognized symbol $(diff_var) was used as a variable in an equation: \"$eq\". Since the @require_declaration flag is set, all variables in equations must be explicitly declared via @variables, @species, or @parameters."))
             else
                 add_default_diff = true
                 in(diff_var, variables_declared) || push!(vars_extracted, diff_var)
@@ -790,7 +788,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted; req
             obs_name, ivs, defaults, metadata = find_varinfo_in_declaration(obs_eq.args[2])
             if (requiredec && !in(obs_name, species_n_vars_declared))
                 throw(UndeclaredSymbolicError(
-                                              "An undeclared variable ($obs_name) was declared as an observable. Since the flag @require_declaration is set, all variables must be declared with the @species, @parameters, or @variables macros."))
+                                              "An undeclared variable ($obs_name) was declared as an observable in the following observable equation: \"$obs_eq\". Since the flag @require_declaration is set, all variables must be declared with the @species, @parameters, or @variables macros."))
             end
             isempty(ivs) ||
                 error("An observable ($obs_name) was given independent variable(s). These should not be given, as they are inferred automatically.")
