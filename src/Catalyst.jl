@@ -167,6 +167,11 @@ export hc_steady_states
 function make_si_ode end
 export make_si_ode
 
+# GraphMakie
+function plot_network end
+function plot_complexes end
+export plot_network, plot_complexes
+
 ### Spatial Reaction Networks ###
 
 # Spatial reactions.
