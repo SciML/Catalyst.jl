@@ -32,30 +32,11 @@ jobs:
 
       # Start Xvfb explicitly instead of using xvfb-run
       # This gives us more control and visibility into the virtual display setup
-      - name: Setup and verify virtual framebuffer
+      - name: Setup virtual framebuffer
         run: |
-          # Start Xvfb on display :99
-          /usr/bin/Xvfb :99 -screen 0 1024x768x24 &
-          echo "Waiting for Xvfb to start..."
-          
-          # Try to connect to Xvfb for up to 10 seconds
-          max_attempts=10
-          attempt=1
-          while [ $attempt -le $max_attempts ]; do
-            echo "Connection attempt $attempt of $max_attempts..."
-            if xdpyinfo -display :99 >/dev/null 2>&1; then
-              echo "✓ Xvfb is running and accepting connections"
-              echo "DISPLAY=:99" >> $GITHUB_ENV
-              exit 0
-            fi
-            attempt=$((attempt+1))
-            sleep 1
-          done
-          
-          echo "✗ Failed to connect to Xvfb after $max_attempts seconds"
-          echo "Xvfb status:"
-          ps aux | grep Xvfb
-          exit 1
+          # Start Xvfb and wait for it to be ready
+          /usr/bin/Xvfb :99 -screen 0 1024x768x24
+          echo "DISPLAY=:99" >> $GITHUB_ENV
 
       - name: Install Julia
         uses: julia-actions/setup-julia@latest
@@ -79,11 +60,10 @@ jobs:
       # Build documentation with the stable virtual display
       - name: Build and deploy
         env:
-          # GKSwstype=100 tells GR to use a different backend that works better in headless environments
           GKSwstype: "100"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
-        run: julia --project=docs --color=yes --code-coverage=user docs/make.jl
+        run: xvfb-run julia --project=docs --color=yes --code-coverage=user docs/make.jl
 
       - name: Upload site as artifact
         uses: actions/upload-artifact@v4
