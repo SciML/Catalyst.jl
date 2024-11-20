@@ -88,6 +88,7 @@ Generally, there are four main reasons for specifying species/parameters using t
 !!! warning
     Catalyst's DSL automatically infer species and parameters from the input. However, it only does so for *quantities that appear in reactions*. Until now this has not been relevant. However, this tutorial will demonstrate cases where species/parameters that are not part of reactions are used. These *must* be designated using either the `@species` or `@parameters` options (or the `@variables` option, which is described [later](@ref constraint_equations)).
 
+
 ### [Setting default values for species and parameters](@id dsl_advanced_options_default_vals)
 When declaring species/parameters using the `@species` and `@parameters` options, one can also assign them default values (by appending them with `=` followed by the desired default value). E.g here we set `X`'s default initial condition value to $1.0$, and `p` and `d`'s default values to $1.0$ and $0.2$, respectively:
 ```@example dsl_advanced_defaults
@@ -205,7 +206,7 @@ ModelingToolkit.getdescription(two_state_system.kA)
 
 ### [Designating constant-valued/fixed species parameters](@id dsl_advanced_options_constant_species)
 
-Catalyst enables the designation of parameters as `constantspecies`. These parameters can be used as species in reactions, however, their values are not changed by the reaction and remain constant throughout the simulation (unless changed by e.g. the [occurrence of an event]@ref constraint_equations_events). Practically, this is done by setting the parameter's `isconstantspecies` metadata to `true`. Here, we create a simple reaction where the species `X` is converted to `Xᴾ` at rate `k`. By designating `X` as a constant species parameter, we ensure that its quantity is unchanged by the occurrence of the reaction.
+Catalyst enables the designation of parameters as `constantspecies`. These parameters can be used as species in reactions, however, their values are not changed by the reaction and remain constant throughout the simulation (unless changed by e.g. the [occurrence of an event](@ref constraint_equations_events). Practically, this is done by setting the parameter's `isconstantspecies` metadata to `true`. Here, we create a simple reaction where the species `X` is converted to `Xᴾ` at rate `k`. By designating `X` as a constant species parameter, we ensure that its quantity is unchanged by the occurrence of the reaction.
 ```@example dsl_advanced_constant_species
 using Catalyst # hide
 rn = @reaction_network begin
@@ -271,6 +272,34 @@ oprob = ODEProblem(two_state_model, u0, tspan, ps)
 sol = solve(oprob)
 plot(sol)
 ```
+
+### Turning off species, parameter, and variable inferring
+In some cases it may be desirable for Catalyst to not infer species and parameters from the DSL, as in the case of reaction networks with very many variables, or as a sanity check that variable names are written correctly. To turn off inferring, simply add the `@require_declaration` macro to one of the lines of the `@reaction_network` declaration. Having this macro means that every single variable, species, or parameter will have to be explicitly declared using the `@variable`, `@species`, or `@parameter` macro. In the case that the DSL parser encounters an undeclared symbolic in this case, it will error with an `UndeclaredSymbolicError` and print the reaction or equation that the undeclared symbolic was found in. 
+
+```@example dsl_advanced_no_infer
+using Catalyst
+# The following case will throw an UndeclaredSymbolicError.
+rn = @reaction_network begin
+    @require_declaration
+    (k1, k2), A <--> B
+end
+# The following case will not error. 
+t = default_t()
+rn = @reaction_network begin
+    @require_declaration
+    @species A(t) B(t)
+    @parameters k1 k2
+    (k1, k2), A <--> B
+end
+```
+
+The following cases in which the DSL would normally infer variables will all throw errors if `@require_declaration` is set and the variables are not explicitly declared.
+- Inferring a species in a reaction, as in the example above
+- Inferring a parameter in a reaction rate expression, as in the reaction line `k*n, A --> B`
+- Inferring a parameter in the stoichiometry of a species, as in the reaction line `k, n*A --> B`
+- Inferring a differential variable on the LHS of a coupled differential equation, as in `A` in `@equations D(A) ~ A^2`
+- Inferring an [observable](@dsl_advanced_options_observables) that is declared using `@observables`
+
 
 ## [Naming reaction networks](@id dsl_advanced_options_naming)
 Each reaction network model has a name. It can be accessed using the `nameof` function. By default, some generic name is used:
@@ -574,3 +603,8 @@ latexify(rn; form = :ode)
 ```
 has rate $d[X]/dt = -2 k$.
 
+## Turning off species, parameter, and variable inferring
+In some cases it may be desirable for Catalyst to not infer species and parameters from the DSL, as in the case of reaction networks with very many variables, or as a sanity check that variable names are written correctly. To turn off inferring, simply add the `@require_declaration` macro to one of the lines of the `@reaction_network` declaration. Having this macro means that every single variable, species, or parameter will have to be explicitly declared using the `@variable`, `@species`, or `@parameter` macro. In the case that the DSL parser encounters an undeclared symbolic in this case, it will error with an `UndeclaredSymbolicError` and print the reaction or equation that the undeclared symbolic was found in. 
+
+```@example dsl_advanced_defaults
+```
