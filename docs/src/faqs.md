@@ -311,7 +311,7 @@ Symbolics.jl before their use in Catalyst, see the discussion
 [here](https://symbolics.juliasymbolics.org/stable/manual/functions/).
 
 ## How can I turn off automatic inferring of species and parameters when using the DSL?
-This option can be set using the `@require_declaration` option inside `@reaction_network`. In this case all the species, parameters, and variables in the system must be pre-declared using one of the `@species`, `@parameters`, or `@variables` macros. For more information about what is inferred automatically and not, please see the section on [`@require_declaration`](@dsl_advanced_options_require_dec).
+This option can be set using the `@require_declaration` option inside `@reaction_network`. In this case all the species, parameters, and variables in the system must be pre-declared using one of the `@species`, `@parameters`, or `@variables` macros. For more information about what is inferred automatically and not, please see the section on [`@require_declaration`](@ref dsl_advanced_options_require_dec).
 
 ```@example faq9
 using Catalyst

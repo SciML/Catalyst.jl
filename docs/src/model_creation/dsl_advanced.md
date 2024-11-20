@@ -278,9 +278,12 @@ In some cases it may be desirable for Catalyst to not infer species and paramete
 ```@example dsl_advanced_no_infer
 using Catalyst
 # The following case will throw an UndeclaredSymbolicError.
-rn = @reaction_network begin
+try @macroexpand @reaction_network begin
     @require_declaration
     (k1, k2), A <--> B
+end
+catch e
+    println(e.msg)
 end
 ```
 In order to avoid an error in this case all the relevant species and parameters will have to be declared.
@@ -300,7 +303,7 @@ The following cases in which the DSL would normally infer variables will all thr
 - Inferring a parameter in a reaction rate expression, as in the reaction line `k*n, A --> B`
 - Inferring a parameter in the stoichiometry of a species, as in the reaction line `k, n*A --> B`
 - Inferring a differential variable on the LHS of a coupled differential equation, as in `A` in `@equations D(A) ~ A^2`
-- Inferring an [observable](@dsl_advanced_options_observables) that is declared using `@observables`
+- Inferring an [observable](@ref dsl_advanced_options_observables) that is declared using `@observables`
 
 ## [Naming reaction networks](@id dsl_advanced_options_naming)
 Each reaction network model has a name. It can be accessed using the `nameof` function. By default, some generic name is used:
