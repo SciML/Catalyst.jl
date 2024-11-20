@@ -25,6 +25,20 @@
   StructuralIdentifiability has with Julia 1.10.5 and 1.11.
 - A tutorial on making interactive plot displays using Makie has been added.
 - The BifurcationKit extension has been updated to v.4.
+- There is a new DSL option `@require_declaration` that will turn off automatic inferring for species, parameters, and variables in the DSL. For example, the following will now error:
+  ```julia
+  rn = @reaction_network begin
+    @require_declaration
+    (k1, k2), A <--> B
+  end
+  # All symbolics must be explicitly declared. 
+  rn = @reaction_network begin
+    @species A(t) B(t)
+    @parameters k1 k2
+    @require_declaration
+    (k1, k2), A <--> B
+  end
+  ```
 
 ## Catalyst 14.4.1
 - Support for user-defined functions on the RHS when providing coupled equations 
