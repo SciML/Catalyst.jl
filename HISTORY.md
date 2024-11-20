@@ -33,6 +33,7 @@
   end
   ```
   When this flag is set, all symbolics must be explicitly declared. 
+  ```
   rn = @reaction_network begin
     @species A(t) B(t)
     @parameters k1 k2
