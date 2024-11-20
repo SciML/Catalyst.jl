@@ -96,4 +96,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [targets]
-test = ["DiffEqCallbacks", "DomainSets", "Graphviz_jll", "Logging", "NonlinearSolve", "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner", "Pkg", "Plots", "Random", "SafeTestsets", "SciMLBase", "SciMLNLSolve", "StableRNGs", "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "Unitful"]
+test = ["DiffEqCallbacks", "DomainSets", "Graphviz_jll", "Logging", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner", "Pkg", "Plots", "Random", "SafeTestsets", "SciMLBase", "SciMLNLSolve", "StableRNGs", "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "Unitful"]
