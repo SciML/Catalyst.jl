@@ -31,7 +31,8 @@
     @require_declaration
     (k1, k2), A <--> B
   end
-  # All symbolics must be explicitly declared. 
+  ```
+  When this flag is set, all symbolics must be explicitly declared. 
   rn = @reaction_network begin
     @species A(t) B(t)
     @parameters k1 k2
