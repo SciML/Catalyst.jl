@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages
-using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEq, Plots, SteadyStateDiffEq, StochasticDiffEq, Test
+using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEqTsit5, Plots, SteadyStateDiffEq, StochasticDiffEq, Test
 import ModelingToolkit: getp, getu, setp, setu
 
 # Sets rnd number.

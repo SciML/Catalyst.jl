@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, JumpProcesses, LinearAlgebra, NonlinearSolve, OrdinaryDiffEq, SteadyStateDiffEq, StochasticDiffEq, Test
+using Catalyst, JumpProcesses, LinearAlgebra, NonlinearSolve, OrdinaryDiffEqTsit5, SteadyStateDiffEq, StochasticDiffEq, Test
 
 # Sets stable rng number.
 using StableRNGs
@@ -192,7 +192,7 @@ let
     oprob1 = ODEProblem(rn, u0_1, 10.0, ps; remove_conserved = true, remove_conserved_warn)
     oprob2 = ODEProblem(rn, u0_2, 10.0, ps; remove_conserved = true, remove_conserved_warn)
     oprob3 = ODEProblem(rn, u0_3, 10.0, ps; remove_conserved = true, remove_conserved_warn)
-    @test solve(oprob1)[sps] ≈ solve(oprob2)[sps] ≈ solve(oprob3)[sps]
+    @test solve(oprob1, Tsit5())[sps] ≈ solve(oprob2, Tsit5())[sps] ≈ solve(oprob3, Tsit5())[sps]
 end
 
 # Tests conservation laws in SDE simulation.
@@ -224,8 +224,8 @@ let
     oprob2 = ODEProblem(osys, u0, 10.0, ps_2)
 
     # Checks that the solutions generates the correct conserved quantities.
-    sol1 = solve(oprob1; saveat = 1.0)
-    sol2 = solve(oprob2; saveat = 1.0)
+    sol1 = solve(oprob1, Tsit5(); saveat = 1.0)
+    sol2 = solve(oprob2, Tsit5(); saveat = 1.0)
     @test all(sol1[osys.X1 + osys.X2] .== 2.0)
     @test all(sol2[osys.X1 + osys.X2] .== 4.0)
 end

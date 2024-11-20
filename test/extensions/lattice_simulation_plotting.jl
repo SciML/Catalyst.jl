@@ -91,7 +91,7 @@ let
     lattice = CartesianGrid((2,2,2))
     lrs = LatticeReactionSystem(rs, [diffusion_rx], lattice)
     oprob = ODEProblem(lrs, [:X => 1.0], 1.0, [:d => 1.0, :D => 0.2])
-    osol = solve(oprob)
+    osol = solve(oprob, Tsit5())
 
     @test_throws ArgumentError lattice_plot(osol, :X, lrs)
     @test_throws ArgumentError lattice_animation(osol, :X, lrs, "animation_tmp.mp4")
