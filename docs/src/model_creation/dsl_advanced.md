@@ -604,8 +604,3 @@ latexify(rn; form = :ode)
 ```
 has rate $d[X]/dt = -2 k$.
 
-## Turning off species, parameter, and variable inferring
-In some cases it may be desirable for Catalyst to not infer species and parameters from the DSL, as in the case of reaction networks with very many variables, or as a sanity check that variable names are written correctly. To turn off inferring, simply add the `@require_declaration` macro to one of the lines of the `@reaction_network` declaration. Having this macro means that every single variable, species, or parameter will have to be explicitly declared using the `@variable`, `@species`, or `@parameter` macro. In the case that the DSL parser encounters an undeclared symbolic in this case, it will error with an `UndeclaredSymbolicError` and print the reaction or equation that the undeclared symbolic was found in. 
-
-```@example dsl_advanced_defaults
-```
