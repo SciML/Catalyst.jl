@@ -271,7 +271,7 @@ isequivalent
 ==(rn1::ReactionSystem, rn2::ReactionSystem)
 ```
 
-## Network visualization
+## [Network visualization](@id network_visualization)
 [Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to convert
 networks to LaTeX equations by
 ```julia
