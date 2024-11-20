@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, JumpProcesses, LinearAlgebra, NonlinearSolve, OrdinaryDiffEq, SteadyStateDiffEq, StochasticDiffEq, Test
+using Catalyst, JumpProcesses, LinearAlgebra, NonlinearSolve, OrdinaryDiffEqTsit5, OrdinaryDiffEqDefault, OrdinaryDiffEqVerner, SteadyStateDiffEq, StochasticDiffEq, Test
 
 # Sets stable rng number.
 using StableRNGs

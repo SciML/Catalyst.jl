@@ -1,7 +1,7 @@
 ### Preparations ###
 
 # Fetch packages.
-using Catalyst, CairoMakie, GraphMakie, Graphs, JumpProcesses, OrdinaryDiffEq, Test
+using Catalyst, CairoMakie, GraphMakie, Graphs, JumpProcesses, OrdinaryDiffEqDefault, OrdinaryDiffEq, Test
 
 
 ### Checks Basic Plot Cases ###
