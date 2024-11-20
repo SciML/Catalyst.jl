@@ -47,7 +47,6 @@ A network graph showing a Catalyst model's species and reactions can be displaye
 
 Let's declare a [Brusselator model](@ref basic_CRN_library_brusselator) to see this plotting functionality. The functions `plot_network` and `plot_complexes` are used to create the species-reaction and complex graphs, respectively. For a more thorough description of these two representations, please see the [network visualization](@network_visualization) section of the API, but the gist is that the species-reaction graph has species and reactions as nodes, and the complex graph has reaction complexes as nodes. Below we will plot the species-reaction graph using `plot_network`. 
 ```@example visualisation_graphs
-using Catalyst
 brusselator = @reaction_network begin
     A, ∅ --> X
     1, 2X + Y --> 3X
@@ -57,9 +56,9 @@ end
 plot_network(brusselator)
 nothing # hide
 ```
-!["Brusselator Graph"](../assets/network_graphs/brusselator_graph.png)
+!["Brusselator Graph"](../assets/network_graphs/brusselator_graph_makie.png)
 
-The species-reaction graph (or network graph) represents species as blue nodes and reactions as orange dots. Black arrows from species to reactions indicate substrates, and are labelled with their respective stoichiometries. Similarly, black arrows from reactions to species indicate products (also labelled with their respective stoichiometries). If there are any reactions where a species affect the rate, but does not participate as a reactant, this is displayed with a dashed red arrow. This can be seen in the following [Repressilator model](@ref basic_CRN_library_repressilator):
+The species-reaction graph (or network graph) represents species as blue nodes and reactions as green dots. Black arrows from species to reactions indicate substrates, and are labelled with their respective stoichiometries. Similarly, black arrows from reactions to species indicate products (also labelled with their respective stoichiometries). If there are any reactions where a species affect the rate, but does not participate as a reactant, this is displayed with a dashed red arrow. This can be seen in the following [Repressilator model](@ref basic_CRN_library_repressilator):
 ```@example visualisation_graphs
 repressilator = @reaction_network begin
     hillr(Z,v,K,n), ∅ --> X
@@ -70,23 +69,23 @@ end
 plot_network(repressilator)
 nothing # hide
 ```
-!["Repressilator Graph"](../assets/network_graphs/repressilator_graph.png)
+!["Repressilator Graph"](../assets/network_graphs/repressilator_graph_makie.png)
 
 A generated graph can be saved using Makie's `save` function. 
 ```julia
-repressilator_graph = Graph(repressilator)
+repressilator_graph = plot_network(repressilator)
 save("repressilator_graph.png", repressilator_graph)
 ```
 
-Finally, a [network's reaction complexes](@ref network_analysis_reaction_complexes) (and the reactions in between these) can be displayed using the `complexgraph(brusselator)` function:
+Finally, a [network's reaction complexes](@ref network_analysis_reaction_complexes) (and the reactions in between these) can be displayed using the `plot_complexes(brusselator)` function:
 ```@example visualisation_graphs
 plot_complexes(brusselator)
 nothing # hide
 ```
-!["Repressilator Complex Graph"](../assets/network_graphs/repressilator_complex_graph.png)
-Here, reaction complexes are displayed as blue nodes, and reactions in between these as black arrows.
+!["Brusselator Complex Graph"](../assets/network_graphs/brusselator_complex_graph_makie.png)
+Here, reaction complexes are displayed as blue nodes, and reactions between complexes are displayed as black arrows. Edges are labeled with their rate expressions.
 
-Makie graphs can be made to be interactive, allowing one to drag nodes and edges. To do this, we retrieve the axis from the GraphMakie plot, and then register the interactions. Note that this can only be done if `GLMakie` is the installed Makie backend.  
+Makie graphs can be made to be interactive, allowing one to drag nodes and edges. To do this, we retrieve the axis from the GraphMakie plot, and then register the interactions. Note that this can only be done if `GLMakie` is the installed Makie backend. See the [GraphMakie docs](https://graph.makie.org/stable/#Predefined-Interactions) for more information.  
 
 ```@example visualization_graphs
 using GLMakie
@@ -94,4 +93,12 @@ f, ax, p = plot_network(brusselator)
 deregister_interaction!(ax, :rectanglezoom)
 register_interaction!(ax, :ndrag, NodeDrag(p))
 register_interaction!(ax, :edrag, EdgeDrag(p))
+nothing
+```
+
+The equivalent of `show` for Makie objects is the `display` function. 
+```@example visualization_graphs
+f = plot_network(brusselator)
+display(f)
+nothing #hide
 ```
