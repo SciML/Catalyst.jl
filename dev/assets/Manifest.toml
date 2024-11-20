@@ -5,9 +5,9 @@ manifest_format = "2.0"
 project_hash = "d23fb93f797e31c9d0d70468bf6e0db98744dc85"
 
 [[deps.ADTypes]]
-git-tree-sha1 = "30bb95a372787af850addf28ac937f1be7b79173"
+git-tree-sha1 = "72af59f5b8f09faee36b4ec48e014a79210f2f4f"
 uuid = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
-version = "1.10.0"
+version = "1.11.0"
 weakdeps = ["ChainRulesCore", "ConstructionBase", "EnzymeCore"]
 
     [deps.ADTypes.extensions]
