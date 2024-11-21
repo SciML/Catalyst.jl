@@ -1,7 +1,7 @@
 ### Preparations ###
 
 # Fetch packages.
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, OrdinaryDiffEqBDF
 using Random, Statistics, SparseArrays, Test
 
 # Fetch test networks.

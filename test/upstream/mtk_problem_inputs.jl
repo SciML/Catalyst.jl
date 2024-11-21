@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages
-using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEq, StaticArrays, SteadyStateDiffEq, 
+using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEqTsit5, StaticArrays, SteadyStateDiffEq, 
     StochasticDiffEq, Test
 
 # Sets rnd number.
