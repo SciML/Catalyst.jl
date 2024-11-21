@@ -2,6 +2,7 @@
 BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
 Catalyst = "479239e8-5488-4da2-87a7-35f2df7eef83"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 GraphMakie = "1ecd5474-83a3-4783-bb4f-06765db800d2"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
