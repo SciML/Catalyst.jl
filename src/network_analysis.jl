@@ -314,6 +314,44 @@ function incidencematgraph(incidencemat::SparseMatrixCSC{Int, Int})
     return graph
 end
 
+
+"""
+    species_reaction_graph(rn::ReactionSystem)
+
+Construct a directed simple graph where there are two types of nodes: species and reactions. 
+An edge from a species *s* to reaction *r* indicates that *s* is a reactant for *r*, and 
+an edge from a reaction *r* to a species *s* indicates that *s* is a product of *r*. By 
+default, the species vertices are listed first, so the first *n* indices correspond to 
+species nodes. 
+
+Note: this is equivalent to the Petri net representation of a chemical reaction network.
+
+For example,
+```julia
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end
+species_reaction_graph(sir)
+"""
+function species_reaction_graph(rn::ReactionSystem) 
+    specs = species(rn)
+    rxs = reactions(rn)
+    sm = speciesmap(rn)
+    s = length(specs)
+    
+    edgelist = Graphs.Edge[]
+    for (i, rx) in enumerate(rxs) 
+        for spec in rx.substrates
+            push!(edgelist, Graphs.Edge(sm[spec], s+i))
+        end
+        for spec in rx.products
+            push!(edgelist, Graphs.Edge(s+i, sm[spec]))
+        end
+    end
+    srg = Graphs.SimpleDiGraphFromIterator(edgelist)
+end
+
 ### Linkage, Deficiency, Reversibility ###
 
 """

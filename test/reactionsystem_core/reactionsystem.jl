@@ -1,7 +1,7 @@
 ### Fetch Packages and Set Global Variables ###
 
 # Fetch packages.
-using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEq, StochasticDiffEq, Test
+using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEqTsit5, OrdinaryDiffEqVerner, StochasticDiffEq, Test
 const MT = ModelingToolkit
 
 # Sets stable rng number.

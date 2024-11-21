@@ -1,7 +1,7 @@
 ### Fetch Packages and Set Global Variables ###
 
 # Fetch packages.
-using Catalyst, OrdinaryDiffEq, Test
+using Catalyst, Test
 using ModelingToolkit, DomainSets
 const MT = ModelingToolkit
 

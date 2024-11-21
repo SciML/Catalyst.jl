@@ -1,5 +1,5 @@
 # Fetch packages.
-using Catalyst, NonlinearSolve, OrdinaryDiffEq, Statistics, SteadyStateDiffEq, StochasticDiffEq, Test
+using Catalyst, NonlinearSolve, OrdinaryDiffEqVerner, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, Statistics, SteadyStateDiffEq, StochasticDiffEq, Test
 using ModelingToolkit: getdefault, getdescription, getdefault
 using Symbolics: BasicSymbolic, unwrap
 
