@@ -277,13 +277,14 @@ In some cases it may be desirable for Catalyst to not infer species and paramete
 
 ```julia
 using Catalyst
-# The following case will throw an UndeclaredSymbolicError.
 rn = @reaction_network begin
     @require_declaration
     (k1, k2), A <--> B
 end
 ```
-In order to avoid an error in this case all the relevant species and parameters will have to be declared.
+Running the code above will yield the following error: `LoadError: UndeclaredSymbolicError: Unrecognized variables A detected in reaction expression: "((k1, k2), A <--> B)". Since the flag @require_declaration is declared, all species must be explicitly declared with the @species macro.`
+
+In order to avoid the error in this case all the relevant species and parameters will have to be declared.
 ```@example dsl_advanced_require_dec
 # The following case will not error. 
 t = default_t()
