@@ -272,22 +272,19 @@ sol = solve(oprob)
 plot(sol)
 ```
 
-### [Turning off species, parameter, and variable inferring](@id dsl_advanced_options_require_dec)
-In some cases it may be desirable for Catalyst to not infer species and parameters from the DSL, as in the case of reaction networks with very many variables, or as a sanity check that variable names are written correctly. To turn off inferring, simply add the `@require_declaration` macro to one of the lines of the `@reaction_network` declaration. Having this macro means that every single variable, species, or parameter will have to be explicitly declared using the `@variable`, `@species`, or `@parameter` macro. In the case that the DSL parser encounters an undeclared symbolic, it will error with an `UndeclaredSymbolicError` and print the reaction or equation that the undeclared symbolic was found in. 
+### [Turning off species, parameter, and variable inference](@id dsl_advanced_options_require_dec)
+In some cases it may be desirable for Catalyst to not infer species and parameters from the DSL, as in the case of reaction networks with very many variables, or as a sanity check that variable names are written correctly. To turn off inference, simply use the `@require_declaration` option when using the `@reaction_network` DSL. This will require every single variable, species, or parameter used within the DSL to be explicitly declared using the `@variable`, `@species`, or `@parameter` options. In the case that the DSL parser encounters an undeclared symbolic, it will error with an `UndeclaredSymbolicError` and print the reaction or equation that the undeclared symbolic was found in. 
 
-```@example dsl_advanced_no_infer
+```julia
 using Catalyst
 # The following case will throw an UndeclaredSymbolicError.
-try @macroexpand @reaction_network begin
+rn = @reaction_network begin
     @require_declaration
     (k1, k2), A <--> B
 end
-catch e
-    println(e.msg)
-end
 ```
 In order to avoid an error in this case all the relevant species and parameters will have to be declared.
-```
+```@example dsl_advanced_require_dec
 # The following case will not error. 
 t = default_t()
 rn = @reaction_network begin
@@ -299,11 +296,11 @@ end
 ```
 
 The following cases in which the DSL would normally infer variables will all throw errors if `@require_declaration` is set and the variables are not explicitly declared.
-- Inferring a species in a reaction, as in the example above
-- Inferring a parameter in a reaction rate expression, as in the reaction line `k*n, A --> B`
-- Inferring a parameter in the stoichiometry of a species, as in the reaction line `k, n*A --> B`
-- Inferring a differential variable on the LHS of a coupled differential equation, as in `A` in `@equations D(A) ~ A^2`
-- Inferring an [observable](@ref dsl_advanced_options_observables) that is declared using `@observables`
+- Occurrence of an undeclared species in a reaction, as in the example above.
+- Occurrence of an undeclared parameter in a reaction rate expression, as in the reaction line `k*n, A --> B`.
+- Occurrence of an undeclared parameter in the stoichiometry of a species, as in the reaction line `k, n*A --> B`.
+- Occurrence of an undeclared differential variable on the LHS of a coupled differential equation, as in `A` in `@equations D(A) ~ A^2`.
+- Occurrence of an undeclared [observable](@ref dsl_advanced_options_observables) in an `@observables` expression, such as `@observables X1 ~ A + B`.
 
 ## [Naming reaction networks](@id dsl_advanced_options_naming)
 Each reaction network model has a name. It can be accessed using the `nameof` function. By default, some generic name is used:
