@@ -287,6 +287,7 @@ Running the code above will yield the following error: `LoadError: UndeclaredSym
 In order to avoid the error in this case all the relevant species and parameters will have to be declared.
 ```@example dsl_advanced_require_dec
 # The following case will not error. 
+using Catalyst
 t = default_t()
 rn = @reaction_network begin
     @require_declaration
