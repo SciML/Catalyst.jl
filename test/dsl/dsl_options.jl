@@ -643,7 +643,7 @@ let
         k, 0 --> X1 + X2
     end
     @test isequal(observed(rn1)[1].rhs, observed(rn2)[1].rhs)
-    @test_broken isequal(observed(rn1)[1].lhs.metadata, observed(rn2)[1].lhs.metadata)
+    @test isequal(observed(rn1)[1].lhs.metadata, observed(rn2)[1].lhs.metadata)
     @test isequal(unknowns(rn1), unknowns(rn2))
 
     # Case with metadata.
@@ -657,7 +657,7 @@ let
         k, 0 --> X1 + X2
     end
     @test isequal(observed(rn3)[1].rhs, observed(rn4)[1].rhs)
-    @test_broken isequal(observed(rn3)[1].lhs.metadata, observed(rn4)[1].lhs.metadata)
+    @test isequal(observed(rn3)[1].lhs.metadata, observed(rn4)[1].lhs.metadata)
     @test isequal(unknowns(rn3), unknowns(rn4))
 end
 
@@ -1069,7 +1069,7 @@ let
     # Test error when species are inferred
     @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
         @require_declaration
-        @parameters k 
+        @parameters k
         k, A --> B
     end
     @test_nowarn @macroexpand @reaction_network begin
@@ -1130,4 +1130,3 @@ let
         @observables X2 ~ X1
     end
 end
-
