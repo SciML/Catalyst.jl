@@ -90,7 +90,7 @@ end
 
         # Test spatial plotting, using CarioMakie and GraphMakie
         @time @safetestset "Lattice Simulation Plotting" begin include("extensions/lattice_simulation_plotting.jl") end
-        @time @safetestset "Graph visualization" begin include("extensions/graphmakie.jl")
+        @time @safetestset "Graph visualization" begin include("extensions/graphmakie.jl") end
     end
 
 end # @time
