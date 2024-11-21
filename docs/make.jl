@@ -1,5 +1,6 @@
 using Documenter
 using Catalyst, ModelingToolkit
+using GraphMakie, GLMakie
 
 docpath = Base.source_dir()
 assetpath = joinpath(docpath, "src", "assets")
@@ -39,7 +40,7 @@ makedocs(sitename = "Catalyst.jl",
         canonical = "https://docs.sciml.ai/Catalyst/stable/"),
     modules = [Catalyst, ModelingToolkit, 
                isdefined(Base, :get_extension) ? Base.get_extension(Catalyst, :CatalystGraphMakieExtension) :
-                   Manifolds.ManifoldsTestExt],
+               Catalyst.CatalystGraphMakieExtension],
     doctest = false,
     clean = true,
     pages = pages,
