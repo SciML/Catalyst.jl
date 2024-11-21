@@ -65,5 +65,3 @@ pages = Any[
     "API" => "api.md",
     "Developer Documentation" => "devdocs/dev_guide.md"
 ]
-
-pages = Any["model_creation/model_visualisation.md", "api.md", "model_creation/examples/basic_CRN_library.md", "model_creation/network_analysis.md"]
