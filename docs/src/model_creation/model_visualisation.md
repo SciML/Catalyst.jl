@@ -96,7 +96,7 @@ register_interaction!(ax, :edrag, EdgeDrag(p))
 nothing
 ```
 
-The equivalent of `show` for Makie objects is the `display` function. 
+The equivalent of `show` for Makie plots is the `display` function. 
 ```@example visualization_graphs
 f = plot_network(brusselator)
 display(f)
