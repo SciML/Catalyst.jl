@@ -282,8 +282,10 @@ rn = @reaction_network begin
     (k1, k2), A <--> B
 end
 ```
-Running the code above will yield the following error: `LoadError: UndeclaredSymbolicError: Unrecognized variables A detected in reaction expression: "((k1, k2), A <--> B)". Since the flag @require_declaration is declared, all species must be explicitly declared with the @species macro.`
-
+Running the code above will yield the following error: 
+```
+LoadError: UndeclaredSymbolicError: Unrecognized variables A detected in reaction expression: "((k1, k2), A <--> B)". Since the flag @require_declaration is declared, all species must be explicitly declared with the @species macro.
+```
 In order to avoid the error in this case all the relevant species and parameters will have to be declared.
 ```@example dsl_advanced_require_dec
 # The following case will not error. 
