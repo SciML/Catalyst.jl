@@ -210,7 +210,7 @@ let
     for (prob, solver) in zip(deepcopy([oprob, sprob]), [Tsit5(), ImplicitEM(), SSAStepper()])
 
         # Save single variable
-        if solver isa SSAStepper
+        if !(solver isa SSAStepper)
             @test solve(prob, solver; seed, save_idxs=X)[X][1] == 4
             @test solve(prob, solver; seed, save_idxs=model.X)[X][1] == 4
             @test solve(prob, solver; seed, save_idxs=:X)[X][1] == 4
