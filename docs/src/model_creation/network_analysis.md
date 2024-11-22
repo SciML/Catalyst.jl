@@ -188,21 +188,17 @@ N == Z*B
 ```
 
 Reaction complexes give an alternative way to visualize a reaction network
-graph. Catalyst's [`complexgraph`](@ref) command will calculate the complexes of
+graph. Catalyst's [`plot_complexes`](@ref) command will calculate the complexes of
 a network and then show how they are related. For example,
-```julia
-complexgraph(rn)
+```@example s1
+using Catalyst, GraphMakie, GLMakie
+plot_complexes(rn)
 ```
-gives
-
-![Simple example complex graph](../assets/simple_complexgraph.svg)
 
 while for the repressilator we find
-```julia
-complexgraph(repressilator)
+```@example s1
+plot_complexes(repressilator)
 ```
-
-![Repressilator complex](../assets/repressilator_complexgraph.svg)
 
 Here ∅ represents the empty complex, black arrows show reactions converting
 substrate complexes into product complexes where the rate is just a number or
@@ -229,11 +225,10 @@ rn = @reaction_network begin
 end
 ```
 with graph
-```julia
-complexgraph(rn)
+```@example s1
+plot_complexes(rn)
 ```
 
-![network_1](../assets/complex_rn.svg)
 
 #### [Linkage classes and sub-networks of the reaction network](@id network_analysis_structural_aspects_linkage)
 The preceding reaction complex graph shows that `rn` is composed of two
@@ -261,18 +256,14 @@ subnets = subnetworks(rn)
 reactions.(subnets)
 ```
 The graphs of the reaction complexes in the two sub-networks are then
-```julia
-  complexgraph(subnets[1])
+```@example s1
+  plot_complexes(subnets[1])
 ```
-
-![subnetwork_1](../assets/complex_subnets1.svg)
 
 and,
-```julia
- complexgraph(subnets[2])
+```@example s1
+ plot_complexes(subnets[2])
 ```
-
-![subnetwork_2](../assets/complex_subnets2.svg)
 
 #### [Deficiency of the network](@id network_analysis_structural_aspects_deficiency)
 A famous theorem in Chemical Reaction Network Theory, the Deficiency Zero
@@ -358,11 +349,9 @@ end
 reactioncomplexes(rn)
 isreversible(rn)
 ```
-```julia
-complexgraph(rn)
+```@example s1
+plot_complexes(rn)
 ```
-
-![reversibility](../assets/complex_reversibility.svg)
 
 It is evident from the preceding graph that the network is not reversible.
 However, it satisfies a weaker property in that there is a path from each
