@@ -144,8 +144,6 @@ include("latexify_recipes.jl")
 
 # for making and saving graphs/plots
 include("plotting.jl")
-include("graphs.jl")
-export Graph, savegraph, complexgraph
 
 # for creating compounds
 include("chemistry_functionality.jl")
@@ -167,7 +165,7 @@ export hc_steady_states
 function make_si_ode end
 export make_si_ode
 
-# GraphMakie
+# GraphMakie: functionality for plotting species-reaction graphs and complexes
 function plot_network end
 function plot_complexes end
 export plot_network, plot_complexes
