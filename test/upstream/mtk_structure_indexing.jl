@@ -207,7 +207,7 @@ end
 # Test solve's save_idxs argument.
 # Currently, `save_idxs` is broken with symbolic stuff (https://github.com/SciML/ModelingToolkit.jl/issues/1761).
 let 
-    for (prob, solver) in zip(deepcopy([oprob, sprob]), [Tsit5(), ImplicitEM(), SSAStepper()])
+    for (prob, solver) in zip(deepcopy([oprob, sprob, jprob]), [Tsit5(), ImplicitEM(), SSAStepper()])
 
         # Save single variable
         if !(solver isa SSAStepper)
