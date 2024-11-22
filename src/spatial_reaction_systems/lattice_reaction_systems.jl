@@ -8,7 +8,7 @@ const GridLattice{N, T} = Union{Array{Bool, N}, CartesianGridRej{N, T}}
 """
 $(TYPEDEF)
 
-A representation of a spatial system of chemical reactions on a discrete (lattice) space. 
+A representation of a spatial system of chemical reactions on a discrete (lattice) space.
 
 # Fields
 $(FIELDS)
@@ -20,7 +20,7 @@ Arguments:
 to which the non-spatial model is expanded.
 
 Keyword Arguments:
-- `diagonal_connections = false`: Only relevant for Cartesian and masked lattices. If `true`, 
+- `diagonal_connections = false`: Only relevant for Cartesian and masked lattices. If `true`,
 diagonally adjacent compartments are considered adjacent, and spatial reactions in between these
 are possible.
 
@@ -82,12 +82,12 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
     """
     parameters::Vector{Any}
     """
-    Parameters which values are tied to vertices, 
+    Parameters which values are tied to vertices,
     e.g. that possibly could have unique values at each vertex of the system.
     """
     vertex_parameters::Vector{Any}
     """
-    Parameters whose values are tied to edges (adjacencies), 
+    Parameters whose values are tied to edges (adjacencies),
     e.g. that possibly could have unique values at each edge of the system.
     """
     edge_parameters::Vector{Any}
@@ -108,9 +108,6 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
         if !iscomplete(rs)
             throw(ArgumentError("A non-complete `ReactionSystem` was used as input, this is not permitted."))
         end
-        if !isempty(MT.get_systems(rs))
-            throw(ArgumentError("A non-flattened (hierarchical) `ReactionSystem` was used as input. `LatticeReactionSystem`s can only be based on non-hierarchical `ReactionSystem`s."))
-        end
         if length(reactions(rs)) != length(equations(rs))
             throw(ArgumentError("The `ReactionSystem` used as input contain equations (in addition to reactions). This is not permitted."))
         end
@@ -118,13 +115,16 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
             throw(ArgumentError("The `ReactionSystem` used as input contain variable unknowns (in addition to species unknowns). This is not permitted (the input `ReactionSystem` must contain species unknowns only)."))
         end
         if !isempty(MT.continuous_events(rs)) || !isempty(MT.discrete_events(rs))
-            throw(ArgumentError("The `ReactionSystem` used as input to `LatticeReactionSystem contain events. These will be ignored in any simulations based on the created `LatticeReactionSystem`."))
+            throw(ArgumentError("The `ReactionSystem` used as input to `LatticeReactionSystem` contain events. These will be ignored in any simulations based on the created `LatticeReactionSystem`."))
+        end
+        if !isempty(get_parent(MT.get_systems(rs)))
+            @warn "The `ReactionSystem` used as input to `LatticeReactionSystem` was originally created as a hierarchical model. While this won't necessarily result in errors, it has not been well-tested, and is not recommended."
         end
         if !isempty(observed(rs))
-            @warn "The `ReactionSystem` used as input to `LatticeReactionSystem contain observables. It will not be possible to access these from the created `LatticeReactionSystem`."
+            @warn "The `ReactionSystem` used as input to `LatticeReactionSystem` contain observables. It will not be possible to access these from the created `LatticeReactionSystem`."
         end
 
-        # Computes the species which are parts of spatial reactions. Also counts the total number of 
+        # Computes the species which are parts of spatial reactions. Also counts the total number of
         # species types.
         if isempty(spatial_reactions)
             spat_species = Vector{BasicSymbolic{Real}}[]
@@ -171,7 +171,7 @@ function LatticeReactionSystem(rs, srs, lattice::SimpleGraph)
     LatticeReactionSystem(rs, srs, DiGraph(lattice))
 end
 
-# Creates a LatticeReactionSystem from a CartesianGrid lattice (cartesian grid) or a Boolean Array 
+# Creates a LatticeReactionSystem from a CartesianGrid lattice (cartesian grid) or a Boolean Array
 # lattice (masked grid). These two are quite similar, so much code can be reused in a single interface.
 function LatticeReactionSystem(rs, srs, lattice::GridLattice{N, T};
         diagonal_connections = false) where {N, T}
@@ -226,7 +226,7 @@ function count_edges(grid::CartesianGridRej{N, T};
     return num_edges
 end
 
-# Counts and edges on a masked grid. Does so by looping through all the vertices of the grid, 
+# Counts and edges on a masked grid. Does so by looping through all the vertices of the grid,
 # finding their neighbours, and updating the edge count accordingly.
 function count_edges(grid::Array{Bool, N}; diagonal_connections = false) where {N}
     g_size = grid_size(grid)
@@ -239,7 +239,7 @@ function count_edges(grid::Array{Bool, N}; diagonal_connections = false) where {
     return num_edges
 end
 
-# For a (1d, 2d, or 3d) (Cartesian or masked) grid, returns a vector and an array, permitting the 
+# For a (1d, 2d, or 3d) (Cartesian or masked) grid, returns a vector and an array, permitting the
 # conversion between a vertex's flat (scalar) and grid indices. E.g. for a 2d grid, if grid point (3,2)
 # corresponds to the fifth vertex, then `flat_to_grid_idx[5] = (3,2)` and `grid_to_flat_idx[3,2] = 5`.
 function get_index_converters(grid::GridLattice{N, T}, num_verts) where {N, T}
@@ -335,7 +335,7 @@ num_verts(lrs::LatticeReactionSystem) = getfield(lrs, :num_verts)
 """
     num_edges(lrs::LatticeReactionSystem)
 
-Returns the number of edges (i.e. connections between vertices) in the lattice stored in a 
+Returns the number of edges (i.e. connections between vertices) in the lattice stored in a
 `LatticeReactionSystem`.
 """
 num_edges(lrs::LatticeReactionSystem) = getfield(lrs, :num_edges)
@@ -392,7 +392,7 @@ end
 """
     has_cartesian_lattice(lrs::LatticeReactionSystem)
 
-Returns `true` if `lrs` was created using a cartesian grid lattice (e.g. created via `CartesianGrid(5,5)`). 
+Returns `true` if `lrs` was created using a cartesian grid lattice (e.g. created via `CartesianGrid(5,5)`).
 Otherwise, returns `false`.
 """
 has_cartesian_lattice(lrs::LatticeReactionSystem) = lattice(lrs) isa
@@ -401,7 +401,7 @@ has_cartesian_lattice(lrs::LatticeReactionSystem) = lattice(lrs) isa
 """
     has_masked_lattice(lrs::LatticeReactionSystem)
 
-Returns `true` if `lrs` was created using a masked grid lattice (e.g. created via `[true true; true false]`). 
+Returns `true` if `lrs` was created using a masked grid lattice (e.g. created via `[true true; true false]`).
 Otherwise, returns `false`.
 """
 has_masked_lattice(lrs::LatticeReactionSystem) = lattice(lrs) isa Array{Bool, N} where {N}
@@ -418,7 +418,7 @@ end
 """
     has_graph_lattice(lrs::LatticeReactionSystem)
 
-Returns `true` if `lrs` was created using a graph grid lattice (e.g. created via `path_graph(5)`). 
+Returns `true` if `lrs` was created using a graph grid lattice (e.g. created via `path_graph(5)`).
 Otherwise, returns `false`.
 """
 has_graph_lattice(lrs::LatticeReactionSystem) = lattice(lrs) isa SimpleDiGraph
@@ -426,7 +426,7 @@ has_graph_lattice(lrs::LatticeReactionSystem) = lattice(lrs) isa SimpleDiGraph
 """
     grid_size(lrs::LatticeReactionSystem)
 
-Returns the size of `lrs`'s lattice (only if it is a cartesian or masked grid lattice). 
+Returns the size of `lrs`'s lattice (only if it is a cartesian or masked grid lattice).
 E.g. for a lattice `CartesianGrid(4,6)`, `(4,6)` is returned.
 """
 grid_size(lrs::LatticeReactionSystem) = grid_size(lattice(lrs))
@@ -439,7 +439,7 @@ end
 """
     grid_dims(lrs::LatticeReactionSystem)
 
-Returns the number of dimensions of `lrs`'s lattice (only if it is a cartesian or masked grid lattice). 
+Returns the number of dimensions of `lrs`'s lattice (only if it is a cartesian or masked grid lattice).
 The output is either `1`, `2`, or `3`.
 """
 grid_dims(lrs::LatticeReactionSystem) = grid_dims(lattice(lrs))
@@ -506,19 +506,19 @@ end
 """
     make_edge_p_values(lrs::LatticeReactionSystem, make_edge_p_value::Function)
 
-Generates edge parameter values for a lattice reaction system. Only work for (Cartesian or masked) 
-grid lattices (without diagonal adjacencies). 
+Generates edge parameter values for a lattice reaction system. Only work for (Cartesian or masked)
+grid lattices (without diagonal adjacencies).
 
 Input:
 - `lrs`: The lattice reaction system for which values should be generated.
     - `make_edge_p_value`: a function describing a rule for generating the edge parameter values.
 
 Output:
-    - `ep_vals`: A sparse matrix of size (num_verts,num_verts) (where num_verts is the number of 
-    vertices in `lrs`). Here, `eps[i,j]` is filled only if there is an edge going from vertex i to 
+    - `ep_vals`: A sparse matrix of size (num_verts,num_verts) (where num_verts is the number of
+    vertices in `lrs`). Here, `eps[i,j]` is filled only if there is an edge going from vertex i to
     vertex j. The value of `eps[i,j]` is determined by `make_edge_p_value`.
 
-Here, `make_edge_p_value` should take two arguments, `src_vert` and `dst_vert`, which correspond to 
+Here, `make_edge_p_value` should take two arguments, `src_vert` and `dst_vert`, which correspond to
 the grid indices of an edge's source and destination vertices, respectively. It outputs a single value,
 which is the value assigned to that edge.
 
@@ -568,34 +568,34 @@ function make_edge_p_values(lrs::LatticeReactionSystem, make_edge_p_value::Funct
 end
 
 """
-    make_directed_edge_values(lrs::LatticeReactionSystem, x_vals::Tuple{T,T}, y_vals::Tuple{T,T} = (undef,undef), 
+    make_directed_edge_values(lrs::LatticeReactionSystem, x_vals::Tuple{T,T}, y_vals::Tuple{T,T} = (undef,undef),
                      z_vals::Tuple{T,T} = (undef,undef)) where {T}
 
-Generates edge parameter values for a lattice reaction system. Only work for (Cartesian or masked) 
-grid lattices (without diagonal adjacencies). Each dimension (x, and possibly y and z), and 
+Generates edge parameter values for a lattice reaction system. Only work for (Cartesian or masked)
+grid lattices (without diagonal adjacencies). Each dimension (x, and possibly y and z), and
 direction has assigned its own constant edge parameter value.
 
 Input:
     - `lrs`: The lattice reaction system for which values should be generated.
-    - `x_vals::Tuple{T,T}`: The values in the increasing (from a lower x index to a higher x index) 
+    - `x_vals::Tuple{T,T}`: The values in the increasing (from a lower x index to a higher x index)
     and decreasing (from a higher x index to a lower x index) direction along the x dimension.
-    - `y_vals::Tuple{T,T}`: The values in the increasing and decreasing direction along the y dimension. 
+    - `y_vals::Tuple{T,T}`: The values in the increasing and decreasing direction along the y dimension.
     Should only be used for 2 and 3-dimensional grids.
-    - `z_vals::Tuple{T,T}`: The values in the increasing and decreasing direction along the z dimension. 
+    - `z_vals::Tuple{T,T}`: The values in the increasing and decreasing direction along the z dimension.
     Should only be used for 3-dimensional grids.
 
 Output:
-    - `ep_vals`: A sparse matrix of size (num_verts,num_verts) (where num_verts is the number of 
-    vertices in `lrs`). Here, `eps[i,j]` is filled only if there is an edge going from vertex i to 
-    vertex j. The value of `eps[i,j]` is determined by the `x_vals`, `y_vals`, and `z_vals` Tuples, 
+    - `ep_vals`: A sparse matrix of size (num_verts,num_verts) (where num_verts is the number of
+    vertices in `lrs`). Here, `eps[i,j]` is filled only if there is an edge going from vertex i to
+    vertex j. The value of `eps[i,j]` is determined by the `x_vals`, `y_vals`, and `z_vals` Tuples,
     and vertices i and j's relative position in the grid.
 
-It should be noted that two adjacent vertices will always be different in exactly a single dimension 
+It should be noted that two adjacent vertices will always be different in exactly a single dimension
 (x, y, or z). The corresponding tuple determines which value is assigned.
 
 Example:
     In the following example, we wish to have diffusion in the x dimension, but a constant flow from
-    low y values to high y values (so not transportation from high to low y). We achieve it in the 
+    low y values to high y values (so not transportation from high to low y). We achieve it in the
     following manner:
 ```julia
 using Catalyst
