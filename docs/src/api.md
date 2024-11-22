@@ -294,8 +294,8 @@ Finally, another optional argument (`expand_functions=true`) automatically expan
 
 Reaction networks can be plotted using the `GraphMakie` extension, which is loaded whenever both `Catalyst` and `GraphMakie` are loaded (note that a Makie backend, like `GLMakie`, must be loaded as well). The two functions for plotting networks are `plot_network` and `plot_complexes`, which are two distinct representations. 
 ```@docs
-plot_network(rn)
-plot_complexes(rn)
+plot_network(::ReactionSystem)
+plot_complexes(::ReactionSystem)
 ```
 
 ## [Rate laws](@id api_rate_laws)
