@@ -85,13 +85,10 @@ Catalyst also has functionality for visualizing networks using the [Makie](https
 plotting ecosystem. The relevant packages to load are Catalyst, GraphMakie, and a Makie backend
 such as GLMakie. Doing so and then using the `plot_network` function allows us to 
 visualize the network: 
-```julia
+```@example tut1
 using Catalyst, GraphMakie, GLMakie
 g = plot_network(rn)
 ```
-giving
-
-![Repressilator solution](../assets/repressilator_graph_makie.png)
 
 The network graph shows a variety of information, representing each species as a
 blue node, and each reaction as an orange dot. Black arrows from species to

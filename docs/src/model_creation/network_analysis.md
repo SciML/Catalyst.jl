@@ -31,11 +31,10 @@ In the [Introduction to Catalyst](@ref introduction_to_catalyst)
 tutorial we showed how the above network could be visualized as a
 species-reaction graph. There, species are represented by the nodes of the graph
 and edges show the reactions in which a given species is a substrate or product.
-```julia
+```@example s1
 using Catalyst, GraphMakie, GLMakie
 g = plot_network(repressilator)
 ```
-![Repressilator solution](../assets/repressilator_graph_makie.png)
 
 We also showed in the [Introduction to Catalyst](@ref introduction_to_catalyst) tutorial that
 the reaction rate equation ODE model for the repressilator is
