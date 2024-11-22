@@ -43,7 +43,7 @@ end
 
 # Macro for creating a `TransportReaction`.
 macro transport_reaction(rateex::ExprValues, species::ExprValues)
-    make_transport_reaction(MacroTools.striplines(rateex), species)
+    make_transport_reaction(striplines(rateex), species)
 end
 function make_transport_reaction(rateex, species)
     # Handle interpolation of variables

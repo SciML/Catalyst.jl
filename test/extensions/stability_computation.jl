@@ -1,7 +1,7 @@
 ### Fetch Packages ###
 
 # Fetch packages.
-using Catalyst, OrdinaryDiffEq, SteadyStateDiffEq, Test
+using Catalyst, OrdinaryDiffEqVerner, SteadyStateDiffEq, Test
 import HomotopyContinuation
 
 # Sets rnd number.

@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, LinearAlgebra, OrdinaryDiffEq, SciMLNLSolve, Test
+using Catalyst, LinearAlgebra, OrdinaryDiffEqTsit5, SciMLNLSolve, Test
 using ModelingToolkit: nameof
 
 # Sets the default `t` to use.

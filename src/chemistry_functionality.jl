@@ -63,11 +63,11 @@ t = default_t()
 @compound CO2(t) ~ C + 2O
 ```
 
-Notes: 
+Notes:
 - The component species must be defined before using the `@compound` macro.
 """
 macro compound(expr)
-    make_compound(MacroTools.striplines(expr))
+    make_compound(striplines(expr))
 end
 
 # Declares compound error messages:
@@ -83,12 +83,12 @@ function make_compound(expr)
         error(COMPOUND_CREATION_ERROR_BAD_SEPARATOR)
 
     # Loops through all components, add the component and the coefficients to the corresponding vectors
-    # Cannot extract directly using e.g. "getfield.(composition, :reactant)" because then 
+    # Cannot extract directly using e.g. "getfield.(composition, :reactant)" because then
     # we get something like :([:C, :O]), rather than :([C, O]).
     composition = Catalyst.recursive_find_reactants!(expr.args[3], 1,
         Vector{ReactantStruct}(undef, 0))
-    components = :([])                                      # Becomes something like :([C, O]).                                         
-    coefficients = :([])                                    # Becomes something like :([1, 2]). 
+    components = :([])                                      # Becomes something like :([C, O]).
+    coefficients = :([])                                    # Becomes something like :([1, 2]).
     for comp in composition
         push!(components.args, comp.reactant)
         push!(coefficients.args, comp.stoichiometry)
@@ -110,13 +110,13 @@ function make_compound(expr)
                for comp in $components])))
 
     # Creates the found expressions that will create the compound species.
-    # The `Expr(:escape, :(...))` is required so that the expressions are evaluated in 
-    # the scope the users use the macro in (to e.g. detect already exiting species).     
+    # The `Expr(:escape, :(...))` is required so that the expressions are evaluated in
+    # the scope the users use the macro in (to e.g. detect already exiting species).
     # Creates something like (where `compound_ivs` and `component_ivs` evaluates to all the compound's and components' ivs):
     #   `@species CO2(..)`
     #   `isempty([])` && length(component_ivs) && error("When ...)
-    #   `CO2 = CO2(component_ivs..)` 
-    #   `issetequal(compound_ivs, component_ivs) || error("The ...)` 
+    #   `CO2 = CO2(component_ivs..)`
+    #   `issetequal(compound_ivs, component_ivs) || error("The ...)`
     #   `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, true)`
     #   `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [C, O])`
     #   `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [1, 2])`
@@ -159,7 +159,7 @@ Macro that creates several compound species, which each is composed of smaller c
 Example:
 ```julia
 t = default_t()
-@species C(t) H(t) O(t) 
+@species C(t) H(t) O(t)
 @compounds
     CH4(t) = C + 4H
     O2(t) = 2O
@@ -168,11 +168,11 @@ t = default_t()
 end
 ```
 
-Notes: 
+Notes:
 - The component species must be defined before using the `@compound` macro.
 """
 macro compounds(expr)
-    make_compounds(MacroTools.striplines(expr))
+    make_compounds(striplines(expr))
 end
 
 # Function managing the @compound macro.
@@ -183,7 +183,7 @@ function make_compounds(expr)
     # For each compound in `expr`, creates the set of 7 compound creation lines (using `make_compound`).
     # Next, loops through all 7*[Number of compounds] lines and add them to compound_declarations.
     compound_calls = [Catalyst.make_compound(line) for line in expr.args]
-    for compound_call in compound_calls, line in MacroTools.striplines(compound_call).args
+    for compound_call in compound_calls, line in striplines(compound_call).args
         push!(compound_declarations.args, line)
     end
 
@@ -249,7 +249,7 @@ brxs = balance_reaction(rx) # No solution.
 
 Notes:
 - Balancing reactions that contain compounds of compounds is currently not supported.
-- A reaction may not always yield a single solution; it could have an infinite number of solutions or none at all. When there are multiple solutions, a vector of all possible `Reaction` objects is returned. However, substrates and products may be interchanged as we currently do not solve for a linear combination that maintains the set of substrates and products. 
+- A reaction may not always yield a single solution; it could have an infinite number of solutions or none at all. When there are multiple solutions, a vector of all possible `Reaction` objects is returned. However, substrates and products may be interchanged as we currently do not solve for a linear combination that maintains the set of substrates and products.
 - If the reaction cannot be balanced, an empty `Reaction` vector is returned.
 """
 function balance_reaction(reaction::Reaction)
@@ -369,16 +369,16 @@ From a system, creates a new system where each reaction is a balanced version of
 reaction of the original system. For more information, consider the `balance_reaction` function
 (which is internally applied to each system reaction).
 
-Arguments 
+Arguments
 - `rs`: The reaction system that should be balanced.
 
 Notes:
 - If any reaction in the system cannot be balanced, throws an error.
-- If any reaction in the system have an infinite number of potential reactions, throws an error. 
+- If any reaction in the system have an infinite number of potential reactions, throws an error.
 Here, it would be possible to generate a valid reaction, however, no such routine is currently
 implemented in `balance_system`.
 - `balance_system` will not modify reactions of subsystems to the input system. It is recommended
-not to apply `balance_system` to non-flattened systems. 
+not to apply `balance_system` to non-flattened systems.
 """
 function balance_system(rs::ReactionSystem)
     @set! rs.eqs = CatalystEqType[get_balanced_reaction(eq) for eq in get_eqs(rs)]
@@ -391,7 +391,7 @@ end
 function get_balanced_reaction(rx::Reaction)
     brxs = balance_reaction(rx)
 
-    # In case there are no, or multiple, solutions to the balancing problem. 
+    # In case there are no, or multiple, solutions to the balancing problem.
     if isempty(brxs)
         error("Could not balance reaction `$rx`, unable to create a balanced `ReactionSystem`.")
     end
