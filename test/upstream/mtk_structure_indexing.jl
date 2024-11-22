@@ -209,9 +209,9 @@ end
 let 
     for (prob, solver) in zip(deepcopy([oprob, sprob, jprob]), [Tsit5(), ImplicitEM(), SSAStepper()])
         # Save single variable
-        @test_broken solve(prob, solver; seed, save_idxs=X)[X][1] == 4
-        @test_broken solve(prob, solver; seed, save_idxs=model.X)[X][1] == 4
-        @test_broken solve(prob, solver; seed, save_idxs=:X)[X][1] == 4
+        @test solve(prob, solver; seed, save_idxs=X)[X][1] == 4
+        @test solve(prob, solver; seed, save_idxs=model.X)[X][1] == 4
+        @test solve(prob, solver; seed, save_idxs=:X)[X][1] == 4
 
         # Save observable.
         @test_broken solve(prob, solver; seed, save_idxs=XY)[XY][1] == 9
