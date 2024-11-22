@@ -81,14 +81,17 @@ latexify(rn)
 ```@example tut1
 rn #hide
 ```
-Assuming [Graphviz](https://graphviz.org/) is installed and command line
-accessible, within a Jupyter notebook we can also graph the reaction network by
+Catalyst also has functionality for visualizing networks using the [Makie](https://docs.makie.org/stable/)
+plotting ecosystem. The relevant packages to load are Catalyst, GraphMakie, and a Makie backend
+such as GLMakie. Doing so and then using the `plot_network` function allows us to 
+visualize the network: 
 ```julia
+using Catalyst, GraphMakie, GLMakie
 g = Graph(rn)
 ```
 giving
 
-![Repressilator solution](../assets/repressilator.svg)
+![Repressilator solution](../assets/repressilator_graph_makie.png)
 
 The network graph shows a variety of information, representing each species as a
 blue node, and each reaction as an orange dot. Black arrows from species to
