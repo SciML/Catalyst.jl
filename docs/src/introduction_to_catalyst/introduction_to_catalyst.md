@@ -87,7 +87,7 @@ such as GLMakie. Doing so and then using the `plot_network` function allows us t
 visualize the network: 
 ```julia
 using Catalyst, GraphMakie, GLMakie
-g = Graph(rn)
+g = plot_network(rn)
 ```
 giving
 
@@ -108,8 +108,11 @@ hillr(P₂,α,K,n), ∅ --> m₃
 have rates that depend on the proteins, and hence lead to red arrows from each
 `Pᵢ`.
 
-Note, from the REPL or scripts one can always use [`savegraph`](@ref) to save
-the graph (assuming `Graphviz` is installed).
+Note, from the REPL or scripts one can always use Makie's `save` function to save
+the graph.
+```julia
+save("repressilator_graph.png", g)
+```
 
 ## Mass action ODE models
 Let's now use our `ReactionSystem` to generate and solve a corresponding mass
