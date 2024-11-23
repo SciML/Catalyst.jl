@@ -60,7 +60,7 @@ function gen_distances(g::SRGraphWrap; inc = 0.2)
 end
 
 """
-    plot_network(rn::ReactionSystem; interactive=false)
+    plot_network(rn::ReactionSystem)
 
 Converts a [`ReactionSystem`](@ref) into a GraphMakie plot of the species reaction graph
 (or Petri net representation). Reactions correspond to small green circles, and 
@@ -119,7 +119,7 @@ function Catalyst.plot_network(rn::ReactionSystem)
 end
 
 """
-    plot_complexes(rn::ReactionSystem; interactive=false)
+    plot_complexes(rn::ReactionSystem)
 
     Creates a GraphMakie plot of the [`ReactionComplex`](@ref)s in `rn`. Reactions
     correspond to arrows and reaction complexes to blue circles.
@@ -147,7 +147,7 @@ function Catalyst.plot_complexes(rn::ReactionSystem)
     graphplot(img; 
              edge_color = edgecolors,
              elabels = edgelabels, 
-             ilabels = complexlabels(rn), 
+             ilabels = nodelabels, 
              node_color = :skyblue3,
              elabels_rotation = 0,
              arrow_shift = :end, 

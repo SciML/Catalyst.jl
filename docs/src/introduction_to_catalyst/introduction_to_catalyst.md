@@ -179,9 +179,10 @@ At this point we are all set to solve the ODEs. We can now use any ODE solver
 from within the
 [OrdinaryDiffEq.jl](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/)
 package. We'll use the recommended default explicit solver, `Tsit5()`, and then
-plot the solutions:
+plot the solutions (we have imported `plot` to avoid ambiguity with GLMakie):
 
 ```@example tut1
+import Plots: plot
 sol = solve(oprob, Tsit5(), saveat=10.0)
 plot(sol)
 ```
