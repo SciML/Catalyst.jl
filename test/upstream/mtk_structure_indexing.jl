@@ -208,10 +208,17 @@ end
 # Currently, `save_idxs` is broken with symbolic stuff (https://github.com/SciML/ModelingToolkit.jl/issues/1761).
 let 
     for (prob, solver) in zip(deepcopy([oprob, sprob, jprob]), [Tsit5(), ImplicitEM(), SSAStepper()])
+
         # Save single variable
-        @test_broken solve(prob, solver; seed, save_idxs=X)[X][1] == 4
-        @test_broken solve(prob, solver; seed, save_idxs=model.X)[X][1] == 4
-        @test_broken solve(prob, solver; seed, save_idxs=:X)[X][1] == 4
+        if !(solver isa SSAStepper)
+            @test solve(prob, solver; seed, save_idxs=X)[X][1] == 4
+            @test solve(prob, solver; seed, save_idxs=model.X)[X][1] == 4
+            @test solve(prob, solver; seed, save_idxs=:X)[X][1] == 4
+        else
+            @test_broken solve(prob, solver; seed, save_idxs=X)[X][1] == 4
+            @test_broken solve(prob, solver; seed, save_idxs=model.X)[X][1] == 4
+            @test_broken solve(prob, solver; seed, save_idxs=:X)[X][1] == 4
+        end    
 
         # Save observable.
         @test_broken solve(prob, solver; seed, save_idxs=XY)[XY][1] == 9
