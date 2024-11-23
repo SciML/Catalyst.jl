@@ -389,7 +389,7 @@ let
     
     A_k = Catalyst.laplacianmat(MAPK, ratemap)
     @test all(col -> sum(col) == 0, eachcol(A_k))
-    A_k = Catalyst.laplacianmat(MAPK; sparse = true)
+    A_k = Catalyst.laplacianmat(MAPK, ratemap; sparse = true)
     @test Catalyst.issparse(A_k)
 
     numeqs = similar(eqs)
