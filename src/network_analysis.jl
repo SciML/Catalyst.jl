@@ -193,7 +193,7 @@ function complexstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem, rcs)
 end
 
 """
-    laplacianmat(rn::ReactionSystem, parammap=nothing; sparse=false)
+    laplacianmat(rn::ReactionSystem, pmap=Dict(); sparse=false)
 
     Return the negative of the graph Laplacian of the reaction network. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where Y is the [`complexstoichmat`](@ref) and A_k is the negative of the graph Laplacian, and Φ is the [`massactionvector`](@ref). A_k is an n-by-n matrix, where n is the number of complexes, where A_{ij} = k_{ij} if a reaction exists between the two complexes and 0 otherwise. 
     Returns a symbolic matrix by default, but will return a numerical matrix if parameter values are specified via parammap. 
@@ -204,11 +204,12 @@ function laplacianmat(rn::ReactionSystem, pmap = Dict(); sparse = false)
 end
 
 """
-    fluxmat(rn::ReactionSystem, parammap = nothing; sparse=true)
+    fluxmat(rn::ReactionSystem, pmap = Dict(); sparse=false)
 
     Return an r×c matrix K such that, if complex j is the substrate complex of reaction i, then K_{ij} = k, the rate constant for this reaction. Mostly a helper function for the network Laplacian, [`networklaplacianmat`](@ref). Has the useful property that ``\frac{dx}{dt} = S*K*Φ(x)``, where S is the [`netstoichmat`](@ref) or net stoichiometry matrix.
+    Returns a symbolic matrix by default, but will return a numerical matrix if rate constants are specified as a `Tuple`, `Vector`, or `Dict` of symbol-value pairs via `pmap`.
 """
-function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse=true) 
+function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse=false) 
     rates = reactionrates(rn)
 
     if !isempty(pmap)
@@ -265,7 +266,7 @@ function fluxmat(rn::ReactionSystem, pmap::Tuple; sparse = false)
 end
 
 """
-    massactionvector(rn::ReactionSystem, scmap = nothing)
+    massactionvector(rn::ReactionSystem, scmap = Dict())
 
     Return the vector whose entries correspond to the "mass action products" of each complex. For example, given the complex A + B, the corresponding entry of the vector would be A*B, and for the complex 2X + Y, the corresponding entry would be X^2*Y. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where Y is the [`complexstoichmat`](@ref) and A_k is the negative of the [`networklaplacian`](@ref). This utility returns Φ(x).
     Returns a symbolic vector by default, but will return a numerical vector if species concentrations are specified as a tuple, vector, or dictionary via scmap.
@@ -275,7 +276,7 @@ function massactionvector(rn::ReactionSystem, scmap::Dict = Dict())
     sm = speciesmap(rn); specs = species(rn)
 
     if !all(r -> ismassaction(r, rn), rxs)
-        error("The supplied ReactionSystem has reactions that are not ismassaction. The monomial vector is only defined for pure mass action networks.")
+        error("The supplied ReactionSystem has reactions that are not ismassaction. The mass action vector is only defined for pure mass action networks.")
     end
 
     if !isempty(scmap)
