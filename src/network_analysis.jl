@@ -193,20 +193,116 @@ function complexstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem, rcs)
 end
 
 """
-    networklaplacian(rn::ReactionSystem; parammap=nothing, sparse=false)
+    laplacianmat(rn::ReactionSystem, parammap=nothing; sparse=false)
 
-    Return the negative of the graph Laplacian of the reaction network. The ODE system of a chemical reaction network can be factorized as $$\frac{dx}{dt} = Y A_k Φ(x)$$, where Y is the [`complexstoichmat`](@ref) and A_k is the negative of the graph Laplacian. This is an n-by-n matrix, where n is the number of complexes, where A_{ij} = k_{ij} if a reaction exists between the two complexes and 0 otherwise. 
+    Return the negative of the graph Laplacian of the reaction network. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where Y is the [`complexstoichmat`](@ref) and A_k is the negative of the graph Laplacian, and Φ is the [`massactionvector`](@ref). A_k is an n-by-n matrix, where n is the number of complexes, where A_{ij} = k_{ij} if a reaction exists between the two complexes and 0 otherwise. 
+    Returns a symbolic matrix by default, but will return a numerical matrix if parameter values are specified via parammap. 
 """
-function networklaplacian(rn::ReactionSystem; parammap = nothing, sparse = false) 
-    
+function laplacianmat(rn::ReactionSystem, pmap = Dict(); sparse = false) 
+    D = incidencemat(rn; sparse); K = fluxmat(rn, pmap; sparse)
+    -D*K
 end
 
+"""
+    fluxmat(rn::ReactionSystem, parammap = nothing; sparse=true)
+
+    Return an r×c matrix K such that, if complex j is the substrate complex of reaction i, then K_{ij} = k, the rate constant for this reaction. Mostly a helper function for the network Laplacian, [`networklaplacianmat`](@ref). Has the useful property that ``\frac{dx}{dt} = S*K*Φ(x)``, where S is the [`netstoichmat`](@ref) or net stoichiometry matrix.
+"""
+function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse=true) 
+    rates = reactionrates(rn)
+
+    if !isempty(pmap)
+        length(pmap) != length(parameters(rn)) && error("Incorrect number of parameters were specified.")
+        pmap = symmap_to_varmap(rs, pmap)
+        pmap = Dict(ModelingToolkit.value(k) => v for (k, v) in pmap)
+        rates = [substitute(rate, pmap) for rate in rates]
+    end
+
+    rcmap = reactioncomplexmap(rn); nc = length(rcmap); nr = length(rates)
+    mtype = eltype(rates) <: Symbolics.BasicSymbolic ? Num : eltype(rates)
+    K = if sparse
+        fluxmat(SparseMatrixCSC{mtype, Int}, rcmap, rates)
+    else
+        fluxmat(Matrix{mtype}, rcmap, rates)
+    end
+end
+
+function fluxmat(::Type{SparseMatrixCSC{T, Int}}, rcmap, rates) where T
+    Is = Int[]
+    Js = Int[]
+    Vs = T[]
+    for (i, (complex, rxs)) in enumerate(rcmap)
+        for (rx, dir) in rxs
+            dir == -1 && begin
+                push!(Is, rx)
+                push!(Js, i)
+                push!(Vs, rates[rx])
+            end
+        end
+    end
+    Z = sparse(Is, Js, Vs, length(rates), length(rcmap))
+end
+
+function fluxmat(::Type{Matrix{T}}, rcmap, rates) where T
+    nr = length(rates); nc = length(rcmap)
+    K = zeros(T, nr, nc)
+    for (i, (complex, rxs)) in enumerate(rcmap)
+        for (rx, dir) in rxs
+            dir == -1 && (K[rx, i] = rates[rx])
+        end
+    end
+    K
+end
+
+function fluxmat(rn::ReactionSystem, pmap::Vector; sparse = false) 
+    pdict = Dict(pmap)
+    fluxmat(rs, pdict; sparse)
+end
+
+function fluxmat(rn::ReactionSystem, pmap::Tuple; sparse = false) 
+    pdict = Dict(pmap)
+    fluxmat(rs, pdict; sparse)
+end
 
 """
-    monomialvector(rn::ReactionSystem)
+    massactionvector(rn::ReactionSystem, scmap = nothing)
+
+    Return the vector whose entries correspond to the "substrate complexes" of each reaction. For example, given the reaction A + B --> C, the corresponding entry of the vector would be A*B, and for the reaction 2X + Y --> 3X, the corresponding entry would be X^2*Y. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where Y is the [`complexstoichmat`](@ref) and A_k is the negative of the [`networklaplacian`](@ref). This utility returns Φ(x).
+    Returns a symbolic vector by default, but will return a numerical vector if species concentrations are specified as a tuple, vector, or dictionary via scmap.
 """
-function monomialvector(rn::ReactionSystem) 
-    
+function massactionvector(rn::ReactionSystem, scmap::Dict = Dict()) 
+    r = numreactions(rn); rxs = reactions(rn)
+    sm = speciesmap(rn); specs = species(rn)
+
+    if !all(r -> ismassaction(r, rn), rxs)
+        error("The supplied ReactionSystem has reactions that are not ismassaction. The monomial vector is only defined for pure mass action networks.")
+    end
+
+    if !isempty(scmap)
+        length(scmap) != length(specs) && error("Incorrect number of species concentrations were specified.")
+        scmap = symmap_to_varmap(rs, scmap)
+        scmap = Dict(ModelingToolkit.value(k) => v for (k, v) in scmap)
+        specs = [substitute(s, scmap) for s in specs]
+    end
+
+    Φ = Vector{eltype(specs)}()
+    for i in 1:n
+        subs = rxs[i].substrates
+        stoich = rxs[i].substoich
+        push!(Φ, prod([specs[sm[s]]^α for (s, α) in zip(subs, stoich)]))
+    end
+
+    Φ 
+end
+
+function massactionvector(rn::ReactionSystem, scmap::Tuple) 
+    sdict = Dict(scmap)
+    massactionvector(rs, sdict)
+end
+
+function massactionvector(rn::ReactionSystem, scmap::Vector) 
+    sdict = Dict(scmap)
+    massactionvector(rs, sdict)
 end
 
 @doc raw"""
@@ -804,7 +900,7 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol=0, re
     elseif !isreversible(rs)
         return false
     elseif !all(r -> ismassaction(r, rs), reactions(rs))
-        error("The supplied ReactionSystem has reactions that are not ismassaction. Testing for being complex balanced is currently only supported for pure mass action networks.")
+        error("The supplied ReactionSystem has reactions that are not ismassaction. Testing for being detailed balanced is currently only supported for pure mass action networks.")
     end
 
     isforestlike(rs) && deficiency(rs) == 0 && return true
