@@ -380,8 +380,8 @@ let
     # Test using numbers
     k = rand(rng, numparams(MAPK))
     ratevec = collect(zip(parameters(MAPK), k))
-    ratemap = Dict(ratemap)
-    ratetup = Tuple(ratemap)
+    ratemap = Dict(ratevec)
+    ratetup = Tuple(ratevec)
 
     @test Catalyst.fluxmat(MAPK, ratemap) == Catalyst.fluxmat(MAPK, ratevec) == Catalyst.fluxmat(MAPK, ratetup)
     K = Catalyst.fluxmat(MAPK, ratemap; sparse = true)
