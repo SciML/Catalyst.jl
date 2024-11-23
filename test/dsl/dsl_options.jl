@@ -565,6 +565,45 @@ let
     @test sol[:X][1] == u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]
 end
 
+# Checks that models created w/o specifying `@variables` for observables are identical.
+# Compares both to model with explicit declaration, and programmatically created model.
+let
+    # With default ivs.
+    rn1 = @reaction_network rn begin
+        @variables X(t) X1(t) X2(t)
+        @observables X ~ X1 + X2
+    end
+    rn2 = @reaction_network rn begin
+        @variables X1(t) X2(t)
+        @observables X ~ X1 + X2
+    end
+    @variables X(t) X1(t) X2(t)
+    rn3 = complete(ReactionSystem([], t, [X1, X2], []; name = :rn, observed = [X ~ X1 + X2]))
+    @test isequal(rn1, rn2)
+    @test isequal(rn1, rn3)
+    @test isequal(rn1.X, rn2.X)
+    @test isequal(rn1.X, rn3.X)
+
+    # With non-default ivs.
+    rn4 = @reaction_network rn begin
+        @ivs τ x
+        @variables X(τ,x) X1(τ,x) X2(τ,x)
+        @observables X ~ X1 + X2
+    end
+    rn5 = @reaction_network rn begin
+        @ivs τ x
+        @variables X1(τ,x) X2(τ,x)
+        @observables X ~ X1 + X2
+    end
+    @parameters τ x
+    @variables X(τ,x) X1(τ,x) X2(τ,x)
+    rn6 = complete(ReactionSystem([], τ, [X1, X2], []; name = :rn, observed = [X ~ X1 + X2], spatial_ivs = [x]))
+    @test isequal(rn4, rn5)
+    @test isequal(rn4, rn6)
+    @test isequal(rn4.X, rn5.X)
+    @test isequal(rn4.X, rn6.X)
+end
+
 # Checks that ivs are correctly found.
 let
     rn = @reaction_network begin
@@ -604,7 +643,7 @@ let
         k, 0 --> X1 + X2
     end
     @test isequal(observed(rn1)[1].rhs, observed(rn2)[1].rhs)
-    @test_broken isequal(observed(rn1)[1].lhs.metadata, observed(rn2)[1].lhs.metadata)
+    @test isequal(observed(rn1)[1].lhs.metadata, observed(rn2)[1].lhs.metadata)
     @test isequal(unknowns(rn1), unknowns(rn2))
 
     # Case with metadata.
@@ -618,7 +657,7 @@ let
         k, 0 --> X1 + X2
     end
     @test isequal(observed(rn3)[1].rhs, observed(rn4)[1].rhs)
-    @test_broken isequal(observed(rn3)[1].lhs.metadata, observed(rn4)[1].lhs.metadata)
+    @test isequal(observed(rn3)[1].lhs.metadata, observed(rn4)[1].lhs.metadata)
     @test isequal(unknowns(rn3), unknowns(rn4))
 end
 
@@ -951,7 +990,7 @@ let
     @test isequal(rl, k1*A^2)
 end
 
-# Test whether user-defined functions are properly expanded in equations. 
+# Test whether user-defined functions are properly expanded in equations.
 let
     f(A, t) = 2*A*t
 
@@ -965,7 +1004,7 @@ let
     @test isequal(equations(rn)[1], D(A) ~ 2*A*t)
 
 
-    # Test whether expansion happens properly for unregistered/registered functions. 
+    # Test whether expansion happens properly for unregistered/registered functions.
     hill_unregistered(A, v, K, n) = v*(A^n) / (A^n + K^n)
     rn2 = @reaction_network begin
         @parameters v K n
@@ -978,7 +1017,7 @@ let
 
     hill2(A, v, K, n) = v*(A^n) / (A^n + K^n)
     @register_symbolic hill2(A, v, K, n)
-    # Registered symbolic function should not expand. 
+    # Registered symbolic function should not expand.
     rn2r = @reaction_network begin
         @parameters v K n
         @equations D(A) ~ hill2(A, v, K, n)
@@ -1009,9 +1048,9 @@ let
     @named rn3_sym = ReactionSystem(eq, t)
     rn3_sym = complete(rn3_sym)
     @test isequivalent(rn3, rn3_sym)
-    
-    
-    # Test more complicated expression involving both registered function and a user-defined function. 
+
+
+    # Test more complicated expression involving both registered function and a user-defined function.
     g(A, K, n) = A^n + K^n
     rn4 = @reaction_network begin
         @parameters v K n
@@ -1030,7 +1069,7 @@ let
     # Test error when species are inferred
     @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
         @require_declaration
-        @parameters k 
+        @parameters k
         k, A --> B
     end
     @test_nowarn @macroexpand @reaction_network begin
@@ -1091,4 +1130,3 @@ let
         @observables X2 ~ X1
     end
 end
-
