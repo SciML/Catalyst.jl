@@ -1,4 +1,4 @@
-using Catalyst, GraphMakie, GLMakie, Graphs
+using Catalyst, GraphMakie, CairoMakie, Graphs
 include("../test_networks.jl")
 
 # Test that speciesreactiongraph is generated correctly
