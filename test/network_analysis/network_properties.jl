@@ -8,8 +8,6 @@ using Catalyst, LinearAlgebra, Test, SparseArrays
 using StableRNGs
 rng = StableRNG(514)
 
-### Defining reaction networks.
-
 ### Basic Tests ###
 
 # Tests basic `ReactionComplex` properties.
@@ -62,7 +60,6 @@ let
     k = rand(rng, numparams(MAPK))
     rates = Dict(zip(parameters(MAPK), k))
     @test Catalyst.iscomplexbalanced(MAPK, rates) == false
-
     cyclemat = Catalyst.cycles(MAPK)
     S = netstoichmat(MAPK)
     for i in 1:size(S, 2)-1
@@ -297,7 +294,6 @@ let
     complexoutgoingmat(rs) == cmplx_out_mat
     complexoutgoingmat(rs; sparse = true) == sparse(cmplx_out_mat)
 end
-
 
 # Tests outgoing complexes matrices (2).
 # Checks using dense and sparse representation.
