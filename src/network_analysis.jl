@@ -200,7 +200,7 @@ end
 """
 function laplacianmat(rn::ReactionSystem, pmap = Dict(); sparse = false) 
     D = incidencemat(rn; sparse); K = fluxmat(rn, pmap; sparse)
-    -D*K
+    D*K
 end
 
 """
@@ -213,7 +213,7 @@ function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse=true)
 
     if !isempty(pmap)
         length(pmap) != length(parameters(rn)) && error("Incorrect number of parameters were specified.")
-        pmap = symmap_to_varmap(rs, pmap)
+        pmap = symmap_to_varmap(rn, pmap)
         pmap = Dict(ModelingToolkit.value(k) => v for (k, v) in pmap)
         rates = [substitute(rate, pmap) for rate in rates]
     end
@@ -256,18 +256,18 @@ end
 
 function fluxmat(rn::ReactionSystem, pmap::Vector; sparse = false) 
     pdict = Dict(pmap)
-    fluxmat(rs, pdict; sparse)
+    fluxmat(rn, pdict; sparse)
 end
 
 function fluxmat(rn::ReactionSystem, pmap::Tuple; sparse = false) 
     pdict = Dict(pmap)
-    fluxmat(rs, pdict; sparse)
+    fluxmat(rn, pdict; sparse)
 end
 
 """
     massactionvector(rn::ReactionSystem, scmap = nothing)
 
-    Return the vector whose entries correspond to the "substrate complexes" of each reaction. For example, given the reaction A + B --> C, the corresponding entry of the vector would be A*B, and for the reaction 2X + Y --> 3X, the corresponding entry would be X^2*Y. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where Y is the [`complexstoichmat`](@ref) and A_k is the negative of the [`networklaplacian`](@ref). This utility returns Φ(x).
+    Return the vector whose entries correspond to the "mass action products" of each complex. For example, given the complex A + B, the corresponding entry of the vector would be A*B, and for the complex 2X + Y, the corresponding entry would be X^2*Y. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where Y is the [`complexstoichmat`](@ref) and A_k is the negative of the [`networklaplacian`](@ref). This utility returns Φ(x).
     Returns a symbolic vector by default, but will return a numerical vector if species concentrations are specified as a tuple, vector, or dictionary via scmap.
 """
 function massactionvector(rn::ReactionSystem, scmap::Dict = Dict()) 
@@ -280,16 +280,18 @@ function massactionvector(rn::ReactionSystem, scmap::Dict = Dict())
 
     if !isempty(scmap)
         length(scmap) != length(specs) && error("Incorrect number of species concentrations were specified.")
-        scmap = symmap_to_varmap(rs, scmap)
+        scmap = symmap_to_varmap(rn, scmap)
         scmap = Dict(ModelingToolkit.value(k) => v for (k, v) in scmap)
         specs = [substitute(s, scmap) for s in specs]
     end
 
-    Φ = Vector{eltype(specs)}()
-    for i in 1:n
-        subs = rxs[i].substrates
-        stoich = rxs[i].substoich
-        push!(Φ, prod([specs[sm[s]]^α for (s, α) in zip(subs, stoich)]))
+    vtype = eltype(specs) <: Symbolics.BasicSymbolic ? Num : eltype(specs)
+    Φ = Vector{vtype}()
+    rcmap = reactioncomplexmap(rn)
+    for comp in keys(reactioncomplexmap(rn))
+        subs = map(ce -> getfield(ce, :speciesid), comp)
+        stoich = map(ce -> getfield(ce, :speciesstoich), comp)
+        push!(Φ, prod(vtype[specs[s]^α for (s, α) in zip(subs, stoich)]))
     end
 
     Φ 
@@ -297,12 +299,12 @@ end
 
 function massactionvector(rn::ReactionSystem, scmap::Tuple) 
     sdict = Dict(scmap)
-    massactionvector(rs, sdict)
+    massactionvector(rn, sdict)
 end
 
 function massactionvector(rn::ReactionSystem, scmap::Vector) 
     sdict = Dict(scmap)
-    massactionvector(rs, sdict)
+    massactionvector(rn, sdict)
 end
 
 @doc raw"""
