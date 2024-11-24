@@ -248,7 +248,7 @@ end
     @test_logs (:warn, r"The `ReactionSystem` used as input to `LatticeReactionSystem contain observables. It *") match_mode=:any LatticeReactionSystem(rs4, [tr], short_path)
 end
 
-# Tests for hierarchical input system.
+# Tests for hierarchical input system (should yield a warning).
 let
     t = default_t()
     @parameters d D
@@ -257,7 +257,7 @@ let
     @named rs1 = ReactionSystem(rxs, t)
     @named rs2 = ReactionSystem(rxs, t; systems = [rs1])
     rs2 = complete(rs2)
-    @test_throws ArgumentError LatticeReactionSystem(rs2, [TransportReaction(D, X)], CartesianGrid((2,2)))
+    @test_logs (:warn, r"The `ReactionSystem` used as input to `LatticeReactionSystem` was originally created as a hierarchical model. While *") match_mode=:any LatticeReactionSystem(rs2, [TransportReaction(D, X)], CartesianGrid((2,2)))
 end
 
 # Tests for non-complete input `ReactionSystem`.
