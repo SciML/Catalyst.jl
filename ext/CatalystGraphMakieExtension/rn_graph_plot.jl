@@ -60,7 +60,7 @@ function gen_distances(g::SRGraphWrap; inc = 0.2)
 end
 
 """
-    plot_network(rn::ReactionSystem; interactive=false)
+    plot_network(rn::ReactionSystem)
 
 Converts a [`ReactionSystem`](@ref) into a GraphMakie plot of the species reaction graph
 (or Petri net representation). Reactions correspond to small green circles, and 
@@ -76,7 +76,6 @@ Notes:
   red arrow from `A` to the reaction node. In `k*A, A+B --> C`, there would be
   red and black arrows from `A` to the reaction node.
 """  
-# TODO: update docs for interacting with plots. The `interactive` flag sets the ability to interactively drag nodes and edges in the generated plot. Only allowed if `GLMakie` is the loaded Makie backend.
 function Catalyst.plot_network(rn::ReactionSystem)
     srg = SRGraphWrap(rn)
     ns = length(species(rn))
@@ -119,7 +118,7 @@ function Catalyst.plot_network(rn::ReactionSystem)
 end
 
 """
-    plot_complexes(rn::ReactionSystem; interactive=false)
+    plot_complexes(rn::ReactionSystem)
 
     Creates a GraphMakie plot of the [`ReactionComplex`](@ref)s in `rn`. Reactions
     correspond to arrows and reaction complexes to blue circles.
