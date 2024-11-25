@@ -92,7 +92,7 @@ an ordinary differential equation.
 
 ```julia
 # Fetch required packages.
-using Catalyst, OrdinaryDiffEq, Plots
+using Catalyst, OrdinaryDiffEqDefault, Plots
 
 # Create model.
 model = @reaction_network begin
