@@ -85,6 +85,7 @@ end
     if GROUP == "All" || GROUP == "Extensions"
         activate_extensions_env()
 
+        @time @safetestset "Graph visualization" begin include("extensions/graphmakie.jl") end
         @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
         @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
 
