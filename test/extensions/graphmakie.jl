@@ -74,7 +74,7 @@ let
         k * C, A --> C
         k * B, B --> C
     end
-    srg = CGME.SRGraphWrap(rn)
+    srg = CGME.MultiGraphWrap(rn)
     s = length(species(rn))
     @test ne(srg) == 8
     @test Graphs.Edge(3, s+2) ∈ srg.rateedges 
@@ -96,7 +96,7 @@ let
         k * A, A --> C
         k * B, B --> C
     end
-    srg = CGME.SRGraphWrap(rn)
+    srg = CGME.MultiGraphWrap(rn)
     s = length(species(rn))
     @test ne(srg) == 8
     # Since A, B is both a dep and a reactant
