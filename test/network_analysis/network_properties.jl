@@ -350,11 +350,44 @@ let
 
     Φ = Catalyst.massactionvector(MAPK)
     specs = species(MAPK)
-    @test isequal(Φ[1], MAPK.KKK * MAPK.E1)
-    @test isequal(Φ[6], MAPK.KKK * MAPK.E2)
-    @test isequal(Φ[8], MAPK.KK_KKK_)
+    truevec = [MAPK.KKK * MAPK.E1,
+               MAPK.KKKE1,
+               MAPK.KKK_ * MAPK.E1,
+               MAPK.KKK_ * MAPK.E2,
+               MAPK.KKKE2,
+               MAPK.KKK * MAPK.E2,
+               MAPK.KK * MAPK.KKK_,
+               MAPK.KK_KKK_,
+               MAPK.KKP * MAPK.KKK_,
+               MAPK.KKPKKK_,
+               MAPK.KKPP * MAPK.KKK_,
+               MAPK.KKP * MAPK.KKPase,
+               MAPK.KKPKKPase,
+               MAPK.KKPPKKPase,
+               MAPK.KK * MAPK.KKPase,
+               MAPK.KKPP * MAPK.KKPase,
+               MAPK.KKPP * MAPK.K,
+               MAPK.KKPPK,
+               MAPK.KKPP * MAPK.KP, 
+               MAPK.KPKKPP,
+               MAPK.KPP * MAPK.KKPP,
+               MAPK.KP * MAPK.KPase,
+               MAPK.KPKPase, 
+               MAPK.KKPPKPase, 
+               MAPK.K * MAPK.KPase,
+               MAPK.KPP * MAPK.KPase,
+              ]
+    @test isequal(Φ, truevec)
     
     K = fluxmat(MAPK)
+    # Construct matrix from incidence matrix
+    mat = zeros(Num, 30, 26); D = incidencemat(MAPK)
+    rates = reactionrates(MAPK)
+    for (i, col) in enumerate(eachcol(D))
+        sub = findfirst(==(-1), col)
+        mat[i, sub] = rates[i]
+    end
+    @test isequal(K, mat)
     @test isequal(K[1, 1], MAPK.k₁)
     @test all(==(0), K[1, 2:end])
     @test isequal(K[2, 2], MAPK.k₂) 
@@ -400,23 +433,75 @@ let
     @test all(iszero, simplify(numeqs - Y*A_k*Φ))
 end
 
-# Test handling for weird complexes. 
+# Test handling for weird complexes and combinatoric rate laws. 
 let
     rn = @reaction_network begin
         k1, 2X + Y + 3Z --> ∅
+        (k2, k3), 2Y + 2Z <--> 3X
     end
-    Φ = Catalyst.massactionvector(rn)
-    @test isequal(Φ[1], rn.X^2 * rn.Y * rn.Z^3)
-    @test isequal(Φ[2], 1)
 
+    Φ = Catalyst.massactionvector(rn); specs = species(rn)
+    crvec = [rn.X^2/2 * rn.Y * rn.Z^3/6,
+             1.,
+             rn.Y^2/2 * rn.Z^2/2,
+             rn.X^3/6]
+    @test isequal(Φ, crvec)
+    ncrvec = [rn.X^2 * rn.Y * rn.Z^3,
+              1.,
+              rn.Y^2 * rn.Z^2,
+              rn.X^3]
+    Φ_2 = Catalyst.massactionvector(rn; combinatoric_ratelaws = false)
+    @test isequal(Φ_2, ncrvec)
+
+    # Test that the ODEs generated are the same.
+    eqs = Catalyst.assemble_oderhs(rn, specs)
+    S = netstoichmat(rn); Y = complexstoichmat(rn); K = fluxmat(rn); A_k = laplacianmat(rn)
+    @test all(iszero, simplify(eqs - S*K*Φ))
+    @test all(iszero, simplify(eqs - Y*A_k*Φ))
+
+    eq_ncr = Catalyst.assemble_oderhs(rn, specs; combinatoric_ratelaws = false)
+    @test all(iszero, simplify(eq_ncr - S*K*Φ_2))
+    @test all(iszero, simplify(eq_ncr - Y*A_k*Φ_2))
+
+    # Test that the ODEs with rate constants are the same.
+    k = rand(rng, numparams(rn))
+    ratevec = collect(zip(parameters(rn), k))
+    ratemap = Dict(ratevec)
+    K = fluxmat(rn, ratemap); A_k = laplacianmat(rn, ratemap)
+
+    numeqs = similar(eqs)
+    for i in 1:length(eqs)
+        numeqs[i] = substitute(eqs[i], ratemap)
+    end
+    @test_broken all(iszero, simplify(numeqs - S*K*Φ))
+    @test_broken all(iszero, simplify(numeqs - Y*A_k*Φ))
+
+    numeqs_ncr = similar(eq_ncr)
+    for i in 1:length(eq_ncr)
+        numeqs_ncr[i] = substitute(eq_ncr[i], ratemap)
+    end
+    @test all(iszero, simplify(numeqs_ncr - S*K*Φ_2))
+    @test all(iszero, simplify(numeqs_ncr - Y*A_k*Φ_2))
+
+    # Test that handling of species concentrations is correct.
     u0vec = [:X => 3., :Y => .5, :Z => 2.]
     u0map = Dict(u0vec)
     u0tup = Tuple(u0vec)
 
     Φ = Catalyst.massactionvector(rn, u0vec)
-    @test isequal(Φ[1], 36.)
-    Φ = Catalyst.massactionvector(rn, u0tup)
+    @test isequal(Φ[1], 3.)
+    Φ = Catalyst.massactionvector(rn, u0tup; combinatoric_ratelaws = false)
     @test isequal(Φ[1], 36.)
     Φ = Catalyst.massactionvector(rn, u0map)
-    @test isequal(Φ[1], 36.)
+    @test isequal(Φ[1], 3.)
+
+    # Test full simplification.
+    u0map = symmap_to_varmap(rn, u0map)
+    numeqs = [substitute(eq, u0map) for eq in numeqs]
+    @test isapprox(numeqs, S*K*Φ)
+    @test isapprox(numeqs, Y*A_k*Φ)
+
+    numeqs_ncr = [substitute(eq, u0map) for eq in numeqs_ncr]
+    @test isapprox(numeqs_ncr - S*K*Φ_2)
+    @test isapprox(numeqs_ncr - Y*A_k*Φ_2)
 end
