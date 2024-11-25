@@ -473,6 +473,7 @@ let
     for i in 1:length(eqs)
         numeqs[i] = substitute(eqs[i], ratemap)
     end
+    # Broken but the difference is just numerical, something on the order of 1e-17 times a term
     @test_broken all(iszero, simplify(numeqs - S*K*Φ))
     @test_broken all(iszero, simplify(numeqs - Y*A_k*Φ))
 
