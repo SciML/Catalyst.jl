@@ -1,4 +1,4 @@
-using Catalyst, GraphMakie, GLMakie, Graphs
+using Catalyst, GraphMakie, CairoMakie, Graphs
 include("../test_networks.jl")
 
 # Test that speciesreactiongraph is generated correctly
@@ -103,4 +103,3 @@ let
     @test count(==(Graphs.Edge(1, s+2)), edges(srg)) == 2
     @test count(==(Graphs.Edge(2, s+3)), edges(srg)) == 2
 end
-
