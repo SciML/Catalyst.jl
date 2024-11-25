@@ -474,8 +474,8 @@ let
         numeqs[i] = substitute(eqs[i], ratemap)
     end
     # Broken but the difference is just numerical, something on the order of 1e-17 times a term
-    @test_broken all(iszero, simplify(numeqs - S*K*Φ))
-    @test_broken all(iszero, simplify(numeqs - Y*A_k*Φ))
+    @test all(iszero, simplify(numeqs - S*K*Φ))
+    @test all(iszero, simplify(numeqs - Y*A_k*Φ))
 
     numeqs_ncr = similar(eq_ncr)
     for i in 1:length(eq_ncr)
@@ -503,6 +503,6 @@ let
     @test isapprox(numeqs, Y*A_k*Φ)
 
     numeqs_ncr = [substitute(eq, u0map) for eq in numeqs_ncr]
-    @test isapprox(numeqs_ncr - S*K*Φ_2)
-    @test isapprox(numeqs_ncr - Y*A_k*Φ_2)
+    @test isapprox(numeqs_ncr, S*K*Φ_2)
+    @test isapprox(numeqs_ncr, Y*A_k*Φ_2)
 end
