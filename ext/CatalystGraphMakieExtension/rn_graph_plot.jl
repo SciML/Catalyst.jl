@@ -62,19 +62,37 @@ function Graphs.edges(g::MultiGraphWrap)
     edgelist = vcat(collect(Graphs.edges(g.g)), g.multiedges)[g.edgeorder]
 end
 
-function gen_distances(g::MultiGraphWrap; inc = 0.25) 
+function gen_distances(g::MultiGraphWrap; inc = 0.4) 
     edgelist = edges(g)
     distances = zeros(length(edgelist))
-    for (i,e) in enumerate(edgelist)
-        fwd = findall(==(e), edgelist); rev = findall(==(reverse(e)), edgelist)
-        distances[i] != 0 && continue
-        distances[fwd] = collect(0:inc:inc*(length(fwd)-1))
-        distances[rev] = collect(inc:inc:inc*(length(rev)))
+    edgedict = Dict(edgelist[1] => [1])
+    for (i, e) in enumerate(edgelist[2:end])
+        if edgelist[i] != edgelist[i+1]
+            edgedict[e] = [i+1]
+        else
+            push!(edgedict[e], i+1)
+        end
+    end
+
+    for (edge, inds) in edgedict
+        if haskey(edgedict, Edge(dst(edge), src(edge)))
+            distances[inds[1]] != 0. && continue
+            inds_ = edgedict[Edge(dst(edge), src(edge))]
+
+            len = length(inds) + length(inds_)
+            sp = -inc/2*(len-1)
+            ep = sp + inc*(len-1)
+            dists = collect(sp:inc:ep)
+            distances[inds] = dists[1:length(inds)]
+            distances[inds_] = -dists[length(inds)+1:end]
+        else
+            sp = -inc/2*(length(inds)-1)
+            ep = sp + inc*(length(inds)-1)
+            distances[inds] = collect(sp:inc:ep)
+        end
     end
     distances
 end
-
-Base.copy(g::MultiGraphWrap) = MultiGraphWrap(g.g, g.multiedges, g.edgeorder)
 
 """
     plot_network(rn::ReactionSystem)
@@ -154,12 +172,14 @@ function Catalyst.plot_complexes(rn::ReactionSystem)
 
     deps = Set()
     edgelist = Vector{Graphs.SimpleEdge{Int}}()
-    rows = SparseArrays.rowvals(D); vals = SparseArrays.nonzeros(D)
+    rows = rowvals(D)
+    vals = nonzeros(D)
 
     # Construct the edge order for reactions.
     for (i, rx) in enumerate(rxs)
-        inds = SparseArrays.nzrange(D, i)
-        val = vals[inds]; row = rows[inds]
+        inds = nzrange(D, i)
+        val = vals[inds]
+        row = rows[inds]
         (sub, prod) = val[1] == -1 ? (row[1], row[2]) : (row[2], row[1])
         push!(edgelist, Graphs.SimpleEdge(sub, prod))
 
