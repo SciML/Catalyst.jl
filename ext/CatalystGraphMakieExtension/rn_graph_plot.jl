@@ -76,7 +76,6 @@ Notes:
   red arrow from `A` to the reaction node. In `k*A, A+B --> C`, there would be
   red and black arrows from `A` to the reaction node.
 """  
-# TODO: update docs for interacting with plots. The `interactive` flag sets the ability to interactively drag nodes and edges in the generated plot. Only allowed if `GLMakie` is the loaded Makie backend.
 function Catalyst.plot_network(rn::ReactionSystem)
     srg = SRGraphWrap(rn)
     ns = length(species(rn))

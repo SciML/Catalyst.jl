@@ -103,4 +103,3 @@ let
     @test count(==(Graphs.Edge(1, s+2)), edges(srg)) == 2
     @test count(==(Graphs.Edge(2, s+3)), edges(srg)) == 2
 end
-
