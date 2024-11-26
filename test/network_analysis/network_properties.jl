@@ -491,8 +491,8 @@ let
 
     Φ = Catalyst.massactionvector(rn, u0vec)
     @test isequal(Φ[1], 3.)
-    Φ = Catalyst.massactionvector(rn, u0tup; combinatoric_ratelaws = false)
-    @test isequal(Φ[1], 36.)
+    Φ_2 = Catalyst.massactionvector(rn, u0tup; combinatoric_ratelaws = false)
+    @test isequal(Φ_2[1], 36.)
     Φ = Catalyst.massactionvector(rn, u0map)
     @test isequal(Φ[1], 3.)
 
