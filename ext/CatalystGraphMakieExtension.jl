@@ -1,7 +1,7 @@
 module CatalystGraphMakieExtension
 
 # Fetch packages.
-using Catalyst, GraphMakie, Graphs, Symbolics
+using Catalyst, GraphMakie, Graphs, Symbolics, SparseArrays
 using Symbolics: get_variables!
 import Catalyst: species_reaction_graph, incidencematgraph, lattice_plot, lattice_animation
 
