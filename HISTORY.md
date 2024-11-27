@@ -41,7 +41,18 @@
     (k1, k2), A <--> B
   end
   ```
-
+- Catalyst's network visualization capability has shifted from using Graphviz to [GraphMakie.jl](https://graph.makie.org/stable/). To use this functionality, load the GraphMakie extension by installing `Catalyst` and `GraphMakie`, along with a Makie backend like `GLMakie`. There are two new methods for visualizing graphs: `plot_network` and `plot_complexes`, which respectively display the species-reaction graph and complex graph.
+  ```julia
+  using Catalyst, GraphMakie, GLMakie
+  brusselator = @reaction_network begin
+     A, ∅ --> X
+     1, 2X + Y --> 3X
+     B, X --> Y
+     1, X --> ∅
+  end
+  plot_network(brusselator)
+  ```
+ 
 ## Catalyst 14.4.1
 - Support for user-defined functions on the RHS when providing coupled equations 
   for CRNs using the @equations macro. For example, the following now works: 
