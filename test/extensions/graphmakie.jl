@@ -1,4 +1,4 @@
-using Catalyst, GraphMakie, CairoMakie, Graphs
+using Catalyst, GraphMakie, CairoMakie, Graphs, SparseArrays
 include("../test_networks.jl")
 
 # Test that speciesreactiongraph is generated correctly
@@ -74,11 +74,11 @@ let
         k * C, A --> C
         k * B, B --> C
     end
-    srg = CGME.SRGraphWrap(rn)
+    srg = CGME.MultiGraphWrap(rn)
     s = length(species(rn))
     @test ne(srg) == 8
-    @test Graphs.Edge(3, s+2) ∈ srg.rateedges 
-    @test Graphs.Edge(2, s+3) ∈ srg.rateedges 
+    @test Graphs.Edge(3, s+2) ∈ srg.multiedges
+    @test Graphs.Edge(2, s+3) ∈ srg.multiedges
     # Since B is both a dep and a reactant
     @test count(==(Graphs.Edge(2, s+3)), edges(srg)) == 2
 
@@ -96,10 +96,88 @@ let
         k * A, A --> C
         k * B, B --> C
     end
-    srg = CGME.SRGraphWrap(rn)
+    srg = CGME.MultiGraphWrap(rn)
     s = length(species(rn))
     @test ne(srg) == 8
     # Since A, B is both a dep and a reactant
     @test count(==(Graphs.Edge(1, s+2)), edges(srg)) == 2
     @test count(==(Graphs.Edge(2, s+3)), edges(srg)) == 2
+end
+
+function test_edgeorder(rn) 
+    # The initial edgelabels in `plot_complexes` is given by the order of reactions in reactions(rn).
+    D = incidencemat(rn; sparse=true); img = incidencematgraph(rn)
+    rxs = reactions(rn)
+    edgelist = Vector{Graphs.SimpleEdge{Int}}()
+    rows = rowvals(D)
+    vals = nonzeros(D)
+
+    for (i, rx) in enumerate(rxs)
+        inds = nzrange(D, i)
+        val = vals[inds]
+        row = rows[inds]
+        (sub, prod) = val[1] == -1 ? (row[1], row[2]) : (row[2], row[1])
+        push!(edgelist, Graphs.SimpleEdge(sub, prod))
+    end
+
+    rxorder = sortperm(edgelist); sortededgelist = edgelist[rxorder] 
+    multiedges = Vector{Graphs.SimpleEdge{Int}}()
+    for i in 2:length(sortededgelist)
+        isequal(sortededgelist[i], sortededgelist[i-1]) && push!(multiedges, sortededgelist[i])
+    end
+    img_ = CGME.MultiGraphWrap(img, multiedges)
+
+    # Label iteration order is given by edgelist[rxorder. Actual edge drawing iteration order is given by edges(g)
+    @test edgelist[rxorder] == Graphs.edges(img_)
+    return rxorder
+end
+
+# Test edge order for complexes.
+let
+    # Multiple edges
+    rn = @reaction_network begin
+        k1, A --> B
+        (k2, k3), C <--> D
+        k4, A --> B
+    end
+    rxorder = test_edgeorder(rn)
+    edgelabels = [repr(rx.rate) for rx in reactions(rn)]
+    # Test internal order of labels is preserved
+    @test edgelabels[rxorder][1] == "k1"
+    @test edgelabels[rxorder][2] == "k4"
+
+    # Multiple edges with species dependencies
+    rn = @reaction_network begin
+        k1, A --> B
+        (k2, k3), C <--> D
+        k4, A --> B
+        hillr(D, α, K, n), C --> D
+        k5*B, A --> B
+    end
+    rxorder = test_edgeorder(rn)
+    edgelabels = [repr(rx.rate) for rx in reactions(rn)]
+    labels = ["k1", "k4", "k5*B(t)", "k2", "Catalyst.hillr(D(t), α, K, n)", "k3"]
+    @test edgelabels[rxorder] == labels
+
+    rs = @reaction_network begin
+        ka, Depot --> Central
+        (k12, k21), Central <--> Peripheral
+        ke, Central --> 0
+    end
+    test_edgeorder(rs)
+
+    rn = @reaction_network begin
+        (k1, k2), A <--> B
+        k3, C --> B
+        (α, β), (A, B) --> C
+        k4, B --> A
+        (k5, k6), B <--> A
+        k7, B --> C
+        (k8, k9), C <--> A
+        (k10, k11), (A, C) --> B
+        (k12, k13), (C, B) --> A
+    end
+    rxorder = test_edgeorder(rn)
+    edgelabels = [repr(rx.rate) for rx in reactions(rn)]
+    @test edgelabels[rxorder][1:3] == ["k1", "k6", "k10"]
 end
