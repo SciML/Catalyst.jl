@@ -32,7 +32,7 @@ function SRGraphWrap(rn::ReactionSystem)
                 specidx = sm[spec]
                 has_edge(srg, specidx, i + length(specs)) ? 
                     push!(multiedges, Graphs.SimpleEdge(specidx, i + length(specs))) : 
-                    add_edge!(srg, Graphs.SimpleEdge(specidx, i + length(specs)))
+                    add_edge!(srg, Graphs.SimpleEdge(specidx, i + length(specs))) 
             end
         end
     end
