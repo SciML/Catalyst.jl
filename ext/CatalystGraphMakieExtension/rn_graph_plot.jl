@@ -3,18 +3,22 @@
 #############
 
 """
-    SRGraphWrap{T}
+    MultiGraphWrap{T}
 
-Wrapper for the species-reaction graph containing edges for rate-dependence on species. Intended to allow plotting of multiple edges. 
+Wrapper intended to allow plotting of multiple edges. This is needed in the following cases: 
+- For the species-reaction graph, multiple edges can exist when a reaction depends on some species for its rate, and if that species is produced by the reaction.
+- For the complex graph, multiple edges can exist between a pair of nodes if there are multiple reactions between the same complexes. This might include a reversible pair of reactions - we might have three total edges if one reaction is reversible, and we have a separate reaction going from one complex to the other.
+
+`gen_distances` sets the distances between the edges that allows multiple to be visible on the plot at the same time. 
 """
-struct SRGraphWrap{T} <: Graphs.AbstractGraph{T}
+struct MultiGraphWrap{T} <: Graphs.AbstractGraph{T}
    g::SimpleDiGraph{T}
-   rateedges::Vector{Graphs.SimpleEdge{T}}
+   multiedges::Vector{Graphs.SimpleEdge{T}}
    edgeorder::Vector{Int64}
 end
 
-# Create the SimpleDiGraph corresponding to the species and reactions
-function SRGraphWrap(rn::ReactionSystem) 
+# Create the SimpleDiGraph corresponding to the species and reactions, the species-reaction graph
+function MultiGraphWrap(rn::ReactionSystem) 
     srg = species_reaction_graph(rn)
     rateedges = Vector{Graphs.SimpleEdge{Int}}()
     sm = speciesmap(rn); specs = species(rn)
@@ -32,29 +36,60 @@ function SRGraphWrap(rn::ReactionSystem)
     end
     edgelist = vcat(collect(Graphs.edges(srg)), rateedges)
     edgeorder = sortperm(edgelist)
-    SRGraphWrap(srg, rateedges, edgeorder)
+    MultiGraphWrap(srg, rateedges, edgeorder)
 end
 
-Base.eltype(g::SRGraphWrap) = eltype(g.g)
-Graphs.edgetype(g::SRGraphWrap) = edgetype(g.g)
-Graphs.has_edge(g::SRGraphWrap, s, d) = has_edge(g.g, s, d)
-Graphs.has_vertex(g::SRGraphWrap, i) = has_vertex(g.g, i)
-Graphs.inneighbors(g::SRGraphWrap{T}, i) where T = inneighbors(g.g, i)
-Graphs.outneighbors(g::SRGraphWrap{T}, i) where T = outneighbors(g.g, i)
-Graphs.ne(g::SRGraphWrap) = length(g.rateedges) + length(Graphs.edges(g.g))
-Graphs.nv(g::SRGraphWrap) = nv(g.g)
-Graphs.vertices(g::SRGraphWrap) = vertices(g.g)
-Graphs.is_directed(g::SRGraphWrap) = is_directed(g.g)
-
-function Graphs.edges(g::SRGraphWrap)
-    edgelist = vcat(collect(Graphs.edges(g.g)), g.rateedges)[g.edgeorder]
+# Automatically set edge order if not supplied
+function MultiGraphWrap(g::SimpleDiGraph{T}, multiedges::Vector{Graphs.SimpleEdge{T}}) where T
+    edgelist = vcat(collect(Graphs.edges(g)), multiedges)
+    edgeorder = sortperm(edgelist)
+    MultiGraphWrap(g, multiedges, edgeorder)
 end
 
-function gen_distances(g::SRGraphWrap; inc = 0.2) 
+Base.eltype(g::MultiGraphWrap) = eltype(g.g)
+Graphs.edgetype(g::MultiGraphWrap) = edgetype(g.g)
+Graphs.has_edge(g::MultiGraphWrap, s, d) = has_edge(g.g, s, d)
+Graphs.has_vertex(g::MultiGraphWrap, i) = has_vertex(g.g, i)
+Graphs.inneighbors(g::MultiGraphWrap{T}, i) where T = inneighbors(g.g, i)
+Graphs.outneighbors(g::MultiGraphWrap{T}, i) where T = outneighbors(g.g, i)
+Graphs.ne(g::MultiGraphWrap) = length(g.multiedges) + length(Graphs.edges(g.g))
+Graphs.nv(g::MultiGraphWrap) = nv(g.g)
+Graphs.vertices(g::MultiGraphWrap) = vertices(g.g)
+Graphs.is_directed(::Type{<:MultiGraphWrap}) = true
+Graphs.is_directed(g::MultiGraphWrap) = is_directed(g.g)
+
+function Graphs.edges(g::MultiGraphWrap)
+    edgelist = vcat(collect(Graphs.edges(g.g)), g.multiedges)[g.edgeorder]
+end
+
+function gen_distances(g::MultiGraphWrap; inc = 0.4) 
     edgelist = edges(g)
     distances = zeros(length(edgelist))
-    for i in 2:Base.length(edgelist)
-        edgelist[i] == edgelist[i-1] && (distances[i] = inc)
+    edgedict = Dict(edgelist[1] => [1])
+    for (i, e) in enumerate(@view edgelist[2:end])
+        if edgelist[i] != edgelist[i+1]
+            edgedict[e] = [i+1]
+        else
+            push!(edgedict[e], i+1)
+        end
+    end
+
+    for (edge, inds) in edgedict
+        if haskey(edgedict, Edge(dst(edge), src(edge)))
+            distances[inds[1]] != 0. && continue
+            inds_ = edgedict[Edge(dst(edge), src(edge))]
+
+            len = length(inds) + length(inds_)
+            sp = -inc/2*(len-1)
+            ep = sp + inc*(len-1)
+            dists = collect(sp:inc:ep)
+            distances[inds] = dists[1:length(inds)]
+            distances[inds_] = -dists[length(inds)+1:end]
+        else
+            sp = -inc/2*(length(inds)-1)
+            ep = sp + inc*(length(inds)-1)
+            distances[inds] = collect(sp:inc:ep)
+        end
     end
     distances
 end
@@ -77,7 +112,7 @@ Notes:
   red and black arrows from `A` to the reaction node.
 """  
 function Catalyst.plot_network(rn::ReactionSystem)
-    srg = SRGraphWrap(rn)
+    srg = MultiGraphWrap(rn)
     ns = length(species(rn))
     nodecolors = vcat([:skyblue3 for i in 1:ns], 
                       [:green for i in ns+1:nv(srg)])
@@ -104,16 +139,16 @@ function Catalyst.plot_network(rn::ReactionSystem)
     end
 
     graphplot(srg; 
-             edge_color = edgecolors,
-             elabels = edgelabels,
-             elabels_rotation = 0,
-             ilabels = ilabels,
-             node_color = nodecolors,
-             node_size = nodesizes,
-             arrow_shift = :end,
-             arrow_size = 20,
-             curve_distance_usage = true,
-             curve_distance = gen_distances(srg)
+              edge_color = edgecolors,
+              elabels = edgelabels,
+              elabels_rotation = 0,
+              ilabels = ilabels,
+              node_color = nodecolors,
+              node_size = nodesizes,
+              arrow_shift = :end,
+              arrow_size = 20,
+              curve_distance_usage = true,
+              curve_distance = gen_distances(srg),
             )
 end
 
@@ -130,27 +165,46 @@ end
     depends on species. i.e. `k*C, A --> B` for `C` a species.
 """
 function Catalyst.plot_complexes(rn::ReactionSystem)
-    img = incidencematgraph(rn)
+    img = incidencematgraph(rn); D = incidencemat(rn; sparse=true)
     specs = species(rn); rxs = reactions(rn)
-    edgecolors = [:black for i in 1:ne(img)]
-    nodelabels = complexlabels(rn)
+    edgecolors = [:black for i in 1:length(rxs)]
     edgelabels = [repr(rx.rate) for rx in rxs]
 
     deps = Set()
+    edgelist = Vector{Graphs.SimpleEdge{Int}}()
+    rows = rowvals(D)
+    vals = nonzeros(D)
+
+    # Construct the edge order for reactions.
     for (i, rx) in enumerate(rxs)
+        inds = nzrange(D, i)
+        val = vals[inds]
+        row = rows[inds]
+        (sub, prod) = val[1] == -1 ? (row[1], row[2]) : (row[2], row[1])
+        push!(edgelist, Graphs.SimpleEdge(sub, prod))
+
         empty!(deps)
         get_variables!(deps, rx.rate, specs)
         (!isempty(deps)) && (edgecolors[i] = :red)
     end
 
-    graphplot(img; 
-             edge_color = edgecolors,
-             elabels = edgelabels, 
-             ilabels = nodelabels, 
-             node_color = :skyblue3,
-             elabels_rotation = 0,
-             arrow_shift = :end, 
-             curve_distance = 0.2
+    # Resolve differences between reaction order and edge order in the incidencematgraph.
+    rxorder = sortperm(edgelist); edgelist = edgelist[rxorder]
+    multiedges = Vector{Graphs.SimpleEdge{Int}}()
+    for i in 2:length(edgelist)
+        isequal(edgelist[i], edgelist[i-1]) && push!(multiedges, edgelist[i])
+    end
+    img_ = MultiGraphWrap(img, multiedges)
+
+    graphplot(img_;
+              edge_color = edgecolors[rxorder],
+              elabels = edgelabels[rxorder], 
+              ilabels = complexlabels(rn), 
+              node_color = :skyblue3,
+              elabels_rotation = 0,
+              arrow_shift = :end, 
+              curve_distance_usage = true,
+              curve_distance = gen_distances(img_)
             )
 end
 
