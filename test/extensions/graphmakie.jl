@@ -74,10 +74,9 @@ let
         k * C, A --> C
         k * B, B --> C
     end
-    srg = CGME.MultiGraphWrap(rn)
+    srg = CGME.SRGraphWrap(rn)
     s = length(species(rn))
     @test ne(srg) == 8
-    @test Graphs.Edge(3, s+2) ∈ srg.multiedges
     @test Graphs.Edge(2, s+3) ∈ srg.multiedges
     # Since B is both a dep and a reactant
     @test count(==(Graphs.Edge(2, s+3)), edges(srg)) == 2
@@ -96,7 +95,7 @@ let
         k * A, A --> C
         k * B, B --> C
     end
-    srg = CGME.MultiGraphWrap(rn)
+    srg = CGME.SRGraphWrap(rn)
     s = length(species(rn))
     @test ne(srg) == 8
     # Since A, B is both a dep and a reactant
@@ -106,12 +105,12 @@ end
 
 function test_edgeorder(rn) 
     # The initial edgelabels in `plot_complexes` is given by the order of reactions in reactions(rn).
-    D = incidencemat(rn; sparse=true); img = incidencematgraph(rn)
+    D = incidencemat(rn; sparse=true)
     rxs = reactions(rn)
     edgelist = Vector{Graphs.SimpleEdge{Int}}()
     rows = rowvals(D)
     vals = nonzeros(D)
-
+    
     for (i, rx) in enumerate(rxs)
         inds = nzrange(D, i)
         val = vals[inds]
@@ -119,16 +118,11 @@ function test_edgeorder(rn)
         (sub, prod) = val[1] == -1 ? (row[1], row[2]) : (row[2], row[1])
         push!(edgelist, Graphs.SimpleEdge(sub, prod))
     end
+        
+    img, rxorder = CGME.ComplexGraphWrap(rn)
 
-    rxorder = sortperm(edgelist); sortededgelist = edgelist[rxorder] 
-    multiedges = Vector{Graphs.SimpleEdge{Int}}()
-    for i in 2:length(sortededgelist)
-        isequal(sortededgelist[i], sortededgelist[i-1]) && push!(multiedges, sortededgelist[i])
-    end
-    img_ = CGME.MultiGraphWrap(img, multiedges)
-
-    # Label iteration order is given by edgelist[rxorder. Actual edge drawing iteration order is given by edges(g)
-    @test edgelist[rxorder] == Graphs.edges(img_)
+    # Label iteration order is given by edgelist[rxorder]. Actual edge drawing iteration order is given by edges(g)
+    @test edgelist[rxorder] == Graphs.edges(img)
     return rxorder
 end
 

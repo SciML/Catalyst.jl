@@ -20,7 +20,7 @@ end
 # Create the SimpleDiGraph corresponding to the species and reactions, the species-reaction graph
 function SRGraphWrap(rn::ReactionSystem) 
     srg = species_reaction_graph(rn)
-    rateedges = Vector{Graphs.SimpleEdge{Int}}()
+    multiedges = Vector{Graphs.SimpleEdge{Int}}()
     sm = speciesmap(rn); specs = species(rn)
 
     deps = Set()
@@ -36,9 +36,9 @@ function SRGraphWrap(rn::ReactionSystem)
             end
         end
     end
-    edgelist = vcat(collect(Graphs.edges(srg)), rateedges)
+    edgelist = vcat(collect(Graphs.edges(srg)), multiedges)
     edgeorder = sortperm(edgelist)
-    MultiGraphWrap(srg, rateedges, edgeorder)
+    MultiGraphWrap(srg, multiedges, edgeorder)
 end
 
 # Automatically set edge drawing order if not supplied
