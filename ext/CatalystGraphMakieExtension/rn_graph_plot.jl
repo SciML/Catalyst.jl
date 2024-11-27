@@ -66,7 +66,7 @@ function gen_distances(g::MultiGraphWrap; inc = 0.4)
     edgelist = edges(g)
     distances = zeros(length(edgelist))
     edgedict = Dict(edgelist[1] => [1])
-    for (i, e) in enumerate(edgelist[2:end])
+    for (i, e) in enumerate(@view edgelist[2:end])
         if edgelist[i] != edgelist[i+1]
             edgedict[e] = [i+1]
         else
