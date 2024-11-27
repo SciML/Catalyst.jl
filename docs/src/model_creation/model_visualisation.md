@@ -44,7 +44,7 @@ using GLMakie
 nothing # hide
 ```
 
-Let's declare a [Brusselator model](@ref basic_CRN_library_brusselator) to see this plotting functionality. The functions `plot_network` and `plot_complexes` are used to create the species-reaction and complex graphs, respectively. For a more thorough description of these two representations, please see the [network visualization](@network_visualisation) section of the API, but the gist is that the species-reaction graph has species and reactions as nodes, and the complex graph has reaction complexes as nodes. Below we will plot the species-reaction graph using `plot_network`. 
+Let's declare a [Brusselator model](@ref basic_CRN_library_brusselator) to see this plotting functionality. The functions `plot_network` and `plot_complexes` are used to create the species-reaction and complex graphs, respectively. For a more thorough description of these two representations, please see the [network visualization](@ref network_visualization) section of the API, but the gist is that the species-reaction graph has species and reactions as nodes, and the complex graph has reaction complexes as nodes. Below we will plot the species-reaction graph using `plot_network`. 
 ```@example visualisation_graphs
 brusselator = @reaction_network begin
     A, ∅ --> X
