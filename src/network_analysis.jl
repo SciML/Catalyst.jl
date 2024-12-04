@@ -211,9 +211,12 @@ end
     Returns a symbolic matrix by default, but will return a numerical matrix if rate constants are specified as a `Tuple`, `Vector`, or `Dict` of symbol-value pairs via `pmap`.
 """
 function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse=false) 
-    rates = reactionrates(rn)
+    rates = if isempty(pmap)
+        reactionrates(rn)
+    else
+        substitutevals(rn, pmap, parameters(rn), reactionrates(rn))
+    end
 
-    !isempty(pmap) && (rates = substitutevals(rn, pmap, parameters(rn), rates))
     rcmap = reactioncomplexmap(rn)
     nc = length(rcmap)
     nr = length(rates)
@@ -282,13 +285,15 @@ function massactionvector(rn::ReactionSystem, scmap::Dict = Dict(); combinatoric
     r = numreactions(rn)
     rxs = reactions(rn)
     sm = speciesmap(rn)
-    specs = species(rn)
+    specs = if isempty(scmap) 
+        species(rn)
+    else
+        substitutevals(rn, scmap, species(rn), species(rn))
+    end
 
     if !all(r -> ismassaction(r, rn), rxs)
         error("The supplied ReactionSystem has reactions that are not ismassaction. The mass action vector is only defined for pure mass action networks.")
     end
-
-    !isempty(scmap) && (specs = substitutevals(rn, scmap, specs, specs))
 
     vtype = eltype(specs) <: Symbolics.BasicSymbolic ? Num : eltype(specs)
     Φ = Vector{vtype}()
