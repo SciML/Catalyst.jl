@@ -42,6 +42,7 @@ end
         # Tests reaction network analysis features.
         @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end
         @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
+        @time @safetestset "CRN Theory" begin include("network_analysis/crn_theory.jl") end
 
         # Tests ODE, SDE, jump simulations, nonlinear solving, and steady state simulations.
         @time @safetestset "ODE System Simulations" begin include("simulation_and_solving/simulate_ODEs.jl") end
