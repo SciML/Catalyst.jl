@@ -281,10 +281,11 @@ end
     Returns a symbolic vector by default, but will return a numerical vector if species concentrations are specified as a tuple, vector, or dictionary via scmap.
     If the `combinatoric_ratelaws` option is set, will include prefactors for that (see [introduction to Catalyst's rate laws](@ref introduction_to_catalyst_ratelaws). Will default to the default for the system.
 """
-function massactionvector(rn::ReactionSystem, scmap::Dict = Dict(); combinatoric_ratelaws = rn.combinatoric_ratelaws)
+function massactionvector(rn::ReactionSystem, scmap::Dict = Dict(); combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn))
     r = numreactions(rn)
     rxs = reactions(rn)
     sm = speciesmap(rn)
+
     specs = if isempty(scmap) 
         species(rn)
     else
@@ -309,12 +310,12 @@ function massactionvector(rn::ReactionSystem, scmap::Dict = Dict(); combinatoric
     Φ 
 end
 
-function massactionvector(rn::ReactionSystem, scmap::Tuple; combinatoric_ratelaws = rn.combinatoric_ratelaws) 
+function massactionvector(rn::ReactionSystem, scmap::Tuple; combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn))
     sdict = Dict(scmap)
     massactionvector(rn, sdict; combinatoric_ratelaws)
 end
 
-function massactionvector(rn::ReactionSystem, scmap::Vector; combinatoric_ratelaws = rn.combinatoric_ratelaws) 
+function massactionvector(rn::ReactionSystem, scmap::Vector; combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn)) 
     sdict = Dict(scmap)
     massactionvector(rn, sdict; combinatoric_ratelaws)
 end
