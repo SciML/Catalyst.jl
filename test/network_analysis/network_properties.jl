@@ -381,7 +381,8 @@ let
     
     K = fluxmat(MAPK)
     # Construct matrix from incidence matrix
-    mat = zeros(Num, 30, 26); D = incidencemat(MAPK)
+    mat = zeros(Num, 30, 26)
+    D = incidencemat(MAPK)
     rates = reactionrates(MAPK)
     for (i, col) in enumerate(eachcol(D))
         sub = findfirst(==(-1), col)
@@ -403,7 +404,8 @@ let
     A_k = Catalyst.laplacianmat(MAPK; sparse = true)
     @test Catalyst.issparse(A_k)
 
-    S = netstoichmat(MAPK); Y = complexstoichmat(MAPK)
+    S = netstoichmat(MAPK)
+    Y = complexstoichmat(MAPK)
     @test isequal(S*K, Y*A_k)
 
     eqs = Catalyst.assemble_oderhs(MAPK, specs)
@@ -440,7 +442,8 @@ let
         (k2, k3), 2Y + 2Z <--> 3X
     end
 
-    Φ = Catalyst.massactionvector(rn); specs = species(rn)
+    Φ = Catalyst.massactionvector(rn)
+    specs = species(rn)
     crvec = [rn.X^2/2 * rn.Y * rn.Z^3/6,
              1.,
              rn.Y^2/2 * rn.Z^2/2,
@@ -455,7 +458,10 @@ let
 
     # Test that the ODEs generated are the same.
     eqs = Catalyst.assemble_oderhs(rn, specs)
-    S = netstoichmat(rn); Y = complexstoichmat(rn); K = fluxmat(rn); A_k = laplacianmat(rn)
+    S = netstoichmat(rn)
+    Y = complexstoichmat(rn)
+    K = fluxmat(rn)
+    A_k = laplacianmat(rn)
     @test all(iszero, simplify(eqs - S*K*Φ))
     @test all(iszero, simplify(eqs - Y*A_k*Φ))
 
@@ -467,7 +473,8 @@ let
     k = rand(rng, numparams(rn))
     ratevec = collect(zip(parameters(rn), k))
     ratemap = Dict(ratevec)
-    K = fluxmat(rn, ratemap); A_k = laplacianmat(rn, ratemap)
+    K = fluxmat(rn, ratemap)
+    A_k = laplacianmat(rn, ratemap)
 
     numeqs = similar(eqs)
     for i in 1:length(eqs)

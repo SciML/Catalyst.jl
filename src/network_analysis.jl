@@ -199,7 +199,8 @@ end
     Returns a symbolic matrix by default, but will return a numerical matrix if parameter values are specified via pmap. 
 """
 function laplacianmat(rn::ReactionSystem, pmap = Dict(); sparse = false) 
-    D = incidencemat(rn; sparse); K = fluxmat(rn, pmap; sparse)
+    D = incidencemat(rn; sparse)
+    K = fluxmat(rn, pmap; sparse)
     D*K
 end
 
@@ -213,7 +214,9 @@ function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse=false)
     rates = reactionrates(rn)
 
     !isempty(pmap) && (rates = substitutevals(rn, pmap, parameters(rn), rates))
-    rcmap = reactioncomplexmap(rn); nc = length(rcmap); nr = length(rates)
+    rcmap = reactioncomplexmap(rn)
+    nc = length(rcmap)
+    nr = length(rates)
     mtype = eltype(rates) <: Symbolics.BasicSymbolic ? Num : eltype(rates)
     if sparse
         return fluxmat(SparseMatrixCSC{mtype, Int}, rcmap, rates)
@@ -239,7 +242,8 @@ function fluxmat(::Type{SparseMatrixCSC{T, Int}}, rcmap, rates) where T
 end
 
 function fluxmat(::Type{Matrix{T}}, rcmap, rates) where T
-    nr = length(rates); nc = length(rcmap)
+    nr = length(rates)
+    nc = length(rcmap)
     K = zeros(T, nr, nc)
     for (i, (complex, rxs)) in enumerate(rcmap)
         for (rx, dir) in rxs
@@ -260,7 +264,7 @@ function fluxmat(rn::ReactionSystem, pmap::Tuple; sparse = false)
 end
 
 # Helper to substitute values into a (vector of) symbolic expressions. The syms are the symbols to substitute and the symexprs are the expressions to substitute into.
-function substitutevals(rn::ReactionSystem, map::Dict, syms, symexprs) 
+function substitutevals(rn::ReactionSystem, map::Dict, syms, symexprs)
     length(map) != length(syms) && error("Incorrect number of parameter-value pairs were specified.")
     map = symmap_to_varmap(rn, map)
     map = Dict(ModelingToolkit.value(k) => v for (k, v) in map)
@@ -272,11 +276,13 @@ end
 
     Return the vector whose entries correspond to the "mass action products" of each complex. For example, given the complex A + B, the corresponding entry of the vector would be ``A*B``, and for the complex 2X + Y, the corresponding entry would be ``X^2*Y``. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where ``Y`` is the [`complexstoichmat`](@ref) and ``A_k`` is the negative of the [`laplacianmat`](@ref). This utility returns ``Φ(x)``.
     Returns a symbolic vector by default, but will return a numerical vector if species concentrations are specified as a tuple, vector, or dictionary via scmap.
-    If the `combinatoric_ratelaws` option is set, will include prefactors for that (see [introduction to Catalyst's rate laws](@ref introduction_to_catalyst_ratelaws).
+    If the `combinatoric_ratelaws` option is set, will include prefactors for that (see [introduction to Catalyst's rate laws](@ref introduction_to_catalyst_ratelaws). Will default to the default for the system.
 """
-function massactionvector(rn::ReactionSystem, scmap::Dict = Dict(); combinatoric_ratelaws = true)
-    r = numreactions(rn); rxs = reactions(rn)
-    sm = speciesmap(rn); specs = species(rn)
+function massactionvector(rn::ReactionSystem, scmap::Dict = Dict(); combinatoric_ratelaws = rn.combinatoric_ratelaws)
+    r = numreactions(rn)
+    rxs = reactions(rn)
+    sm = speciesmap(rn)
+    specs = species(rn)
 
     if !all(r -> ismassaction(r, rn), rxs)
         error("The supplied ReactionSystem has reactions that are not ismassaction. The mass action vector is only defined for pure mass action networks.")
@@ -298,12 +304,12 @@ function massactionvector(rn::ReactionSystem, scmap::Dict = Dict(); combinatoric
     Φ 
 end
 
-function massactionvector(rn::ReactionSystem, scmap::Tuple; combinatoric_ratelaws = true) 
+function massactionvector(rn::ReactionSystem, scmap::Tuple; combinatoric_ratelaws = rn.combinatoric_ratelaws) 
     sdict = Dict(scmap)
     massactionvector(rn, sdict; combinatoric_ratelaws)
 end
 
-function massactionvector(rn::ReactionSystem, scmap::Vector; combinatoric_ratelaws = true) 
+function massactionvector(rn::ReactionSystem, scmap::Vector; combinatoric_ratelaws = rn.combinatoric_ratelaws) 
     sdict = Dict(scmap)
     massactionvector(rn, sdict; combinatoric_ratelaws)
 end
