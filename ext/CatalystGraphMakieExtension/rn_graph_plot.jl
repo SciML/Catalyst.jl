@@ -160,7 +160,7 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
     nodecolors = vcat([:skyblue3 for i in 1:ns], 
                       [:green for i in ns+1:nv(srg)])
     ilabels = vcat(map(s -> String(tosymbol(s, escape=false)), species(rn)),
-                   fill("", nv(srg.g) - ns))
+                   ["R$i" for i in 1:nv(srg)-ns])
     nodesizes = vcat([30 for i in 1:ns],
                      [10 for i in ns+1:nv(srg)])
 
