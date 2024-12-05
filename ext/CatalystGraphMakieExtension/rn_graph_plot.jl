@@ -161,8 +161,6 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
                       [:green for i in ns+1:nv(srg)])
     ilabels = vcat(map(s -> String(tosymbol(s, escape=false)), species(rn)),
                    ["R$i" for i in 1:nv(srg)-ns])
-    nodesizes = vcat([30 for i in 1:ns],
-                     [10 for i in ns+1:nv(srg)])
 
     ssm = substoichmat(rn); psm = prodstoichmat(rn)
     # Get stoichiometry of reaction
@@ -196,7 +194,6 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
               elabels_rotation = 0,
               ilabels = ilabels,
               node_color = nodecolors,
-              node_size = nodesizes,
               arrow_shift = :end,
               arrow_size = 20,
               curve_distance_usage = true,
