@@ -27,6 +27,11 @@ pages = Any[
             "model_creation/examples/noise_modelling_approaches.md",
         ]
     ],
+    "Network Analysis" => Any[
+        "network_analysis/odes.md",
+        "network_analysis/crnt.md",
+        "network_analysis/",
+    ],
     "Model simulation and visualization" => Any[
         "model_simulation/simulation_introduction.md",
         "model_simulation/simulation_plotting.md",

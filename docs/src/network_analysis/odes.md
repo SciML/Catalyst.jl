@@ -323,14 +323,23 @@ ode_func(concvec, rateconsts)
 
 Note also that `ode_func` can take any vector with the right dimension (i.e. the number of species), not just a vector of `Number`, so it can be used to build, e.g. a vector of polynomials in Nemo for commutative algebraic methods.
 
+# Properties of matrix null spaces
+The null spaces of the matrices discussed in this section often have special meaning. Below we will discuss some of these properties.
+
+Recall that we may write the net stoichiometry matrix ``N = YB``.
+
+[Conservation laws](@ref conservation_laws) arise as left null eigenvectors of the net stoichiometry matrix ``N``, and cycles arise as right null eigenvectors of the stoichiometry matrix. A cycle may be understood as a sequence of reactions that leaves the overall species composition unchanged. These do not necessarily have to correspond to actual cycles in the graph.
+
+[Complex balance](@ref complex_and_detailed_balance) can be compactly formulated as the following: a set of steady state reaction fluxes is complex-balanced if it is in the nullspace of the incidence matrix ``B``.
+
 # API Section for matrices and vectors
 We have that: 
-- $N$ is the `netstoichmat`
-- $Z$ is the `complexstoichmat`
-- $B$ is the `incidencemat`
-- $K$ is the `fluxmat`
-- $A_k$ is the `laplacianmat`
-- $\Phi$ is the `massactionvector`
+- ``N`` is the `netstoichmat`
+- ``Z`` is the `complexstoichmat`
+- ``B`` is the `incidencemat`
+- ``K`` is the `fluxmat`
+- ``A_k`` is the `laplacianmat`
+- ``\Phi`` is the `massactionvector`
 
 ```@docs
 netstoichmat
