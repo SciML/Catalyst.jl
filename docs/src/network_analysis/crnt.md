@@ -23,7 +23,7 @@ plot_complexes(rn)
 ```
 
 
-#### [Linkage classes and sub-networks of the reaction network](@id network_analysis_structural_aspects_linkage)
+# [Linkage classes and sub-networks of the reaction network](@id network_analysis_structural_aspects_linkage)
 The preceding reaction complex graph shows that `rn` is composed of two
 disconnected sub-graphs, one containing the complexes ``A+B``, ``C``, ``D+E``, and
 ``F``, the other containing the complexes ``2A``, ``B + G``, and ``H``. These sets,
@@ -59,6 +59,7 @@ and,
 ```
 
 ![subnetwork_2](../assets/complex_subnets2.svg)
+
 
 # [Deficiency of the network](@id network_analysis_structural_aspects_deficiency)
 A famous theorem in Chemical Reaction Network Theory, the Deficiency Zero
@@ -113,6 +114,7 @@ Quoting Feinberg [^1]
 > Deficiency zero networks are ones for which the reaction vectors [i.e. net
 > stoichiometry vectors] are as independent as the partition of complexes into
 > linkage classes will allow.
+
 
 # [Reversibility of the network](@id network_analysis_structural_aspects_reversibility)
 A reaction network is *reversible* if the "arrows" of the reactions are
@@ -251,51 +253,55 @@ which we see is mass action and has deficiency zero, but is not weakly
 reversible. As such, we can conclude that for any choice of rate constants the
 RRE ODEs cannot have a positive equilibrium solution.
 
+```@docs
+satisfiesdeficiencyzero
+```
+
+# Deficiency One Theorem
+Very analogous to the deficiency zero theorem is the deficiency one theorem. The deficiency one theorem applies to a network with the following properties: 
+1. The deficiency of each *linkage class* of the network is at most 1, 
+2. The sum of the linkage class deficiencies is the total deficiency of the network, and
+3. Each linkage class has at most one terminal linkage class. 
+
+If these conditions are met, then the network will have at most one steady state in each stoichiometric compatibility class for any choice of rate constants and parameters.
+Unlike the deficiency zero theorem, networks obeying the deficiency one theorem are not guaranteed to have stable solutions.
+```@docs
+satisfiesdeficiencyone
+```
+
 # [Complex and Detailed Balance](@id complex_and_detailed_balance)
-The reason that the deficiency zero theorem puts such strong restrictions on the steady state properties of the reaction network is because it implies that the reaction network will be complex balanced for any set of rate constants and parameters. The fact that this holds from a purely structural property of the graph, regardless of kinetics, is what makes it so useful. In some cases it might be desirable to check complex balance (and a related property called detailed balance) on their own, though.
+A reaction network's steady state is **complex-balanced** if the total production of each *complex* is zero at the steady state. A reaction network's steady state is **detailed balanced** if every reaction is balanced by its reverse reaction at the steady-state (this corresponds to the usual notion of chemical equilibrium; note that this requires every reaction be reversible). 
 
-A reaction network's steady state is complex-balanced if the total production of each *complex* is zero at the steady state. A reaction network's steady state is detailed balanced if every reaction is balanced by its reverse reaction at the steady-state (note that this requires every reaction be reversible). Detailed balance at a given steady state implies complex balance for that steady state. If a reaction network has at least one complex (detailed) balanced steady state, we say that it is complex (detailed) balanced. 
+Note that detailed balance at a given steady state implies complex balance for that steady state, i.e. detailed balance is a stronger property than complex balance.
 
-Being complex (detailed) balanced is an incredibly powerful property. Having at least one positive steady state that is complex (detailed) balance implies that complex (detailed) balance obtains at *every* positive steady state, there will be exactly one steady state in every positive subspace, and this steady state is asymptotically stable. (For proofs of these results, please consult Martin Feinberg's *Foundations of Chemical Reaction Network Theory*[^1]). 
+Remarkably, having just one positive steady state that is complex (detailed) balance implies that complex (detailed) balance obtains at *every* positive steady state, so we say that a network is complex (detailed) balanced if any one of its steady states are complex (detailed) balanced. Additionally, there will be exactly one steady state in every positive stoichiometric compatibility class, and this steady state is asymptotically stable. (For proofs of these results, please consult Martin Feinberg's *Foundations of Chemical Reaction Network Theory*[^1]). So knowing that a network is complex balanced is really quite powerful.
 
-Catalyst exposes API functions to determine whether a reaction network is complex or detailed balanced, `iscomplexbalanced` and `isdetailedbalanced`. Since complex and detailed balance are properties of a reaction network with a particular assignment of rate constants and parameters, both of these functions require a parameter map.
-
-# [Caching of Network Properties in `ReactionSystems`](@id network_analysis_caching_properties)
-When calling many of the network API functions, Catalyst calculates and caches
-in `rn` a variety of information. For example the first call to
-```julia
-rcs,B = reactioncomplexes(rn)
+Let's check that the reaction network defined above is complex balanced by providing a set of rates:
+```@example s1
+rates = Dict([:k1 => 2.4, :k2 => 4., :k3 => 10., :k4 => 5.5, :k5 => 0.4])
+iscomplexbalanced(rn, rates)
 ```
-calculates, caches, and returns the reaction complexes, `rcs`, and the incidence
-matrix, `B`, of `rn`. Subsequent calls simply return `rcs` and `B` from the
-cache.
 
-Similarly, the first call to
-```julia
-N = netstoichmat(rn)
+Complex balance obtains for some sets of rates but not others: 
+```@example s1
 ```
-calculates, caches and returns the net stoichiometry matrix. Subsequent calls
-then simply return the cached value of `N`. Caching such information means users
-do not need to manually know which subsets of network properties are needed for
-a given calculation (like the deficiency). Generally only
-```julia
-rcs,B = reactioncomplexes(rn)    # must be called once to cache rcs and B
-any_other_network_property(rn)
-```
-should work to calculate a desired network property, with the API doc strings
-indicating when `reactioncomplexes(rn)` must be called at least once before a
-given function is used.
 
-Because of the caching of network properties, subsequent calls to most API
-functions will be fast, simply returning the previously calculated and cached
-values. In some cases it may be desirable to reset the cache and recalculate
-these properties. This can be done by calling
-```julia
-Catalyst.reset_networkproperties!(rn)
+We can do a similar check for detailed balance. Let us make the reaction network 
+```@example s1
+rn1 = @reaction_network begin
+  (k1,k2),A <--> 2B
+  (k3,k4), A + C <--> D
+  (k5,k6), B + E --> C + D
+end
+isdetailedbalanced(rn, rates)
 ```
-Network property functions will then recalculate their associated properties and
-cache the new values the next time they are called.
 
+The reason that the deficiency zero theorem puts such strong restrictions on the steady state properties of the reaction network is because it implies that the reaction network will be complex balanced for any set of rate constants and parameters. The fact that this holds from a purely structural property of the graph, regardless of kinetics, is what makes it so useful. But in some cases it might be desirable to check complex balance on its own, as for higher deficiency networks.
+
+```@docs
+iscomplexbalanced
+isdetailedbalanced
+```
 ---
 ## References
 [^1]: [Feinberg, M. *Foundations of Chemical Reaction Network Theory*, Applied Mathematical Sciences 202, Springer (2019).](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true)
