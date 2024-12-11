@@ -59,7 +59,7 @@ function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     eqs_pars_funcs = vcat(equations(ns), conservedequations(rs))
     eqs = map(eq -> substitute(eq.rhs - eq.lhs, p_dict), eqs_pars_funcs)
     eqs_intexp = make_int_exps.(eqs)
-    ss_poly = Catalyst.to_multivariate_poly(remove_denominators.(eqs_intexp))
+    ss_poly = Catalyst.to_multivariate_poly(remove_denominators.(common_denominator.(eqs_intexp)))
     return poly_type_convert(ss_poly)
 end
 
@@ -76,6 +76,45 @@ function ___make_int_exps(expr)
             error("An non integer ($(sorted_arguments(expr)[2])) was found as a variable exponent. Non-integer exponents are not supported for homotopy continuation based steady state finding.")
         end
     end
+end
+
+function common_denominator(expr)
+    iscall(expr) || return expr
+    if operation(expr) == /
+        num, den = arguments(expr)
+        num = common_denominator(num)
+        den = common_denominator(den)
+        return num / den
+    end
+    if operation(expr) == +
+        num = 0
+        den = 1
+        for arg in arguments(expr)
+            arg = common_denominator(arg)
+            if iscall(arg) && operation(arg) == /
+                n, d = arguments(arg)
+            else
+                n = arg
+                d = 1
+            end
+            num = num * d + den * n
+            den *= d
+        end
+        return num / den
+    end
+    if operation(expr) == ^
+        base, pow = arguments(expr)
+        base = common_denominator(base)
+        if iscall(base) && operation(base) == /
+            num, den = arguments(base)
+        else
+            num, den = base, 1
+        end
+        num ^= pow
+        den ^= pow
+        return num / den
+    end
+    return maketerm(BasicSymbolic, operation(expr), map(common_denominator, arguments(expr)), metadata(expr))
 end
 
 # If the input is a fraction, removes the denominator.
