@@ -379,7 +379,7 @@ let
               ]
     @test isequal(Φ, truevec)
     
-    K = fluxmat(MAPK)
+    K = Catalyst.fluxmat(MAPK)
     # Construct matrix from incidence matrix
     mat = zeros(Num, 30, 26)
     D = incidencemat(MAPK)
@@ -396,7 +396,7 @@ let
     @test isequal(K[3, 2], MAPK.k₃)
     @test all(==(0), vcat(K[3,1], K[3,3:end]))
     @test count(k -> !isequal(k, 0), K) == length(reactions(MAPK))
-    K = fluxmat(MAPK; sparse = true)
+    K = Catalyst.fluxmat(MAPK; sparse = true)
     @test Catalyst.issparse(K)
     
     A_k = Catalyst.laplacianmat(MAPK)

@@ -221,12 +221,12 @@ function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse=false)
     nc = length(rcmap)
     nr = length(rates)
     mtype = eltype(rates) <: Symbolics.BasicSymbolic ? Num : eltype(rates)
-    fluxmat = if sparse
+    mat = if sparse
         fluxmat(SparseMatrixCSC{mtype, Int}, rcmap, rates)
     else
         fluxmat(Matrix{mtype}, rcmap, rates)
     end
-    mtype == Num ? Matrix{Any}(fluxmat) : fluxmat
+    mtype == Num ? Matrix{Any}(mat) : mat
 end
 
 function fluxmat(::Type{SparseMatrixCSC{T, Int}}, rcmap, rates) where T
@@ -250,8 +250,7 @@ function fluxmat(::Type{Matrix{T}}, rcmap, rates) where T
     nc = length(rcmap)
     K = zeros(T, nr, nc)
     for (i, (complex, rxs)) in enumerate(rcmap)
-        for (rx, dir) in rxs
-            dir == -1 && (K[rx, i] = rates[rx])
+        for (rx, dir) in rxs dir == -1 && (K[rx, i] = rates[rx])
         end
     end
     K
