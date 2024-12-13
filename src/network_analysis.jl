@@ -220,12 +220,13 @@ function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse=false)
     rcmap = reactioncomplexmap(rn)
     nc = length(rcmap)
     nr = length(rates)
-    mtype = eltype(rates) <: Symbolics.BasicSymbolic ? Any : eltype(rates)
-    if sparse
-        return fluxmat(SparseMatrixCSC{mtype, Int}, rcmap, rates)
+    mtype = eltype(rates) <: Symbolics.BasicSymbolic ? Num : eltype(rates)
+    fluxmat = if sparse
+        fluxmat(SparseMatrixCSC{mtype, Int}, rcmap, rates)
     else
-        return fluxmat(Matrix{mtype}, rcmap, rates)
+        fluxmat(Matrix{mtype}, rcmap, rates)
     end
+    mtype == Num ? Matrix{Any}(fluxmat) : fluxmat
 end
 
 function fluxmat(::Type{SparseMatrixCSC{T, Int}}, rcmap, rates) where T
@@ -296,7 +297,7 @@ function massactionvector(rn::ReactionSystem, scmap::Dict = Dict(); combinatoric
         error("The supplied ReactionSystem has reactions that are not ismassaction. The mass action vector is only defined for pure mass action networks.")
     end
 
-    vtype = eltype(specs) <: Symbolics.BasicSymbolic ? Any : eltype(specs)
+    vtype = eltype(specs) <: Symbolics.BasicSymbolic ? Num : eltype(specs)
     Φ = Vector{vtype}()
     rcmap = reactioncomplexmap(rn)
     for comp in keys(reactioncomplexmap(rn))
@@ -307,7 +308,7 @@ function massactionvector(rn::ReactionSystem, scmap::Dict = Dict(); combinatoric
         push!(Φ, maprod)
     end
 
-    Φ 
+    vtype == Num ? Vector{Any}(Φ) : Φ
 end
 
 function massactionvector(rn::ReactionSystem, scmap::Tuple; combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn))
