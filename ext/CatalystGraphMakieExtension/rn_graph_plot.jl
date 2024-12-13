@@ -14,7 +14,7 @@ Wrapper intended to allow plotting of multiple edges. This is needed in the foll
 struct MultiGraphWrap{T} <: Graphs.AbstractGraph{T}
    g::SimpleDiGraph{T}
    multiedges::Vector{Graphs.SimpleEdge{T}}
-   """sets the drawing order of the edges. Needed because multiedges need to be consecutive to be drawn properly."""
+   """Sets the drawing order of the edges. Needed because multiedges need to be consecutive to be drawn properly."""
    edgeorder::Vector{Int64} 
 end
 
@@ -22,7 +22,8 @@ end
 function SRGraphWrap(rn::ReactionSystem) 
     srg = species_reaction_graph(rn)
     multiedges = Vector{Graphs.SimpleEdge{Int}}()
-    sm = speciesmap(rn); specs = species(rn)
+    sm = speciesmap(rn)
+    specs = species(rn)
 
     deps = Set()
     for (i, rx) in enumerate(reactions(rn)) 
@@ -51,8 +52,10 @@ end
 
 # Return the multigraph and reaction order corresponding to the complex graph. The reaction order is the order of reactions(rn) that would match the edge order given by g.edgeorder.
 function ComplexGraphWrap(rn::ReactionSystem) 
-    img = incidencematgraph(rn); D = incidencemat(rn; sparse=true)
-    specs = species(rn); rxs = reactions(rn)
+    img = incidencematgraph(rn)
+    D = incidencemat(rn; sparse=true)
+    specs = species(rn)
+    rxs = reactions(rn)
 
     deps = Set()
     edgelist = Vector{Graphs.SimpleEdge{Int}}()
@@ -71,7 +74,8 @@ function ComplexGraphWrap(rn::ReactionSystem)
         get_variables!(deps, rx.rate, specs)
     end
 
-    rxorder = sortperm(edgelist); edgelist = edgelist[rxorder]
+    rxorder = sortperm(edgelist)
+    edgelist = edgelist[rxorder]
     multiedges = Vector{Graphs.SimpleEdge{Int}}()
     for i in 2:length(edgelist)
         isequal(edgelist[i], edgelist[i-1]) && push!(multiedges, edgelist[i])
@@ -163,7 +167,8 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
     ilabels = vcat(map(s -> String(tosymbol(s, escape=false)), species(rn)),
                    ["R$i" for i in 1:nv(srg)-ns])
 
-    ssm = substoichmat(rn); psm = prodstoichmat(rn)
+    ssm = substoichmat(rn)
+    psm = prodstoichmat(rn)
     # Get stoichiometry of reaction
     edgelabels = map(Graphs.edges(srg.g)) do e
         string(src(e) > ns ? 
@@ -218,7 +223,8 @@ end
 For a list of accepted keyword arguments to the graph plot, please see the [GraphMakie documentation](https://graph.makie.org/stable/#The-graphplot-Recipe).
 """
 function Catalyst.plot_complexes(rn::ReactionSystem; kwargs...)
-    rxs = reactions(rn); specs = species(rn)
+    rxs = reactions(rn)
+    specs = species(rn)
     edgecolors = [:black for i in 1:length(rxs)]
     edgelabels = [repr(rx.rate) for rx in rxs]
 
