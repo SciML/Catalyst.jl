@@ -14,7 +14,8 @@ Wrapper intended to allow plotting of multiple edges. This is needed in the foll
 struct MultiGraphWrap{T} <: Graphs.AbstractGraph{T}
    g::SimpleDiGraph{T}
    multiedges::Vector{Graphs.SimpleEdge{T}}
-   edgeorder::Vector{Int64} # sets the drawing order of the edges. Needed because multiedges need to be consecutive to be drawn properly.
+   """sets the drawing order of the edges. Needed because multiedges need to be consecutive to be drawn properly."""
+   edgeorder::Vector{Int64} 
 end
 
 # Create the SimpleDiGraph corresponding to the species and reactions, the species-reaction graph
