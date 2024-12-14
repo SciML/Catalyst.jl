@@ -15,7 +15,7 @@ end
 ### Run Tests ###
 @time begin
     if GROUP == "All" || GROUP == "Core"
-        # Tests the `ReactionSystem` structure and its properties.
+        Tests the `ReactionSystem` structure and its properties.
         @time @safetestset "Reaction Structure" begin include("reactionsystem_core/reaction.jl") end
         @time @safetestset "ReactionSystem Structure" begin include("reactionsystem_core/reactionsystem.jl") end
         @time @safetestset "Higher Order Reactions" begin include("reactionsystem_core/higher_order_reactions.jl") end

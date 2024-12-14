@@ -198,11 +198,14 @@ end
     Return the negative of the graph Laplacian of the reaction network. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where ``Y`` is the [`complexstoichmat`](@ref) and ``A_k`` is the negative of the graph Laplacian, and ``Φ`` is the [`massactionvector`](@ref). ``A_k`` is an n-by-n matrix, where n is the number of complexes, where ``A_{ij} = k_{ij}`` if a reaction exists between the two complexes and 0 otherwise. 
     Returns a symbolic matrix by default, but will return a numerical matrix if parameter values are specified via pmap. 
 """
-function laplacianmat(rn::ReactionSystem, pmap = Dict(); sparse = false) 
-    D = incidencemat(rn; sparse)
-    K = fluxmat(rn, pmap; sparse)
-    D*K
+function laplacianmat(rn::ReactionSystem, pmap::Dict = Dict())
+    D = incidencemat(rn)
+    K = fluxmat(rn, pmap)
+    D * K
 end
+
+Base.zero(::Type{Union{R, Symbolics.BasicSymbolic{Real}}}) where R <: Real = zero(R)
+Base.one(::Type{Union{R, Symbolics.BasicSymbolic{Real}}}) where R <: Real = one(R)
 
 @doc raw"""
     fluxmat(rn::ReactionSystem, pmap = Dict(); sparse=false)
@@ -210,7 +213,7 @@ end
     Return an r×c matrix ``K`` such that, if complex ``j`` is the substrate complex of reaction ``i``, then ``K_{ij} = k``, the rate constant for this reaction. Mostly a helper function for the network Laplacian, [`laplacianmat`](@ref). Has the useful property that ``\frac{dx}{dt} = S*K*Φ(x)``, where S is the [`netstoichmat`](@ref) or net stoichiometry matrix and ``Φ(x)`` is the [`massactionvector`](@ref).
     Returns a symbolic matrix by default, but will return a numerical matrix if rate constants are specified as a `Tuple`, `Vector`, or `Dict` of symbol-value pairs via `pmap`.
 """
-function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse=false) 
+function fluxmat(rn::ReactionSystem, pmap::Dict = Dict())
     rates = if isempty(pmap)
         reactionrates(rn)
     else
@@ -221,49 +224,45 @@ function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse=false)
     nc = length(rcmap)
     nr = length(rates)
     mtype = eltype(rates) <: Symbolics.BasicSymbolic ? Num : eltype(rates)
-    mat = if sparse
-        fluxmat(SparseMatrixCSC{mtype, Int}, rcmap, rates)
-    else
-        fluxmat(Matrix{mtype}, rcmap, rates)
-    end
-    mtype == Num ? Matrix{Any}(mat) : mat
+    Matrix{Any}(fluxmat(Matrix{mtype}, rcmap, rates))
 end
 
-function fluxmat(::Type{SparseMatrixCSC{T, Int}}, rcmap, rates) where T
-    Is = Int[]
-    Js = Int[]
-    Vs = T[]
-    for (i, (complex, rxs)) in enumerate(rcmap)
-        for (rx, dir) in rxs
-            dir == -1 && begin
-                push!(Is, rx)
-                push!(Js, i)
-                push!(Vs, rates[rx])
-            end
-        end
-    end
-    Z = sparse(Is, Js, Vs, length(rates), length(rcmap))
-end
+# function fluxmat(::Type{SparseMatrixCSC{T, Int}}, rcmap, rates) where T
+#     Is = Int[]
+#     Js = Int[]
+#     Vs = T[]
+#     for (i, (complex, rxs)) in enumerate(rcmap)
+#         for (rx, dir) in rxs
+#             dir == -1 && begin
+#                 push!(Is, rx)
+#                 push!(Js, i)
+#                 push!(Vs, rates[rx])
+#             end
+#         end
+#     end
+#     Z = sparse(Is, Js, Vs, length(rates), length(rcmap))
+# end
 
 function fluxmat(::Type{Matrix{T}}, rcmap, rates) where T
     nr = length(rates)
     nc = length(rcmap)
     K = zeros(T, nr, nc)
     for (i, (complex, rxs)) in enumerate(rcmap)
-        for (rx, dir) in rxs dir == -1 && (K[rx, i] = rates[rx])
+        for (rx, dir) in rxs 
+            dir == -1 && (K[rx, i] = rates[rx])
         end
     end
     K
 end
 
-function fluxmat(rn::ReactionSystem, pmap::Vector; sparse = false) 
+function fluxmat(rn::ReactionSystem, pmap::Vector) 
     pdict = Dict(pmap)
-    fluxmat(rn, pdict; sparse)
+    fluxmat(rn, pdict)
 end
 
-function fluxmat(rn::ReactionSystem, pmap::Tuple; sparse = false) 
+function fluxmat(rn::ReactionSystem, pmap::Tuple) 
     pdict = Dict(pmap)
-    fluxmat(rn, pdict; sparse)
+    fluxmat(rn, pdict)
 end
 
 # Helper to substitute values into a (vector of) symbolic expressions. The syms are the symbols to substitute and the symexprs are the expressions to substitute into.
@@ -307,7 +306,7 @@ function massactionvector(rn::ReactionSystem, scmap::Dict = Dict(); combinatoric
         push!(Φ, maprod)
     end
 
-    vtype == Num ? Vector{Any}(Φ) : Φ
+    Vector{Any}(Φ)
 end
 
 function massactionvector(rn::ReactionSystem, scmap::Tuple; combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn))
