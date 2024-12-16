@@ -10,8 +10,8 @@ Arguments:
 - `ps`: The parameter values for which we want to find the steady states.
 - `filter_negative=true`: If set to true, solutions with any species concentration <neg_thres is removed from the output.
 - `neg_thres=-1e-20`: Determine the minimum values for which a species concentration is to be considered non-negative. Species concentrations ``> neg_thres`` but `< 0.0` are set to `0.0`.
-- `u0=nothing`: Initial conditions for which we want to find the steady states. For systems with conservation laws this are required to compute conserved quantities. Initial conditions are not required for all species, only those involved in conserved quantities (if this set is unknown, it is recommended to provide initial conditions for all species). 
-- `kwargs...`: any additional arguments (like `show_progress= true`) are passed into HomotopyContinuation.jl's `solve` call. 
+- `u0=nothing`: Initial conditions for which we want to find the steady states. For systems with conservation laws this are required to compute conserved quantities. Initial conditions are not required for all species, only those involved in conserved quantities (if this set is unknown, it is recommended to provide initial conditions for all species).
+- `kwargs...`: any additional arguments (like `show_progress= true`) are passed into HomotopyContinuation.jl's `solve` call.
 
 Examples
 ```@repl
@@ -48,6 +48,8 @@ end
 
 # For a given reaction system, parameter values, and initial conditions, find the polynomial that HC solves to find steady states.
 function steady_state_polynomial(rs::ReactionSystem, ps, u0)
+    # Creates the appropriate nonlinear system, and converts parameters to a form that can
+    # be substituted in later.
     rs = Catalyst.expand_registered_functions(rs)
     ns = complete(convert(NonlinearSystem, rs;
         remove_conserved = true, remove_conserved_warn = false))
@@ -56,10 +58,15 @@ function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns);
         defaults = ModelingToolkit.defaults(ns))
     p_dict = Dict(parameters(ns) .=> p_vals)
-    eqs_pars_funcs = vcat(equations(ns), conservedequations(rs))
-    eqs = map(eq -> substitute(eq.rhs - eq.lhs, p_dict), eqs_pars_funcs)
-    eqs_intexp = make_int_exps.(eqs)
-    ss_poly = Catalyst.to_multivariate_poly(remove_denominators.(common_denominator.(eqs_intexp)))
+
+    # Step by step convert the equation to something HC can work on (adds conserved equations,
+    # inserts parameter values and put everything on a side, converts e.g. 2.0 to 2, remove
+    # denominators to avoid rational polynomials).
+    eqs = vcat(equations(ns), conservedequations(rs))
+    eqs = [substitute(eq.rhs - eq.lhs, p_dict) for eq in eqs]
+    eqs = make_int_exps.(eqs)
+    eqs = [remove_denominators(common_denominator(eq)) for eq in eqs]
+    ss_poly = Catalyst.to_multivariate_poly(eqs)
     return poly_type_convert(ss_poly)
 end
 
@@ -78,6 +85,8 @@ function ___make_int_exps(expr)
     end
 end
 
+# Converts an expression of the form p(x)/q(x) + r(x)/s(x) to t(x)/u(x) (i.e. puts everything
+# above a single denominator, which is what `remove_denominators` is able to simplify away).
 function common_denominator(expr)
     iscall(expr) || return expr
     if operation(expr) == /
