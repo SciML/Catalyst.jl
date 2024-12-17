@@ -245,7 +245,7 @@ end
         @observables X2 ~ 2X
         (p,d), 0 <--> X
     end
-    @test_logs (:warn, r"The `ReactionSystem` used as input to `LatticeReactionSystem contain observables. It *") match_mode=:any LatticeReactionSystem(rs4, [tr], short_path)
+    @test_logs (:warn, r"The `ReactionSystem` used as input to `LatticeReactionSystem` contain observables. It *") match_mode=:any LatticeReactionSystem(rs4, [tr], short_path)
 end
 
 # Tests for hierarchical input system (should yield a warning).
