@@ -78,7 +78,7 @@ end
         @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_jumps.jl") end
         @time @safetestset "Lattice Simulation Structure Interfacing" begin include("spatial_modelling/lattice_simulation_struct_interfacing.jl") end
 
-        # Test spatial plotting, using CairoMakie and GraphMakie
+        # Tests spatial plotting, using CairoMakie and GraphMakie (functionality is stored in an extension).
         activate_extensions_env()
         @time @safetestset "Lattice Simulation Plotting" begin include("extensions/lattice_simulation_plotting.jl") end
     end
