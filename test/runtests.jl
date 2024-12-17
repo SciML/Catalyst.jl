@@ -56,8 +56,7 @@ end
     end
 
     if GROUP == "All" || GROUP == "IO"
-        # BROKEN
-        # @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
+        @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
         # BROKEN
         # @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
 
