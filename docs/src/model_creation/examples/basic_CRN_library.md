@@ -1,4 +1,22 @@
 # [Library of Basic Chemical Reaction Network Models](@id basic_CRN_library)
+```@raw html
+<details><summary><strong>Tutorial environment set-up</strong></summary>
+```
+The following code sets up an environment for running this tutorial.
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.add("Catalyst")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("StochasticDiffEq")
+Pkg.add("JumpProcesses")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+  \
+  
 Below we will present various simple and established chemical reaction network (CRN) models. Each model is given some brief background, implemented using the `@reaction_network` DSL, and basic simulations are performed.
 
 ## [Birth-death process](@id basic_CRN_library_bd)
