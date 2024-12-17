@@ -72,13 +72,15 @@ end
         # Tests spatial modelling and simulations.
         @time @safetestset "PDE Systems Simulations" begin include("spatial_modelling/simulate_PDEs.jl") end
         @time @safetestset "Spatial Reactions" begin include("spatial_modelling/spatial_reactions.jl") end
-
-        # BROKEN
-        #@time @safetestset "Lattice Reaction Systems" begin include("spatial_modelling/lattice_reaction_systems.jl") end
+        @time @safetestset "Lattice Reaction Systems" begin include("spatial_modelling/lattice_reaction_systems.jl") end
         @time @safetestset "Spatial Lattice Variants" begin include("spatial_modelling/lattice_reaction_systems_lattice_types.jl") end
         @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_ODEs.jl") end
         @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_jumps.jl") end
         @time @safetestset "Lattice Simulation Structure Interfacing" begin include("spatial_modelling/lattice_simulation_struct_interfacing.jl") end
+
+        # Test spatial plotting, using CairoMakie and GraphMakie
+        activate_extensions_env()
+        @time @safetestset "Lattice Simulation Plotting" begin include("extensions/lattice_simulation_plotting.jl") end
     end
 
     # Tests extensions.
@@ -94,9 +96,6 @@ end
 
         # Tests stability computation (but requires the HomotopyContinuation extension).
         #@time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
-
-        # Test spatial plotting, using CarioMakie and GraphMakie
-        @time @safetestset "Lattice Simulation Plotting" begin include("extensions/lattice_simulation_plotting.jl") end
     end
 
 end # @time
