@@ -27,7 +27,7 @@ are possible.
 Example:
 ```julia
 # Fetch packages.
-using Catalyst, OrdinaryDiffEq
+using Catalyst, OrdinaryDiffEqDefault
 import CairoMakie
 
 # Creates the `LatticeReactionSystem` model.
