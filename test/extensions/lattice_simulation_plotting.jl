@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using Catalyst, CairoMakie, GraphMakie, Graphs
-using JumpProcesses, OrdinaryDiffEqDefault, OrdinaryDiffEqTsit5, Test
+using JumpProcesses, OrdinaryDiffEqTsit5, Test
 
 
 ### Checks Basic Plot Cases ###
@@ -19,7 +19,7 @@ let
     diffusion_rx = @transport_reaction D X
     for lattice in [CartesianGrid(3), [true, true, false]]
         lrs = LatticeReactionSystem(rs, [diffusion_rx], lattice)
-        
+
         # Simulates the model (using ODE and jumps).
         u0 = [:X => [1, 2, 3]]
         tspan = (0.0, 1.0)
@@ -34,7 +34,7 @@ let
             # Plots the simulation and checks that a stored value is correct.
             fig, ax, plt = lattice_plot(sol, :X, lrs; t = 1.0)
             @test plt[1].val[1][2] ≈ sol.u[end][1]
-            
+
             # Attempts to animate the simulation (using various arguments). Deletes the saved file.
             lattice_animation(sol, :X, lrs, "animation_tmp.mp4"; nframes = 10, framerate = 10, colormap = :BuGn_6)
             @test isfile("animation_tmp.mp4")
@@ -59,7 +59,7 @@ let
     diffusion_rx = @transport_reaction D X
     for lattice in [CartesianGrid((2,2)), [true true; false true]]
         lrs = LatticeReactionSystem(rs, [diffusion_rx], lattice)
-        
+
         # Simulates the model (using ODE and jumps).
         u0 = [:X => [1 2; 3 4]]
         tspan = (0.0, 1.0)
@@ -74,7 +74,7 @@ let
             # Plots the simulation and checks that a stored value is correct.
             fig, ax, hm = lattice_plot(sol, :X, lrs; t = 1.0)
             @test hm[3].val[1] ≈ sol.u[end][1]
-                    
+
             # Attempts to animate the simulation (using various arguments). Deletes the saved file.
             lattice_animation(sol, :X, lrs, "animation_tmp.mp4"; nframes = 10, framerate = 10, colormap = :BuGn_6)
             @test isfile("animation_tmp.mp4")
@@ -92,7 +92,7 @@ let
     lattice = CartesianGrid((2,2,2))
     lrs = LatticeReactionSystem(rs, [diffusion_rx], lattice)
     oprob = ODEProblem(lrs, [:X => 1.0], 1.0, [:d => 1.0, :D => 0.2])
-    osol = solve(oprob)
+    osol = solve(oprob, Tsit5())
 
     @test_throws ArgumentError lattice_plot(osol, :X, lrs)
     @test_throws ArgumentError lattice_animation(osol, :X, lrs, "animation_tmp.mp4")
@@ -110,7 +110,7 @@ let
     diffusion_rx = @transport_reaction D X
     lattice = Graphs.SimpleGraphs.cycle_graph(4)
     lrs = LatticeReactionSystem(rs, [diffusion_rx], lattice)
-    
+
     # Simulates the model (using ODE and jumps).
     u0 = [:X => [1, 2, 3, 4]]
     tspan = (0.0, 1.0)
@@ -125,7 +125,7 @@ let
         # Plots the simulation and checks that a stored value is correct.
         fig, ax, plt = lattice_plot(sol, :X, lrs; t = 0.0)
         @test plt.node_color[] == osol.u[1]
-        
+
         # Attempts to animate the simulation (using various arguments). Deletes the saved file.
         lattice_animation(sol, :X, lrs, "animation_tmp.mp4"; nframes = 10, framerate = 10, colormap = :BuGn_6)
         @test isfile("animation_tmp.mp4")
