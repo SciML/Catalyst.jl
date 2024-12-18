@@ -61,7 +61,8 @@ When our optimisation algorithm searches parameter space it will likely consider
 To improve optimisation performance, rather than creating a new `ODEProblem` in each iteration, we pre-declare one which we [apply `remake` to](@ref simulation_structure_interfacing_problems_remake). We also use the `saveat = data_ts, save_idxs = :P` arguments to only save the values of the measured species at the measured time points.
 
 We can now create an `OptimizationProblem` using our `objective_function` and some initial guess of parameter values from which the optimiser will start:
-```@example optimization_paramfit_1 
+```@example optimization_paramfit_1
+using Optimization
 p_guess = [1.0, 1.0, 1.0]
 optprob = OptimizationProblem(objective_function, p_guess)
 nothing # hide
@@ -105,13 +106,13 @@ to solve `optprob` for this combination of solve and implementation.
 Optimisation methods can be divided into differentiation-free and differentiation-based optimisation methods. E.g. consider finding the minimum of the function $f(x) = x^2$, given some initial guess of $x$. Here, we can simply compute the differential and descend along it until we find $x=0$ (admittedly, for this simple problem the minimum can be computed directly). This principle forms the basis of optimisation methods such as [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent), which utilises information of a function's differential to minimise it. When attempting to find a global minimum, to avoid getting stuck in local minimums, these methods are often augmented by additional routines. While the differentiation of most algebraic functions is trivial, it turns out that even complicated functions (such as the one we used above) can be differentiated computationally through the use of [*automatic differentiation* (AD)](https://en.wikipedia.org/wiki/Automatic_differentiation).
 
 Through packages such as [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl), [ReverseDiff.jl](https://github.com/JuliaDiff/ReverseDiff.jl), and [Zygote.jl](https://github.com/FluxML/Zygote.jl), Julia supports AD for most code. Specifically for code including simulation of differential equations, differentiation is supported by [SciMLSensitivity.jl](https://github.com/SciML/SciMLSensitivity.jl). Generally, AD can be used without specific knowledge from the user, however, it requires an additional step in the construction of our `OptimizationProblem`. Here, we create a [specialised `OptimizationFunction` from our objective function](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction). To it, we will also provide our choice of AD method. There are [several alternatives](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#Automatic-Differentiation-Construction-Choice-Recommendations), and in our case we will use `AutoForwardDiff()` (a good choice for small optimisation problems). We can then create a new `OptimizationProblem` using our updated objective function:
-```@example behaviour_optimization
+```@example optimization_paramfit_1
 opt_func = OptimizationFunction(objective_function, AutoForwardDiff())
 opt_prob = OptimizationProblem(opt_func, p_guess)
 nothing # hide
 ```
 Finally, we can find the optimum using some differentiation-based optimisation methods. Here we will use [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)'s [Broyden–Fletcher–Goldfarb–Shanno algorithm](https://en.wikipedia.org/wiki/Broyden%E2%80%93Fletcher%E2%80%93Goldfarb%E2%80%93Shanno_algorithm) implementation:
-```@example behaviour_optimization
+```@example optimization_paramfit_1
 using OptimizationOptimJL
 opt_sol = solve(opt_prob, OptimizationOptimJL.BFGS())
 ```
@@ -146,7 +147,7 @@ Here we do not normalise the contribution from each species to the objective fun
 We can now fit our model to data and plot the results:
 ```@example optimization_paramfit_1 
 optprob_S_P = OptimizationProblem(objective_function_S_P, p_guess)
-optsol_S_P = solve(optprob_S_P, Optim.NelderMead())
+optsol_S_P = solve(optprob_S_P, NLopt.LN_NELDERMEAD())
 oprob_fitted_S_P = remake(oprob_base; p = optsol_S_P.u)
 fitted_sol_S_P = solve(oprob_fitted_S_P)
 plot!(fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle = :dash, lw = 6, color = [:lightblue :pink])
@@ -177,14 +178,14 @@ end
 We can now create and solve the corresponding `OptimizationProblem`, but with only two parameters in the initial guess.
 ```@example optimization_paramfit_1 
 optprob_known_kD = OptimizationProblem(objective_function_known_kD, [1.0, 1.0])
-optsol_known_kD = solve(optprob_known_kD, Optim.NelderMead())
+optsol_known_kD = solve(optprob_known_kD, NLopt.LN_NELDERMEAD())
 nothing # hide
 ```
 
 ## [Optimisation solver options](@id optimization_parameter_fitting_solver_options)
 Optimization.jl supports various [optimisation solver options](https://docs.sciml.ai/Optimization/stable/API/solve/) that can be supplied to the `solve` command. For example, to set a maximum number of seconds (after which the optimisation process is terminated), you can use the `maxtime` argument:
 ```@example optimization_paramfit_1 
-optsol_fixed_kD = solve(optprob, Optim.NelderMead(); maxtime = 100)
+optsol_fixed_kD = solve(optprob, NLopt.LN_NELDERMEAD(); maxtime = 100)
 nothing # hide
 ```
 It should be noted that not all solver options are available to all optimisation solvers.

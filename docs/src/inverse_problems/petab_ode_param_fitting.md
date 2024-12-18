@@ -242,7 +242,7 @@ t1, d1 = let
 end
 t2, d2 = let
     oprob_true = ODEProblem(rn, [:S=>0.5; u0], (0.0, 10.0), p_true)
-    data_sol = solve(oprob_true; savea t= 1.0)
+    data_sol = solve(oprob_true; saveat = 1.0)
     data_sol.t[2:end], (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 end
 
