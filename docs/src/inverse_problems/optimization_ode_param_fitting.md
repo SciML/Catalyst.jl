@@ -93,7 +93,7 @@ Catalyst.PNG(plot(plt; fmt = :png, dpi = 200)) # hide
 !!! note
     Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. Identifiability is a concept that studies how to deal with this problem.<!--NTS: re-add ref when identifiablity works again-->
 
-Say that we instead would like to use a [genetic algorithm](https://en.wikipedia.org/wiki/Differential_evolution) approach, as implemented by the [Evolutionary.jl](https://github.com/wildart/Evolutionary.jl) package. In this case we can run:
+Say that we instead would like to use a [genetic algorithm](https://en.wikipedia.org/wiki/Genetic_algorithm) approach, as implemented by the [Evolutionary.jl](https://github.com/wildart/Evolutionary.jl) package. In this case we can run:
 ```@example optimization_paramfit_1 
 using OptimizationEvolutionary
 sol = solve(optprob, Evolutionary.GA())
