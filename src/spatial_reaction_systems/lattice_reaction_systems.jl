@@ -27,7 +27,7 @@ are possible.
 Example:
 ```julia
 # Fetch packages.
-using Catalyst, OrdinaryDiffEqDefault
+using Catalyst, OrdinaryDiffEqTsit5
 import CairoMakie
 
 # Creates the `LatticeReactionSystem` model.
@@ -43,7 +43,7 @@ u0 = [:X => rand(5,5)]
 tspan = (0.0, 1.0)
 ps = [:p => 1.0, :d => 0.5, :D => 0.1]
 oprob = ODEProblem(lrs, u0, tspan, ps)
-osol = solve(oprob)
+osol = solve(oprob, Tsit5())
 
 # Saves an animation of the solution to the file "lattice_animation.mp4".
 lattice_animation(osol, :X, lrs, "lattice_animation.mp4")
