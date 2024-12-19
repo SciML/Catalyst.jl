@@ -235,11 +235,11 @@ begin
         Dict([model_vec.X[1] => 1.0, model_vec.X[2] => 2.0, model_vec.Y[1] => 10.0, model_vec.Y[2] => 20.0]),
         Dict([:X => [1.0, 2.0], :Y => [10.0, 20.0]]),
         # Tuples not providing default values.
-        (X => [1.0, 2.0]),
+        (X => [1.0, 2.0],),
         (X[1] => 1.0, X[2] => 2.0),
-        (model_vec.X => [1.0, 2.0]),
+        (model_vec.X => [1.0, 2.0],),
         (model_vec.X[1] => 1.0, model_vec.X[2] => 2.0),
-        (:X => [1.0, 2.0]),
+        (:X => [1.0, 2.0],),
         # Tuples providing default values.
         (X => [1.0, 2.0], Y => [10.0, 20.0]),
         (X[1] => 1.0, X[2] => 2.0, Y[1] => 10.0, Y[2] => 20.0),
@@ -275,9 +275,9 @@ begin
         Dict([model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]]),
         Dict([:p => [4.0, 5.0], :d => [0.2, 0.5]]),
         # Tuples not providing default values.
-        (p => [4.0, 5.0]),
-        (model_vec.p => [4.0, 5.0]),
-        (:p => [4.0, 5.0]),
+        (p => [4.0, 5.0],),
+        (model_vec.p => [4.0, 5.0],),
+        (:p => [4.0, 5.0],),
         # Tuples providing default values.
         (p => [4.0, 5.0], d => [0.2, 0.5]),
         (model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]),
