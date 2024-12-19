@@ -70,7 +70,7 @@ plot(sol_res; idxs = :Z)
 ```
 For this model, it turns out that $Z$'s maximum pulse amplitude is equal to twice its steady state concentration. Hence, the maximisation of its pulse amplitude is equivalent to maximising its steady state concentration.
 
-## [Other options](@id optimization_parameter_fitting)
+## [Other optimisation options](@id behaviour_optimisation_options)
 How to use Optimization.jl is discussed in more detail in [this tutorial](@ref optimization_parameter_fitting). This includes options such as using [automatic differentiation](@ref optimization_parameter_fitting_AD), [setting constraints](@ref optimization_parameter_fitting_constraints), and setting [optimisation solver options](@ref optimization_parameter_fitting_solver_options). Finally, it discusses the advantages of [carrying out the fitting in logarithmic space](@ref optimization_parameter_fitting_log_scale), something which can be advantageous for the problem described above as well.
 
 ---
