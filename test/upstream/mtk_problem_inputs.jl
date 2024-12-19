@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages
-using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEqTsit5, StaticArrays, SteadyStateDiffEq, 
+using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEqTsit5, StaticArrays, SteadyStateDiffEq,
     StochasticDiffEq, Test
 
 # Sets rnd number.
@@ -15,7 +15,7 @@ seed = rand(rng, 1:100)
 ### Basic Tests ###
 
 # Prepares a models and initial conditions/parameters (of different forms) to be used as problem inputs.
-begin 
+begin
     model = @reaction_network begin
         @species Z(t) = Z0
         @parameters k2=0.5 Z0
@@ -97,7 +97,7 @@ begin
 end
 
 # Perform ODE simulations (singular and ensemble).
-let 
+let
     # Creates normal and ensemble problems.
     base_oprob = ODEProblem(model, u0_alts[1], tspan, p_alts[1])
     base_sol = solve(base_oprob, Tsit5(); saveat = 1.0)
@@ -114,7 +114,7 @@ let
 end
 
 # Perform SDE simulations (singular and ensemble).
-let 
+let
     # Creates normal and ensemble problems.
     base_sprob = SDEProblem(model, u0_alts[1], tspan, p_alts[1])
     base_sol = solve(base_sprob, ImplicitEM(); seed, saveat = 1.0)
@@ -131,7 +131,7 @@ let
 end
 
 # Perform jump simulations (singular and ensemble).
-let 
+let
     # Creates normal and ensemble problems.
     base_dprob = DiscreteProblem(model, u0_alts[1], tspan, p_alts[1])
     base_jprob = JumpProblem(model, base_dprob, Direct(); rng)
@@ -159,7 +159,7 @@ let
 end
 
 # Perform steady state simulations (singular and ensemble).
-let 
+let
     # Creates normal and ensemble problems.
     base_ssprob = SteadyStateProblem(model, u0_alts[1], p_alts[1])
     base_sol = solve(base_ssprob, DynamicSS(Tsit5()))
@@ -177,7 +177,7 @@ end
 
 ### Vector Species/Parameters Tests ###
 
-begin 
+begin
     # Declares the model (with vector species/parameters, with/without default values, and observables).
     t = default_t()
     @species (X(t))[1:2] (Y(t))[1:2] = [10.0, 20.0] (XY(t))[1:2]
@@ -235,11 +235,11 @@ begin
         Dict([model_vec.X[1] => 1.0, model_vec.X[2] => 2.0, model_vec.Y[1] => 10.0, model_vec.Y[2] => 20.0]),
         Dict([:X => [1.0, 2.0], :Y => [10.0, 20.0]]),
         # Tuples not providing default values.
-        (X => [1.0, 2.0]),
+        (X => [1.0, 2.0],),
         (X[1] => 1.0, X[2] => 2.0),
-        (model_vec.X => [1.0, 2.0]),
+        (model_vec.X => [1.0, 2.0],),
         (model_vec.X[1] => 1.0, model_vec.X[2] => 2.0),
-        (:X => [1.0, 2.0]),
+        (:X => [1.0, 2.0],),
         # Tuples providing default values.
         (X => [1.0, 2.0], Y => [10.0, 20.0]),
         (X[1] => 1.0, X[2] => 2.0, Y[1] => 10.0, Y[2] => 20.0),
@@ -251,33 +251,33 @@ begin
     # Declares various ps versions (vector forms only).
     p_alts_vec = [
         # Vectors not providing default values.
-        [p => [1.0, 2.0]],
-        [model_vec.p => [1.0, 2.0]],
-        [:p => [1.0, 2.0]],
+        [p => [4.0, 5.0]],
+        [model_vec.p => [4.0, 5.0]],
+        [:p => [4.0, 5.0]],
         # Vectors providing default values.
         [p => [4.0, 5.0], d => [0.2, 0.5]],
         [model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]],
         [:p => [4.0, 5.0], :d => [0.2, 0.5]],
         # Static vectors not providing default values.
-        SA[p => [1.0, 2.0]],
-        SA[model_vec.p => [1.0, 2.0]],
-        SA[:p => [1.0, 2.0]],
+        SA[p => [4.0, 5.0]],
+        SA[model_vec.p => [4.0, 5.0]],
+        SA[:p => [4.0, 5.0]],
         # Static vectors providing default values.
         SA[p => [4.0, 5.0], d => [0.2, 0.5]],
         SA[model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]],
         SA[:p => [4.0, 5.0], :d => [0.2, 0.5]],
         # Dicts not providing default values.
-        Dict([p => [1.0, 2.0]]),
-        Dict([model_vec.p => [1.0, 2.0]]),
-        Dict([:p => [1.0, 2.0]]),
+        Dict([p => [4.0, 5.0]]),
+        Dict([model_vec.p => [4.0, 5.0]]),
+        Dict([:p => [4.0, 5.0]]),
         # Dicts providing default values.
         Dict([p => [4.0, 5.0], d => [0.2, 0.5]]),
         Dict([model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]]),
         Dict([:p => [4.0, 5.0], :d => [0.2, 0.5]]),
         # Tuples not providing default values.
-        (p => [1.0, 2.0]),
-        (model_vec.p => [1.0, 2.0]),
-        (:p => [1.0, 2.0]),
+        (p => [4.0, 5.0],),
+        (model_vec.p => [4.0, 5.0],),
+        (:p => [4.0, 5.0],),
         # Tuples providing default values.
         (p => [4.0, 5.0], d => [0.2, 0.5]),
         (model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]),
@@ -289,7 +289,7 @@ begin
 end
 
 # Perform ODE simulations (singular and ensemble).
-let 
+let
     # Creates normal and ensemble problems.
     base_oprob = ODEProblem(model_vec, u0_alts_vec[1], tspan, p_alts_vec[1])
     base_sol = solve(base_oprob, Tsit5(); saveat = 1.0)
@@ -307,7 +307,7 @@ let
 end
 
 # Perform SDE simulations (singular and ensemble).
-let 
+let
     # Creates normal and ensemble problems.
     base_sprob = SDEProblem(model_vec, u0_alts_vec[1], tspan, p_alts_vec[1])
     base_sol = solve(base_sprob, ImplicitEM(); seed, saveat = 1.0)
@@ -325,7 +325,7 @@ let
 end
 
 # Perform jump simulations (singular and ensemble).
-let 
+let
     # Creates normal and ensemble problems.
     base_dprob = DiscreteProblem(model_vec, u0_alts_vec[1], tspan, p_alts_vec[1])
     base_jprob = JumpProblem(model_vec, base_dprob, Direct(); rng)
@@ -355,7 +355,7 @@ let
 end
 
 # Perform steady state simulations (singular and ensemble).
-let 
+let
     # Creates normal and ensemble problems.
     base_ssprob = SteadyStateProblem(model_vec, u0_alts_vec[1], p_alts_vec[1])
     base_sol = solve(base_ssprob, DynamicSS(Tsit5()))
