@@ -2,7 +2,7 @@
 ```@raw html
 <details><summary><strong>Tutorial environment set-up</strong></summary>
 ```
-The following code sets up an environment for running this tutorial.
+The following code sets up an environment for running the following examples.
 ```julia
 using Pkg
 Pkg.activate(".")
