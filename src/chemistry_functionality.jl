@@ -101,31 +101,29 @@ function make_compound(expr)
     species_expr = expr.args[2]
     species_name, ivs, _, _ = find_varinfo_in_declaration(expr.args[2])
 
-    # If no ivs were given, inserts `(..)` (e.g. turning `CO` to `CO(..)`).
-    isempty(ivs) && (species_expr = insert_independent_variable(species_expr, :(..)))
-
-    # Expression which when evaluated gives a vector with all the ivs of the components.
-    ivs_get_expr = :(unique(reduce(
-        vcat, [sorted_arguments(ModelingToolkit.unwrap(comp))
-               for comp in $components])))
+    # If no ivs were given, inserts  and expression which evaluates to the union of the ivs
+    # for the species the compound depends on.
+    ivs_get_expr = :(unique(reduce( vcat, [sorted_arguments(ModelingToolkit.unwrap(comp))
+        for comp in $components])))
+    if isempty(ivs)
+        species_expr = Catalyst.insert_independent_variable(species_expr, :($ivs_get_expr...))
+    end
 
     # Creates the found expressions that will create the compound species.
     # The `Expr(:escape, :(...))` is required so that the expressions are evaluated in
     # the scope the users use the macro in (to e.g. detect already exiting species).
     # Creates something like (where `compound_ivs` and `component_ivs` evaluates to all the compound's and components' ivs):
-    #   `@species CO2(..)`
-    #   `isempty([])` && length(component_ivs) && error("When ...)
-    #   `CO2 = CO2(component_ivs..)`
+    #   `@species CO2(iv)`
+    #   `isempty([])` && (length(component_ivs) > 1) && error("When ...)
     #   `issetequal(compound_ivs, component_ivs) || error("The ...)`
     #   `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, true)`
     #   `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [C, O])`
     #   `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [1, 2])`
+    #   `CO2 = ModelingToolkit.wrap(CO2)`
     species_declaration_expr = Expr(:escape, :(@species $species_expr))
     multiple_ivs_error_check_expr = Expr(:escape,
         :($(isempty(ivs)) && (length($ivs_get_expr) > 1) &&
           error($COMPOUND_CREATION_ERROR_DEPENDENT_VAR_REQUIRED)))
-    iv_designation_expr = Expr(:escape,
-        :($(isempty(ivs)) && ($species_name = $(species_name)($(ivs_get_expr)...))))
     iv_check_expr = Expr(:escape,
         :(issetequal(arguments(ModelingToolkit.unwrap($species_name)), $ivs_get_expr) ||
           error("The independent variable(S) provided to the compound ($(arguments(ModelingToolkit.unwrap($species_name)))), and those of its components ($($ivs_get_expr)))), are not identical.")))
@@ -138,16 +136,18 @@ function make_compound(expr)
     coefficients_designation_expr = Expr(:escape,
         :($species_name = ModelingToolkit.setmetadata(
             $species_name, Catalyst.CompoundCoefficients, $coefficients)))
+    compound_wrap_expr = Expr(:escape,
+        :($species_name = ModelingToolkit.wrap($species_name)))
 
     # Returns the rephrased expression.
     return quote
         $species_declaration_expr
         $multiple_ivs_error_check_expr
-        $iv_designation_expr
         $iv_check_expr
         $compound_designation_expr
         $components_designation_expr
         $coefficients_designation_expr
+        $compound_wrap_expr
     end
 end
 
