@@ -153,6 +153,13 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
             sr -> check_spatial_reaction_validity(rs, sr; edge_parameters = edge_parameters),
             spatial_reactions)
 
+        # Additional error checks.
+        if any(haskey(Symbolics.unwrap(symvar).metadata, Symbolics.ArrayShapeCtx)
+                for symvar in [ps; species(rs)])
+            println([ps; species(rs)])
+            throw(ArgumentError("Some species and/or parameters used to create the `LatticeReactionSystem` are array variables ($(filter(symvar -> haskey(Symbolics.unwrap(symvar).metadata, Symbolics.ArrayShapeCtx), [ps; species(rs)]))). This is currently not supported."))
+        end
+
         return new{Q, R, S, T}(
             rs, spatial_reactions, lattice, num_verts, num_edges, num_species,
             spat_species, ps, vertex_parameters, edge_parameters, edge_iterator)
