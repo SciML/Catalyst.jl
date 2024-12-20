@@ -4,7 +4,7 @@
     lat_setp!(sim_struct, p, lrs::LatticeReactionSystem, p_val)
 
 For a problem or integrators, update its `p` vector with the input `p_val`. For non-lattice models,
-this is can be done through direct interfacing (e.g. `prob[p] = 1.0`). However, for 
+this is can be done through direct interfacing (e.g. `prob[p] = 1.0`). However, for
 `LatticeReactionSystem`-based problems and integrators, this function must be used instead.
 
 Arguments:
@@ -82,7 +82,7 @@ end
     lat_getp(sim_struct, p, lrs::LatticeReactionSystem)
 
 For a problem or integrators, retrieves its `p` values. For non-lattice models,
-this is can be done through direct interfacing (e.g. `prob[p]`). However, for 
+this is can be done through direct interfacing (e.g. `prob[p]`). However, for
 `LatticeReactionSystem`-based problems and integrators, this function must be used instead. The
 output format depends on the lattice (a dense array for cartesian grid lattices, a sparse array for
 masked grid lattices, and a vector for graph lattices). This format is similar to what is used to
@@ -95,7 +95,7 @@ Arguments:
 - `lrs`: The `LatticeReactionSystem` which was used to generate the structure we wish to modify.
 
 Notes:
-- Even if the parameter is spatially uniform, a full array with its values across all vertices will be retrieved. 
+- Even if the parameter is spatially uniform, a full array with its values across all vertices will be retrieved.
 
 Example:
 ```julia
@@ -145,7 +145,7 @@ end
     lat_setu!(sim_struct, sp, lrs::LatticeReactionSystem, u)
 
 For a problem or integrators, update its `u` vector with the input `u`. For non-lattice models,
-this is can be done through direct interfacing (e.g. `prob[X] = 1.0`). However, for 
+this is can be done through direct interfacing (e.g. `prob[X] = 1.0`). However, for
 `LatticeReactionSystem`-based problems and integrators, this function must be used instead.
 
 Arguments:
@@ -224,7 +224,7 @@ end
     lat_getu(sim_struct, sp, lrs::LatticeReactionSystem)
 
 For a problem or integrators, retrieves its `u` values. For non-lattice models,
-this is can be done through direct interfacing (e.g. `prob[X]`). However, for 
+this is can be done through direct interfacing (e.g. `prob[X]`). However, for
 `LatticeReactionSystem`-based problems and integrators, this function must be used instead. The
 output format depends on the lattice (a dense array for cartesian grid lattices, a sparse array for
 masked grid lattices, and a vector for graph lattices). This format is similar to which is used to
@@ -236,7 +236,7 @@ Arguments:
 - `lrs`: The `LatticeReactionSystem` which was used to generate the structure we wish to modify.
 
 Notes:
-- Even if the species is spatially uniform, a full array with its values across all vertices will be retrieved. 
+- Even if the species is spatially uniform, a full array with its values across all vertices will be retrieved.
 
 Example:
 ```julia
@@ -277,15 +277,15 @@ function lat_getu(jint::JumpProcesses.SSAIntegrator, sp_idx, sp_tot, lattice)
     return reshape_vals(jint.u[sp_idx, :], lattice)
 end
 
-# A single function, `lat_getu`, which contains all interfacing functionality. However, 
-# long-term it should be replaced with a sleeker interface. Ideally as MTK-wide support for 
+# A single function, `lat_getu`, which contains all interfacing functionality. However,
+# long-term it should be replaced with a sleeker interface. Ideally as MTK-wide support for
 # lattice problems and solutions is introduced. Note that SciML considers jump simulation solutions
 # as `ODESolution`, hence that type is specified.
 """
     lat_getu(sol, sp, lrs::LatticeReactionSystem; t = nothing)
 
 A function for retrieving the solution of a `LatticeReactionSystem`-based simulation on various
-desired forms. Generally, for `LatticeReactionSystem`s, the values in `sol` is ordered in a 
+desired forms. Generally, for `LatticeReactionSystem`s, the values in `sol` is ordered in a
 way which is not directly interpretable by the user. Furthermore, the normal Catalyst interface
 for solutions (e.g. `sol[:X]`) does not work for these solutions. Hence this function is used instead.
 
@@ -307,13 +307,13 @@ Notes:
 
 Example:
 ```julia
-using Catalyst, OrdinaryDiffEq
+using Catalyst, OrdinaryDiffEqTsit5
 
 # Prepare `LatticeReactionSystem`s.
 rs = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
-tr = @transport_reaction D X1 
+tr = @transport_reaction D X1
 lrs = LatticeReactionSystem(rs, [tr], CartesianGrid((2,2)))
 
 # Create problems.
@@ -348,7 +348,7 @@ function lat_getu(sol::ODESolution, lattice, t::Nothing, sp_idx::Int64, sp_tot::
     end
 end
 
-# Function which handles the input in the case where `t` is a range of values (i.e. return `sp`s 
+# Function which handles the input in the case where `t` is a range of values (i.e. return `sp`s
 # value at all designated time points.
 function lat_getu(sol::ODESolution, lattice, t::AbstractVector{T}, sp_idx::Int64,
         sp_tot::Int64) where {T <: Number}
@@ -374,8 +374,8 @@ end
 """
     rebuild_lat_internals!(sciml_struct)
 
-Rebuilds the internal functions for simulating a LatticeReactionSystem. Whenever a problem or 
-integrator has had its parameter values updated, this function should be called for the update to 
+Rebuilds the internal functions for simulating a LatticeReactionSystem. Whenever a problem or
+integrator has had its parameter values updated, this function should be called for the update to
 be taken into account. For ODE simulations, `rebuild_lat_internals!` needs only to be called when
 - An edge parameter has been updated.
 - When a parameter with spatially homogeneous values has been given spatially heterogeneous values (or vice versa).
@@ -393,7 +393,7 @@ Example:
 rs = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
-tr = @transport_reaction D X1 
+tr = @transport_reaction D X1
 grid = CartesianGrid((2,2))
 lrs = LatticeReactionSystem(rs, [tr], grid)
 
