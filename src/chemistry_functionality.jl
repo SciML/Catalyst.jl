@@ -101,7 +101,7 @@ function make_compound(expr)
     species_expr = expr.args[2]
     species_name, ivs, _, _ = find_varinfo_in_declaration(expr.args[2])
 
-    # If no ivs were given, inserts  and expression which evaluates to the union of the ivs
+    # If no ivs were given, inserts  an expression which evaluates to the union of the ivs
     # for the species the compound depends on.
     ivs_get_expr = :(unique(reduce( vcat, [sorted_arguments(ModelingToolkit.unwrap(comp))
         for comp in $components])))
