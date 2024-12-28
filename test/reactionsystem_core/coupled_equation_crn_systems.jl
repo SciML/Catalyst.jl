@@ -228,7 +228,7 @@ let
         Reaction(d, [X], []),
         Reaction(d, [X], nothing, [2], nothing),
         D(V) ~ X - v*V,
-        W^2 ~ log(V) + X 
+        W^2 ~ log(V) + X
     ]
     @named coupled_rs = ReactionSystem(eqs, t)
 
@@ -456,7 +456,7 @@ end
 
 # Checks that a coupled SDE + algebraic equations works.
 # Checks that structural_simplify is required to simulate coupled SDE + algebraic equations.
-@test_broken let # SDEs are currently broken with structural simplify (https://github.com/SciML/ModelingToolkit.jl/issues/2614).
+let # SDEs are currently broken with structural simplify (https://github.com/SciML/ModelingToolkit.jl/issues/2614).
     # Creates coupled reactions system.
     @parameters p d k1 k2
     @species X(t)
@@ -480,7 +480,7 @@ end
     # Checks the algebraic equation holds.
     sprob = SDEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true)
     ssol = solve(sprob, ImplicitEM())
-    @test 2 .+ ps[:k1] * ssol[:A] == 3 .+ ps[:k2] * ssol[:X]
+    @test_broken 2 .+ ps[k1] * ssol[:A] == 3 .+ ps[k2] * ssol[:X]
 end
 
 
