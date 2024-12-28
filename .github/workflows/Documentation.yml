@@ -22,13 +22,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Install all required X11 and OpenGL libraries
-      # These are needed for GLMakie to work in a headless environment
-      - name: Install binary dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb libgl1 mesa-utils freeglut3-dev xorg-dev \
-            libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
+      # # Install all required X11 and OpenGL libraries
+      # # These are needed for GLMakie to work in a headless environment
+      # - name: Install binary dependencies
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y xvfb libgl1 mesa-utils freeglut3-dev xorg-dev \
+      #       libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
 
       # # Start Xvfb explicitly instead of using xvfb-run
       # # This gives us more control and visibility into the virtual display setup
@@ -81,4 +81,3 @@ jobs:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
-

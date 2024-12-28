@@ -480,7 +480,7 @@ let # SDEs are currently broken with structural simplify (https://github.com/Sci
     # Checks the algebraic equation holds.
     sprob = SDEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true)
     ssol = solve(sprob, ImplicitEM())
-    @test_broken 2 .+ ps[k1] * ssol[:A] == 3 .+ ps[k2] * ssol[:X]
+    @test (2 .+ ps[k1] * ssol[:A]) ≈ (3 .+ ps[k2] * ssol[:X])
 end
 
 
