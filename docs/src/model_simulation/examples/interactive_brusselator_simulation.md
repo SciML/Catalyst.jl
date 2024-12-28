@@ -5,7 +5,7 @@ Catalyst can utilize the [GLMakie.jl](https://github.com/JuliaPlots/GLMakie.jl) 
 
 ## [Setting up the Brusselator model](@id setup_brusselator)
 
-Let's again use the oscillating Brusselator model, extending the basic simulation [plotting](@ref simulation_plotting) workflow we saw earlier. We first load the needed packages
+Let's again use the oscillating Brusselator model, extending the basic simulation [plotting](@ref simulation_plotting) workflow we saw earlier. 
 ```@example interactive_brusselator
 using Catalyst
 using OrdinaryDiffEqTsit5
