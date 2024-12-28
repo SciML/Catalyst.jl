@@ -480,7 +480,7 @@ end
     # Checks the algebraic equation holds.
     sprob = SDEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true)
     ssol = solve(sprob, ImplicitEM())
-    @test 2 .+ ps[:k1] * ssol[:A] == 3 .+ ps[:k2] * ssol[:X]
+    @test 2 .+ ps[k1] * ssol[:A] == 3 .+ ps[k2] * ssol[:X]
 end
 
 
