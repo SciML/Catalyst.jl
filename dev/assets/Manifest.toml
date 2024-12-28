@@ -2,7 +2,7 @@
 
 julia_version = "1.11.2"
 manifest_format = "2.0"
-project_hash = "8b5f73387194c387e49aaf23106db84a6163da6b"
+project_hash = "5b0d45bd14e65acc186cd9d53134d1fa1a484989"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "72af59f5b8f09faee36b4ec48e014a79210f2f4f"
@@ -1253,23 +1253,11 @@ deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 version = "1.11.0"
 
-[[deps.GLFW]]
-deps = ["GLFW_jll"]
-git-tree-sha1 = "7ed24cfc4cb29fb10c0e8cca871ddff54c32a4c3"
-uuid = "f7f18e0c-5ee9-5ccd-a5bf-e8befd85ed98"
-version = "3.4.3"
-
 [[deps.GLFW_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libglvnd_jll", "Xorg_libXcursor_jll", "Xorg_libXi_jll", "Xorg_libXinerama_jll", "Xorg_libXrandr_jll", "libdecor_jll", "xkbcommon_jll"]
 git-tree-sha1 = "fcb0584ff34e25155876418979d4c8971243bb89"
 uuid = "0656b61e-2033-5cc2-a64a-77c0f6c09b89"
 version = "3.4.0+2"
-
-[[deps.GLMakie]]
-deps = ["ColorTypes", "Colors", "FileIO", "FixedPointNumbers", "FreeTypeAbstraction", "GLFW", "GeometryBasics", "LinearAlgebra", "Makie", "Markdown", "MeshIO", "ModernGL", "Observables", "PrecompileTools", "Printf", "ShaderAbstractions", "StaticArrays"]
-git-tree-sha1 = "8753fba3356131357b5cd02500fe80c3668535d0"
-uuid = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
-version = "0.10.18"
 
 [[deps.GMP_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -2174,12 +2162,6 @@ git-tree-sha1 = "c13304c81eec1ed3af7fc20e75fb6b26092a1102"
 uuid = "442fdcdd-2543-5da2-b0f3-8c86c306513e"
 version = "0.3.2"
 
-[[deps.MeshIO]]
-deps = ["ColorTypes", "FileIO", "GeometryBasics", "Printf"]
-git-tree-sha1 = "14a12d9153b1a1a22d669eede58b2ea2164ff138"
-uuid = "7269a6da-0436-5bbc-96c2-40638cbb6118"
-version = "0.4.13"
-
 [[deps.MicroCollections]]
 deps = ["Accessors", "BangBang", "InitialValues"]
 git-tree-sha1 = "44d32db644e84c75dab479f1bc15ee76a1a3618f"
@@ -2223,12 +2205,6 @@ version = "9.59.0"
     HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
     InfiniteOpt = "20393b10-9daf-11e9-18c9-8db751c92c57"
     LabelledArrays = "2ee39098-c373-598a-b85f-a56591580800"
-
-[[deps.ModernGL]]
-deps = ["Libdl"]
-git-tree-sha1 = "b76ea40b5c0f45790ae09492712dd326208c28b2"
-uuid = "66fc600b-dfda-50eb-8b99-91cfa97b1301"
-version = "1.1.7"
 
 [[deps.Mods]]
 git-tree-sha1 = "0a3c164857cfc4defe0ac09e6b0123d61320abb1"
