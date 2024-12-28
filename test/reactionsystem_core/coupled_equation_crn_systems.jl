@@ -228,7 +228,7 @@ let
         Reaction(d, [X], []),
         Reaction(d, [X], nothing, [2], nothing),
         D(V) ~ X - v*V,
-        W^2 ~ log(V) + X 
+        W^2 ~ log(V) + X
     ]
     @named coupled_rs = ReactionSystem(eqs, t)
 
