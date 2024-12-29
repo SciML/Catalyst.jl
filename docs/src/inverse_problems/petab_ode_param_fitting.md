@@ -1,5 +1,7 @@
 # [Parameter Fitting for ODEs using PEtab.jl](@id petab_parameter_fitting)
-The [PEtab.jl package](https://github.com/sebapersson/PEtab.jl) implements the [PEtab format](https://petab.readthedocs.io/en/latest/) for fitting the parameters of deterministic CRN models to data [^1]. PEtab.jl both implements methods for creating cost functions (determining how well parameter sets fit to data), and for minimizing these cost functions. The PEtab approach covers most cases of fitting deterministic (ODE) models to data and is a good default choice when fitting reaction rate equation ODE models. This page describes how to combine PEtab.jl and Catalyst for parameter fitting, with the PEtab.jl package providing [a more extensive documentation](https://sebapersson.github.io/PEtab.jl/stable/) (this tutorial is partially an adaptation of this documentation).
+The [PEtab.jl package](https://github.com/sebapersson/PEtab.jl) implements the [PEtab format](https://petab.readthedocs.io/en/latest/) for fitting the parameters of deterministic CRN models to data [^1]. PEtab.jl both implements methods for creating cost functions (determining how well parameter sets fit to data), and for minimizing these cost functions. The PEtab approach covers most cases of fitting deterministic (ODE) models to data and is a good default choice when fitting reaction rate equation ODE models. This page describes how to combine PEtab.jl and Catalyst for parameter fitting, with the PEtab.jl package providing [a more extensive documentation](https://sebapersson.github.io/PEtab.jl/stable/) (this tutorial is partially an adaptation of this documentation). 
+
+While PEtab's interface generally is very flexible, there might be specific use-cases where it cannot create an appropriate cost-function. Here, it is recommended to instead look at using [Optimization.jl](@ref optimization_parameter_fitting).
 
 ## Introductory example
 Let us consider a simple catalysis network, where an enzyme ($E$) turns a substrate ($S$) into a product ($P$):
@@ -19,18 +21,18 @@ u0 = [:S => 1.0, :E => 1.0, :SE => 0.0, :P => 0.0]
 p_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
 
 # Generate synthetic data.
-using OrdinaryDiffEqTsit5
+using OrdinaryDiffEqDefault
 oprob_true = ODEProblem(rn, u0, (0.0, 10.0), p_true)
-true_sol = solve(oprob_true, Tsit5())
-data_sol = solve(oprob_true, Tsit5(); saveat=1.0)
+true_sol = solve(oprob_true)
+data_sol = solve(oprob_true; saveat = 1.0)
 data_ts = data_sol.t[2:end]
 data_vals = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 
 # Plots the true solutions and the (synthetic data) measurements.
 using Plots
-default(bottom_margin=4Plots.Measures.mm,left_margin=4Plots.Measures.mm) # hide
-plot(true_sol; idxs=:P, label="True solution", lw=4)
-plot!(data_ts, data_vals; label="Measurements", seriestype=:scatter, ms=6, color=:blue)
+default(bottom_margin = 4Plots.Measures.mm, left_margin = 4Plots.Measures.mm) # hide
+plot(true_sol; idxs = :P, label = "True solution", lw = 4)
+plot!(data_ts, data_vals; label = "Measurements", seriestype = :scatter, ms = 6, color = :blue)
 ```
 
 Generally, PEtab takes five different inputs to define an optimisation problem (the minimiser of which generates a fitted parameter set):
@@ -86,7 +88,7 @@ For cases where several simulation conditions are given, we also need to provide
 Each individual measurement is provided as a row of a `DataFrame`. The values are provided in the `obs_id`, `time`, `measurement`, and `simulation_id` columns. In our case we only need to fill in the first three:
 ```@example petab1
 using DataFrames
-measurements = DataFrame(obs_id="obs_P", time=data_ts, measurement=data_vals)
+measurements = DataFrame(obs_id = "obs_P", time = data_ts, measurement = data_vals)
 ```
 Since, in our example, all measurements are of the same observable, we can set `obs_id="obs_P"`. However, it is also possible to [include measurements from several different observables](@ref petab_simulation_measurements_several_observables).
 
@@ -94,7 +96,7 @@ Since, in our example, all measurements are of the same observable, we can set `
 ### Creating a PEtabModel
 Finally, we combine all inputs in a single `PEtabModel`. To it, we also pass the initial conditions of our simulations (using the `speciemap` argument). It is also possible to have [initial conditions with uncertainty](@ref petab_simulation_initial_conditions_uncertainty), [that vary between different simulations](@ref petab_simulation_conditions), or [that we attempt to fit to the data](@ref petab_simulation_initial_conditions_fitted).
 ```@example petab1
-petab_model = PEtabModel(rn, observables, measurements, params; speciemap=u0)
+petab_model = PEtabModel(rn, observables, measurements, params; speciemap = u0)
 nothing # hide
 ```
 
@@ -116,9 +118,9 @@ res = calibrate(petab_problem, p0, IPNewton())
 
 We can now simulate our model for the fitted parameter set, and compare the result to the measurements and true solution.
 ```@example petab1
-oprob_fitted = remake(oprob_true; p=get_ps(res, petab_problem))
-fitted_sol = solve(oprob_fitted, Tsit5())
-plot!(fitted_sol; idxs=:P, label="Fitted solution", linestyle=:dash, lw=4, color=:lightblue)
+oprob_fitted = remake(oprob_true; p = get_ps(res, petab_problem))
+fitted_sol = solve(oprob_fitted)
+plot!(fitted_sol; idxs = :P, label = "Fitted solution", linestyle = :dash, lw = 4, color = :lightblue)
 ```
 
 Here we use the `get_ps` function to retrieve a full parameter set using the optimal parameters. Alternatively, the `ODEProblem` or fitted simulation can be retrieved directly using the `get_odeproblem` or `get_odesol` [functions](https://sebapersson.github.io/PEtab.jl/stable/API/), respectively (and the initial condition using the `get_u0` function). The calibration result can also be found in `res.xmin`, however, note that PEtab automatically ([unless a linear scale is selected](@ref petab_parameters_scales)) converts parameters to logarithmic scale, so typically `10 .^res.xmin` are the values of interest. If you investigate the result from this example you might note, that even if PEtab.jl has found the global optimum (which fits the data well), this does not actually correspond to the true parameter set. This phenomenon is related to the concept of *identifiability*, which is very important for parameter fitting.
@@ -155,7 +157,7 @@ It would also be possible to make $σ$ a *parameter that is fitted as a part of 
 
 PEtab.jl assumes that noise is normally distributed (with a standard deviation equal to the second argument provided to `PEtabObservable`). The only other (currently implemented) noise distribution is log-normally distributed noise, which is designated through the `transformation=:log` argument:
 ```@example petab1
-obs_P = PEtabObservable(P, σ; transformation=:log)
+obs_P = PEtabObservable(P, σ; transformation = :log)
 ```
 
 ## [Additional features: Parameters](@id petab_parameters)
@@ -170,14 +172,14 @@ nothing # hide
 ```
 We then provide `parameter_map=[:kB => 1.0]` when we assembly our model:
 ```@example petab1
-petab_model_known_param = PEtabModel(rn, observables, measurements, params; speciemap=u0, parametermap=[:kB => 1.0])
+petab_model_known_param = PEtabModel(rn, observables, measurements, params; speciemap = u0, parametermap = [:kB => 1.0])
 nothing # hide
 ```
 
 ### [Parameter bounds](@id petab_parameters_bounds)
 By default, when fitted, potential parameter values are assumed to be in the interval $(1e-3, 1e3)$. When declaring a `PEtabParameter` it is possible to change these values through the `lb` and `ub` arguments. E.g. we could use
 ```@example petab1
-par_kB = PEtabParameter(:kB; lb=1e-2, ub=1e2)
+par_kB = PEtabParameter(:kB; lb = 1e-2, ub = 1e2)
 ```
 to achieve the more conservative bound $(1e-2, 1e2)$ for the parameter $kB$.
 
@@ -186,7 +188,7 @@ to achieve the more conservative bound $(1e-2, 1e2)$ for the parameter $kB$.
 Internally, parameters that are fitted are converted to a logarithmic scale (generally, this is considered advantageous[^2]). To prevent this conversion, the `scale=:lin` argument can be used. Here we change the scale of $kB$ to linear:
 
 ```@example petab1
-par_kB = PEtabParameter(:kB; scale=:lin)
+par_kB = PEtabParameter(:kB; scale = :lin)
 ```
 
 ### [Parameter priors](@id petab_parameters_priors)
@@ -194,11 +196,11 @@ If we have prior knowledge about the distribution of a parameter, it is possible
 
 ```@example petab1
 using Distributions
-par_kB = PEtabParameter(:kB; prior=Normal(1.0,0.2))
+par_kB = PEtabParameter(:kB; prior = Normal(1.0,0.2))
 ```
 to set a normally distributed prior (with mean `1.0` and standard deviation `0.2`) on the value of $kB$. By default, the prior is assumed to be on the linear scale of the parameter (before any potential log transform). To specify that the prior is on the logarithmic scale, the `prior_on_linear_scale=false` argument can be provided:
 ```@example petab1
-par_kB = PEtabParameter(:kB; prior=Normal(1.0,0.2), prior_on_linear_scale=false)
+par_kB = PEtabParameter(:kB; prior = Normal(1.0,0.2), prior_on_linear_scale = false)
 ```
 In this example, setting `prior_on_linear_scale=false` makes sense as a (linear) normal distribution is non-zero for negative values (an alternative is to use a log-normal distribution, e.g. `prior=LogNormal(3.0, 3.0)`).
 
@@ -232,15 +234,15 @@ u0 = [:E => 1.0, :SE => 0.0, :P => 0.0]
 p_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
 
 # Simulate data.
-using OrdinaryDiffEqTsit5
+using OrdinaryDiffEqDefault
 t1, d1 = let
-    oprob_true = ODEProblem(rn, [:S=>1.0; u0], (0.0, 10.0), p_true)
-    data_sol = solve(oprob_true, Tsit5(); saveat=1.0)
+    oprob_true = ODEProblem(rn, [:S => 1.0; u0], (0.0, 10.0), p_true)
+    data_sol = solve(oprob_true; saveat = 1.0)
     data_sol.t[2:end], (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 end
 t2, d2 = let
     oprob_true = ODEProblem(rn, [:S=>0.5; u0], (0.0, 10.0), p_true)
-    data_sol = solve(oprob_true, Tsit5(); saveat=1.0)
+    data_sol = solve(oprob_true; saveat = 1.0)
     data_sol.t[2:end], (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 end
 
@@ -258,11 +260,11 @@ c2 = Dict(:S => 0.5)
 simulation_conditions = Dict("c1" => c1, "c2" => c2)
 
 using DataFrames
-m1 = DataFrame(simulation_id="c1", obs_id="obs_P", time=t1, measurement=d1)
-m2 = DataFrame(simulation_id="c2", obs_id="obs_P", time=t2, measurement=d2)
+m1 = DataFrame(simulation_id = "c1", obs_id = "obs_P", time = t1, measurement = d1)
+m2 = DataFrame(simulation_id = "c2", obs_id = "obs_P", time = t2, measurement = d2)
 measurements = vcat(m1,m2)
 
-petab_model = PEtabModel(rn, observables, measurements, params; speciemap=u0, 
+petab_model = PEtabModel(rn, observables, measurements, params; speciemap = u0, 
                          simulation_conditions = simulation_conditions)
 nothing # hide
 ```
@@ -288,8 +290,8 @@ nothing # hide
 ```
 we are able to include all these measurements in the same `measurements` `DataFrame`:
 ```@example petab1
-m1 = DataFrame(obs_id="obs_P", time=data_ts, measurement=data_vals_S)
-m2 = DataFrame(obs_id="obs_S", time=data_ts, measurement=data_vals_P)
+m1 = DataFrame(obs_id = "obs_P", time = data_ts, measurement = data_vals_S)
+m2 = DataFrame(obs_id = "obs_S", time = data_ts, measurement = data_vals_P)
 measurements = vcat(m1,m2)
 ```
 which then can be used as input to `PEtabModel`.
@@ -346,10 +348,10 @@ end
 u0 = [:SE => 0.0, :P => 0.0]
 p_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5, :S0=>1.0, :E0 => 1.0]
 
-using OrdinaryDiffEqTsit5
+using OrdinaryDiffEqDefault
 oprob_true = ODEProblem(rn, u0, (0.0, 10.0), p_true)
-true_sol = solve(oprob_true, Tsit5())
-data_sol = solve(oprob_true, Tsit5(); saveat=1.0)
+true_sol = solve(oprob_true)
+data_sol = solve(oprob_true; saveat = 1.0)
 data_ts = data_sol.t[2:end]
 data_vals = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 
@@ -365,9 +367,9 @@ par_E0 = PEtabParameter(:E0; prior = Normal(1.0, 0.1))
 params = [par_kB, par_kD, par_kP, par_S0, par_E0]
 
 using DataFrames
-measurements = DataFrame(obs_id="obs_P", time=data_ts, measurement=data_vals)
+measurements = DataFrame(obs_id = "obs_P", time = data_ts, measurement = data_vals)
 
-petab_model = PEtabModel(rn, observables, measurements, params; speciemap=u0)
+petab_model = PEtabModel(rn, observables, measurements, params; speciemap = u0)
 nothing # hide
 ```
 Here, when we fit our data we will also gain values for `S0` and `E0`, however, unless we are explicitly interested in these, they can be ignored.
@@ -380,9 +382,9 @@ Here is an example, adapted from the [more detailed PEtab.jl documentation](http
 ```@example petab1
 using OrdinaryDiffEqRosenbrock
 PEtabODEProblem(petab_model, 
-                odesolver=ODESolver(Rodas5P(), abstol=1e-8, reltol=1e-8),
-                gradient_method=:ForwardDiff, 
-                hessian_method=:ForwardDiff)
+                odesolver = ODESolver(Rodas5P(), abstol = 1e-8, reltol = 1e-8),
+                gradient_method = :ForwardDiff, 
+                hessian_method = :ForwardDiff)
 nothing # hide
 ```
 where we simulate our ODE model using the `Rodas5P` method (with absolute and relative tolerance both equal `1e-8`) and use [forward automatic differentiation](https://github.com/JuliaDiff/ForwardDiff.jl) for both gradient and hessian computation. More details on available ODE solver options can be found in [the PEtab.jl documentation](https://sebapersson.github.io/PEtab.jl/stable/API/#PEtabODEProblem).
@@ -392,7 +394,7 @@ where we simulate our ODE model using the `Rodas5P` method (with absolute and re
 ### [Optimisation methods and options](@id petab_optimisation_optimisers)
 For our examples, we have used the `Optim.IPNewton` optimisation method. PEtab.jl supports [several additional optimisation methods](https://sebapersson.github.io/PEtab.jl/stable/pest_algs/). Furthermore, `calibrate`'s `options` argument permits the customisation of the options for any used optimiser. E.g. to designate the maximum number of iterations of the `Optim.IPNewton` method we would use:
 ```@example petab1
-res = calibrate(petab_problem, p0, IPNewton(); options=Optim.Options(iterations = 10000))
+res = calibrate(petab_problem, p0, IPNewton(); options = Optim.Options(iterations = 10000))
 nothing # hide
 ```
 
@@ -402,7 +404,7 @@ Please read the [PEtab.jl documentation](https://sebapersson.github.io/PEtab.jl/
 
 To record all the parameter sets evaluated (and their objective values) during the optimisation procedure, provide the `save_trace=true` argument to `calibrate` (or `calibrate_multistart`):
 ```@example petab1
-res = calibrate(petab_problem, p0, IPNewton(); save_trace=true)
+res = calibrate(petab_problem, p0, IPNewton(); save_trace = true)
 nothing # hide
 ```
 This is required for the various [optimisation evaluation plots](@ref petab_plotting) provided by PEtab.jl. If desired, this information can be accessed in the calibration output's `.xtrace` and `.ftrace` fields.
@@ -439,8 +441,8 @@ using Optim
 using QuasiMonteCarlo
 mkdir("OptimisationRuns") # hide
 res_ms = calibrate_multistart(petab_problem, IPNewton(), 10; dirsave = "OptimisationRuns",
-    sampling_method=QuasiMonteCarlo.SobolSample())
-res_ms = calibrate_multistart(petab_problem, IPNewton(), 10; dirsave = "OptimisationRuns", sampling_method=QuasiMonteCarlo.SobolSample()) # hide
+    sampling_method = QuasiMonteCarlo.SobolSample())
+res_ms = calibrate_multistart(petab_problem, IPNewton(), 10; dirsave = "OptimisationRuns", sampling_method = QuasiMonteCarlo.SobolSample()) # hide
 nothing # hide
 ```
 The best result across all runs can still be retrieved using `get_ps(res_ms, petab_problem)`, with the results of the individual runs being stored in the `res_ms.runs` field.
@@ -452,8 +454,8 @@ nothing # hide
 ```
 where `"OptimisationRuns"` is the name of the save directory (specified in `calibrate_multistart`). If the OptimisationRuns folder contains the output from several runs, we can designate which to load using the `which_run` argument. Here we load the second run to be saved in that folder:
 ```@example petab1
-res_ms = PEtabMultistartResult("OptimisationRuns"; which_run=2)
-rm("OptimisationRuns", recursive=true) # hide
+res_ms = PEtabMultistartResult("OptimisationRuns"; which_run = 2)
+rm("OptimisationRuns", recursive = true) # hide
 nothing # hide
 ```
 By default, `which_run` loads the first run saved to that directory.
@@ -479,7 +481,7 @@ Whenever we have several events or not, we bundle them together in a single vect
 ```@example petab1
 params = [par_kB, par_kD, par_kP] # hide
 events = [event1, event2]
-petab_model = PEtabModel(rn, observables, measurements, params; speciemap=u0, events=events)
+petab_model = PEtabModel(rn, observables, measurements, params; speciemap = u0, events = events)
 nothing # hide
 ```
 
@@ -493,7 +495,7 @@ There exist various types of graphs that can be used to evaluate the parameter f
 
 To, for a single start calibration run, plot, for each iteration of the optimization process, the best objective value achieved so far, run:
 ```@example petab1
-res = calibrate(petab_problem, p0, IPNewton(); save_trace=true) # hide
+res = calibrate(petab_problem, p0, IPNewton(); save_trace = true) # hide
 plot(res)
 ```
 
