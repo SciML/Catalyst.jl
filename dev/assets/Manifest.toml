@@ -2,7 +2,7 @@
 
 julia_version = "1.11.2"
 manifest_format = "2.0"
-project_hash = "5b0d45bd14e65acc186cd9d53134d1fa1a484989"
+project_hash = "ab40f3aaa4721d33c2af18f85daae2d35d0d9505"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "72af59f5b8f09faee36b4ec48e014a79210f2f4f"
@@ -675,18 +675,6 @@ git-tree-sha1 = "9e2f36d3c96a820c678f2f1f1782582fcf685bae"
 uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 version = "1.9.1"
 
-[[deps.Dierckx]]
-deps = ["Dierckx_jll"]
-git-tree-sha1 = "d1ea9f433781bb6ff504f7d3cb70c4782c504a3a"
-uuid = "39dd38d3-220a-591b-8e3c-4c3a8c710a94"
-version = "0.5.3"
-
-[[deps.Dierckx_jll]]
-deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "6596b96fe1caff3db36415eeb6e9d3b50bfe40ee"
-uuid = "cd4c43a9-7502-52ba-aa6d-59fb2a88580b"
-version = "0.1.0+0"
-
 [[deps.DiffEqBase]]
 deps = ["ArrayInterface", "ConcreteStructs", "DataStructures", "DocStringExtensions", "EnumX", "EnzymeCore", "FastBroadcast", "FastClosures", "FastPower", "ForwardDiff", "FunctionWrappers", "FunctionWrappersWrappers", "LinearAlgebra", "Logging", "Markdown", "MuladdMacro", "Parameters", "PreallocationTools", "PrecompileTools", "Printf", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLOperators", "SciMLStructures", "Setfield", "Static", "StaticArraysCore", "Statistics", "TruncatedStacktraces"]
 git-tree-sha1 = "b1e23a7fe7371934d9d538114a7e7166c1d09e05"
@@ -736,12 +724,6 @@ weakdeps = ["ReverseDiff"]
 
     [deps.DiffEqNoiseProcess.extensions]
     DiffEqNoiseProcessReverseDiffExt = "ReverseDiff"
-
-[[deps.DiffEqParamEstim]]
-deps = ["Calculus", "Dierckx", "DiffEqBase", "Distributions", "LinearAlgebra", "PenaltyFunctions", "PreallocationTools", "RecursiveArrayTools", "SciMLBase"]
-git-tree-sha1 = "6dd0b91c54b5d98bb06fee51e9ca42181c427528"
-uuid = "1130ab10-4a5a-5621-a13d-e4788d82bd4c"
-version = "2.2.0"
 
 [[deps.DiffResults]]
 deps = ["StaticArraysCore"]
@@ -977,6 +959,12 @@ version = "0.0.20230411+1"
 git-tree-sha1 = "d6863c556f1142a061532e79f611aa46be201686"
 uuid = "90fa49ef-747e-5e6f-a989-263ba693cf1a"
 version = "0.5.2"
+
+[[deps.Evolutionary]]
+deps = ["LinearAlgebra", "NLSolversBase", "Random", "StackViews", "Statistics", "UnPack"]
+git-tree-sha1 = "495cc997e315ee71d2361bf4c90ef21dc12e8fd1"
+uuid = "86b6b26d-c046-49b6-aa0b-5f0f74682bd6"
+version = "0.11.1"
 
 [[deps.ExactPredicates]]
 deps = ["IntervalArithmetic", "Random", "StaticArraysCore", "Test"]
@@ -2556,6 +2544,12 @@ version = "2.4.0"
     SymbolicAnalysis = "4297ee4d-0239-47d8-ba5d-195ecdf594fe"
     Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
+[[deps.OptimizationEvolutionary]]
+deps = ["Evolutionary", "Optimization", "Reexport"]
+git-tree-sha1 = "55bff473a646db6d1084fdd4ff397a474ee4a7f3"
+uuid = "cb963754-43f6-435e-8d4b-99009ff27753"
+version = "0.4.0"
+
 [[deps.OptimizationNLopt]]
 deps = ["NLopt", "Optimization", "Random", "Reexport"]
 git-tree-sha1 = "da55bae039168c0ef977bd5926cd5208c6cd13cf"
@@ -2855,12 +2849,6 @@ deps = ["Dates", "PrecompileTools", "UUIDs"]
 git-tree-sha1 = "8489905bcdbcfac64d1daa51ca07c0d8f0283821"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
 version = "2.8.1"
-
-[[deps.PenaltyFunctions]]
-deps = ["InteractiveUtils", "LinearAlgebra", "RecipesBase"]
-git-tree-sha1 = "4fb26eb6d41e0f8728772877ff159e45842fe8a0"
-uuid = "06bb1623-fdd5-5ca2-a01c-88eae3ea319e"
-version = "0.3.0"
 
 [[deps.Permutations]]
 deps = ["Combinatorics", "LinearAlgebra", "Random"]
