@@ -307,7 +307,7 @@ Notes:
 
 Example:
 ```julia
-using Catalyst, OrdinaryDiffEqTsit5
+using Catalyst, OrdinaryDiffEqDefault
 
 # Prepare `LatticeReactionSystem`s.
 rs = @reaction_network begin
@@ -322,7 +322,7 @@ tspan = (0.0, 10.0)
 ps = [:k1 => 1, :k2 => 2.0, :D => 0.1]
 
 oprob = ODEProblem(lrs1, u0, tspan, ps)
-osol = solve(oprob1, Tsit5())
+osol = solve(oprob)
 lat_getu(osol, :X1, lrs) # Returns the value of X1 at each time step.
 lat_getu(osol, :X1, lrs; t = 0.0:10.0) # Returns the value of X1 at times 0.0, 1.0, ..., 10.0
 ```
