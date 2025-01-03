@@ -1,8 +1,8 @@
 # [Library of Basic Chemical Reaction Network Models](@id basic_CRN_library)
 ```@raw html
-<details><summary><strong>Tutorial environment set-up</strong></summary>
+<details><summary><strong>Environment setup and package installation</strong></summary>
 ```
-The following code sets up an environment for running the following examples.
+The following code sets up an environment for running the code on this page.
 ```julia
 using Pkg
 Pkg.activate(".")
