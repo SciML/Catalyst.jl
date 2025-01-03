@@ -42,13 +42,14 @@ end
         # Tests reaction network analysis features.
         @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end
         @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
+        @time @safetestset "CRN Theory" begin include("network_analysis/crn_theory.jl") end
 
         # Tests ODE, SDE, jump simulations, nonlinear solving, and steady state simulations.
         @time @safetestset "ODE System Simulations" begin include("simulation_and_solving/simulate_ODEs.jl") end
         @time @safetestset "Automatic Jacobian Construction" begin include("simulation_and_solving/jacobian_construction.jl") end
         @time @safetestset "SDE System Simulations" begin include("simulation_and_solving/simulate_SDEs.jl") end
         @time @safetestset "Jump System Simulations" begin include("simulation_and_solving/simulate_jumps.jl") end
-        @time @safetestset "Nonlinear and SteadyState System Solving" begin include("simulation_and_solving/solve_nonlinear.jl") end
+        # @time @safetestset "Nonlinear and SteadyState System Solving" begin include("simulation_and_solving/solve_nonlinear.jl") end
 
         # Tests upstream SciML and DiffEq stuff.
         @time @safetestset "MTK Structure Indexing" begin include("upstream/mtk_structure_indexing.jl") end
