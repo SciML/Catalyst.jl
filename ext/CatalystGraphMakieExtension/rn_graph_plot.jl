@@ -246,7 +246,7 @@ function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels = false, k
     graphplot(cg;
               layout,
               edge_color = edgecolors[rxorder],
-              elabels = show_edge_labels ? edgelabels[rxorder] : [], 
+              elabels = show_rate_labels ? edgelabels[rxorder] : [], 
               ilabels = complexlabels(rn), 
               node_color = :skyblue3,
               elabels_rotation = 0,
