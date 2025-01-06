@@ -49,7 +49,7 @@ end
         @time @safetestset "Automatic Jacobian Construction" begin include("simulation_and_solving/jacobian_construction.jl") end
         @time @safetestset "SDE System Simulations" begin include("simulation_and_solving/simulate_SDEs.jl") end
         @time @safetestset "Jump System Simulations" begin include("simulation_and_solving/simulate_jumps.jl") end
-        # @time @safetestset "Nonlinear and SteadyState System Solving" begin include("simulation_and_solving/solve_nonlinear.jl") end
+        @time @safetestset "Nonlinear and SteadyState System Solving" begin include("simulation_and_solving/solve_nonlinear.jl") end
 
         # Tests upstream SciML and DiffEq stuff.
         @time @safetestset "MTK Structure Indexing" begin include("upstream/mtk_structure_indexing.jl") end
