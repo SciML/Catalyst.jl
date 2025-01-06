@@ -1,7 +1,7 @@
 using Documenter
 using Catalyst, ModelingToolkit
 # Add packages for plotting
-using GraphMakie, GLMakie
+using GraphMakie, CairoMakie
 
 docpath = Base.source_dir()
 assetpath = joinpath(docpath, "src", "assets")

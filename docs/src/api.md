@@ -292,7 +292,7 @@ displayed as the ODE form)
 
 Finally, another optional argument (`expand_functions=true`) automatically expands functions defined by Catalyst (such as `mm`). To disable this, set `expand_functions=false`.
 
-Reaction networks can be plotted using the `GraphMakie` extension, which is loaded whenever both `Catalyst` and `GraphMakie` are loaded (note that a Makie backend, like `GLMakie`, must be loaded as well). The two functions for plotting networks are `plot_network` and `plot_complexes`, which are two distinct representations. 
+Reaction networks can be plotted using the `GraphMakie` extension, which is loaded whenever all of `Catalyst`, `GraphMakie`, and `NetworkLayout` are loaded (note that a Makie backend, like `CairoMakie`, must be loaded as well). The two functions for plotting networks are `plot_network` and `plot_complexes`, which are two distinct representations. 
 ```@docs
 plot_network(::ReactionSystem)
 plot_complexes(::ReactionSystem)

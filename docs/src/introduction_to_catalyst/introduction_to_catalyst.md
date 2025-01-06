@@ -82,12 +82,12 @@ latexify(rn)
 rn #hide
 ```
 Catalyst also has functionality for visualizing networks using the [Makie](https://docs.makie.org/stable/)
-plotting ecosystem. The relevant packages to load are Catalyst, GraphMakie, and a Makie backend
-such as GLMakie. Doing so and then using the `plot_network` function allows us to 
+plotting ecosystem. The relevant packages to load are Catalyst, GraphMakie, NetworkLayout, and a Makie backend
+such as CairoMakie. Doing so and then using the `plot_network` function allows us to 
 visualize the network: 
 ```@example tut1
 using Catalyst
-import GLMakie, GraphMakie
+import CairoMakie, GraphMakie, NetworkLayout
 g = plot_network(rn)
 ```
 
