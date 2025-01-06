@@ -49,7 +49,7 @@ end
         @time @safetestset "Automatic Jacobian Construction" begin include("simulation_and_solving/jacobian_construction.jl") end
         @time @safetestset "SDE System Simulations" begin include("simulation_and_solving/simulate_SDEs.jl") end
         @time @safetestset "Jump System Simulations" begin include("simulation_and_solving/simulate_jumps.jl") end
-        # @time @safetestset "Nonlinear and SteadyState System Solving" begin include("simulation_and_solving/solve_nonlinear.jl") end
+        @time @safetestset "Nonlinear and SteadyState System Solving" begin include("simulation_and_solving/solve_nonlinear.jl") end
 
         # Tests upstream SciML and DiffEq stuff.
         @time @safetestset "MTK Structure Indexing" begin include("upstream/mtk_structure_indexing.jl") end
@@ -57,8 +57,7 @@ end
     end
 
     if GROUP == "All" || GROUP == "IO"
-        # BROKEN
-        # @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
+        @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
         # BROKEN
         # @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
 
@@ -73,9 +72,7 @@ end
         # Tests spatial modelling and simulations.
         @time @safetestset "PDE Systems Simulations" begin include("spatial_modelling/simulate_PDEs.jl") end
         @time @safetestset "Spatial Reactions" begin include("spatial_modelling/spatial_reactions.jl") end
-
-        # BROKEN
-        #@time @safetestset "Lattice Reaction Systems" begin include("spatial_modelling/lattice_reaction_systems.jl") end
+        @time @safetestset "Lattice Reaction Systems" begin include("spatial_modelling/lattice_reaction_systems.jl") end
         @time @safetestset "Spatial Lattice Variants" begin include("spatial_modelling/lattice_reaction_systems_lattice_types.jl") end
         @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_ODEs.jl") end
         @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_jumps.jl") end
@@ -96,7 +93,7 @@ end
         # Tests stability computation (but requires the HomotopyContinuation extension).
         #@time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
 
-        # Test spatial plotting, using CarioMakie and GraphMakie
+        # Test spatial plotting, using CairoMakie and GraphMakie
         @time @safetestset "Lattice Simulation Plotting" begin include("extensions/lattice_simulation_plotting.jl") end
     end
 

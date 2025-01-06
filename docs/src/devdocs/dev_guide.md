@@ -15,7 +15,7 @@ continuing stability of releases. Before making a release one should
    the artifact in the doc build that the docs actually look ok (since sometimes
    issues can arise that do not lead to actual errors in the doc CI).
 4. Release via the [registration
-   issue](https://github.com/SciML/JumpProcesses.jl/issues/73) with the
+   issue](https://github.com/SciML/Catalyst.jl/issues/127) with the
    command:
    
     ```
