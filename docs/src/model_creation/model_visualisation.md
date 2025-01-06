@@ -36,11 +36,11 @@ If you wish to copy the output to your [clipboard](https://en.wikipedia.org/wiki
     For a model to be nicely displayed you have to use an IDE that actually supports this (such as a [notebook](https://jupyter.org/)). Other environments (such as [the Julia REPL](https://docs.julialang.org/en/v1/stdlib/REPL/)) will simply return the full LaTeX code which would generate the desired expression. 
 
 ## [Displaying model networks](@id visualisation_graphs)
-Catalyst uses `GraphMakie` to display representations of chemical reaction networks, including the complex graph and the species-reaction graph (which is similar to the [Petri net](https://en.wikipedia.org/wiki/Petri_net) representation). To get started, import Catalyst and GraphMakie to load the `CatalystGraphMakieExtension` extension, and then load a Makie backend (`GLMakie` is recommended).
+Catalyst uses `GraphMakie` to display representations of chemical reaction networks, including the complex graph and the species-reaction graph (which is similar to the [Petri net](https://en.wikipedia.org/wiki/Petri_net) representation). To get started, import Catalyst, GraphMakie, and NetworkLayout to load the `CatalystGraphMakieExtension` extension, and then load a Makie backend (`CairoMakie` is a good lightweight choice).
 
 ```@example visualisation_graphs
-using Catalyst, GraphMakie
-using GLMakie
+using Catalyst, GraphMakie, NetworkLayout
+using CairoMakie
 nothing # hide
 ```
 

@@ -32,7 +32,7 @@ tutorial we showed how the above network could be visualized as a
 species-reaction graph. There, species are represented by the nodes of the graph
 and edges show the reactions in which a given species is a substrate or product.
 ```@example s1
-using Catalyst, GraphMakie, GLMakie
+using Catalyst, GraphMakie, NetworkLayout, CairoMakie
 g = plot_network(repressilator)
 ```
 
@@ -190,7 +190,7 @@ Reaction complexes give an alternative way to visualize a reaction network
 graph. Catalyst's [`plot_complexes`](@ref) command will calculate the complexes of
 a network and then show how they are related. For example,
 ```@example s1
-using Catalyst, GraphMakie, GLMakie
+using Catalyst, GraphMakie, NetworkLayout, CairoMakie
 plot_complexes(rn)
 ```
 

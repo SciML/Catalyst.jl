@@ -191,7 +191,7 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
     end
 
     layout = if !haskey(kwargs, :layout) 
-        is_connected(srg) ? Stress() : Spring()
+        Stress()
     end
     graphplot(srg; 
               layout,
@@ -209,7 +209,7 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
 end
 
 """
-    plot_complexes(rn::ReactionSystem; kwargs...)
+    plot_complexes(rn::ReactionSystem; show_rate_labels = false, kwargs...)
 
     Creates a GraphMakie plot of the [`ReactionComplex`](@ref)s in `rn`. Reactions
     correspond to arrows and reaction complexes to blue circles.
@@ -219,10 +219,12 @@ end
       parameter or a `Number`. i.e. `k, A --> B`.
     - Red arrows from complexes to complexes indicate reactions whose rate
     depends on species. i.e. `k*C, A --> B` for `C` a species.
+    - The `show_rate_labels` keyword, if set to `true`, will annotate each edge
+    with the rate constant for the reaction.
 
 For a list of accepted keyword arguments to the graph plot, please see the [GraphMakie documentation](https://graph.makie.org/stable/#The-graphplot-Recipe).
 """
-function Catalyst.plot_complexes(rn::ReactionSystem; kwargs...)
+function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels = false, kwargs...)
     rxs = reactions(rn)
     specs = species(rn)
     edgecolors = [:black for i in 1:length(rxs)]
@@ -238,13 +240,13 @@ function Catalyst.plot_complexes(rn::ReactionSystem; kwargs...)
     # Get complex graph and reaction order for edgecolors and edgelabels. rxorder gives the order of reactions(rn) that would match the edge order in edges(cg).
     cg, rxorder = ComplexGraphWrap(rn)
 
-    layout = if !haskey(kwargs, :layout) 
-        is_connected(cg) ? Stress() : Spring()
+    layout = if !haskey(kwargs, :layout)  
+        Stress()
     end
     graphplot(cg;
               layout,
               edge_color = edgecolors[rxorder],
-              elabels = edgelabels[rxorder], 
+              elabels = show_edge_labels ? edgelabels[rxorder] : [], 
               ilabels = complexlabels(rn), 
               node_color = :skyblue3,
               elabels_rotation = 0,
