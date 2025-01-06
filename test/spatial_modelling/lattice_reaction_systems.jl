@@ -245,7 +245,7 @@ end
         @observables X2 ~ 2X
         (p,d), 0 <--> X
     end
-    @test_logs (:warn, r"The `ReactionSystem` used as input to `LatticeReactionSystem contain observables. It *") match_mode=:any LatticeReactionSystem(rs4, [tr], short_path)
+    @test_logs (:warn, r"The `ReactionSystem` used as input to `LatticeReactionSystem` contain observables. It *") match_mode=:any LatticeReactionSystem(rs4, [tr], short_path)
 end
 
 # Tests for hierarchical input system (should yield a warning).
@@ -267,6 +267,25 @@ let
         (p,d), 0 <--> X
     end
     @test_throws ArgumentError LatticeReactionSystem(rs, [tr], CartesianGrid((2,2)))
+end
+
+# Tests for array parameters/species.
+let
+    tr = @transport_reaction D Y
+
+    rs1 = @reaction_network begin
+        @species X(t)[1:2] Y(t)
+        (k1,k2), X[1] <--> X[2]
+    end
+    @test_throws ArgumentError LatticeReactionSystem(rs1, [tr], CartesianGrid((2,2)))
+
+    rs2 =  @reaction_network begin
+        @species Y(t)
+        @parameters k[1:2,1:2]
+        (k[1,1],k[1,2]), X11 <--> X12
+        (k[2,1],k[2,2]), X21 <--> X22
+    end
+    @test_throws ArgumentError LatticeReactionSystem(rs2, [tr], CartesianGrid((2,2)))
 end
 
 ### Tests Grid Vertex and Edge Number Computation ###
