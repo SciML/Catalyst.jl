@@ -5,13 +5,16 @@ Catalyst can utilize the [GLMakie.jl](https://github.com/JuliaPlots/GLMakie.jl) 
 
 ## [Setting up the Brusselator model](@id setup_brusselator)
 
-Let's again use the oscillating Brusselator model, extending the basic simulation [plotting](@ref simulation_plotting) workflow we saw earlier.
-
-```@example interactive_brusselator; continued = true
+Let's again use the oscillating Brusselator model, extending the basic simulation [plotting](@ref simulation_plotting) workflow we saw earlier. 
+```@example interactive_brusselator
 using Catalyst
 using OrdinaryDiffEqTsit5
+```
+```julia
 using GLMakie
-GLMakie.activate!(inline = true) # hide
+```
+```@example interactive_brusselator
+using CairoMakie # hide
 
 # Define the Brusselator model
 brusselator = @reaction_network begin
@@ -79,7 +82,7 @@ Now, let's add interactivity to our plot using Observables and sliders. We'll bu
 
 Observables are a key concept in reactive programming and are central to how Makie.jl creates interactive visualizations. You can read more about them [here](https://docs.makie.org/stable/explanations/observables).
 
-```@example interactive_brusselator; continued = true
+```julia
 # Create observables for parameters and initial conditions
 A = Observable(1.0)
 B = Observable(4.0)
@@ -93,7 +96,7 @@ An Observable is a container for a value that can change over time. When the val
 
 Let's add [sliders](https://docs.makie.org/stable/reference/blocks/slider) that will control our Observables:
 
-```@example interactive_brusselator; continued = true
+```julia
 # Create the main figure
 fig = Figure(size = (800, 600), fontsize = 18);
 
@@ -126,7 +129,7 @@ These sliders allow us to interactively change the parameters A and B, as well a
 
 Now, let's create a plot that reacts to changes in our sliders:
 
-```@example interactive_brusselator
+```julia
 # Create an axis for the plot
 ax = Axis(plot_layout[1, 1], 
     title = "Brusselator Model", 
@@ -148,6 +151,7 @@ axislegend(ax, position = :rt)
 # Display the figure
 fig
 ```
+![Interactive Brusselator Plot](../../assets/interactive_brusselator.png)
 
 This plot will now update in real-time as you move the sliders, allowing for interactive exploration of the Brusselator's behavior under different conditions. (Note the figure above is not interactive, but for illustrative purposes to show what you should see locally.)
 
@@ -259,5 +263,3 @@ You can further extend this visualization by:
 - Adding other interactive elements, such as [buttons](https://docs.makie.org/stable/reference/blocks/button) or [dropdown menus](https://docs.makie.org/stable/reference/blocks/menu) to control different aspects of the simulation or visualization.
 - Adding additonal axes to the plot, such as plotting the derivatives of the species.
 - Color coding the slider and slider labels to match the plot colors.
-
-

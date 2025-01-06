@@ -1,6 +1,6 @@
-#############
+#################################
 # Adapted from https://github.com/MakieOrg/GraphMakie.jl/issues/52#issuecomment-1018527479
-#############
+#################################
 
 """
     MultiGraphWrap{T}
@@ -14,14 +14,16 @@ Wrapper intended to allow plotting of multiple edges. This is needed in the foll
 struct MultiGraphWrap{T} <: Graphs.AbstractGraph{T}
    g::SimpleDiGraph{T}
    multiedges::Vector{Graphs.SimpleEdge{T}}
-   edgeorder::Vector{Int64}
+   """Sets the drawing order of the edges. Needed because multiedges need to be consecutive to be drawn properly."""
+   edgeorder::Vector{Int64} 
 end
 
 # Create the SimpleDiGraph corresponding to the species and reactions, the species-reaction graph
-function MultiGraphWrap(rn::ReactionSystem) 
+function SRGraphWrap(rn::ReactionSystem) 
     srg = species_reaction_graph(rn)
-    rateedges = Vector{Graphs.SimpleEdge{Int}}()
-    sm = speciesmap(rn); specs = species(rn)
+    multiedges = Vector{Graphs.SimpleEdge{Int}}()
+    sm = speciesmap(rn)
+    specs = species(rn)
 
     deps = Set()
     for (i, rx) in enumerate(reactions(rn)) 
@@ -30,20 +32,55 @@ function MultiGraphWrap(rn::ReactionSystem)
         if !isempty(deps)
             for spec in deps 
                 specidx = sm[spec]
-                push!(rateedges, Graphs.SimpleEdge(specidx, i + length(specs)))
+                has_edge(srg, specidx, i + length(specs)) ? 
+                    push!(multiedges, Graphs.SimpleEdge(specidx, i + length(specs))) : 
+                    add_edge!(srg, Graphs.SimpleEdge(specidx, i + length(specs))) 
             end
         end
     end
-    edgelist = vcat(collect(Graphs.edges(srg)), rateedges)
+    edgelist = vcat(collect(Graphs.edges(srg)), multiedges)
     edgeorder = sortperm(edgelist)
-    MultiGraphWrap(srg, rateedges, edgeorder)
+    MultiGraphWrap(srg, multiedges, edgeorder)
 end
 
-# Automatically set edge order if not supplied
+# Automatically set edge drawing order if not supplied
 function MultiGraphWrap(g::SimpleDiGraph{T}, multiedges::Vector{Graphs.SimpleEdge{T}}) where T
     edgelist = vcat(collect(Graphs.edges(g)), multiedges)
     edgeorder = sortperm(edgelist)
     MultiGraphWrap(g, multiedges, edgeorder)
+end
+
+# Return the multigraph and reaction order corresponding to the complex graph. The reaction order is the order of reactions(rn) that would match the edge order given by g.edgeorder.
+function ComplexGraphWrap(rn::ReactionSystem) 
+    img = incidencematgraph(rn)
+    D = incidencemat(rn; sparse=true)
+    specs = species(rn)
+    rxs = reactions(rn)
+
+    deps = Set()
+    edgelist = Vector{Graphs.SimpleEdge{Int}}()
+    rows = rowvals(D)
+    vals = nonzeros(D)
+
+    # Construct the edge order for reactions.
+    for (i, rx) in enumerate(rxs)
+        inds = nzrange(D, i)
+        val = vals[inds]
+        row = rows[inds]
+        (sub, prod) = val[1] == -1 ? (row[1], row[2]) : (row[2], row[1])
+        push!(edgelist, Graphs.SimpleEdge(sub, prod))
+
+        empty!(deps)
+        get_variables!(deps, rx.rate, specs)
+    end
+
+    rxorder = sortperm(edgelist)
+    edgelist = edgelist[rxorder]
+    multiedges = Vector{Graphs.SimpleEdge{Int}}()
+    for i in 2:length(edgelist)
+        isequal(edgelist[i], edgelist[i-1]) && push!(multiedges, edgelist[i])
+    end
+    MultiGraphWrap(img, multiedges), rxorder
 end
 
 Base.eltype(g::MultiGraphWrap) = eltype(g.g)
@@ -57,12 +94,21 @@ Graphs.nv(g::MultiGraphWrap) = nv(g.g)
 Graphs.vertices(g::MultiGraphWrap) = vertices(g.g)
 Graphs.is_directed(::Type{<:MultiGraphWrap}) = true
 Graphs.is_directed(g::MultiGraphWrap) = is_directed(g.g)
+Graphs.is_connected(g::MultiGraphWrap) = is_connected(g.g)
+
+function Graphs.adjacency_matrix(g::MultiGraphWrap) 
+    adj = Graphs.adjacency_matrix(g.g)
+    for e in g.multiedges
+        adj[src(e), dst(e)] = 1
+    end
+    adj
+end
 
 function Graphs.edges(g::MultiGraphWrap)
     edgelist = vcat(collect(Graphs.edges(g.g)), g.multiedges)[g.edgeorder]
 end
 
-function gen_distances(g::MultiGraphWrap; inc = 0.4) 
+function gen_distances(g::MultiGraphWrap; inc = 0.2) 
     edgelist = edges(g)
     distances = zeros(length(edgelist))
     edgedict = Dict(edgelist[1] => [1])
@@ -95,7 +141,7 @@ function gen_distances(g::MultiGraphWrap; inc = 0.4)
 end
 
 """
-    plot_network(rn::ReactionSystem)
+    plot_network(rn::ReactionSystem; kwargs...)
 
 Converts a [`ReactionSystem`](@ref) into a GraphMakie plot of the species reaction graph
 (or Petri net representation). Reactions correspond to small green circles, and 
@@ -110,18 +156,19 @@ Notes:
   rate expression. For example, in the reaction `k*A, B --> C`, there would be a
   red arrow from `A` to the reaction node. In `k*A, A+B --> C`, there would be
   red and black arrows from `A` to the reaction node.
+
+For a list of accepted keyword arguments to the graph plot, please see the [GraphMakie documentation](https://graph.makie.org/stable/#The-graphplot-Recipe).
 """  
-function Catalyst.plot_network(rn::ReactionSystem)
-    srg = MultiGraphWrap(rn)
+function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
+    srg = SRGraphWrap(rn)
     ns = length(species(rn))
     nodecolors = vcat([:skyblue3 for i in 1:ns], 
                       [:green for i in ns+1:nv(srg)])
     ilabels = vcat(map(s -> String(tosymbol(s, escape=false)), species(rn)),
-                   fill("", nv(srg.g) - ns))
-    nodesizes = vcat([30 for i in 1:ns],
-                     [10 for i in ns+1:nv(srg)])
+                   ["R$i" for i in 1:nv(srg)-ns])
 
-    ssm = substoichmat(rn); psm = prodstoichmat(rn)
+    ssm = substoichmat(rn)
+    psm = prodstoichmat(rn)
     # Get stoichiometry of reaction
     edgelabels = map(Graphs.edges(srg.g)) do e
         string(src(e) > ns ? 
@@ -131,29 +178,38 @@ function Catalyst.plot_network(rn::ReactionSystem)
     edgecolors = [:black for i in 1:ne(srg)]
 
     num_e = ne(srg.g)
+    # Handle the rate edges
     for i in 1:length(srg.edgeorder)
-        if srg.edgeorder[i] > num_e
+        # If there are stoichiometry and rate edges from the same species to reaction
+        if srg.edgeorder[i] > num_e 
             edgecolors[i] = :red
             insert!(edgelabels, i, "")
+        elseif edgelabels[i] == "0"
+            edgecolors[i] = :red
+            edgelabels[i] = ""
         end
     end
 
+    layout = if !haskey(kwargs, :layout) 
+        is_connected(srg) ? Stress() : Spring()
+    end
     graphplot(srg; 
+              layout,
               edge_color = edgecolors,
               elabels = edgelabels,
               elabels_rotation = 0,
               ilabels = ilabels,
               node_color = nodecolors,
-              node_size = nodesizes,
               arrow_shift = :end,
               arrow_size = 20,
               curve_distance_usage = true,
               curve_distance = gen_distances(srg),
+              kwargs...
             )
 end
 
 """
-    plot_complexes(rn::ReactionSystem)
+    plot_complexes(rn::ReactionSystem; kwargs...)
 
     Creates a GraphMakie plot of the [`ReactionComplex`](@ref)s in `rn`. Reactions
     correspond to arrows and reaction complexes to blue circles.
@@ -163,40 +219,30 @@ end
       parameter or a `Number`. i.e. `k, A --> B`.
     - Red arrows from complexes to complexes indicate reactions whose rate
     depends on species. i.e. `k*C, A --> B` for `C` a species.
+
+For a list of accepted keyword arguments to the graph plot, please see the [GraphMakie documentation](https://graph.makie.org/stable/#The-graphplot-Recipe).
 """
-function Catalyst.plot_complexes(rn::ReactionSystem)
-    img = incidencematgraph(rn); D = incidencemat(rn; sparse=true)
-    specs = species(rn); rxs = reactions(rn)
+function Catalyst.plot_complexes(rn::ReactionSystem; kwargs...)
+    rxs = reactions(rn)
+    specs = species(rn)
     edgecolors = [:black for i in 1:length(rxs)]
     edgelabels = [repr(rx.rate) for rx in rxs]
 
     deps = Set()
-    edgelist = Vector{Graphs.SimpleEdge{Int}}()
-    rows = rowvals(D)
-    vals = nonzeros(D)
-
-    # Construct the edge order for reactions.
     for (i, rx) in enumerate(rxs)
-        inds = nzrange(D, i)
-        val = vals[inds]
-        row = rows[inds]
-        (sub, prod) = val[1] == -1 ? (row[1], row[2]) : (row[2], row[1])
-        push!(edgelist, Graphs.SimpleEdge(sub, prod))
-
         empty!(deps)
         get_variables!(deps, rx.rate, specs)
         (!isempty(deps)) && (edgecolors[i] = :red)
     end
 
-    # Resolve differences between reaction order and edge order in the incidencematgraph.
-    rxorder = sortperm(edgelist); edgelist = edgelist[rxorder]
-    multiedges = Vector{Graphs.SimpleEdge{Int}}()
-    for i in 2:length(edgelist)
-        isequal(edgelist[i], edgelist[i-1]) && push!(multiedges, edgelist[i])
-    end
-    img_ = MultiGraphWrap(img, multiedges)
+    # Get complex graph and reaction order for edgecolors and edgelabels. rxorder gives the order of reactions(rn) that would match the edge order in edges(cg).
+    cg, rxorder = ComplexGraphWrap(rn)
 
-    graphplot(img_;
+    layout = if !haskey(kwargs, :layout) 
+        is_connected(cg) ? Stress() : Spring()
+    end
+    graphplot(cg;
+              layout,
               edge_color = edgecolors[rxorder],
               elabels = edgelabels[rxorder], 
               ilabels = complexlabels(rn), 
@@ -204,7 +250,8 @@ function Catalyst.plot_complexes(rn::ReactionSystem)
               elabels_rotation = 0,
               arrow_shift = :end, 
               curve_distance_usage = true,
-              curve_distance = gen_distances(img_)
+              curve_distance = gen_distances(cg),
+              kwargs...
             )
 end
 

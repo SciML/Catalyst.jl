@@ -14,7 +14,7 @@ include("../test_functions.jl")
 # Tests for Symbolics initial condition input.
 # Tests for different types (Symbol/Symbolics) for parameters and initial conditions.
 # Tests that attempts to find steady states of system with conservation laws, while u0 is not provided, gives an error.
-let 
+let
     # Creates the model.
     rs = @reaction_network begin
         (k1,k2), X1 <--> X2
@@ -37,7 +37,7 @@ end
 # Tests for Symbol parameter input.
 # Tests that passing kwargs to HC.solve does not error and have an effect (i.e. modifying the seed
 # slightly modified the output in some way).
-let 
+let
     wilhelm_2009_model = @reaction_network begin
         k1, Y --> 2X
         k2, 2X --> X + Y
@@ -61,7 +61,7 @@ end
 # Tests where input ps/u0 are tuples with mixed types.
 let
     rs_1 = @reaction_network begin
-        @parameters kX1=1.0 kX2=2.0 kY1=12345.0 
+        @parameters kX1=1.0 kX2=2.0 kY1=12345.0
         @species X1(t)=0.1 X2(t)=0.2 Y1(t)=12345.0
         (kX1,kX2), X1 <--> X2
         (kY1,kY2), Y1 <--> Y2
@@ -69,36 +69,36 @@ let
     end
     ps = (:kY1 => 1.0, :kY2 => 3, :kZ1 => 1.0, :kZ2 => 4.0)
     u0_1 = (:Y1 => 1.0, :Y2 => 3, :Z1 => 10, :Z2 =>40.0)
-    
+
     ss_1 = sort(hc_steady_states(rs_1, ps; u0 = u0_1, show_progress = false, seed = 0x000004d1), by = sol->sol[1])
     @test ss_1 ≈ [[0.2, 0.1, 3.0, 1.0, 40.0, 10.0]]
-    
+
     rs_2 = @reaction_network begin
-        @parameters kX1=1.0 kX2=2.0 kY1=12345.0 
+        @parameters kX1=1.0 kX2=2.0 kY1=12345.0
         @species C2(t)=0.1 C1(t)=0.2 B2(t)=12345.0
         (kX1,kX2), C2 <--> C1
         (kY1,kY2), B2 <--> B1
         (kZ1,kZ2), A2 <--> A1
     end
     u0_2 = [:B2 => 1.0, :B1 => 3.0, :A2 => 10.0, :A1 =>40.0]
-    
+
     ss_2 = sort(hc_steady_states(rs_2, ps; u0 = u0_2, show_progress = false, seed = 0x000004d1), by = sol->sol[1])
     @test ss_1 ≈ ss_2
 end
 
 # Tests that non-scalar reaction rates work.
-# Tests that rational polynomial steady state systems work. 
+# Tests that rational polynomial steady state systems work.
 # Tests that Hill function is correctly expanded even if nested.
 # Test filter_negative=false works.
 # Tests than non-integer exponents throws an error.
-let 
+let
     rs = @reaction_network begin
         v*(0.1/v + hill(X,1,K,n)), 0 --> X
         d, X --> 0
     end
     ps = Dict([:v => 5.0, :K => 2.5, :n => 3, :d => 1.0])
     sss = hc_steady_states(rs, ps; filter_negative = false, show_progress = false, seed = 0x000004d1)
-    
+
     @test length(sss) == 4
     for ss in sss
         @test ps[:v]*(0.1/ps[:v] + ss[1]^ps[:n]/(ss[1]^ps[:n] + ps[:K]^ps[:n])) - ps[:d]*ss[1]≈ 0.0 atol = 1e-12
@@ -108,6 +108,26 @@ let
     @test_throws Exception hc_steady_states(rs, ps; show_progress = false, seed = 0x000004d1)
 end
 
+# Checks that the correct steady states are found for system with multiple, known, steady states.
+# Checks where (activating/repressing) Hill function is written out/using `hillar`.
+# The system is known to have (exactly five steady states for the given parameter set.
+let
+    # Finds the model steady states.
+    rs = @reaction_network begin
+        0.01 + hillar(X,Y,1.0,Kx,3), ∅ --> X
+        0.01 + (Y^3) / (X^3 + Y^3 + Ky^3), ∅ --> Y
+        1.0, (X, Y) --> ∅
+    end
+    ps = [:Kx => 0.3, :Ky => 0.5]
+    sss = hc_steady_states(rs, ps)
+
+    # Checks that the steady states are correct, all unique, and that 5 (known number) is found.
+    @test length(sss) == 5
+    @test allunique(sss)
+    for ss in sss
+        @test f_eval(rs, ss, ps, 0.0) ≈ [0.0, 0.0] atol = 1e-12 rtol = 1e-12
+    end
+end
 
 ### Other Tests ###
 
@@ -131,19 +151,19 @@ let
 end
 
 # Checks that `hc_steady_states` cannot be applied to non-complete `ReactionSystems`s.
-let 
+let
     # Create model.
     incomplete_network = @network_component begin
         (p, d), 0 <--> X
     end
     p_start = [:p => 1.0, :d => 0.2]
-    
+
     # Computes bifurcation diagram.
     @test_throws Exception hc_steady_states(incomplete_network, p_start; show_progress = false, seed = 0x000004d1)
 end
 
 # Tests that non-autonomous system throws an error
-let 
+let
     rs = @reaction_network begin
         (k,t), 0 <--> X
     end
