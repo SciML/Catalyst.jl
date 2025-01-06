@@ -197,10 +197,12 @@ end
 
     Return the negative of the graph Laplacian of the reaction network. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where ``Y`` is the [`complexstoichmat`](@ref) and ``A_k`` is the negative of the graph Laplacian, and ``Φ`` is the [`massactionvector`](@ref). ``A_k`` is an n-by-n matrix, where n is the number of complexes, where ``A_{ij} = k_{ij}`` if a reaction exists between the two complexes and 0 otherwise. 
     Returns a symbolic matrix by default, but will return a numerical matrix if parameter values are specified via pmap. 
+
+    **Warning**: Unlike other Catalyst functions, the `laplacianmat` function will return a `Matrix{Num}` in the symbolic case. This is to allow easier computation of the matrix decomposition of the ODEs.
 """
-function laplacianmat(rn::ReactionSystem, pmap::Dict = Dict())
-    D = incidencemat(rn)
-    K = fluxmat(rn, pmap)
+function laplacianmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse = false)
+    D = incidencemat(rn; sparse)
+    K = fluxmat(rn, pmap; sparse)
     D * K
 end
 
@@ -212,8 +214,10 @@ Base.one(::Type{Union{R, Symbolics.BasicSymbolic{Real}}}) where R <: Real = one(
 
     Return an r×c matrix ``K`` such that, if complex ``j`` is the substrate complex of reaction ``i``, then ``K_{ij} = k``, the rate constant for this reaction. Mostly a helper function for the network Laplacian, [`laplacianmat`](@ref). Has the useful property that ``\frac{dx}{dt} = S*K*Φ(x)``, where S is the [`netstoichmat`](@ref) or net stoichiometry matrix and ``Φ(x)`` is the [`massactionvector`](@ref).
     Returns a symbolic matrix by default, but will return a numerical matrix if rate constants are specified as a `Tuple`, `Vector`, or `Dict` of symbol-value pairs via `pmap`.
+
+    **Warning**: Unlike other Catalyst functions, the `fluxmat` function will return a `Matrix{Num}` in the symbolic case. This is to allow easier computation of the matrix decomposition of the ODEs.
 """
-function fluxmat(rn::ReactionSystem, pmap::Dict = Dict())
+function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse=false)
     rates = if isempty(pmap)
         reactionrates(rn)
     else
@@ -224,24 +228,28 @@ function fluxmat(rn::ReactionSystem, pmap::Dict = Dict())
     nc = length(rcmap)
     nr = length(rates)
     mtype = eltype(rates) <: Symbolics.BasicSymbolic ? Num : eltype(rates)
-    Matrix{Any}(fluxmat(Matrix{mtype}, rcmap, rates))
+    if sparse
+        return fluxmat(SparseMatrixCSC{mtype, Int}, rcmap, rates)
+    else
+        return fluxmat(Matrix{mtype}, rcmap, rates)
+    end
 end
 
-# function fluxmat(::Type{SparseMatrixCSC{T, Int}}, rcmap, rates) where T
-#     Is = Int[]
-#     Js = Int[]
-#     Vs = T[]
-#     for (i, (complex, rxs)) in enumerate(rcmap)
-#         for (rx, dir) in rxs
-#             dir == -1 && begin
-#                 push!(Is, rx)
-#                 push!(Js, i)
-#                 push!(Vs, rates[rx])
-#             end
-#         end
-#     end
-#     Z = sparse(Is, Js, Vs, length(rates), length(rcmap))
-# end
+function fluxmat(::Type{SparseMatrixCSC{T, Int}}, rcmap, rates) where T
+    Is = Int[]
+    Js = Int[]
+    Vs = T[]
+    for (i, (complex, rxs)) in enumerate(rcmap)
+        for (rx, dir) in rxs
+            dir == -1 && begin
+                push!(Is, rx)
+                push!(Js, i)
+                push!(Vs, rates[rx])
+            end
+        end
+    end
+    Z = sparse(Is, Js, Vs, length(rates), length(rcmap))
+end
 
 function fluxmat(::Type{Matrix{T}}, rcmap, rates) where T
     nr = length(rates)
@@ -279,6 +287,8 @@ end
     Return the vector whose entries correspond to the "mass action products" of each complex. For example, given the complex A + B, the corresponding entry of the vector would be ``A*B``, and for the complex 2X + Y, the corresponding entry would be ``X^2*Y``. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where ``Y`` is the [`complexstoichmat`](@ref) and ``A_k`` is the negative of the [`laplacianmat`](@ref). This utility returns ``Φ(x)``.
     Returns a symbolic vector by default, but will return a numerical vector if species concentrations are specified as a tuple, vector, or dictionary via scmap.
     If the `combinatoric_ratelaws` option is set, will include prefactors for that (see [introduction to Catalyst's rate laws](@ref introduction_to_catalyst_ratelaws). Will default to the default for the system.
+
+    **Warning**: Unlike other Catalyst functions, the `massactionvector` function will return a `Matrix{Num}` in the symbolic case. This is to allow easier computation of the matrix decomposition of the ODEs.
 """
 function massactionvector(rn::ReactionSystem, scmap::Dict = Dict(); combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn))
     r = numreactions(rn)
@@ -306,7 +316,7 @@ function massactionvector(rn::ReactionSystem, scmap::Dict = Dict(); combinatoric
         push!(Φ, maprod)
     end
 
-    Vector{Any}(Φ)
+    Φ
 end
 
 function massactionvector(rn::ReactionSystem, scmap::Tuple; combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn))
