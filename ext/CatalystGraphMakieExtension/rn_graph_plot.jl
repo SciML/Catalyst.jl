@@ -217,7 +217,7 @@ end
     Notes:
     - Black arrows from complexes to complexes indicate reactions whose rate is a
       parameter or a `Number`. i.e. `k, A --> B`.
-    - Red arrows from complexes to complexes indicate reactions whose rate
+    - Red arrows from complexes to complexes indicate reactions whose rate constants
     depends on species. i.e. `k*C, A --> B` for `C` a species.
     - The `show_rate_labels` keyword, if set to `true`, will annotate each edge
     with the rate constant for the reaction.

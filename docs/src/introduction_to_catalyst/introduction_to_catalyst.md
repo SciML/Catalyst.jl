@@ -92,7 +92,7 @@ g = plot_network(rn)
 ```
 
 The network graph shows a variety of information, representing each species as a
-blue node, and each reaction as an orange dot. Black arrows from species to
+blue node, and each reaction as an green node. Black arrows from species to
 reactions indicate reactants, and are labelled with their input stoichiometry.
 Similarly, black arrows from reactions to species indicate products, and are
 labelled with their output stoichiometry. In contrast, red arrows from a species

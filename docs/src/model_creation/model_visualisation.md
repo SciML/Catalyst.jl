@@ -76,9 +76,12 @@ Finally, a [network's reaction complexes](@ref network_analysis_reaction_complex
 ```@example visualisation_graphs
 plot_complexes(brusselator)
 ```
-Here, reaction complexes are displayed as blue nodes, and reactions between complexes are displayed as black arrows. Edges are labeled with their rate expressions.
+Here, reaction complexes are displayed as blue nodes, and reactions between complexes are displayed as black arrows. Red arrows indicate that the rate constantof a reaction has a species-dependence. Edges can be optionally labeled with their rate expressions by calling with the option `show_rate_labels`.
+```@example visualisation_graphs
+plot_complexes(brusselator, show_rate_labels = true)
+```
 
-Makie graphs can be made to be interactive, allowing one to drag nodes and edges. To do this, we retrieve the axis from the GraphMakie plot, and then register the interactions. Note that this can only be done if `GLMakie` is the installed Makie backend. See the [GraphMakie docs](https://graph.makie.org/stable/#Predefined-Interactions) for more information.  
+Makie graphs can be made to be interactive, allowing one to drag nodes and edges. To do this, we retrieve the axis from the GraphMakie plot, and then register the interactions. **Note that this can only be done if `GLMakie` is the installed Makie backend. See the [GraphMakie docs](https://graph.makie.org/stable/#Predefined-Interactions) for more information about the types of interactions one can register.** Below is a non-interactive code example:
 
 ```julia
 using GLMakie
