@@ -193,7 +193,7 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
     layout = if !haskey(kwargs, :layout) 
         Stress()
     end
-    graphplot(srg; 
+    f, ax, p = graphplot(srg; 
               layout,
               edge_color = edgecolors,
               elabels = edgelabels,
@@ -206,21 +206,26 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
               curve_distance = gen_distances(srg),
               kwargs...
             )
+
+    ax.xautolimitmargin = (0.15, 0.15)
+    ax.yautolimitmargin = (0.15, 0.15)
+    
+    f, ax, p
 end
 
 """
     plot_complexes(rn::ReactionSystem; show_rate_labels = false, kwargs...)
 
-    Creates a GraphMakie plot of the [`ReactionComplex`](@ref)s in `rn`. Reactions
-    correspond to arrows and reaction complexes to blue circles.
+Creates a GraphMakie plot of the [`ReactionComplex`](@ref)s in `rn`. Reactions
+correspond to arrows and reaction complexes to blue circles.
 
-    Notes:
-    - Black arrows from complexes to complexes indicate reactions whose rate is a
-      parameter or a `Number`. i.e. `k, A --> B`.
-    - Red arrows from complexes to complexes indicate reactions whose rate constants
-    depends on species. i.e. `k*C, A --> B` for `C` a species.
-    - The `show_rate_labels` keyword, if set to `true`, will annotate each edge
-    with the rate constant for the reaction.
+Notes:
+- Black arrows from complexes to complexes indicate reactions whose rate is a
+  parameter or a `Number`. i.e. `k, A --> B`.
+- Red arrows from complexes to complexes indicate reactions whose rate constants
+depends on species. i.e. `k*C, A --> B` for `C` a species.
+- The `show_rate_labels` keyword, if set to `true`, will annotate each edge
+with the rate constant for the reaction.
 
 For a list of accepted keyword arguments to the graph plot, please see the [GraphMakie documentation](https://graph.makie.org/stable/#The-graphplot-Recipe).
 """
@@ -243,7 +248,7 @@ function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels = false, k
     layout = if !haskey(kwargs, :layout)  
         Stress()
     end
-    graphplot(cg;
+    f, ax, p = graphplot(cg;
               layout,
               edge_color = edgecolors[rxorder],
               elabels = show_rate_labels ? edgelabels[rxorder] : [], 
@@ -255,6 +260,10 @@ function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels = false, k
               curve_distance = gen_distances(cg),
               kwargs...
             )
+    ax.xautolimitmargin = (0.15, 0.15)
+    ax.yautolimitmargin = (0.15, 0.15)
+    
+    f, ax, p
 end
 
 function complexelem_tostr(e::Catalyst.ReactionComplexElement, specstrs) 

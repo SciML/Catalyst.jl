@@ -81,7 +81,44 @@ Here, reaction complexes are displayed as blue nodes, and reactions between comp
 plot_complexes(brusselator, show_rate_labels = true)
 ```
 
-Makie graphs can be made to be interactive, allowing one to drag nodes and edges. To do this, we retrieve the axis from the GraphMakie plot, and then register the interactions. **Note that this can only be done if `GLMakie` is the installed Makie backend. See the [GraphMakie docs](https://graph.makie.org/stable/#Predefined-Interactions) for more information about the types of interactions one can register.** Below is a non-interactive code example:
+## Customizing Plots
+In this section we demonstrate some of the ways that plot objects can be manipulated to give nicer images. Let's start with our brusselator plot once again. Note that the `plot` function returns three objects: the `Figure`, the `Axis`, and the `Plot`, which can each be customized independently. See the general [Makie documentation](https://docs.makie.org/stable/) for more information.
+
+```@example visualisation_graphs
+f, ax, p = plot_complexes(brusselator, show_rate_labels = true)
+```
+
+It seems like a bit of the top node is cut off. Let's hide the tick marks and grid and increase the top and bottom margins by increasing `yautolimitmargin`.
+```@example visualisation_graphs
+hidedecorations!(ax)
+ax.yautolimitmargin = (0.1, 0.1) # defaults to (0.05, 0.05)
+ax.aspect = DataAspect()
+```
+
+There are many keyword arguments that can be passed to `plot_network` or `plot_complexes` to change the look of the graph (which get passed to the `graphplot` Makie recipe). Let's change the color of the nodes and make the inner labels a bit smaller. As before, we hide the tick marks and grid. Let's also give the plot a title. 
+```@example visualisation_graphs
+f, ax, p = plot_complexes(brusselator, show_rate_labels = true, node_color = :yellow, ilabels_fontsize = 10)
+hidedecorations!(ax)
+ax.yautolimitmargin = (0.1, 0.1) # defaults to (0.05, 0.05)
+ax.aspect = DataAspect()
+ax.title = "Brusselator"
+```
+
+Most of the kwargs that modify the nodes or edges will also accept a vector with the same length as the number of nodes or edges, respectively. See [here](https://graph.makie.org/stable/#The-graphplot-Recipe) for a full list of keyword arguments to `graph_plot`. Note that `plot_complexes` and `plot_network` default to `layout = Stress()` rather than `layout = Spring()`, since `Stress()` is better at generating plots with fewer edge crossings. More layout options and customizations (such as pinning nodes to certain positions) can be found in the [`NetworkLayout` documentation](https://juliagraphs.org/NetworkLayout.jl/stable/).
+
+Once a graph is already created we can also change the keyword arguments by modifying the fields of the `Plot` object `p`.
+```@example visualisation_graphs
+p.node_color = :orange
+```
+
+Custom node positions can also be given, if the automatic layout is unsatisfactory.
+```@example visualisation_graphs
+fixedlayout = [(0,0), (1,0), (0,1), (1,1), (2,0)]
+p.layout = fixedlayout
+autolimits!(ax)
+```
+
+Makie graph plots can be made to be interactive, allowing one to drag nodes and edges. To do this, we retrieve the axis from the GraphMakie plot, and then register the interactions. **Note that this can only be done if `GLMakie` is the installed Makie backend. See the [GraphMakie docs](https://graph.makie.org/stable/#Predefined-Interactions) for more information about the types of interactions one can register.** Below is a non-interactive code example that shows how to do this:
 
 ```julia
 using GLMakie
@@ -95,4 +132,9 @@ The equivalent of `show` for Makie plots is the `display` function.
 ```julia
 f = plot_network(brusselator)
 display(f)
+```
+
+Once you are happy with the graph plot, you can save it using the `save` function. 
+```julia
+save("fig.png", f)
 ```
