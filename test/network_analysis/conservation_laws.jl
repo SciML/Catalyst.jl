@@ -324,7 +324,8 @@ let
         @test_nowarn convert(XSystem, rn; remove_conserved = true, remove_conserved_warn = false)
     end
 
-    # Checks during problem creation (separate depending on whether they have a time span or not).    # Checks during problem creation (separate depending on whether they have a time span or not).
+    # Checks during problem creation (separate depending on whether they have a time span or not).
+    @test_broken false # SDEProblems generate anacounted for warnings here. These should be figured out and `warn_initialize_determined = false` removed (https://github.com/SciML/Catalyst.jl/pull/1159).
     for XProblem in [ODEProblem, SDEProblem]
         @test_nowarn XProblem(rn, u0, tspan, ps, warn_initialize_determined = false)
         @test_logs (:warn, r"You are creating a system or problem while eliminating conserved quantities. Please *") XProblem(rn, u0, tspan, ps; remove_conserved = true, warn_initialize_determined = false)
