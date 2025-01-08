@@ -193,7 +193,7 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
     layout = if !haskey(kwargs, :layout) 
         Stress()
     end
-    f, ax, p = graphplot(srg; 
+    f = graphplot(srg; 
               layout,
               edge_color = edgecolors,
               elabels = edgelabels,
@@ -207,10 +207,10 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
               kwargs...
             )
 
-    ax.xautolimitmargin = (0.15, 0.15)
-    ax.yautolimitmargin = (0.15, 0.15)
+    f.axis.xautolimitmargin = (0.15, 0.15)
+    f.axis.yautolimitmargin = (0.15, 0.15)
     
-    f, ax, p
+    f
 end
 
 """
@@ -248,7 +248,7 @@ function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels = false, k
     layout = if !haskey(kwargs, :layout)  
         Stress()
     end
-    f, ax, p = graphplot(cg;
+    f = graphplot(cg;
               layout,
               edge_color = edgecolors[rxorder],
               elabels = show_rate_labels ? edgelabels[rxorder] : [], 
@@ -260,10 +260,10 @@ function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels = false, k
               curve_distance = gen_distances(cg),
               kwargs...
             )
-    ax.xautolimitmargin = (0.15, 0.15)
-    ax.yautolimitmargin = (0.15, 0.15)
+    f.axis.xautolimitmargin = (0.15, 0.15)
+    f.axis.yautolimitmargin = (0.15, 0.15)
     
-    f, ax, p
+    f
 end
 
 function complexelem_tostr(e::Catalyst.ReactionComplexElement, specstrs) 
