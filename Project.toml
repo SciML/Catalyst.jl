@@ -33,14 +33,12 @@ CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 GraphMakie = "1ecd5474-83a3-4783-bb4f-06765db800d2"
 HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
 NetworkLayout = "46757867-2c16-5918-afeb-47bfcb05e46a"
-# StructuralIdentifiability = "220ca800-aa68-49bb-acd8-6037fa93a544"
 
 [extensions]
 CatalystBifurcationKitExtension = "BifurcationKit"
 CatalystCairoMakieExtension = "CairoMakie"
 CatalystGraphMakieExtension = ["GraphMakie", "NetworkLayout"]
 CatalystHomotopyContinuationExtension = "HomotopyContinuation"
-# CatalystStructuralIdentifiabilityExtension = "StructuralIdentifiability"
 
 [compat]
 BifurcationKit = "0.4.4"
@@ -66,8 +64,7 @@ Requires = "1.0"
 RuntimeGeneratedFunctions = "0.5.12"
 SciMLBase = "2.57.2"
 Setfield = "1"
-# StructuralIdentifiability = "0.5.8"
-SymbolicUtils = "< 3.8"
+SymbolicUtils = "< 3.8, 3"
 Symbolics = "6.22"
 Unitful = "1.12.4"
 julia = "1.10"
