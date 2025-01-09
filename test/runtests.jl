@@ -86,8 +86,10 @@ end
         @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
         @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
 
-        # BROKEN
-        # @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
+        # BROKEN on 1.10 and earlier 1.11 releases
+        if VERSION >= v"1.11.2"
+            @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
+        end
 
         # Tests stability computation (but requires the HomotopyContinuation extension).
         #@time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
