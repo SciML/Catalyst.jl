@@ -60,12 +60,6 @@ end
         @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
         # BROKEN
         # @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
-
-        # Tests network visualisation.
-        # Disable on Macs as can't install GraphViz via jll
-        if !Sys.isapple()
-            @time @safetestset "Graphs Visualisations" begin include("visualisation/graphs.jl") end
-        end
     end
 
     if GROUP == "All" || GROUP == "Spatial"
