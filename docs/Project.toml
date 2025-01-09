@@ -41,6 +41,7 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 SteadyStateDiffEq = "9672c7b4-1e72-59bd-8a11-6ac3964bc41f"
 StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
+StructuralIdentifiability = "220ca800-aa68-49bb-acd8-6037fa93a544"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
@@ -85,4 +86,5 @@ SpecialFunctions = "2.4"
 StaticArrays = "1.9"
 SteadyStateDiffEq = "2.2"
 StochasticDiffEq = "6.65"
+StructuralIdentifiability = "0.5.11"
 Symbolics = "6.22"
