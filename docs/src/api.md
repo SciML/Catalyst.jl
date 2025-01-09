@@ -271,7 +271,7 @@ isequivalent
 ==(rn1::ReactionSystem, rn2::ReactionSystem)
 ```
 
-## Network visualization
+## [Network visualization](@id network_visualization)
 [Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to convert
 networks to LaTeX equations by
 ```julia
@@ -292,13 +292,10 @@ displayed as the ODE form)
 
 Finally, another optional argument (`expand_functions=true`) automatically expands functions defined by Catalyst (such as `mm`). To disable this, set `expand_functions=false`.
 
-If [Graphviz](https://graphviz.org/) is installed and commandline accessible, it
-can be used to create and save network diagrams using [`Graph`](@ref) and
-[`savegraph`](@ref).
+Reaction networks can be plotted using the `GraphMakie` extension, which is loaded whenever all of `Catalyst`, `GraphMakie`, and `NetworkLayout` are loaded (note that a Makie backend, like `CairoMakie`, must be loaded as well). The two functions for plotting networks are `plot_network` and `plot_complexes`, which are two distinct representations. 
 ```@docs
-Graph
-complexgraph
-savegraph
+plot_network(::ReactionSystem)
+plot_complexes(::ReactionSystem)
 ```
 
 ## [Rate laws](@id api_rate_laws)
