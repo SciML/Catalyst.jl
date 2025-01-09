@@ -218,15 +218,23 @@ end
 # The second argument must be a vector of AbstractSpatialReaction subtypes.
 let 
     rs = @reaction_network begin
-        (p,d), 0 <--> X
+        @species X(t) [description="Species with added metadata"]
+        (p, d), 0 <--> X
     end
 
     # Define an invalid spatial reaction type (not a subtype of AbstractSpatialReaction)
     struct InvalidSpatialReaction end
 
     # Attempt to create the LatticeReactionSystem with InvalidSpatialReaction
-    lattice = CartesianGrid((5,5))
-    @test_throws ArgumentError LatticeReactionSystem(rs, [InvalidSpatialReaction()], lattice)
+    for grid in grids
+        @test_throws ArgumentError LatticeReactionSystem(rs, [InvalidSpatialReaction()], grid)
+
+        rs = @reaction_network begin
+            @parameters D [description="Parameter with added metadata"]
+            (p, d), 0 <--> X
+        end
+        @test_throws ArgumentError LatticeReactionSystem(rs, [InvalidSpatialReaction()], grid)
+    end
 end
 
 # Tests various networks with non-permitted content.
