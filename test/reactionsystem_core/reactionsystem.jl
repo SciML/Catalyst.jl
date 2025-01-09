@@ -107,6 +107,9 @@ end
 let
     @named rs2 = ReactionSystem(rxs, t)
     @test Catalyst.isequivalent(rs, rs2)
+
+    # Test with a type mismatch
+    @test Catalyst.isequivalent(rs, "Not a ReactionSystem") == false
 end
 
 # Defaults test.
