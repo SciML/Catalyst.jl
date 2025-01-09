@@ -115,8 +115,8 @@ export @reaction_network, @network_component, @reaction, @species
 # Network analysis functionality.
 include("network_analysis.jl")
 export reactioncomplexmap, reactioncomplexes, incidencemat
-export complexstoichmat
-export complexoutgoingmat, incidencematgraph, linkageclasses, stronglinkageclasses,
+export complexstoichmat, laplacianmat, fluxmat, massactionvector, complexoutgoingmat
+export incidencematgraph, linkageclasses, stronglinkageclasses,
        terminallinkageclasses, deficiency, subnetworks
 export linkagedeficiencies, isreversible, isweaklyreversible
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
