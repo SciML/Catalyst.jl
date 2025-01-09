@@ -216,7 +216,7 @@ end
 """
     plot_complexes(rn::ReactionSystem; show_rate_labels = false, kwargs...)
 
-Creates a GraphMakie plot of the [`ReactionComplex`](@ref)s in `rn`. Reactions
+Creates a GraphMakie plot of the [`Catalyst.ReactionComplex`](@ref)s in `rn`. Reactions
 correspond to arrows and reaction complexes to blue circles.
 
 Notes:

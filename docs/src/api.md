@@ -247,8 +247,8 @@ conservationlaws
 conservedquantities
 conservedequations
 conservationlaw_constants
-Catalyst.ReactionComplexElement
-Catalyst.ReactionComplex
+ReactionComplexElement
+ReactionComplex
 reactioncomplexmap
 reactioncomplexes
 incidencemat
