@@ -68,24 +68,17 @@ let
     rates_invalid = reshape(rate_vals, 1, 8)
 
     # Tests that all input types generates the correct rate matrix.
-<<<<<<< HEAD
     @test Catalyst.adjacencymat(rn, rates_vec) == rate_mat
     @test Catalyst.adjacencymat(rn, rates_tup) == rate_mat
     @test Catalyst.adjacencymat(rn, rates_dict) == rate_mat
     @test_throws Exception Catalyst.adjacencymat(rn, rate_vals)
-=======
-    Catalyst.ratematrix(rn, rate_vals) == rate_mat
-    Catalyst.ratematrix(rn, rates_vec) == rate_mat
-    Catalyst.ratematrix(rn, rates_tup) == rate_mat
-    Catalyst.ratematrix(rn, rates_dict) == rate_mat
 
     # Tests that throws error in rate matrix.
     incorrect_param_dict = Dict(:k1 => 1.0)
 
-    @test_throws ErrorException Catalyst.ratematrix(rn, 123)
-    @test_throws ErrorException Catalyst.ratematrix(rn, incorrect_param_dict)
+    @test_throws ErrorException Catalyst.adjacencymat(rn, 123)
+    @test_throws ErrorException Catalyst.adjacencymat(rn, incorrect_param_dict)
 
->>>>>>> a309a9e81f964703653d00de2918e77c40f6ba6a
     @test_throws Exception Catalyst.iscomplexbalanced(rn, rates_invalid)
 
     # Test sparse matrix
