@@ -27,6 +27,18 @@ let
     @test_throws Exception Catalyst.iscomplexbalanced(rn, k)
 end
 
+# Test that incomplete rate maps error.
+let
+    rn = @reaction_network begin
+        (k1, k2), C1 <--> C2
+        (k3, k4), C2 <--> C3
+        (k5, k6), C3 <--> C1
+    end
+
+    incorrect_params = Dict(:k1 => 0.5)
+    @test_throws ErrorException Catalyst.iscomplexbalanced(rn, incorrect_params)
+end
+
 # Tests rate matrix computation for various input types.
 let
     # Declares network and its known rate matrix.
@@ -56,10 +68,24 @@ let
     rates_invalid = reshape(rate_vals, 1, 8)
 
     # Tests that all input types generates the correct rate matrix.
+<<<<<<< HEAD
     @test Catalyst.adjacencymat(rn, rates_vec) == rate_mat
     @test Catalyst.adjacencymat(rn, rates_tup) == rate_mat
     @test Catalyst.adjacencymat(rn, rates_dict) == rate_mat
     @test_throws Exception Catalyst.adjacencymat(rn, rate_vals)
+=======
+    Catalyst.ratematrix(rn, rate_vals) == rate_mat
+    Catalyst.ratematrix(rn, rates_vec) == rate_mat
+    Catalyst.ratematrix(rn, rates_tup) == rate_mat
+    Catalyst.ratematrix(rn, rates_dict) == rate_mat
+
+    # Tests that throws error in rate matrix.
+    incorrect_param_dict = Dict(:k1 => 1.0)
+
+    @test_throws ErrorException Catalyst.ratematrix(rn, 123)
+    @test_throws ErrorException Catalyst.ratematrix(rn, incorrect_param_dict)
+
+>>>>>>> a309a9e81f964703653d00de2918e77c40f6ba6a
     @test_throws Exception Catalyst.iscomplexbalanced(rn, rates_invalid)
 
     # Test sparse matrix
@@ -94,6 +120,16 @@ let
     @test Catalyst.robustspecies(EnvZ_OmpR) == [6]
 end
 
+let
+    # Define a reaction network with bi-directional reactions
+    non_deficient_network = @reaction_network begin
+        (k1, k2), A <--> B
+        (k3, k4), B <--> C 
+    end
+
+    # Test: Check that the error is raised for networks with deficiency != 1
+    @test_throws ErrorException Catalyst.robustspecies(non_deficient_network)
+end
 
 ### Complex balance and reversibility tests ###
 
