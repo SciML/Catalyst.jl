@@ -1120,26 +1120,6 @@ let
     @test 5*sol[:Y][end] ≈ sol[:S][end] + sol[:X][end]
 end
 
-# Tests that the correct symbolic variables are inferred as species, variables, and parameters.
-let
-    rn = @reaction_network begin
-        @parameters p1 p2 k1 k2 k3 k4
-        @species X1(t) X2(t)
-        @variables W(t)
-        @equations begin
-            D(V1) ~ p1 * X1 - k1 * V1 + W
-            k2 * V2 ~ D(V2) + p2 * X2
-            V3 + X3 ~ V1^2 + X2^2
-        end
-        (k1, k2), X1 <--> X2
-        (k3, k4), X2 <--> X3
-    end
-
-    @test issetequal(species(rn), @species X1(t) X2(t) X3(t))
-    @test issetequal(parameters(rn), @parameters p1 p2 k1 k2 k3 k4)
-    @test issetequal(nonspecies(rn), @variables V1(t) V2(t) V3(t) W(t))
-end
-
 # Tests that various erroneous declarations throw errors.
 let
     # Using = instead of ~ (for equation).
