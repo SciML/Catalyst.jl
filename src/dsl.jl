@@ -354,10 +354,10 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         reactions, declared_syms; requiredec)
 
     # Reads equations (and infers potential variables).
-    # Exlucdes any parameters already extracted (if they also was a variable).
-    designated_syms = [declared_syms; species_extracted]
+    # Excludes any parameters already extracted (if they also was a variable).
+    declared_syms = union(declared_syms, species_extracted)
     vars_extracted, add_default_diff, equations = read_equations_options(
-        options, designated_syms)
+        options, declared_syms)
     variables = vcat(variables_declared, vars_extracted)
     parameters_extracted = setdiff(parameters_extracted, vars_extracted)
 
@@ -731,7 +731,7 @@ function read_equations_options(options, syms_declared; requiredec = false)
             requiredec && throw(UndeclaredSymbolicError(
                 "Unrecognized symbol D was used as a differential in an equation: \"$eq\". Since the @require_declaration flag is set, all differentials in equations must be explicitly declared using the @differentials option."))
             add_default_diff = true
-            excluded_syms = [excluded_syms; :D]
+            excluded_syms = push!(excluded_syms, :D)
         end
 
         # Any undecalred symbolic variables encountered should be extracted as variables.
