@@ -612,6 +612,31 @@ let
     @test_throws Exception rs = ReactionSystem([Reaction(k1, [X1], [])], t, [X1, x], [k1])
 end
 
+# Test for forbidden symbols
+let
+    # Define the forbidden symbols (mocked for the purpose of the test)
+    forbidden_symbols_error = Set([:forbidden1, :forbidden2, :forbidden3])
+    Catalyst.forbidden_symbols_error = forbidden_symbols_error
+
+    # Define parameters and species including forbidden symbols
+    @parameters p1 forbidden1
+    @species S1 forbidden2(t)
+
+    # Define reactions using the species and parameters
+    rxs = [
+        Reaction(p1, [], [S1]),
+        Reaction(forbidden1, [], [S1]),
+    ]
+
+    # Attempt to create a ReactionSystem and capture the error
+    try
+        @named rs = ReactionSystem(rxs, t)
+        @test false  # This line should not be reached
+    catch e
+        @test e isa Exception
+    end
+end
+
 # Tests various erroneous `convert` calls.
 let
     # Conversion of non-autonomous `ReactionSystem` to `NonlinearSystem`.
