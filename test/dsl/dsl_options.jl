@@ -1284,12 +1284,12 @@ let
     # Test error when a variable in an equation is inferred
     @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
         @require_declaration
-        @equations D(V) ~ V^2
+        @equations V ~ V^2 + 2
     end
     @test_nowarn @macroexpand @reaction_network begin
         @require_declaration
         @variables V(t)
-        @equations D(V) ~ V^2
+        @equations V ~ V^2 + 2
     end
 
     # Test error when a variable in an observable is inferred
