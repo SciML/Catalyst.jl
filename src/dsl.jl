@@ -357,7 +357,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Excludes any parameters already extracted (if they also was a variable).
     declared_syms = union(declared_syms, species_extracted)
     vars_extracted, add_default_diff, equations = read_equations_options(
-        options, declared_syms)
+        options, declared_syms; requiredec)
     variables = vcat(variables_declared, vars_extracted)
     parameters_extracted = setdiff(parameters_extracted, vars_extracted)
 
