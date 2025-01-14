@@ -614,18 +614,14 @@ end
 
 # Test for forbidden symbols
 let
-    # Define the forbidden symbols (mocked for the purpose of the test)
-    forbidden_symbols_error = Set([:forbidden1, :forbidden2, :forbidden3])
-    Catalyst.forbidden_symbols_error = forbidden_symbols_error
-
     # Define parameters and species including forbidden symbols
-    @parameters p1 forbidden1
-    @species S1 forbidden2(t)
+    @parameters p1 Γ
+    @species S1(t)
 
     # Define reactions using the species and parameters
     rxs = [
         Reaction(p1, [], [S1]),
-        Reaction(forbidden1, [], [S1]),
+        Reaction(Γ, [], [S1]),
     ]
 
     # Attempt to create a ReactionSystem and capture the error
