@@ -597,7 +597,7 @@ let
     @variables V(t)
 
     # System using a forbidden symbol.
-    @test_throws Exception rs = ReactionSystem([Reaction(Γ, [X1], [])], t; named = :rs)
+    @test_throws Exception rs = ReactionSystem([Reaction(Γ, [X1], [])], t; name = :rs)
 
     # Species among parameters.
     @test_throws Exception rs = ReactionSystem([Reaction(k1, [X1], [])], t, [X1], [k1, X2])
@@ -610,22 +610,6 @@ let
 
     # Constant species-parameter among unknowns.
     @test_throws Exception rs = ReactionSystem([Reaction(k1, [X1], [])], t, [X1, x], [k1])
-end
-
-# Test for forbidden symbols
-let
-    # Define parameters and species including forbidden symbols
-    @parameters p1 Γ
-    @species S1(t)
-
-    # Define reactions using the species and parameters
-    rxs = [
-        Reaction(p1, [], [S1]),
-        Reaction(Γ, [], [S1]),
-    ]
-
-    # Attempt to create a ReactionSystem and capture the error
-    @test_throws Exception @named rs = ReactionSystem(rxs, t)
 end
 
 # Tests various erroneous `convert` calls.
