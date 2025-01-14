@@ -735,13 +735,9 @@ function read_equations_options(options, syms_declared; requiredec = false)
         end
 
         # Any undecalred symbolic variables encountered should be extracted as variables.
-        # Additional step required to handle `requiredec = true` (to be improved later).
-        prev_vars_extracted = deepcopy(vars_extracted)
         add_syms_from_expr!(vars_extracted, eq, excluded_syms)
-        if requiredec && length(prev_vars_extracted) < length(vars_extracted)
-            throw(UndeclaredSymbolicError(
-                "Unrecognized symbols $(setdiff(vars_extracted, prev_vars_extracted)) was used in an equation: \"$eq\".  Since the flag @require_declaration is set, all variables must be declared with the @species, @parameters, or @variables macros."))
-        end
+        (!isempty(vars_extracted) && requiredec) && throw(UndeclaredSymbolicError(
+            "Unrecognized symbolic variables $(join(vars_extracted, ", ")) detected in equation expression: \"$(string(eq))\". Since the flag @require_declaration is declared, all symbolic variables must be explicitly declared with the @species, @variables, and @parameters options."))
     end
 
     return collect(vars_extracted), add_default_diff, equations
