@@ -347,10 +347,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         combinatoric_ratelaws = true
     end
 
-    # Reads observables.
-    observed_vars, observed_eqs, obs_syms = read_observed_options(
-        options, [species_declared; variables], all_ivs; requiredec)
-
     # Collect species and parameters, including ones inferred from the reactions.
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
         variables_declared)))
