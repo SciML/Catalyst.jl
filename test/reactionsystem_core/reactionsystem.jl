@@ -625,12 +625,7 @@ let
     ]
 
     # Attempt to create a ReactionSystem and capture the error
-    try
-        @named rs = ReactionSystem(rxs, t)
-        @test false  # This line should not be reached
-    catch e
-        @test e isa Exception
-    end
+    @test_throws Exception @named rs = ReactionSystem(rxs, t)
 end
 
 # Tests various erroneous `convert` calls.
