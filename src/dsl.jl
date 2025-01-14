@@ -730,11 +730,11 @@ function read_equations_options(options, syms_declared; requiredec = false)
             requiredec && throw(UndeclaredSymbolicError(
                 "Unrecognized symbol D was used as a differential in an equation: \"$eq\". Since the @require_declaration flag is set, all differentials in equations must be explicitly declared using the @differentials option."))
             add_default_diff = true
-            excluded_syms = push!(excluded_syms, :D)
+            push!(syms_declared, :D)
         end
 
         # Any undecalred symbolic variables encountered should be extracted as variables.
-        add_syms_from_expr!(vars_extracted, eq, excluded_syms)
+        add_syms_from_expr!(vars_extracted, eq, syms_declared)
         (!isempty(vars_extracted) && requiredec) && throw(UndeclaredSymbolicError(
             "Unrecognized symbolic variables $(join(vars_extracted, ", ")) detected in equation expression: \"$(string(eq))\". Since the flag @require_declaration is declared, all symbolic variables must be explicitly declared with the @species, @variables, and @parameters options."))
     end
