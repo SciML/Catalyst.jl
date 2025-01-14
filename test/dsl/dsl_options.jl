@@ -447,19 +447,19 @@ let
     #end
 
     # Species + differential.
-    @test_throws false Exception @eval @reaction_network begin
+    @test_throws Exception @eval @reaction_network begin
         @species X(t)
         @differentials X = Differential(t)
     end
 
     # Parameter + differential.
-    @test_throws false Exception @eval @reaction_network begin
+    @test_throws Exception @eval @reaction_network begin
         @parameters X
         @differentials X = Differential(t)
     end
 
     # Variable + differential.
-    @test_throws false Exception @eval @reaction_network begin
+    @test_throws Exception @eval @reaction_network begin
         @variables X(t)
         @differentials X = Differential(t)
     end

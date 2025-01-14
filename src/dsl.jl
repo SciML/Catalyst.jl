@@ -290,7 +290,7 @@ struct UndeclaredSymbolicError <: Exception
     msg::String
 end
 
-function Base.showerror(io::IO, err::UndeclaredSymbolicError) 
+function Base.showerror(io::IO, err::UndeclaredSymbolicError)
     print(io, "UndeclaredSymbolicError: ")
     print(io, err.msg)
 end
@@ -327,11 +327,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
     variables_declared = extract_syms(options, :variables)
-
-    # Reads equations.
-    vars_extracted, add_default_diff, equations = read_equations_options(
-        options, variables_declared; requiredec)
-    variables = vcat(variables_declared, vars_extracted)
 
     # Handle independent variables
     if haskey(options, :ivs)

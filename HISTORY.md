@@ -20,7 +20,7 @@ E.g. in
 end
 ```
 `S` is inferred as a species, `V1` and `V2` as variables, and `p` as a parameter. The previous special cases for the `@observables`, `@compounds`, and `@differentials` options still hold. Finally, the `@require_declaration` options (described in more detail below) can now be used to require everything to be explicitly declared.
-- New formula for determining whether the default differentials have been used within an `@equations` option. Right now, if any expression `D(...)` is encountered (where `...`) can be anything, this is inferred as usage of the default differential D. E.g. in the following equations `D` is inferred as a differential with respect to the default independent variable:
+- New formula for determining whether the default differentials have been used within an `@equations` option. Now, if any expression `D(...)` is encountered (where `...` can be anything), this is inferred as usage of the default differential D. E.g. in the following equations `D` is inferred as a differential with respect to the default independent variable:
 ```julia
 @reaction_network begin
   @equations D(V) + V ~ 1
