@@ -353,14 +353,17 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(
         reactions, declared_syms; requiredec)
 
-    species = vcat(species_declared, species_extracted)
-    parameters = vcat(parameters_declared, parameters_extracted)
-
-    # Reads equations.
-    designated_syms = [species; parameters; variables_declared]
+    # Reads equations (and infers potential variables).
+    # Exlucdes any parameters already extracted (if they also was a variable).
+    designated_syms = [declared_syms; species_extracted]
     vars_extracted, add_default_diff, equations = read_equations_options(
         options, designated_syms)
     variables = vcat(variables_declared, vars_extracted)
+    parameters_extracted = setdiff(parameters_extracted, vars_extracted)
+
+    # Creates the finalised parameter and species lists.
+    species = vcat(species_declared, species_extracted)
+    parameters = vcat(parameters_declared, parameters_extracted)
 
     # Create differential expression.
     diffexpr = create_differential_expr(
@@ -723,6 +726,7 @@ function read_equations_options(options, syms_declared; requiredec = false)
         end
 
         # If the default differential (`D`) is used, record that it should be decalred later on.
+
         if !in(eq, excluded_syms) && find_D_call(eq)
             requiredec && throw(UndeclaredSymbolicError(
                 "Unrecognized symbol D was used as a differential in an equation: \"$eq\". Since the @require_declaration flag is set, all differentials in equations must be explicitly declared using the @differentials option."))
