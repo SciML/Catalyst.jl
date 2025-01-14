@@ -702,7 +702,7 @@ end
 # `vars_extracted`: A vector with extracted variables (lhs in pure differential equations only).
 # `dtexpr`: If a differential equation is defined, the default derivative (D ~ Differential(t)) must be defined.
 # `equations`: a vector with the equations provided.
-function read_equations_options(options, variables_declared; requiredec = false)
+function read_equations_options(options, syms_declared; requiredec = false)
     # Prepares the equations. First, extracts equations from provided option (converting to block form if required).
     # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
     eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
@@ -722,33 +722,37 @@ function read_equations_options(options, variables_declared; requiredec = false)
             error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")
         end
 
-        # Checks if the equation have the format D(X) ~ ... (where X is a symbol). This means that the
-        # default differential has been used and we make a note that it should be decalred in the DSL output.
-        lhs = eq.args[2]
-        # If lhs: is an expression. Is a function call. The function's name is D. It has a single argument.
-        if (lhs isa Expr) && (lhs.head == :call) && (lhs.args[1] == :D) &&
-           (lhs.args[2] isa Symbol)
-            diff_var = lhs.args[2]
-            if in(diff_var, forbidden_symbols_error)
-                error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
-            elseif (!in(diff_var, variables_declared)) && requiredec
-                throw(UndeclaredSymbolicError(
-                                              "Unrecognized symbol $(diff_var) was used as a variable in an equation: \"$eq\". Since the @require_declaration flag is set, all variables in equations must be explicitly declared via @variables, @species, or @parameters."))
-            else
-                add_default_diff = true
-                in(diff_var, variables_declared) || push!(vars_extracted, diff_var)
-            end
-            if !add_default_diff
-                add_default_diff = true
-                excluded_syms = [excluded_syms; :D]
-            end
+        # If the default differential (`D`) is used, record that it should be decalred later on.
+        if !in(eq, excluded_syms) && find_D_call(eq)
+            requiredec && throw(UndeclaredSymbolicError(
+                "Unrecognized symbol D was used as a differential in an equation: \"$eq\". Since the @require_declaration flag is set, all differentials in equations must be explicitly declared using the @differentials option."))
+            add_default_diff = true
+            excluded_syms = [excluded_syms; :D]
         end
 
         # Any undecalred symbolic variables encountered should be extracted as variables.
+        # Additional step required to handle `requiredec = true` (to be improved later).
+        prev_vars_extracted = deepcopy(vars_extracted)
         add_syms_from_expr!(vars_extracted, eq, excluded_syms)
+        if requiredec && length(prev_vars_extracted) < length(vars_extracted)
+            throw(UndeclaredSymbolicError(
+                "Unrecognized symbols $(setdiff(vars_extracted, prev_vars_extracted)) was used in an equation: \"$eq\".  Since the flag @require_declaration is set, all variables must be declared with the @species, @parameters, or @variables macros."))
+        end
     end
 
     return collect(vars_extracted), add_default_diff, equations
+end
+
+# Searches an expresion `expr` and returns true if it have any subexpression `D(...)` (where `...` can be anything).
+# Used to determine whether the default differential D has been used in any equation provided to `@equations`.
+function find_D_call(expr)
+    return if Base.isexpr(expr, :call) && expr.args[1] == :D
+        true
+    elseif expr isa Expr
+        any(find_D_call, expr.args)
+    else
+        false
+    end
 end
 
 # Creates an expression declaring differentials. Here, `tiv` is the time independent variables,
