@@ -193,6 +193,143 @@ function complexstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem, rcs)
 end
 
 @doc raw"""
+    laplacianmat(rn::ReactionSystem, pmap=Dict(); sparse=false)
+
+    Return the negative of the graph Laplacian of the reaction network. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where ``Y`` is the [`complexstoichmat`](@ref) and ``A_k`` is the negative of the graph Laplacian, and ``Φ`` is the [`massactionvector`](@ref). ``A_k`` is an n-by-n matrix, where n is the number of complexes, where ``A_{ij} = k_{ij}`` if a reaction exists between the two complexes and 0 otherwise. 
+    Returns a symbolic matrix by default, but will return a numerical matrix if parameter values are specified via pmap. 
+
+    **Warning**: Unlike other Catalyst functions, the `laplacianmat` function will return a `Matrix{Num}` in the symbolic case. This is to allow easier computation of the matrix decomposition of the ODEs, and to ensure that multiplying the sparse form of the matrix will work.
+"""
+function laplacianmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse = false)
+    D = incidencemat(rn; sparse)
+    K = fluxmat(rn, pmap; sparse)
+    D * K
+end
+
+Base.zero(::Type{Union{R, Symbolics.BasicSymbolic{Real}}}) where R <: Real = zero(R)
+Base.one(::Type{Union{R, Symbolics.BasicSymbolic{Real}}}) where R <: Real = one(R)
+
+@doc raw"""
+    fluxmat(rn::ReactionSystem, pmap = Dict(); sparse=false)
+
+    Return an r×c matrix ``K`` such that, if complex ``j`` is the substrate complex of reaction ``i``, then ``K_{ij} = k``, the rate constant for this reaction. Mostly a helper function for the network Laplacian, [`laplacianmat`](@ref). Has the useful property that ``\frac{dx}{dt} = S*K*Φ(x)``, where S is the [`netstoichmat`](@ref) or net stoichiometry matrix and ``Φ(x)`` is the [`massactionvector`](@ref).
+    Returns a symbolic matrix by default, but will return a numerical matrix if rate constants are specified as a `Tuple`, `Vector`, or `Dict` of symbol-value pairs via `pmap`.
+
+    **Warning**: Unlike other Catalyst functions, the `fluxmat` function will return a `Matrix{Num}` in the symbolic case. This is to allow easier computation of the matrix decomposition of the ODEs, and to ensure that multiplying the sparse form of the matrix will work.
+"""
+function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse=false)
+    rates = if isempty(pmap)
+        reactionrates(rn)
+    else
+        substitutevals(rn, pmap, parameters(rn), reactionrates(rn))
+    end
+
+    rcmap = reactioncomplexmap(rn)
+    nc = length(rcmap)
+    nr = length(rates)
+    mtype = eltype(rates) <: Symbolics.BasicSymbolic ? Num : eltype(rates)
+    if sparse
+        return fluxmat(SparseMatrixCSC{mtype, Int}, rcmap, rates)
+    else
+        return fluxmat(Matrix{mtype}, rcmap, rates)
+    end
+end
+
+function fluxmat(::Type{SparseMatrixCSC{T, Int}}, rcmap, rates) where T
+    Is = Int[]
+    Js = Int[]
+    Vs = T[]
+    for (i, (complex, rxs)) in enumerate(rcmap)
+        for (rx, dir) in rxs
+            dir == -1 && begin
+                push!(Is, rx)
+                push!(Js, i)
+                push!(Vs, rates[rx])
+            end
+        end
+    end
+    Z = sparse(Is, Js, Vs, length(rates), length(rcmap))
+end
+
+function fluxmat(::Type{Matrix{T}}, rcmap, rates) where T
+    nr = length(rates)
+    nc = length(rcmap)
+    K = zeros(T, nr, nc)
+    for (i, (complex, rxs)) in enumerate(rcmap)
+        for (rx, dir) in rxs 
+            dir == -1 && (K[rx, i] = rates[rx])
+        end
+    end
+    K
+end
+
+function fluxmat(rn::ReactionSystem, pmap::Vector) 
+    pdict = Dict(pmap)
+    fluxmat(rn, pdict)
+end
+
+function fluxmat(rn::ReactionSystem, pmap::Tuple) 
+    pdict = Dict(pmap)
+    fluxmat(rn, pdict)
+end
+
+# Helper to substitute values into a (vector of) symbolic expressions. The syms are the symbols to substitute and the symexprs are the expressions to substitute into.
+function substitutevals(rn::ReactionSystem, map::Dict, syms, symexprs)
+    length(map) != length(syms) && error("Incorrect number of parameter-value pairs were specified.")
+    map = symmap_to_varmap(rn, map)
+    map = Dict(ModelingToolkit.value(k) => v for (k, v) in map)
+    vals = [substitute(expr, map) for expr in symexprs]
+end
+
+"""
+    massactionvector(rn::ReactionSystem, scmap = Dict(); combinatoric_ratelaws = true)
+
+    Return the vector whose entries correspond to the "mass action products" of each complex. For example, given the complex A + B, the corresponding entry of the vector would be ``A*B``, and for the complex 2X + Y, the corresponding entry would be ``X^2*Y``. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where ``Y`` is the [`complexstoichmat`](@ref) and ``A_k`` is the negative of the [`laplacianmat`](@ref). This utility returns ``Φ(x)``.
+    Returns a symbolic vector by default, but will return a numerical vector if species concentrations are specified as a tuple, vector, or dictionary via scmap.
+    If the `combinatoric_ratelaws` option is set, will include prefactors for that (see [introduction to Catalyst's rate laws](@ref introduction_to_catalyst_ratelaws). Will default to the default for the system.
+
+    **Warning**: Unlike other Catalyst functions, the `massactionvector` function will return a `Vector{Num}` in the symbolic case. This is to allow easier computation of the matrix decomposition of the ODEs.
+"""
+function massactionvector(rn::ReactionSystem, scmap::Dict = Dict(); combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn))
+    r = numreactions(rn)
+    rxs = reactions(rn)
+    sm = speciesmap(rn)
+
+    specs = if isempty(scmap) 
+        species(rn)
+    else
+        substitutevals(rn, scmap, species(rn), species(rn))
+    end
+
+    if !all(r -> ismassaction(r, rn), rxs)
+        error("The supplied ReactionSystem has reactions that are not ismassaction. The mass action vector is only defined for pure mass action networks.")
+    end
+
+    vtype = eltype(specs) <: Symbolics.BasicSymbolic ? Num : eltype(specs)
+    Φ = Vector{vtype}()
+    rcmap = reactioncomplexmap(rn)
+    for comp in keys(reactioncomplexmap(rn))
+        subs = map(ce -> getfield(ce, :speciesid), comp)
+        stoich = map(ce -> getfield(ce, :speciesstoich), comp)
+        maprod = prod(vtype[specs[s]^α for (s, α) in zip(subs, stoich)])
+        combinatoric_ratelaws && (maprod /= prod(map(factorial, stoich)))
+        push!(Φ, maprod)
+    end
+
+    Φ
+end
+
+function massactionvector(rn::ReactionSystem, scmap::Tuple; combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn))
+    sdict = Dict(scmap)
+    massactionvector(rn, sdict; combinatoric_ratelaws)
+end
+
+function massactionvector(rn::ReactionSystem, scmap::Vector; combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn)) 
+    sdict = Dict(scmap)
+    massactionvector(rn, sdict; combinatoric_ratelaws)
+end
+
+@doc raw"""
     complexoutgoingmat(network::ReactionSystem; sparse=false)
 
 Given a [`ReactionSystem`](@ref) and complex incidence matrix, ``B``, return a
@@ -312,6 +449,44 @@ function incidencematgraph(incidencemat::SparseMatrixCSC{Int, Int})
         end
     end
     return graph
+end
+
+
+"""
+    species_reaction_graph(rn::ReactionSystem)
+
+Construct a directed simple graph where there are two types of nodes: species and reactions. 
+An edge from a species *s* to reaction *r* indicates that *s* is a reactant for *r*, and 
+an edge from a reaction *r* to a species *s* indicates that *s* is a product of *r*. By 
+default, the species vertices are listed first, so the first *n* indices correspond to 
+species nodes. 
+
+Note: this is equivalent to the Petri net representation of a chemical reaction network.
+
+For example,
+```julia
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end
+species_reaction_graph(sir)
+"""
+function species_reaction_graph(rn::ReactionSystem) 
+    specs = species(rn)
+    rxs = reactions(rn)
+    sm = speciesmap(rn)
+    s = length(specs)
+    
+    edgelist = Graphs.Edge[]
+    for (i, rx) in enumerate(rxs) 
+        for spec in rx.substrates
+            push!(edgelist, Graphs.Edge(sm[spec], s+i))
+        end
+        for spec in rx.products
+            push!(edgelist, Graphs.Edge(s+i, sm[spec]))
+        end
+    end
+    srg = Graphs.SimpleDiGraphFromIterator(edgelist)
 end
 
 ### Linkage, Deficiency, Reversibility ###
@@ -749,7 +924,7 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol=0, re
     elseif !isreversible(rs)
         return false
     elseif !all(r -> ismassaction(r, rs), reactions(rs))
-        error("The supplied ReactionSystem has reactions that are not ismassaction. Testing for being complex balanced is currently only supported for pure mass action networks.")
+        error("The supplied ReactionSystem has reactions that are not ismassaction. Testing for being detailed balanced is currently only supported for pure mass action networks.")
     end
 
     isforestlike(rs) && deficiency(rs) == 0 && return true

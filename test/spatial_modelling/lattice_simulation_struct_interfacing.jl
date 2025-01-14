@@ -1,7 +1,7 @@
 ### Preparations ###
 
 # Fetch packages.
-using Catalyst, Graphs, JumpProcesses, OrdinaryDiffEq, SparseArrays, Test
+using Catalyst, Graphs, JumpProcesses, OrdinaryDiffEqVerner, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, SparseArrays, Test
 
 # Fetch test networks.
 include("../spatial_test_networks.jl")

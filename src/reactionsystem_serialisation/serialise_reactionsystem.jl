@@ -10,10 +10,10 @@ Arguments:
 - `annotate = true`: Whether annotation should be added to the file.
 - `safety_check = true`: After serialisation, Catalyst will automatically load the serialised
   `ReactionSystem` and check that it is equal to `rn`. If it is not, an error will be thrown. For
-  models without the `connection_type` field, this should not happen. If performance is required 
+  models without the `connection_type` field, this should not happen. If performance is required
   (i.e. when saving a large number of models), this can be disabled by setting `safety_check = false`.
 
-Example: 
+Example:
 ```julia
 rn = @reaction_network begin
     (p,d), 0 <--> X
@@ -56,13 +56,17 @@ end
 # Gets the full string which corresponds to the declaration of a system. Might be called recursively
 # for systems with subsystems.
 function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::Bool)
+    # MTK automatically performs flattening when `complete` is carried out. In case of a
+    # hierarchical system, we must undo this an process the non-flattened system.
+    iscomplete(rn) && (rn = MT.get_parent(rn))
+
     # Initiates the file string.
     file_text = ""
 
     # Goes through each type of system component, potentially adding it to the string.
     # Species, variables, and parameters must be handled differently in case there are default values
-    # dependencies between them. 
-    # Systems use custom `push_field` function as these require the annotation `Bool`to be passed 
+    # dependencies between them.
+    # Systems use custom `push_field` function as these require the annotation `Bool`to be passed
     # to the function that creates the next sub-system declarations.
     file_text, _ = push_field(file_text, rn, annotate, top_level, IV_FS)
     file_text, has_sivs = push_field(file_text, rn, annotate, top_level, SIVS_FS)
@@ -163,7 +167,7 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
         @string_append! reaction_system_string ", metadata = $(x_2_string(MT.get_metadata(rs)))"
     end
 
-    # Finalises the call. Appends potential annotation. If the system is complete, add a call for this. 
+    # Finalises the call. Appends potential annotation. If the system is complete, add a call for this.
     @string_append! reaction_system_string ")"
     if ModelingToolkit.iscomplete(rs)
         @string_prepend! "rs = " reaction_system_string

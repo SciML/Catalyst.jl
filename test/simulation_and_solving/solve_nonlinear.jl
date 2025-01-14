@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, NonlinearSolve, OrdinaryDiffEq, SteadyStateDiffEq
+using Catalyst, NonlinearSolve, OrdinaryDiffEqRosenbrock, SteadyStateDiffEq
 using Random, Test
 
 # Sets stable rng number.

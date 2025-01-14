@@ -1,7 +1,7 @@
 ### Fetch Packages and Set Global Variables ###
 
 # Fetch packages.
-using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEq, StochasticDiffEq, Test
+using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEqTsit5, StochasticDiffEq, Test
 using Symbolics: BasicSymbolic, unwrap
 
 # Sets stable rng number.

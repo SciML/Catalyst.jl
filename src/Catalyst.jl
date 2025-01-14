@@ -41,6 +41,7 @@ import ModelingToolkit: check_variables,
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
+using MacroTools: striplines
 import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
@@ -58,19 +59,6 @@ end
 const DEFAULT_IV = default_t()
 const DEFAULT_IV_SYM = Symbol(DEFAULT_IV)
 export default_t, default_time_deriv
-
-# as used in Catlab
-const USE_GV_JLL = Ref(false)
-function __init__()
-    @require Graphviz_jll="3c863552-8265-54e4-a6dc-903eb78fde85" begin
-        USE_GV_JLL[] = true
-        let cfg = joinpath(Graphviz_jll.artifact_dir, "lib", "graphviz", "config6")
-            if !isfile(cfg)
-                Graphviz_jll.dot(path -> run(`$path -c`))
-            end
-        end
-    end
-end
 
 ### Package Constants ###
 
@@ -127,8 +115,8 @@ export @reaction_network, @network_component, @reaction, @species
 # Network analysis functionality.
 include("network_analysis.jl")
 export reactioncomplexmap, reactioncomplexes, incidencemat
-export complexstoichmat
-export complexoutgoingmat, incidencematgraph, linkageclasses, stronglinkageclasses,
+export complexstoichmat, laplacianmat, fluxmat, massactionvector, complexoutgoingmat
+export incidencematgraph, linkageclasses, stronglinkageclasses,
        terminallinkageclasses, deficiency, subnetworks
 export linkagedeficiencies, isreversible, isweaklyreversible
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
@@ -144,8 +132,6 @@ include("latexify_recipes.jl")
 
 # for making and saving graphs/plots
 include("plotting.jl")
-include("graphs.jl")
-export Graph, savegraph, complexgraph
 
 # for creating compounds
 include("chemistry_functionality.jl")
@@ -166,6 +152,11 @@ export hc_steady_states
 # StructuralIdentifiability
 function make_si_ode end
 export make_si_ode
+
+# GraphMakie: functionality for plotting species-reaction graphs and complexes
+function plot_network end
+function plot_complexes end
+export plot_network, plot_complexes
 
 ### Spatial Reaction Networks ###
 

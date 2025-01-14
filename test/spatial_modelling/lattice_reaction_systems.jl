@@ -1,7 +1,7 @@
 ### Preparations ###
 
 # Fetch packages.
-using Catalyst, Graphs, OrdinaryDiffEq, Test
+using Catalyst, Graphs, OrdinaryDiffEqTsit5, Test
 
 # Fetch test networks.
 include("../spatial_test_networks.jl")
@@ -215,6 +215,18 @@ let
     end
 end
 
+# The second argument must be a vector of AbstractSpatialReaction subtypes.
+let 
+    # Define an invalid spatial reaction type (not a subtype of AbstractSpatialReaction)
+    struct InvalidSpatialReactionType end
+
+    # Attempt to create the LatticeReactionSystem with InvalidSpatialReactionType
+    for grid in grids
+        @test_throws ArgumentError LatticeReactionSystem(binding_system, [], grid)
+        @test_throws ArgumentError LatticeReactionSystem(binding_system, [InvalidSpatialReactionType()], grid)
+    end
+end
+
 # Tests various networks with non-permitted content.
     let
     tr = @transport_reaction D X
@@ -245,10 +257,10 @@ end
         @observables X2 ~ 2X
         (p,d), 0 <--> X
     end
-    @test_logs (:warn, r"The `ReactionSystem` used as input to `LatticeReactionSystem contain observables. It *") match_mode=:any LatticeReactionSystem(rs4, [tr], short_path)
+    @test_logs (:warn, r"The `ReactionSystem` used as input to `LatticeReactionSystem` contain observables. It *") match_mode=:any LatticeReactionSystem(rs4, [tr], short_path)
 end
 
-# Tests for hierarchical input system.
+# Tests for hierarchical input system (should yield a warning).
 let
     t = default_t()
     @parameters d D
@@ -257,7 +269,7 @@ let
     @named rs1 = ReactionSystem(rxs, t)
     @named rs2 = ReactionSystem(rxs, t; systems = [rs1])
     rs2 = complete(rs2)
-    @test_throws ArgumentError LatticeReactionSystem(rs2, [TransportReaction(D, X)], CartesianGrid((2,2)))
+    @test_logs (:warn, r"The `ReactionSystem` used as input to `LatticeReactionSystem` was originally created as a hierarchical model. While *") match_mode=:any LatticeReactionSystem(rs2, [TransportReaction(D, X)], CartesianGrid((2,2)))
 end
 
 # Tests for non-complete input `ReactionSystem`.
@@ -267,6 +279,25 @@ let
         (p,d), 0 <--> X
     end
     @test_throws ArgumentError LatticeReactionSystem(rs, [tr], CartesianGrid((2,2)))
+end
+
+# Tests for array parameters/species.
+let
+    tr = @transport_reaction D Y
+
+    rs1 = @reaction_network begin
+        @species X(t)[1:2] Y(t)
+        (k1,k2), X[1] <--> X[2]
+    end
+    @test_throws ArgumentError LatticeReactionSystem(rs1, [tr], CartesianGrid((2,2)))
+
+    rs2 =  @reaction_network begin
+        @species Y(t)
+        @parameters k[1:2,1:2]
+        (k[1,1],k[1,2]), X11 <--> X12
+        (k[2,1],k[2,2]), X21 <--> X22
+    end
+    @test_throws ArgumentError LatticeReactionSystem(rs2, [tr], CartesianGrid((2,2)))
 end
 
 ### Tests Grid Vertex and Edge Number Computation ###

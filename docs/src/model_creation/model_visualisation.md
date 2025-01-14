@@ -36,21 +36,26 @@ If you wish to copy the output to your [clipboard](https://en.wikipedia.org/wiki
     For a model to be nicely displayed you have to use an IDE that actually supports this (such as a [notebook](https://jupyter.org/)). Other environments (such as [the Julia REPL](https://docs.julialang.org/en/v1/stdlib/REPL/)) will simply return the full LaTeX code which would generate the desired expression. 
 
 ## [Displaying model networks](@id visualisation_graphs)
-A network graph showing a Catalyst model's species and reactions can be displayed using the `Graph` function. This first requires [Graphviz](https://graphviz.org/) to be installed and command line accessible. Here, we first declare a [Brusselator model](@ref basic_CRN_library_brusselator) and then displays its network topology:
+Catalyst uses `GraphMakie` to display representations of chemical reaction networks, including the complex graph and the species-reaction graph (which is similar to the [Petri net](https://en.wikipedia.org/wiki/Petri_net) representation). To get started, import Catalyst, GraphMakie, and NetworkLayout to load the `CatalystGraphMakieExtension` extension, and then load a Makie backend (`CairoMakie` is a good lightweight choice).
+
 ```@example visualisation_graphs
-using Catalyst
+using Catalyst, GraphMakie, NetworkLayout
+using CairoMakie
+nothing # hide
+```
+
+Let's declare a [Brusselator model](@ref basic_CRN_library_brusselator) to see this plotting functionality. The functions `plot_network` and `plot_complexes` are used to create the species-reaction and complex graphs, respectively. For a more thorough description of these two representations, please see the [network visualization](@ref network_visualization) section of the API, but the gist is that the species-reaction graph has species and reactions as nodes, and the complex graph has reaction complexes as nodes. Below we will plot the species-reaction graph using `plot_network`. 
+```@example visualisation_graphs
 brusselator = @reaction_network begin
     A, ∅ --> X
     1, 2X + Y --> 3X
     B, X --> Y
     1, X --> ∅
 end
-Graph(brusselator)
-nothing # hide
+plot_network(brusselator)
 ```
-!["Brusselator Graph"](../assets/network_graphs/brusselator_graph.png)
 
-The network graph represents species as blue nodes and reactions as orange dots. Black arrows from species to reactions indicate substrates, and are labelled with their respective stoichiometries. Similarly, black arrows from reactions to species indicate products (also labelled with their respective stoichiometries). If there are any reactions where a species affect the rate, but does not participate as a reactant, this is displayed with a dashed red arrow. This can be seen in the following [Repressilator model](@ref basic_CRN_library_repressilator):
+The species-reaction graph (or network graph) represents species as blue nodes and reactions as green dots. Black arrows from species to reactions indicate substrates, and are labelled with their respective stoichiometries. Similarly, black arrows from reactions to species indicate products (also labelled with their respective stoichiometries). If there are any reactions where a species affect the rate, but does not participate as a reactant, this is displayed with a dashed red arrow. This can be seen in the following [Repressilator model](@ref basic_CRN_library_repressilator):
 ```@example visualisation_graphs
 repressilator = @reaction_network begin
     hillr(Z,v,K,n), ∅ --> X
@@ -58,21 +63,78 @@ repressilator = @reaction_network begin
     hillr(Y,v,K,n), ∅ --> Z
     d, (X, Y, Z) --> ∅
 end
-Graph(repressilator)
-nothing # hide
+plot_network(repressilator)
 ```
-!["Repressilator Graph"](../assets/network_graphs/repressilator_graph.png)
 
-A generated graph can be saved using the `savegraph` function:
+A generated graph can be saved using Makie's `save` function. 
 ```julia
-repressilator_graph = Graph(repressilator)
-savegraph(repressilator_graph, "repressilator_graph.png")
+repressilator_graph = plot_network(repressilator)
+save("repressilator_graph.png", repressilator_graph)
 ```
 
-Finally, a [network's reaction complexes](@ref network_analysis_reaction_complexes) (and the reactions in between these) can be displayed using the `complexgraph(brusselator)` function:
+Finally, a [network's reaction complexes](@ref network_analysis_reaction_complexes) (and the reactions in between these) can be displayed using the `plot_complexes(brusselator)` function:
 ```@example visualisation_graphs
-complexgraph(brusselator)
-nothing # hide
+plot_complexes(brusselator)
 ```
-!["Repressilator Complex Graph"](../assets/network_graphs/repressilator_complex_graph.png)
-Here, reaction complexes are displayed as blue nodes, and reactions in between these as black arrows.
+Here, reaction complexes are displayed as blue nodes, and reactions between complexes are displayed as black arrows. Red arrows indicate that the rate constantof a reaction has a species-dependence. Edges can be optionally labeled with their rate expressions by calling with the option `show_rate_labels`.
+```@example visualisation_graphs
+plot_complexes(brusselator, show_rate_labels = true)
+```
+
+## Customizing Plots
+In this section we demonstrate some of the ways that plot objects can be manipulated to give nicer images. Let's start with our brusselator plot once again. Note that the `plot` function returns three objects: the `Figure`, the `Axis`, and the `Plot`, which can each be customized independently. See the general [Makie documentation](https://docs.makie.org/stable/) for more information.
+
+```@example visualisation_graphs
+f, ax, p = plot_complexes(brusselator, show_rate_labels = true)
+```
+
+It seems like a bit of the top node is cut off. Let's hide the tick marks and grid and increase the top and bottom margins by increasing `yautolimitmargin`.
+```@example visualisation_graphs
+hidedecorations!(ax)
+ax.yautolimitmargin = (0.1, 0.1) # defaults to (0.05, 0.05)
+ax.aspect = DataAspect()
+```
+
+There are many keyword arguments that can be passed to `plot_network` or `plot_complexes` to change the look of the graph (which get passed to the `graphplot` Makie recipe). Let's change the color of the nodes and make the inner labels a bit smaller. As before, we hide the tick marks and grid. Let's also give the plot a title. 
+```@example visualisation_graphs
+f, ax, p = plot_complexes(brusselator, show_rate_labels = true, node_color = :yellow, ilabels_fontsize = 10)
+hidedecorations!(ax)
+ax.yautolimitmargin = (0.1, 0.1) # defaults to (0.05, 0.05)
+ax.aspect = DataAspect()
+ax.title = "Brusselator"
+```
+
+Most of the kwargs that modify the nodes or edges will also accept a vector with the same length as the number of nodes or edges, respectively. See [here](https://graph.makie.org/stable/#The-graphplot-Recipe) for a full list of keyword arguments to `graph_plot`. Note that `plot_complexes` and `plot_network` default to `layout = Stress()` rather than `layout = Spring()`, since `Stress()` is better at generating plots with fewer edge crossings. More layout options and customizations (such as pinning nodes to certain positions) can be found in the [`NetworkLayout` documentation](https://juliagraphs.org/NetworkLayout.jl/stable/).
+
+Once a graph is already created we can also change the keyword arguments by modifying the fields of the `Plot` object `p`.
+```@example visualisation_graphs
+p.node_color = :orange
+```
+
+Custom node positions can also be given, if the automatic layout is unsatisfactory.
+```@example visualisation_graphs
+fixedlayout = [(0,0), (1,0), (0,1), (1,1), (2,0)]
+p.layout = fixedlayout
+autolimits!(ax)
+```
+
+Makie graph plots can be made to be interactive, allowing one to drag nodes and edges. To do this, we retrieve the axis from the GraphMakie plot, and then register the interactions. **Note that this can only be done if `GLMakie` is the installed Makie backend. See the [GraphMakie docs](https://graph.makie.org/stable/#Predefined-Interactions) for more information about the types of interactions one can register.** Below is a non-interactive code example that shows how to do this:
+
+```julia
+using GLMakie
+f, ax, p = plot_network(brusselator)
+deregister_interaction!(ax, :rectanglezoom)
+register_interaction!(ax, :ndrag, NodeDrag(p))
+register_interaction!(ax, :edrag, EdgeDrag(p))
+```
+
+The equivalent of `show` for Makie plots is the `display` function. 
+```julia
+f = plot_network(brusselator)
+display(f)
+```
+
+Once you are happy with the graph plot, you can save it using the `save` function. 
+```julia
+save("fig.png", f)
+```

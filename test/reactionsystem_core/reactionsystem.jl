@@ -1,7 +1,7 @@
 ### Fetch Packages and Set Global Variables ###
 
 # Fetch packages.
-using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEq, StochasticDiffEq, Test
+using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEqTsit5, OrdinaryDiffEqVerner, StochasticDiffEq, Test
 const MT = ModelingToolkit
 
 # Sets stable rng number.
@@ -107,6 +107,9 @@ end
 let
     @named rs2 = ReactionSystem(rxs, t)
     @test Catalyst.isequivalent(rs, rs2)
+
+    # Test with a type mismatch
+    @test Catalyst.isequivalent(rs, "Not a ReactionSystem") == false
 end
 
 # Defaults test.

@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, ModelingToolkit, OrdinaryDiffEq, StochasticDiffEq, Plots, Test
+using Catalyst, ModelingToolkit, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, StochasticDiffEq, Plots, Test
 using Symbolics: unwrap
 
 # Sets stable rng number.
@@ -565,6 +565,45 @@ let
     @test sol[:X][1] == u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]
 end
 
+# Checks that models created w/o specifying `@variables` for observables are identical.
+# Compares both to model with explicit declaration, and programmatically created model.
+let
+    # With default ivs.
+    rn1 = @reaction_network rn begin
+        @variables X(t) X1(t) X2(t)
+        @observables X ~ X1 + X2
+    end
+    rn2 = @reaction_network rn begin
+        @variables X1(t) X2(t)
+        @observables X ~ X1 + X2
+    end
+    @variables X(t) X1(t) X2(t)
+    rn3 = complete(ReactionSystem([], t, [X1, X2], []; name = :rn, observed = [X ~ X1 + X2]))
+    @test isequal(rn1, rn2)
+    @test isequal(rn1, rn3)
+    @test isequal(rn1.X, rn2.X)
+    @test isequal(rn1.X, rn3.X)
+
+    # With non-default ivs.
+    rn4 = @reaction_network rn begin
+        @ivs τ x
+        @variables X(τ,x) X1(τ,x) X2(τ,x)
+        @observables X ~ X1 + X2
+    end
+    rn5 = @reaction_network rn begin
+        @ivs τ x
+        @variables X1(τ,x) X2(τ,x)
+        @observables X ~ X1 + X2
+    end
+    @parameters τ x
+    @variables X(τ,x) X1(τ,x) X2(τ,x)
+    rn6 = complete(ReactionSystem([], τ, [X1, X2], []; name = :rn, observed = [X ~ X1 + X2], spatial_ivs = [x]))
+    @test isequal(rn4, rn5)
+    @test isequal(rn4, rn6)
+    @test isequal(rn4.X, rn5.X)
+    @test isequal(rn4.X, rn6.X)
+end
+
 # Checks that ivs are correctly found.
 let
     rn = @reaction_network begin
@@ -604,7 +643,7 @@ let
         k, 0 --> X1 + X2
     end
     @test isequal(observed(rn1)[1].rhs, observed(rn2)[1].rhs)
-    @test_broken isequal(observed(rn1)[1].lhs.metadata, observed(rn2)[1].lhs.metadata)
+    @test isequal(observed(rn1)[1].lhs.metadata, observed(rn2)[1].lhs.metadata)
     @test isequal(unknowns(rn1), unknowns(rn2))
 
     # Case with metadata.
@@ -618,7 +657,7 @@ let
         k, 0 --> X1 + X2
     end
     @test isequal(observed(rn3)[1].rhs, observed(rn4)[1].rhs)
-    @test_broken isequal(observed(rn3)[1].lhs.metadata, observed(rn4)[1].lhs.metadata)
+    @test isequal(observed(rn3)[1].lhs.metadata, observed(rn4)[1].lhs.metadata)
     @test isequal(unknowns(rn3), unknowns(rn4))
 end
 
@@ -1041,4 +1080,73 @@ let
     @test equations(rn4)[1] isa Equation
     @parameters v n
     @test isequal(Catalyst.expand_registered_functions(equations(rn4)[1]), D(A) ~ v*(A^n))
+end
+
+### test that @no_infer properly throws errors when undeclared variables are written
+
+import Catalyst: UndeclaredSymbolicError
+let
+    # Test error when species are inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters k
+        k, A --> B
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @species A(t) B(t)
+        @parameters k
+        k, A --> B
+    end
+
+    # Test error when a parameter in rate is inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @species A(t) B(t)
+        @parameters k
+        k*n, A --> B
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters n k
+        @species A(t) B(t)
+        k*n, A --> B
+    end
+
+    # Test error when a parameter in stoichiometry is inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters k
+        @species A(t) B(t)
+        k, n*A --> B
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters k n
+        @species A(t) B(t)
+        k, n*A --> B
+    end
+
+    # Test error when a variable in an equation is inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @equations D(V) ~ V^2
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @variables V(t)
+        @equations D(V) ~ V^2
+    end
+
+    # Test error when a variable in an observable is inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @variables X1(t)
+        @observables X2 ~ X1
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @variables X1(t) X2(t)
+        @observables X2 ~ X1
+    end
 end
