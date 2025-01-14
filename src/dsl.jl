@@ -718,7 +718,6 @@ function read_equations_options(options, syms_declared; requiredec = false)
     # When this is the case, the variable X and differential D are extracted (for automatic declaration).
     # Also performs simple error checks.
     vars_extracted = OrderedSet{Union{Symbol, Expr}}()
-    excluded_syms = syms_declared
     add_default_diff = false
     for eq in equations
         if (eq.head != :call) || (eq.args[1] != :~)
