@@ -371,7 +371,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Reads observables.
     observed_vars, observed_eqs, obs_syms = read_observed_options(
-        options, [species_declared; variables], all_ivs)
+        options, [species_declared; variables], all_ivs; requiredec)
 
     # Checks for input errors.
     (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
@@ -726,7 +726,7 @@ function read_equations_options(options, syms_declared; requiredec = false)
 
         # If the default differential (`D`) is used, record that it should be decalred later on.
 
-        if !in(eq, excluded_syms) && find_D_call(eq)
+        if !in(eq, syms_declared) && find_D_call(eq)
             requiredec && throw(UndeclaredSymbolicError(
                 "Unrecognized symbol D was used as a differential in an equation: \"$eq\". Since the @require_declaration flag is set, all differentials in equations must be explicitly declared using the @differentials option."))
             add_default_diff = true
