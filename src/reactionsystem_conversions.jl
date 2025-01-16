@@ -42,7 +42,7 @@ function oderatelaw(rx; combinatoric_ratelaw = true)
     rl
 end
 
-# Function returning `true` for species which shouldn't change from the reactions, 
+# Function returning `true` for species which shouldn't change from the reactions,
 # including non-species variables.
 drop_dynamics(s) = isconstant(s) || isbc(s) || (!isspecies(s))
 
@@ -109,7 +109,7 @@ function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
     num_bcsts = count(isbc, get_unknowns(rs))
 
     # we make a matrix sized by the number of reactions
-    eqs = Matrix{Num}(undef, length(sts) + num_bcsts, length(get_rxs(rs)))
+    eqs = Matrix{Any}(undef, length(sts) + num_bcsts, length(get_rxs(rs)))
     eqs .= 0
     species_to_idx = Dict((x => i for (i, x) in enumerate(ispcs)))
     nps = get_networkproperties(rs)
@@ -454,13 +454,13 @@ COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be convert
 function check_cons_warning(remove_conserved, remove_conserved_warn)
     (remove_conserved && remove_conserved_warn) || return
     @warn "You are creating a system or problem while eliminating conserved quantities. Please note,
-        due to limitations / design choices in ModelingToolkit if you use the created system to 
+        due to limitations / design choices in ModelingToolkit if you use the created system to
         create a problem (e.g. an `ODEProblem`), or are directly creating a problem, you *should not*
-        modify that problem's initial conditions for species (e.g. using `remake`). Changing initial 
-        conditions must be done by creating a new Problem from your reaction system or the 
-        ModelingToolkit system you converted it into with the new initial condition map. 
+        modify that problem's initial conditions for species (e.g. using `remake`). Changing initial
+        conditions must be done by creating a new Problem from your reaction system or the
+        ModelingToolkit system you converted it into with the new initial condition map.
         Modification of parameter values is still possible, *except* for the modification of any
-        conservation law constants ($CONSERVED_CONSTANT_SYMBOL), which is not possible. You might 
+        conservation law constants ($CONSERVED_CONSTANT_SYMBOL), which is not possible. You might
         get this warning when creating a problem directly.
 
         You can remove this warning by setting `remove_conserved_warn = false`."
@@ -568,13 +568,13 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
         kwargs...)
 end
 
-# Ideally, when `ReactionSystem`s are converted to `NonlinearSystem`s, any coupled ODEs should be 
+# Ideally, when `ReactionSystem`s are converted to `NonlinearSystem`s, any coupled ODEs should be
 # on the form D(X) ~ ..., where lhs is the time derivative w.r.t. a single variable, and the rhs
 # does not contain any differentials. If this is not the case, we throw a warning to let the user
 # know that they should be careful.
 function nonlinear_convert_differentials_check(rs::ReactionSystem)
     for eq in filter(is_diff_equation, equations(rs))
-        # For each differential equation, checks in order: 
+        # For each differential equation, checks in order:
         # If there is a differential on the right hand side.
         # If the lhs is not on the form D(...).
         # If the lhs upper level function is not a differential w.r.t. time.
@@ -585,12 +585,12 @@ function nonlinear_convert_differentials_check(rs::ReactionSystem)
            !isequal(Symbolics.operation(eq.lhs), Differential(get_iv(rs))) ||
            (length(arguments(eq.lhs)) != 1) ||
            !any(isequal(arguments(eq.lhs)[1]), nonspecies(rs))
-            error("You are attempting to convert a `ReactionSystem` coupled with differential equations to a `NonlinearSystem`. However, some of these differentials are not of the form `D(x) ~ ...` where: 
+            error("You are attempting to convert a `ReactionSystem` coupled with differential equations to a `NonlinearSystem`. However, some of these differentials are not of the form `D(x) ~ ...` where:
                     (1) The left-hand side is a differential of a single variable with respect to the time independent variable, and
                     (2) The right-hand side does not contain any differentials.
                 This is generally not permitted.
 
-                If you still would like to perform this conversion, please use the `all_differentials_permitted = true` option. In this case, all differentials will be set to `0`. 
+                If you still would like to perform this conversion, please use the `all_differentials_permitted = true` option. In this case, all differentials will be set to `0`.
                 However, it is recommended to proceed with caution to ensure that the produced nonlinear equation makes sense for your intended application."
             )
         end
@@ -769,6 +769,79 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         noise_rate_prototype = p_matrix, kwargs...)
 end
 
+"""
+$(TYPEDEF)
+
+Inputs for a JumpProblem from a given `ReactionSystem`.
+
+# Fields
+$(FIELDS)
+"""
+struct JumpInputs{S <: MT.JumpSystem, T <: SciMLBase.AbstractODEProblem}
+    """The `JumpSystem` to define the problem over"""
+    sys::S
+    """The problem the JumpProblem should be defined over, for example DiscreteProblem"""
+    prob::T
+end
+
+"""
+    jumpinput = JumpInputs(rs::ReactionSystem, u0map, tspan,
+                    pmap = DiffEqBase.NullParameters;
+                    name = nameof(rs),
+                    combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+                    checks = false, kwargs...)
+
+    Constructs the input to build a JumpProblem for the given reaction system.
+
+Example:
+```julia
+using Catalyst, OrdinaryDiffEqTsit5, JumpProcesses, Plots
+rn = @reaction_network begin
+    k*(1 + sin(t)), 0 --> A
+end
+jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+@assert jinput.prob isa ODEProblem
+jprob = JumpProblem(jinput)
+sol = solve(jprob, Tsit5())
+plot(sol, idxs = :A)
+
+rn = @reaction_network begin
+    k, 0 --> A
+end
+jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+@assert jinput.prob isa DiscreteProblem
+jprob = JumpProblem(jinput)
+sol = solve(jprob)
+plot(sol, idxs = :A)
+```
+"""
+function JumpInputs(rs::ReactionSystem, u0, tspan, p = DiffEqBase.NullParameters();
+        name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        checks = false, kwargs...)
+    u0map = symmap_to_varmap(rs, u0)
+    pmap = symmap_to_varmap(rs, p)
+    jsys = complete(convert(JumpSystem, rs; name, combinatoric_ratelaws, checks))
+    if MT.has_variableratejumps(jsys)
+        prob = ODEProblem(jsys, u0map, tspan, pmap; kwargs...)
+    else
+        prob = DiscreteProblem(jsys, u0map, tspan, pmap; kwargs...)
+    end
+    JumpInputs(jsys, prob)
+end
+
+function Base.summary(io::IO, jinputs::JumpInputs)
+    type_color, no_color = SciMLBase.get_colorizers(io)
+    print(io,
+        type_color, nameof(typeof(jinputs)),
+        no_color, " storing", "\n",
+        no_color, "  JumpSystem: ", type_color, nameof(jinputs.sys), "\n",
+        no_color, "  Problem type: ", type_color, nameof(typeof(jinputs.prob)))
+end
+
+function Base.show(io::IO, mime::MIME"text/plain", jinputs::JumpInputs)
+    summary(io, jinputs)
+end
+
 # DiscreteProblem from AbstractReactionNetwork
 function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
         p = DiffEqBase.NullParameters(), args...;
@@ -783,13 +856,20 @@ function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
 end
 
 # JumpProblem from AbstractReactionNetwork
-function JumpProcesses.JumpProblem(rs::ReactionSystem, prob, aggregator, args...;
-        name = nameof(rs),
+function JumpProcesses.JumpProblem(rs::ReactionSystem, prob,
+        aggregator = JumpProcesses.NullAggregator(); name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         checks = false, kwargs...)
     jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks)
     jsys = complete(jsys)
-    return JumpProblem(jsys, prob, aggregator, args...; kwargs...)
+    return JumpProblem(jsys, prob, aggregator; kwargs...)
+end
+
+# JumpProblem for JumpInputs
+function JumpProcesses.JumpProblem(jinputs::JumpInputs,
+        agg::JumpProcesses.AbstractAggregatorAlgorithm = JumpProcesses.NullAggregator();
+        kwargs...)
+    JumpProblem(jinputs.sys, jinputs.prob, agg; kwargs...)
 end
 
 # SteadyStateProblem from AbstractReactionNetwork

@@ -238,7 +238,7 @@ end
 
 # Converts a vector of vectors to a single, long, vector.
 # These are used when the initial condition is converted to a single vector (from vector of vector form).
-function expand_component_values(values::Vector{Vector{T}}, num_verts::Int64) where {T}
+function expand_component_values(values::Vector{<:Vector}, num_verts::Int64)
     vcat([get_vertex_value.(values, vert) for vert in 1:num_verts]...)
 end
 

@@ -189,15 +189,15 @@ let
     @test isequal(Catalyst.getmetadata_dict(r3), Catalyst.getmetadata_dict(rxs[3]))
 
     # Checks that accessor functions works on the DSL.
-    @test Catalyst.hasmetadata(rxs[1], :noise_scaling)
-    @test !Catalyst.hasmetadata(rxs[1], :md_1)
-    @test !Catalyst.hasmetadata(rxs[2], :noise_scaling)
-    @test Catalyst.hasmetadata(rxs[2], :md_1)
-    @test !Catalyst.hasmetadata(rxs[3], :noise_scaling)
-    @test !Catalyst.hasmetadata(rxs[3], :md_1)
+    @test hasmetadata(rxs[1], :noise_scaling)
+    @test !hasmetadata(rxs[1], :md_1)
+    @test !hasmetadata(rxs[2], :noise_scaling)
+    @test hasmetadata(rxs[2], :md_1)
+    @test !hasmetadata(rxs[3], :noise_scaling)
+    @test !hasmetadata(rxs[3], :md_1)
 
-    @test isequal(Catalyst.getmetadata(rxs[1], :noise_scaling), η)
-    @test isequal(Catalyst.getmetadata(rxs[2], :md_1), 1.0)
+    @test isequal(getmetadata(rxs[1], :noise_scaling), η)
+    @test isequal(getmetadata(rxs[2], :md_1), 1.0)
 
     # Test that metadata works for @reaction macro.
     rx1 = @reaction k, 2X --> X2, [noise_scaling=$η]
@@ -356,10 +356,23 @@ let
         k[1]*a+k[2], X[1] + V[1]*X[2] --> V[2]*W*Y + B*C
     end
 
-    @parameters k[1:3] a B
+    @parameters k[1:2] a B
     @variables (V(t))[1:2] W(t)
     @species (X(t))[1:2] Y(t) C(t)
     rx = Reaction(k[1]*a+k[2], [X[1], X[2]], [Y, C], [1, V[1]], [V[2] * W, B])
     @named arrtest = ReactionSystem([rx], t)
-    arrtest == rn
+    @test arrtest == rn
+
+    rn = @reaction_network twostate begin
+        @parameters k[1:2]
+        @species (X(t))[1:2]
+        (k[1],k[2]), X[1] <--> X[2]
+    end
+    
+    @parameters k[1:2]
+    @species (X(t))[1:2]
+    rx1 = Reaction(k[1], [X[1]], [X[2]])
+    rx2 = Reaction(k[2], [X[2]], [X[1]])
+    @named twostate = ReactionSystem([rx1, rx2], t)
+    @test twostate == rn
 end

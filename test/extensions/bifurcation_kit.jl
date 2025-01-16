@@ -56,32 +56,35 @@ end
 # Checks that the same bifurcation problem is created as for BifurcationKit.
 # Checks with Symbolics as bifurcation and plot vars.
 # Tries setting `jac=false`.
+# Note: Only one parameter used, as tests technically depended on internal parameter ordering
+# (Potentially the test should also be removed as it tests internal parameter stuff, however, test
+# was written a while ago when I paid less attention to this kind of stuff.)
 let 
     # Creates BifurcationProblem via Catalyst.
     bistable_switch = @reaction_network begin
-        0.1 + hill(X,v,K,n), 0 --> X
-        d, X --> 0
+        0.1 + hill(X,5.0,K,3), 0 --> X
+        1.0, X --> 0
     end
-    @unpack X, v, K, n, d = bistable_switch
+    @unpack X, K = bistable_switch
     u0_guess = [X => 1.0]
-    p_start = [v => 5.0, K => 2.5, n => 3, d => 1.0]
+    p_start = [K => 2.5]
     bprob = BifurcationProblem(bistable_switch, u0_guess, p_start, K; jac=false, plot_var=X)
     
     # Creates BifurcationProblem via BifurcationKit.
     function bistable_switch_BK(u, p)
         X, = u
-        v, K, n, d = p
-        return [0.1 + v*(X^n)/(X^n + K^n) - d*X]
+        K, = p
+        return [0.1 + 5.0*(X^3)/(X^3 + K^3) - 1.0*X]
     end
-    bprob_BK = BifurcationProblem(bistable_switch_BK, [1.0], [5.0, 2.5, 3, 1.0], (@lens _[1]); record_from_solution = (x, p) -> x[1])
+    bprob_BK = BifurcationProblem(bistable_switch_BK, [1.0], [2.5], (BifurcationKit.@optic _[1]); record_from_solution = (x, p; k...) -> x[1])
     
     # Check the same function have been generated.
     bprob.u0 == bprob_BK.u0
     bprob.params == bprob_BK.params
     for repeat = 1:20
         u0 = rand(rng, 1)
-        p = rand(rng, 4)
-        @test bprob_BK.VF.F(u0, p) == bprob.VF.F(u0, p)
+        p = rand(rng, 1)
+        @test bprob_BK.VF.F(u0, p) ≈ bprob.VF.F(u0, p)
     end
 end
 
@@ -228,3 +231,44 @@ let
     # Attempts to build a BifurcationProblem.
     @test_throws Exception BifurcationProblem(rn, u0_guess, p_start, :p)
 end
+
+# Tests the bifurcation when one of the parameters depends on another parameter, initial condition, etc. 
+# let
+#     rn = @reaction_network begin
+#         @parameters k ksq = k^2 
+#         (k, ksq), A <--> B
+#     end
+
+#     rn = complete(rn)
+#     u0_guess = [:A => 1., :B => 1.] 
+#     p_start = [:k => 2.]
+
+#     bprob = BifurcationProblem(rn, u0_guess, p_start, :k; plot_var = :A, u0 = [:A => 5., :B => 3.])
+#     p_span = (0.1, 6.0)
+#     opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
+#     bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside = true)
+#     plot(bif_dia, xlabel = "k", ylabel = "A", xlims = (0, 6), ylims=(0,8))
+
+#     xs = getfield.(bif_dia.γ.branch, :x)
+#     ks = getfield.(bif_dia.γ.branch, :param)
+#     @test_broken @. 8 * (ks / (ks + ks^2)) ≈ xs
+
+#     # Test that parameter updating happens correctly in ODESystem
+#     t = default_t()
+#     kval = 4. 
+#     @parameters k ksq = k^2 tratechange = 10.
+#     @species A(t) B(t)
+#     rxs = [(@reaction k, A --> B), (@reaction ksq, B --> A)]
+#     ratechange = (t == tratechange) => [k ~ kval]
+#     u0 = [A => 5., B => 3.]
+#     tspan = (0.0, 30.0)
+#     p = [k => 1.0]
+
+#     @named rs2 = ReactionSystem(rxs, t, [A, B], [k, ksq, tratechange]; discrete_events = ratechange)
+#     rs2 = complete(rs2)
+
+#     oprob = ODEProblem(rs2, u0, tspan, p)
+#     sol = OrdinaryDiffEq.solve(oprob, Tsit5(); tstops = 10.0)
+#     xval = sol.u[end][1]
+#     @test isapprox(xval, 8 * (kval / (kval + kval^2)), atol=1e-3) 
+# end

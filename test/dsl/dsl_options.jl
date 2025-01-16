@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, ModelingToolkit, OrdinaryDiffEq, StochasticDiffEq, Plots, Test
+using Catalyst, ModelingToolkit, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, StochasticDiffEq, Plots, Test
 using Symbolics: unwrap
 
 # Sets stable rng number.
@@ -13,6 +13,7 @@ seed = rand(rng, 1:100)
 
 # Sets the default `t` to use.
 t = default_t()
+D = default_time_deriv()
 
 ### Tests `@parameters`, `@species`, and `@variables` Options ###
 
@@ -465,7 +466,8 @@ let
     end
 
     @parameters k k2
-    @variables s x D(x) E(s) F(s,x)
+    @parameters s x
+    @variables D(x) E(s) F(s,x)
     @species A(s,x) B(s) C(x) C2(s,x)
     rx = Reaction(k*k2*D, [A, B], [C, C2], [E, 1], [F, 1])
     @named ivstest = ReactionSystem([rx], s; spatial_ivs = [x])
@@ -592,6 +594,45 @@ let
     @test sol[:X][1] == u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]
 end
 
+# Checks that models created w/o specifying `@variables` for observables are identical.
+# Compares both to model with explicit declaration, and programmatically created model.
+let
+    # With default ivs.
+    rn1 = @reaction_network rn begin
+        @variables X(t) X1(t) X2(t)
+        @observables X ~ X1 + X2
+    end
+    rn2 = @reaction_network rn begin
+        @variables X1(t) X2(t)
+        @observables X ~ X1 + X2
+    end
+    @variables X(t) X1(t) X2(t)
+    rn3 = complete(ReactionSystem([], t, [X1, X2], []; name = :rn, observed = [X ~ X1 + X2]))
+    @test isequal(rn1, rn2)
+    @test isequal(rn1, rn3)
+    @test isequal(rn1.X, rn2.X)
+    @test isequal(rn1.X, rn3.X)
+
+    # With non-default ivs.
+    rn4 = @reaction_network rn begin
+        @ivs τ x
+        @variables X(τ,x) X1(τ,x) X2(τ,x)
+        @observables X ~ X1 + X2
+    end
+    rn5 = @reaction_network rn begin
+        @ivs τ x
+        @variables X1(τ,x) X2(τ,x)
+        @observables X ~ X1 + X2
+    end
+    @parameters τ x
+    @variables X(τ,x) X1(τ,x) X2(τ,x)
+    rn6 = complete(ReactionSystem([], τ, [X1, X2], []; name = :rn, observed = [X ~ X1 + X2], spatial_ivs = [x]))
+    @test isequal(rn4, rn5)
+    @test isequal(rn4, rn6)
+    @test isequal(rn4.X, rn5.X)
+    @test isequal(rn4.X, rn6.X)
+end
+
 # Checks that ivs are correctly found.
 let
     rn = @reaction_network begin
@@ -603,8 +644,8 @@ let
         end
     end
     V,W = getfield.(observed(rn), :lhs)
-    @test isequal(arguments(ModelingToolkit.unwrap(V)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[1], Catalyst.get_sivs(rn)[2]])
-    @test isequal(arguments(ModelingToolkit.unwrap(W)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[2]])
+    @test isequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(V)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[1], Catalyst.get_sivs(rn)[2]])
+    @test isequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(W)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[2]])
 end
 
 # Checks that metadata is written properly.
@@ -819,7 +860,7 @@ let
     @test isequal(equations(rn)[4], 3Y + X  ~ S + X*d)
 
     # Checks that simulations has the correct output
-    u0 = Dict([S => 1 + rand(rng), X => 1 + rand(rng), Y => 1 + rand(rng)])
+    u0 = Dict([S => 1 + rand(rng)])
     ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
     oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify=true)
     sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
@@ -857,10 +898,7 @@ let
         @variables X(t)
         @equations 2X ~ $c - X
     end)
-
-    u0 = [rn.X => 0.0]
-    ps = []
-    oprob = ODEProblem(rn, u0, (0.0, 100.0), ps; structural_simplify=true)
+    oprob = ODEProblem(rn, [], (0.0, 100.0); structural_simplify=true)
     sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
     @test sol[rn.X][end] ≈ 2.0
 end
@@ -930,7 +968,7 @@ let
     @test equations(rn)[3] isa Equation
 
     # Checks that simulations has the correct output
-    u0 = Dict([S => 1 + rand(rng), X => 1 + rand(rng), Y => 1 + rand(rng)])
+    u0 = Dict([S => 1 + rand(rng), Y => 1 + rand(rng)])
     ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
     oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify=true)
     sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
@@ -994,6 +1032,147 @@ let
     rl = oderatelaw(reactions(rn3)[1]; combinatoric_ratelaw)
     @unpack k1, A = rn3
     @test isequal(rl, k1*A^2)
+end
+
+# Test whether user-defined functions are properly expanded in equations.
+let
+    f(A, t) = 2*A*t
+
+    # Test user-defined function
+    rn = @reaction_network begin
+        @equations D(A) ~ f(A, t)
+    end
+    @test length(equations(rn)) == 1
+    @test equations(rn)[1] isa Equation
+    @species A(t)
+    @test isequal(equations(rn)[1], D(A) ~ 2*A*t)
+
+
+    # Test whether expansion happens properly for unregistered/registered functions.
+    hill_unregistered(A, v, K, n) = v*(A^n) / (A^n + K^n)
+    rn2 = @reaction_network begin
+        @parameters v K n
+        @equations D(A) ~ hill_unregistered(A, v, K, n)
+    end
+    @test length(equations(rn2)) == 1
+    @test equations(rn2)[1] isa Equation
+    @parameters v K n
+    @test isequal(equations(rn2)[1], D(A) ~ v*(A^n) / (A^n + K^n))
+
+    hill2(A, v, K, n) = v*(A^n) / (A^n + K^n)
+    @register_symbolic hill2(A, v, K, n)
+    # Registered symbolic function should not expand.
+    rn2r = @reaction_network begin
+        @parameters v K n
+        @equations D(A) ~ hill2(A, v, K, n)
+    end
+    @test length(equations(rn2r)) == 1
+    @test equations(rn2r)[1] isa Equation
+    @parameters v K n
+    @test isequal(equations(rn2r)[1], D(A) ~ hill2(A, v, K, n))
+
+
+    rn3 = @reaction_network begin
+        @species Iapp(t)
+        @equations begin
+            D(A) ~ Iapp
+            Iapp ~ f(A,t)
+        end
+    end
+    @test length(equations(rn3)) == 2
+    @test equations(rn3)[1] isa Equation
+    @test equations(rn3)[2] isa Equation
+    @variables Iapp(t)
+    @test isequal(equations(rn3)[1], D(A) ~ Iapp)
+    @test isequal(equations(rn3)[2], Iapp ~ 2*A*t)
+
+    # Test whether the DSL and symbolic ways of creating the network generate the same system
+    @species Iapp(t) A(t)
+    eq = [D(A) ~ Iapp, Iapp ~ f(A, t)]
+    @named rn3_sym = ReactionSystem(eq, t)
+    rn3_sym = complete(rn3_sym)
+    @test isequivalent(rn3, rn3_sym)
+
+
+    # Test more complicated expression involving both registered function and a user-defined function.
+    g(A, K, n) = A^n + K^n
+    rn4 = @reaction_network begin
+        @parameters v K n
+        @equations D(A) ~ hill(A, v, K, n)*g(A, K, n)
+    end
+    @test length(equations(rn4)) == 1
+    @test equations(rn4)[1] isa Equation
+    @parameters v n
+    @test isequal(Catalyst.expand_registered_functions(equations(rn4)[1]), D(A) ~ v*(A^n))
+end
+
+### test that @no_infer properly throws errors when undeclared variables are written
+
+import Catalyst: UndeclaredSymbolicError
+let
+    # Test error when species are inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters k
+        k, A --> B
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @species A(t) B(t)
+        @parameters k
+        k, A --> B
+    end
+
+    # Test error when a parameter in rate is inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @species A(t) B(t)
+        @parameters k
+        k*n, A --> B
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters n k
+        @species A(t) B(t)
+        k*n, A --> B
+    end
+
+    # Test error when a parameter in stoichiometry is inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters k
+        @species A(t) B(t)
+        k, n*A --> B
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters k n
+        @species A(t) B(t)
+        k, n*A --> B
+    end
+
+    # Test error when a variable in an equation is inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @equations D(V) ~ V^2
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @variables V(t)
+        @equations D(V) ~ V^2
+    end
+
+    # Test error when a variable in an observable is inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @variables X1(t)
+        @observables X2 ~ X1
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @variables X1(t) X2(t)
+        @observables X2 ~ X1
+    end
 end
 
 # Erroneous `@default_noise_scaling` declaration (other noise scaling tests are mostly in the SDE file).

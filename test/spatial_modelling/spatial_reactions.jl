@@ -17,18 +17,6 @@ let
     tr = TransportReaction(dV*dE, X)
     @test isequal(tr.rate, dV*dE)
 end
-
-# Tests transport_reactions function for creating TransportReactions.
-let
-    rs = @reaction_network begin
-        @parameters d
-        (p,1), 0 <--> X
-    end
-    @unpack d, X = rs
-    trs = TransportReactions([(d, X), (d, X)])
-    @test isequal(trs[1], trs[2])
-end
-
 # Test reactions with constants in rate.
 let
     t = default_t()
@@ -86,12 +74,14 @@ end
 
 # Tests that creation of TransportReaction with non-parameters in rate yield errors.
 # Tests that errors are throw even when the rate is highly nested.
+# Tests that error is thrown when non-permitted rate symbol is used.
 let
     t = default_t()
     @species X(t) Y(t)
     @parameters D1 D2 D3
     @test_throws ErrorException TransportReaction(D1 + D2*(D3 + Y), X)
     @test_throws ErrorException TransportReaction(Y, X)
+    @test_throws Exception @eval @transport_reaction ∅ X
 end
 
 ### Other Tests ###

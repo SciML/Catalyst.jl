@@ -1,7 +1,7 @@
 ### Fetch Packages and Set Global Variables ###
 
 # Fetch packages.
-using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEq, StochasticDiffEq, Test
+using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEqTsit5, StochasticDiffEq, Test
 using Symbolics: BasicSymbolic, unwrap
 
 # Sets stable rng number.
@@ -17,8 +17,8 @@ t = default_t()
 # Declares a simple model to run tests on.
 begin
     t = default_t()
-    @parameters p1 p2::Float64 p3::Int64 p4::Float32 p5::Rational{Int64}
-    @parameters d1 d2::Float64 = 1.2 d3::Int64 = 2 [description = "A parameter"] d4::Rational{Int64} d5::Float32
+    @parameters p1 p2 p3::Int64 p4 p5::Rational{Int64}
+    @parameters d1 d2 = 1.2 d3::Int64 = 2 [description = "A parameter"] d4::Rational{Int64} d5
     @species X1(t) X2(t) X3(t) X4(t) X5(t)
 
     rxs = [
@@ -49,14 +49,14 @@ end
 let
     @test Symbolics.unwrap(rs.p1) isa BasicSymbolic{Real}
     @test Symbolics.unwrap(rs.d1) isa BasicSymbolic{Real}
-    @test Symbolics.unwrap(rs.p2) isa BasicSymbolic{Float64}
-    @test Symbolics.unwrap(rs.d2) isa BasicSymbolic{Float64}
+    @test Symbolics.unwrap(rs.p2) isa BasicSymbolic{Real}
+    @test Symbolics.unwrap(rs.d2) isa BasicSymbolic{Real}
     @test Symbolics.unwrap(rs.p3) isa BasicSymbolic{Int64}
     @test Symbolics.unwrap(rs.d3) isa BasicSymbolic{Int64}
-    @test Symbolics.unwrap(rs.p4) isa BasicSymbolic{Float32}
+    @test Symbolics.unwrap(rs.p4) isa BasicSymbolic{Real}
     @test Symbolics.unwrap(rs.d4) isa BasicSymbolic{Rational{Int64}}
     @test Symbolics.unwrap(rs.p5) isa BasicSymbolic{Rational{Int64}}
-    @test Symbolics.unwrap(rs.d5) isa BasicSymbolic{Float32}
+    @test Symbolics.unwrap(rs.d5) isa BasicSymbolic{Real}
 end
 
 # Tests that simulations with differentially typed variables yields correct results.
@@ -96,10 +96,10 @@ let
         @test unwrap(mtk_struct.ps[d2]) isa Float64
         @test unwrap(mtk_struct.ps[p3]) isa Int64
         @test unwrap(mtk_struct.ps[d3]) isa Int64
-        @test unwrap(mtk_struct.ps[p4]) isa Float32
+        @test unwrap(mtk_struct.ps[p4]) isa Float64
         @test unwrap(mtk_struct.ps[d4]) isa Rational{Int64}
         @test unwrap(mtk_struct.ps[p5]) isa Rational{Int64}
-        @test unwrap(mtk_struct.ps[d5]) isa Float32
+        @test unwrap(mtk_struct.ps[d5]) isa Float64
 
         # Checks that all parameters have the correct value.
         @test unwrap(mtk_struct.ps[p1]) == 1.0

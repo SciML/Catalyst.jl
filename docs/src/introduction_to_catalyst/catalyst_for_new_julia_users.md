@@ -55,15 +55,15 @@ To import a Julia package into a session, you can use the `using PackageName` co
 using Pkg
 Pkg.add("Catalyst")
 ```
-Here, the Julia package manager package (`Pkg`) is by default installed on your computer when Julia is installed, and can be activated directly. Next, we also wish to install the `OrdinaryDiffEq` and `Plots` packages (for numeric simulation of models, and plotting, respectively).
+Here, the Julia package manager package (`Pkg`) is by default installed on your computer when Julia is installed, and can be activated directly. Next, we install an ODE solver from a sub-library of the larger `OrdinaryDiffEq` package, and install the `Plots` package for making graphs. We will import the recommended default solver from the `OrdinaryDiffEqDefault` sub-library. A full list of `OrdinaryDiffEq` solver sublibraries can be found on the sidebar of [this page](https://docs.sciml.ai/OrdinaryDiffEq/stable/).
 ```julia
-Pkg.add("OrdinaryDiffEq")
+Pkg.add("OrdinaryDiffEqDefault")
 Pkg.add("Plots")
 ```
 Once a package has been installed through the `Pkg.add` command, this command does not have to be repeated if we restart our Julia session. We can now import all three packages into our current session with:
 ```@example ex2
 using Catalyst
-using OrdinaryDiffEq
+using OrdinaryDiffEqDefault
 using Plots
 ```
 Here, if we restart Julia, these `using` commands *must be rerun*.
@@ -166,19 +166,17 @@ params = [:b => 0.2, :k => 1.0]
 nothing # hide
 ```
 
-Previously we have bundled this information into an `ODEProblem` (denoting a deterministic *ordinary differential equation*). Now we wish to simulate our model as a jump process (where each reaction event corresponds to a single jump in the state of the system). We do this by first creating a `DiscreteProblem`, and then using this as an input to a `JumpProblem`.
+Previously we have bundled this information into an `ODEProblem` (denoting a deterministic *ordinary differential equation*). Now we wish to simulate our model as a jump process (where each reaction event corresponds to a discrete change in the state of the system). We do this by first processing the inputs to work in a jump model -- an extra step needed for jump models that can be avoided for ODE/SDE models -- and then creating a `JumpProblem` from the inputs:
 ```@example ex2
 using JumpProcesses # hide
-dprob = DiscreteProblem(sir_model, u0, tspan, params)
-jprob = JumpProblem(sir_model, dprob, Direct())
+jinput = JumpInputs(sir_model, u0, tspan, params)
+jprob = JumpProblem(jinput)
 nothing # hide
 ```
-Again, the order in which the inputs are given to the `DiscreteProblem` and the `JumpProblem` is important. The last argument to the `JumpProblem` (`Direct()`) denotes which simulation method we wish to use. For now, we recommend that users simply use the `Direct()` option, and then consider alternative ones (see the [JumpProcesses.jl docs](https://docs.sciml.ai/JumpProcesses/stable/)) when they are more familiar with modelling in Catalyst and Julia.
-
-Finally, we can simulate our model using the `solve` function, and plot the solution using the `plot` function. For jump simulations, the `solve` function also requires a second argument (`SSAStepper()`). This is a time-stepping algorithm that calls the `Direct` solver to advance a simulation. Again, we recommend at this stage you simply use this option, and then explore exactly what this means at a later stage.
+Finally, we can now simulate our model using the `solve` function, and plot the solution using the `plot` function.
 ```@example ex2
-sol = solve(jprob, SSAStepper())
-sol = solve(jprob, SSAStepper(); seed=1234) # hide
+sol = solve(jprob)
+sol = solve(jprob; seed=1234) # hide
 plot(sol)
 ```
 
@@ -222,7 +220,7 @@ We have previously described how to set up new Julia environments, how to instal
 1. If Latexify is not already installed on your computer, install it.
 2. Add Latexify as an available package to your current environment.
 
-Here, while Catalyst has previously been installed on your computer, it has not been added to the new environment you created. To do so, simply run 
+Here, while Catalyst has previously been installed on your computer, it has not been added to the new environment you created. To do so, simply run
 ```julia
 using Pkg
 Pkg.add("Latexify")

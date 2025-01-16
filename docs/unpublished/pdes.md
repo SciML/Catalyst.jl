@@ -11,7 +11,7 @@ parameters in (Kim et al., J. Chem. Phys., 146, 2017).
 
 First we load the packages we'll use
 ```julia
-using Catalyst, MethodOfLines, DomainSets, OrdinaryDiffEq, Plots, Random, Distributions
+using Catalyst, MethodOfLines, DomainSets, OrdinaryDiffEqSDIRK, Plots, Random, Distributions
 using ModelingToolkit: scalarize, unwrap, operation, defaults
 ```
 
@@ -43,7 +43,7 @@ end
 We now define the reaction model
 ```julia
 t = default_t()
-@variables x y
+@parameters x y
 @species U(x,y,t) V(x,y,t) W(x,y,t)
 rxs = [Reaction(k[1], [U, W], [V, W]),
        Reaction(k[2], [V], [W], [2], [1]),

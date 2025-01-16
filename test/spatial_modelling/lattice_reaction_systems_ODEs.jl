@@ -1,7 +1,7 @@
 ### Preparations ###
 
 # Fetch packages.
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, OrdinaryDiffEqBDF
 using Random, Statistics, SparseArrays, Test
 
 # Fetch test networks.
@@ -443,7 +443,7 @@ let
     @test ss_1 == ss_2
 end
 
-# Tries various ways of creating TransportReactions.
+# Tries various ways of creating `TransportReaction`s.
 let
     CuH_Amination_system_alt_1 = @reaction_network begin
         @species Newspecies1(t) Newspecies2(t)
@@ -504,122 +504,6 @@ let
     ss_1 = solve(ODEProblem(lrs_1, u0, (0.0, 500.0), [pV; pE]), Tsit5()).u[end]
     ss_2 = solve(ODEProblem(lrs_2, u0, (0.0, 500.0), [pV; pE]), Tsit5()).u[end]
     @test all(isequal.(ss_1, ss_2))
-end
-
-### ODEProblem & Integrator Interfacing ###
-
-# Checks that basic interfacing with ODEProblem parameters (getting and setting) works.
-let
-    # Creates an initial `ODEProblem`.
-    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, small_1d_cartesian_grid)
-    u0 = [:X => 1.0, :Y => 2.0]
-    ps = [:A => 1.0, :B => [1.0, 2.0, 3.0, 4.0, 5.0], :dX => 0.1]
-    oprob = ODEProblem(lrs, u0, (0.0, 10.0), ps)
-
-    # Checks that retrieved parameters are correct.
-    @test oprob.ps[:A] == [1.0]
-    @test oprob.ps[:B] == [1.0, 2.0, 3.0, 4.0, 5.0]
-    @test oprob.ps[:dX] == sparse([1], [1], [0.1])
-
-    # Updates content.
-    oprob.ps[:A] = [10.0, 20.0, 30.0, 40.0, 50.0]
-    oprob.ps[:B] = [10.0]
-    oprob.ps[:dX] = [0.01]
-
-    # Checks that content is correct.
-    @test oprob.ps[:A] == [10.0, 20.0, 30.0, 40.0, 50.0]
-    @test oprob.ps[:B] == [10.0]
-    @test oprob.ps[:dX] == [0.01]
-end
-
-# Checks that the `rebuild_lat_internals!` function is correctly applied to an ODEProblem.
-let
-    # Creates a Brusselator `LatticeReactionSystem`.
-    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_2, very_small_2d_cartesian_grid)
-
-    # Checks for all combinations of Jacobian and sparsity.
-    for jac in [false, true], sparse in [false, true]
-        # Creates an initial ODEProblem.
-        u0 = [:X => 1.0, :Y => [1.0 2.0; 3.0 4.0]]
-        dY_vals = spzeros(4,4)
-        dY_vals[1,2] = 0.1; dY_vals[2,1] = 0.1; 
-        dY_vals[1,3] = 0.2; dY_vals[3,1] = 0.2; 
-        dY_vals[2,4] = 0.3; dY_vals[4,2] = 0.3; 
-        dY_vals[3,4] = 0.4; dY_vals[4,3] = 0.4; 
-        ps = [:A => 1.0, :B => [4.0 5.0; 6.0 7.0], :dX => 0.1, :dY => dY_vals]
-        oprob_1 = ODEProblem(lrs, u0, (0.0, 10.0), ps; jac, sparse)
-
-        # Creates an alternative version of the ODEProblem.
-        dX_vals = spzeros(4,4)
-        dX_vals[1,2] = 0.01; dX_vals[2,1] = 0.01; 
-        dX_vals[1,3] = 0.02; dX_vals[3,1] = 0.02; 
-        dX_vals[2,4] = 0.03; dX_vals[4,2] = 0.03; 
-        dX_vals[3,4] = 0.04; dX_vals[4,3] = 0.04; 
-        ps = [:A => [1.1 1.2; 1.3 1.4], :B => 5.0, :dX => dX_vals, :dY => 0.01]
-        oprob_2 = ODEProblem(lrs, u0, (0.0, 10.0), ps; jac, sparse)
-
-        # Modifies the initial ODEProblem to be identical to the new one.
-        oprob_1.ps[:A] = [1.1 1.2; 1.3 1.4]
-        oprob_1.ps[:B] = [5.0]
-        oprob_1.ps[:dX] = dX_vals
-        oprob_1.ps[:dY] = [0.01]
-        rebuild_lat_internals!(oprob_1)
-
-        # Checks that simulations of the two `ODEProblem`s are identical.
-        @test solve(oprob_1, Rodas5P()) ≈ solve(oprob_2, Rodas5P())
-    end
-end
-
-# Checks that the `rebuild_lat_internals!` function is correctly applied to an integrator.
-# Does through by applying it within a callback, and compare to simulations without callback.
-# To keep test faster, only check for `jac = sparse = true` only.
-let
-    # Prepares problem inputs.
-    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_2, very_small_2d_cartesian_grid)
-    u0 = [:X => 1.0, :Y => [1.0 2.0; 3.0 4.0]]
-    A1 = 1.0
-    B1 = [4.0 5.0; 6.0 7.0]
-    A2 = [1.1 1.2; 1.3 1.4]
-    B2 = 5.0
-    dY_vals = spzeros(4,4)
-    dY_vals[1,2] = 0.1; dY_vals[2,1] = 0.1; 
-    dY_vals[1,3] = 0.2; dY_vals[3,1] = 0.2; 
-    dY_vals[2,4] = 0.3; dY_vals[4,2] = 0.3; 
-    dY_vals[3,4] = 0.4; dY_vals[4,3] = 0.4; 
-    dX_vals = spzeros(4,4)
-    dX_vals[1,2] = 0.01; dX_vals[2,1] = 0.01; 
-    dX_vals[1,3] = 0.02; dX_vals[3,1] = 0.02; 
-    dX_vals[2,4] = 0.03; dX_vals[4,2] = 0.03; 
-    dX_vals[3,4] = 0.04; dX_vals[4,3] = 0.04; 
-    dX1 = 0.1
-    dY1 = dY_vals
-    dX2 = dX_vals
-    dY2 = 0.01
-    ps_1 = [:A => A1, :B => B1, :dX => dX1, :dY => dY1]
-    ps_2 = [:A => A2, :B => B2, :dX => dX2, :dY => dY2]
-
-    # Creates simulation through two different separate simulations.
-    oprob_1_1 = ODEProblem(lrs, u0, (0.0, 5.0), ps_1; jac = true, sparse = true)
-    sol_1_1 = solve(oprob_1_1, Rosenbrock23(); saveat = 1.0, abstol = 1e-8, reltol = 1e-8)
-    u0_1_2 = [:X => sol_1_1.u[end][1:2:end], :Y => sol_1_1.u[end][2:2:end]]
-    oprob_1_2 = ODEProblem(lrs, u0_1_2, (0.0, 5.0), ps_2; jac = true, sparse = true)
-    sol_1_2 = solve(oprob_1_2, Rosenbrock23(); saveat = 1.0, abstol = 1e-8, reltol = 1e-8)
-
-    # Creates simulation through a single simulation with a callback
-    oprob_2 = ODEProblem(lrs, u0, (0.0, 10.0), ps_1; jac = true, sparse = true)
-    condition(u, t, integrator) = (t == 5.0)
-    function affect!(integrator)
-        integrator.ps[:A] = A2
-        integrator.ps[:B] = [B2]
-        integrator.ps[:dX] = dX2
-        integrator.ps[:dY] = [dY2]
-        rebuild_lat_internals!(integrator)
-    end
-    callback = DiscreteCallback(condition, affect!)
-    sol_2 = solve(oprob_2, Rosenbrock23(); saveat = 1.0, tstops = [5.0], callback, abstol = 1e-8, reltol = 1e-8)
-
-    # Check that trajectories are equivalent.
-    @test [sol_1_1.u; sol_1_2.u] ≈ sol_2.u
 end
 
 ### Tests Special Cases ###
@@ -778,4 +662,7 @@ let
     @test_throws ArgumentError ODEProblem(lrs, u0, tspan, [d1 => 1.0, D => bad_D_vals_1])
     bad_D_vals_2 = sparse([0.0 0.0 0.0 1.0; 1.0 0.0 1.0 0.0; 0.0 1.0 0.0 1.0; 1.0 0.0 0.0 0.0])
     @test_throws ArgumentError ODEProblem(lrs, u0, tspan, [d1 => 1.0, D => bad_D_vals_2])
+    @test_throws ArgumentError ODEProblem(lrs, u0, tspan, [d1 => 1.0])
+    @test_throws ArgumentError ODEProblem(lrs, [X1 => [1.0, 2.0, 3.0]], tspan, ps)
+    @test_throws ArgumentError ODEProblem(lrs, [X1 => ones(3,1)], tspan, ps)
 end

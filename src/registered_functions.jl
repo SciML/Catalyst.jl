@@ -140,7 +140,7 @@ end
 # it in its expanded form. If not, returns the input expression.
 function expand_catalyst_function(expr)
     is_catalyst_function(expr) || (return expr)
-    args = arguments(expr)
+    args = sorted_arguments(expr)
     if operation(expr) == Catalyst.mm
         return args[2] * args[1] / (args[1] + args[3])
     elseif operation(expr) == Catalyst.mmr

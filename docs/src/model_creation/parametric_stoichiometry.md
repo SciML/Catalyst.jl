@@ -7,7 +7,7 @@ use symbolic stoichiometries, and discuss several caveats to be aware of.
 Let's first consider a simple reversible reaction where the number of reactants
 is a parameter, and the number of products is the product of two parameters.
 ```@example s1
-using Catalyst, Latexify, OrdinaryDiffEq, ModelingToolkit, Plots
+using Catalyst, Latexify, OrdinaryDiffEqTsit5, ModelingToolkit, Plots
 revsys = @reaction_network revsys begin
     @parameters m::Int64 n::Int64
     k₊, m*A --> (m*n)*B
@@ -165,7 +165,7 @@ show(stdout, MIME"text/plain"(), equations(jsys)[4].rate) # hide
 equations(jsys)[4].affect!
 show(stdout, MIME"text/plain"(), equations(jsys)[4].affect!) # hide
 ```
-Finally, we can now simulate our jumpsystem
+Finally, we can now simulate our `JumpSystem`
 ```@example s1
 pmean = 200
 bval = 70
@@ -179,7 +179,7 @@ u₀ = symmap_to_varmap(jsys, [:G₊ => 1, :G₋ => 0, :P => 1])
 tspan = (0., 6.0)   # time interval to solve over
 dprob = DiscreteProblem(jsys, u₀, tspan, p)
 jprob = JumpProblem(jsys, dprob, Direct())
-sol = solve(jprob, SSAStepper())
+sol = solve(jprob)
 plot(sol.t, sol[jsys.P], legend = false, xlabel = "time", ylabel = "P(t)")
 ```
 To double check our results are consistent with MomentClosure.jl, let's
@@ -192,7 +192,7 @@ function getmean(jprob, Nsims, tv)
     Pmean = zeros(length(tv))
     @variables P(t)
     for n in 1:Nsims
-        sol = solve(jprob, SSAStepper())
+        sol = solve(jprob)
         Pmean .+= sol(tv, idxs=P)
     end
     Pmean ./= Nsims

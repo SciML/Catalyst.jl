@@ -6,11 +6,11 @@ using Catalyst, Test
 # Sets the default `t` to use.
 t = default_t()
 
-### Test Macro Basic Functionality  ### 
+### Test Macro Basic Functionality  ###
 
 # Miscellaneous basic usage.
 let
-    @species C(t) H(t) O(t) 
+    @species C(t) H(t) O(t)
     @parameters p1 p2
 
     # Basic cases that should pass:
@@ -50,7 +50,7 @@ let
 
     # Declares stuff in the DSL.
     rn = @reaction_network begin
-        @species N(t) H(t) 
+        @species N(t) H(t)
         @parameters p1 p2
         @compounds begin
             NH3_1 ~ N + 3H
@@ -80,7 +80,7 @@ let
 
     @test isequal([C, H, O], components(C6H12O2))
     @test isequal([6, 12, 2], coefficients(C6H12O2))
-    @test isequal([C => 6, H => 12, O => 2], Catalyst.component_coefficients(C6H12O2)) 
+    @test isequal([C => 6, H => 12, O => 2], Catalyst.component_coefficients(C6H12O2))
     @test all(!iscompound(i) for i in components(C6H12O2))
 end
 
@@ -95,15 +95,33 @@ let
 
     @test isequal([O], components(O2))
     @test isequal([2], coefficients(O2))
-    @test isequal([O => 2], Catalyst.component_coefficients(O2)) 
+    @test isequal([O => 2], Catalyst.component_coefficients(O2))
     @test all(!iscompound(i) for i in components(O2))
+end
+
+# Tests https://github.com/SciML/Catalyst.jl/issues/1151.
+# Checks that compounds are `Num` (and not BasicSymbolics).
+# Check that ModelingToolkit.get_variables! works on compounds.
+let
+    @species C(t) H(t) O(t)
+    @compounds begin
+        O₂ ~ 2O
+        CH₄ ~ C + 4H
+    end
+
+    @test O₂ isa Symbolics.Num
+    @test CH₄ isa Symbolics.Num
+    vars = []
+    ModelingToolkit.get_variables!(vars, O₂)
+    ModelingToolkit.get_variables!(vars, CH₄)
+    @test issetequal(vars, [O₂, CH₄])
 end
 
 ### Independent Variables ###
 
 # Test using different independent variable combinations.
 let
-    @variables x y z
+    @parameters x y z
     @species C(t) H(x) N(x) O(t) P(t,x) S(x,y)
 
     # Checks that wrong (or absent) independent variable produces errors.
@@ -112,20 +130,20 @@ let
     @test_throws Exception @eval @compound (H2O = 2.0) ~ 2H + O
     @test_throws Exception @eval @compound PH4(x) ~ P + 4H
     @test_throws Exception @eval @compound SO2(t,y) ~ S + 2O
-    
+
     # Creates compounds.
     @compound CO2 ~ C + 2O
     @compound (NH4, [output=true]) ~ N + 4H
     @compound (H2O(t,x) = 2.0) ~ 2H + O
     @compound PH4(t,x) ~ P + 4H
     @compound SO2(t,x,y) ~ S + 2O
-    
+
     # Checks they have the correct independent variables.
-    @test issetequal(arguments(ModelingToolkit.unwrap(CO2)), [t])
-    @test issetequal(arguments(ModelingToolkit.unwrap(NH4)), [x])
-    @test issetequal(arguments(ModelingToolkit.unwrap(H2O)), [t, x])
-    @test issetequal(arguments(ModelingToolkit.unwrap(PH4)), [t, x])
-    @test issetequal(arguments(ModelingToolkit.unwrap(SO2)), [t, x, y])
+    @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(CO2)), [t])
+    @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(NH4)), [x])
+    @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(H2O)), [t, x])
+    @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(PH4)), [t, x])
+    @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(SO2)), [t, x, y])
 end
 
 ### Interpolation Tests ###
@@ -200,7 +218,7 @@ let
 end
 
 # Case 5.
-let 
+let
     @species A(t)
     B = A
     @compound A2 ~ 2A
@@ -217,7 +235,7 @@ end
 ### Test @compounds Macro ###
 
 # Basic @compounds syntax.
-let 
+let
     @species C(t) H(t) O(t)
     @compound OH ~ 1O + 1H
     @compound C3H5OH3 ~ 3C + 5H + 3OH
@@ -239,7 +257,7 @@ let
 end
 
 # Interpolation in @compounds.
-let 
+let
     @species s1(t) s2(t) s3(t)
     s2_alt = s2
     s3_alt = s3
@@ -262,8 +280,8 @@ end
 # Checks that compounds cannot be created from non-existing species.
 let
     @species C(t) H(t)
-    @test_throws Exception @compound C6H12O2 ~ 6C + 12H + 2O    
-    @test_throws Exception @compound O2 ~ 2O    
+    @test_throws Exception @compound C6H12O2 ~ 6C + 12H + 2O
+    @test_throws Exception @compound O2 ~ 2O
 end
 
 # Checks that nested components works as expected.
@@ -292,7 +310,7 @@ end
 # Checks with a single compound.
 # Checks using @unpack.
 # Check where compounds and components does not occur in reactions.
-let 
+let
     rn = @reaction_network begin
         @species C(t) O(t)
         @compounds begin
@@ -300,17 +318,17 @@ let
         end
     end
     @unpack C, O, CO2 = rn
-    
+
     @test length(species(rn)) == 3
     @test iscompound(CO2)
     @test isequal([C, O], components(CO2))
     @test isequal([1, 2], coefficients(CO2))
-    @test isequal([C => 1, O => 2], component_coefficients(CO2)) 
+    @test isequal([C => 1, O => 2], component_coefficients(CO2))
 end
 
 # Test using multiple compounds.
 # Test using rn. notation to fetch species.
-let 
+let
     rn = @reaction_network begin
         @species C(t) O(t) H(t)
         @compounds begin
@@ -322,20 +340,20 @@ let
         k, CH4 + O2 --> CO2 + H2O
     end
     species(rn)
-    
+
     @test length(species(rn)) == 7
     @test isequal([rn.C, rn.H], components(rn.CH4))
     @test isequal([1, 4], coefficients(rn.CH4))
-    @test isequal([rn.C => 1, rn.H => 4], component_coefficients(rn.CH4)) 
+    @test isequal([rn.C => 1, rn.H => 4], component_coefficients(rn.CH4))
     @test isequal([rn.O], components(rn.O2))
     @test isequal([2], coefficients(rn.O2))
-    @test isequal([rn.O => 2], component_coefficients(rn.O2)) 
+    @test isequal([rn.O => 2], component_coefficients(rn.O2))
     @test isequal([rn.C, rn.O], components(rn.CO2))
     @test isequal([1, 2], coefficients(rn.CO2))
-    @test isequal([rn.C => 1, rn.O => 2], component_coefficients(rn.CO2)) 
+    @test isequal([rn.C => 1, rn.O => 2], component_coefficients(rn.CO2))
     @test isequal([rn.H, rn.O], components(rn.H2O))
     @test isequal([2, 1], coefficients(rn.H2O))
-    @test isequal([rn.H => 2, rn.O => 1], component_coefficients(rn.H2O)) 
+    @test isequal([rn.H => 2, rn.O => 1], component_coefficients(rn.H2O))
 end
 
 # Tests using compounds of compounds.
@@ -351,13 +369,13 @@ let
     end
     species(rn)
     @unpack S, O, SO2, S2O4 = rn
-    
+
     @test length(species(rn)) == 4
-    
+
     @test isequal([S, O], components(SO2))
     @test isequal([1, 2], coefficients(SO2))
-    @test isequal([S => 1, O => 2], component_coefficients(SO2)) 
+    @test isequal([S => 1, O => 2], component_coefficients(SO2))
     @test isequal([SO2], components(S2O4))
     @test isequal([2], coefficients(S2O4))
-    @test isequal([SO2 => 2], component_coefficients(S2O4)) 
+    @test isequal([SO2 => 2], component_coefficients(S2O4))
 end

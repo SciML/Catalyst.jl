@@ -204,7 +204,7 @@ let
     @test isequal(Catalyst.getmisc(get_rxs(rs_loaded.rs2)[5]), mat_md)
 
     # Checks that `ReactionSystem` metadata fields are correct.
-    @test isequal(get_metadata(rs_loaded), mat_md)
+    @test_broken isequal(get_metadata(rs_loaded), mat_md) # Issue in MTK: https://github.com/SciML/ModelingToolkit.jl/issues/3275
     @test isequal(get_metadata(rs_loaded.rs2), dict_md)
 end
 
@@ -213,7 +213,7 @@ end
 # Checks for system with non-default independent variable.
 let
     # Prepares parameters/variables/species with complicated dependencies.
-    @variables τ
+    @parameters τ
     @parameters begin
         b = 3.0
         c
@@ -513,6 +513,7 @@ let
         d, X --> 0, [misc = x -> 2x]
     end
     @test_throws Exception save_reactionsystem("test_serialisation.jl", rs)
+    rm("test_serialisation.jl")
 end
 
 # Test connection field.

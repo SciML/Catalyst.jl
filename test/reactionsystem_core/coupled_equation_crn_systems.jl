@@ -1,5 +1,5 @@
 # Fetch packages.
-using Catalyst, NonlinearSolve, OrdinaryDiffEq, Statistics, SteadyStateDiffEq, StochasticDiffEq, Test
+using Catalyst, NonlinearSolve, OrdinaryDiffEqVerner, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, Statistics, SteadyStateDiffEq, StochasticDiffEq, Test
 using ModelingToolkit: getdefault, getdescription, getdefault
 using Symbolics: BasicSymbolic, unwrap
 
@@ -182,7 +182,8 @@ end
 # The system is mostly made up to be non-trivial, but reliably solvable.
 let
     @parameters p d a b c
-    @variables τ A(τ) B(τ) C(τ)
+    @parameters τ
+    @variables A(τ) B(τ) C(τ)
     @species X(τ)
     Δ = Differential(τ)
     eqs = [
@@ -227,7 +228,7 @@ let
         Reaction(d, [X], []),
         Reaction(d, [X], nothing, [2], nothing),
         D(V) ~ X - v*V,
-        W^2 ~ log(V) + X 
+        W^2 ~ log(V) + X
     ]
     @named coupled_rs = ReactionSystem(eqs, t)
 
@@ -265,7 +266,8 @@ end
 # Checks that non-default iv is inferred correctly from reactions/equations.
 let
     # Create coupled model.
-    @variables τ A(τ) B(τ)
+    @parameters τ
+    @variables A(τ) B(τ)
     @species X(τ) X2(τ)
     @parameters k1 k2 k b1 b2
     D = Differential(τ)
@@ -454,7 +456,7 @@ end
 
 # Checks that a coupled SDE + algebraic equations works.
 # Checks that structural_simplify is required to simulate coupled SDE + algebraic equations.
-@test_broken let # SDEs are currently broken with structural simplify (https://github.com/SciML/ModelingToolkit.jl/issues/2614).
+let # SDEs are currently broken with structural simplify (https://github.com/SciML/ModelingToolkit.jl/issues/2614).
     # Creates coupled reactions system.
     @parameters p d k1 k2
     @species X(t)
@@ -478,7 +480,7 @@ end
     # Checks the algebraic equation holds.
     sprob = SDEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true)
     ssol = solve(sprob, ImplicitEM())
-    @test 2 .+ ps[:k1] * ssol[:A] == 3 .+ ps[:k2] * ssol[:X]
+    @test (2 .+ ps[k1] * ssol[:A]) ≈ (3 .+ ps[k2] * ssol[:X])
 end
 
 
@@ -607,7 +609,8 @@ let
 
     # Declares the model in a messy fashion, and simulates it.
     osol_messy = let
-        @variables τ M(τ) H(τ)=h_max
+        @parameters τ
+        @variables M(τ) H(τ)=h_max
         @species S(τ) I(τ) R(τ)
         Δ = Differential(τ)
         eqs_messy = [
@@ -972,7 +975,8 @@ end
 # Checks that various erroneous coupled system declarations yield errors.
 let
     @parameters p1 p2
-    @variables τ  U1(τ) V1(t)
+    @parameters τ
+    @variables U1(τ) V1(t)
     @species R1(τ) R2(τ) S1(t) S2(t)
     E = Differential(τ)
 
@@ -989,7 +993,7 @@ let
     # Equation with variable using non-declared independent variable.
     @test_throws Exception ReactionSystem([
         Reaction(p1, [S1], [S2]),
-        U1 ~ S1 + p2
+        E(U1) ~ S1 + p2
     ], t; name = :rs)
 
     # Differential with respect to non-declared independent variable.

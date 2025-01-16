@@ -373,4 +373,4 @@ It should be noted that the following symbols are *not permitted* to be used as 
 - `∅` ([used for production/degradation reactions](@ref dsl_description_symbols_empty_set)).
 - `im` (used in Julia to represent [complex numbers](https://docs.julialang.org/en/v1/manual/complex-and-rational-numbers/#Complex-Numbers)).
 - `nothing` (used in Julia to denote [nothing](https://docs.julialang.org/en/v1/base/constants/#Core.nothing)).
-- `Γ` (used by Catalyst to represent conserved quantities).
+- `Γ` (used by Catalyst to represent [conserved quantities](@ref constraint_equations)).

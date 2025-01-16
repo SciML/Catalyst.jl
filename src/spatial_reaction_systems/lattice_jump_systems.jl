@@ -142,13 +142,3 @@ end
 #     majpmapper = ModelingToolkit.JumpSysMajParamMapper(js, p; jseqs = eqs, rateconsttype = invttype)
 #     return ModelingToolkit.assemble_maj(eqs.x[1], statetoid, majpmapper)
 # end
-
-### Problem & Integrator Rebuilding ###
-
-# Currently not implemented.
-function rebuild_lat_internals!(dprob::DiscreteProblem)
-    error("Modification and/or rebuilding of `DiscreteProblem`s is currently not supported. Please create a new problem instead.")
-end
-function rebuild_lat_internals!(jprob::JumpProblem)
-    error("Modification and/or rebuilding of `JumpProblem`s is currently not supported. Please create a new problem instead.")
-end

@@ -1,7 +1,7 @@
 ### Fetch Packages and Set Global Variables ###
 
 # Fetch packages.
-using Catalyst, OrdinaryDiffEq, Test
+using Catalyst, Test
 using ModelingToolkit, DomainSets
 const MT = ModelingToolkit
 
@@ -19,7 +19,7 @@ end
 let
     t = default_t()
     @parameters k[1:7] D[1:3] n0[1:3] A
-    @variables x y
+    @parameters x y
     @species U(x, y, t) V(x, y, t) W(x, y, t)
     rxs = [Reaction(k[1], [U, W], [V, W]),
         Reaction(k[2], [V], [W], [2], [1]),

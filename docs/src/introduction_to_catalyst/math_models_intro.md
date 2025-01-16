@@ -28,11 +28,11 @@ with $\alpha^k = (\alpha_1^k,\dots,\alpha_M^k)$ its substrate stoichiometry vect
 
 As explained in [the Catalyst introduction](@ref introduction_to_catalyst), for a mass action reaction where the preceding reaction has a fixed rate constant, $k$, this function would be the rate law
 ```math
-a_k(\mathbf{X}(t)) = k \prod_{m=1}^M \frac{(X_m(t))^{\sigma_m^k}}{\sigma_m^k!},
+a_k(\mathbf{X}(t)) = k \prod_{m=1}^M \frac{(X_m(t))^{\alpha_m^k}}{\alpha_m^k!},
 ```
 for RRE ODE and CLE SDE models, and the propensity function
 ```math
-a_k(\mathbf{X}(t)) = k \prod_{m=1}^M \frac{X_m(t) (X_m(t)-1) \dots (X_m(t)-\sigma_m^k+1)}{\sigma_m^k!},
+a_k(\mathbf{X}(t)) = k \prod_{m=1}^M \frac{X_m(t) (X_m(t)-1) \dots (X_m(t)-\alpha_m^k+1)}{\alpha_m^k!},
 ```
 for stochastic chemical kinetics jump process models.
 
@@ -41,7 +41,7 @@ For the reaction $2A + B \overset{k}{\to} 3 C$ we would have
 ```math
 \mathbf{X}(t) = (A(t), B(t), C(t))
 ```
-with $\sigma_1 = 2$, $\sigma_2 = 1$, $\sigma_3 = 0$, $\beta_1 = 0$, $\beta_2 =
+with $\alpha_1 = 2$, $\alpha_2 = 1$, $\alpha_3 = 0$, $\beta_1 = 0$, $\beta_2 =
 0$, $\beta_3 = 3$, $\nu_1 = -2$, $\nu_2 = -1$, and $\nu_3 = 3$. For an ODE/SDE
 model we would have the rate law
 ```math
@@ -73,7 +73,7 @@ while the jump process propensity function is
 a(\mathbf{X}(t)) = k A (A-1) B.
 ```
 
-## Reaction Rate Equation (RRE) ODE Models
+## [Reaction Rate Equation (RRE) ODE Models](@id math_models_in_catalyst_rre_odes)
 The RRE ODE models Catalyst creates for a general system correspond to the coupled system of ODEs given by
 ```math
 \frac{d X_m}{dt} =\sum_{k=1}^K \nu_m^k a_k(\mathbf{X}(t),t), \quad m = 1,\dots,M.

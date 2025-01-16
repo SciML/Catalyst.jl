@@ -348,10 +348,30 @@ end
 MT.is_diff_equation(rx::Reaction) = false
 MT.is_alg_equation(rx::Reaction) = false
 
+# MTK functions for extracting variables within equation type object
+MT.eqtype_supports_collect_vars(rx::Reaction) = true
+function MT.collect_vars!(unknowns, parameters, rx::Reaction, iv; depth = 0,
+        op = MT.Differential)    
+
+    MT.collect_vars!(unknowns, parameters, rx.rate, iv; depth, op)
+
+    for items in (rx.substrates, rx.products, rx.substoich, rx.prodstoich)
+        for item in items
+            MT.collect_vars!(unknowns, parameters, item, iv; depth, op)
+        end
+    end
+
+    if hasnoisescaling(rx)
+        ns = getnoisescaling(rx)
+        MT.collect_vars!(unknowns, parameters, ns, iv; depth, op)
+    end
+    return nothing
+end
+
 """
     get_symbolics(set, rx::Reaction)
 
-Returns all symbolic variables that are part of a reaction. This includes all variables 
+Returns all symbolic variables that are part of a reaction. This includes all variables
 encountered in:
     - Rates.
     - Among substrates and products.
@@ -365,7 +385,7 @@ end
 """
     get_variables!(set, rx::Reaction)
 
-Adds all symbolic variables that are part of a reaction to set. This includes all variables 
+Adds all symbolic variables that are part of a reaction to set. This includes all variables
 encountered in:
     - Rates.
     - Among substrates and products.
@@ -412,7 +432,7 @@ function MT.modified_unknowns!(munknowns, rx::Reaction, sts::AbstractVector)
     munknowns
 end
 
-### `Reaction`-specific Functions ### 
+### `Reaction`-specific Functions ###
 
 """
     isbcbalanced(rx::Reaction)
@@ -461,9 +481,10 @@ function getmetadata_dict(reaction::Reaction)
 end
 
 """
-hasmetadata(reaction::Reaction, md_key::Symbol)
+    SymbolicUtils.hasmetadata(reaction::Reaction, md_key::Symbol)
 
-Checks if a `Reaction` have a certain metadata field. If it does, returns `true` (else returns `false`).
+Checks if a `Reaction` have a certain metadata field. If it does, returns `true` (else
+returns `false`).
 
 Arguments:
 - `reaction`: The reaction for which we wish to check if a specific metadata field exist.
@@ -475,14 +496,15 @@ reaction = @reaction k, 0 --> X, [description="Production reaction"]
 hasmetadata(reaction, :description)
 ```
 """
-function hasmetadata(reaction::Reaction, md_key::Symbol)
+function SymbolicUtils.hasmetadata(reaction::Reaction, md_key::Symbol)
     return any(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))
 end
 
 """
-getmetadata(reaction::Reaction, md_key::Symbol)
+    SymbolicUtils.getmetadata(reaction::Reaction, md_key::Symbol)
 
-Retrieves a certain metadata value from a `Reaction`. If the metadata does not exist, throws an error.
+Retrieves a certain metadata value from a `Reaction`. If the metadata does not exist, throws
+an error.
 
 Arguments:
 - `reaction`: The reaction for which we wish to retrieve a specific metadata value.
@@ -494,16 +516,37 @@ reaction = @reaction k, 0 --> X, [description="Production reaction"]
 getmetadata(reaction, :description)
 ```
 """
-function getmetadata(reaction::Reaction, md_key::Symbol)
-    if !hasmetadata(reaction, md_key)
-        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(getmetadata_dict(reaction))).")
-    end
+function SymbolicUtils.getmetadata(reaction::Reaction, md_key::Symbol)
     metadata = getmetadata_dict(reaction)
-    return metadata[findfirst(isequal(md_key, entry[1])
-    for entry in getmetadata_dict(reaction))][2]
+    idx = findfirst(isequal(md_key, entry[1]) for entry in metadata)
+    (idx === nothing) &&
+        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(first.(values(metadata))).")
+    return metadata[idx][2]
 end
 
-### Implemented Reaction Metadata ###
+"""
+    SymbolicUtils.setmetadata(rx::Reaction, key::Symbol, val)
+
+Sets the metadata with key `key` to the value `val`, overwriting if already present or
+adding if not present.
+
+Arguments:
+- `rx`: The reaction to add the metadata too.
+- `key`: `Symbol` representing the metadata's key (i.e. name).
+- `val`: value for the metadata.
+"""
+function SymbolicUtils.setmetadata(rx::Reaction, key::Symbol, val)
+    mdvec = getmetadata_dict(rx)
+    idx = findfirst(isequal(key, first(md)) for md in mdvec)
+    if idx === nothing
+        push!(mdvec, key => val)
+    else
+        mdvec[idx] = key => val
+    end
+    nothing
+end
+
+### Catalyst Defined Reaction Metadata ###
 
 # Noise scaling.
 """
@@ -622,10 +665,10 @@ getmisc(reaction)
 
 Notes:
 - The `misc` field can contain any valid Julia structure. This mean that Catalyst cannot check it
-for symbolic variables that are added here. This means that symbolic variables (e.g. parameters of 
-species) that are stored here are not accessible to Catalyst. This can cause troubles when e.g. 
+for symbolic variables that are added here. This means that symbolic variables (e.g. parameters of
+species) that are stored here are not accessible to Catalyst. This can cause troubles when e.g.
 creating a `ReactionSystem` programmatically (in which case any symbolic variables stored in the
-`misc` metadata field should also be explicitly provided to the `ReactionSystem` constructor). 
+`misc` metadata field should also be explicitly provided to the `ReactionSystem` constructor).
 
 """
 function getmisc(reaction::Reaction)

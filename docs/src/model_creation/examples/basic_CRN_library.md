@@ -18,7 +18,7 @@ nothing # hide
 ```
 We can now simulate our model using all three interpretations. First, we perform a reaction rate equation-based ODE simulation:
 ```@example crn_library_birth_death
-using OrdinaryDiffEq
+using OrdinaryDiffEqDefault
 oprob = ODEProblem(bd_process, u0, tspan, ps)
 osol = solve(oprob)
 nothing # hide
@@ -34,10 +34,10 @@ nothing # hide
 Next, a stochastic chemical kinetics-based jump simulation:
 ```@example crn_library_birth_death
 using JumpProcesses
-dprob = DiscreteProblem(bd_process, u0, tspan, ps)
-jprob = JumpProblem(bd_process, dprob, Direct())
-jsol = solve(jprob, SSAStepper())
-jsol = solve(jprob, SSAStepper(); seed = 12) # hide
+jinput = JumpInputs(bd_process, u0, tspan, ps)
+jprob = JumpProblem(jinput)
+jsol = solve(jprob)
+jsol = solve(jprob; seed = 12) # hide
 nothing # hide
 ```
 Finally, we plot the results:
@@ -52,14 +52,14 @@ plot(oplt, splt, jplt; lw = 3, size=(800,700), layout = (3,1))
 ## [Two-state model](@id basic_CRN_library_two_states)
 The two-state model describes a component (here called $X$) which can exist in two different forms (here called $X₁$ and $X₂$). It switches between these forms at linear rates. First, we simulate the model using both ODEs and SDEs:
 ```@example crn_library_two_states
-using Catalyst, OrdinaryDiffEq, StochasticDiffEq, Plots
+using Catalyst, OrdinaryDiffEqDefault, StochasticDiffEq, Plots
 two_state_model = @reaction_network begin
-    (k1,k2), X₁ <--> X₂
+    (k₁,k₂), X₁ <--> X₂
 end
 
 u0 = [:X₁ => 50.0, :X₂ => 50.0]
 tspan = (0.0, 1.0)
-ps = [:k1 => 2.0, :k2 => 3.0]
+ps = [:k₁ => 2.0, :k₂ => 3.0]
 
 oprob = ODEProblem(two_state_model, u0, tspan, ps)
 osol = solve(oprob)
@@ -96,7 +96,7 @@ u0 = [:S => 301, :E => 100, :SE => 0, :P => 0]
 tspan = (0., 100.)
 ps = [:kB => 0.00166, :kD => 0.0001, :kP => 0.1]
 
-using OrdinaryDiffEq
+using OrdinaryDiffEqDefault
 oprob = ODEProblem(mm_system, u0, tspan, ps)
 osol  = solve(oprob)
 
@@ -106,21 +106,19 @@ ssol = solve(sprob, STrapezoid())
 ssol = solve(sprob, STrapezoid(); seed = 12) # hide
 
 using JumpProcesses
-dprob = DiscreteProblem(mm_system, u0, tspan, ps)
-jprob = JumpProblem(mm_system, dprob, Direct())
-jsol = solve(jprob, SSAStepper())
-jsol = solve(jprob, SSAStepper(), seed = 12) # hide
+jinput = JumpInputs(mm_system, u0, tspan, ps)
+jprob = JumpProblem(jinput)
+jsol = solve(jprob)
+jsol = solve(jprob; seed = 12) # hide
 
 using Plots
 oplt = plot(osol; title = "Reaction rate equation (ODE)")
 splt = plot(ssol; title = "Chemical Langevin equation (SDE)")
 jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)")
 plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1))
-oplt = plot(osol; title = "Reaction rate equation (ODE)", plotdensity = 1000, fmt = :png) # hide
-splt = plot(ssol; title = "Chemical Langevin equation (SDE)", plotdensity = 1000, fmt = :png) # hide
-jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)", plotdensity = 1000, fmt = :png) # hide
-plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1), plotdensity = 1000, fmt = :png) # hide
-plot!(bottom_margin = 3Plots.Measures.mm) # hide
+fullplt = plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1), fmt = :png,
+    dpi = 200, bottom_margin = 3Plots.Measures.mm) # hide
+Catalyst.PNG(fullplt) # hide
 ```
 
 ## [SIR infection model](@id basic_CRN_library_sir)
@@ -134,7 +132,7 @@ end
 ```
 First, we perform a deterministic ODE simulation:
 ```@example crn_library_sir
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [:S => 99, :I => 1, :R => 0]
 tspan = (0.0, 500.0)
 ps = [:α => 0.001, :β => 0.01]
@@ -147,24 +145,22 @@ plot(osol; title = "Reaction rate equation (ODE)", size=(800,350))
 Next, we perform 3 different Jump simulations. Note that for the stochastic model, the occurrence of an outbreak is not certain. Rather, there is a possibility that it fizzles out without a noteworthy peak.
 ```@example crn_library_sir
 using JumpProcesses
-dprob = DiscreteProblem(sir_model, u0, tspan, ps)
-jprob = JumpProblem(sir_model, dprob, Direct(); save_positions = (false, false))
+jinput = JumpInputs(sir_model, u0, tspan, ps)
+jprob = JumpProblem(jinput)
 
-jsol1 = solve(jprob, SSAStepper(); saveat = 1.0)
-jsol2 = solve(jprob, SSAStepper(); saveat = 1.0)
-jsol3 = solve(jprob, SSAStepper(); saveat = 1.0)
-jsol1 = solve(jprob, SSAStepper(); saveat = 1.0, seed = 1) # hide
-jsol2 = solve(jprob, SSAStepper(); saveat = 1.0, seed = 2) # hide
-jsol3 = solve(jprob, SSAStepper(); saveat = 1.0, seed = 3) # hide
+jsol1 = solve(jprob)
+jsol2 = solve(jprob)
+jsol3 = solve(jprob)
+jsol1 = solve(jprob, seed = 1) # hide
+jsol2 = solve(jprob, seed = 2) # hide
+jsol3 = solve(jprob, seed = 3) # hide
 
 jplt1 = plot(jsol1; title = "Outbreak")
 jplt2 = plot(jsol2; title = "Outbreak")
 jplt3 = plot(jsol3; title = "No outbreak")
 plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1))
-jplt1 = plot(jsol1; title = "Outbreak", plotdensity = 1000, fmt = :png) # hide
-jplt2 = plot(jsol2; title = "Outbreak", plotdensity = 1000, fmt = :png) # hide
-jplt3 = plot(jsol3; title = "No outbreak", plotdensity = 1000, fmt = :png) # hide
-plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1), plotdensity = 1000, fmt = :png) # hide
+fullplt = plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1), fmt = :png, dpi = 200) # hide
+Catalyst.PNG(fullplt) # hide
 ```
 
 ## [Chemical cross-coupling](@id basic_CRN_library_cc)
@@ -183,10 +179,10 @@ Below, we perform a simple deterministic ODE simulation of the system. Next, we 
 
 In two separate plots.
 ```@example crn_library_cc
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [:S₁ => 1.0, :C => 0.05, :S₂ => 1.2, :S₁C => 0.0, :CP => 0.0, :P => 0.0]
 tspan = (0., 15.)
-ps = [:k₁ => 5.0, :k₂ => 5.0, :k₃ => 100.0] 
+ps = [:k₁ => 5.0, :k₂ => 5.0, :k₃ => 100.0]
 
 # solve ODEs
 oprob = ODEProblem(cc_system, u0, tspan, ps)
@@ -208,9 +204,9 @@ wilhelm_model = @reaction_network begin
     k4, X --> 0
 end
 ```
-We can simulate the model for two different initial conditions, demonstrating the existence of two different stable steady states. 
+We can simulate the model for two different initial conditions, demonstrating the existence of two different stable steady states.
 ```@example crn_library_wilhelm
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqDefault, Plots
 u0_1 = [:X => 1.5, :Y => 0.5]
 u0_2 = [:X => 2.5, :Y => 0.5]
 tspan = (0., 10.)
@@ -234,11 +230,11 @@ sa_loop = @reaction_network begin
     d, X --> ∅
 end
 ```
-A simple example of such a loop is a transcription factor which activates its own gene. Here, $v₀$ represents a basic transcription rate (leakage) in the absence of the transcription factor. 
+A simple example of such a loop is a transcription factor which activates its own gene. Here, $v₀$ represents a basic transcription rate (leakage) in the absence of the transcription factor.
 
 We simulate the self-activation loop from a single initial condition using both deterministic (ODE) and stochastic (jump) simulations. We note that while the deterministic simulation reaches a single steady state, the stochastic one switches between two different states.
 ```@example crn_library_self_activation
-using JumpProcesses, OrdinaryDiffEq, Plots
+using JumpProcesses, OrdinaryDiffEqDefault, Plots
 u0 = [:X => 4]
 tspan = (0.0, 1000.0)
 ps = [:v₀ => 0.1, :v => 2.0, :K => 10.0, :n => 2, :d => 0.1]
@@ -246,14 +242,16 @@ ps = [:v₀ => 0.1, :v => 2.0, :K => 10.0, :n => 2, :d => 0.1]
 oprob = ODEProblem(sa_loop, u0, tspan, ps)
 osol = solve(oprob)
 
-dprob = DiscreteProblem(sa_loop, u0, tspan, ps)
-jprob = JumpProblem(sa_loop, dprob, Direct(); save_positions = (false,false))
-jsol = solve(jprob, SSAStepper(); saveat = 10.0)
-jsol = solve(jprob, SSAStepper(); saveat = 10.0, seed = 12) # hide
+jinput = JumpInputs(sa_loop, u0, tspan, ps)
+jprob = JumpProblem(jinput)
+jsol = solve(jprob)
+jsol = solve(jprob, seed = 12) # hide
 
-plot(osol; lw = 3, label = "Reaction rate equation (ODE)")
-plot!(jsol; lw = 3, label = "Stochastic chemical kinetics (Jump)", yguide = "X", size = (800,350))
-plot!(bottom_margin = 3Plots.Measures.mm, left_margin=3Plots.Measures.mm) # hide
+fplt = plot(osol; lw = 3, label = "Reaction rate equation (ODE)")
+plot!(fplt, jsol; lw = 3, label = "Stochastic chemical kinetics (Jump)", yguide = "X", size = (800,350))
+plot!(fplt, bottom_margin = 3Plots.Measures.mm, left_margin=3Plots.Measures.mm) # hide
+plot!(fplt; fmt = :png, dpi = 200) # hide
+Catalyst.PNG(fplt) # hide
 ```
 
 ## [The Brusselator](@id basic_CRN_library_brusselator)
@@ -269,7 +267,7 @@ end
 ```
 It is generally known to (for reaction rate equation-based ODE simulations) produce oscillations when $B > 1 + A^2$. However, this result is based on models generated when *combinatorial adjustment of rates is not performed*. Since Catalyst [automatically perform these adjustments](@ref introduction_to_catalyst_ratelaws), and one reaction contains a stoichiometric constant $>1$, the threshold will be different. Here, we trial two different values of $B$. In both cases, $B < 1 + A^2$, however, in the second case the system can generate oscillations.
 ```@example crn_library_brusselator
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [:X => 1.0, :Y => 1.0]
 tspan = (0., 50.)
 ps1 = [:A => 1.0, :B => 1.0]
@@ -298,7 +296,7 @@ end
 ```
 Whether the Repressilator oscillates or not depends on its parameter values. Here, we will perform deterministic (ODE) simulations for two different values of $K$, showing that it oscillates for one value and not the other one. Next, we will perform stochastic (SDE) simulations for both $K$ values, showing that the stochastic model can sustain oscillations in both cases. This is an example of the phenomena of *noise-induced oscillation*.
 ```@example crn_library_brusselator
-using OrdinaryDiffEq, StochasticDiffEq, Plots
+using OrdinaryDiffEqDefault, StochasticDiffEq, Plots
 u0 = [:X => 50.0, :Y => 15.0, :Z => 15.0]
 tspan = (0., 200.)
 ps1 = [:v => 10.0, :K => 20.0, :n => 3, :d => 0.1]
@@ -339,7 +337,7 @@ end
 ```
 Here we simulate the model for a single initial condition, showing both time-state space and phase space how it reaches a [*strange attractor*](https://www.dynamicmath.xyz/strange-attractors/).
 ```@example crn_library_chaos
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [:X => 1.5, :Y => 1.5, :Z => 1.5]
 tspan = (0.0, 50.0)
 p = [:k1 => 2.1, :k2 => 0.7, :k3 => 2.9, :k4 => 1.1, :k5 => 1.0, :k6 => 0.5, :k7 => 2.7]

@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, DiffEqCallbacks, JumpProcesses, OrdinaryDiffEq, StochasticDiffEq, Test
+using Catalyst, DiffEqCallbacks, JumpProcesses, OrdinaryDiffEqTsit5, StochasticDiffEq, Test
 
 # Sets stable rng number.
 using StableRNGs
@@ -349,7 +349,7 @@ let
         @parameters e1=0 e2=0 e3=0
         @discrete_events begin
             [1.0] => [e1 ~ 1]
-            # 1.0 => [e2 ~ 1]
+            1.0 => [e2 ~ 1]
             (X > 1000.0) & (e3==0) => [e3 ~ 1]
         end
         (p,d), 0 <--> X
@@ -363,9 +363,8 @@ let
     sol = solve(jprob, SSAStepper(); seed)
 
     # Checks that all `e` parameters have been updated properly.
-    # Note that periodic discrete events are currently broken for jump processes (and unlikely to be fixed soon due to periodic callbacks using the internals of ODE integrator and Datastructures heap implementations).
     @test sol.ps[:e1] == 1
-    @test_broken sol.ps[:e2] == 1 # (https://github.com/SciML/JumpProcesses.jl/issues/417)
+    @test sol.ps[:e2] == 1 
     @test sol.ps[:e3] == 1
 end
 
@@ -440,8 +439,6 @@ let
     jprob = JumpProblem(rn, dprob, Direct(); rng)
     jprob_events = JumpProblem(rn_dics_events, dprob_events, Direct(); rng)
     sol = solve(jprob, SSAStepper(); seed, callback)
-    @test_broken let # (https://github.com/SciML/JumpProcesses.jl/issues/417)
-        sol_events = solve(jprob_events, SSAStepper(); seed)
-        @test sol == sol_events
-    end
+    sol_events = solve(jprob_events, SSAStepper(); seed)
+    @test_broken sol == sol_events  # seems to be not identical in the sample paths
 end

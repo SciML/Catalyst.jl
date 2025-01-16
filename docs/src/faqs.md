@@ -5,7 +5,7 @@ One can directly use symbolic variables to index into SciML solution objects.
 Moreover, observables can also be evaluated in this way. For example,
 consider the system
 ```@example faq1
-using Catalyst, OrdinaryDiffEq, Plots
+using Catalyst, OrdinaryDiffEqTsit5, Plots
 rn = @reaction_network ABtoC begin
   (k₊,k₋), A + B <--> C
 end
@@ -58,7 +58,7 @@ like
 plot(sol; idxs = [A, B])
 ```
 
-## How to disable rescaling of reaction rates in rate laws?
+## [How to disable rescaling of reaction rates in rate laws?](@id faq_combinatoric_ratelaws)
 As explained in the [Reaction rate laws used in simulations](@ref introduction_to_catalyst_ratelaws) section, for
 a reaction such as `k, 2X --> 0`, the generated rate law will rescale the rate
 constant, giving `k*X^2/2` instead of `k*X^2` for ODEs and `k*X*(X-1)/2` instead
@@ -70,6 +70,16 @@ osys = convert(ODESystem, rn; combinatoric_ratelaws=false)
 ```
 Disabling these rescalings should work for all conversions of `ReactionSystem`s
 to other `ModelingToolkit.AbstractSystem`s.
+
+When creating a [`ReactionSystem`](@ref) using the DSL, combinatoric rate laws can be disabled (for 
+the created system, and all systems derived from it) using the `@combinatoric_ratelaws` option (providing `false` as its only input):
+```@example faq1
+rn = @reaction_network begin
+    @combinatoric_ratelaws false
+    k, 2X --> 0
+end
+nothing # hide
+```
 
 ## How to use non-integer stoichiometric coefficients?
 ```@example faq2
@@ -122,7 +132,7 @@ When directly constructing a `ReactionSystem`, we can set the symbolic values to
 have the desired default values, and this will automatically be propagated
 through to the equation solvers:
 ```@example faq3
-using Catalyst, Plots, OrdinaryDiffEq
+using Catalyst, Plots, OrdinaryDiffEqTsit5
 t = default_t()
 @parameters β=1e-4 ν=.01
 @species S(t)=999.0 I(t)=1.0 R(t)=0.0
@@ -165,7 +175,7 @@ Julia `Symbol`s corresponding to each variable/parameter to their values, or
 from ModelingToolkit symbolic variables/parameters to their values. Using
 `Symbol`s we have
 ```@example faq4
-using Catalyst, OrdinaryDiffEq
+using Catalyst, OrdinaryDiffEqTsit5
 rn = @reaction_network begin
     α, S + I --> 2I
     β, I --> R
@@ -299,3 +309,16 @@ end
 In some cases, it may be necessary or desirable to register functions with
 Symbolics.jl before their use in Catalyst, see the discussion
 [here](https://symbolics.juliasymbolics.org/stable/manual/functions/).
+
+## How can I turn off automatic inferring of species and parameters when using the DSL?
+This option can be set using the `@require_declaration` option inside `@reaction_network`. In this case all the species, parameters, and variables in the system must be pre-declared using one of the `@species`, `@parameters`, or `@variables` macros. For more information about what is inferred automatically and not, please see the section on [`@require_declaration`](@ref dsl_advanced_options_require_dec).
+
+```@example faq9
+using Catalyst
+rn = @reaction_network begin
+    @require_declaration
+    @species A(t) B(t)
+    @parameters k1 k2
+    (k1, k2), A <--> B
+end
+```

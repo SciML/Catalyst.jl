@@ -100,7 +100,7 @@ end
 ```
 Next, if we simulate the model, we do not need to provide values for species or parameters that have default values. In this case all have default values, so both `u0` and `ps` can be empty vectors:
 ```@example dsl_advanced_defaults
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = []
 tspan = (0.0, 10.0)
 p = []
@@ -142,6 +142,7 @@ end
 ```
 Please note that as the parameter `X₀` does not occur as part of any reactions, Catalyst's DSL cannot infer whether it is a species or a parameter. This must hence be explicitly declared. We can now simulate our model while providing `X`'s value through the `X₀` parameter:
 ```@example dsl_advanced_defaults
+using OrdinaryDiffEqTsit5
 u0 = []
 p = [:X₀ => 1.0, :p => 1.0, :d => 0.5]
 oprob = ODEProblem(rn, u0, tspan, p)
@@ -204,7 +205,7 @@ ModelingToolkit.getdescription(two_state_system.kA)
 
 ### [Designating constant-valued/fixed species parameters](@id dsl_advanced_options_constant_species)
 
-Catalyst enables the designation of parameters as `constantspecies`. These parameters can be used as species in reactions, however, their values are not changed by the reaction and remain constant throughout the simulation (unless changed by e.g. the [occurrence of an event]@ref constraint_equations_events). Practically, this is done by setting the parameter's `isconstantspecies` metadata to `true`. Here, we create a simple reaction where the species `X` is converted to `Xᴾ` at rate `k`. By designating `X` as a constant species parameter, we ensure that its quantity is unchanged by the occurrence of the reaction.
+Catalyst enables the designation of parameters as `constantspecies`. These parameters can be used as species in reactions, however, their values are not changed by the reaction and remain constant throughout the simulation (unless changed by e.g. the [occurrence of an event](@ref constraint_equations_events). Practically, this is done by setting the parameter's `isconstantspecies` metadata to `true`. Here, we create a simple reaction where the species `X` is converted to `Xᴾ` at rate `k`. By designating `X` as a constant species parameter, we ensure that its quantity is unchanged by the occurrence of the reaction.
 ```@example dsl_advanced_constant_species
 using Catalyst # hide
 rn = @reaction_network begin
@@ -256,13 +257,13 @@ Sometimes, one wishes to declare a large number of similar parameters or species
 using Catalyst # hide
 two_state_model = @reaction_network begin
     @parameters k[1:2]
-    @species X(t)[1:2]
+    @species (X(t))[1:2]
     (k[1],k[2]), X[1] <--> X[2]
 end
 ```
 Now, we can also declare our initial conditions and parameter values as vectors as well:
 ```@example dsl_advanced_vector_variables
-using OrdinaryDiffEq, Plots # hide
+using OrdinaryDiffEqDefault, Plots # hide
 u0 = [:X => [0.0, 2.0]]
 tspan = (0.0, 1.0)
 ps = [:k => [1.0, 2.0]]
@@ -270,6 +271,40 @@ oprob = ODEProblem(two_state_model, u0, tspan, ps)
 sol = solve(oprob)
 plot(sol)
 ```
+
+### [Turning off species, parameter, and variable inference](@id dsl_advanced_options_require_dec)
+In some cases it may be desirable for Catalyst to not infer species and parameters from the DSL, as in the case of reaction networks with very many variables, or as a sanity check that variable names are written correctly. To turn off inference, simply use the `@require_declaration` option when using the `@reaction_network` DSL. This will require every single variable, species, or parameter used within the DSL to be explicitly declared using the `@variable`, `@species`, or `@parameter` options. In the case that the DSL parser encounters an undeclared symbolic, it will error with an `UndeclaredSymbolicError` and print the reaction or equation that the undeclared symbolic was found in. 
+
+```julia
+using Catalyst
+rn = @reaction_network begin
+    @require_declaration
+    (k1, k2), A <--> B
+end
+```
+Running the code above will yield the following error: 
+```
+LoadError: UndeclaredSymbolicError: Unrecognized variables A detected in reaction expression: "((k1, k2), A <--> B)". Since the flag @require_declaration is declared, all species must be explicitly declared with the @species macro.
+```
+In order to avoid the error in this case all the relevant species and parameters will have to be declared.
+```@example dsl_advanced_require_dec
+# The following case will not error. 
+using Catalyst
+t = default_t()
+rn = @reaction_network begin
+    @require_declaration
+    @species A(t) B(t)
+    @parameters k1 k2
+    (k1, k2), A <--> B
+end
+```
+
+The following cases in which the DSL would normally infer variables will all throw errors if `@require_declaration` is set and the variables are not explicitly declared.
+- Occurrence of an undeclared species in a reaction, as in the example above.
+- Occurrence of an undeclared parameter in a reaction rate expression, as in the reaction line `k*n, A --> B`.
+- Occurrence of an undeclared parameter in the stoichiometry of a species, as in the reaction line `k, n*A --> B`.
+- Occurrence of an undeclared differential variable on the LHS of a coupled differential equation, as in `A` in `@equations D(A) ~ A^2`.
+- Occurrence of an undeclared [observable](@ref dsl_advanced_options_observables) in an `@observables` expression, such as `@observables X1 ~ A + B`.
 
 ## [Naming reaction networks](@id dsl_advanced_options_naming)
 Each reaction network model has a name. It can be accessed using the `nameof` function. By default, some generic name is used:
@@ -332,7 +367,7 @@ end
 ```
 We can now simulate our model using normal syntax (initial condition values for observables should not, and can not, be provided):
 ```@example dsl_advanced_observables
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 u0 = [:X => 1.0, :Y => 2.0, :XY => 0.0]
 tspan = (0.0, 10.0)
 ps = [:kB => 1.0, :kD => 1.5]
@@ -464,6 +499,8 @@ rx = @reaction p, 0 --> X, [description="A production reaction"]
 Catalyst.getdescription(rx)
 ```
 
+A list of all available reaction metadata can be found [in the api](@ref api_rx_metadata).
+
 ## [Working with symbolic variables and the DSL](@id dsl_advanced_options_symbolics_and_DSL)
 We have previously described how Catalyst represents its models symbolically (enabling e.g. symbolic differentiation of expressions stored in models). While Catalyst utilises this for many internal operation, these symbolic representations can also be accessed and harnessed by the user. Primarily, doing so is much easier during programmatic (as opposed to DSL-based) modelling. Indeed, the section on [programmatic modelling](@ref programmatic_CRN_construction) goes into more details about symbolic representation in models, and how these can be used. It is, however, also ways to utilise these methods during DSL-based modelling. Below we briefly describe two methods for doing so.
 
@@ -487,7 +524,7 @@ X
 ```
 Next, we can now use these to e.g. designate initial conditions and parameter values for model simulations:
 ```@example dsl_advanced_programmatic_unpack
-using OrdinaryDiffEq, Plots # hide
+using OrdinaryDiffEqDefault, Plots # hide
 u0 = [X => 0.1]
 tspan = (0.0, 10.0)
 ps = [p => 1.0, d => 0.2]
@@ -537,3 +574,37 @@ nothing # hide
 
 !!! note
     When using interpolation, expressions like `2$spec` won't work; the multiplication symbol must be explicitly included like `2*$spec`.
+
+## [Disabling mass action for reactions](@id dsl_advanced_options_disable_ma)
+
+As [described previously](@ref math_models_in_catalyst_rre_odes), Catalyst uses *mass action kinetics* to generate ODEs from reactions. Here, each reaction generates a term for each of its reactants, which consists of the reaction's rate, substrates, and the reactant's stoichiometry. E.g. the following reaction:
+```@example dsl_advanced_disable_ma
+using Catalyst # hide
+rn = @reaction_network begin
+  k, X --> ∅
+end
+```
+generates a single term $-k*[X]$:
+```@example dsl_advanced_disable_ma
+using Latexify
+latexify(rn; form = :ode)
+```
+
+It is possible to remove the substrate contribution by using any of the following non-filled arrows when declaring the reaction: `<=`, `⇐`, `⟽`, `=>`, `⇒`, `⟾`, `⇔`, `⟺`. This means that the reaction
+```@example dsl_advanced_disable_ma
+rn = @reaction_network begin
+  k, X => ∅
+end
+latexify(rn; form = :ode)
+```
+will occur at rate $d[X]/dt = -k$ (which might become a problem since $[X]$ will be degraded at a constant rate even when very small or equal to 0). This functionality allows the user to fully customise the ODEs generated by their models. 
+
+Note, stoichiometric coefficients are still included, i.e. the reaction
+```@example dsl_advanced_disable_ma
+rn = @reaction_network begin
+  k, 2*X ⇒ ∅
+end
+latexify(rn; form = :ode)
+```
+has rate $d[X]/dt = -2 k$.
+

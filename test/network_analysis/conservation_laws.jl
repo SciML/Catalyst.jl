@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, JumpProcesses, LinearAlgebra, NonlinearSolve, OrdinaryDiffEq, SteadyStateDiffEq, StochasticDiffEq, Test
+using Catalyst, JumpProcesses, LinearAlgebra, NonlinearSolve, OrdinaryDiffEqTsit5, OrdinaryDiffEqDefault, OrdinaryDiffEqVerner, SteadyStateDiffEq, StochasticDiffEq, Test
 
 # Sets stable rng number.
 using StableRNGs
@@ -343,7 +343,7 @@ end
 let 
     # Prepares the model.
     t = default_t()
-    @species X(t)[1:2]
+    @species (X(t))[1:2]
     @parameters k[1:2]
     rxs = [
         Reaction(k[1], [X[1]], [X[2]]),

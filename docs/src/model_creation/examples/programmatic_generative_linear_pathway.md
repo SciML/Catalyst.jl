@@ -56,7 +56,7 @@ nothing # hide
 ```
 Next, we prepare an ODE for each model (scaling the initial concentration of $X_0$ and the value of $\tau$ appropriately for each model).
 ```@example programmatic_generative_linear_pathway_dsl
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqDefault, Plots
 u0_n3 = [:X0 => 3*1.0, :X1 => 0.0, :X2 => 0.0, :X3 => 0.0]
 ps_n3 = [:τ => 1.0/3]
 oprob_n3 = ODEProblem(lp_n3, u0_n3, (0.0, 5.0), ps_n3)
@@ -84,7 +84,7 @@ t = default_t()
 @parameters τ
 function generate_lp(n)
     # Creates a vector `X` with n+1 species.
-    @species X(t)[1:n+1]
+    @species (X(t))[1:n+1]
     @species Xend(t)
 
     # Generate
@@ -117,7 +117,7 @@ nothing # hide
 ```
 We can now simulate linear pathways of arbitrary lengths using a simple syntax. We use this to recreate our previous result from the DSL:
 ```@example programmatic_generative_linear_pathway_generative
-using OrdinaryDiffEq, Plots # hide
+using OrdinaryDiffEqDefault, Plots # hide
 sol_n3 = solve(generate_oprob(3))
 sol_n10 = solve(generate_oprob(10))
 plot(sol_n3; idxs = :Xend, label = "n = 3")

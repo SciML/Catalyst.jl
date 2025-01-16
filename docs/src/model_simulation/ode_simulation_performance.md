@@ -15,7 +15,7 @@ Generally, ODE problems can be categorised into [*stiff ODEs* and *non-stiff ODE
 
 Here we simulate the (stiff) [Brusselator](@ref basic_CRN_library_brusselator) model using the `Tsit5` solver (which is designed for non-stiff ODEs):
 ```@example ode_simulation_performance_1
-using Catalyst, OrdinaryDiffEq, Plots
+using Catalyst, OrdinaryDiffEqTsit5, Plots
 
 brusselator = @reaction_network begin
     A, ∅ --> X
@@ -31,7 +31,7 @@ oprob = ODEProblem(brusselator, u0, tspan, ps)
 
 sol1 = solve(oprob, Tsit5())
 plot(sol1)
-plot(sol1, plotdensity = 1000, fmt = :png) # hide
+Catalyst.PNG(plot(sol1; fmt = :png, dpi = 200)) # hide
 ```
 
 We get a warning, indicating that the simulation was terminated. Furthermore, the resulting plot ends at $t ≈ 12$, meaning that the simulation was not completed (as the simulation's endpoint is $t = 20$). Indeed, we can confirm this by checking the *return code* of the solution object:
@@ -40,13 +40,14 @@ sol1.retcode
 ```
 Next, we instead try the `Rodas5P` solver (which is designed for stiff problems):
 ```@example ode_simulation_performance_1
+using OrdinaryDiffEqRosenbrock
 sol2 = solve(oprob, Rodas5P())
 plot(sol2)
-``` 
+```
 This time the simulation was successfully completed, which can be confirmed by checking the return code:
 ```@example ode_simulation_performance_1
 sol2.retcode
-``` 
+```
 
 Generally, ODE solvers can be divided into [*explicit* and *implicit* solvers](https://en.wikipedia.org/wiki/Explicit_and_implicit_methods). Roughly, explicit solvers are better for non-stiff problems, with implicit solvers being required for stiff problems. While we could use implicit solvers for all problems (to guarantee successful simulations irrespective of stiffness), these are typically less performant (as compared to the explicit solvers) on equations that are non-stiff. An important property of implicit solvers is that they require the *computation of a [Jacobian](https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant)* as part of their routine. This means that the various options for efficient Jacobian computation [described later in this tutorial](@ref ode_simulation_performance_jacobian) are only relevant to implicit solvers.
 
@@ -56,7 +57,7 @@ Finally, we should note that stiffness is not tied to the model equations only. 
 ## [ODE solver selection](@id ode_simulation_performance_solvers)
 OrdinaryDiffEq implements an unusually large number of ODE solvers, with the performance of the simulation heavily depending on which one is chosen. These are provided as the second argument to the `solve` command, e.g. here we use the `Tsit5` solver to simulate a simple [birth-death process](@ref basic_CRN_library_bd):
 ```@example ode_simulation_performance_2
-using Catalyst, OrdinaryDiffEq
+using Catalyst, OrdinaryDiffEqTsit5
 
 bd_model = @reaction_network begin
     (p,d), 0 <--> X
@@ -68,17 +69,20 @@ ps = [:p => 1.0, :d => 0.2]
 oprob = ODEProblem(bd_model, u0, tspan, ps)
 solve(oprob, Tsit5())
 nothing # hide
-``` 
-If no solver argument is provided to `solve`, one is automatically selected:
+```
+If no solver argument is provided to `solve`, and the `OrdinaryDiffEqDefault` sub-library or meta `OrdinaryDiffEq` library are loaded, then one is automatically selected:
 ```@example ode_simulation_performance_2
+using OrdinaryDiffEqDefault
 solve(oprob)
 nothing # hide
-``` 
+```
+
 While the default choice is typically enough for most single simulations, if performance is important, it can be worthwhile exploring the available solvers to find one that is especially suited for the given problem. A complete list of possible ODE solvers, with advice on optimal selection, can be found [here](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/). This section will give some general advice.
 
 The most important part of solver selection is to select one appropriate for [the problem's stiffness](@ref ode_simulation_performance_stiffness). Generally, the `Tsit5` solver is good for non-stiff problems, and `Rodas5P` for stiff problems. For large stiff problems (with many species), `FBDF` can be a good choice. We can illustrate the impact of these choices by simulating our birth-death process using the `Tsit5`, `Vern7` (an explicit solver yielding [low error in the solution](@ref ode_simulation_performance_error)), `Rodas5P`, and `FBDF` solvers (benchmarking their respective performance using [BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl)):
 ```julia
-using BenchmarkTools
+using BenchmarkTools 
+using OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, OrdinaryDiffEqVerner, OrdinaryDiffEqBDF
 @btime solve(oprob, Tsit5())
 @btime solve(oprob, Vern7())
 @btime solve(oprob, Rodas5P())
@@ -93,7 +97,7 @@ Numerical ODE simulations [approximate an ODEs' continuous solutions as discrete
 @btime solve(oprob, Tsit5(); abstol=1e-12, reltol=1e-12)
 ```
 It should be noted, however, that the result of the second simulation is a lot more accurate. Thus, ODE solver performance cannot be determined solely from run time, but is a composite of run
-time and error. Benchmarks comparing solver performance (by plotting the run time as a function of the error) for various CRN models can be found in the [SciMLBenchmarks repository](https://docs.sciml.ai/SciMLBenchmarksOutput/stable/Bio/BCR/). 
+time and error. Benchmarks comparing solver performance (by plotting the run time as a function of the error) for various CRN models can be found in the [SciMLBenchmarks repository](https://docs.sciml.ai/SciMLBenchmarksOutput/stable/Bio/BCR/).
 
 Generally, whether solution error is a consideration depends on the application. If you want to compute the trajectory of an expensive space probe as it is sent from Earth, to slingshot Jupiter, and then reach Pluto a few years later, ensuring a minimal error will be essential. However, if you want to simulate a simple CRN to determine whether it oscillates for a given parameter set, a small error will not constitute a problem. An important aspect with regard to error is that it affects the selection of the optimal solver. E.g. if tolerance is low (generating larger errors) the `Rosenbrock23` method performs well for small, stiff, problems (again, more details can be found in [OrdinaryDiffEq's documentation](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/)).
 
@@ -106,7 +110,7 @@ By default, OrdinaryDiffEq computes the Jacobian using [*automatic differentiati
 
 To use this option, simply set `jac = true` when constructing an `ODEProblem`:
 ```@example ode_simulation_performance_3
-using Catalyst, OrdinaryDiffEq
+using Catalyst, OrdinaryDiffEqDefault
 
 brusselator = @reaction_network begin
     A, ∅ --> X
@@ -132,18 +136,18 @@ nothing # hide
 ### [Linear solver selection](@id ode_simulation_performance_symbolic_jacobian_linear_solver)
 When implicit solvers use e.g. the Newton-Raphson method to (at each simulation time step) solve a (typically non-linear) equation, they actually solve a linearised version of this equation. For this, they use a linear solver, the choice of which can impact performance. To specify one, we use the `linsolve` option (given to the solver function, *not* the `solve` command). E.g. to use the `KLUFactorization` linear solver (which requires loading the [LinearSolve.jl](https://github.com/SciML/LinearSolve.jl) package) we run
 ```@example ode_simulation_performance_3
-using LinearSolve
+using LinearSolve, OrdinaryDiffEqRosenbrock
 solve(oprob, Rodas5P(linsolve = KLUFactorization()))
 nothing # hide
 ```
-A full list of potential linear solvers can be found [here](https://docs.sciml.ai/LinearSolve/dev/solvers/solvers/#Full-List-of-Methods). Typically, the default choice performs well. 
+A full list of potential linear solvers can be found [here](https://docs.sciml.ai/LinearSolve/dev/solvers/solvers/#Full-List-of-Methods). Typically, the default choice performs well.
 
 A unique approach to the linear solvers is to use a *matrix-free Newton-Krylov method*. These do not actually compute the Jacobian, but rather *the effect of multiplying it with a vector*. They are typically advantageous for large systems (with large Jacobians), and can be designated using the `KrylovJL_GMRES` linear solver:
 ```@example ode_simulation_performance_3
 solve(oprob, Rodas5P(linsolve = KrylovJL_GMRES()))
 nothing # hide
 ```
-Since these methods do not depend on a Jacobian, certain Jacobian options (such as [computing it symbolically](@ref ode_simulation_performance_symbolic_jacobian)) are irrelevant to them. 
+Since these methods do not depend on a Jacobian, certain Jacobian options (such as [computing it symbolically](@ref ode_simulation_performance_symbolic_jacobian)) are irrelevant to them.
 
 ### [Designating preconditioners for Jacobian-free linear solvers](@id ode_simulation_performance_preconditioners)
 When an implicit method solves a linear equation through an (iterative) matrix-free Newton-Krylov method, the rate of convergence depends on the numerical properties of the matrix defining the linear system. To speed up convergence, a [*preconditioner*](https://en.wikipedia.org/wiki/Preconditioner) can be applied to both sides of the linear equation, attempting to create an equation that converges faster. Preconditioners are only relevant when using matrix-free Newton-Krylov methods.
@@ -171,8 +175,28 @@ Finally, we note that when using preconditioners with a matrix-free method (like
 Generally, the use of preconditioners is only recommended for advanced users who are familiar with the concepts. However, for large systems, if performance is essential, they can be worth looking into.
 
 
+## [Elimination of system conservation laws](@id ode_simulation_performance_conservation_laws)
+Previously, we have described how Catalyst, when it generates ODEs, is able to [detect and eliminate conserved quantities](@ref conservation_laws). In certain cases, doing this can improve performance. E.g. in the following example we will eliminate the single conserved quantity in a [two-state model](@ref basic_CRN_library_two_states). This results in a differential algebraic equation with a single differential equation and a single algebraic equation (as opposed to two differential equations). However, as the algebraic equation is fully determined by the ODE solution, Catalyst moves it to be an observable and our new system therefore only contains one ODE that must be solved numerically. Conservation laws can be eliminated by providing the `remove_conserved = true` option to `ODEProblem`:
+```@example ode_simulation_performance_conservation_laws
+using Catalyst, OrdinaryDiffEqTsit5
+
+# Declare model.
+rs = @reaction_network begin
+    (k₁,k₂), X₁ <--> X₂
+end
+
+# Generate and simulate and ODE (while eliminating any conserved quantities).
+u0 = [:X₁ => 2.0, :X₂ => 3.0]
+ps = [:k₁ => 1.0, :k₂ => 2.0]
+oprob = ODEProblem(rs, u0, (0.0, 10.0), ps; remove_conserved = true)
+sol = solve(oprob)
+nothing # hide
+```
+Conservation law elimination is not expected to ever impact performance negatively; it simply results in a (possibly) lower-dimensional system of ODEs to solve. However, eliminating conserved species may have minimal performance benefits; it is model-dependent whether elimination results in faster ODE solving times and/or increased solution accuracy.
+
+
 ## [Parallelisation on CPUs and GPUs](@id ode_simulation_performance_parallelisation)
-Whenever an ODE is simulated a large number of times (e.g. when investigating its behaviour for different parameter values), the best way to improve performance is to [parallelise the simulation over multiple processing units](https://en.wikipedia.org/wiki/Parallel_computing). Indeed, an advantage of the Julia programming language is that it was designed after the advent of parallel computing, making it well-suited for this task. Roughly, parallelisation can be divided into parallelisation on [CPUs](https://en.wikipedia.org/wiki/Central_processing_unit) and on [GPUs](https://en.wikipedia.org/wiki/General-purpose_computing_on_graphics_processing_units). CPU parallelisation is most straightforward, while GPU parallelisation requires specialised ODE solvers (which Catalyst have access to). 
+Whenever an ODE is simulated a large number of times (e.g. when investigating its behaviour for different parameter values), the best way to improve performance is to [parallelise the simulation over multiple processing units](https://en.wikipedia.org/wiki/Parallel_computing). Indeed, an advantage of the Julia programming language is that it was designed after the advent of parallel computing, making it well-suited for this task. Roughly, parallelisation can be divided into parallelisation on [CPUs](https://en.wikipedia.org/wiki/Central_processing_unit) and on [GPUs](https://en.wikipedia.org/wiki/General-purpose_computing_on_graphics_processing_units). CPU parallelisation is most straightforward, while GPU parallelisation requires specialised ODE solvers (which Catalyst have access to).
 
 Both CPU and GPU parallelisation require first building an `EnsembleProblem` (which defines the simulations you wish to perform) and then supplying this with the correct parallelisation options. `EnsembleProblem`s have [previously been introduced in Catalyst's documentation](@ref ensemble_simulations) (but in the context of convenient bundling of similar simulations, rather than to improve performance), with a more throughout description being found in [OrdinaryDiffEq's documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#ensemble). Finally, a general documentation of parallel computing in Julia is available [here](https://docs.julialang.org/en/v1/manual/parallel-computing/).
 
@@ -189,7 +213,7 @@ end
 ```
 The model can be simulated, showing how $P$ is produced from $S$:
 ```@example ode_simulation_performance_4
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqTsit5, Plots
 u0 = [:S => 1.0, :E => 1.0, :SE => 0.0, :P => 0.0]
 tspan = (0.0, 50.0)
 ps = [:kB => 1.0, :kD => 0.1, :kP => 0.5, :d => 0.1]
@@ -212,7 +236,7 @@ and output the `ODEProblem` simulated in the i'th simulation.
 
 Let us assume that we wish to simulate our model 100 times, for $kP = 0.01, 0.02, ..., 0.99, 1.0$. We define our `prob_func` using [`remake`](@ref simulation_structure_interfacing_problems_remake):
 ```@example ode_simulation_performance_4
-function prob_func(prob, i, repeat) 
+function prob_func(prob, i, repeat)
     return remake(prob; p = [:kP => 0.01*i])
 end
 nothing # hide
@@ -276,7 +300,7 @@ Which backend package you should use depends on your available hardware, with th
 
 Next, we declare our model and `ODEProblem`. However, we make all values `Float64` (by appending `f0` to them) and all vectors static (by adding `@SVector` before their declaration, something which requires the [StaticArrays](https://github.com/JuliaArrays/StaticArrays.jl) package).
 ```@example ode_simulation_performance_5
-using Catalyst, OrdinaryDiffEq, StaticArrays
+using Catalyst, OrdinaryDiffEqDefault, StaticArrays
 
 mm_model = @reaction_network begin
     kB, S + E --> SE
@@ -286,7 +310,7 @@ mm_model = @reaction_network begin
 end
 @unpack S, E, SE, P, kB, kD, kP, d = mm_model
 
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = @SVector [S => 1.0f0, E => 1.0f0, SE => 0.0f0, P => 0.0f0]
 tspan = (0.0f0, 50.0f0)
 p = @SVector [kB => 1.0f0, kD => 0.1f0, kP => 0.5f0, d => 0.1f0]
@@ -295,7 +319,7 @@ nothing # hide
 ```
 When we declare our `prob_func` and `EnsembleProblem` we need to ensure that the updated `ODEProblem` uses `Float32`:
 ```@example ode_simulation_performance_5
-function prob_func(prob, i, repeat) 
+function prob_func(prob, i, repeat)
     return remake(prob; p = [:kP => 0.0001f0*i])
 end
 eprob = EnsembleProblem(oprob; prob_func = prob_func)

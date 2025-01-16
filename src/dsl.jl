@@ -11,7 +11,7 @@ const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔
 # Declares the keys used for various options.
 const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables,
     :default_noise_scaling, :differentials, :equations,
-    :continuous_events, :discrete_events, :combinatoric_ratelaws)
+    :continuous_events, :discrete_events, :combinatoric_ratelaws, :require_declaration)
 
 ### `@species` Macro ###
 
@@ -193,13 +193,14 @@ struct ReactionInternal
     products::Vector{ReactantInternal}
     rate::ExprValues
     metadata::Expr
+    rxexpr::Expr
 
     function ReactionInternal(sub_line::ExprValues, prod_line::ExprValues,
             rate::ExprValues, metadata_line::ExprValues)
         subs = recursive_find_reactants!(sub_line, 1, Vector{ReactantInternal}(undef, 0))
         prods = recursive_find_reactants!(prod_line, 1, Vector{ReactantInternal}(undef, 0))
         metadata = extract_metadata(metadata_line)
-        new(subs, prods, rate, metadata)
+        new(sub, prod, rate, metadata, rx_line)
     end
 end
 
@@ -270,6 +271,17 @@ function extract_metadata(metadata_line::Expr)
         push!(metadata.args, :($(QuoteNode(arg.args[1])) => $(arg.args[2])))
     end
     return metadata
+end
+
+
+
+struct UndeclaredSymbolicError <: Exception
+    msg::String
+end
+
+function Base.showerror(io::IO, err::UndeclaredSymbolicError) 
+    print(io, "UndeclaredSymbolicError: ")
+    print(io, err.msg)
 end
 
 ### DSL Internal Master Function ###
@@ -353,15 +365,20 @@ function make_reaction_system(ex::Expr, name)
         $compound_expr
         $diffexpr
 
-        Catalyst.remake_ReactionSystem_internal(
-            Catalyst.make_ReactionSystem_internal(
-                $rxsexprs, $tiv, setdiff(union($spsvar, $vsvar, $compsvar), $obs_syms),
-                $psvar; name = $name, spatial_ivs = $sivs, observed = $observed_eqs,
-                continuous_events = $continuous_events_expr,
-                discrete_events = $discrete_events_expr,
+        sivs_vec = $sivs
+        rx_eq_vec = $rxexprs
+        vars = setdiff(union($spssym, $varssym, $compssym), $obs_syms)
+        obseqs = $observed_eqs
+        cevents = $continuous_events_expr
+        devents = $discrete_events_expr
+
+        remake_ReactionSystem_internal(
+            make_ReactionSystem_internal(
+                rx_eq_vec, $tiv, vars, $pssym;
+                name = $name, spatial_ivs = sivs_vec, observed = obseqs,
+                continuous_events = cevents, discrete_events = devents,
                 combinatoric_ratelaws = $combinatoric_ratelaws);
-            default_reaction_metadata = $default_reaction_metadata
-        )
+            default_reaction_metadata = $default_reaction_metadata)
     end
 end
 
@@ -383,17 +400,17 @@ function get_reactions(exprs::Vector{Expr})
                 error("Error: Must provide a tuple of reaction rates when declaring a bi-directional reaction.")
             end
             push_reactions!(reactions, reaction.args[2], reaction.args[3],
-                rate.args[1], metadata.args[1], arrow)
+                rate.args[1], metadata.args[1], arrow, line)
             push_reactions!(reactions, reaction.args[3], reaction.args[2],
-                rate.args[2], metadata.args[2], arrow)
+                rate.args[2], metadata.args[2], arrow, line)
         elseif in(arrow, fwd_arrows)
             push_reactions!(reactions, reaction.args[2], reaction.args[3],
-                rate, metadata, arrow)
+                rate, metadata, arrow, line)
         elseif in(arrow, bwd_arrows)
             push_reactions!(reactions, reaction.args[3], reaction.args[2],
-                rate, metadata, arrow)
+                rate, metadata, arrow, line)
         else
-            throw("Malformed reaction, invalid arrow type used in: $(MacroTools.striplines(line))")
+            throw("Malformed reaction, invalid arrow type used in: $(striplines(line))")
         end
     end
     return reactions
@@ -473,6 +490,8 @@ function extract_species_and_parameters(reactions, excluded_syms)
     for reaction in reactions
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(species, reactant.reactant, excluded_syms)
+            (!isempty(species) && requiredec) && throw(UndeclaredSymbolicError(
+                                                                               "Unrecognized variables $(join(species, ", ")) detected in reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all species must be explicitly declared with the @species macro."))
         end
     end
     foreach(s -> push!(excluded_syms, s), species)
@@ -481,8 +500,12 @@ function extract_species_and_parameters(reactions, excluded_syms)
     parameters = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
         add_syms_from_expr!(parameters, reaction.rate, excluded_syms)
+        (!isempty(parameters) && requiredec) && throw(UndeclaredSymbolicError(
+                                                                              "Unrecognized parameter $(join(parameters, ", ")) detected in rate expression: $(reaction.rate) for the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(parameters, reactant.stoichiometry, excluded_syms)
+            (!isempty(parameters) && requiredec) && throw(UndeclaredSymbolicError(
+                                                                                  "Unrecognized parameters $(join(parameters, ", ")) detected in the stoichiometry for reactant $(reactant.reactant) in the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
         end
     end
 
@@ -650,7 +673,7 @@ function read_events_option(options, event_type::Symbol)
         error("Trying to read an unsupported event type.")
     end
     events_input = haskey(options, event_type) ? options[event_type].args[3] :
-                   MacroTools.striplines(:(begin end))
+                   striplines(:(begin end))
     events_input = option_block_form(events_input)
 
     # Goes through the events, checks for errors, and adds them to the output vector.
@@ -681,7 +704,7 @@ end
 # `vars_extracted`: A vector with extracted variables (lhs in pure differential equations only).
 # `dtexpr`: If a differential equation is defined, the default derivative (D ~ Differential(t)) must be defined.
 # `equations`: a vector with the equations provided.
-function read_equations_options(options, variables_declared)
+function read_equations_options(options, variables_declared; requiredec = false)
     # Prepares the equations. First, extracts equations from provided option (converting to block form if required).
     # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
     eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
@@ -710,9 +733,13 @@ function read_equations_options(options, variables_declared)
             diff_var = lhs.args[2]
             if in(diff_var, forbidden_symbols_error)
                 error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
+            elseif (!in(diff_var, variables_declared)) && requiredec
+                throw(UndeclaredSymbolicError(
+                                              "Unrecognized symbol $(diff_var) was used as a variable in an equation: \"$eq\". Since the @require_declaration flag is set, all variables in equations must be explicitly declared via @variables, @species, or @parameters."))
+            else
+                add_default_diff = true
+                in(diff_var, variables_declared) || push!(vars_extracted, diff_var)
             end
-            add_default_diff = true
-            in(diff_var, variables_declared) || push!(vars_extracted, diff_var)
         end
     end
 
@@ -726,7 +753,7 @@ function create_differential_expr(options, add_default_diff, used_syms, tiv)
     # If differentials was provided as options, this is used as the initial expression.
     # If the default differential (D(...)) was used in equations, this is added to the expression.
     diffexpr = (haskey(options, :differentials) ? options[:differentials].args[3] :
-                MacroTools.striplines(:(begin end)))
+                striplines(:(begin end)))
     diffexpr = option_block_form(diffexpr)
 
     # Goes through all differentials, checking that they are correctly formatted and their symbol is not used elsewhere.
@@ -760,9 +787,8 @@ function read_combinatoric_ratelaws_option(options)
     end
 end
 
-# Reads the observables options. Outputs an expression for creating the obervable variables,
-# a vector with the observable equations, and a vector with the observables' symbols.
-function read_observed_options(options, species_n_vars_declared, ivs_sorted)
+# Reads the observables options. Outputs an expression ofr creating the observable variables, and a vector of observable equations.
+function read_observed_options(options, species_n_vars_declared, ivs_sorted; requiredec = false)
     if haskey(options, :observables)
         # Gets list of observable equations and prepares variable declaration expression.
         # (`options[:observables]` includes `@observables`, `.args[3]` removes this part)
@@ -773,7 +799,11 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
         for (idx, obs_eq) in enumerate(observed_eqs.args)
             # Extract the observable, checks for errors.
             obs_name, ivs, defaults, metadata = find_varinfo_in_declaration(obs_eq.args[2])
-            if !isempty(ivs)
+            if (requiredec && !in(obs_name, species_n_vars_declared))
+                throw(UndeclaredSymbolicError(
+                                              "An undeclared variable ($obs_name) was declared as an observable in the following observable equation: \"$obs_eq\". Since the flag @require_declaration is set, all variables must be declared with the @species, @parameters, or @variables macros."))
+            end
+            isempty(ivs) ||
                 error("An observable ($obs_name) was given independent variable(s). These should not be given, as they are inferred automatically.")
             end
             if !isnothing(defaults)
@@ -795,22 +825,18 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
             # For Observables that have already been declared using @species/@variables,
             # or are interpolated, this parts should not be carried out.
             if !((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2]))
-                # Appends (..) to the observable (which is later replaced with the extracted ivs).
-                # Adds the observable to the first line of the output expression (starting with `@variables`).
-                obs_expr = insert_independent_variable(obs_eq.args[2], :(..))
-                push!(observed_expr.args[1].args, obs_expr)
-
-                # Adds a line to the `observed_expr` expression, setting the ivs for this observable.
-                # Cannot extract directly using e.g. "getfield.(dependants_structs, :reactant)" because
-                # then we get something like :([:X1, :X2]), rather than :([X1, X2]).
+                # Creates an expression which extracts the ivs of the species & variables the
+                # observable depends on, and splats them out in the correct order.
                 dep_var_expr = :(filter(!MT.isparameter,
                     Symbolics.get_variables($(obs_eq.args[3]))))
-                ivs_get_expr = :(unique(reduce(vcat,
-                    [arguments(MT.unwrap(dep)) for dep in $dep_var_expr])))
-                sort_func(iv) = findfirst(MT.getname(iv) == ivs for ivs in ivs_sorted)
-                ivs_get_expr_sorted = :(sort($(ivs_get_expr); by = $sort_func))
-                push!(observed_expr.args,
-                    :($obs_name = $(obs_name)($(ivs_get_expr_sorted)...)))
+                ivs_get_expr = :(unique(reduce(
+                    vcat, [sorted_arguments(MT.unwrap(dep))
+                           for dep in $dep_var_expr])))
+                ivs_get_expr_sorted = :(sort($(ivs_get_expr);
+                    by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $ivs_sorted)))
+
+                obs_expr = insert_independent_variable(obs_eq.args[2], :($ivs_get_expr_sorted...))
+                push!(observed_vars.args[1].args, obs_expr)
             end
 
             # In case metadata was given, this must be cleared from `observed_eqs`.
@@ -823,8 +849,9 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
             is_escaped_expr(obs_eq.args[2]) || push!(obs_syms.args, obs_name)
         end
 
-        # If nothing was added to `observed_expr`, it has to be modified not to throw an error.
-        (length(observed_expr.args) == 1) && (observed_expr = :())
+        # If nothing was added to `observed_vars`, it has to be modified not to throw an error.
+        (striplines(observed_vars) == striplines(Expr(:block, :(@variables)))) &&
+            (observed_vars = :())
     else
         # If option is not used, return empty expression and vector.
         observed_expr = :()
@@ -957,6 +984,14 @@ end
 
 # Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably
 # a Symbol/Numerical). This is used to handle bundled reaction (like `d, (X,Y) --> 0`).
+# Recursively escape functions in the right-hand-side of an equation written using user-defined functions. Special function calls like "hill(...)" are not expanded.
+function escape_equation_RHS!(eqexpr::Expr)
+    rhs = recursive_escape_functions!(eqexpr.args[3])
+    eqexpr.args[3] = rhs
+    eqexpr
+end
+
+# Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a Symbol/Numerical).
 function tup_leng(ex::ExprValues)
     (typeof(ex) == Expr && ex.head == :tuple) && (return length(ex.args))
     return 1

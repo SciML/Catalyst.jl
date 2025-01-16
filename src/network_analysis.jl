@@ -193,6 +193,143 @@ function complexstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem, rcs)
 end
 
 @doc raw"""
+    laplacianmat(rn::ReactionSystem, pmap=Dict(); sparse=false)
+
+    Return the negative of the graph Laplacian of the reaction network. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where ``Y`` is the [`complexstoichmat`](@ref) and ``A_k`` is the negative of the graph Laplacian, and ``Φ`` is the [`massactionvector`](@ref). ``A_k`` is an n-by-n matrix, where n is the number of complexes, where ``A_{ij} = k_{ij}`` if a reaction exists between the two complexes and 0 otherwise. 
+    Returns a symbolic matrix by default, but will return a numerical matrix if parameter values are specified via pmap. 
+
+    **Warning**: Unlike other Catalyst functions, the `laplacianmat` function will return a `Matrix{Num}` in the symbolic case. This is to allow easier computation of the matrix decomposition of the ODEs, and to ensure that multiplying the sparse form of the matrix will work.
+"""
+function laplacianmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse = false)
+    D = incidencemat(rn; sparse)
+    K = fluxmat(rn, pmap; sparse)
+    D * K
+end
+
+Base.zero(::Type{Union{R, Symbolics.BasicSymbolic{Real}}}) where R <: Real = zero(R)
+Base.one(::Type{Union{R, Symbolics.BasicSymbolic{Real}}}) where R <: Real = one(R)
+
+@doc raw"""
+    fluxmat(rn::ReactionSystem, pmap = Dict(); sparse=false)
+
+    Return an r×c matrix ``K`` such that, if complex ``j`` is the substrate complex of reaction ``i``, then ``K_{ij} = k``, the rate constant for this reaction. Mostly a helper function for the network Laplacian, [`laplacianmat`](@ref). Has the useful property that ``\frac{dx}{dt} = S*K*Φ(x)``, where S is the [`netstoichmat`](@ref) or net stoichiometry matrix and ``Φ(x)`` is the [`massactionvector`](@ref).
+    Returns a symbolic matrix by default, but will return a numerical matrix if rate constants are specified as a `Tuple`, `Vector`, or `Dict` of symbol-value pairs via `pmap`.
+
+    **Warning**: Unlike other Catalyst functions, the `fluxmat` function will return a `Matrix{Num}` in the symbolic case. This is to allow easier computation of the matrix decomposition of the ODEs, and to ensure that multiplying the sparse form of the matrix will work.
+"""
+function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse=false)
+    rates = if isempty(pmap)
+        reactionrates(rn)
+    else
+        substitutevals(rn, pmap, parameters(rn), reactionrates(rn))
+    end
+
+    rcmap = reactioncomplexmap(rn)
+    nc = length(rcmap)
+    nr = length(rates)
+    mtype = eltype(rates) <: Symbolics.BasicSymbolic ? Num : eltype(rates)
+    if sparse
+        return fluxmat(SparseMatrixCSC{mtype, Int}, rcmap, rates)
+    else
+        return fluxmat(Matrix{mtype}, rcmap, rates)
+    end
+end
+
+function fluxmat(::Type{SparseMatrixCSC{T, Int}}, rcmap, rates) where T
+    Is = Int[]
+    Js = Int[]
+    Vs = T[]
+    for (i, (complex, rxs)) in enumerate(rcmap)
+        for (rx, dir) in rxs
+            dir == -1 && begin
+                push!(Is, rx)
+                push!(Js, i)
+                push!(Vs, rates[rx])
+            end
+        end
+    end
+    Z = sparse(Is, Js, Vs, length(rates), length(rcmap))
+end
+
+function fluxmat(::Type{Matrix{T}}, rcmap, rates) where T
+    nr = length(rates)
+    nc = length(rcmap)
+    K = zeros(T, nr, nc)
+    for (i, (complex, rxs)) in enumerate(rcmap)
+        for (rx, dir) in rxs 
+            dir == -1 && (K[rx, i] = rates[rx])
+        end
+    end
+    K
+end
+
+function fluxmat(rn::ReactionSystem, pmap::Vector) 
+    pdict = Dict(pmap)
+    fluxmat(rn, pdict)
+end
+
+function fluxmat(rn::ReactionSystem, pmap::Tuple) 
+    pdict = Dict(pmap)
+    fluxmat(rn, pdict)
+end
+
+# Helper to substitute values into a (vector of) symbolic expressions. The syms are the symbols to substitute and the symexprs are the expressions to substitute into.
+function substitutevals(rn::ReactionSystem, map::Dict, syms, symexprs)
+    length(map) != length(syms) && error("Incorrect number of parameter-value pairs were specified.")
+    map = symmap_to_varmap(rn, map)
+    map = Dict(ModelingToolkit.value(k) => v for (k, v) in map)
+    vals = [substitute(expr, map) for expr in symexprs]
+end
+
+"""
+    massactionvector(rn::ReactionSystem, scmap = Dict(); combinatoric_ratelaws = true)
+
+    Return the vector whose entries correspond to the "mass action products" of each complex. For example, given the complex A + B, the corresponding entry of the vector would be ``A*B``, and for the complex 2X + Y, the corresponding entry would be ``X^2*Y``. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where ``Y`` is the [`complexstoichmat`](@ref) and ``A_k`` is the negative of the [`laplacianmat`](@ref). This utility returns ``Φ(x)``.
+    Returns a symbolic vector by default, but will return a numerical vector if species concentrations are specified as a tuple, vector, or dictionary via scmap.
+    If the `combinatoric_ratelaws` option is set, will include prefactors for that (see [introduction to Catalyst's rate laws](@ref introduction_to_catalyst_ratelaws). Will default to the default for the system.
+
+    **Warning**: Unlike other Catalyst functions, the `massactionvector` function will return a `Vector{Num}` in the symbolic case. This is to allow easier computation of the matrix decomposition of the ODEs.
+"""
+function massactionvector(rn::ReactionSystem, scmap::Dict = Dict(); combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn))
+    r = numreactions(rn)
+    rxs = reactions(rn)
+    sm = speciesmap(rn)
+
+    specs = if isempty(scmap) 
+        species(rn)
+    else
+        substitutevals(rn, scmap, species(rn), species(rn))
+    end
+
+    if !all(r -> ismassaction(r, rn), rxs)
+        error("The supplied ReactionSystem has reactions that are not ismassaction. The mass action vector is only defined for pure mass action networks.")
+    end
+
+    vtype = eltype(specs) <: Symbolics.BasicSymbolic ? Num : eltype(specs)
+    Φ = Vector{vtype}()
+    rcmap = reactioncomplexmap(rn)
+    for comp in keys(reactioncomplexmap(rn))
+        subs = map(ce -> getfield(ce, :speciesid), comp)
+        stoich = map(ce -> getfield(ce, :speciesstoich), comp)
+        maprod = prod(vtype[specs[s]^α for (s, α) in zip(subs, stoich)])
+        combinatoric_ratelaws && (maprod /= prod(map(factorial, stoich)))
+        push!(Φ, maprod)
+    end
+
+    Φ
+end
+
+function massactionvector(rn::ReactionSystem, scmap::Tuple; combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn))
+    sdict = Dict(scmap)
+    massactionvector(rn, sdict; combinatoric_ratelaws)
+end
+
+function massactionvector(rn::ReactionSystem, scmap::Vector; combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn)) 
+    sdict = Dict(scmap)
+    massactionvector(rn, sdict; combinatoric_ratelaws)
+end
+
+@doc raw"""
     complexoutgoingmat(network::ReactionSystem; sparse=false)
 
 Given a [`ReactionSystem`](@ref) and complex incidence matrix, ``B``, return a
@@ -314,6 +451,44 @@ function incidencematgraph(incidencemat::SparseMatrixCSC{Int, Int})
     return graph
 end
 
+
+"""
+    species_reaction_graph(rn::ReactionSystem)
+
+Construct a directed simple graph where there are two types of nodes: species and reactions. 
+An edge from a species *s* to reaction *r* indicates that *s* is a reactant for *r*, and 
+an edge from a reaction *r* to a species *s* indicates that *s* is a product of *r*. By 
+default, the species vertices are listed first, so the first *n* indices correspond to 
+species nodes. 
+
+Note: this is equivalent to the Petri net representation of a chemical reaction network.
+
+For example,
+```julia
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end
+species_reaction_graph(sir)
+"""
+function species_reaction_graph(rn::ReactionSystem) 
+    specs = species(rn)
+    rxs = reactions(rn)
+    sm = speciesmap(rn)
+    s = length(specs)
+    
+    edgelist = Graphs.Edge[]
+    for (i, rx) in enumerate(rxs) 
+        for spec in rx.substrates
+            push!(edgelist, Graphs.Edge(sm[spec], s+i))
+        end
+        for spec in rx.products
+            push!(edgelist, Graphs.Edge(s+i, sm[spec]))
+        end
+    end
+    srg = Graphs.SimpleDiGraphFromIterator(edgelist)
+end
+
 ### Linkage, Deficiency, Reversibility ###
 
 """
@@ -398,6 +573,19 @@ function isterminal(lc::Vector, rn::ReactionSystem)
     true
 end
 
+function isforestlike(rn::ReactionSystem)
+    subnets = subnetworks(rn)
+    nps = get_networkproperties(rn)
+
+    isempty(nps.incidencemat) && reactioncomplexes(rn)
+    sparseig = issparse(nps.incidencemat)
+    for subnet in subnets
+        nps = get_networkproperties(subnet)
+        isempty(nps.incidencemat) && reactioncomplexes(subnet; sparse = sparseig)
+    end
+    all(Graphs.is_tree ∘ SimpleGraph ∘ incidencematgraph, subnets)
+end
+
 @doc raw"""
     deficiency(rn::ReactionSystem)
 
@@ -421,11 +609,15 @@ end
 """
 function deficiency(rn::ReactionSystem)
     nps = get_networkproperties(rn)
-    conservationlaws(rn)
-    r = nps.rank
-    ig = incidencematgraph(rn)
-    lc = linkageclasses(rn)
-    nps.deficiency = Graphs.nv(ig) - length(lc) - r
+
+    # Check if deficiency has been computed already (initialized to -1)
+    if nps.deficiency == -1
+        conservationlaws(rn)
+        r = nps.rank
+        ig = incidencematgraph(rn)
+        lc = linkageclasses(rn)
+        nps.deficiency = Graphs.nv(ig) - length(lc) - r
+    end
     nps.deficiency
 end
 
@@ -639,22 +831,9 @@ end
 Given the net stoichiometry matrix of a reaction system, computes a matrix of
 conservation laws, each represented as a row in the output.
 """
-function conservationlaws(nsm::T; col_order = nothing) where {T <: AbstractMatrix}
-
-    # compute the left nullspace over the integers
-    N = MT.nullspace(nsm'; col_order)
-
-    # if all coefficients for a conservation law are negative, make positive
-    for Nrow in eachcol(N)
-        all(r -> r <= 0, Nrow) && (Nrow .*= -1)
-    end
-
-    # check we haven't overflowed
-    iszero(N' * nsm) || error("Calculation of the conservation law matrix was inaccurate, "
-          * "likely due to numerical overflow. Please use a larger integer "
-          * "type like Int128 or BigInt for the net stoichiometry matrix.")
-
-    T(N')
+function conservationlaws(nsm::Matrix; col_order = nothing)
+    conslaws = positive_nullspace(nsm'; col_order = col_order)
+    Matrix(conslaws)
 end
 
 # Used in the subsequent function.
@@ -666,8 +845,8 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     indepspecs = sts[indepidxs]
     depidxs = col_order[(r + 1):end]
     depspecs = sts[depidxs]
-    constants = MT.unwrap.(MT.scalarize(only(
-        @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] [conserved = true])))
+    constants = MT.unwrap(only(
+        @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] [conserved = true]))
 
     conservedeqs = Equation[]
     constantdefs = Equation[]
@@ -734,13 +913,92 @@ function conservationlaw_errorcheck(rs, pre_varmap)
 end
 
 """
+    isdetailedbalanced(rs::ReactionSystem, parametermap; reltol=1e-9, abstol)
+
+Constructively compute whether a kinetic system (a reaction network with a set of rate constants) will admit detailed-balanced equilibrium
+solutions, using the Wegscheider conditions, [Feinberg, 1989](https://www.sciencedirect.com/science/article/pii/0009250989851243). A detailed-balanced solution is one for which the rate of every forward reaction exactly equals its reverse reaction. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
+"""
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol=0, reltol=1e-9)
+    if length(parametermap) != numparams(rs)
+        error("Incorrect number of parameters specified.")
+    elseif !isreversible(rs)
+        return false
+    elseif !all(r -> ismassaction(r, rs), reactions(rs))
+        error("The supplied ReactionSystem has reactions that are not ismassaction. Testing for being detailed balanced is currently only supported for pure mass action networks.")
+    end
+
+    isforestlike(rs) && deficiency(rs) == 0 && return true
+
+    pmap = symmap_to_varmap(rs, parametermap)
+    pmap = Dict(ModelingToolkit.value(k) => v for (k, v) in pmap)
+
+    # Construct reaction-complex graph 
+    complexes, D = reactioncomplexes(rs)
+    img = incidencematgraph(rs)
+    undir_img = SimpleGraph(incidencematgraph(rs))
+    K = ratematrix(rs, pmap)
+
+    spanning_forest = Graphs.kruskal_mst(undir_img)
+    outofforest_edges = setdiff(collect(edges(undir_img)), spanning_forest)
+
+    # Independent Cycle Conditions: for any cycle we create by adding in an out-of-forest reaction, the product of forward reaction rates over the cycle must equal the product of reverse reaction rates over the cycle.  
+    for edge in outofforest_edges
+        g = SimpleGraph([spanning_forest..., edge])
+        ic = Graphs.cycle_basis(g)[1]
+        fwd = prod([K[ic[r], ic[r + 1]] for r in 1:(length(ic) - 1)]) * K[ic[end], ic[1]]
+        rev = prod([K[ic[r + 1], ic[r]] for r in 1:(length(ic) - 1)]) * K[ic[1], ic[end]]
+        isapprox(fwd, rev; atol = abstol, rtol = reltol) ? continue : return false
+    end
+
+    # Spanning Forest Conditions: for non-deficiency 0 networks, we get an additional δ equations. Choose an orientation for each reaction pair in the spanning forest (we will take the one given by default from kruskal_mst).  
+
+    if deficiency(rs) > 0
+        rxn_idxs = [edgeindex(D, Graphs.src(e), Graphs.dst(e)) for e in spanning_forest]
+        S_F = netstoichmat(rs)[:, rxn_idxs]
+        sols = positive_nullspace(S_F)
+
+        for i in 1:size(sols, 2)
+            α = sols[:, i]
+            fwd = prod([K[Graphs.src(e), Graphs.dst(e)]^α[i]
+                        for (e, i) in zip(spanning_forest, 1:length(α))])
+            rev = prod([K[Graphs.dst(e), Graphs.src(e)]^α[i]
+                        for (e, i) in zip(spanning_forest, 1:length(α))])
+            isapprox(fwd, rev; atol = abstol, rtol = reltol) ? continue : return false
+        end
+    end
+
+    true
+end
+
+# Helper to find the index of the reaction with a given reactant and product complex.
+function edgeindex(imat, src::T, dst::T) where T <: Int
+    for i in 1:size(imat, 2)
+        (imat[src, i] == -1) && (imat[dst, i] == 1) && return i
+    end
+    error("This edge does not exist in this reaction graph.")
+end
+
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Vector{<:Pair})
+    pdict = Dict(parametermap)
+    isdetailedbalanced(rs, pdict)
+end
+
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Tuple{<:Pair})
+    pdict = Dict(parametermap)
+    isdetailedbalanced(rs, pdict)
+end
+
+function isdetailedbalanced(rs::ReactionSystem, parametermap)
+    error("Parameter map must be a dictionary, tuple, or vector of symbol/value pairs.")
+end
+
+"""
     iscomplexbalanced(rs::ReactionSystem, parametermap)
 
 Constructively compute whether a network will have complex-balanced equilibrium
 solutions, following the method in van der Schaft et al., [2015](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). 
 Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
-
 function iscomplexbalanced(rs::ReactionSystem, parametermap::Dict)
     if length(parametermap) != numparams(rs)
         error("Incorrect number of parameters specified.")
@@ -817,7 +1075,6 @@ end
     constant of the reaction between complex i and complex j. Accepts a dictionary, vector, or tuple 
     of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
-
 function ratematrix(rs::ReactionSystem, rates::Vector{Float64})
     complexes, D = reactioncomplexes(rs)
     n = length(complexes)
@@ -904,4 +1161,130 @@ function treeweight(t::SimpleDiGraph, g::SimpleDiGraph, distmx::Matrix)
         prod *= distmx[s, t]
     end
     prod
+end
+
+"""
+    cycles(rs::ReactionSystem)
+
+    Returns the matrix of a basis of cycles (or flux vectors), or a basis for reaction fluxes for which the system is at steady state. 
+    These correspond to right eigenvectors of the stoichiometric matrix. Equivalent to [`fluxmodebasis`](@ref). 
+"""
+function cycles(rs::ReactionSystem)
+    nps = get_networkproperties(rs)
+    nsm = netstoichmat(rs)
+    !isempty(nps.cyclemat) && return nps.cyclemat
+    nps.cyclemat = cycles(nsm; col_order = nps.col_order)
+    nps.cyclemat
+end
+
+function cycles(nsm::Matrix; col_order = nothing)
+    positive_nullspace(nsm; col_order)
+end
+
+function positive_nullspace(M::T; col_order = nothing) where {T <: AbstractMatrix}
+    # compute the left nullspace over the integers
+    N = MT.nullspace(M; col_order)
+
+    # if all coefficients for a cycle are negative, make positive
+    for Ncol in eachcol(N)
+        all(r -> r <= 0, Ncol) && (Ncol .*= -1)
+    end
+
+    # check we haven't overflowed
+    iszero(M * N) || error("Calculation of the cycle matrix was inaccurate, "
+          * "likely due to numerical overflow. Please use a larger integer "
+          * "type like Int128 or BigInt for the net stoichiometry matrix.")
+
+    T(N)
+end
+
+"""
+    fluxvectors(rs::ReactionSystem)
+
+    See documentation for [`cycles`](@ref). 
+"""
+function fluxvectors(rs::ReactionSystem)
+    cycles(rs)
+end
+
+### Deficiency one
+
+"""
+    satisfiesdeficiencyone(rn::ReactionSystem)
+
+    Check if a reaction network obeys the conditions of the deficiency one theorem, which ensures that there is only one equilibrium for every positive stoichiometric compatibility class.
+"""
+function satisfiesdeficiencyone(rn::ReactionSystem)
+    all(r -> ismassaction(r, rn), reactions(rn)) ||
+        error("The deficiency one theorem is only valid for reaction networks that are mass action.")
+    complexes, D = reactioncomplexes(rn)
+    δ = deficiency(rn)
+    δ_l = linkagedeficiencies(rn)
+
+    lcs = linkageclasses(rn)
+    tslcs = terminallinkageclasses(rn)
+
+    # Check the conditions for the deficiency one theorem: 
+    #   1) the deficiency of each individual linkage class is at most 1; 
+    #   2) the sum of the linkage deficiencies is the total deficiency, and 
+    #   3) there is only one terminal linkage class per linkage class. 
+    all(<=(1), δ_l) && (sum(δ_l) == δ) && (length(lcs) == length(tslcs))
+end
+
+"""
+    satisfiesdeficiencyzero(rn::ReactionSystem)
+
+    Check if a reaction network obeys the conditions of the deficiency zero theorem, which ensures that there is only one equilibrium for every positive stoichiometric compatibility class, this equilibrium is asymptotically stable, and this equilibrium is complex balanced.
+"""
+function satisfiesdeficiencyzero(rn::ReactionSystem)
+    all(r -> ismassaction(r, rn), reactions(rn)) ||
+        error("The deficiency zero theorem is only valid for reaction networks that are mass action.")
+    δ = deficiency(rn)
+    δ == 0 && isweaklyreversible(rn, subnetworks(rn))
+end
+
+"""
+    robustspecies(rn::ReactionSystem)
+
+    Return a vector of indices corresponding to species that are concentration robust, i.e. for every positive equilbrium, the concentration of species s will be the same. 
+
+    Note: This function currently only works for networks of deficiency one, and is not currently guaranteed to return *all* the concentration-robust species in the network. Any species returned by the function will be robust, but this may not include all of them. Use with caution. Support for higher deficiency networks and necessary conditions for robustness will be coming in the future.  
+"""
+function robustspecies(rn::ReactionSystem)
+    complexes, D = reactioncomplexes(rn)
+    nps = get_networkproperties(rn)
+
+    if deficiency(rn) != 1
+        error("This algorithm currently only checks for robust species in networks with deficiency one.")
+    end
+
+    # A species is concentration robust in a deficiency one network if there are two non-terminal complexes (i.e. complexes 
+    # belonging to a linkage class that is not terminal) that differ only in species s (i.e. their difference is some 
+    # multiple of s. (A + B, A) differ only in B. (A + 2B, B) differ in both A and B, since A + 2B - B = A + B). 
+
+    if !nps.checkedrobust
+        tslcs = terminallinkageclasses(rn)
+        Z = complexstoichmat(rn)
+
+        # Find the complexes that do not belong to a terminal linkage class 
+        nonterminal_complexes = deleteat!([1:length(complexes);], vcat(tslcs...))
+        robust_species = Int64[]
+
+        for (c_s, c_p) in Combinatorics.combinations(nonterminal_complexes, 2)
+            # Check the difference of all the combinations of complexes. The support is the set of indices that are non-zero 
+            suppcnt = 0
+            supp = 0
+            for i in 1:size(Z, 1)
+                (Z[i, c_s] != Z[i, c_p]) && (suppcnt += 1; supp = i)
+                (suppcnt > 1) && break
+            end
+
+            # If the support has length one, then they differ in only one species, and that species is concentration robust. 
+            (suppcnt == 1) && (supp ∉ robust_species) && push!(robust_species, supp)
+        end
+        nps.checkedrobust = true
+        nps.robustspecies = robust_species
+    end
+
+    nps.robustspecies
 end

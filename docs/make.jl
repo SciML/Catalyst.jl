@@ -1,5 +1,7 @@
 using Documenter
 using Catalyst, ModelingToolkit
+# Add packages for plotting
+using GraphMakie, CairoMakie
 
 docpath = Base.source_dir()
 assetpath = joinpath(docpath, "src", "assets")
@@ -34,13 +36,16 @@ makedocs(sitename = "Catalyst.jl",
     authors = "Samuel Isaacson",
     format = Documenter.HTML(; analytics = "UA-90474609-3",
         prettyurls = (get(ENV, "CI", nothing) == "true"),
+        collapselevel = 1,
         assets = ["assets/favicon.ico"],
         canonical = "https://docs.sciml.ai/Catalyst/stable/"),
-    modules = [Catalyst, ModelingToolkit],
+    modules = [Catalyst, ModelingToolkit, 
+               isdefined(Base, :get_extension) ? Base.get_extension(Catalyst, :CatalystGraphMakieExtension) :
+               Catalyst.CatalystGraphMakieExtension],
     doctest = false,
     clean = true,
     pages = pages,
-    pagesonly = false,
+    pagesonly = true,
     warnonly = [:missing_docs])
 
 deploydocs(repo = "github.com/SciML/Catalyst.jl.git";

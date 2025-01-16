@@ -96,7 +96,10 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     linkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
     stronglinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
     terminallinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
-    deficiency::Int = 0
+
+    checkedrobust::Bool = false 
+    robustspecies::Vector{Int} = Vector{Int}(undef, 0)
+    deficiency::Int = -1 
 end
 #! format: on
 
@@ -137,7 +140,9 @@ function reset!(nps::NetworkProperties{I, V}) where {I, V}
     empty!(nps.linkageclasses)
     empty!(nps.stronglinkageclasses)
     empty!(nps.terminallinkageclasses)
-    nps.deficiency = 0
+    nps.deficiency = -1
+    empty!(nps.robustspecies)
+    nps.checkedrobust = false
 
     # this needs to be last due to setproperty! setting it to false
     nps.isempty = true
@@ -224,7 +229,7 @@ const reactionsystem_fields = (
     :eqs, :rxs, :iv, :sivs, :unknowns, :species, :ps, :var_to_name,
     :observed, :name, :systems, :defaults, :connection_type,
     :networkproperties, :combinatoric_ratelaws, :continuous_events,
-    :discrete_events, :metadata, :complete)
+    :discrete_events, :metadata, :complete, :parent)
 
 """
 $(TYPEDEF)
@@ -320,11 +325,16 @@ struct ReactionSystem{V <: NetworkProperties} <:
     complete: if a model `sys` is complete, then `sys.x` no longer performs namespacing.
     """
     complete::Bool
+    """
+    The hierarchical parent system before simplification that MTK now seems to require for
+    hierarchical namespacing to work in indexing.
+    """
+    parent::Any
 
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, connection_type, nps, cls, cevs, devs,
-            metadata = nothing, complete = false; checks::Bool = true)
+            metadata = nothing, complete = false, parent = nothing; checks::Bool = true)
 
         # Checks that all parameters have the appropriate Symbolics type.
         for p in ps
@@ -353,7 +363,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
         rs = new{typeof(nps)}(
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, connection_type, nps, cls, cevs,
-            devs, metadata, complete)
+            devs, metadata, complete, parent)
         checks && validate(rs)
         rs
     end
@@ -400,11 +410,11 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     sivs′ = if spatial_ivs === nothing
         Vector{typeof(iv′)}()
     else
-        value.(MT.scalarize(spatial_ivs))
+        value.(spatial_ivs)
     end
-    unknowns′ = sort!(value.(MT.scalarize(unknowns)), by = !isspecies)
+    unknowns′ = sort!(value.(unknowns), by = !isspecies)
     spcs = filter(isspecies, unknowns′)
-    ps′ = value.(MT.scalarize(ps))
+    ps′ = value.(ps)
 
     # Checks that no (by Catalyst) forbidden symbols are used.
     allsyms = Iterators.flatten((ps′, unknowns′))
@@ -462,7 +472,7 @@ end
 # Two-argument constructor (reactions/equations and time variable).
 # Calls the `make_ReactionSystem_internal`, which in turn calls the four-argument constructor.
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
-    make_ReactionSystem_internal(rxs, iv, Vector{Num}(), Vector{Num}(); kwargs...)
+    make_ReactionSystem_internal(rxs, iv, [], []; kwargs...)
 end
 
 # One-argument constructor. Creates an emtoy `ReactionSystem` from a time independent variable only.
@@ -480,24 +490,25 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
         spatial_ivs = nothing, continuous_events = [], discrete_events = [],
         observed = [], kwargs...)
 
-    # Filters away any potential observables from `states` and `spcs`.
-    obs_vars = [obs_eq.lhs for obs_eq in observed]
-    us_in = filter(u -> !any(isequal(u, obs_var) for obs_var in obs_vars), us_in)
+    # Error if any observables have been declared a species or variable
+    obs_vars = Set(obs_eq.lhs for obs_eq in observed)
+    any(in(obs_vars), us_in) &&
+        error("Found an observable in the list of unknowns. This is not allowed.")
 
     # Creates a combined iv vector (iv and sivs). This is used later in the function (so that 
     # independent variables can be excluded when encountered quantities are added to `us` and `ps`).
     t = value(iv)
     ivs = Set([t])
     if (spatial_ivs !== nothing)
-        for siv in (MT.scalarize(spatial_ivs))
+        for siv in (spatial_ivs)
             push!(ivs, value(siv))
         end
     end
 
     # Initialises the new unknowns and parameter vectors.
     # Preallocates the `vars` set, which is used by `findvars!`
-    us = OrderedSet{eltype(us_in)}(us_in)
-    ps = OrderedSet{eltype(ps_in)}(ps_in)
+    us = OrderedSet{Any}(us_in)
+    ps = OrderedSet{Any}(ps_in)
     vars = OrderedSet()
 
     # Extracts the reactions and equations from the combined reactions + equations input vector.
@@ -506,24 +517,8 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     eqs = Equation[eq for eq in rxs_and_eqs if eq isa Equation]
 
     # Loops through all reactions, adding encountered quantities to the unknown and parameter vectors.
-    # Starts by looping through substrates + products only (so these are added to the vector first).
-    # Next, the other components of reactions (e.g. rates and stoichiometries) are added.
     for rx in rxs
-        for reactants in (rx.substrates, rx.products), spec in reactants
-            MT.isparameter(spec) ? push!(ps, spec) : push!(us, spec)
-        end
-    end
-    for rx in rxs
-        # Adds all quantities encountered in the reaction's rate.
-        findvars!(ps, us, rx.rate, ivs, vars)
-
-        # Extracts all quantities encountered within stoichiometries.
-        for stoichiometry in (rx.substoich, rx.prodstoich), sym in stoichiometry
-            (sym isa Symbolic) && findvars!(ps, us, sym, ivs, vars)
-        end
-
-        # Extract all quantities encountered in relevant `Reaction` metadata.
-        hasnoisescaling(rx) && findvars!(ps, us, getnoisescaling(rx), ivs, vars)
+        MT.collect_vars!(us, ps, rx, iv)
     end
 
     # Extracts any species, variables, and parameters that occur in (non-reaction) equations.
@@ -537,13 +532,33 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
         fulleqs = rxs
     end
 
+    # get variables in subsystems with scope at this level
+    for ssys in get(kwargs, :systems, [])
+        MT.collect_scoped_vars!(us, ps, ssys, iv)
+    end
+
     # Loops through all events, adding encountered quantities to the unknown and parameter vectors.
     find_event_vars!(ps, us, continuous_events, ivs, vars)
     find_event_vars!(ps, us, discrete_events, ivs, vars)
 
     # Converts the found unknowns and parameters to vectors.
     usv = collect(us)
-    psv = collect(ps)
+
+    new_ps = OrderedSet()
+    for p in ps
+        if iscall(p) && operation(p) === getindex
+            par = arguments(p)[begin]
+            if Symbolics.shape(Symbolics.unwrap(par)) !== Symbolics.Unknown() &&
+               all(par[i] in ps for i in eachindex(par))
+                push!(new_ps, par)
+            else
+                push!(new_ps, p)
+            end
+        else
+            push!(new_ps, p)
+        end
+    end
+    psv = collect(new_ps)
 
     # Passes the processed input into the next `ReactionSystem` call.    
     ReactionSystem(fulleqs, t, usv, psv; spatial_ivs, continuous_events,
@@ -1374,6 +1389,42 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
         spatial_ivs = get_sivs(rs),
         continuous_events = MT.continuous_events(rs),
         discrete_events = MT.discrete_events(rs))
+end
+
+"""
+    ModelingToolkit.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
+
+Compose the indicated [`ReactionSystem`](@ref) with one or more `AbstractSystem`s.
+
+Notes:
+- The `AbstractSystem` being added in must be an `ODESystem`, `NonlinearSystem`,
+  or `ReactionSystem` currently.
+- Returns a new `ReactionSystem` and does not modify `rs`.
+- By default, the new `ReactionSystem` will have the same name as `sys`.
+"""
+function ModelingToolkit.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
+    nsys = length(systems)
+    nsys == 0 && return sys
+    @set! sys.name = name
+    @set! sys.systems = [get_systems(sys); systems]
+    newunknowns = OrderedSet{BasicSymbolic{Real}}()
+    newparams = OrderedSet()
+    iv = has_iv(sys) ? get_iv(sys) : nothing
+    for ssys in systems
+        MT.collect_scoped_vars!(newunknowns, newparams, ssys, iv)
+    end
+
+    if !isempty(newunknowns) 
+        @set! sys.unknowns = union(get_unknowns(sys), newunknowns)
+        sort!(get_unknowns(sys), by = !isspecies)
+        @set! sys.species = filter(isspecies, get_unknowns(sys))
+    end
+
+    if !isempty(newparams)
+        @set! sys.ps = union(get_ps(sys), newparams)
+    end
+
+    return sys
 end
 
 """
