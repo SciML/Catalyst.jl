@@ -357,7 +357,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Excludes any parameters already extracted (if they also was a variable).
     declared_syms = union(declared_syms, species_extracted)
     vars_extracted, add_default_diff, equations = read_equations_options(
-        options, declared_syms; requiredec)
+        options, declared_syms, parameters_extracted; requiredec)
     variables = vcat(variables_declared, vars_extracted)
     parameters_extracted = setdiff(parameters_extracted, vars_extracted)
 
@@ -705,7 +705,7 @@ end
 # `vars_extracted`: A vector with extracted variables (lhs in pure differential equations only).
 # `dtexpr`: If a differential equation is defined, the default derivative (D ~ Differential(t)) must be defined.
 # `equations`: a vector with the equations provided.
-function read_equations_options(options, syms_declared; requiredec = false)
+function read_equations_options(options, syms_declared, parameters_extracted; requiredec = false)
     # Prepares the equations. First, extracts equations from provided option (converting to block form if required).
     # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
     eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
@@ -725,8 +725,7 @@ function read_equations_options(options, syms_declared; requiredec = false)
         end
 
         # If the default differential (`D`) is used, record that it should be decalred later on.
-
-        if !in(eq, syms_declared) && find_D_call(eq)
+        if (:D ∉ union(syms_declared, parameters_extracted)) && find_D_call(eq)
             requiredec && throw(UndeclaredSymbolicError(
                 "Unrecognized symbol D was used as a differential in an equation: \"$eq\". Since the @require_declaration flag is set, all differentials in equations must be explicitly declared using the @differentials option."))
             add_default_diff = true

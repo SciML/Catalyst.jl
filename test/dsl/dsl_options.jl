@@ -614,11 +614,11 @@ let
         #@equations D(V) ~ 1 - V
         #d, X --> 0
     #end
-    @test_broken false # @test_throws Exception @eval @reaction_network begin
-        #@parameters D
-        #@equations D(V) ~ 1 - V
-        #d, X --> 0
-    #end
+    @test_throws Exception @eval @reaction_network begin
+        @parameters D
+        @equations D(V) ~ 1 - V
+        d, X --> 0
+    end
 
     # Symbol only occurring in events.
     @test_throws Exception @eval @reaction_network begin

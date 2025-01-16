@@ -29,7 +29,7 @@ end
   @equations D(D(V)) ~ 1
 end
 ```
-Please note that this cannot be used at the same time as `D` is used to represent a species, variable, or parameter. 
+Please note that this cannot be used at the same time as `D` is used to represent a species, variable, or parameter (including is these are implicitly designated as such by e.g. appearing as a reaction reactant). 
 - Array symbolics support is more consistent with ModelingToolkit v9. Parameter
   arrays are no longer scalarized by Catalyst, while species and variables
   arrays still are (as in ModelingToolkit). As such, parameter arrays should now
