@@ -217,7 +217,7 @@ struct DSLReaction
     rxexpr::Expr
 
     function DSLReaction(sub_line::ExprValues, prod_line::ExprValues,
-            rate::ExprValues, metadata_line::ExprValues)
+            rate::ExprValues, metadata_line::ExprValues, rx_line::Expr)
         subs = recursive_find_reactants!(sub_line, 1, Vector{DSLReactant}(undef, 0))
         prods = recursive_find_reactants!(prod_line, 1, Vector{DSLReactant}(undef, 0))
         metadata = extract_metadata(metadata_line)
@@ -482,9 +482,14 @@ function push_reactions!(reactions::Vector{DSLReaction}, subs::ExprValues,
             push!(metadata_i.args, :(only_use_rate = $(in(arrow, pure_rate_arrows))))
         end
 
+        # Checks that metadata fields are unique.
+        if !allunique(arg.args[1] for arg in metadata_i.args)
+            error("Some reaction metadata fields where repeated: $(metadata_entries)")
+        end
+
         # Extracts substrates, products, and rates for the i'th reaction.
         subs_i, prods_i, rate_i = get_tup_arg.((subs, prods, rate), i)
-        push!(reactions, DSLReaction(subs_i, prods_i, rate_i, metadata_i))
+        push!(reactions, DSLReaction(subs_i, prods_i, rate_i, metadata_i, line))
     end
 end
 
@@ -505,29 +510,29 @@ function extract_syms(opts, vartype::Symbol)
 end
 
 # Function looping through all reactions, to find undeclared symbols (species or
-# parameters), and assign them to the right category.
+# parameters) and assign them to the right category.
 function extract_species_and_parameters(reactions, excluded_syms)
     # Loops through all reactant, extract undeclared ones as species.
     species = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(species, reactant.reactant, excluded_syms)
-            (!isempty(species) && requiredec) && throw(UndeclaredSymbolicError(
-                                                                               "Unrecognized variables $(join(species, ", ")) detected in reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all species must be explicitly declared with the @species macro."))
         end
+        (!isempty(species) && requiredec) &&
+            throw(UndeclaredSymbolicError("Unrecognized variables $(join(species, ", ")) detected in reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all species must be explicitly declared with the @species macro."))
     end
-    foreach(s -> push!(excluded_syms, s), species)
+    union!(excluded_syms, species)
 
     # Loops through all rates and stoichiometries, extracting used symbols as parameters.
     parameters = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
         add_syms_from_expr!(parameters, reaction.rate, excluded_syms)
-        (!isempty(parameters) && requiredec) && throw(UndeclaredSymbolicError(
-                                                                              "Unrecognized parameter $(join(parameters, ", ")) detected in rate expression: $(reaction.rate) for the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
+        (!isempty(parameters) && requiredec) &&
+            throw(UndeclaredSymbolicError("Unrecognized parameter $(join(parameters, ", ")) detected in rate expression: $(reaction.rate) for the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(parameters, reactant.stoichiometry, excluded_syms)
-            (!isempty(parameters) && requiredec) && throw(UndeclaredSymbolicError(
-                                                                                  "Unrecognized parameters $(join(parameters, ", ")) detected in the stoichiometry for reactant $(reactant.reactant) in the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
+            (!isempty(parameters) && requiredec) &&
+                throw(UndeclaredSymbolicError("Unrecognized parameters $(join(parameters, ", ")) detected in the stoichiometry for reactant $(reactant.reactant) in the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
         end
     end
 
@@ -556,12 +561,12 @@ end
 # `@species ...` (or `@variables ..`) expression which would declare these.
 # If `key = :variables`, does this for variables (and not species).
 function get_usexpr(us_extracted, options, key = :species; ivs = (DEFAULT_IV_SYM,))
-    if haskey(options, key)
-        usexpr = options[key]
+    usexpr = if haskey(options, key)
+        options[key]
     elseif isempty(us_extracted)
-        usexpr = :()
+        :()
     else
-        usexpr = Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
+        Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
     end
     for u in us_extracted
         u isa Symbol && push!(usexpr.args, Expr(:call, u, ivs...))
@@ -572,12 +577,12 @@ end
 # Given the parameters that were extracted from the reactions, and the options dictionary,
 # creates the `@parameters ...` expression for the macro output.
 function get_pexpr(parameters_extracted, options)
-    if haskey(options, :parameters)
-        pexprs = options[:parameters]
+    pexprs = if haskey(options, :parameters)
+        options[:parameters]
     elseif isempty(parameters_extracted)
-        pexprs = :()
+        :()
     else
-        pexprs = :(@parameters)
+        :(@parameters)
     end
     foreach(p -> push!(pexprs.args, p), parameters_extracted)
     return pexprs
@@ -586,7 +591,7 @@ end
 # Takes a ModelingToolkit declaration macro (like @parameters ...) and return and expression:
 # That calls the macro and then scalarizes all the symbols created into a vector of Nums.
 # stores the created symbolic variables in a variable (which name is generated from `name`).
-# It will also return the name used for the variable that stores the symbolci variables.
+# It will also return the name used for the variable that stores the symbolic variables.
 function scalarize_macro(expr_init, name)
     # Generates a random variable name which (in generated code) will store the produced
     # symbolic variables (e.g. `var"##ps#384"`).
@@ -638,8 +643,8 @@ end
 
 ### DSL Option Handling ###
 
-# Finds the time idenepdnet variable, and any potential spatial indepndent variables.
-# Returns these (individually and combined), as well as an expression for declaring them
+# Finds the time independent variable, and any potential spatial indepndent variables.
+# Returns these (individually and combined), as well as an expression for declaring them.
 function read_ivs_option(options)
     # Creates the independent variables expressions (depends on whether the `ivs` option was used).
     if haskey(options, :ivs)
@@ -651,7 +656,7 @@ function read_ivs_option(options)
         ivexpr = :($(DEFAULT_IV_SYM) = default_t())
     end
 
-    # Extracts the independet variables symbols, and returns the output.
+    # Extracts the independet variables symbols (time and spatial), and returns the output.
     tiv = ivs[1]
     sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
     return tiv, sivs, ivs, ivexpr
@@ -802,11 +807,8 @@ end
 # Reads the combinatiorial ratelaw options, which determines if a combinatorial rate law should
 # be used or not. If not provides, uses the default (true).
 function read_combinatoric_ratelaws_option(options)
-    if haskey(options, :combinatoric_ratelaws)
-        return options[:combinatoric_ratelaws].args[end]
-    else
-        return true
-    end
+    return haskey(options, :combinatoric_ratelaws) ?
+        options[:combinatoric_ratelaws].args[end] : true
 end
 
 # Reads the observables options. Outputs an expression ofr creating the observable variables, and a vector of observable equations.
@@ -821,26 +823,19 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted; req
         for (idx, obs_eq) in enumerate(observed_eqs.args)
             # Extract the observable, checks for errors.
             obs_name, ivs, defaults, metadata = find_varinfo_in_declaration(obs_eq.args[2])
-            if (requiredec && !in(obs_name, species_n_vars_declared))
-                throw(UndeclaredSymbolicError(
-                                              "An undeclared variable ($obs_name) was declared as an observable in the following observable equation: \"$obs_eq\". Since the flag @require_declaration is set, all variables must be declared with the @species, @parameters, or @variables macros."))
-            end
-            if !isempty(ivs)
+
+            (requiredec && !in(obs_name, species_n_vars_declared)) &&
+                throw(UndeclaredSymbolicError("An undeclared variable ($obs_name) was declared as an observable in the following observable equation: \"$obs_eq\". Since the flag @require_declaration is set, all variables must be declared with the @species, @parameters, or @variables macros."))
+            isempty(ivs) ||
                 error("An observable ($obs_name) was given independent variable(s). These should not be given, as they are inferred automatically.")
-            end
-            if !isnothing(defaults)
+            isnothing(defaults) ||
                 error("An observable ($obs_name) was given a default value. This is forbidden.")
-            end
-            if in(obs_name, forbidden_symbols_error)
+            in(obs_name, forbidden_symbols_error) &&
                 error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
-            end
-            if (obs_name in species_n_vars_declared) && is_escaped_expr(obs_eq.args[2])
+            (obs_name in species_n_vars_declared) && is_escaped_expr(obs_eq.args[2]) &&
                 error("An interpolated observable have been used, which has also been ereqxplicitly declared within the system using either @species or @variables. This is not permitted.")
-            end
-            if ((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2])) &&
-               !isnothing(metadata)
-                error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the observable was also declared separately (using either @species or @variables). When this is done, metadata should instead be provided within the original @species or @variable declaration.")
-            end
+            ((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2])) &&
+                !isnothing(metadata) && error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the observable was also declared separately (using either @species or @variables). When this is done, metadata should instead be provided within the original @species or @variable declaration.")
 
             # This bits adds the observables to the @variables vector which is given as output.
             # For Observables that have already been declared using @species/@variables,
