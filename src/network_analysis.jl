@@ -219,7 +219,7 @@ function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse=false)
     for (i, rx) in enumerate(reactions(rn))
         empty!(deps)
         get_variables!(deps, rx.rate, species(rn))
-        (!isempty(deps)) && (error("Reaction $rx's rate constant depends on species $(join(deps, ", ")). `adjacencymat` cannot support rate constants of this form."))
+        (!isempty(deps)) && (error("Reaction $rx's rate constant depends on species $(join(deps, ", ")). `fluxmat` cannot support rate constants of this form."))
     end
 
     rates = if isempty(pmap)
