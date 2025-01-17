@@ -4,6 +4,7 @@
 using Catalyst, Test
 using Catalyst: get_symbolics
 using ModelingToolkit: value, get_variables!, collect_vars!, eqtype_supports_collect_vars
+using Catalyst: has_physical_scale, get_physical_scale
 
 # Sets the default `t` to use.
 t = default_t()
