@@ -259,7 +259,7 @@ let
     @species A(t) B(t) C(t)
     @parameters k1, k2
 
-    rx = Reaction(k1, [A], [B], [2], [1]; metadata = [:physical_scale = PhysicalScale.Jump])
+    rx = Reaction(k1, [A], [B], [2], [1]; metadata = [:physical_scale => PhysicalScale.Jump])
     @test has_physical_scale(rx)
     @test get_physical_scale(rx) == PhysicalScale.Jump
 
@@ -267,7 +267,7 @@ let
     @test has_physical_scale(rx2) == false
 
     rx3 = Reaction(k1, [A], [B], [2], [1]; 
-        metadata = [:physical_scale = PhysicalScale.Jump, :noise_scaling => 0.1])
+        metadata = [:physical_scale => PhysicalScale.Jump, :noise_scaling => 0.1])
     @test has_physical_scale(rx3)
     @test get_physical_scale(rx3) == PhysicalScale.Jump    
 end
