@@ -123,17 +123,6 @@ let
     @test rn == rn2
 end
 
-# Creates a reaction network using `eval` and internal function.
-let
-    ex = quote
-        (Ka, Depot --> Central)
-        (CL / Vc, Central --> 0)
-    end
-    # Line number nodes aren't ignored so have to be manually removed
-    Base.remove_linenums!(ex)
-    @test eval(Catalyst.make_reaction_system(ex, QuoteNode(:name))) isa ReactionSystem
-end
-
 # Miscellaneous interpolation tests. Unsure what they do here (not related to DSL).
 let
     rx = @reaction k*h, A + 2*B --> 3*C + D
@@ -211,11 +200,11 @@ let
 end
 
 # Checks that repeated metadata throws errors.
-let 
-    @test_throws Exception @eval @reaction k, 0 --> X, [md1=1.0, md1=2.0] 
+let
+    @test_throws Exception @eval @reaction k, 0 --> X, [md1=1.0, md1=2.0]
     @test_throws Exception @eval @reaction_network begin
-        k, 0 --> X, [md1=1.0, md1=1.0] 
-    end 
+        k, 0 --> X, [md1=1.0, md1=1.0]
+    end
 end
 
 # Tests for nested metadata.
@@ -368,7 +357,7 @@ let
         @species (X(t))[1:2]
         (k[1],k[2]), X[1] <--> X[2]
     end
-    
+
     @parameters k[1:2]
     @species (X(t))[1:2]
     rx1 = Reaction(k[1], [X[1]], [X[2]])

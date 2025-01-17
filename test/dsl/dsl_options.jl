@@ -418,7 +418,7 @@ let
 end
 
 # Tests errors in `@variables` declarations.
-let 
+let
     # Variable used as species in reaction.
     @test_throws Exception @eval rn = @reaction_network begin
         @variables K(t)
@@ -813,7 +813,7 @@ let
     # Observable metadata provided twice.
     @test_throws Exception @eval @reaction_network begin
         @species X2 [description="Twice the amount of X"]
-        @observables (X2, [description="X times two."]) ~ 2X 
+        @observables (X2, [description="X times two."]) ~ 2X
         d, X --> 0
     end
 
@@ -998,6 +998,14 @@ let
     end
 end
 
+# Erroneous `@default_noise_scaling` declaration (other noise scaling tests are mostly in the SDE file).
+let
+    # Default noise scaling with multiple entries.
+    @test_throws Exception @eval @reaction_network begin
+        @default_noise_scaling η1 η2
+    end
+end
+
 ### Other DSL Option Tests ###
 
 # test combinatoric_ratelaws DSL option
@@ -1173,12 +1181,4 @@ let
         @variables X1(t) X2(t)
         @observables X2 ~ X1
     end
-end
-
-# Erroneous `@default_noise_scaling` declaration (other noise scaling tests are mostly in the SDE file).
-let
-    # Default noise scaling with multiple entries.
-    @test_throws Exception @eval @reaction_network begin
-        @default_noise_scaling η1 η2
-    end 
 end

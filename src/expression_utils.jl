@@ -5,7 +5,7 @@ function esc_dollars!(ex)
     # If we do not have an expression: recursion has finished and we return the input.
     (ex isa Expr) || (return ex)
 
-    # If we have encountered an interpolation, perform the appropriate modification, else recur. 
+    # If we have encountered an interpolation, perform the appropriate modification, else recur.
     if ex.head == :$
         return esc(:($(ex.args[1])))
     else
@@ -26,27 +26,27 @@ end
 
 # Throws an error when a forbidden symbol is used.
 function forbidden_symbol_check(sym)
-    isempty(intersect(forbidden_symbols_error, sym)) && return
     used_forbidden_syms = intersect(forbidden_symbols_error, sym)
+    isempty(used_forbidden_syms) && return
     error("The following symbol(s) are used as species or parameters: $used_forbidden_syms, this is not permitted.")
 end
 
 # Throws an error when a forbidden variable is used (a forbidden symbol that is not `:t`).
 function forbidden_variable_check(sym)
-    isempty(intersect(forbidden_variables_error, sym)) && return
     used_forbidden_syms = intersect(forbidden_variables_error, sym)
+    isempty(used_forbidden_syms) && return
     error("The following symbol(s) are used as variables: $used_forbidden_syms, this is not permitted.")
 end
 
 # Checks that no symbol was sued for multiple purposes.
 function unique_symbol_check(syms)
-    allunique(syms) && return
-    error("Reaction network independent variables, parameters, species, and variables must all have distinct names, but a duplicate has been detected. ")
+    allunique(syms)||
+        error("Reaction network independent variables, parameters, species, and variables must all have distinct names, but a duplicate has been detected. ")
 end
 
 ### Catalyst-specific Expressions Manipulation ###
 
-# Some options takes input on form that is either `@option ...` or `@option begin ... end`. 
+# Some options takes input on form that is either `@option ...` or `@option begin ... end`.
 # This transforms input of the latter form to the former (with only one line in the `begin ... end` block)
 function option_block_form(expr)
     (expr.head == :block) && return expr
@@ -72,12 +72,12 @@ function find_varinfo_in_declaration(expr)
 
     # Case: X
     (expr isa Symbol) && (return expr, [], nothing, nothing)
-    # Case: X(t)         
+    # Case: X(t)
     (expr.head == :call) && (return expr.args[1], expr.args[2:end], nothing, nothing)
     if expr.head == :(=)
         # Case: X = 1.0
         (expr.args[1] isa Symbol) && (return expr.args[1], [], expr.args[2], nothing)
-        # Case: X(t) = 1.0        
+        # Case: X(t) = 1.0
         (expr.args[1].head == :call) &&
             (return expr.args[1].args[1], expr.args[1].args[2:end], expr.args[2].args[1],
             nothing)
@@ -114,7 +114,7 @@ end
 # (In this example the independent variable :t was inserted).
 # Here, the iv is a iv_expr, which can be anything, which is inserted
 function insert_independent_variable(expr_in, iv_expr)
-    # If expr is a symbol, just attach the iv. If not we have to create a new expr and mutate it. 
+    # If expr is a symbol, just attach the iv. If not we have to create a new expr and mutate it.
     # Because Symbols (a possible input) cannot be mutated, this function cannot mutate the input
     # (would have been easier if Expr input was guaranteed).
     (expr_in isa Symbol) && (return Expr(:call, expr_in, iv_expr))

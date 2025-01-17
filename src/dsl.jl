@@ -221,7 +221,7 @@ struct DSLReaction
         subs = recursive_find_reactants!(sub_line, 1, Vector{DSLReactant}(undef, 0))
         prods = recursive_find_reactants!(prod_line, 1, Vector{DSLReactant}(undef, 0))
         metadata = extract_metadata(metadata_line)
-        new(sub, prod, rate, metadata, rx_line)
+        new(subs, prods, rate, metadata, rx_line)
     end
 end
 
@@ -232,13 +232,13 @@ end
 function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
         reactants::Vector{DSLReactant})
     # We have reached the end of the expression tree and can finalise and return the reactants.
-    if typeof(ex) != Expr || (ex.head == :escape) || (ex.head == :ref)
+    if (typeof(ex) != Expr) || (ex.head == :escape) || (ex.head == :ref)
         # The final bit of the expression is not a relevant reactant, no additions are required.
         (ex == 0 || in(ex, empty_set)) && (return reactants)
 
         # If the expression corresponds to a reactant on our list, increase its multiplicity.
-        if any(ex == reactant.reactant for reactant in reactants)
-            idx = findfirst(r.reactant == ex for r in reactants)
+        idx = findfirst(r.reactant == ex for r in reactants)
+        if !isnothing(idx)
             new_mult = processmult(+, mult, reactants[idx].stoichiometry)
             reactants[idx] = DSLReactant(ex, new_mult)
 
@@ -324,12 +324,13 @@ function make_reaction_system(ex::Expr, name)
 
     # Reads options (round 1, options which must be read before the reactions, e.g. because
     # they might declare parameters/species/variables).
+    requiredec = haskey(options, :require_declaration)
     compound_expr_init, compound_species = read_compound_options(options)
     species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
     variables_declared = extract_syms(options, :variables)
     vars_extracted, add_default_diff, equations = read_equations_options(options,
-        variables_declared)
+        variables_declared; requiredec)
 
     # Extracts all reactions. Extracts all parameters, species, and variables of the system and
     # creates lists with them.
@@ -338,31 +339,29 @@ function make_reaction_system(ex::Expr, name)
     syms_declared = Set(Iterators.flatten((parameters_declared, species_declared,
         variables)))
     species_extracted, parameters_extracted = extract_species_and_parameters(reactions,
-        syms_declared)
+        syms_declared; requiredec)
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
     # Reads options (round 2, options that either can, or must, be read after the reactions).
-    tiv, sivs, ivs, ivexpr = read_ivs_option(options)
+    tiv, sivs, ivs, ivsexpr = read_ivs_option(options)
     continuous_events_expr = read_events_option(options, :continuous_events)
     discrete_events_expr = read_events_option(options, :discrete_events)
-    observed_expr, observed_eqs, obs_syms = read_observed_options(options,
-        [species_declared; variables], ivs)
+    obsexpr, observed_eqs, obs_syms = read_observed_options(options,
+        [species_declared; variables], ivs; requiredec)
     diffexpr = create_differential_expr(options, add_default_diff,
         [species; parameters; variables], tiv)
     default_reaction_metadata = read_default_noise_scaling_option(options)
     combinatoric_ratelaws = read_combinatoric_ratelaws_option(options)
 
     # Checks for input errors.
-    if (sum(length, [reaction_lines, option_lines]) != length(ex.args))
-        error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
-    end
-    if any(!in(opt_in, option_keys) for opt_in in keys(options))
-        error("The following unsupported options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
-    end
     forbidden_symbol_check(union(species, parameters))
     forbidden_variable_check(variables)
     unique_symbol_check(vcat(species, parameters, variables, ivs))
+    (sum(length, [reaction_lines, option_lines]) != length(ex.args)) &&
+        error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
+    any(!in(option_keys), keys(options)) &&
+        error("The following unsupported options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     psexpr_init = get_pexpr(parameters_extracted, options)
@@ -371,35 +370,37 @@ function make_reaction_system(ex::Expr, name)
     psexpr, psvar = scalarize_macro(psexpr_init, "ps")
     spsexpr, spsvar = scalarize_macro(spsexpr_init, "specs")
     vsexpr, vsvar = scalarize_macro(vsexpr_init, "vars")
-    compound_expr, compsvar = scalarize_macro(compound_expr_init, "comps")
+    cmpsexpr, cmpsvar = scalarize_macro(compound_expr_init, "comps")
     rxsexprs = make_rxsexprs(reactions, equations)
 
     # Assemblies the full expression that declares all required symbolic variables, and
     # then the output `ReactionSystem`.
-    quote
+    MacroTools.flatten(striplines(quote
+        # Inserts the expressions which generates the `ReactionSystem` input.
+        $ivsexpr
         $psexpr
-        $ivexpr
         $spsexpr
         $vsexpr
-        $observed_expr
-        $compound_expr
+        $obsexpr
+        $cmpsexpr
         $diffexpr
 
-        sivs_vec = $sivs
-        rx_eq_vec = $rxexprs
-        vars = setdiff(union($spssym, $varssym, $compssym), $obs_syms)
-        obseqs = $observed_eqs
-        cevents = $continuous_events_expr
-        devents = $discrete_events_expr
+        # Stores each kwarg in a variable. Not necessary but useful when inspecting code for debugging.
+        name = $name
+        spatial_ivs = $sivs
+        rx_eq_vec = $rxsexprs
+        vars = setdiff(union($spsvar, $vsvar, $cmpsvar), $obs_syms)
+        observed = $observed_eqs
+        continuous_events = $continuous_events_expr
+        discrete_events = $discrete_events_expr
+        combinatoric_ratelaws = $combinatoric_ratelaws
+        default_reaction_metadata = $default_reaction_metadata
 
         remake_ReactionSystem_internal(
-            make_ReactionSystem_internal(
-                rx_eq_vec, $tiv, vars, $pssym;
-                name = $name, spatial_ivs = sivs_vec, observed = obseqs,
-                continuous_events = cevents, discrete_events = devents,
-                combinatoric_ratelaws = $combinatoric_ratelaws);
-            default_reaction_metadata = $default_reaction_metadata)
-    end
+            make_ReactionSystem_internal(rx_eq_vec, $tiv, vars, $psvar; name, spatial_ivs,
+                observed, continuous_events, discrete_events, combinatoric_ratelaws);
+            default_reaction_metadata)
+    end))
 end
 
 ### DSL Reaction Reading Functions ###
@@ -451,7 +452,7 @@ function read_reaction_line(line::Expr)
 
     # Handles metadata. If not provided, empty metadata is created.
     if length(line.args) == 2
-        in(arrow, double_arrows) ? :(([], [])) : :([])
+        metadata = in(arrow, double_arrows) ? :(([], [])) : :([])
     elseif length(line.args) == 3
         metadata = line.args[3]
     else
@@ -511,7 +512,7 @@ end
 
 # Function looping through all reactions, to find undeclared symbols (species or
 # parameters) and assign them to the right category.
-function extract_species_and_parameters(reactions, excluded_syms)
+function extract_species_and_parameters(reactions, excluded_syms; requiredec = false)
     # Loops through all reactant, extract undeclared ones as species.
     species = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
@@ -649,17 +650,17 @@ function read_ivs_option(options)
     # Creates the independent variables expressions (depends on whether the `ivs` option was used).
     if haskey(options, :ivs)
         ivs = Tuple(extract_syms(options, :ivs))
-        ivexpr = copy(options[:ivs])
-        ivexpr.args[1] = Symbol("@", "parameters")
+        ivsexpr = copy(options[:ivs])
+        ivsexpr.args[1] = Symbol("@", "parameters")
     else
         ivs = (DEFAULT_IV_SYM,)
-        ivexpr = :($(DEFAULT_IV_SYM) = default_t())
+        ivsexpr = :($(DEFAULT_IV_SYM) = default_t())
     end
 
     # Extracts the independet variables symbols (time and spatial), and returns the output.
     tiv = ivs[1]
     sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
-    return tiv, sivs, ivs, ivexpr
+    return tiv, sivs, ivs, ivsexpr
 end
 
 # Returns the `default_reaction_metadata` output. Technically Catalyst's code could have been made
@@ -977,9 +978,8 @@ end
 # Reads a single line and creates the corresponding DSLReaction.
 function get_reaction(line)
     reaction = get_reactions([line])
-    if (length(reaction) != 1)
+    (length(reaction) != 1) &&
         error("Malformed reaction. @reaction macro only creates a single reaction. E.g. double arrows, such as `<-->` are not supported.")
-    end
     return only(reaction)
 end
 
