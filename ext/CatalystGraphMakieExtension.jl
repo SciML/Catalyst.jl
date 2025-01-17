@@ -1,11 +1,11 @@
 module CatalystGraphMakieExtension
 
 # Fetch packages.
-using Catalyst, GraphMakie
-import Catalyst: lattice_plot, lattice_animation, extract_vals
-import Graphs: AbstractGraph, SimpleGraph
+using Catalyst, GraphMakie, Graphs, Symbolics, SparseArrays, NetworkLayout
+using Symbolics: get_variables!
+import Catalyst: species_reaction_graph, incidencematgraph, lattice_plot, lattice_animation
 
-# Creates and exports hc_steady_states function.
+# Creates and exports graph plotting functions.
 include("CatalystGraphMakieExtension/graph_makie_extension_spatial_modelling.jl")
-
+include("CatalystGraphMakieExtension/rn_graph_plot.jl")
 end

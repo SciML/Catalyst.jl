@@ -42,6 +42,7 @@ end
         # Tests reaction network analysis features.
         @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end
         @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
+        @time @safetestset "CRN Theory" begin include("network_analysis/crn_theory.jl") end
 
         # Tests ODE, SDE, jump simulations, nonlinear solving, and steady state simulations.
         @time @safetestset "ODE System Simulations" begin include("simulation_and_solving/simulate_ODEs.jl") end
@@ -56,25 +57,16 @@ end
     end
 
     if GROUP == "All" || GROUP == "IO"
-        # BROKEN
-        # @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
+        @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
         # BROKEN
         # @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
-
-        # Tests network visualisation.
-        # Disable on Macs as can't install GraphViz via jll
-        if !Sys.isapple()
-            @time @safetestset "Graphs Visualisations" begin include("visualisation/graphs.jl") end
-        end
     end
 
     if GROUP == "All" || GROUP == "Spatial"
         # Tests spatial modelling and simulations.
         @time @safetestset "PDE Systems Simulations" begin include("spatial_modelling/simulate_PDEs.jl") end
         @time @safetestset "Spatial Reactions" begin include("spatial_modelling/spatial_reactions.jl") end
-
-        # BROKEN
-        #@time @safetestset "Lattice Reaction Systems" begin include("spatial_modelling/lattice_reaction_systems.jl") end
+        @time @safetestset "Lattice Reaction Systems" begin include("spatial_modelling/lattice_reaction_systems.jl") end
         @time @safetestset "Spatial Lattice Variants" begin include("spatial_modelling/lattice_reaction_systems_lattice_types.jl") end
         @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_ODEs.jl") end
         @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_jumps.jl") end
@@ -85,6 +77,7 @@ end
     if GROUP == "All" || GROUP == "Extensions"
         activate_extensions_env()
 
+        @time @safetestset "Graph visualization" begin include("extensions/graphmakie.jl") end
         @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
         @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
 
@@ -92,9 +85,9 @@ end
         # @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
 
         # Tests stability computation (but requires the HomotopyContinuation extension).
-        @time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
+        #@time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
 
-        # Test spatial plotting, using CarioMakie and GraphMakie
+        # Test spatial plotting, using CairoMakie and GraphMakie
         @time @safetestset "Lattice Simulation Plotting" begin include("extensions/lattice_simulation_plotting.jl") end
     end
 

@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, ModelingToolkit, OrdinaryDiffEq, StochasticDiffEq, Plots, Test
+using Catalyst, ModelingToolkit, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, StochasticDiffEq, Plots, Test
 using Symbolics: unwrap
 
 # Sets stable rng number.
@@ -424,6 +424,74 @@ let
     end
 end
 
+# Tests that explicitly declaring a single symbol as several things does not work.
+# Several of these are broken, but note sure how to test broken-ness on `@test_throws false Exception @eval`.
+# Relevant issue: https://github.com/SciML/Catalyst.jl/issues/1173
+let
+    # Species + parameter.
+    @test_broken false #@test_throws Exception @eval @reaction_network begin
+        #@species X(t)
+        #@parameters X
+    #end
+
+    # Species + variable.
+    @test_broken false #@test_throws Exception @eval @reaction_network begin
+        #@species X(t)
+        #@variables X(t)
+    #end
+
+    # Variable + parameter.
+    @test_broken false #@test_throws Exception @eval @reaction_network begin
+        #@variables X(t)
+        #@parameters X
+    #end
+
+    # Species + differential.
+    @test_throws Exception @eval @reaction_network begin
+        @species X(t)
+        @differentials X = Differential(t)
+    end
+
+    # Parameter + differential.
+    @test_throws Exception @eval @reaction_network begin
+        @parameters X
+        @differentials X = Differential(t)
+    end
+
+    # Variable + differential.
+    @test_throws Exception @eval @reaction_network begin
+        @variables X(t)
+        @differentials X = Differential(t)
+    end
+
+    # Parameter + observable (species/variable + observable is OK, as this e.g. provide additional observables information).
+    @test_broken false #@test_throws Exception @eval @reaction_network begin
+        #@species Y(t)
+        #@parameters X
+        #@observables X ~ Y
+    #end
+
+    # Species + compound.
+    @test_broken false #@test_throws Exception @eval @reaction_network begin
+        #@species X(t) O(t)
+        #@compounds begin X(t) ~ 2O end
+    #end
+
+    # Parameter + compound.
+    @test_broken false #@test_throws Exception @eval @reaction_network begin
+        #@species O(t)
+        #@parameters X
+        #@compounds begin X(t) ~ 2O end
+    #end
+
+    # Variable + compound.
+    @test_broken false #@test_throws Exception @eval @reaction_network begin
+        #@species O(t)
+        #@variables X(t)
+        #@compounds begin X(t) ~ 2O end
+    #end
+end
+
 ### Test Independent Variable Designations ###
 
 # Test ivs in DSL.
@@ -450,6 +518,118 @@ let
     @test issetequal(Catalyst.get_sivs(rn), [x])
 end
 
+### Test Symbolic Variable Inference ###
+
+# Basic checks that that symbolic variables not explicitly declared are correctly inferred.
+let
+    # Case 1 (a reaction only).
+    rn1 = @reaction_network begin
+        (p1/(S1+p2) + S2), S1 --> S2
+    end
+    @test issetequal(species(rn1), [rn1.S1, rn1.S2])
+    @test issetequal(parameters(rn1), [rn1.p1, rn1.p2])
+
+    # Case 2 (reactions and equations).
+    rn2 = @reaction_network begin
+        @equations V1 + log(V2 + S1) ~ V2^2
+        (p1/V1 + S1 + log(S2 + V2 + p2)), S1 --> S2
+    end
+    @test issetequal(species(rn2), [rn2.S1, rn2.S2])
+    @test issetequal(nonspecies(rn2), [rn2.V1, rn2.V2])
+    @test issetequal(parameters(rn2), [rn2.p1, rn2.p2])
+
+    # Case 3 (reaction and equations with a differential).
+    rn3 = @reaction_network begin
+        @equations begin
+            D(V1) ~ S1 + V1
+            V2 + S2 ~ V1^2 + V2^2
+        end
+        (p1/V1 + S1 + log(S2 + V2 + p2)), S1 --> S2
+    end
+    @test issetequal(species(rn3), [rn3.S1, rn3.S2])
+    @test issetequal(nonspecies(rn3), [rn3.V1, rn3.V2])
+    @test issetequal(parameters(rn3), [rn3.p1, rn3.p2])
+
+    # Case 4 (reactions and equations with a pre-declared parameter).
+    rn4 = @reaction_network begin
+        @parameters p1
+        @equations V1 + sin(p1 + S1) ~ S2*V2
+        (p1+p2+V1+V2+S1+S2), S1 --> S2
+    end
+    @test issetequal(species(rn4), [rn2.S1, rn2.S2])
+    @test issetequal(nonspecies(rn4), [rn2.V1, rn2.V2])
+    @test issetequal(parameters(rn4), [rn2.p1, rn2.p2])
+
+    # Case 5 (algebraic equation containing D, which is pre-declared as a species).
+    rn5 = @reaction_network begin
+        @species D(t)
+        @equations D * (S1 + V1 + V2) ~ S2
+        (p1 + p2*(D + V1 + V2 + S2 + S2)), S1 --> S2 + D
+    end
+    @test issetequal(species(rn5), [rn5.S1, rn5.S2, rn5.D])
+    @test issetequal(nonspecies(rn5), [rn5.V1, rn5.V2])
+    @test issetequal(parameters(rn5), [rn5.p1, rn5.p2])
+
+    # Case 6 (algebraic equation containing D, which is pre-declared as a parameter).
+    rn6 = @reaction_network begin
+        @parameters D
+        @equations D * (S1 + V1 + V2) ~ S2
+        (p1 + p2*(D + V1 + V2 + S2 + S2)), S1 --> S2
+    end
+    @test issetequal(species(rn6), [rn6.S1, rn6.S2])
+    @test issetequal(nonspecies(rn6), [rn6.V1, rn6.V2])
+    @test issetequal(parameters(rn6), [rn6.p1, rn6.p2, rn6.D])
+
+    # Case 7 (algebraic equation containing D, which is pre-declared as a variable).
+    rn7 = @reaction_network begin
+        @variables D(t)
+        @equations D * (S1 + V1 + V2) ~ S2
+        (p1 + p2*(D + V1 + V2 + S2 + S2)), S1 --> S2
+    end
+    @test issetequal(species(rn7), [rn7.S1, rn7.S2])
+    @test issetequal(nonspecies(rn7), [rn7.V1, rn7.V2, rn7.D])
+    @test issetequal(parameters(rn7), [rn7.p1, rn7.p2])
+
+    # Case 8 (reactions, equations, and a custom differential).
+    rn8 = @reaction_network begin
+        @differentials Δ = Differential(t)
+        @equations Δ(V1) + Δ(V2) + log(V2 + S1) ~  S2
+        (p1/V1 + S1 + log(S2 + V2 + p2)), S1 --> S2
+    end
+    @test issetequal(species(rn8), [rn8.S1, rn8.S2])
+    @test issetequal(nonspecies(rn8), [rn8.V1, rn8.V2])
+    @test issetequal(parameters(rn8), [rn8.p1, rn8.p2])
+end
+
+# Checks that various cases where symbolic variables cannot (or shouldn't) be inferred generate errors.
+let
+    # Species/variables/parameter named after default differential used as function call.
+    # In the future, species/variables should be usable this way (designating a time delay).
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(V) ~ 1 - V
+        d, D --> 0
+    end
+    @test_broken false # @test_throws Exception @eval @reaction_network begin
+        #@variables D(t)
+        #@equations D(V) ~ 1 - V
+        #d, X --> 0
+    #end
+    @test_throws Exception @eval @reaction_network begin
+        @parameters D
+        @equations D(V) ~ 1 - V
+        d, X --> 0
+    end
+
+    # Symbol only occurring in events.
+    @test_throws Exception @eval @reaction_network begin
+        @discrete_event (X > 1.0) => [V => V/2]
+        d, X --> 0
+    end
+    @test_throws Exception @eval @reaction_network begin
+        @continuous_event [X > 1.0] => [V => V/2]
+        d, X --> 0
+    end
+end
 
 ### Observables ###
 
@@ -565,6 +745,45 @@ let
     @test sol[:X][1] == u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]
 end
 
+# Checks that models created w/o specifying `@variables` for observables are identical.
+# Compares both to model with explicit declaration, and programmatically created model.
+let
+    # With default ivs.
+    rn1 = @reaction_network rn begin
+        @variables X(t) X1(t) X2(t)
+        @observables X ~ X1 + X2
+    end
+    rn2 = @reaction_network rn begin
+        @variables X1(t) X2(t)
+        @observables X ~ X1 + X2
+    end
+    @variables X(t) X1(t) X2(t)
+    rn3 = complete(ReactionSystem([], t, [X1, X2], []; name = :rn, observed = [X ~ X1 + X2]))
+    @test isequal(rn1, rn2)
+    @test isequal(rn1, rn3)
+    @test isequal(rn1.X, rn2.X)
+    @test isequal(rn1.X, rn3.X)
+
+    # With non-default ivs.
+    rn4 = @reaction_network rn begin
+        @ivs τ x
+        @variables X(τ,x) X1(τ,x) X2(τ,x)
+        @observables X ~ X1 + X2
+    end
+    rn5 = @reaction_network rn begin
+        @ivs τ x
+        @variables X1(τ,x) X2(τ,x)
+        @observables X ~ X1 + X2
+    end
+    @parameters τ x
+    @variables X(τ,x) X1(τ,x) X2(τ,x)
+    rn6 = complete(ReactionSystem([], τ, [X1, X2], []; name = :rn, observed = [X ~ X1 + X2], spatial_ivs = [x]))
+    @test isequal(rn4, rn5)
+    @test isequal(rn4, rn6)
+    @test isequal(rn4.X, rn5.X)
+    @test isequal(rn4.X, rn6.X)
+end
+
 # Checks that ivs are correctly found.
 let
     rn = @reaction_network begin
@@ -604,7 +823,7 @@ let
         k, 0 --> X1 + X2
     end
     @test isequal(observed(rn1)[1].rhs, observed(rn2)[1].rhs)
-    @test_broken isequal(observed(rn1)[1].lhs.metadata, observed(rn2)[1].lhs.metadata)
+    @test isequal(observed(rn1)[1].lhs.metadata, observed(rn2)[1].lhs.metadata)
     @test isequal(unknowns(rn1), unknowns(rn2))
 
     # Case with metadata.
@@ -618,7 +837,7 @@ let
         k, 0 --> X1 + X2
     end
     @test isequal(observed(rn3)[1].rhs, observed(rn4)[1].rhs)
-    @test_broken isequal(observed(rn3)[1].lhs.metadata, observed(rn4)[1].lhs.metadata)
+    @test isequal(observed(rn3)[1].lhs.metadata, observed(rn4)[1].lhs.metadata)
     @test isequal(unknowns(rn3), unknowns(rn4))
 end
 
@@ -751,7 +970,7 @@ end
 # Check that DAE is solved correctly.
 let
     rn = @reaction_network rn begin
-        @parameters k
+        @parameters k d
         @variables X(t) Y(t)
         @equations begin
             X + 5 ~ k*S
@@ -909,12 +1128,6 @@ let
         @equations X = 1 - S
         (p,d), 0 <--> S
     end
-
-    # Equation with component undeclared elsewhere.
-    @test_throws Exception @eval @reaction_network begin
-        @equations X ~ p - S
-        (P,D), 0 <--> S
-    end
 end
 
 # test combinatoric_ratelaws DSL option
@@ -951,7 +1164,7 @@ let
     @test isequal(rl, k1*A^2)
 end
 
-# Test whether user-defined functions are properly expanded in equations. 
+# Test whether user-defined functions are properly expanded in equations.
 let
     f(A, t) = 2*A*t
 
@@ -965,7 +1178,7 @@ let
     @test isequal(equations(rn)[1], D(A) ~ 2*A*t)
 
 
-    # Test whether expansion happens properly for unregistered/registered functions. 
+    # Test whether expansion happens properly for unregistered/registered functions.
     hill_unregistered(A, v, K, n) = v*(A^n) / (A^n + K^n)
     rn2 = @reaction_network begin
         @parameters v K n
@@ -978,7 +1191,7 @@ let
 
     hill2(A, v, K, n) = v*(A^n) / (A^n + K^n)
     @register_symbolic hill2(A, v, K, n)
-    # Registered symbolic function should not expand. 
+    # Registered symbolic function should not expand.
     rn2r = @reaction_network begin
         @parameters v K n
         @equations D(A) ~ hill2(A, v, K, n)
@@ -1009,9 +1222,9 @@ let
     @named rn3_sym = ReactionSystem(eq, t)
     rn3_sym = complete(rn3_sym)
     @test isequivalent(rn3, rn3_sym)
-    
-    
-    # Test more complicated expression involving both registered function and a user-defined function. 
+
+
+    # Test more complicated expression involving both registered function and a user-defined function.
     g(A, K, n) = A^n + K^n
     rn4 = @reaction_network begin
         @parameters v K n
@@ -1021,4 +1234,85 @@ let
     @test equations(rn4)[1] isa Equation
     @parameters v n
     @test isequal(Catalyst.expand_registered_functions(equations(rn4)[1]), D(A) ~ v*(A^n))
+end
+
+### test that @no_infer properly throws errors when undeclared variables are written ###
+
+import Catalyst: UndeclaredSymbolicError
+let
+    # Test error when species are inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters k
+        k, A --> B
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @species A(t) B(t)
+        @parameters k
+        k, A --> B
+    end
+
+    # Test error when a parameter in rate is inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @species A(t) B(t)
+        @parameters k
+        k*n, A --> B
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters n k
+        @species A(t) B(t)
+        k*n, A --> B
+    end
+
+    # Test error when a parameter in stoichiometry is inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters k
+        @species A(t) B(t)
+        k, n*A --> B
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters k n
+        @species A(t) B(t)
+        k, n*A --> B
+    end
+
+    # Test error when a variable in an equation is inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @equations V ~ V^2 + 2
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @variables V(t)
+        @equations V ~ V^2 + 2
+    end
+
+    # Test error when a variable in an observable is inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @variables X1(t)
+        @observables X2 ~ X1
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @variables X1(t) X2(t)
+        @observables X2 ~ X1
+    end
+
+    # Test when the default differential D is inferred
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @variables V(t)
+        @equations D(V) ~ 1 - V
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @differentials D = Differential(t)
+        @variables X1(t) X2(t)
+        @observables X2 ~ X1
+    end
 end

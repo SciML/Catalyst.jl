@@ -1,7 +1,7 @@
 ### Fetch Packages and Set Global Variables ###
 
 # Fetch packages.
-using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEq, StochasticDiffEq, Test
+using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEqTsit5, OrdinaryDiffEqVerner, StochasticDiffEq, Test
 const MT = ModelingToolkit
 
 # Sets stable rng number.
@@ -107,6 +107,9 @@ end
 let
     @named rs2 = ReactionSystem(rxs, t)
     @test Catalyst.isequivalent(rs, rs2)
+
+    # Test with a type mismatch
+    @test Catalyst.isequivalent(rs, "Not a ReactionSystem") == false
 end
 
 # Defaults test.
@@ -594,7 +597,7 @@ let
     @variables V(t)
 
     # System using a forbidden symbol.
-    @test_throws Exception rs = ReactionSystem([Reaction(Γ, [X1], [])], t; named = :rs)
+    @test_throws Exception rs = ReactionSystem([Reaction(Γ, [X1], [])], t; name = :rs)
 
     # Species among parameters.
     @test_throws Exception rs = ReactionSystem([Reaction(k1, [X1], [])], t, [X1], [k1, X2])

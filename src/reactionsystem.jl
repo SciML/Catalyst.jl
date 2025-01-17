@@ -97,9 +97,9 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     stronglinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
     terminallinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
 
-    checkedrobust::Bool = false 
+    checkedrobust::Bool = false
     robustspecies::Vector{Int} = Vector{Int}(undef, 0)
-    deficiency::Int = -1 
+    deficiency::Int = -1
 end
 #! format: on
 
@@ -215,11 +215,11 @@ end
 
 ### ReactionSystem Structure ###
 
-""" 
+"""
 WARNING!!!
 
-The following variable is used to check that code that should be updated when the `ReactionSystem` 
-fields are updated has in fact been updated. Do not just blindly update this without first checking 
+The following variable is used to check that code that should be updated when the `ReactionSystem`
+fields are updated has in fact been updated. Do not just blindly update this without first checking
 all such code and updating it appropriately (e.g. serialization). Please use a search for
 `reactionsystem_fields` throughout the package to ensure all places which should be updated, are updated.
 """
@@ -318,7 +318,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
     """
     discrete_events::Vector{MT.SymbolicDiscreteCallback}
     """
-    Metadata for the system, to be used by downstream packages. 
+    Metadata for the system, to be used by downstream packages.
     """
     metadata::Any
     """
@@ -480,10 +480,10 @@ function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
 
-# Called internally (whether DSL-based or programmatic model creation is used). 
+# Called internally (whether DSL-based or programmatic model creation is used).
 # Creates a sorted reactions + equations vector, also ensuring reaction is first in this vector.
-# Extracts potential species, variables, and parameters from the input (if not provided as part of 
-# the model creation) and creates the corresponding vectors. 
+# Extracts potential species, variables, and parameters from the input (if not provided as part of
+# the model creation) and creates the corresponding vectors.
 # While species are ordered before variables in the unknowns vector, this ordering is not imposed here,
 # but carried out at a later stage.
 function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
@@ -495,7 +495,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     any(in(obs_vars), us_in) &&
         error("Found an observable in the list of unknowns. This is not allowed.")
 
-    # Creates a combined iv vector (iv and sivs). This is used later in the function (so that 
+    # Creates a combined iv vector (iv and sivs). This is used later in the function (so that
     # independent variables can be excluded when encountered quantities are added to `us` and `ps`).
     t = value(iv)
     ivs = Set([t])
@@ -560,7 +560,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     end
     psv = collect(new_ps)
 
-    # Passes the processed input into the next `ReactionSystem` call.    
+    # Passes the processed input into the next `ReactionSystem` call.
     ReactionSystem(fulleqs, t, usv, psv; spatial_ivs, continuous_events,
         discrete_events, observed, kwargs...)
 end
@@ -1072,8 +1072,8 @@ end
 
 ### General `ReactionSystem`-specific Functions ###
 
-# Checks if the `ReactionSystem` structure have been updated without also updating the 
-# `reactionsystem_fields` constant. If this is the case, returns `false`. This is used in 
+# Checks if the `ReactionSystem` structure have been updated without also updating the
+# `reactionsystem_fields` constant. If this is the case, returns `false`. This is used in
 # certain functionalities which would break if the `ReactionSystem` structure is updated without
 # also updating these functionalities.
 function reactionsystem_uptodate_check()
@@ -1251,7 +1251,7 @@ end
 ### `ReactionSystem` Remaking ###
 
 """
-    remake_ReactionSystem_internal(rs::ReactionSystem; 
+    remake_ReactionSystem_internal(rs::ReactionSystem;
         default_reaction_metadata::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol, Any}}()) where {T}
 
 Takes a `ReactionSystem` and remakes it, returning a modified `ReactionSystem`. Modifications depend
@@ -1284,7 +1284,7 @@ function set_default_metadata(rs::ReactionSystem; default_reaction_metadata = []
     # Currently, `noise_scaling` is the only relevant metadata supported this way.
     drm_dict = Dict(default_reaction_metadata)
     if haskey(drm_dict, :noise_scaling)
-        # Finds parameters, species, and variables in the noise scaling term.       
+        # Finds parameters, species, and variables in the noise scaling term.
         ns_expr = drm_dict[:noise_scaling]
         ns_syms = [Symbolics.unwrap(sym) for sym in get_variables(ns_expr)]
         ns_ps = Iterators.filter(ModelingToolkit.isparameter, ns_syms)
@@ -1424,7 +1424,7 @@ function ModelingToolkit.compose(sys::ReactionSystem, systems::AbstractArray; na
         MT.collect_scoped_vars!(newunknowns, newparams, ssys, iv)
     end
 
-    if !isempty(newunknowns) 
+    if !isempty(newunknowns)
         @set! sys.unknowns = union(get_unknowns(sys), newunknowns)
         sort!(get_unknowns(sys), by = !isspecies)
         @set! sys.species = filter(isspecies, get_unknowns(sys))

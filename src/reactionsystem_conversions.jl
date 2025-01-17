@@ -872,7 +872,7 @@ end
 
 Example:
 ```julia
-using Catalyst, OrdinaryDiffEq, JumpProcesses, Plots
+using Catalyst, OrdinaryDiffEqTsit5, JumpProcesses, Plots
 rn = @reaction_network begin
     k*(1 + sin(t)), 0 --> A
 end

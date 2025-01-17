@@ -1,5 +1,5 @@
 # Fetch packages.
-using Catalyst, NonlinearSolve, OrdinaryDiffEq, Statistics, SteadyStateDiffEq, StochasticDiffEq, Test
+using Catalyst, NonlinearSolve, OrdinaryDiffEqVerner, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, Statistics, SteadyStateDiffEq, StochasticDiffEq, Test
 using ModelingToolkit: getdefault, getdescription, getdefault
 using Symbolics: BasicSymbolic, unwrap
 
@@ -228,7 +228,7 @@ let
         Reaction(d, [X], []),
         Reaction(d, [X], nothing, [2], nothing),
         D(V) ~ X - v*V,
-        W^2 ~ log(V) + X 
+        W^2 ~ log(V) + X
     ]
     @named coupled_rs = ReactionSystem(eqs, t)
 
@@ -456,7 +456,7 @@ end
 
 # Checks that a coupled SDE + algebraic equations works.
 # Checks that structural_simplify is required to simulate coupled SDE + algebraic equations.
-@test_broken let # SDEs are currently broken with structural simplify (https://github.com/SciML/ModelingToolkit.jl/issues/2614).
+let # SDEs are currently broken with structural simplify (https://github.com/SciML/ModelingToolkit.jl/issues/2614).
     # Creates coupled reactions system.
     @parameters p d k1 k2
     @species X(t)
@@ -480,7 +480,7 @@ end
     # Checks the algebraic equation holds.
     sprob = SDEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true)
     ssol = solve(sprob, ImplicitEM())
-    @test 2 .+ ps[:k1] * ssol[:A] == 3 .+ ps[:k2] * ssol[:X]
+    @test (2 .+ ps[k1] * ssol[:A]) ≈ (3 .+ ps[k2] * ssol[:X])
 end
 
 
@@ -899,38 +899,6 @@ end
 
 # Checks that various misformatted declarations yield errors.
 let
-    # Symbol in equation not appearing elsewhere (1).
-    @test_throws Exception @eval @reaction_network begin
-        @equations D(V) ~ -X
-    end
-
-    # Symbol in equation not appearing elsewhere (2).
-    @test_throws Exception @eval @reaction_network begin
-        @equations 1 + log(x) ~ 2X
-    end
-
-    # Attempting to infer differential variable not isolated on lhs (1).
-    @test_throws Exception @eval @reaction_network begin
-        @equations D(V) + 1 ~ 0
-    end
-
-    # Attempting to infer differential variable not isolated on lhs (2).
-    @test_throws Exception @eval @reaction_network begin
-        @equations -1.0 ~ D(V)
-    end
-
-    # Attempting to infer differential operator not isolated on lhs (1).
-    @test_throws Exception @eval @reaction_network begin
-        @variables V(t)
-        @equations D(V) + 1 ~ 0
-    end
-
-    # Attempting to infer a variable when using a non-default differential.
-    @test_throws Exception @eval @reaction_network begin
-        @differentials Δ = Differential(t)
-        @equations Δ(V) ~ -1,0
-    end
-
     # Attempting to create a new differential from an unknown iv.
     @test_throws Exception @eval @reaction_network begin
         @differentials D = Differential(τ)
@@ -944,14 +912,8 @@ let
 
     # Several equations without `begin ... end` block.
     @test_throws Exception @eval @reaction_network begin
-        @variables V(t)
         @equations D(V) + 1 ~ - 1.0
-    end
-
-    # Undeclared differential.
-    @test_throws Exception @eval @reaction_network begin
-        @species V
-        @equations Δ(V) ~ -1.0
+        @equations D(W) + 1 ~ - 1.0
     end
 
     # System using multiple ivs.

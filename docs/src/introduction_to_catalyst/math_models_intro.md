@@ -73,7 +73,7 @@ while the jump process propensity function is
 a(\mathbf{X}(t)) = k A (A-1) B.
 ```
 
-## Reaction Rate Equation (RRE) ODE Models
+## [Reaction Rate Equation (RRE) ODE Models](@id math_models_in_catalyst_rre_odes)
 The RRE ODE models Catalyst creates for a general system correspond to the coupled system of ODEs given by
 ```math
 \frac{d X_m}{dt} =\sum_{k=1}^K \nu_m^k a_k(\mathbf{X}(t),t), \quad m = 1,\dots,M.

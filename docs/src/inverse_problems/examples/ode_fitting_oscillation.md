@@ -56,7 +56,7 @@ function optimise_p(pinit, tend)
         newprob = remake(prob; tspan = (0.0, tend), p = p)
         sol = Array(solve(newprob, Rosenbrock23(); saveat = newtimes))
         loss = sum(abs2, sol .- sample_vals[:, 1:size(sol,2)])
-        return loss, sol
+        return loss
     end
 
     # optimize for the parameters that minimize the loss

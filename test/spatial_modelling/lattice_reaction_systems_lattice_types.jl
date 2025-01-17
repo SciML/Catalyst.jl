@@ -1,7 +1,7 @@
 ### Preparations ###
 
 # Fetch packages.
-using Catalyst, Graphs, OrdinaryDiffEq, Test
+using Catalyst, Graphs, OrdinaryDiffEqTsit5, OrdinaryDiffEqBDF, Test
 
 # Fetch test networks.
 include("../spatial_test_networks.jl")

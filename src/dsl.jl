@@ -71,7 +71,7 @@ const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔
 # Declares the keys used for various options.
 const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables,
     :default_noise_scaling, :differentials, :equations,
-    :continuous_events, :discrete_events, :combinatoric_ratelaws)
+    :continuous_events, :discrete_events, :combinatoric_ratelaws, :require_declaration)
 
 ### `@species` Macro ###
 
@@ -141,17 +141,17 @@ ReactionSystems generated through `@reaction_network` are complete.
 """
 macro reaction_network(name::Symbol, ex::Expr)
     :(complete($(make_reaction_system(
-        MacroTools.striplines(ex); name = :($(QuoteNode(name)))))))
+        striplines(ex); name = :($(QuoteNode(name)))))))
 end
 
 # Allows @reaction_network $name begin ... to interpolate variables storing a name.
 macro reaction_network(name::Expr, ex::Expr)
     :(complete($(make_reaction_system(
-        MacroTools.striplines(ex); name = :($(esc(name.args[1])))))))
+        striplines(ex); name = :($(esc(name.args[1])))))))
 end
 
 macro reaction_network(ex::Expr)
-    ex = MacroTools.striplines(ex)
+    ex = striplines(ex)
 
     # no name but equations: @reaction_network begin ... end ...
     if ex.head == :block
@@ -179,16 +179,16 @@ Equivalent to `@reaction_network` except the generated `ReactionSystem` is not m
 complete.
 """
 macro network_component(name::Symbol, ex::Expr)
-    make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name))))
+    make_reaction_system(striplines(ex); name = :($(QuoteNode(name))))
 end
 
 # Allows @network_component $name begin ... to interpolate variables storing a name.
 macro network_component(name::Expr, ex::Expr)
-    make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1]))))
+    make_reaction_system(striplines(ex); name = :($(esc(name.args[1]))))
 end
 
 macro network_component(ex::Expr)
-    ex = MacroTools.striplines(ex)
+    ex = striplines(ex)
 
     # no name but equations: @network_component begin ... end ...
     if ex.head == :block
@@ -220,13 +220,14 @@ struct ReactionStruct
     products::Vector{ReactantStruct}
     rate::ExprValues
     metadata::Expr
+    rxexpr::Expr
 
     function ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues,
-            metadata_line::ExprValues)
+            metadata_line::ExprValues, rx_line::Expr)
         sub = recursive_find_reactants!(sub_line, 1, Vector{ReactantStruct}(undef, 0))
         prod = recursive_find_reactants!(prod_line, 1, Vector{ReactantStruct}(undef, 0))
         metadata = extract_metadata(metadata_line)
-        new(sub, prod, rate, metadata)
+        new(sub, prod, rate, metadata, rx_line)
     end
 end
 
@@ -283,6 +284,17 @@ function extract_metadata(metadata_line::Expr)
     return metadata
 end
 
+
+
+struct UndeclaredSymbolicError <: Exception
+    msg::String
+end
+
+function Base.showerror(io::IO, err::UndeclaredSymbolicError)
+    print(io, "UndeclaredSymbolicError: ")
+    print(io, err.msg)
+end
+
 ### DSL Internal Master Function ###
 
 # Function for creating a ReactionSystem structure (used by the @reaction_network macro).
@@ -308,17 +320,13 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     compound_expr, compound_species = read_compound_options(options)
     continuous_events_expr = read_events_option(options, :continuous_events)
     discrete_events_expr = read_events_option(options, :discrete_events)
+    requiredec = haskey(options, :require_declaration)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
     species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
     variables_declared = extract_syms(options, :variables)
-
-    # Reads equations. 
-    vars_extracted, add_default_diff, equations = read_equations_options(
-        options, variables_declared)
-    variables = vcat(variables_declared, vars_extracted)
 
     # Handle independent variables
     if haskey(options, :ivs)
@@ -339,22 +347,31 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         combinatoric_ratelaws = true
     end
 
-    # Reads observables.
-    observed_vars, observed_eqs, obs_syms = read_observed_options(
-        options, [species_declared; variables], all_ivs)
-
-    # Collect species and parameters, including ones inferred from the reactions. 
+    # Collect species and parameters, including ones inferred from the reactions.
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
-        variables)))
+        variables_declared)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(
-        reactions, declared_syms)
+        reactions, declared_syms; requiredec)
 
+    # Reads equations (and infers potential variables).
+    # Excludes any parameters already extracted (if they also was a variable).
+    declared_syms = union(declared_syms, species_extracted)
+    vars_extracted, add_default_diff, equations = read_equations_options(
+        options, declared_syms, parameters_extracted; requiredec)
+    variables = vcat(variables_declared, vars_extracted)
+    parameters_extracted = setdiff(parameters_extracted, vars_extracted)
+
+    # Creates the finalised parameter and species lists.
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
     # Create differential expression.
     diffexpr = create_differential_expr(
         options, add_default_diff, [species; parameters; variables], tiv)
+
+    # Reads observables.
+    observed_vars, observed_eqs, obs_syms = read_observed_options(
+        options, [species_declared; variables], all_ivs; requiredec)
 
     # Checks for input errors.
     (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
@@ -384,7 +401,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args, equation)
     end
 
-    # Output code corresponding to the reaction system. 
+    # Output code corresponding to the reaction system.
     quote
         $ivexpr
         $ps
@@ -425,17 +442,17 @@ function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(u
                 error("Error: Must provide a tuple of reaction rates when declaring a bi-directional reaction.")
             end
             push_reactions!(reactions, reaction.args[2], reaction.args[3],
-                rate.args[1], metadata.args[1], arrow)
+                rate.args[1], metadata.args[1], arrow, line)
             push_reactions!(reactions, reaction.args[3], reaction.args[2],
-                rate.args[2], metadata.args[2], arrow)
+                rate.args[2], metadata.args[2], arrow, line)
         elseif in(arrow, fwd_arrows)
             push_reactions!(reactions, reaction.args[2], reaction.args[3],
-                rate, metadata, arrow)
+                rate, metadata, arrow, line)
         elseif in(arrow, bwd_arrows)
             push_reactions!(reactions, reaction.args[3], reaction.args[2],
-                rate, metadata, arrow)
+                rate, metadata, arrow, line)
         else
-            throw("Malformed reaction, invalid arrow type used in: $(MacroTools.striplines(line))")
+            throw("Malformed reaction, invalid arrow type used in: $(striplines(line))")
         end
     end
     return reactions
@@ -467,7 +484,7 @@ end
 # Takes a reaction line and creates reaction(s) from it and pushes those to the reaction array.
 # Used to create multiple reactions from, for instance, `k, (X,Y) --> 0`.
 function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues,
-        prod_line::ExprValues, rate::ExprValues, metadata::ExprValues, arrow::Symbol)
+        prod_line::ExprValues, rate::ExprValues, metadata::ExprValues, arrow::Symbol, line::Expr)
     # The rates, substrates, products, and metadata may be in a tupple form (e.g. `k, (X,Y) --> 0`).
     # This finds the length of these tuples (or 1 if not in tuple forms). Errors if lengs inconsistent.
     lengs = (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate), tup_leng(metadata))
@@ -490,7 +507,7 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
 
         push!(reactions,
             ReactionStruct(get_tup_arg(sub_line, i),
-                get_tup_arg(prod_line, i), get_tup_arg(rate, i), metadata_i))
+                get_tup_arg(prod_line, i), get_tup_arg(rate, i), metadata_i, line))
     end
 end
 
@@ -511,11 +528,13 @@ end
 
 # Function looping through all reactions, to find undeclared symbols (species or
 # parameters), and assign them to the right category.
-function extract_species_and_parameters!(reactions, excluded_syms)
+function extract_species_and_parameters!(reactions, excluded_syms; requiredec = false)
     species = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(species, reactant.reactant, excluded_syms)
+            (!isempty(species) && requiredec) && throw(UndeclaredSymbolicError(
+                                                                               "Unrecognized variables $(join(species, ", ")) detected in reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all species must be explicitly declared with the @species macro."))
         end
     end
 
@@ -523,8 +542,12 @@ function extract_species_and_parameters!(reactions, excluded_syms)
     parameters = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
         add_syms_from_expr!(parameters, reaction.rate, excluded_syms)
+        (!isempty(parameters) && requiredec) && throw(UndeclaredSymbolicError(
+                                                                              "Unrecognized parameter $(join(parameters, ", ")) detected in rate expression: $(reaction.rate) for the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(parameters, reactant.stoichiometry, excluded_syms)
+            (!isempty(parameters) && requiredec) && throw(UndeclaredSymbolicError(
+                                                                                  "Unrecognized parameters $(join(parameters, ", ")) detected in the stoichiometry for reactant $(reactant.reactant) in the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
         end
     end
 
@@ -651,7 +674,7 @@ function read_events_option(options, event_type::Symbol)
         error("Trying to read an unsupported event type.")
     end
     events_input = haskey(options, event_type) ? options[event_type].args[3] :
-                   MacroTools.striplines(:(begin end))
+                   striplines(:(begin end))
     events_input = option_block_form(events_input)
 
     # Goes through the events, checks for errors, and adds them to the output vector.
@@ -682,7 +705,7 @@ end
 # `vars_extracted`: A vector with extracted variables (lhs in pure differential equations only).
 # `dtexpr`: If a differential equation is defined, the default derivative (D ~ Differential(t)) must be defined.
 # `equations`: a vector with the equations provided.
-function read_equations_options(options, variables_declared)
+function read_equations_options(options, syms_declared, parameters_extracted; requiredec = false)
     # Prepares the equations. First, extracts equations from provided option (converting to block form if required).
     # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
     eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
@@ -694,30 +717,40 @@ function read_equations_options(options, variables_declared)
     # Loops through all equations, checks for lhs of the form `D(X) ~ ...`.
     # When this is the case, the variable X and differential D are extracted (for automatic declaration).
     # Also performs simple error checks.
-    vars_extracted = Vector{Symbol}()
+    vars_extracted = OrderedSet{Union{Symbol, Expr}}()
     add_default_diff = false
     for eq in equations
         if (eq.head != :call) || (eq.args[1] != :~)
             error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")
         end
 
-        # Checks if the equation have the format D(X) ~ ... (where X is a symbol). This means that the
-        # default differential has been used. X is added as a declared variable to the system, and
-        # we make a note that a differential D = Differential(iv) should be made as well.
-        lhs = eq.args[2]
-        # if lhs: is an expression. Is a function call. The function's name is D. Calls a single symbol.
-        if (lhs isa Expr) && (lhs.head == :call) && (lhs.args[1] == :D) &&
-           (lhs.args[2] isa Symbol)
-            diff_var = lhs.args[2]
-            if in(diff_var, forbidden_symbols_error)
-                error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
-            end
+        # If the default differential (`D`) is used, record that it should be decalred later on.
+        if (:D ∉ union(syms_declared, parameters_extracted)) && find_D_call(eq)
+            requiredec && throw(UndeclaredSymbolicError(
+                "Unrecognized symbol D was used as a differential in an equation: \"$eq\". Since the @require_declaration flag is set, all differentials in equations must be explicitly declared using the @differentials option."))
             add_default_diff = true
-            in(diff_var, variables_declared) || push!(vars_extracted, diff_var)
+            push!(syms_declared, :D)
         end
+
+        # Any undecalred symbolic variables encountered should be extracted as variables.
+        add_syms_from_expr!(vars_extracted, eq, syms_declared)
+        (!isempty(vars_extracted) && requiredec) && throw(UndeclaredSymbolicError(
+            "Unrecognized symbolic variables $(join(vars_extracted, ", ")) detected in equation expression: \"$(string(eq))\". Since the flag @require_declaration is declared, all symbolic variables must be explicitly declared with the @species, @variables, and @parameters options."))
     end
 
-    return vars_extracted, add_default_diff, equations
+    return collect(vars_extracted), add_default_diff, equations
+end
+
+# Searches an expresion `expr` and returns true if it have any subexpression `D(...)` (where `...` can be anything).
+# Used to determine whether the default differential D has been used in any equation provided to `@equations`.
+function find_D_call(expr)
+    return if Base.isexpr(expr, :call) && expr.args[1] == :D
+        true
+    elseif expr isa Expr
+        any(find_D_call, expr.args)
+    else
+        false
+    end
 end
 
 # Creates an expression declaring differentials. Here, `tiv` is the time independent variables,
@@ -727,7 +760,7 @@ function create_differential_expr(options, add_default_diff, used_syms, tiv)
     # If differentials was provided as options, this is used as the initial expression.
     # If the default differential (D(...)) was used in equations, this is added to the expression.
     diffexpr = (haskey(options, :differentials) ? options[:differentials].args[3] :
-                MacroTools.striplines(:(begin end)))
+                striplines(:(begin end)))
     diffexpr = option_block_form(diffexpr)
 
     # Goes through all differentials, checking that they are correctly formatted and their symbol is not used elsewhere.
@@ -752,7 +785,7 @@ function create_differential_expr(options, add_default_diff, used_syms, tiv)
 end
 
 # Reads the observables options. Outputs an expression ofr creating the observable variables, and a vector of observable equations.
-function read_observed_options(options, species_n_vars_declared, ivs_sorted)
+function read_observed_options(options, species_n_vars_declared, ivs_sorted; requiredec = false)
     if haskey(options, :observables)
         # Gets list of observable equations and prepares variable declaration expression.
         # (`options[:observables]` includes `@observables`, `.args[3]` removes this part)
@@ -763,6 +796,10 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
         for (idx, obs_eq) in enumerate(observed_eqs.args)
             # Extract the observable, checks errors, and continues the loop if the observable has been declared.
             obs_name, ivs, defaults, metadata = find_varinfo_in_declaration(obs_eq.args[2])
+            if (requiredec && !in(obs_name, species_n_vars_declared))
+                throw(UndeclaredSymbolicError(
+                                              "An undeclared variable ($obs_name) was declared as an observable in the following observable equation: \"$obs_eq\". Since the flag @require_declaration is set, all variables must be declared with the @species, @parameters, or @variables macros."))
+            end
             isempty(ivs) ||
                 error("An observable ($obs_name) was given independent variable(s). These should not be given, as they are inferred automatically.")
             isnothing(defaults) ||
@@ -783,14 +820,8 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
             # For Observables that have already been declared using @species/@variables,
             # or are interpolated, this parts should not be carried out.
             if !((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2]))
-                # Appends (..) to the observable (which is later replaced with the extracted ivs).
-                # Adds the observable to the first line of the output expression (starting with `@variables`).
-                obs_expr = insert_independent_variable(obs_eq.args[2], :(..))
-                push!(observed_vars.args[1].args, obs_expr)
-
-                # Adds a line to the `observed_vars` expression, setting the ivs for this observable.
-                # Cannot extract directly using e.g. "getfield.(dependants_structs, :reactant)" because
-                # then we get something like :([:X1, :X2]), rather than :([X1, X2]).
+                # Creates an expression which extracts the ivs of the species & variables the
+                # observable depends on, and splats them out in the correct order.
                 dep_var_expr = :(filter(!MT.isparameter,
                     Symbolics.get_variables($(obs_eq.args[3]))))
                 ivs_get_expr = :(unique(reduce(
@@ -798,8 +829,9 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                            for dep in $dep_var_expr])))
                 ivs_get_expr_sorted = :(sort($(ivs_get_expr);
                     by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $ivs_sorted)))
-                push!(observed_vars.args,
-                    :($obs_name = $(obs_name)($(ivs_get_expr_sorted)...)))
+
+                obs_expr = insert_independent_variable(obs_eq.args[2], :($ivs_get_expr_sorted...))
+                push!(observed_vars.args[1].args, obs_expr)
             end
 
             # In case metadata was given, this must be cleared from `observed_eqs`.
@@ -813,7 +845,8 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
         end
 
         # If nothing was added to `observed_vars`, it has to be modified not to throw an error.
-        (length(observed_vars.args) == 1) && (observed_vars = :())
+        (striplines(observed_vars) == striplines(Expr(:block, :(@variables)))) &&
+            (observed_vars = :())
     else
         # If option is not used, return empty expression and vector.
         observed_vars = :()
@@ -917,7 +950,7 @@ end
 
 ### Generic Expression Manipulation ###
 
-# Recursively traverses an expression and escapes all the user-defined functions. Special function calls like "hill(...)" are not expanded. 
+# Recursively traverses an expression and escapes all the user-defined functions. Special function calls like "hill(...)" are not expanded.
 function recursive_escape_functions!(expr::ExprValues)
     (typeof(expr) != Expr) && (return expr)
     foreach(i -> expr.args[i] = recursive_escape_functions!(expr.args[i]),

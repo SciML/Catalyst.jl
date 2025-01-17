@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages
-using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEq, Plots, SteadyStateDiffEq, StochasticDiffEq, Test
+using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEqTsit5, Plots, SteadyStateDiffEq, StochasticDiffEq, Test
 import ModelingToolkit: getp, getu, setp, setu
 
 # Sets rnd number.
@@ -52,7 +52,7 @@ begin
     nint = init(nprob, NewtonRaphson(); save_everystep = false)
     @test_broken ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep = false) # https://github.com/SciML/SciMLBase.jl/issues/660
     integrators = [oint, sint, jint, nint]
-    
+
     # Creates solutions.
     osol = solve(oprob, Tsit5())
     ssol = solve(sprob, ImplicitEM(); seed)
@@ -63,7 +63,7 @@ begin
 end
 
 # Tests problem indexing and updating.
-let 
+let
     @test_broken false # A few cases fails for JumpProblem: https://github.com/SciML/ModelingToolkit.jl/issues/2838
     for prob in deepcopy([oprob, sprob, dprob, nprob, ssprob, eoprob, esprob, edprob, enprob, essprob])
         # Get u values (including observables).
@@ -72,8 +72,8 @@ let
         @test prob[[XY,Y]] == prob[[model.XY,model.Y]] == prob[[:XY,:Y]] == [9, 5]
         @test prob[(XY,Y)] == prob[(model.XY,model.Y)] == prob[(:XY,:Y)] == (9, 5)
         @test getu(prob, X)(prob) == getu(prob, model.X)(prob) == getu(prob, :X)(prob) == 4
-        @test getu(prob, XY)(prob) == getu(prob, model.XY)(prob) == getu(prob, :XY)(prob) == 9 
-        @test getu(prob, [XY,Y])(prob) == getu(prob, [model.XY,model.Y])(prob) == getu(prob, [:XY,:Y])(prob) == [9, 5]  
+        @test getu(prob, XY)(prob) == getu(prob, model.XY)(prob) == getu(prob, :XY)(prob) == 9
+        @test getu(prob, [XY,Y])(prob) == getu(prob, [model.XY,model.Y])(prob) == getu(prob, [:XY,:Y])(prob) == [9, 5]
         @test getu(prob, (XY,Y))(prob) == getu(prob, (model.XY,model.Y))(prob) == getu(prob, (:XY,:Y))(prob) == (9, 5)
 
         # Set u values.
@@ -91,13 +91,13 @@ let
         @test prob[X] == 70
 
         # Get p values.
-        @test prob.ps[kp] == prob.ps[model.kp] == prob.ps[:kp] == 1.0    
+        @test prob.ps[kp] == prob.ps[model.kp] == prob.ps[:kp] == 1.0
         @test prob.ps[[k1,k2]] == prob.ps[[model.k1,model.k2]] == prob.ps[[:k1,:k2]] == [0.25, 0.5]
         @test prob.ps[(k1,k2)] == prob.ps[(model.k1,model.k2)] == prob.ps[(:k1,:k2)] == (0.25, 0.5)
         @test getp(prob, kp)(prob) == getp(prob, model.kp)(prob) == getp(prob, :kp)(prob) == 1.0
         @test getp(prob, [k1,k2])(prob) == getp(prob, [model.k1,model.k2])(prob) == getp(prob, [:k1,:k2])(prob) == [0.25, 0.5]
         @test getp(prob, (k1,k2))(prob) == getp(prob, (model.k1,model.k2))(prob) == getp(prob, (:k1,:k2))(prob) == (0.25, 0.5)
-        
+
         # Set p values.
         prob.ps[kp] = 2.0
         @test prob.ps[kp] == 2.0
@@ -115,7 +115,7 @@ let
 end
 
 # Test remake function.
-let 
+let
     @test_broken false # Cannot check result for JumpProblem: https://github.com/SciML/ModelingToolkit.jl/issues/2838
     for prob in deepcopy([oprob, sprob, dprob, nprob, ssprob, eoprob, esprob, edprob, enprob, essprob])
         # Remake for all u0s.
@@ -153,7 +153,7 @@ let
 end
 
 # Test integrator indexing.
-let 
+let
     @test_broken false # NOTE: Cannot even create a `ssint` (https://github.com/SciML/SciMLBase.jl/issues/660).
     for int in deepcopy([oint, sint, jint, nint])
         # Get u values.
@@ -162,8 +162,8 @@ let
         @test int[[XY,Y]] == int[[model.XY,model.Y]] == int[[:XY,:Y]] == [9, 5]
         @test int[(XY,Y)] == int[(model.XY,model.Y)] == int[(:XY,:Y)] == (9, 5)
         @test getu(int, X)(int) == getu(int, model.X)(int) == getu(int, :X)(int) == 4
-        @test getu(int, XY)(int) == getu(int, model.XY)(int) == getu(int, :XY)(int) == 9 
-        @test getu(int, [XY,Y])(int) == getu(int, [model.XY,model.Y])(int) == getu(int, [:XY,:Y])(int) == [9, 5]  
+        @test getu(int, XY)(int) == getu(int, model.XY)(int) == getu(int, :XY)(int) == 9
+        @test getu(int, [XY,Y])(int) == getu(int, [model.XY,model.Y])(int) == getu(int, [:XY,:Y])(int) == [9, 5]
         @test getu(int, (XY,Y))(int) == getu(int, (model.XY,model.Y))(int) == getu(int, (:XY,:Y))(int) == (9, 5)
 
         # Set u values.
@@ -181,13 +181,13 @@ let
         @test int[X] == 70
 
         # Get p values.
-        @test int.ps[kp] == int.ps[model.kp] == int.ps[:kp] == 1.0    
+        @test int.ps[kp] == int.ps[model.kp] == int.ps[:kp] == 1.0
         @test int.ps[[k1,k2]] == int.ps[[model.k1,model.k2]] == int.ps[[:k1,:k2]] == [0.25, 0.5]
         @test int.ps[(k1,k2)] == int.ps[(model.k1,model.k2)] == int.ps[(:k1,:k2)] == (0.25, 0.5)
         @test getp(int, kp)(int) == getp(int, model.kp)(int) == getp(int, :kp)(int) == 1.0
         @test getp(int, [k1,k2])(int) == getp(int, [model.k1,model.k2])(int) == getp(int, [:k1,:k2])(int) == [0.25, 0.5]
         @test getp(int, (k1,k2))(int) == getp(int, (model.k1,model.k2))(int) == getp(int, (:k1,:k2))(int) == (0.25, 0.5)
-        
+
         # Set p values.
         int.ps[kp] = 2.0
         @test int.ps[kp] == 2.0
@@ -206,12 +206,19 @@ end
 
 # Test solve's save_idxs argument.
 # Currently, `save_idxs` is broken with symbolic stuff (https://github.com/SciML/ModelingToolkit.jl/issues/1761).
-let 
+let
     for (prob, solver) in zip(deepcopy([oprob, sprob, jprob]), [Tsit5(), ImplicitEM(), SSAStepper()])
+
         # Save single variable
-        @test_broken solve(prob, solver; seed, save_idxs=X)[X][1] == 4
-        @test_broken solve(prob, solver; seed, save_idxs=model.X)[X][1] == 4
-        @test_broken solve(prob, solver; seed, save_idxs=:X)[X][1] == 4
+        if !(solver isa SSAStepper)
+            @test solve(prob, solver; seed, save_idxs=X)[X][1] == 4
+            @test solve(prob, solver; seed, save_idxs=model.X)[X][1] == 4
+            @test solve(prob, solver; seed, save_idxs=:X)[X][1] == 4
+        else
+            @test_broken solve(prob, solver; seed, save_idxs=X)[X][1] == 4
+            @test_broken solve(prob, solver; seed, save_idxs=model.X)[X][1] == 4
+            @test_broken solve(prob, solver; seed, save_idxs=:X)[X][1] == 4
+        end
 
         # Save observable.
         @test_broken solve(prob, solver; seed, save_idxs=XY)[XY][1] == 9
@@ -226,7 +233,7 @@ let
 end
 
 # Tests solution indexing.
-let 
+let
     for sol in deepcopy([osol, ssol, jsol])
         # Get u values.
         @test sol[X][1] == sol[model.X][1] == sol[:X][1] == 4
@@ -234,9 +241,9 @@ let
         @test sol[[XY,Y]][1] == sol[[model.XY,model.Y]][1] == sol[[:XY,:Y]][1] == [9, 5]
         @test sol[(XY,Y)][1] == sol[(model.XY,model.Y)][1] == sol[(:XY,:Y)][1] == (9, 5)
         @test getu(sol, X)(sol)[1] == getu(sol, model.X)(sol)[1] == getu(sol, :X)(sol)[1] == 4
-        @test getu(sol, XY)(sol)[1] == getu(sol, model.XY)(sol)[1] == getu(sol, :XY)(sol)[1] == 9 
-        @test getu(sol, [XY,Y])(sol)[1] == getu(sol, [model.XY,model.Y])(sol)[1] == getu(sol, [:XY,:Y])(sol)[1] == [9, 5]  
-        @test getu(sol, (XY,Y))(sol)[1] == getu(sol, (model.XY,model.Y))(sol)[1] == getu(sol, (:XY,:Y))(sol)[1] == (9, 5)       
+        @test getu(sol, XY)(sol)[1] == getu(sol, model.XY)(sol)[1] == getu(sol, :XY)(sol)[1] == 9
+        @test getu(sol, [XY,Y])(sol)[1] == getu(sol, [model.XY,model.Y])(sol)[1] == getu(sol, [:XY,:Y])(sol)[1] == [9, 5]
+        @test getu(sol, (XY,Y))(sol)[1] == getu(sol, (model.XY,model.Y))(sol)[1] == getu(sol, (:XY,:Y))(sol)[1] == (9, 5)
 
         # Get u values via idxs and functional call.
         @test sol(0.0; idxs=X) == sol(0.0; idxs=model.X) == sol(0.0; idxs=:X) == 4
@@ -245,7 +252,7 @@ let
         @test_broken sol(0.0; idxs = (XY,Y)) == sol(0.0; idxs = (model.XY,model.Y)) == sol(0.0; idxs = (:XY,:Y)) == (9, 5) # https://github.com/SciML/SciMLBase.jl/issues/711
 
         # Get p values.
-        @test sol.ps[kp] == sol.ps[model.kp] == sol.ps[:kp] == 1.0    
+        @test sol.ps[kp] == sol.ps[model.kp] == sol.ps[:kp] == 1.0
         @test sol.ps[[k1,k2]] == sol.ps[[model.k1,model.k2]] == sol.ps[[:k1,:k2]] == [0.25, 0.5]
         @test sol.ps[(k1,k2)] == sol.ps[(model.k1,model.k2)] == sol.ps[(:k1,:k2)] == (0.25, 0.5)
         @test getp(sol, kp)(sol) == getp(sol, model.kp)(sol) == getp(sol, :kp)(sol) == 1.0
@@ -264,7 +271,7 @@ let
             @test getu(sol, X)(sol) == getu(sol, model.X)(sol)[1] == getu(sol, :X)(sol)
             @test getu(sol, XY)(sol) == getu(sol, model.XY)(sol)[1] == getu(sol, :XY)(sol)
             @test getu(sol, [XY,Y])(sol) == getu(sol, [model.XY,model.Y])(sol) == getu(sol, [:XY,:Y])(sol)
-            @test_broken getu(sol, (XY,Y))(sol) == getu(sol, (model.XY,model.Y))(sol) == getu(sol, (:XY,:Y))(sol)[1] # https://github.com/SciML/SciMLBase.jl/issues/710
+            @test getu(sol, (XY,Y))(sol) == getu(sol, (model.XY,model.Y))(sol) == getu(sol, (:XY,:Y))(sol)
 
             # Get p values.
             @test sol.ps[kp] == sol.ps[model.kp] == sol.ps[:kp]
@@ -278,7 +285,7 @@ let
 end
 
 # Tests plotting.
-let 
+let
     for sol in deepcopy([osol, jsol, ssol])
         # Single variable.
         @test length(plot(sol; idxs = X).series_list) == 1
@@ -303,7 +310,7 @@ let
         @test length(plot(sol; idxs = (model.XY, model.Y)).series_list) == 1
         @test length(plot(sol; idxs = (:X, :Y)).series_list) == 1
         @test length(plot(sol; idxs = (:XY, :Y)).series_list) == 1
-    end     
+    end
 end
 
 
@@ -358,27 +365,27 @@ let
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 30.0
     reset_aggregated_jumps!(jint)
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 8.0
-    
+
     jint.ps[rn.p1] = 5.0
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 8.0
     reset_aggregated_jumps!(jint)
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 10.0
-    
+
     jint.ps[:p1] = 6.0
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 10.0
     reset_aggregated_jumps!(jint)
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 12.0
-    
+
     setp(jint, p1)(jint, 7.0)
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 12.0
     reset_aggregated_jumps!(jint)
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 14.0
-    
+
     setp(jint, rn.p1)(jint, 8.0)
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 14.0
     reset_aggregated_jumps!(jint)
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 16.0
-    
+
     setp(jint, :p1)(jint, 3.0)
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 16.0
     reset_aggregated_jumps!(jint)

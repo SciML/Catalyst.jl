@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, NonlinearSolve, OrdinaryDiffEq, SparseArrays, StochasticDiffEq, Test
+using Catalyst, NonlinearSolve, OrdinaryDiffEqTsit5, SparseArrays, StochasticDiffEq, Test
 using LinearAlgebra: norm
 using ModelingToolkit: value
 
