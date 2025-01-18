@@ -53,14 +53,14 @@ end
 Macro for generating chemical reaction network models (Catalyst `ReactionSystem`s). See the
 following two section ([DSL introduction](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_basics/)
 and [advantage usage](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_advanced/)) of
-the Catalyst documentation for more details on the domain specific language (DSL) that the
-macro implements. The macros output (a `ReactionSystem` structure) are central to Catalyst
-and its functionality. How to e.g. simulate them is described in the [Catalyst documentation](https://docs.sciml.ai/Catalyst/stable/).
+the Catalyst documentation for more details on the domain-specific language (DSL) that the
+macro implements. The macro's output (a `ReactionSystem` structure) is central to Catalyst
+and its functionality. How to e.g. simulate these is described in the [Catalyst documentation](https://docs.sciml.ai/Catalyst/stable/).
 
 Returns:
 - A Catalyst `ReactionSystem`, i.e. a symbolic model for the reaction network. The returned
 system is marked `complete`. To obtain a `ReactionSystem` that is not marked complete, for
-example to then use in compositional modeling, see the otherwise equivalent `@network_component`
+example to then use in compositional modelling, see the otherwise equivalent `@network_component`
 macro.
 
 Examples:
@@ -253,7 +253,7 @@ function extract_metadata(metadata_line::Expr)
     return metadata
 end
 
-### Specialised Error for @require_declaration Option ###
+### Specialised @require_declaration Option Error ###
 struct UndeclaredSymbolicError <: Exception
     msg::String
 end
@@ -282,13 +282,13 @@ function make_reaction_system(ex::Expr, name)
     any(!in(option_keys), keys(options)) &&
         error("The following unsupported options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
 
-    # Read options that explicitly declares some symbol. Compiles a list of all declared symbols
-    # and checks that there has been no double-declarations.
-    cmpexpr_init, cmps_declared = read_compound_options(options)
+    # Read options that explicitly declares some symbol (e.g. `@species`). Compiles a list of
+    # all declared symbols and checks that there has been no double-declarations.
     sps_declared = extract_syms(options, :species)
     ps_declared = extract_syms(options, :parameters)
     vs_declared = extract_syms(options, :variables)
     tiv, sivs, ivs, ivsexpr = read_ivs_option(options)
+    cmpexpr_init, cmps_declared = read_compound_options(options)
     diffsexpr, diffs_declared = read_differentials_option(options)
     syms_declared = collect(Iterators.flatten((cmps_declared, sps_declared, ps_declared,
         vs_declared, ivs, diffs_declared)))
@@ -340,7 +340,7 @@ function make_reaction_system(ex::Expr, name)
         name = $name
         spatial_ivs = $sivs
         rx_eq_vec = $rxsexprs
-        vars = setdiff(union($spsvar, $vsvar, $cmpsvar), $obs_syms)
+        us = setdiff(union($spsvar, $vsvar, $cmpsvar), $obs_syms)
         observed = $obs_eqs
         continuous_events = $continuous_events_expr
         discrete_events = $discrete_events_expr
@@ -348,7 +348,7 @@ function make_reaction_system(ex::Expr, name)
         default_reaction_metadata = $default_reaction_metadata
 
         remake_ReactionSystem_internal(
-            make_ReactionSystem_internal(rx_eq_vec, $tiv, vars, $psvar; name, spatial_ivs,
+            make_ReactionSystem_internal(rx_eq_vec, $tiv, us, $psvar; name, spatial_ivs,
                 observed, continuous_events, discrete_events, combinatoric_ratelaws);
             default_reaction_metadata)
     end))
@@ -581,7 +581,7 @@ function get_rxexpr(rx::DSLReaction)
     subs_stoich_init = deepcopy(subs_init)
     prod_init = isempty(rx.products) ? nothing : :([])
     prod_stoich_init = deepcopy(prod_init)
-    rx_constructor = :(Reaction($rate, $subs_init, $subs_stoich_init, $prod_init,
+    rx_constructor = :(Reaction($rate, $subs_init, $prod_init, $subs_stoich_init,
         $prod_stoich_init; metadata = $(rx.metadata)))
 
     # Loops through all products and substrates, and adds them (and their stoichiometries)
@@ -876,22 +876,22 @@ macro (but permitting only a single reaction). A more detailed introduction to t
 be found in the description of `@reaction_network`.
 
 The `@reaction` macro is followed by a single line consisting of three parts:
-- A rate (at which the reaction occur).
+- A rate (at which the reaction occurs).
 - Any number of substrates (which are consumed by the reaction).
 - Any number of products (which are produced by the reaction).
 
 The output is a reaction (just like created using the `Reaction` constructor).
 
 Examples:
-Here we create a simple binding reaction and stores it in the variable rx:
+Here we create a simple binding reaction and store it in the variable rx:
 ```julia
 rx = @reaction k, X + Y --> XY
 ```
 The macro will automatically deduce `X`, `Y`, and `XY` to be species (as these occur as reactants)
-and `k` as a parameters (as it does not occur as a reactant).
+and `k` as a parameter (as it does not occur as a reactant).
 
 The `@reaction` macro provides a more concise notation to the `Reaction` constructor. I.e. here
-we create the same reaction using both approaches, and also confirms that they are identical.
+we create the same reaction using both approaches, and also confirm that they are identical.
 ```julia
 # Creates a reaction using the `@reaction` macro.
 rx = @reaction k*v, A + B --> C + D
@@ -917,7 +917,7 @@ rx = @reaction b*\$ex*\$A, \$A --> C
 Notes:
 - `@reaction` does not support bi-directional type reactions (using `<-->`) or reaction bundling
 (e.g. `d, (X,Y) --> 0`).
-- Interpolation of Julia variables into the macro works similar to the `@reaction_network`
+- Interpolation of Julia variables into the macro works similarly to the `@reaction_network`
 macro. See [The Reaction DSL](@ref dsl_description) tutorial for more details.
 """
 macro reaction(ex)

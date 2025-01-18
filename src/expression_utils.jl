@@ -25,8 +25,8 @@ end
 ### Parameters/Species/Variables Symbols Correctness Checking ###
 
 # Throws an error when a forbidden symbol is used.
-function forbidden_symbol_check(sym)
-    used_forbidden_syms =
+function forbidden_symbol_check(syms)
+    used_forbidden_syms = intersect(forbidden_symbols_error, syms)
     isempty(used_forbidden_syms) ||
         error("The following symbol(s) are used as species or parameters: $used_forbidden_syms, this is not permitted.")
 end
