@@ -577,7 +577,12 @@ end
 function get_rxexpr(rx::DSLReaction)
     # Initiates the `Reaction` expression.
     rate = recursive_escape_functions!(rx.rate)
-    rx_constructor = :(Reaction($rate, nothing, nothing; metadata = $(rx.metadata)))
+    subs_init = isempty(rx.substrates) ? nothing : :([])
+    subs_stoich_init = deepcopy(subs_init)
+    prod_init = isempty(rx.products) ? nothing : :([])
+    prod_stoich_init = deepcopy(prod_init)
+    rx_constructor = :(Reaction($rate, $subs_init, $subs_stoich_init, $prod_init,
+        $prod_stoich_init; metadata = $(rx.metadata)))
 
     # Loops through all products and substrates, and adds them (and their stoichiometries)
     # to the `Reaction` expression.
@@ -589,7 +594,6 @@ function get_rxexpr(rx::DSLReaction)
         push!(rx_constructor.args[5].args, prod.reactant)
         push!(rx_constructor.args[7].args, prod.stoichiometry)
     end
-
     return rx_constructor
 end
 
@@ -731,7 +735,7 @@ function read_equations_options!(diffsexpr, options, syms_unavailable, tiv; requ
         push!(diffsexpr.args, :(D = Differential($(tiv))))
     end
 
-    return vs_inferred, diffs_inferred, equations
+    return collect(vs_inferred), diffs_inferred, equations
 end
 
 # Searches an expression `expr` and returns true if it have any subexpression `D(...)` (where `...` can be anything).
