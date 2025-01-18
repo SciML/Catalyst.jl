@@ -933,7 +933,7 @@ function make_reaction(ex::Expr)
     # Handle interpolation of variables in the input.
     ex = esc_dollars!(ex)
 
-    # Parses reactions. Extracts species and paraemters within it.
+    # Parses reactions. Extracts species and parameters within it.
     reaction = get_reaction(ex)
     species, parameters = extract_sps_and_ps([reaction], [])
 
