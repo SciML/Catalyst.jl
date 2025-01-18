@@ -688,7 +688,7 @@ function read_events_option(options, event_type::Symbol)
     return events_expr
 end
 
-# Reads the variables options. Outputs a list of teh variables inferred from the equations,
+# Reads the variables options. Outputs a list of the variables inferred from the equations,
 # as well as the equation vector. If the default differential was used, updates the `diffsexpr`
 # expression so that this declares this as well.
 function read_equations_options!(diffsexpr, options, syms_unavailable, tiv; requiredec = false)
@@ -876,7 +876,7 @@ The `@reaction` macro is followed by a single line consisting of three parts:
 - Any number of substrates (which are consumed by the reaction).
 - Any number of products (which are produced by the reaction).
 
-The output is a reaction (just like created using teh `Reaction` constructor).
+The output is a reaction (just like created using the `Reaction` constructor).
 
 Examples:
 Here we create a simple binding reaction and stores it in the variable rx:
@@ -907,7 +907,7 @@ t = default_t()
 @parameters k b
 @species A(t)
 ex = k*A^2 + t
-rx = @reaction b*$ex*$A, $A --> C
+rx = @reaction b*\$ex*\$A, \$A --> C
 ```
 
 Notes:
