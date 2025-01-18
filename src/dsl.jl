@@ -577,7 +577,7 @@ end
 function get_rxexpr(rx::DSLReaction)
     # Initiates the `Reaction` expression.
     rate = recursive_escape_functions!(rx.rate)
-    rx_constructor = :(Reaction($rate, [], [], [], []; metadata = $(rx.metadata)))
+    rx_constructor = :(Reaction($rate, nothing, nothing; metadata = $(rx.metadata)))
 
     # Loops through all products and substrates, and adds them (and their stoichiometries)
     # to the `Reaction` expression.

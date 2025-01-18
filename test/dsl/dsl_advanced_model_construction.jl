@@ -75,7 +75,6 @@ end
 
 ### Test Interpolation Within the DSL ###
 
-
 # Declares parameters and species used across the test.
 @parameters α k k1 k2
 @species A(t) B(t) C(t) D(t)
