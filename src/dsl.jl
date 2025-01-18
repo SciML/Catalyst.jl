@@ -84,8 +84,9 @@ This model also contains production and degradation reactions, where `0` denotes
 either no substrates or no products in a reaction.
 
 Options:
-In addition to reactions, the macro also supports "option" inputs. Each option is designated
-by a tag starting with a `@` followed by its input. A list of options can be found [here](https://docs.sciml.ai/Catalyst/stable/api/#api_dsl_options).
+In addition to reactions, the macro also supports "option" inputs (permitting e.g. the addition
+of observables). Each option is designated by a tag starting with a `@` followed by its input.
+A list of options can be found [here](https://docs.sciml.ai/Catalyst/stable/api/#api_dsl_options).
 """
 macro reaction_network(name::Symbol, network_expr::Expr)
     make_rs_expr(QuoteNode(name), network_expr)
@@ -198,8 +199,8 @@ function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
         # If the expression corresponds to a reactant on our list, increase its multiplicity.
         idx = findfirst(r.reactant == ex for r in reactants)
         if !isnothing(idx)
-            new_mult = processmult(+, mult, reactants[idx].stoichiometry)
-            reactants[idx] = DSLReactant(ex, new_mult)
+            newmult = processmult(+, mult, reactants[idx].stoichiometry)
+            reactants[idx] = DSLReactant(ex, newmult)
 
             # If the expression corresponds to a new reactant, add it to the list.
         else
@@ -210,12 +211,12 @@ function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
     elseif ex.args[1] == :*
         # The normal case (e.g. 3*X or 3*(X+Y)). Update the current multiplicity and continue.
         if length(ex.args) == 3
-            new_mult = processmult(*, mult, ex.args[2])
-            recursive_find_reactants!(ex.args[3], new_mult, reactants)
+            newmult = processmult(*, mult, ex.args[2])
+            recursive_find_reactants!(ex.args[3], newmult, reactants)
             # More complicated cases (e.g. 2*3*X). Yes, `ex.args[1:(end - 1)]` should start at 1 (not 2).
         else
-            new_mult = processmult(*, mult, Expr(:call, ex.args[1:(end - 1)]...))
-            recursive_find_reactants!(ex.args[end], new_mult, reactants)
+            newmult = processmult(*, mult, Expr(:call, ex.args[1:(end - 1)]...))
+            recursive_find_reactants!(ex.args[end], newmult, reactants)
         end
         # If we have encountered a sum of different reactants, apply recursion on each.
     elseif ex.args[1] == :+
@@ -243,11 +244,10 @@ end
 function extract_metadata(metadata_line::Expr)
     metadata = :([])
     for arg in metadata_line.args
-        if arg.head != :(=)
+        (arg.head != :(=)) &&
             error("Malformatted metadata line: $metadata_line. Each entry in the vector should contain a `=`.")
-        elseif !(arg.args[1] isa Symbol)
+        (arg.args[1] isa Symbol) ||
             error("Malformatted metadata entry: $arg. Entries left-hand-side should be a single symbol.")
-        end
         push!(metadata.args, :($(QuoteNode(arg.args[1])) => $(arg.args[2])))
     end
     return metadata
@@ -422,7 +422,7 @@ function push_reactions!(reactions::Vector{DSLReaction}, subs::ExprValues,
     lengs = (tup_leng(subs), tup_leng(prods), tup_leng(rate), tup_leng(metadata))
     maxl = maximum(lengs)
     if any(!(leng == 1 || leng == maxl) for leng in lengs)
-        throw("Malformed reaction, rate=$rate, subs=$subs, prods=$prods, metadata=$metadata.")
+        error("Malformed reaction, rate: $rate, subs: $subs, prods: $prods, metadata: $metadata.")
     end
 
     # Loops through each reaction encoded by the reaction's different components.
@@ -452,12 +452,12 @@ end
 function extract_syms(opts, vartype::Symbol)
     # If the corresponding option have been used, uses `Symbolics._parse_vars` to find all
     # variable within it (returning them in a vector).
-    if haskey(opts, vartype)
+    return if haskey(opts, vartype)
         ex = opts[vartype]
         vars = Symbolics._parse_vars(vartype, Real, ex.args[3:end])
-        return Vector{Union{Symbol, Expr}}(vars.args[end].args)
+        Vector{Union{Symbol, Expr}}(vars.args[end].args)
     else
-        return Union{Symbol, Expr}[]
+        Union{Symbol, Expr}[]
     end
 end
 
@@ -591,6 +591,14 @@ function get_rxexpr(rx::DSLReaction)
     end
 
     return rx_constructor
+end
+
+# Recursively escape functions within equations of an equation written using user-defined functions.
+# Does not expand special function calls like "hill(...)" and differential operators.
+function escape_equation!(eqexpr::Expr, diffsyms)
+    eqexpr.args[2] = recursive_escape_functions!(eqexpr.args[2], diffsyms)
+    eqexpr.args[3] = recursive_escape_functions!(eqexpr.args[3], diffsyms)
+    eqexpr
 end
 
 ### DSL Option Handling ###
@@ -856,7 +864,7 @@ end
 
 ### `@reaction` Macro & its Internals ###
 
-@doc raw"""
+"""
     @reaction
 
 Macro for generating a single [`Reaction`](@ref) object using a similar syntax as the `@reaction_network`
@@ -960,15 +968,6 @@ function recursive_escape_functions!(expr::ExprValues, diffsyms = [])
         expr.args[1] = esc(expr.args[1])
     end
     expr
-end
-
-# Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably
-# a Symbol/Numerical). This is used to handle bundled reaction (like `d, (X,Y) --> 0`).
-# Recursively escape functions in the right-hand-side of an equation written using user-defined functions. Special function calls like "hill(...)" are not expanded.
-function escape_equation!(eqexpr::Expr, diffsyms)
-    eqexpr.args[2] = recursive_escape_functions!(eqexpr.args[2], diffsyms)
-    eqexpr.args[3] = recursive_escape_functions!(eqexpr.args[3], diffsyms)
-    eqexpr
 end
 
 # Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a Symbol/Numerical).

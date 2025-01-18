@@ -26,15 +26,9 @@ end
 
 # Throws an error when a forbidden symbol is used.
 function forbidden_symbol_check(sym)
-    used_forbidden_syms = intersect(forbidden_symbols_error, sym)
-    isempty(used_forbidden_syms) && return
-    error("The following symbol(s) are used as species or parameters: $used_forbidden_syms, this is not permitted.")
-end
-
-# Checks that no symbol was sued for multiple purposes.
-function unique_symbol_check(syms)
-    allunique(syms)||
-        error("Reaction network independent variables, parameters, species, and variables must all have distinct names, but a duplicate has been detected. ")
+    used_forbidden_syms =
+    isempty(used_forbidden_syms) ||
+        error("The following symbol(s) are used as species or parameters: $used_forbidden_syms, this is not permitted.")
 end
 
 ### Catalyst-specific Expressions Manipulation ###

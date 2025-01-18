@@ -417,15 +417,8 @@ let
     @test issetequal(species(rn), spcs)
 end
 
-# Tests errors in `@variables` declarations.
+# Tests error when disallowed name is used for variable.
 let
-    # Variable used as species in reaction.
-    @test_throws Exception @eval rn = @reaction_network begin
-        @variables K(t)
-        k, K + A --> B
-    end
-
-    # Tests error when disallowed name is used for variable.
     @test_throws Exception @eval @reaction_network begin
         @variables π(t)
     end
@@ -433,7 +426,6 @@ end
 
 # Tests that explicitly declaring a single symbol as several things does not work.
 # Several of these are broken, but note sure how to test broken-ness on `@test_throws false Exception @eval`.
-# Relevant issue: https://github.com/SciML/Catalyst.jl/issues/1173
 let
     # Species + parameter.
     @test_throws Exception @eval @reaction_network begin
@@ -1150,14 +1142,6 @@ let
     end
 end
 
-# Erroneous `@default_noise_scaling` declaration (other noise scaling tests are mostly in the SDE file).
-let
-    # Default noise scaling with multiple entries.
-    @test_throws Exception @eval @reaction_network begin
-        @default_noise_scaling η1 η2
-    end
-end
-
 ### Other DSL Option Tests ###
 
 # test combinatoric_ratelaws DSL option
@@ -1262,6 +1246,14 @@ let
     @test equations(rn4)[1] isa Equation
     @parameters v n
     @test isequal(Catalyst.expand_registered_functions(equations(rn4)[1]), D(A) ~ v*(A^n))
+end
+
+# Erroneous `@default_noise_scaling` declaration (other noise scaling tests are mostly in the SDE file).
+let
+    # Default noise scaling with multiple entries.
+    @test_throws Exception @eval @reaction_network begin
+        @default_noise_scaling η1 η2
+    end
 end
 
 ### test that @no_infer properly throws errors when undeclared variables are written ###
