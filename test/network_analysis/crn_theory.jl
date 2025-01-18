@@ -1,7 +1,6 @@
 # Tests for properties from chemical reaction network theory: deficiency theorems, complex/detailed balance, etc.
 using Catalyst, StableRNGs, LinearAlgebra, Test
 rng = StableRNG(514)
-
 # Tests that `iscomplexbalanced` works for different rate inputs.
 # Tests that non-valid rate input yields and error
 let
@@ -69,18 +68,21 @@ let
     rates_invalid = reshape(rate_vals, 1, 8)
 
     # Tests that all input types generates the correct rate matrix.
-    Catalyst.ratematrix(rn, rate_vals) == rate_mat
-    Catalyst.ratematrix(rn, rates_vec) == rate_mat
-    Catalyst.ratematrix(rn, rates_tup) == rate_mat
-    Catalyst.ratematrix(rn, rates_dict) == rate_mat
+    @test Catalyst.adjacencymat(rn, rates_vec) == rate_mat
+    @test Catalyst.adjacencymat(rn, rates_tup) == rate_mat
+    @test Catalyst.adjacencymat(rn, rates_dict) == rate_mat
+    @test_throws Exception Catalyst.adjacencymat(rn, rate_vals)
 
     # Tests that throws error in rate matrix.
     incorrect_param_dict = Dict(:k1 => 1.0)
 
-    @test_throws ErrorException Catalyst.ratematrix(rn, 123)
-    @test_throws ErrorException Catalyst.ratematrix(rn, incorrect_param_dict)
+    @test_throws ErrorException Catalyst.adjacencymat(rn, 123)
+    @test_throws ErrorException Catalyst.adjacencymat(rn, incorrect_param_dict)
 
     @test_throws Exception Catalyst.iscomplexbalanced(rn, rates_invalid)
+
+    # Test sparse matrix
+    @test Catalyst.adjacencymat(rn, rates_vec; sparse = true) == rate_mat
 end
 
 ### CONCENTRATION ROBUSTNESS TESTS

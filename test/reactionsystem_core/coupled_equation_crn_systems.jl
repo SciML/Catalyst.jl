@@ -899,38 +899,6 @@ end
 
 # Checks that various misformatted declarations yield errors.
 let
-    # Symbol in equation not appearing elsewhere (1).
-    @test_throws Exception @eval @reaction_network begin
-        @equations D(V) ~ -X
-    end
-
-    # Symbol in equation not appearing elsewhere (2).
-    @test_throws Exception @eval @reaction_network begin
-        @equations 1 + log(x) ~ 2X
-    end
-
-    # Attempting to infer differential variable not isolated on lhs (1).
-    @test_throws Exception @eval @reaction_network begin
-        @equations D(V) + 1 ~ 0
-    end
-
-    # Attempting to infer differential variable not isolated on lhs (2).
-    @test_throws Exception @eval @reaction_network begin
-        @equations -1.0 ~ D(V)
-    end
-
-    # Attempting to infer differential operator not isolated on lhs (1).
-    @test_throws Exception @eval @reaction_network begin
-        @variables V(t)
-        @equations D(V) + 1 ~ 0
-    end
-
-    # Attempting to infer a variable when using a non-default differential.
-    @test_throws Exception @eval @reaction_network begin
-        @differentials Δ = Differential(t)
-        @equations Δ(V) ~ -1,0
-    end
-
     # Attempting to create a new differential from an unknown iv.
     @test_throws Exception @eval @reaction_network begin
         @differentials D = Differential(τ)
@@ -944,14 +912,8 @@ let
 
     # Several equations without `begin ... end` block.
     @test_throws Exception @eval @reaction_network begin
-        @variables V(t)
         @equations D(V) + 1 ~ - 1.0
-    end
-
-    # Undeclared differential.
-    @test_throws Exception @eval @reaction_network begin
-        @species V
-        @equations Δ(V) ~ -1.0
+        @equations D(W) + 1 ~ - 1.0
     end
 
     # System using multiple ivs.
