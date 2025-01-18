@@ -305,10 +305,11 @@ function make_reaction_system(ex::Expr, name)
         union(syms_declared, sps_inferred), tiv; requiredec)
     ps_inferred = setdiff(ps_pre_inferred, vs_inferred, diffs_inferred)
     syms_inferred = union(sps_inferred, ps_inferred, vs_inferred, diffs_inferred)
+    all_syms = union(syms_declared, syms_inferred)
 
     # Read options not related to the declaration or inference of symbols.
     obsexpr, obs_eqs, obs_syms = read_observed_options(options, ivs,
-        union(sps_declared, vs_declared), union(syms_declared, syms_inferred); requiredec)
+        union(sps_declared, vs_declared), all_syms; requiredec)
     continuous_events_expr = read_events_option(options, :continuous_events)
     discrete_events_expr = read_events_option(options, :discrete_events)
     default_reaction_metadata = read_default_noise_scaling_option(options)
@@ -322,7 +323,7 @@ function make_reaction_system(ex::Expr, name)
     spsexpr, spsvar = scalarize_macro(spsexpr_init, "specs")
     vsexpr, vsvar = scalarize_macro(vsexpr_init, "vars")
     cmpsexpr, cmpsvar = scalarize_macro(cmpexpr_init, "comps")
-    rxsexprs = get_rxexprs(reactions, equations, union(diffs_declared, diffs_inferred))
+    rxsexprs = get_rxexprs(reactions, equations, all_syms)
 
     # Assemblies the full expression that declares all required symbolic variables, and
     # then the output `ReactionSystem`.
@@ -565,10 +566,10 @@ end
 
 # From the system reactions (as `DSLReaction`s) and equations (as expressions),
 # creates the expressions that evaluates to the reaction (+ equations) vector.
-function get_rxexprs(reactions, equations, diffsyms)
+function get_rxexprs(reactions, equations, all_syms)
     rxsexprs = :(Catalyst.CatalystEqType[])
     foreach(rx -> push!(rxsexprs.args, get_rxexpr(rx)), reactions)
-    foreach(eq -> push!(rxsexprs.args, escape_equation!(eq, diffsyms)), equations)
+    foreach(eq -> push!(rxsexprs.args, escape_equation!(eq, all_syms)), equations)
     return rxsexprs
 end
 
@@ -598,10 +599,12 @@ function get_rxexpr(rx::DSLReaction)
 end
 
 # Recursively escape functions within equations of an equation written using user-defined functions.
-# Does not expand special function calls like "hill(...)" and differential operators.
-function escape_equation!(eqexpr::Expr, diffsyms)
-    eqexpr.args[2] = recursive_escape_functions!(eqexpr.args[2], diffsyms)
-    eqexpr.args[3] = recursive_escape_functions!(eqexpr.args[3], diffsyms)
+# Does not escape special function calls like "hill(...)" and differential operators. Does
+# also not escape stuff corresponding to e.g. species or parameters (required for good error
+# for when e.g. a species is used as a differential, or for time delays in the future).
+function escape_equation!(eqexpr::Expr, all_syms)
+    eqexpr.args[2] = recursive_escape_functions!(eqexpr.args[2], all_syms)
+    eqexpr.args[3] = recursive_escape_functions!(eqexpr.args[3], all_syms)
     eqexpr
 end
 
@@ -934,9 +937,6 @@ function make_reaction(ex::Expr)
     reaction = get_reaction(ex)
     species, parameters = extract_sps_and_ps([reaction], [])
 
-    # Checks for input errors.
-    forbidden_symbol_check(union(species, parameters))
-
     # Creates expressions corresponding to code for declaring the parameters, species, and reaction.
     spexprs = get_usexpr(species, Dict{Symbol, Expr}())
     pexprs = get_psexpr(parameters, Dict{Symbol, Expr}())
@@ -964,11 +964,11 @@ end
 
 # Recursively traverses an expression and escapes all the user-defined functions.
 # Special function calls like "hill(...)" are not expanded.
-function recursive_escape_functions!(expr::ExprValues, diffsyms = [])
+function recursive_escape_functions!(expr::ExprValues, syms_skip = [])
     (typeof(expr) != Expr) && (return expr)
-    foreach(i -> expr.args[i] = recursive_escape_functions!(expr.args[i], diffsyms),
+    foreach(i -> expr.args[i] = recursive_escape_functions!(expr.args[i], syms_skip),
         1:length(expr.args))
-    if (expr.head == :call) && !isdefined(Catalyst, expr.args[1]) && expr.args[1] ∉ diffsyms
+    if (expr.head == :call) && !isdefined(Catalyst, expr.args[1]) && expr.args[1] ∉ syms_skip
         expr.args[1] = esc(expr.args[1])
     end
     expr
