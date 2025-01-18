@@ -47,45 +47,21 @@ end
 
 ### `@reaction_network` and `@network_component` Macros ###
 
-""" @reaction_network
+"""
+    @reaction_network
 
 Macro for generating chemical reaction network models (Catalyst `ReactionSystem`s). See the
-[Catalyst documentation](https://catalyst.sciml.ai) for more details on the domain specific
-language (DSL) that the macro implements, and for how `ReactionSystem`s can be used to generate
-and simulate mathematical models of chemical systems.
+following two section ([DSL introduction](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_basics/)
+and [advantage usage](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_advanced/)) of
+the Catalyst documentation for more details on the domain specific language (DSL) that the
+macro implements. The macros output (a `ReactionSystem` structure) are central to Catalyst
+and its functionality. How to e.g. simulate them is described in the [Catalyst documentation](https://docs.sciml.ai/Catalyst/stable/).
 
 Returns:
 - A Catalyst `ReactionSystem`, i.e. a symbolic model for the reaction network. The returned
 system is marked `complete`. To obtain a `ReactionSystem` that is not marked complete, for
-example to then use in compositional modeling, see the otherwise equivalent `@network_component` macro.
-
-Options:
-- `@species S1(t) S2(t) ...`, defines a collection of species.
-- `@variables V1(t) V2(t) ...`, defines non-species variables (for example, that evolve via a coupled ODE).
-- ... - naming a network ...
-
-Examples: some examples illustrating various use cases, including begin/end blocks, naming, interpolation, and mixes of the options.
-
-"""
-
-"""
-    @reaction_network
-
-Macro for generating chemical reaction network models. Outputs a [`ReactionSystem`](@ref) structure,
-which stores all information of the model. Next, it can be used as input to various simulations, or
-other tools for model analysis. The `@reaction_network` macro is sometimes called the "Catalyst
-DSL" (where DSL = domain-specific language), as it implements a DSL for creating chemical reaction
-network models.
-
-The `@reaction_network` macro, and the `ReactionSystem`s it generates, are central to Catalyst
-and its functionality. Catalyst is described in more detail in its documentation. The
-`reaction_network` DSL in particular is described in more detail [here](@ref dsl_description).
-
-The `@reaction_network` statement is followed by a `begin ... end` block. Each line within the
-block corresponds to a single reaction. Each reaction consists of:
-- A rate (at which the reaction occurs).
-- Any number of substrates (which are consumed by the reaction).
-- Any number of products (which are produced by the reaction).
+example to then use in compositional modeling, see the otherwise equivalent `@network_component`
+macro.
 
 Examples:
 Here we create a basic SIR model. It contains two reactions (infection and recovery):
@@ -108,25 +84,8 @@ This model also contains production and degradation reactions, where `0` denotes
 either no substrates or no products in a reaction.
 
 Options:
-The `@reaction_network` also accepts various options. These are inputs to the model creation that are
-not reactions. To denote that a line contains an option (and not a reaction), the line starts with `@`
-followed by the options name. E.g. an observable is declared using the `@observables` option.
-Here we create a polymerisation model (where the parameter `n` denotes the number of monomers in
-the polymer). We use the observable `Xtot` to track the total amount of `X` in the system. We also
-bundle the forward and backwards binding reactions into a single line.
-```julia
-polymerisation = @reaction_network begin
-    @observables Xtot ~ X + n*Xn
-    (kB,kD), n*X <--> Xn
-end
-```
-
-Notes:
-- `ReactionSystem`s created through `@reaction_network` are considered complete (non-complete
-systems can be created through the alternative `@network_component` macro).
-- `ReactionSystem`s created through `@reaction_network`, by default, have a random name. Specific
-names can be designated as a first argument (before `begin`, e.g. `rn = @reaction_network name begin ...`).
-- For more information, please again consider Catalyst's documentation.
+In addition to reactions, the macro also supports "option" inputs. Each option is designated
+by a tag starting with a `@` followed by its input. A list of options can be found [here](https://docs.sciml.ai/Catalyst/stable/api/#api_dsl_options).
 """
 macro reaction_network(name::Symbol, network_expr::Expr)
     make_rs_expr(QuoteNode(name), network_expr)
@@ -191,7 +150,7 @@ function make_rs_expr(name; complete = true)
     return Expr(:block, :(@parameters t), rs_expr)
 end
 
-# When both a name and a network expression is generated, dispatches thees to the internal
+# When both a name and a network expression is generated, dispatches these to the internal
 # `make_reaction_system` function.
 function make_rs_expr(name, network_expr; complete = true)
     rs_expr = make_reaction_system(striplines(network_expr), name)
@@ -312,10 +271,16 @@ function make_reaction_system(ex::Expr, name)
     # Handle interpolation of variables in the input.
     ex = esc_dollars!(ex)
 
-    # Extracts the lines with reactions, the lines with options, and the options.
+    # Extracts the lines with reactions, the lines with options, and the options. Check for input errors.
     reaction_lines = Expr[x for x in ex.args if x.head == :tuple]
     option_lines = Expr[x for x in ex.args if x.head == :macrocall]
     options = Dict(Symbol(String(arg.args[1])[2:end]) => arg for arg in option_lines)
+    allunique(arg.args[1] for arg in option_lines) ||
+        error("Some options where given multiple times.")
+    (sum(length, [reaction_lines, option_lines]) != length(ex.args)) &&
+        error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
+    any(!in(option_keys), keys(options)) &&
+        error("The following unsupported options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
 
     # Read options that explicitly declares some symbol. Compiles a list of all declared symbols
     # and checks that there has been no double-declarations.
@@ -324,21 +289,22 @@ function make_reaction_system(ex::Expr, name)
     ps_declared = extract_syms(options, :parameters)
     vs_declared = extract_syms(options, :variables)
     tiv, sivs, ivs, ivsexpr = read_ivs_option(options)
-    diffexpr, diffs_declared = read_differentials_option(options)
-    syms_declared = union(cmps_declared, sps_declared, ps_declared, vs_declared,
-        ivs, diffs_declared)
+    diffsexpr, diffs_declared = read_differentials_option(options)
+    syms_declared = collect(Iterators.flatten((cmps_declared, sps_declared, ps_declared,
+        vs_declared, ivs, diffs_declared)))
+    if !allunique(syms_declared)
+        nonunique_syms = [s for s in syms_declared if count(x -> x == s, syms_declared) > 1]
+        error("The following symbols $(unique(nonunique_syms)) have explicitly been declared as multiple types of components (e.g. occur in at least two of the `@species`, `@parameters`, `@variables`, `@ivs`, `@compounds`, `@differentials`). This is not allowed.")
+    end
 
-    # Reads the reactions and equation. From these, finds inferred species, variables and parameters.
+    # Reads the reactions and equation. From these, infers species, variables, and parameters.
     requiredec = haskey(options, :require_declaration)
     reactions = get_reactions(reaction_lines)
     sps_inferred, ps_pre_inferred = extract_sps_and_ps(reactions, syms_declared; requiredec)
-    vs_inferred, diffs_inferred, equations = read_equations_options!(diffexpr, options,
+    vs_inferred, diffs_inferred, equations = read_equations_options!(diffsexpr, options,
         union(syms_declared, sps_inferred), tiv; requiredec)
     ps_inferred = setdiff(ps_pre_inferred, vs_inferred, diffs_inferred)
     syms_inferred = union(sps_inferred, ps_inferred, vs_inferred, diffs_inferred)
-    sps = union(sps_declared, sps_inferred)
-    vs = union(vs_declared, vs_inferred)
-    ps = union(ps_inferred, ps_inferred)
 
     # Read options not related to the declaration or inference of symbols.
     obsexpr, obs_eqs, obs_syms = read_observed_options(options, ivs,
@@ -348,29 +314,15 @@ function make_reaction_system(ex::Expr, name)
     default_reaction_metadata = read_default_noise_scaling_option(options)
     combinatoric_ratelaws = read_combinatoric_ratelaws_option(options)
 
-    # Checks for input errors.
-    forbidden_symbol_check(union(sps, ps))
-    forbidden_variable_check(vs)
-    allunique(arg.args[1] for arg in option_lines) ||
-        error("Some options where given multiple times.")
-    (sum(length, [reaction_lines, option_lines]) != length(ex.args)) &&
-        error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
-    any(!in(option_keys), keys(options)) &&
-        error("The following unsupported options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
-    if !allunique(syms_declared)
-        nonunique_syms = [s for s in syms_declared if count(x -> x == s, syms_declared) > 1]
-        error("The following symbols $(nonunique_syms) have explicitly been declared as multiple types of components (e.g. occur in at least two of the `@species`, `@parameters`, `@variables`, `@ivs`, `@compounds`, `@differentials`). This is not allowed.")
-    end
-
     # Creates expressions corresponding to actual code from the internal DSL representation.
-    psexpr_init = get_pexpr(ps_inferred, options)
+    psexpr_init = get_psexpr(ps_inferred, options)
     spsexpr_init = get_usexpr(sps_inferred, options; ivs)
     vsexpr_init = get_usexpr(vs_inferred, options, :variables; ivs)
     psexpr, psvar = scalarize_macro(psexpr_init, "ps")
     spsexpr, spsvar = scalarize_macro(spsexpr_init, "specs")
     vsexpr, vsvar = scalarize_macro(vsexpr_init, "vars")
     cmpsexpr, cmpsvar = scalarize_macro(cmpexpr_init, "comps")
-    rxsexprs = make_rxsexprs(reactions, equations)
+    rxsexprs = get_rxexprs(reactions, equations, union(diffs_declared, diffs_inferred))
 
     # Assemblies the full expression that declares all required symbolic variables, and
     # then the output `ReactionSystem`.
@@ -382,9 +334,9 @@ function make_reaction_system(ex::Expr, name)
         $vsexpr
         $obsexpr
         $cmpsexpr
-        $diffexpr
+        $diffsexpr
 
-        # Stores each kwarg in a variable. Not necessary but useful when inspecting code for debugging.
+        # Stores each kwarg in a variable. Not necessary, but useful when debugging generated code.
         name = $name
         spatial_ivs = $sivs
         rx_eq_vec = $rxsexprs
@@ -576,7 +528,7 @@ end
 
 # Given the parameters that were extracted from the reactions, and the options dictionary,
 # creates the `@parameters ...` expression for the macro output.
-function get_pexpr(parameters_extracted, options)
+function get_psexpr(parameters_extracted, options)
     pexprs = if haskey(options, :parameters)
         options[:parameters]
     elseif isempty(parameters_extracted)
@@ -597,7 +549,7 @@ function scalarize_macro(expr_init, name)
     # symbolic variables (e.g. `var"##ps#384"`).
     namesym = gensym(name)
 
-    # If the input expression is non-emtpy, wraps it with addiional information.
+    # If the input expression is non-empty, wraps it with additional information.
     if expr_init != :(())
         symvec = gensym()
         expr = quote
@@ -612,19 +564,19 @@ function scalarize_macro(expr_init, name)
 end
 
 # From the system reactions (as `DSLReaction`s) and equations (as expressions),
-# creates the expressions that evalutes to the reaction (+ equations) vector.
-function make_rxsexprs(reactions, equations)
+# creates the expressions that evaluates to the reaction (+ equations) vector.
+function get_rxexprs(reactions, equations, diffsyms)
     rxsexprs = :(Catalyst.CatalystEqType[])
     foreach(rx -> push!(rxsexprs.args, get_rxexpr(rx)), reactions)
-    foreach(eq -> push!(rxsexprs.args, eq), equations)
+    foreach(eq -> push!(rxsexprs.args, escape_equation!(eq, diffsyms)), equations)
     return rxsexprs
 end
 
 # From a `DSLReaction` struct, creates the expression which evaluates to the creation
-# of the correponding reaction.
+# of the corresponding reaction.
 function get_rxexpr(rx::DSLReaction)
     # Initiates the `Reaction` expression.
-    rate = recursive_expand_functions!(rx.rate)
+    rate = recursive_escape_functions!(rx.rate)
     rx_constructor = :(Reaction($rate, [], [], [], []; metadata = $(rx.metadata)))
 
     # Loops through all products and substrates, and adds them (and their stoichiometries)
@@ -643,7 +595,7 @@ end
 
 ### DSL Option Handling ###
 
-# Finds the time independent variable, and any potential spatial indepndent variables.
+# Finds the time independent variable, and any potential spatial independent variables.
 # Returns these (individually and combined), as well as an expression for declaring them.
 function read_ivs_option(options)
     # Creates the independent variables expressions (depends on whether the `ivs` option was used).
@@ -656,7 +608,7 @@ function read_ivs_option(options)
         ivsexpr = :($(DEFAULT_IV_SYM) = default_t())
     end
 
-    # Extracts the independet variables symbols (time and spatial), and returns the output.
+    # Extracts the independent variables symbols (time and spatial), and returns the output.
     tiv = ivs[1]
     sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
     return tiv, sivs, ivs, ivsexpr
@@ -718,7 +670,7 @@ function read_events_option(options, event_type::Symbol)
             error("The condition part of continuous events (the left-hand side) must be a vector. This is not the case for: $(arg).")
         end
         if (arg isa Expr) && (arg.args[3] isa Expr) && (arg.args[3].head != :vect)
-            error("The affect part of all events (the righ-hand side) must be a vector. This is not the case for: $(arg).")
+            error("The affect part of all events (the right-hand side) must be a vector. This is not the case for: $(arg).")
         end
 
         # Adds the correctly formatted event to the event creation expression.
@@ -729,9 +681,9 @@ function read_events_option(options, event_type::Symbol)
 end
 
 # Reads the variables options. Outputs a list of teh variables inferred from the equations,
-# as well as the equation vector. If the default differential was used, updates the `diffexpr`
+# as well as the equation vector. If the default differential was used, updates the `diffsexpr`
 # expression so that this declares this as well.
-function read_equations_options!(diffexpr, options, syms_unavaiable, tiv; requiredec = false)
+function read_equations_options!(diffsexpr, options, syms_unavailable, tiv; requiredec = false)
     # Prepares the equations. First, extracts equations from provided option (converting to block form if required).
     # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
     eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
@@ -751,30 +703,30 @@ function read_equations_options!(diffexpr, options, syms_unavaiable, tiv; requir
         end
 
         # If the default differential (`D`) is used, record that it should be declared later on.
-        if (:D ∉ syms_unavaiable) && find_D_call(eq)
+        if (:D ∉ syms_unavailable) && find_D_call(eq)
             requiredec && throw(UndeclaredSymbolicError(
                 "Unrecognized symbol D was used as a differential in an equation: \"$eq\". Since the @require_declaration flag is set, all differentials in equations must be explicitly declared using the @differentials option."))
             add_default_diff = true
-            push!(syms_unavaiable, :D)
+            push!(syms_unavailable, :D)
         end
 
-        # Any undecalred symbolic variables encountered should be extracted as variables.
-        add_syms_from_expr!(vs_inferred, eq, syms_unavaiable)
+        # Any undeclared symbolic variables encountered should be extracted as variables.
+        add_syms_from_expr!(vs_inferred, eq, syms_unavailable)
         (!isempty(vs_inferred) && requiredec) && throw(UndeclaredSymbolicError(
             "Unrecognized symbolic variables $(join(vs_inferred, ", ")) detected in equation expression: \"$(string(eq))\". Since the flag @require_declaration is declared, all symbolic variables must be explicitly declared with the @species, @variables, and @parameters options."))
     end
 
-    # If `D` differential is used, add it to differential expression and infered differentials list.
+    # If `D` differential is used, add it to differential expression and inferred differentials list.
     diffs_inferred = Union{Symbol, Expr}[]
-    if add_default_diff && !any(diff_dec.args[1] == :D for diff_dec in diffexpr.args)
+    if add_default_diff && !any(diff_dec.args[1] == :D for diff_dec in diffsexpr.args)
         diffs_inferred = [:D]
-        push!(diffexpr.args, :(D = Differential($(tiv))))
+        push!(diffsexpr.args, :(D = Differential($(tiv))))
     end
 
     return vs_inferred, diffs_inferred, equations
 end
 
-# Searches an expresion `expr` and returns true if it have any subexpression `D(...)` (where `...` can be anything).
+# Searches an expression `expr` and returns true if it have any subexpression `D(...)` (where `...` can be anything).
 # Used to determine whether the default differential D has been used in any equation provided to `@equations`.
 function find_D_call(expr)
     return if Base.isexpr(expr, :call) && expr.args[1] == :D
@@ -792,14 +744,14 @@ function read_differentials_option(options)
     # Creates the differential expression.
     # If differentials was provided as options, this is used as the initial expression.
     # If the default differential (D(...)) was used in equations, this is added to the expression.
-    diffexpr = (haskey(options, :differentials) ? options[:differentials].args[3] :
+    diffsexpr = (haskey(options, :differentials) ? options[:differentials].args[3] :
                 striplines(:(begin end)))
-    diffexpr = option_block_form(diffexpr)
+    diffsexpr = option_block_form(diffsexpr)
 
     # Goes through all differentials, checking that they are correctly formatted. Adds their
-    # symbol to the list of declared differential sybols.
+    # symbol to the list of declared differential symbols.
     diffs_declared = Union{Symbol, Expr}[]
-    for dexpr in diffexpr.args
+    for dexpr in diffsexpr.args
         (dexpr.head != :(=)) &&
             error("Differential declaration must have form like D = Differential(t), instead \"$(dexpr)\" was given.")
         (dexpr.args[1] isa Symbol) ||
@@ -809,10 +761,10 @@ function read_differentials_option(options)
         push!(diffs_declared, dexpr.args[1])
     end
 
-    return diffexpr, diffs_declared
+    return diffsexpr, diffs_declared
 end
 
-# Reads the combinatiorial ratelaw options, which determines if a combinatorial rate law should
+# Reads the combinatorial ratelaw options, which determines if a combinatorial rate law should
 # be used or not. If not provides, uses the default (true).
 function read_combinatoric_ratelaws_option(options)
     return haskey(options, :combinatoric_ratelaws) ?
@@ -821,8 +773,9 @@ end
 
 # Reads the observables options. Outputs an expression for creating the observable variables,
 # a vector containing the observable equations, and a list of all observable symbols (this
-# list contains both those declared separately or infered from the `@observables` option` input`).
+# list contains both those declared separately or inferred from the `@observables` option` input`).
 function read_observed_options(options, all_ivs, us_declared, all_syms; requiredec = false)
+    syms_unavailable = setdiff(all_syms, us_declared)
     if haskey(options, :observables)
         # Gets list of observable equations and prepares variable declaration expression.
         # (`options[:observables]` includes `@observables`, `.args[3]` removes this part)
@@ -843,10 +796,10 @@ function read_observed_options(options, all_ivs, us_declared, all_syms; required
                 error("An observable ($obs_name) was given a default value. This is forbidden.")
             in(obs_name, forbidden_symbols_error) &&
                 error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
-            in(obs_name, all_syms) &&
+            in(obs_name, syms_unavailable) &&
                 error("An observable ($obs_name) uses a name that already have been already been declared or inferred as another model property.")
             (obs_name in us_declared) && is_escaped_expr(obs_eq.args[2]) &&
-                error("An interpolated observable have been used, which has also been ereqxplicitly declared within the system using either @species or @variables. This is not permitted.")
+                error("An interpolated observable have been used, which has also been explicitly declared within the system using either @species or @variables. This is not permitted.")
             ((obs_name in us_declared) || is_escaped_expr(obs_eq.args[2])) &&
                 !isnothing(metadata) && error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the observable was also declared separately (using either @species or @variables). When this is done, metadata should instead be provided within the original @species or @variable declaration.")
 
@@ -904,21 +857,21 @@ end
 ### `@reaction` Macro & its Internals ###
 
 @doc raw"""
-@reaction
+    @reaction
 
-Generates a single [`Reaction`](@ref) object using a similar syntax as the `@reaction_network`
-macro (but permiting only a single reaction). A more detailed introduction to the syntax can
+Macro for generating a single [`Reaction`](@ref) object using a similar syntax as the `@reaction_network`
+macro (but permitting only a single reaction). A more detailed introduction to the syntax can
 be found in the description of `@reaction_network`.
 
-The `@reaction` macro is folled by a single line consisting of three parts:
+The `@reaction` macro is followed by a single line consisting of three parts:
 - A rate (at which the reaction occur).
 - Any number of substrates (which are consumed by the reaction).
 - Any number of products (which are produced by the reaction).
 
-The output is a reaction (just liek created using teh `Reaction` constructor).
+The output is a reaction (just like created using teh `Reaction` constructor).
 
 Examples:
-Here we create a simple binding reaction and stroes it in the variable rx:
+Here we create a simple binding reaction and stores it in the variable rx:
 ```julia
 rx = @reaction k, X + Y --> XY
 ```
@@ -973,16 +926,16 @@ function make_reaction(ex::Expr)
     forbidden_symbol_check(union(species, parameters))
 
     # Creates expressions corresponding to code for declaring the parameters, species, and reaction.
-    sexprs = get_usexpr(species, Dict{Symbol, Expr}())
-    pexprs = get_pexpr(parameters, Dict{Symbol, Expr}())
+    spexprs = get_usexpr(species, Dict{Symbol, Expr}())
+    pexprs = get_psexpr(parameters, Dict{Symbol, Expr}())
     rxexpr = get_rxexpr(reaction)
     iv = :($(DEFAULT_IV_SYM) = default_t())
 
-    # Returns a repharsed expression which generates the `Reaction`.
+    # Returns a rephrased expression which generates the `Reaction`.
     quote
         $pexprs
         $iv
-        $sexprs
+        $spexprs
         $rxexpr
     end
 end
@@ -997,25 +950,24 @@ end
 
 ### Generic Expression Manipulation ###
 
-# Recursively traverses an expression and replaces special function call like "hill(...)" with
-# the actual corresponding expression.
-function recursive_expand_functions!(expr::ExprValues)
+# Recursively traverses an expression and escapes all the user-defined functions.
+# Special function calls like "hill(...)" are not expanded.
+function recursive_escape_functions!(expr::ExprValues, diffsyms = [])
     (typeof(expr) != Expr) && (return expr)
-    for i in eachindex(expr.args)
-        expr.args[i] = recursive_expand_functions!(expr.args[i])
-    end
-    if (expr.head == :call) && !isdefined(Catalyst, expr.args[1])
+    foreach(i -> expr.args[i] = recursive_escape_functions!(expr.args[i], diffsyms),
+        1:length(expr.args))
+    if (expr.head == :call) && !isdefined(Catalyst, expr.args[1]) && expr.args[1] ∉ diffsyms
         expr.args[1] = esc(expr.args[1])
     end
-    return expr
+    expr
 end
 
 # Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably
 # a Symbol/Numerical). This is used to handle bundled reaction (like `d, (X,Y) --> 0`).
 # Recursively escape functions in the right-hand-side of an equation written using user-defined functions. Special function calls like "hill(...)" are not expanded.
-function escape_equation_RHS!(eqexpr::Expr)
-    rhs = recursive_escape_functions!(eqexpr.args[3])
-    eqexpr.args[3] = rhs
+function escape_equation!(eqexpr::Expr, diffsyms)
+    eqexpr.args[2] = recursive_escape_functions!(eqexpr.args[2], diffsyms)
+    eqexpr.args[3] = recursive_escape_functions!(eqexpr.args[3], diffsyms)
     eqexpr
 end
 

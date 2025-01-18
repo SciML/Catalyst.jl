@@ -436,22 +436,22 @@ end
 # Relevant issue: https://github.com/SciML/Catalyst.jl/issues/1173
 let
     # Species + parameter.
-    @test_broken false #@test_throws Exception @eval @reaction_network begin
-        #@species X(t)
-        #@parameters X
-    #end
+    @test_throws Exception @eval @reaction_network begin
+        @species X(t)
+        @parameters X
+    end
 
     # Species + variable.
-    @test_broken false #@test_throws Exception @eval @reaction_network begin
-        #@species X(t)
-        #@variables X(t)
-    #end
+    @test_throws Exception @eval @reaction_network begin
+        @species X(t)
+        @variables X(t)
+    end
 
     # Variable + parameter.
-    @test_broken false #@test_throws Exception @eval @reaction_network begin
-        #@variables X(t)
-        #@parameters X
-    #end
+    @test_throws Exception @eval @reaction_network begin
+        @variables X(t)
+        @parameters X
+    end
 
     # Species + differential.
     @test_throws Exception @eval @reaction_network begin
@@ -472,31 +472,31 @@ let
     end
 
     # Parameter + observable (species/variable + observable is OK, as this e.g. provide additional observables information).
-    @test_broken false #@test_throws Exception @eval @reaction_network begin
-        #@species Y(t)
-        #@parameters X
-        #@observables X ~ Y
-    #end
+    @test_throws Exception @eval @reaction_network begin
+        @species Y(t)
+        @parameters X
+        @observables X ~ Y
+    end
 
     # Species + compound.
-    @test_broken false #@test_throws Exception @eval @reaction_network begin
-        #@species X(t) O(t)
-        #@compounds begin X(t) ~ 2O end
-    #end
+    @test_throws Exception @eval @reaction_network begin
+        @species X(t) O(t)
+        @compounds begin X(t) ~ 2O end
+    end
 
     # Parameter + compound.
-    @test_broken false #@test_throws Exception @eval @reaction_network begin
-        #@species O(t)
-        #@parameters X
-        #@compounds begin X(t) ~ 2O end
-    #end
+   @test_throws Exception @eval @reaction_network begin
+        @species O(t)
+        @parameters X
+        @compounds begin X(t) ~ 2O end
+    end
 
     # Variable + compound.
-    @test_broken false #@test_throws Exception @eval @reaction_network begin
-        #@species O(t)
-        #@variables X(t)
-        #@compounds begin X(t) ~ 2O end
-    #end
+    @test_throws Exception @eval @reaction_network begin
+        @species O(t)
+        @variables X(t)
+        @compounds begin X(t) ~ 2O end
+    end
 end
 
 ### Test Independent Variable Designations ###
@@ -616,11 +616,11 @@ let
         @equations D(V) ~ 1 - V
         d, D --> 0
     end
-    @test_broken false # @test_throws Exception @eval @reaction_network begin
-        #@variables D(t)
-        #@equations D(V) ~ 1 - V
-        #d, X --> 0
-    #end
+    @test_throws Exception @eval @reaction_network begin
+        @variables D(t)
+        @equations D(V) ~ 1 - V
+        d, X --> 0
+    end
     @test_throws Exception @eval @reaction_network begin
         @parameters D
         @equations D(V) ~ 1 - V
@@ -682,7 +682,7 @@ let
     @test plot(sol; idxs=:X).series_list[1].plotattributes[:y][end] ≈ 10.0
     @test plot(sol; idxs=[X, Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
     @test plot(sol; idxs=[rn.X, rn.Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
-    @test plot(sol; idxs=[:X, :Y]).series_list[2].plotattributes[:y][end] ≈ 3.0 # (https://github.com/SciML/ModelingToolkit.jl/issues/2778)
+    @test plot(sol; idxs=[:X, :Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
 end
 
 # Compares programmatic and DSL system with observables.
@@ -1197,16 +1197,16 @@ end
 # Test whether user-defined functions are properly expanded in equations.
 let
     f(A, t) = 2*A*t
+    g(A) = 2*A + 2
 
-    # Test user-defined function
+    # Test user-defined function (on both lhs and rhs).
     rn = @reaction_network begin
-        @equations D(A) ~ f(A, t)
+        @equations D(A) + g(A) ~ f(A, t)
     end
     @test length(equations(rn)) == 1
     @test equations(rn)[1] isa Equation
     @species A(t)
-    @test isequal(equations(rn)[1], D(A) ~ 2*A*t)
-
+    @test isequal(equations(rn)[1], D(A) + 2*A + 2 ~ 2*A*t)
 
     # Test whether expansion happens properly for unregistered/registered functions.
     hill_unregistered(A, v, K, n) = v*(A^n) / (A^n + K^n)
@@ -1231,7 +1231,6 @@ let
     @parameters v K n
     @test isequal(equations(rn2r)[1], D(A) ~ hill2(A, v, K, n))
 
-
     rn3 = @reaction_network begin
         @species Iapp(t)
         @equations begin
@@ -1252,7 +1251,6 @@ let
     @named rn3_sym = ReactionSystem(eq, t)
     rn3_sym = complete(rn3_sym)
     @test isequivalent(rn3, rn3_sym)
-
 
     # Test more complicated expression involving both registered function and a user-defined function.
     g(A, K, n) = A^n + K^n

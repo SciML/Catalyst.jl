@@ -31,13 +31,6 @@ function forbidden_symbol_check(sym)
     error("The following symbol(s) are used as species or parameters: $used_forbidden_syms, this is not permitted.")
 end
 
-# Throws an error when a forbidden variable is used (a forbidden symbol that is not `:t`).
-function forbidden_variable_check(sym)
-    used_forbidden_syms = intersect(forbidden_variables_error, sym)
-    isempty(used_forbidden_syms) && return
-    error("The following symbol(s) are used as variables: $used_forbidden_syms, this is not permitted.")
-end
-
 # Checks that no symbol was sued for multiple purposes.
 function unique_symbol_check(syms)
     allunique(syms)||
