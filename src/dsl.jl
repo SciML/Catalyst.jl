@@ -472,7 +472,7 @@ function extract_sps_and_ps(reactions, excluded_syms; requiredec = false)
             add_syms_from_expr!(species, reactant.reactant, excluded_syms)
         end
         (!isempty(species) && requiredec) &&
-            throw(UndeclaredSymbolicError("Unrecognized variables $(join(species, ", ")) detected in reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all species must be explicitly declared with the @species macro."))
+            throw(UndeclaredSymbolicError("Unrecognized reactant $(join(species, ", ")) detected in reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all species must be explicitly declared with the @species option."))
     end
     union!(excluded_syms, species)
 
@@ -481,11 +481,11 @@ function extract_sps_and_ps(reactions, excluded_syms; requiredec = false)
     for reaction in reactions
         add_syms_from_expr!(parameters, reaction.rate, excluded_syms)
         (!isempty(parameters) && requiredec) &&
-            throw(UndeclaredSymbolicError("Unrecognized parameter $(join(parameters, ", ")) detected in rate expression: $(reaction.rate) for the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
+            throw(UndeclaredSymbolicError("Unrecognized symbol $(join(parameters, ", ")) detected in rate expression: $(reaction.rate) for the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters option."))
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(parameters, reactant.stoichiometry, excluded_syms)
             (!isempty(parameters) && requiredec) &&
-                throw(UndeclaredSymbolicError("Unrecognized parameters $(join(parameters, ", ")) detected in the stoichiometry for reactant $(reactant.reactant) in the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters macro."))
+                throw(UndeclaredSymbolicError("Unrecognized symbol $(join(parameters, ", ")) detected in the stoichiometry for reactant $(reactant.reactant) in the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters option."))
         end
     end
 
@@ -728,7 +728,7 @@ function read_equations_options!(diffsexpr, options, syms_unavailable, tiv; requ
         # Any undeclared symbolic variables encountered should be extracted as variables.
         add_syms_from_expr!(vs_inferred, eq, syms_unavailable)
         (!isempty(vs_inferred) && requiredec) && throw(UndeclaredSymbolicError(
-            "Unrecognized symbolic variables $(join(vs_inferred, ", ")) detected in equation expression: \"$(string(eq))\". Since the flag @require_declaration is declared, all symbolic variables must be explicitly declared with the @species, @variables, and @parameters options."))
+            "Unrecognized symbol $(join(vs_inferred, ", ")) detected in equation expression: \"$(string(eq))\". Since the flag @require_declaration is declared, all symbolic variables must be explicitly declared with the @species, @variables, and @parameters options."))
     end
 
     # If `D` differential is used, add it to differential expression and inferred differentials list.
@@ -804,7 +804,7 @@ function read_observed_options(options, all_ivs, us_declared, all_syms; required
 
             # Error checks.
             (requiredec && !in(obs_name, us_declared)) &&
-                throw(UndeclaredSymbolicError("An undeclared variable ($obs_name) was declared as an observable in the following observable equation: \"$obs_eq\". Since the flag @require_declaration is set, all variables must be declared with the @species, @parameters, or @variables macros."))
+                throw(UndeclaredSymbolicError("An undeclared symbol ($obs_name) was used as an observable in the following observable equation: \"$obs_eq\". Since the flag @require_declaration is set, all observables must be declared with either the @species or @variables options."))
             isempty(ivs) ||
                 error("An observable ($obs_name) was given independent variable(s). These should not be given, as they are inferred automatically.")
             isnothing(defaults) ||
@@ -936,6 +936,9 @@ function make_reaction(ex::Expr)
     # Parses reactions. Extracts species and parameters within it.
     reaction = get_reaction(ex)
     species, parameters = extract_sps_and_ps([reaction], [])
+
+    # Checks for input errors. Needed here but not in `@reaction_network` as `ReactionSystem` perform this check but `Reaction` don't.
+    forbidden_symbol_check(union(species, parameters))
 
     # Creates expressions corresponding to code for declaring the parameters, species, and reaction.
     spexprs = get_usexpr(species, Dict{Symbol, Expr}())

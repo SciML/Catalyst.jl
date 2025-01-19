@@ -55,9 +55,8 @@ function make_transport_reaction(rateex, species)
     find_parameters_in_rate!(parameters, rateex)
 
     # Checks for input errors.
-    if isempty(intersect(forbidden_symbols_error, union([species], parameters)))
-        error("The following symbol(s) are used as species or parameters: $(intersect(forbidden_symbols_error, union([species], parameters)))), this is not permitted.")
-    end
+    forbidden_symbol_check(union([species], parameters))
+
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     sexprs = get_usexpr([species], Dict{Symbol, Expr}())
