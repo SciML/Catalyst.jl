@@ -637,9 +637,8 @@ end
 # the `default_noise_scaling` reaction metadata, otherwise, returns an empty vector.
 function read_default_noise_scaling_option(options)
     if haskey(options, :default_noise_scaling)
-        if (length(options[:default_noise_scaling].args) != 3)
-            error("@default_noise_scaling should only have a single expression as its input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
-        end
+        (length(options[:default_noise_scaling].args) != 3) &&
+            error("@default_noise_scaling should only have a single expression as its input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")        
         return :([:noise_scaling => $(options[:default_noise_scaling].args[3])])
     end
     return :([])
@@ -649,11 +648,14 @@ end
 # of the compound species, and also the expression that crates them.
 function read_compound_options(options)
     # If the compound option is used, retrieve a list of compound species and  the option line
-    # that creates them (used to declare them as compounds at the end).
+    # that creates them (used to declare them as compounds at the end). Due to some expression
+    # handling, in the case of a single compound we must change to the `@compound` macro.
     if haskey(options, :compounds)
         cmpexpr_init = options[:compounds]
+        cmpexpr_init.args[3] = option_block_form(get_block_option(cmpexpr_init))
         cmps_declared = [find_varinfo_in_declaration(arg.args[2])[1]
                             for arg in cmpexpr_init.args[3].args]
+        (length(cmps_declared) == 1) && (cmpexpr_init.args[1] = Symbol("@compound"))
     else  # If option is not used, return empty vectors and expressions.
         cmpexpr_init = :()
         cmps_declared = Union{Symbol, Expr}[]
@@ -667,7 +669,7 @@ function read_events_option(options, event_type::Symbol)
     if event_type ∉ [:continuous_events, :discrete_events]
         error("Trying to read an unsupported event type.")
     end
-    events_input = haskey(options, event_type) ? options[event_type].args[3] :
+    events_input = haskey(options, event_type) ? get_block_option(options[event_type]) :
                    striplines(:(begin end))
     events_input = option_block_form(events_input)
 
@@ -701,7 +703,7 @@ end
 function read_equations_options!(diffsexpr, options, syms_unavailable, tiv; requiredec = false)
     # Prepares the equations. First, extracts equations from provided option (converting to block form if required).
     # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
-    eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
+    eqs_input = haskey(options, :equations) ? get_block_option(options[:equations]) : :(begin end)
     eqs_input = option_block_form(eqs_input)
     equations = Expr[]
     ModelingToolkit.parse_equations!(Expr(:block), equations,
@@ -759,8 +761,8 @@ function read_differentials_option(options)
     # Creates the differential expression.
     # If differentials was provided as options, this is used as the initial expression.
     # If the default differential (D(...)) was used in equations, this is added to the expression.
-    diffsexpr = (haskey(options, :differentials) ? options[:differentials].args[3] :
-                striplines(:(begin end)))
+    diffsexpr = (haskey(options, :differentials) ? 
+        get_block_option(options[:differentials]) : striplines(:(begin end)))
     diffsexpr = option_block_form(diffsexpr)
 
     # Goes through all differentials, checking that they are correctly formatted. Adds their
@@ -794,7 +796,7 @@ function read_observed_options(options, all_ivs, us_declared, all_syms; required
     if haskey(options, :observables)
         # Gets list of observable equations and prepares variable declaration expression.
         # (`options[:observables]` includes `@observables`, `.args[3]` removes this part)
-        obs_eqs = make_obs_eqs(options[:observables].args[3])
+        obs_eqs = make_obs_eqs(get_block_option(options[:observables]))
         obsexpr = Expr(:block, :(@variables))
         obs_syms = :([])
 

@@ -471,8 +471,8 @@ let
     @test isequal((@reaction k, 0 --> X), (@reaction k, 0 ⥟ X))
 end
 
-# Test that symbols with special meanings, or that are forbidden, are handled properly.
-let
+# Test that symbols with special meanings are handled properly.
+let 
     test_network = @reaction_network begin t * k, X --> ∅ end
     @test length(species(test_network)) == 1
     @test length(parameters(test_network)) == 1
@@ -491,11 +491,39 @@ let
     @test length(species(test_network)) == 1
     @test length(parameters(test_network)) == 0
     @test reactions(test_network)[1].rate == ℯ
+end
 
-    @test_throws LoadError @eval @reaction im, 0 --> B
-    @test_throws LoadError @eval @reaction nothing, 0 --> B
-    @test_throws LoadError @eval @reaction k, 0 --> im
-    @test_throws LoadError @eval @reaction k, 0 --> nothing
+# Check that forbidden symbols correctly generates errors.
+let
+    # @reaction macro, symbols that cannot be in the rate.
+    @test_throws Exception @eval @reaction im, 0 --> X
+    @test_throws Exception @eval @reaction nothing, 0 --> X
+    @test_throws Exception @eval @reaction Γ, 0 --> X
+    @test_throws Exception @eval @reaction ∅, 0 --> X
+    
+    # @reaction macro, symbols that cannot be a reactant.
+    @test_throws Exception @eval @reaction 1, 0 --> im
+    @test_throws Exception @eval @reaction 1, 0 --> nothing
+    @test_throws Exception @eval @reaction 1, 0 --> Γ
+    @test_throws Exception @eval @reaction 1, 0 --> ℯ
+    @test_throws Exception @eval @reaction 1, 0 --> pi
+    @test_throws Exception @eval @reaction 1, 0 --> π
+    @test_throws Exception @eval @reaction 1, 0 --> t
+    
+    # @reaction_network macro, symbols that cannot be in the rate.
+    @test_throws Exception @eval @reaction_network begin im, 0 --> X end
+    @test_throws Exception @eval @reaction_network begin nothing, 0 --> X end
+    @test_throws Exception @eval @reaction_network begin Γ, 0 --> X end
+    @test_throws Exception @eval @reaction_network begin ∅, 0 --> X end
+    
+    # @reaction_network macro, symbols that cannot be a reactant.
+    @test_throws Exception @eval @reaction_network begin 1, 0 --> im end
+    @test_throws Exception @eval @reaction_network begin 1, 0 --> nothing end
+    @test_throws Exception @eval @reaction_network begin 1, 0 --> Γ end
+    @test_throws Exception @eval @reaction_network begin 1, 0 --> ℯ end
+    @test_throws Exception @eval @reaction_network begin 1, 0 --> pi end
+    @test_throws Exception @eval @reaction_network begin 1, 0 --> π end
+    @test_throws Exception @eval @reaction_network begin 1, 0 --> t end
 
     # Checks that non-supported arrow type usage yields error.
     @test_throws Exception @eval @reaction_network begin

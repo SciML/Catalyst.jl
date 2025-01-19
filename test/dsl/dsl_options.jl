@@ -1144,12 +1144,112 @@ end
 
 ### Other DSL Option Tests ###
 
+# Test that various options can be provided in block and single line form.
+# Also checks that the single line form takes maximally one argument.
+let
+    # The `@equations` option.
+    rn11 = @reaction_network rn1 begin
+        @equations D(V) ~ 1 - V
+    end
+    rn12 = @reaction_network rn1 begin
+        @equations begin
+            D(V) ~ 1 - V
+        end
+    end
+    @test isequal(rn11, rn12)
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(V) ~ 1 - V D(W) ~ 1 - W
+    end
+
+    # The `@observables` option.
+    rn21 = @reaction_network rn1 begin
+        @species X(t)
+        @observables X2 ~ 2X
+    end
+    rn22 = @reaction_network rn1 begin
+        @species X(t)
+        @observables begin
+            X2 ~ 2X
+        end
+    end
+    @test isequal(rn21, rn22)
+    @test_throws Exception @eval @reaction_network begin
+        @species X(t)
+        @observables X2 ~ 2X X3 ~ 3X
+    end
+
+    # The `@compounds` option.
+    rn31 = @reaction_network rn1 begin
+        @species X(t)
+        @compounds X2 ~ 2X
+    end
+    rn32 = @reaction_network rn1 begin
+        @species X(t)
+        @compounds begin
+            X2 ~ 2X
+        end
+    end
+    @test isequal(rn31, rn32)
+    @test_throws Exception @eval @reaction_network begin
+        @species X(t)
+        @compounds X2 ~ 2X X3 ~ 3X
+    end
+
+    # The `@differentials` option.
+    rn41 = @reaction_network rn1 begin
+        @differentials D = Differential(t)
+    end
+    rn42 = @reaction_network rn1 begin
+        @differentials begin
+            D = Differential(t)
+        end
+    end
+    @test isequal(rn41, rn42)
+    @test_throws Exception @eval @reaction_network begin
+        @differentials D = Differential(t) Δ = Differential(t)
+    end
+
+    # The `@continuous_events` option.
+    rn51 = @reaction_network rn1 begin
+        @species X(t)
+        @continuous_events [X ~ 3.0] => [X ~ X - 1]
+    end
+    rn52 = @reaction_network rn1 begin
+        @species X(t)
+        @continuous_events begin
+            [X ~ 3.0] => [X ~ X - 1]
+        end
+    end
+    @test isequal(rn51, rn52)
+    @test_throws Exception @eval @reaction_network begin
+        @species X(t)
+        @continuous_events [X ~ 3.0] => [X ~ X - 1] [X ~ 1.0] => [X ~ X + 1]
+    end
+
+    # The `@discrete_events` option.
+    rn61 = @reaction_network rn1 begin
+        @species X(t)
+        @discrete_events [X > 3.0] => [X ~ X - 1]
+    end
+    rn62 = @reaction_network rn1 begin
+        @species X(t)
+        @discrete_events begin
+            [X > 3.0] => [X ~ X - 1]
+        end
+    end
+    @test isequal(rn61, rn62)
+    @test_throws Exception @eval @reaction_network begin
+        @species X(t)
+        @discrete_events [X > 3.0] => [X ~ X - 1] [X < 1.0] => [X ~ X + 1]
+    end
+end
+
 # test combinatoric_ratelaws DSL option
 let
     rn = @reaction_network begin
         @combinatoric_ratelaws false
         (k1,k2), 2A <--> B
-        end
+    end
     combinatoric_ratelaw = Catalyst.get_combinatoric_ratelaws(rn)
     @test combinatoric_ratelaw == false
     rl = oderatelaw(reactions(rn)[1]; combinatoric_ratelaw)
@@ -1159,7 +1259,7 @@ let
     rn2 = @reaction_network begin
         @combinatoric_ratelaws true
         (k1,k2), 2A <--> B
-        end
+    end
     combinatoric_ratelaw = Catalyst.get_combinatoric_ratelaws(rn2)
     @test combinatoric_ratelaw == true
     rl = oderatelaw(reactions(rn2)[1]; combinatoric_ratelaw)
@@ -1170,7 +1270,7 @@ let
     rn3 = @reaction_network begin
         @combinatoric_ratelaws $crl
         (k1,k2), 2A <--> B
-        end
+    end
     combinatoric_ratelaw = Catalyst.get_combinatoric_ratelaws(rn3)
     @test combinatoric_ratelaw == crl
     rl = oderatelaw(reactions(rn3)[1]; combinatoric_ratelaw)
@@ -1256,10 +1356,10 @@ let
     end
 end
 
-### test that @no_infer properly throws errors when undeclared variables are written ###
-
-import Catalyst: UndeclaredSymbolicError
+# test that @require_declaration properly throws errors when undeclared variables are written.
 let
+    import Catalyst: UndeclaredSymbolicError
+
     # Test error when species are inferred
     @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
         @require_declaration

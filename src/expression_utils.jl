@@ -34,6 +34,16 @@ end
 
 ### Catalyst-specific Expressions Manipulation ###
 
+# Many option inputs can be on a form `@option input` or `@option begin ... end`. In both these
+# cases we want to retrieve the third argument in the option expression. Further more, we wish
+# to throw an error if there is more inputs (suggesting e.g. multiple inputs on a single line).
+# Note that there are only some options for which we wish to make this check.
+function get_block_option(expr)
+    (length(expr.args) > 3) &&
+        error("An option input ($expr) is misformatted. Potentially, it has multiple inputs on a single lines, and these should be split across multiple lines using a `begin ... end` block.")
+    return expr.args[3]
+end
+
 # Some options takes input on form that is either `@option ...` or `@option begin ... end`.
 # This transforms input of the latter form to the former (with only one line in the `begin ... end` block)
 function option_block_form(expr)
