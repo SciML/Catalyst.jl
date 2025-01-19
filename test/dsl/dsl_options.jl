@@ -422,6 +422,16 @@ let
     @test_throws Exception @eval @reaction_network begin
         @variables π(t)
     end
+    @test_throws Exception @eval @reaction_network begin
+        @variables Γ(t)
+    end
+    @test_throws Exception @eval @reaction_network begin
+        @variables ∅(t)
+    end
+    @test_throws Exception @eval @reaction_network begin
+        @ivs s
+        @variables t(s)
+    end
 end
 
 # Tests that explicitly declaring a single symbol as several things does not work.
@@ -1139,6 +1149,11 @@ let
     # Differential equation using a forbidden variable (in the DSL).
     @test_throws Exception @eval @reaction_network begin
         @equations D(π) ~ -1
+    end
+
+    # Algebraic equation using a forbidden variable (in the DSL).
+    @test_throws Exception @eval @reaction_network begin
+        @equations Γ ~ 1 + 3(Γ^2 + Γ)
     end
 end
 

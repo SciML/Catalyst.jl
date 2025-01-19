@@ -493,6 +493,38 @@ let
     @test reactions(test_network)[1].rate == ℯ
 end
 
+### Error Test ###
+
+# Erroneous `@reaction` usage.
+let
+    # Bi-directional reaction using the `@reaction` macro.
+    @test_throws Exception @eval @reaction (k1,k2), X1 <--> X2
+
+    # Bundles reactions.
+    @test_throws Exception @eval @reaction k, (X1,X2) --> 0
+end
+
+# Tests that malformed reactions yields errors.
+let
+    # Checks that malformed combinations of entries yields errors.
+    @test_throws Exception @eval @reaction_network begin
+        d, X --> 0, Y --> 0
+    end
+    @test_throws Exception @eval @reaction_network begin
+        d, X --> 0, [misc="Ok metadata"], [description="Metadata in (erroneously) extra []."]
+    end
+
+    # Checks that incorrect bundling yields error.
+    @test_throws Exception @eval @reaction_network begin
+        (k1,k2,k3), (X1,X2) --> 0
+    end
+
+    # Checks that incorrect stoichiometric expression yields an error.
+    @test_throws Exception @eval @reaction_network begin
+        k, X^Y --> XY
+    end
+end
+
 # Check that forbidden symbols correctly generates errors.
 let
     # @reaction macro, symbols that cannot be in the rate.
@@ -528,37 +560,5 @@ let
     # Checks that non-supported arrow type usage yields error.
     @test_throws Exception @eval @reaction_network begin
         d, X ⇻ 0
-    end
-end
-
-### Error Test ###
-
-# Erroneous `@reaction` usage.
-let
-    # Bi-directional reaction using the `@reaction` macro.
-    @test_throws Exception @eval @reaction (k1,k2), X1 <--> X2
-
-    # Bundles reactions.
-    @test_throws Exception @eval @reaction k, (X1,X2) --> 0
-end
-
-# Tests that malformed reactions yields errors.
-let
-    # Checks that malformed combinations of entries yields errors.
-    @test_throws Exception @eval @reaction_network begin
-        d, X --> 0, Y --> 0
-    end
-    @test_throws Exception @eval @reaction_network begin
-        d, X --> 0, [misc="Ok metadata"], [description="Metadata in (erroneously) extra []."]
-    end
-
-    # Checks that incorrect bundling yields error.
-    @test_throws Exception @eval @reaction_network begin
-        (k1,k2,k3), (X1,X2) --> 0
-    end
-
-    # Checks that incorrect stoichiometric expression yields an error.
-    @test_throws Exception @eval @reaction_network begin
-        k, X^Y --> XY
     end
 end

@@ -13,7 +13,6 @@ function esc_dollars!(ex)
             ex.args[i] = esc_dollars!(ex.args[i])
         end
     end
-
     ex
 end
 
