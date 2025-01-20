@@ -629,6 +629,21 @@ function read_ivs_option(options)
     return tiv, sivs, ivs, ivsexpr
 end
 
+# Returns the `default_reaction_metadata` output. Technically Catalyst's code could have been made
+# more generic to account for other default reaction metadata. Practically, this will likely
+# be the only relevant reaction metadata to have a default value via the DSL. If another becomes
+# relevant, the code can be rewritten to take this into account.
+# Checks if the `@default_noise_scaling` option is used. If so, uses it as the default value of
+# the `default_noise_scaling` reaction metadata, otherwise, returns an empty vector.
+function read_default_noise_scaling_option(options)
+    if haskey(options, :default_noise_scaling)
+        (length(options[:default_noise_scaling].args) != 3) &&
+            error("@default_noise_scaling should only have a single expression as its input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
+        return :([:noise_scaling => $(options[:default_noise_scaling].args[3])])
+    end
+    return :([])
+end
+
 # When compound species are declared using the "@compound begin ... end" option, get a list
 # of the compound species, and also the expression that crates them.
 function read_compound_option(options)
@@ -648,30 +663,38 @@ function read_compound_option(options)
     return cmpexpr_init, cmps_declared
 end
 
-# Creates an expression declaring differentials. Here, `tiv` is the time independent variables,
-# which is used by the default differential (if it is used).
-function read_differentials_option(options)
-    # Creates the differential expression.
-    # If differentials was provided as options, this is used as the initial expression.
-    # If the default differential (D(...)) was used in equations, this is added to the expression.
-    diffsexpr = (haskey(options, :differentials) ? 
-        get_block_option(options[:differentials]) : striplines(:(begin end)))
-    diffsexpr = option_block_form(diffsexpr)
+# Read the events (continuous or discrete) provided as options to the DSL. Returns an expression which evaluates to these.
+function read_events_option(options, event_type::Symbol)
+    # Prepares the events, if required to, converts them to block form.
+    if event_type ∉ [:continuous_events, :discrete_events]
+        error("Trying to read an unsupported event type.")
+    end
+    events_input = haskey(options, event_type) ? get_block_option(options[event_type]) :
+                   striplines(:(begin end))
+    events_input = option_block_form(events_input)
 
-    # Goes through all differentials, checking that they are correctly formatted. Adds their
-    # symbol to the list of declared differential symbols.
-    diffs_declared = Union{Symbol, Expr}[]
-    for dexpr in diffsexpr.args
-        (dexpr.head != :(=)) &&
-            error("Differential declaration must have form like D = Differential(t), instead \"$(dexpr)\" was given.")
-        (dexpr.args[1] isa Symbol) ||
-            error("Differential left-hand side must be a single symbol, instead \"$(dexpr.args[1])\" was given.")
-        in(dexpr.args[1], forbidden_symbols_error) &&
-            error("A forbidden symbol ($(dexpr.args[1])) was used as a differential name.")
-        push!(diffs_declared, dexpr.args[1])
+    # Goes through the events, checks for errors, and adds them to the output vector.
+    events_expr = :([])
+    for arg in events_input.args
+        # Formatting error checks.
+        # NOTE: Maybe we should move these deeper into the system (rather than the DSL), throwing errors more generally?
+        if (arg isa Expr) && (arg.head != :call) || (arg.args[1] != :(=>)) ||
+           (length(arg.args) != 3)
+            error("Events should be on form `condition => affect`, separated by a `=>`. This appears not to be the case for: $(arg).")
+        end
+        if (arg isa Expr) && (arg.args[2] isa Expr) && (arg.args[2].head != :vect) &&
+           (event_type == :continuous_events)
+            error("The condition part of continuous events (the left-hand side) must be a vector. This is not the case for: $(arg).")
+        end
+        if (arg isa Expr) && (arg.args[3] isa Expr) && (arg.args[3].head != :vect)
+            error("The affect part of all events (the right-hand side) must be a vector. This is not the case for: $(arg).")
+        end
+
+        # Adds the correctly formatted event to the event creation expression.
+        push!(events_expr.args, arg)
     end
 
-    return diffsexpr, diffs_declared
+    return events_expr
 end
 
 # Reads the variables options. Outputs a list of the variables inferred from the equations,
@@ -732,6 +755,32 @@ function find_D_call(expr)
     end
 end
 
+# Creates an expression declaring differentials. Here, `tiv` is the time independent variables,
+# which is used by the default differential (if it is used).
+function read_differentials_option(options)
+    # Creates the differential expression.
+    # If differentials was provided as options, this is used as the initial expression.
+    # If the default differential (D(...)) was used in equations, this is added to the expression.
+    diffsexpr = (haskey(options, :differentials) ?
+        get_block_option(options[:differentials]) : striplines(:(begin end)))
+    diffsexpr = option_block_form(diffsexpr)
+
+    # Goes through all differentials, checking that they are correctly formatted. Adds their
+    # symbol to the list of declared differential symbols.
+    diffs_declared = Union{Symbol, Expr}[]
+    for dexpr in diffsexpr.args
+        (dexpr.head != :(=)) &&
+            error("Differential declaration must have form like D = Differential(t), instead \"$(dexpr)\" was given.")
+        (dexpr.args[1] isa Symbol) ||
+            error("Differential left-hand side must be a single symbol, instead \"$(dexpr.args[1])\" was given.")
+        in(dexpr.args[1], forbidden_symbols_error) &&
+            error("A forbidden symbol ($(dexpr.args[1])) was used as a differential name.")
+        push!(diffs_declared, dexpr.args[1])
+    end
+
+    return diffsexpr, diffs_declared
+end
+
 # Reads the observables options. Outputs an expression for creating the observable variables,
 # a vector containing the observable equations, and a list of all observable symbols (this
 # list contains both those declared separately or inferred from the `@observables` option` input`).
@@ -761,8 +810,8 @@ function read_observed_option(options, all_ivs, us_declared, all_syms; requirede
                 error("An observable ($obs_name) uses a name that already have been already been declared or inferred as another model property.")
             (obs_name in us_declared) && is_escaped_expr(obs_eq.args[2]) &&
                 error("An interpolated observable have been used, which has also been explicitly declared within the system using either @species or @variables. This is not permitted.")
-            ((obs_name in us_declared) || is_escaped_expr(obs_eq.args[2])) &&
-                !isnothing(metadata) && error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the observable was also declared separately (using either @species or @variables). When this is done, metadata should instead be provided within the original @species or @variable declaration.")
+            ((obs_name in us_declared) || is_escaped_expr(obs_eq.args[2])) && !isnothing(metadata) &&
+                error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the observable was also declared separately (using either @species or @variables). When this is done, metadata should instead be provided within the original @species or @variable declaration.")
 
             # This bits adds the observables to the @variables vector which is given as output.
             # For Observables that have already been declared using @species/@variables,
@@ -815,60 +864,11 @@ function make_obs_eqs(observables_expr)
     return obs_eqs
 end
 
-# Read the events (continuous or discrete) provided as options to the DSL. Returns an expression which evaluates to these.
-function read_events_option(options, event_type::Symbol)
-    # Prepares the events, if required to, converts them to block form.
-    if event_type ∉ [:continuous_events, :discrete_events]
-        error("Trying to read an unsupported event type.")
-    end
-    events_input = haskey(options, event_type) ? get_block_option(options[event_type]) :
-                   striplines(:(begin end))
-    events_input = option_block_form(events_input)
-
-    # Goes through the events, checks for errors, and adds them to the output vector.
-    events_expr = :([])
-    for arg in events_input.args
-        # Formatting error checks.
-        # NOTE: Maybe we should move these deeper into the system (rather than the DSL), throwing errors more generally?
-        if (arg isa Expr) && (arg.head != :call) || (arg.args[1] != :(=>)) ||
-           (length(arg.args) != 3)
-            error("Events should be on form `condition => affect`, separated by a `=>`. This appears not to be the case for: $(arg).")
-        end
-        if (arg isa Expr) && (arg.args[2] isa Expr) && (arg.args[2].head != :vect) &&
-           (event_type == :continuous_events)
-            error("The condition part of continuous events (the left-hand side) must be a vector. This is not the case for: $(arg).")
-        end
-        if (arg isa Expr) && (arg.args[3] isa Expr) && (arg.args[3].head != :vect)
-            error("The affect part of all events (the right-hand side) must be a vector. This is not the case for: $(arg).")
-        end
-
-        # Adds the correctly formatted event to the event creation expression.
-        push!(events_expr.args, arg)
-    end
-
-    return events_expr
-end
-
-# Returns the `default_reaction_metadata` output. Technically Catalyst's code could have been made
-# more generic to account for other default reaction metadata. Practically, this will likely
-# be the only relevant reaction metadata to have a default value via the DSL. If another becomes
-# relevant, the code can be rewritten to take this into account.
-# Checks if the `@default_noise_scaling` option is used. If so, uses it as the default value of
-# the `default_noise_scaling` reaction metadata, otherwise, returns an empty vector.
-function read_default_noise_scaling_option(options)
-    if haskey(options, :default_noise_scaling)
-        (length(options[:default_noise_scaling].args) != 3) &&
-            error("@default_noise_scaling should only have a single expression as its input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")        
-        return :([:noise_scaling => $(options[:default_noise_scaling].args[3])])
-    end
-    return :([])
-end
-
 # Reads the combinatorial ratelaw options, which determines if a combinatorial rate law should
 # be used or not. If not provides, uses the default (true).
 function read_combinatoric_ratelaws_option(options)
     return haskey(options, :combinatoric_ratelaws) ?
-        options[:combinatoric_ratelaws].args[end] : true
+        get_block_option(options[:combinatoric_ratelaws]) : true
 end
 
 ### `@reaction` Macro & its Internals ###

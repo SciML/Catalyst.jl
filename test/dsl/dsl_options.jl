@@ -1261,6 +1261,7 @@ end
 
 # test combinatoric_ratelaws DSL option
 let
+    # Test for `@combinatoric_ratelaws false`.
     rn = @reaction_network begin
         @combinatoric_ratelaws false
         (k1,k2), 2A <--> B
@@ -1271,6 +1272,7 @@ let
     @unpack k1, A = rn
     @test isequal(rl, k1*A^2)
 
+    # Test for `@combinatoric_ratelaws true`.
     rn2 = @reaction_network begin
         @combinatoric_ratelaws true
         (k1,k2), 2A <--> B
@@ -1281,6 +1283,7 @@ let
     @unpack k1, A = rn2
     @test isequal(rl, k1*A^2/2)
 
+    # Test for interpolation into `@combinatoric_ratelaws`.
     crl = false
     rn3 = @reaction_network begin
         @combinatoric_ratelaws $crl
@@ -1291,6 +1294,20 @@ let
     rl = oderatelaw(reactions(rn3)[1]; combinatoric_ratelaw)
     @unpack k1, A = rn3
     @test isequal(rl, k1*A^2)
+
+    # Test for erroneous inputs (to few, to many, wrong type).
+    @test_throws Exception @eval @reaction_network begin
+        @combinatoric_ratelaws
+        d, 3X --> 0
+    end
+    @test_throws Exception @eval @reaction_network begin
+        @combinatoric_ratelaws false false
+        d, 3X --> 0
+    end
+    @test_throws Exception @eval @reaction_network begin
+        @combinatoric_ratelaws "false"
+        d, 3X --> 0
+    end
 end
 
 # Test whether user-defined functions are properly expanded in equations.
