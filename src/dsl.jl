@@ -422,9 +422,8 @@ function push_reactions!(reactions::Vector{DSLReaction}, subs::ExprValues,
     # This finds these tuples' lengths (or 1 for non-tuple forms). Inconsistent lengths yield error.
     lengs = (tup_leng(subs), tup_leng(prods), tup_leng(rate), tup_leng(metadata))
     maxl = maximum(lengs)
-    if any(!(leng == 1 || leng == maxl) for leng in lengs)
+    any(!(leng == 1 || leng == maxl) for leng in lengs) &&
         error("Malformed reaction, rate: $rate, subs: $subs, prods: $prods, metadata: $metadata.")
-    end
 
     # Loops through each reaction encoded by the reaction's different components.
     # Creates a `DSLReaction` representation and adds it to `reactions`.
@@ -492,7 +491,7 @@ function extract_sps_and_ps(reactions, excluded_syms; requiredec = false)
     collect(species), collect(parameters)
 end
 
-# Function called by extract_sps_and_ps, recursively loops through an
+# Function called by `extract_sps_and_ps`, recursively loops through an
 # expression and find symbols (adding them to the push_symbols vector).
 function add_syms_from_expr!(push_symbols::AbstractSet, expr::ExprValues, excluded_syms)
     # If we have encountered a Symbol in the recursion, we can try extracting it.
@@ -541,29 +540,6 @@ function get_psexpr(parameters_extracted, options)
     pexprs
 end
 
-# Takes a ModelingToolkit declaration macro (like @parameters ...) and return and expression:
-# That calls the macro and then scalarizes all the symbols created into a vector of Nums.
-# stores the created symbolic variables in a variable (which name is generated from `name`).
-# It will also return the name used for the variable that stores the symbolic variables.
-function scalarize_macro(expr_init, name)
-    # Generates a random variable name which (in generated code) will store the produced
-    # symbolic variables (e.g. `var"##ps#384"`).
-    namesym = gensym(name)
-
-    # If the input expression is non-empty, wraps it with additional information.
-    if expr_init != :(())
-        symvec = gensym()
-        expr = quote
-            $symvec = $expr_init
-            $namesym = reduce(vcat, Symbolics.scalarize($symvec))
-        end
-    else
-        expr = :($namesym = Num[])
-    end
-
-    return expr, namesym
-end
-
 # From the system reactions (as `DSLReaction`s) and equations (as expressions),
 # creates the expressions that evaluates to the reaction (+ equations) vector.
 function get_rxexprs(reactions, equations, all_syms)
@@ -598,6 +574,29 @@ function get_rxexpr(rx::DSLReaction)
     return rx_constructor
 end
 
+# Takes a ModelingToolkit declaration macro (like @parameters ...) and return and expression:
+# That calls the macro and then scalarizes all the symbols created into a vector of Nums.
+# stores the created symbolic variables in a variable (which name is generated from `name`).
+# It will also return the name used for the variable that stores the symbolic variables.
+function scalarize_macro(expr_init, name)
+    # Generates a random variable name which (in generated code) will store the produced
+    # symbolic variables (e.g. `var"##ps#384"`).
+    namesym = gensym(name)
+
+    # If the input expression is non-empty, wraps it with additional information.
+    if expr_init != :(())
+        symvec = gensym()
+        expr = quote
+            $symvec = $expr_init
+            $namesym = reduce(vcat, Symbolics.scalarize($symvec))
+        end
+    else
+        expr = :($namesym = Num[])
+    end
+
+    return expr, namesym
+end
+
 # Recursively escape functions within equations of an equation written using user-defined functions.
 # Does not escape special function calls like "hill(...)" and differential operators. Does
 # also not escape stuff corresponding to e.g. species or parameters (required for good error
@@ -609,25 +608,6 @@ function escape_equation!(eqexpr::Expr, all_syms)
 end
 
 ### DSL Option Handling ###
-
-# Finds the time independent variable, and any potential spatial independent variables.
-# Returns these (individually and combined), as well as an expression for declaring them.
-function read_ivs_option(options)
-    # Creates the independent variables expressions (depends on whether the `ivs` option was used).
-    if haskey(options, :ivs)
-        ivs = Tuple(extract_syms(options, :ivs))
-        ivsexpr = copy(options[:ivs])
-        ivsexpr.args[1] = Symbol("@", "parameters")
-    else
-        ivs = (DEFAULT_IV_SYM,)
-        ivsexpr = :($(DEFAULT_IV_SYM) = default_t())
-    end
-
-    # Extracts the independent variables symbols (time and spatial), and returns the output.
-    tiv = ivs[1]
-    sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
-    return tiv, sivs, ivs, ivsexpr
-end
 
 # Returns the `default_reaction_metadata` output. Technically Catalyst's code could have been made
 # more generic to account for other default reaction metadata. Practically, this will likely
@@ -869,6 +849,25 @@ end
 function read_combinatoric_ratelaws_option(options)
     return haskey(options, :combinatoric_ratelaws) ?
         get_block_option(options[:combinatoric_ratelaws]) : true
+end
+
+# Finds the time independent variable, and any potential spatial independent variables.
+# Returns these (individually and combined), as well as an expression for declaring them.
+function read_ivs_option(options)
+    # Creates the independent variables expressions (depends on whether the `ivs` option was used).
+    if haskey(options, :ivs)
+        ivs = Tuple(extract_syms(options, :ivs))
+        ivsexpr = copy(options[:ivs])
+        ivsexpr.args[1] = Symbol("@", "parameters")
+    else
+        ivs = (DEFAULT_IV_SYM,)
+        ivsexpr = :($(DEFAULT_IV_SYM) = default_t())
+    end
+
+    # Extracts the independent variables symbols (time and spatial), and returns the output.
+    tiv = ivs[1]
+    sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
+    return tiv, sivs, ivs, ivsexpr
 end
 
 ### `@reaction` Macro & its Internals ###

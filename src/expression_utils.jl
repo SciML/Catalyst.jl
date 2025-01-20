@@ -38,10 +38,10 @@ end
 # to throw an error if there is more inputs (suggesting e.g. multiple inputs on a single line).
 # Note that there are only some options for which we wish to make this check.
 function get_block_option(expr)
-    (length(expr.args) > 3) &&
-        error("An option input ($expr) is missformatted. Potentially, it has multiple inputs on a single lines, and these should be split across multiple lines using a `begin ... end` block.")
     (length(expr.args) < 3) &&
-        error("An option input ($expr) is missformatted. It seems that it has no inputs, which is expected.")
+        error("The $(expr.args[1]) option's input was misformatted (full declaration: `$expr`). It seems that it has no inputs, whereas some input is expected.")
+    (length(expr.args) > 3) &&
+        error("The $(expr.args[1]) option's input was misformatted (full declaration: `$expr`). Potentially, it has multiple inputs on a single line, in which case these should be split across multiple lines using a `begin ... end` block.")
     return expr.args[3]
 end
 
