@@ -1006,6 +1006,12 @@ let
 end
 
 ########## tests related to hybrid systems ##########
+
+massactionjumps(js::JumpSystem) = equations(js).x[1]
+constantratejumps(js::JumpSystem) = equations(js).x[2]
+variableratejumps(js::JumpSystem) = equations(js).x[3]
+odeeqs(js::JumpSystem) = equations(js).x[4]
+
 let
     t = default_t()
     D = default_time_deriv()
@@ -1018,15 +1024,41 @@ let
     cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
     @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
     rs = complete(rs)
-    jinput = JumpInputs(rn, [:A => 0, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
+    jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
     @test jinput.prob isa ODEProblem
     sys = jinput.sys
     @test sys isa JumpSystem
     @test MT.has_equations(sys)
-    eqs = MT.equations(sys)
-    @test isempty(eqs.x[1]) 
-    @test isempty(eqs.x[2]) 
-    @test length(eqs.x[3]) == 1
-    @test length(eqs.x[4]) == 2  # dA/dt and dV/dt
+    @test length(massactionjumps(sys)) == 1
+    @test isempty(constantratejumps(sys)) 
+    @test length(variableratejumps(sys)) == 3
+    @test length(odeeqs(sys)) == 4
+    @test length(continuous_events(sys)) == 1
+end
+
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ k
+    @variables V(t)
+    @species A(t) B(t) C(t)
+    metadata = [:physical_scale => PhysicalScale.ODE]
+    rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing; metadata),
+        Reaction(k, [A, B], nothing), Reaction(λ, [C], [A])]
+    eqs = [D(V) ~ λ*V*C]
+    cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
+    @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
+    rs = complete(rs)
+    jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
+    @test jinput.prob isa ODEProblem
+    sys = jinput.sys
+    @test sys isa JumpSystem
+    @test MT.has_equations(sys)
+    @test length(massactionjumps(sys)) == 1
+    @test isempty(constantratejumps(sys)) 
+    @test length(variableratejumps(sys)) == 2
+    @test length(odeeqs(sys)) == 4
+    odes = union(eqs, [D(A) ~ 0, D(B) ~ -λ*A*B, D(C) ~ 0])
+    @test issetequal(odes, odeeqs(sys))
     @test length(continuous_events(sys)) == 1
 end
