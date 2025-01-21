@@ -1062,3 +1062,31 @@ let
     @test issetequal(odes, odeeqs(sys))
     @test length(continuous_events(sys)) == 1
 end
+
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ k
+    @variables V(t)
+    @species A(t) B(t) C(t)
+    md1 = [:physical_scale => PhysicalScale.ODE]
+    md2 = [:physical_scale => PhysicalScale.VariableRateJump]
+    rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing; metadata = md1),
+        Reaction(k, [A, B], nothing), Reaction(λ, [C], [A]; metadata = md2)]
+    eqs = [D(V) ~ λ*V*C]
+    cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
+    @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
+    rs = complete(rs)
+    jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
+    @test jinput.prob isa ODEProblem
+    sys = jinput.sys
+    @test sys isa JumpSystem
+    @test MT.has_equations(sys)
+    @test isempty(massactionjumps(sys)) 
+    @test isempty(constantratejumps(sys)) 
+    @test length(variableratejumps(sys)) == 3
+    @test length(odeeqs(sys)) == 4
+    odes = union(eqs, [D(A) ~ 0, D(B) ~ -λ*A*B, D(C) ~ 0])
+    @test issetequal(odes, odeeqs(sys))
+    @test length(continuous_events(sys)) == 1
+end

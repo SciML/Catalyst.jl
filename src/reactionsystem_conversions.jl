@@ -315,8 +315,9 @@ end
 # get_depgraph(rs)[i] is the list of reactions with rates depending on species changed by
 # i'th reaction.
 function get_depgraph(rs)
-    jdeps = asgraph(rs)
-    vdeps = variable_dependencies(rs)
+    eqs = reactions(rs)
+    jdeps = asgraph(rs; eqs)
+    vdeps = variable_dependencies(rs; eqs)
     eqeq_dependencies(jdeps, vdeps).fadjlist
 end
 
