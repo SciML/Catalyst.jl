@@ -12,24 +12,24 @@
     (2) Every symbol used as a reaction reactant is inferred as a species.
     (3) Every symbol not declared in (1) or (2) that occurs in an expression provided after `@equations` is inferred as a variable.
     (4) Every symbol not declared in (1), (2), or (3) that occurs either as a reaction rate or stoichiometric coefficient is inferred to be a parameter.
-E.g. in
-```julia
-@reaction_network begin
-    @equations V1 + S ~ V2^2
-    (p + S + V1), S --> 0
-end
-```
-`S` is inferred as a species, `V1` and `V2` as variables, and `p` as a parameter. The previous special cases for the `@observables`, `@compounds`, and `@differentials` options still hold. Finally, the `@require_declaration` options (described in more detail below) can now be used to require everything to be explicitly declared.
+  E.g. in
+  ```julia
+  @reaction_network begin
+      @equations V1 + S ~ V2^2
+      (p + S + V1), S --> 0
+  end
+  ```
+  `S` is inferred as a species, `V1` and `V2` as variables, and `p` as a parameter. The previous special cases for the `@observables`, `@compounds`, and `@differentials` options still hold. Finally, the `@require_declaration` options (described in more detail below) can now be used to require everything to be explicitly declared.
 - New formula for determining whether the default differentials have been used within an `@equations` option. Now, if any expression `D(...)` is encountered (where `...` can be anything), this is inferred as usage of the default differential D. E.g. in the following equations `D` is inferred as a differential with respect to the default independent variable:
-```julia
-@reaction_network begin
-  @equations D(V) + V ~ 1
-end
-@reaction_network begin
-  @equations D(D(V)) ~ 1
-end
-```
-Please note that this cannot be used at the same time as `D` is used to represent a species, variable, or parameter (including is these are implicitly designated as such by e.g. appearing as a reaction reactant). 
+  ```julia
+  @reaction_network begin
+    @equations D(V) + V ~ 1
+  end
+  @reaction_network begin
+    @equations D(D(V)) ~ 1
+  end
+  ```
+  Please note that this cannot be used at the same time as `D` is used to represent a species, variable, or parameter (including is these are implicitly designated as such by e.g. appearing as a reaction reactant). 
 - Array symbolics support is more consistent with ModelingToolkit v9. Parameter
   arrays are no longer scalarized by Catalyst, while species and variables
   arrays still are (as in ModelingToolkit). As such, parameter arrays should now
