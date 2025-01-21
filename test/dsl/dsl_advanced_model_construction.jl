@@ -382,3 +382,62 @@ let
     end        
     @test hybrid == rn
 end
+
+# hybrid models
+let
+    rs = @reaction_network hybrid begin
+        @variables V(t)
+        @parameters λ
+        k*V, 0 --> A
+        λ*A, B --> 0
+        k, A + B --> 0
+        λ, C --> A, [physical_scale = PhysicalScale.ODE]
+        @equations D(V) ~ λ*V*C
+        @continuous_events begin
+            [V ~ 2.0] => [V ~ V/2, A ~ A/2]
+        end
+    end
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ k
+    @variables V(t)
+    @species A(t) B(t) C(t)
+    metadata = [:physical_scale => PhysicalScale.ODE]
+    rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing; metadata),
+        Reaction(k, [A, B], nothing), Reaction(λ, [C], [A])]
+    eqs = [D(V) ~ λ*V*C]
+    cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
+    rs2 = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents, 
+        name = :hybrid)
+    rs2 = complete(rs2)
+    @test rs == rs2
+end
+
+let
+    rs = @reaction_network hybrid begin
+        @variables V(t)
+        @parameters λ
+        k*V, 0 --> A
+        λ*A, B --> 0, [physical_scale = PhysicalScale.ODE]
+        k, A + B --> 0
+        λ, C --> A, [physical_scale = PhysicalScale.VariableRateJump]
+        @equations D(V) ~ λ*V*C
+        @continuous_events begin
+            [V ~ 2.0] => [V ~ V/2, A ~ A/2]
+        end
+    end
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ k
+    @variables V(t)
+    @species A(t) B(t) C(t)
+    md1 = [:physical_scale => PhysicalScale.ODE]
+    md2 = [:physical_scale => PhysicalScale.VariableRateJump]
+    rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing; metadata = md1),
+        Reaction(k, [A, B], nothing), Reaction(λ, [C], [A]; metadata = md2)]
+    eqs = [D(V) ~ λ*V*C]
+    cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
+    rs2 = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents, name = :hybrid)
+    rs2 = complete(rs2)
+    @test rs == rs2
+end
