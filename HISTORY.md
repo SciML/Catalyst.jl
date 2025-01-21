@@ -6,7 +6,13 @@
   with versions of dependencies for which Catalyst CI and doc build tests pass
   (at the time the release is made). If you need a dependency version increased,
   please open an issue and we can update it and make a new Catalyst release once
-  testing against the newer dependency version is complete. 
+  testing against the newer dependency version is complete.
+- It is now longer recommended to install and use the full OrdinaryDiffEq library to access specific ODE solvers.
+  Instead, only install the specific OrdinaryDiffEq sub-libraries that contain the desired
+  solver. This significantly reduces installation and package loading times. I.e. to use the default
+  solver that auto-switches between explicit and implicit methods, install `OrdinaryDiffEqDefault`. To 
+  use `Tsit5` install `OrdinaryDiffEqTsit5`, etc. The possible sub-libraries, each containing different solvers,
+  can be viewed [here](https://github.com/SciML/OrdinaryDiffEq.jl/tree/master/lib).
 - New formula for inferring variables from equations (declared using the `@equations` options) in the DSL. The order of inference of species/variables/parameters is now:
     (1) Every symbol explicitly declared using `@species`, `@variables`, and `@parameters` are assigned to the correct category.
     (2) Every symbol used as a reaction reactant is inferred as a species.
