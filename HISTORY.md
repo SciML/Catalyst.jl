@@ -7,7 +7,7 @@
   (at the time the release is made). If you need a dependency version increased,
   please open an issue and we can update it and make a new Catalyst release once
   testing against the newer dependency version is complete.
-- It is now longer recommended to install and use the full OrdinaryDiffEq library to access specific ODE solvers.
+- It is no longer recommended to install and use the full OrdinaryDiffEq library to access specific ODE solvers.
   Instead, only install the specific OrdinaryDiffEq sub-libraries that contain the desired
   solver. This significantly reduces installation and package loading times. I.e. to use the default
   solver that auto-switches between explicit and implicit methods, install `OrdinaryDiffEqDefault`. To 
