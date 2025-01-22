@@ -81,17 +81,18 @@ latexify(rn)
 ```@example tut1
 rn #hide
 ```
-Assuming [Graphviz](https://graphviz.org/) is installed and command line
-accessible, within a Jupyter notebook we can also graph the reaction network by
-```julia
-g = Graph(rn)
+Catalyst also has functionality for visualizing networks using the [Makie](https://docs.makie.org/stable/)
+plotting ecosystem. The relevant packages to load are Catalyst, GraphMakie, NetworkLayout, and a Makie backend
+such as CairoMakie. Doing so and then using the `plot_network` function allows us to 
+visualize the network: 
+```@example tut1
+using Catalyst
+import CairoMakie, GraphMakie, NetworkLayout
+g = plot_network(rn)
 ```
-giving
-
-![Repressilator solution](../assets/repressilator.svg)
 
 The network graph shows a variety of information, representing each species as a
-blue node, and each reaction as an orange dot. Black arrows from species to
+blue node, and each reaction as an green node. Black arrows from species to
 reactions indicate reactants, and are labelled with their input stoichiometry.
 Similarly, black arrows from reactions to species indicate products, and are
 labelled with their output stoichiometry. In contrast, red arrows from a species
@@ -105,8 +106,11 @@ hillr(P₂,α,K,n), ∅ --> m₃
 have rates that depend on the proteins, and hence lead to red arrows from each
 `Pᵢ`.
 
-Note, from the REPL or scripts one can always use [`savegraph`](@ref) to save
-the graph (assuming `Graphviz` is installed).
+Note, from the REPL or scripts one can always use Makie's `save` function to save
+the graph.
+```julia
+save("repressilator_graph.png", g)
+```
 
 ## Mass action ODE models
 Let's now use our `ReactionSystem` to generate and solve a corresponding mass
@@ -176,7 +180,7 @@ At this point we are all set to solve the ODEs. We can now use any ODE solver
 from within the
 [OrdinaryDiffEq.jl](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/)
 package. We'll use the recommended default explicit solver, `Tsit5()`, and then
-plot the solutions:
+plot the solutions: 
 
 ```@example tut1
 sol = solve(oprob, Tsit5(), saveat=10.0)

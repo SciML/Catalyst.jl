@@ -215,6 +215,18 @@ let
     end
 end
 
+# The second argument must be a vector of AbstractSpatialReaction subtypes.
+let 
+    # Define an invalid spatial reaction type (not a subtype of AbstractSpatialReaction)
+    struct InvalidSpatialReactionType end
+
+    # Attempt to create the LatticeReactionSystem with InvalidSpatialReactionType
+    for grid in grids
+        @test_throws ArgumentError LatticeReactionSystem(binding_system, [], grid)
+        @test_throws ArgumentError LatticeReactionSystem(binding_system, [InvalidSpatialReactionType()], grid)
+    end
+end
+
 # Tests various networks with non-permitted content.
     let
     tr = @transport_reaction D X

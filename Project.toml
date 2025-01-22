@@ -35,6 +35,7 @@ HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
 NetworkLayout = "46757867-2c16-5918-afeb-47bfcb05e46a"
 StructuralIdentifiability = "220ca800-aa68-49bb-acd8-6037fa93a544"
 
+
 [extensions]
 CatalystBifurcationKitExtension = "BifurcationKit"
 CatalystCairoMakieExtension = "CairoMakie"
@@ -44,7 +45,7 @@ CatalystStructuralIdentifiabilityExtension = "StructuralIdentifiability"
 
 [compat]
 BifurcationKit = "0.4.4"
-CairoMakie = "0.12"
+CairoMakie = "0.12, 0.13"
 Combinatorics = "1.0.2"
 DataStructures = "0.18"
 DiffEqBase = "6.159.0"
@@ -75,7 +76,6 @@ julia = "1.10"
 [extras]
 DiffEqCallbacks = "459566f4-90b8-5000-8ac3-15dfb0a30def"
 DomainSets = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
-Graphviz_jll = "3c863552-8265-54e4-a6dc-903eb78fde85"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
@@ -99,4 +99,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [targets]
-test = ["DiffEqCallbacks", "DomainSets", "Graphviz_jll", "Logging", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqDefault", "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner", "Pkg", "Plots", "Random", "SafeTestsets", "SciMLBase", "SciMLNLSolve", "StableRNGs", "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "Unitful"]
+test = ["DiffEqCallbacks", "DomainSets", "Logging", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqDefault", "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner", "Pkg", "Plots", "Random", "SafeTestsets", "SciMLBase", "SciMLNLSolve", "StableRNGs", "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "Unitful"]
