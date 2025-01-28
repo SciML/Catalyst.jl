@@ -4,6 +4,11 @@ reaction networks can often have their steady-state properties known in advance,
 simply by analyzing the graph structure of the network. The subfield of chemistry
 and math studying this relationship is called [Chemical Reaction Network Theory](https://en.wikipedia.org/wiki/Chemical_reaction_network_theory).
 
+In this tutorial we introduce several of the Catalyst API functions for network
+analysis. A complete summary of the exported functions is given in the API
+section
+[`Network-Analysis-and-Representations`](https://docs.sciml.ai/Catalyst/stable/api/catalyst_api/#Network-Analysis-and-Representations).
+
 Broadly, results from chemical reaction network theory relate a purely
 graph-structural property (e.g. deficiency) to dynamical properties of the reaction system
 (e.g. complex balance).
