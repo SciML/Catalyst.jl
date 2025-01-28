@@ -291,23 +291,23 @@ parammap = Dict([:k => 12., b => 8.])
 K = fluxmat(rn, parammap)
 odes = N * K * Φ
 f_oop_expr, f_iip_expr = Symbolics.build_function(odes, species(rn))
-ode_func = eval(f_oop_expr)
+f = eval(f_oop_expr)
 
-concvec = [3., 5., 2., 6.]
-ode_func(concvec)
+c = [3., 5., 2., 6.]
+f(c)
 ```
-The generated `ode_func` now corresponds to the $f(\mathbf{x}(t))$ on the right-hand side of $\frac{d\mathbf{x}(t)}{dt} = f(\mathbf{x}(t))$. Given a vector of species concentrations $c$, `ode_func` will return the rate of change of each species. Steady state concentration vectors `c_ss` will satisfy `ode_func(c_ss) = zeros(length(species(rn)))`.
+The generated `f` now corresponds to the $f(\mathbf{x}(t))$ on the right-hand side of $\frac{d\mathbf{x}(t)}{dt} = f(\mathbf{x}(t))$. Given a vector of species concentrations $c$, `ode_func` will return the rate of change of each species. Steady state concentration vectors `c_ss` will satisfy `f(c_ss) = zeros(length(species(rn)))`.
 
-Above we have generated a numeric rate matrix to substitute the rate constants into the symbolic expressions. We could have used a symbolic rate matrix, but then we would need to define the parameters `k, b`, so that the function `ode_func` knows what `k` and `b` in its output refer to.
+Above we have generated a numeric rate matrix to substitute the rate constants into the symbolic expressions. We could have used a symbolic rate matrix, but then we would need to define the parameters `k, b`, so that the function `f` knows what `k` and `b` in its output refer to.
 ```@example s1
 @parameters k b 
 K = fluxmat(rn)
 odes = N * K * Φ
 f_oop_expr, f_iip_expr = Symbolics.build_function(odes, species(rn))
-ode_func = eval(f_oop_expr)
+f = eval(f_oop_expr)
 
-concvec = [3., 5., 2., 6.]
-ode_func(concvec)
+c = [3., 5., 2., 6.]
+f(c)
 ```
 
 Alternatively, if we use a symbolic rate matrix, we could define our function to take in both species concentrations and parameter values as arguments:
@@ -315,13 +315,13 @@ Alternatively, if we use a symbolic rate matrix, we could define our function to
 K = fluxmat(rn)
 odes = N * K * Φ
 f_oop_expr, f_iip_expr = Symbolics.build_function(odes, species(rn), parameters(rn))
-ode_func = eval(f_oop_expr)
+f = eval(f_oop_expr)
 
-concvec = [3., 5., 2., 6]; rateconsts = [12., 4.]
-ode_func(concvec, rateconsts)
+c = [3., 5., 2., 6]; ks = [12., 4.]
+f(c, ks)
 ```
 
-Note also that `ode_func` can take any vector with the right dimension (i.e. the number of species), not just a vector of `Number`, so it can be used to build, e.g. a vector of polynomials in Nemo for commutative algebraic methods.
+Note also that `f` can take any vector with the right dimension (i.e. the number of species), not just a vector of `Number`, so it can be used to build, e.g. a vector of polynomials in Nemo for commutative algebraic methods.
 
 # Properties of matrix null spaces
 The null spaces of the matrices discussed in this section often have special meaning. Below we will discuss some of these properties.
