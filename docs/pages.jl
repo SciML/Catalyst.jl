@@ -17,7 +17,6 @@ pages = Any[
         "model_creation/model_file_loading_and_export.md",
         "model_creation/model_visualisation.md",
         "model_creation/reactionsystem_content_accessing.md",
-        "model_creation/network_analysis.md",
         "model_creation/chemistry_related_functionality.md",
         "Examples" => Any[
             "model_creation/examples/basic_CRN_library.md",

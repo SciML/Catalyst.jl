@@ -342,7 +342,7 @@ We have that:
 - ``A_k`` is the `laplacianmat`
 - ``\Phi`` is the `massactionvector`
 
-```@docs
+```@docs canonical=false
 netstoichmat
 complexstoichmat
 incidencemat
