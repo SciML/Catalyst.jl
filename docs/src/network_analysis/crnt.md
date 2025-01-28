@@ -1,14 +1,14 @@
 # [Chemical Reaction Network Theory](@id network_analysis_structural_aspects)
-The systems of ODEs or stochastic chemical kinetics models that arise from chemical 
-reaction networks can often have their steady-state properties known in advance, 
-simply by analyzing the graph structure of the network. The subfield of chemistry 
+The systems of ODEs or stochastic chemical kinetics models that arise from chemical
+reaction networks can often have their steady-state properties known in advance,
+simply by analyzing the graph structure of the network. The subfield of chemistry
 and math studying this relationship is called [Chemical Reaction Network Theory](https://en.wikipedia.org/wiki/Chemical_reaction_network_theory).
 
 Broadly, results from chemical reaction network theory relate a purely
-graph-structural property (e.g. deficiency) to dynamical properties of the reaction system 
+graph-structural property (e.g. deficiency) to dynamical properties of the reaction system
 (e.g. complex balance).
 
-We'll now illustrate some of the types of network properties that Catalyst can determine, 
+We'll now illustrate some of the types of network properties that Catalyst can determine,
 using the [reaction complex representation](@ref network_analysis_reaction_complexes) in these calculations.
 
 Consider the following reaction network.
