@@ -263,7 +263,7 @@ which we see is mass action and has deficiency zero, but is not weakly
 reversible. As such, we can conclude that for any choice of rate constants the
 RRE ODEs cannot have a positive equilibrium solution.
 
-```@docs
+```@docs canonical=false
 satisfiesdeficiencyzero
 ```
 
@@ -275,7 +275,7 @@ Very analogous to the deficiency zero theorem is the deficiency one theorem. The
 
 If these conditions are met, then the network will have at most one steady state in each stoichiometric compatibility class for any choice of rate constants and parameters.
 Unlike the deficiency zero theorem, networks obeying the deficiency one theorem are not guaranteed to have stable solutions.
-```@docs
+```@docs canonical=false
 satisfiesdeficiencyone
 ```
 
@@ -308,7 +308,7 @@ isdetailedbalanced(rn, rates)
 
 The reason that the deficiency zero theorem puts such strong restrictions on the steady state properties of the reaction network is because it implies that the reaction network will be complex balanced for any set of rate constants and parameters. The fact that this holds from a purely structural property of the graph, regardless of kinetics, is what makes it so useful. But in some cases it might be desirable to check complex balance on its own, as for higher deficiency networks.
 
-```@docs
+```@docs canonical=false
 iscomplexbalanced
 isdetailedbalanced
 ```
@@ -327,7 +327,7 @@ that can be checked relatively easily. One example is for deficiency one network
 
 This is the check provided by the API function `robustspecies(rn)`. More general concentration robustness analysis can be done using the [CatalystNetworkAnalysis](@ref) package.
 
-```@docs
+```@docs canonical=false
 robustspecies
 ```
 
