@@ -35,3 +35,7 @@ Catalyst.reset_networkproperties!(rn)
 ```
 Network property functions will then recalculate their associated properties and
 cache the new values the next time they are called.
+
+```@docs
+NetworkProperties
+```

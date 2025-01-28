@@ -1,10 +1,15 @@
 # [Chemical Reaction Network Theory](@id network_analysis_structural_aspects)
-The reaction complex representation can be exploited via [Chemical Reaction
-Network Theory](https://en.wikipedia.org/wiki/Chemical_reaction_network_theory)
-to provide insight into possible steady state and time-dependent properties of
-RRE ODE models and stochastic chemical kinetics models. We'll now illustrate
-some of the types of network properties that Catalyst can determine, using the
-reaction complex representation in these calculations.
+The systems of ODEs or stochastic chemical kinetics models that arise from chemical 
+reaction networks can often have their steady-state properties known in advance, 
+simply by analyzing the graph structure of the network. The subfield of chemistry 
+and math studying this relationship is called [Chemical Reaction Network Theory](https://en.wikipedia.org/wiki/Chemical_reaction_network_theory).
+
+Broadly, results from chemical reaction network theory relate a purely
+graph-structural property (e.g. deficiency) to dynamical properties of the reaction system 
+(e.g. complex balance).
+
+We'll now illustrate some of the types of network properties that Catalyst can determine, 
+using the [reaction complex representation](@ref network_analysis_reaction_complexes) in these calculations.
 
 Consider the following reaction network.
 ```@example s1
@@ -64,7 +69,7 @@ and,
 # [Deficiency of the network](@id network_analysis_structural_aspects_deficiency)
 A famous theorem in Chemical Reaction Network Theory, the Deficiency Zero
 Theorem [^1], allows us to use knowledge of the net stoichiometry matrix and the
-linkage classes of a *mass action* RRE ODE system to draw conclusions about the
+linkage classes of a *mass action* [RRE ODE system](@ref network_analysis_matrix_vector_representation) to draw conclusions about the
 system's possible steady states. In this section we'll see how Catalyst can
 calculate a network's deficiency.
 
@@ -269,7 +274,7 @@ Unlike the deficiency zero theorem, networks obeying the deficiency one theorem 
 satisfiesdeficiencyone
 ```
 
-# [Complex and Detailed Balance](@id complex_and_detailed_balance)
+# [Complex and Detailed Balance](@id network_analysis_complex_and_detailed_balance)
 A reaction network's steady state is **complex-balanced** if the total production of each *complex* is zero at the steady state. A reaction network's steady state is **detailed balanced** if every reaction is balanced by its reverse reaction at the steady-state (this corresponds to the usual notion of chemical equilibrium; note that this requires every reaction be reversible). 
 
 Note that detailed balance at a given steady state implies complex balance for that steady state, i.e. detailed balance is a stronger property than complex balance.
@@ -302,6 +307,25 @@ The reason that the deficiency zero theorem puts such strong restrictions on the
 iscomplexbalanced
 isdetailedbalanced
 ```
+
+# [Concentration Robustness](@id network_analysis_concentration_robustness)
+Certain reaction networks have species that do not change their concentration,
+regardless of the system is perturbed to a different stoichiometric compatibility
+class. This is a very useful property to have in biological contexts, where it might
+be important to keep the concentration of a critical species relatively stable in
+the face of changes in its environment. 
+
+Determining every species with concentration-robustness in a network is in general very difficult. However, there are certain cases where there are sufficient conditions
+that can be checked relatively easily. One example is for deficiency one networks.
+
+**Theorem (a sufficient condition for concentration robustness for deficiency one networks)**: If there are two *non-terminal* reaction complexes that differ only in species ``s``, then the system is absolutely concentration robust with respect to ``s``. 
+
+This is the check provided by the API function `robustspecies(rn)`. More general concentration robustness analysis can be done using the [CatalystNetworkAnalysis](@ref) package.
+
+```@docs
+robustspecies
+```
+
 ---
 ## References
 [^1]: [Feinberg, M. *Foundations of Chemical Reaction Network Theory*, Applied Mathematical Sciences 202, Springer (2019).](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true)
