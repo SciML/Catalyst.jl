@@ -293,10 +293,6 @@ rates = Dict([:k1 => 2.4, :k2 => 4., :k3 => 10., :k4 => 5.5, :k5 => 0.4])
 iscomplexbalanced(rn, rates)
 ```
 
-Complex balance obtains for some sets of rates but not others: 
-```@example s1
-```
-
 We can do a similar check for detailed balance. Let us make the reaction network 
 ```@example s1
 rn1 = @reaction_network begin
