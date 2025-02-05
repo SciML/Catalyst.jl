@@ -17,7 +17,7 @@ graph-structural property (e.g. deficiency) to dynamical properties of the react
 We'll now illustrate some of the types of network properties that Catalyst can determine,
 using the [reaction complex representation](@ref network_analysis_reaction_complexes) in these calculations.
 
-Consider the following reaction network.
+Throughout this seciton, we will consider the [reaction complex representation](@ref network_analysis_reaction_complexes) of the following reaction network.
 ```@example s1
 rn = @reaction_network begin
     (k1,k2), A + B <--> C
@@ -33,8 +33,7 @@ with graph
 plot_complexes(rn)
 ```
 
-
-# [Linkage classes and sub-networks of the reaction network](@id network_analysis_structural_aspects_linkage)
+### [Linkage classes and sub-networks of the reaction network](@id network_analysis_structural_aspects_linkage)
 The preceding reaction complex graph shows that `rn` is composed of two
 disconnected sub-graphs, one containing the complexes ``A+B``, ``C``, ``D+E``, and
 ``F``, the other containing the complexes ``2A``, ``B + G``, and ``H``. These sets,
@@ -322,7 +321,7 @@ that can be checked relatively easily. One example is for deficiency one network
 
 **Theorem (a sufficient condition for concentration robustness for deficiency one networks)**: If there are two *non-terminal* reaction complexes that differ only in species ``s``, then the system is absolutely concentration robust with respect to ``s``. 
 
-This is the check provided by the API function `robustspecies(rn)`. More general concentration robustness analysis can be done using the [CatalystNetworkAnalysis](@ref) package.
+This is the check provided by the API function `robustspecies(rn)`. More general concentration robustness analysis can be done using the [CatalystNetworkAnalysis](@ref catalyst_network_analysis) package.
 
 ```@docs; canonical=false
 robustspecies

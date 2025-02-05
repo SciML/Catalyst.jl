@@ -109,12 +109,12 @@ facilitate analysis of a variety of reaction network properties. Consider a simp
 reaction system like
 ```@example s1
 rn = @reaction_network begin
- k*A, 2*A + 3*B --> A + 2*C + D
+ k, 2*A + 3*B --> A + 2*C + D
  b, C + D --> 2*A + 3*B
 end
 ```
 We can think of the first reaction as converting the *reaction complex*,
-``2A+3B`` to the complex ``A+2C+D`` with rate ``kA``. Suppose we order our
+``2A+3B`` to the complex ``A+2C+D`` with rate ``k``. Suppose we order our
 species the same way as Catalyst does, i.e.
 ```math
 \begin{pmatrix}
@@ -189,21 +189,16 @@ N == Z*B
 ```
 
 Reaction complexes give an alternative way to visualize a reaction network
-graph. Catalyst's [`complexgraph`](@ref) command will calculate the complexes of
-a network and then show how they are related. For example,
-```julia
-complexgraph(rn)
+graph. Catalyst's [`plot_complexes`](@ref) command will calculate the complexes of
+a network and then show how they are related. For example, we can run
+```@example s1
+plot_complexes(rn)
 ```
-gives
-
-![Simple example complex graph](../assets/simple_complexgraph.svg)
 
 while for the repressilator we find
 ```julia
-complexgraph(repressilator)
+plot_complexes(repressilator)
 ```
-
-![Repressilator complex](../assets/repressilator_complexgraph.svg)
 
 Here ∅ represents the empty complex, black arrows show reactions converting
 substrate complexes into product complexes where the rate is just a number or
@@ -228,7 +223,7 @@ where $\mathbf{x}^y = \prod_s x_s^{y_s}$, the mass-action product of the complex
 Φ = massactionvector(rn)
 ```
 
-An important thing to note is this function assumes [combinatoric ratelaws](@introduction_to_catalyst_ratelaws), meaning that mass-action products will get rescaled by factorial factors. For instance, note that the mass-action product for the complex `2A + 3B` has a factor of 1/12, corresponding to 1/(2! 3!). This option can be turned off with `combinatoric_ratelaws = false`.
+An important thing to note is this function assumes [combinatoric ratelaws](@ref introduction_to_catalyst_ratelaws), meaning that mass-action products will get rescaled by factorial factors. For instance, note that the mass-action product for the complex `2A + 3B` has a factor of 1/12, corresponding to 1/(2! 3!). This option can be turned off with `combinatoric_ratelaws = false`.
 
 ```@example s1
 Φ_2 = massactionvector(rn; combinatoric_ratelaws = false)
@@ -276,7 +271,7 @@ massactionvector(rn, concmap)
 
 `fluxmat` and `laplacianmat` will return numeric matrices if a set of rate constants and other aprameters are supplied the same way.
 ```@example s1
-parammap = Dict([:k => 12., b => 8.])
+parammap = Dict([:k => 12., :b => 8.])
 fluxmat(rn, parammap)
 ```
 
@@ -332,7 +327,7 @@ Recall that we may write the net stoichiometry matrix ``N = YB``.
 
 [Conservation laws](@ref conservation_laws) arise as left null eigenvectors of the net stoichiometry matrix ``N``, and cycles arise as right null eigenvectors of the stoichiometry matrix. A cycle may be understood as a sequence of reactions that leaves the overall species composition unchanged. These do not necessarily have to correspond to actual cycles in the graph.
 
-[Complex balance](@ref complex_and_detailed_balance) can be compactly formulated as the following: a set of steady state reaction fluxes is complex-balanced if it is in the nullspace of the incidence matrix ``B``.
+[Complex balance](@ref network_analysis_complex_and_detailed_balance) can be compactly formulated as the following: a set of steady state reaction fluxes is complex-balanced if it is in the nullspace of the incidence matrix ``B``.
 
 # API Section for matrices and vectors
 We have that: 
