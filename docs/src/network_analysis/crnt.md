@@ -19,6 +19,7 @@ using the [reaction complex representation](@ref network_analysis_reaction_compl
 
 Throughout this seciton, we will consider the [reaction complex representation](@ref network_analysis_reaction_complexes) of the following reaction network.
 ```@example s1
+using Catalyst
 rn = @reaction_network begin
     (k1,k2), A + B <--> C
     k3, C --> D+E
