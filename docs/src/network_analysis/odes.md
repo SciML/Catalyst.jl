@@ -284,7 +284,7 @@ In some cases it might be useful to generate the function defining the system of
 
 Let's build the full symbolic function corresponding to our ODE system. `build_function` will return two expressions, one for a function that outputs a new vector for the result, and one for a function that modifies the input in-place. Either expression can then be evaluated to return a Julia function.
 ```@example s1
-parammap = Dict([:k => 12., b => 8.])
+parammap = Dict([:k => 12., :b => 8.])
 K = fluxmat(rn, parammap)
 odes = N * K * Φ
 f_oop_expr, f_iip_expr = Symbolics.build_function(odes, species(rn))
