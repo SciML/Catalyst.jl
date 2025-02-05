@@ -1,5 +1,3 @@
-# The `NetworkProperties` Object
-
 # [Caching of Network Properties in `ReactionSystems`](@id network_analysis_caching_properties)
 When calling many of the network API functions, Catalyst calculates and caches
 in `rn` a variety of information. For example the first call to
@@ -35,7 +33,3 @@ Catalyst.reset_networkproperties!(rn)
 ```
 Network property functions will then recalculate their associated properties and
 cache the new values the next time they are called.
-
-```@docs; canonical=false
-NetworkProperties
-```
