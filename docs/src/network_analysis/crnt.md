@@ -1,4 +1,5 @@
 # [Chemical Reaction Network Theory](@id network_analysis_structural_aspects)
+
 The systems of ODEs or stochastic chemical kinetics models that arise from chemical
 reaction networks can often have their steady-state properties known in advance,
 simply by analyzing the graph structure of the network. The subfield of chemistry
@@ -126,7 +127,7 @@ Quoting Feinberg [^1]
 > linkage classes will allow.
 
 
-# [Reversibility of the network](@id network_analysis_structural_aspects_reversibility)
+### [Reversibility of the network](@id network_analysis_structural_aspects_reversibility)
 A reaction network is *reversible* if the "arrows" of the reactions are
 symmetric so that every reaction is accompanied by its reverse reaction.
 Catalyst's API provides the [`isreversible`](@ref) function to determine whether
@@ -173,7 +174,7 @@ isweaklyreversible(rn, subnets)
 Every reversible network is also weakly reversible, but not every weakly
 reversible network is reversible.
 
-# [Deficiency Zero Theorem](@id network_analysis_structural_aspects_deficiency_zero_theorem)
+### [Deficiency Zero Theorem](@id network_analysis_structural_aspects_deficiency_zero_theorem)
 Knowing the deficiency and weak reversibility of a mass action chemical reaction
 network ODE model allows us to make inferences about the corresponding
 steady state behavior. Before illustrating how this works for one example, we
@@ -267,7 +268,7 @@ RRE ODEs cannot have a positive equilibrium solution.
 satisfiesdeficiencyzero
 ```
 
-# Deficiency One Theorem
+### Deficiency One Theorem
 Very analogous to the deficiency zero theorem is the deficiency one theorem. The deficiency one theorem applies to a network with the following properties: 
 1. The deficiency of each *linkage class* of the network is at most 1, 
 2. The sum of the linkage class deficiencies is the total deficiency of the network, and
@@ -279,7 +280,7 @@ Unlike the deficiency zero theorem, networks obeying the deficiency one theorem 
 satisfiesdeficiencyone
 ```
 
-# [Complex and Detailed Balance](@id network_analysis_complex_and_detailed_balance)
+### [Complex and Detailed Balance](@id network_analysis_complex_and_detailed_balance)
 A reaction network's steady state is **complex-balanced** if the total production of each *complex* is zero at the steady state. A reaction network's steady state is **detailed balanced** if every reaction is balanced by its reverse reaction at the steady-state (this corresponds to the usual notion of chemical equilibrium; note that this requires every reaction be reversible). 
 
 Note that detailed balance at a given steady state implies complex balance for that steady state, i.e. detailed balance is a stronger property than complex balance.
@@ -313,7 +314,7 @@ iscomplexbalanced
 isdetailedbalanced
 ```
 
-# [Concentration Robustness](@id network_analysis_concentration_robustness)
+### [Concentration Robustness](@id network_analysis_concentration_robustness)
 Certain reaction networks have species that do not change their concentration,
 regardless of the system is perturbed to a different stoichiometric compatibility
 class. This is a very useful property to have in biological contexts, where it might
