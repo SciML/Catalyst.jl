@@ -14,14 +14,14 @@ const LATEX_DEFS = CatalystLatexParams()
 @latexrecipe function f(rs::ReactionSystem; form = :reactions, expand_functions = true)
     expand_functions && (rs = expand_registered_functions(rs))
     if form == :reactions    # Returns chemical reaction network code.
-        cdot --> false
+        mult_symbol --> ""
         env --> :chem
         return rs
     elseif form == :ode      # Returns ODE system code.
-        cdot --> false
+        mult_symbol --> ""
         return convert(ODESystem, rs)
     elseif form == :sde      # Returns SDE system code.
-        cdot --> false
+        mult_symbol --> ""
         return convert(SDESystem, rs)
     end
     error("Unrecognised form argument given: $form. This should be either reactions (default), :ode, or :sde.")
