@@ -28,7 +28,7 @@ pages = Any[
     ],
     "Network Analysis" => Any[
         "network_analysis/odes.md",
-        "network_analysis/crnt.md",
+        "network_analysis/crn_theory.md",
         "network_analysis/network_properties.md",
         "network_analysis/advanced_analysis.md"
     ],
