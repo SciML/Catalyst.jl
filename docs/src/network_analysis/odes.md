@@ -1,10 +1,10 @@
 # [Decomposing the Reaction Network ODEs](@id network_analysis_odes)
 
 In this tutorial we will discuss the specific mathematical 
-structure of the ODEs that arise from the mass-action dynamics
+structure of the [ODEs that arise from the mass-action dynamics](@ref math_models_in_catalyst_rre_odes)
 of chemical reaction networks, and decompose them as a product
 of matrices that describe the network.  A complete summary of 
-the exported functions is given in the API section [`Network-Analysis-and-Representations`](https://docs.sciml.ai/Catalyst/stable/api/catalyst_api/#Network-Analysis-and-Representations). See Feinberg's *Foundations of Chemical Reaction
+the exported functions is given in the API section [Network Analysis and Representations](@ref api_network_analysis). Please consult Feinberg's *Foundations of Chemical Reaction
 Network Theory*[^1] for more discussion about the concepts on this page.
 
 Note, currently API functions for network analysis and conservation law analysis
@@ -240,14 +240,16 @@ K = fluxmat(rn)
 
 Since we have that $\mathbf{v} = K\Phi$, we can rewrite the above decompositions as follows: 
 ```math
+\begin{align}
 \frac{d\mathbf{x}}{dt} &= N \mathbf{v}(\mathbf{x}(t),t) \\
 &= N K \Phi(\mathbf{x}(t),t) \\
 &= Z B K \Phi(\mathbf{x}(t),t). 
+\end{align}
 ```
 
 The final matrix to discuss is the product of $A_k = BK$, which is a $C$-by-$C$ matrix that turns out to be exactly the negative of the [graph Laplacian](https://en.wikipedia.org/wiki/Laplacian_matrix) of the weighted graph whose nodes are reaction complexes and whose edges represent reactions, weighted by the rate constants. The API function for $A_k$ is the `laplacianmat`: 
 ```@example s1
-A_k = incidencemat(rn)
+A_k = laplacianmat(rn)
 ```
 We can check that 
 ```@example s1
@@ -256,10 +258,12 @@ A_k == B * K
 
 In sum, we have that
 ```math
+\begin{align}
 \frac{d\mathbf{x}}{dt} &= N \mathbf{v}(\mathbf{x}(t),t) \\
 &= N K \Phi(\mathbf{x}(t),t) \\
 &= Z B K \Phi(\mathbf{x}(t),t). 
 &= Z A_k \Phi(\mathbf{x}(t),t). 
+\end{align}
 ```
 
 All three of the objects introduced in this section (the flux matrix, mass-action vector, Laplacian matrix) will return symbolic outputs by default, but can be made to return numerical outputs if values are specified. 
