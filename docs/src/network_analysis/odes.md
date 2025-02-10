@@ -253,8 +253,11 @@ A_k = laplacianmat(rn)
 ```
 We can check that 
 ```@example s1
-A_k == B * K
+isequal(A_k, B * K)
 ```
+
+Note that we have used `isequal` instead of `==` here because `laplacianmat`
+returns a `Matrix{Num}`, since some of its entries are symbolic rate constants.
 
 In sum, we have that
 ```math

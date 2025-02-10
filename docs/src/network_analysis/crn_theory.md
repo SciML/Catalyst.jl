@@ -149,7 +149,7 @@ isreversible(rn)
 ```
 Consider another example,
 ```@example s1
-rn2 = @reaction_network begin
+rn = @reaction_network begin
   (k1,k2),A <--> B
   k3, A + C --> D
   k4, D --> B+E
@@ -291,19 +291,14 @@ Note that detailed balance at a given steady state implies complex balance for t
 
 Remarkably, having just one positive steady state that is complex (detailed) balance implies that complex (detailed) balance obtains at *every* positive steady state, so we say that a network is complex (detailed) balanced if any one of its steady states are complex (detailed) balanced. Additionally, there will be exactly one steady state in every positive stoichiometric compatibility class, and this steady state is asymptotically stable. (For proofs of these results, please consult Martin Feinberg's *Foundations of Chemical Reaction Network Theory*[^1]). So knowing that a network is complex balanced is really quite powerful.
 
-Let's check whether the reaction network defined above is complex balanced by providing a set of rates:
+Let's check whether the deficiency 0 reaction network that we defined above is complex balanced by providing a set of rates:
 ```@example s1
 rates = Dict([:k1 => 2.4, :k2 => 4., :k3 => 10., :k4 => 5.5, :k5 => 0.4])
 iscomplexbalanced(rn, rates)
 ```
 
-We can do a similar check for detailed balance. Let us make the reaction network 
+We can do a similar check for detailed balance.
 ```@example s1
-rn1 = @reaction_network begin
-  (k1,k2), A <--> 2B
-  (k3,k4), A + C <--> D
-  (k5,k6), B + E --> C + D
-end
 isdetailedbalanced(rn, rates)
 ```
 
