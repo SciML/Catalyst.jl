@@ -110,10 +110,6 @@ macro reaction_network(expr::Expr)
     return make_rs_expr(:(gensym(:ReactionSystem)), expr)
 end
 
-# Ideally, it would have been possible to combine the @reaction_network and @network_component
-# macros. However, this issue: https://github.com/JuliaLang/julia/issues/37691 causes problem
-# with interpolations if we make the @reaction_network macro call the @network_component macro.
-# Instead, these use the same input, but pass `complete = false` to `make_rs_expr`.
 """
     @network_component
 
