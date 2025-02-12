@@ -273,8 +273,9 @@ function make_reaction_system(ex::Expr, name)
     options = Dict(Symbol(String(arg.args[1])[2:end]) => arg for arg in option_lines)
     allunique(arg.args[1] for arg in option_lines) ||
         error("Some options where given multiple times.")
-    (sum(length, [reaction_lines, option_lines]) != length(ex.args)) &&
-        error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
+    numlines = length(reaction_lines) + length(option_lines)
+    (numlines != length(ex.args)) &&
+        error("@reaction_network input contain $(length(ex.args) - $numlines) malformed lines.")
     any(!in(option_keys), keys(options)) &&
         error("The following unsupported options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
 
