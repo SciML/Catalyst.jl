@@ -51,8 +51,8 @@ end
     @reaction_network
 
 Macro for generating chemical reaction network models (Catalyst `ReactionSystem`s). See the
-following two section ([DSL introduction](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_basics/)
-and [advantage usage](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_advanced/)) of
+([DSL introduction](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_basics/)
+and [advantage usage](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_advanced/)) sections of
 the Catalyst documentation for more details on the domain-specific language (DSL) that the
 macro implements. The macro's output (a `ReactionSystem` structure) is central to Catalyst
 and its functionality. How to e.g. simulate these is described in the [Catalyst documentation](https://docs.sciml.ai/Catalyst/stable/).
