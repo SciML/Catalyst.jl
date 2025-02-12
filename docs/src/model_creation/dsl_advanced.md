@@ -585,7 +585,7 @@ Here, `@reaction` is followed by a single line consisting of three parts:
 - Any number of substrates (which are consumed by the reaction).
 - Any number of products (which are produced by the reaction).
 
-In the next example, we first create a simple [SIR model](@ref basic_CRN_library_sir). Next, we instead create its individual reaction components using the `@reaction` macro. Finally, we confirm that these are identical to those stored in the initial model (using the [`reactions`](@ref) function).
+In the next example, we first create a simple [SIR model](@ref basic_CRN_library_sir). Then, we specify the same model by instead creating its individual reaction components using the `@reaction` macro. Finally, we confirm that these are identical to those stored in the initial model (using the [`reactions`](@ref) function).
 ```@example dsl_advanced_reaction_macro
 sir_model = @reaction_network begin
  α, S + I --> 2I
