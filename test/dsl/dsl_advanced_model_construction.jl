@@ -136,6 +136,20 @@ let
     @test rx == Reaction(b+ex, [A,C], nothing, [2,1], nothing)
 end
 
+# Creates a reaction network using `eval` and internal function.
+let
+    ex = quote
+        (Ka, Depot --> Central)
+        (CL / Vc, Central --> 0)
+    end
+    # Line number nodes aren't ignored so have to be manually removed
+    Base.remove_linenums!(ex)
+    name = QuoteNode(:rs)
+    exsys = Catalyst.make_reaction_system(ex, name)
+    sys = @eval Catalyst $exsys
+    @test sys isa ReactionSystem
+end
+
 ### Tests Reaction Metadata ###
 
 # Tests construction for various types of reaction metadata.

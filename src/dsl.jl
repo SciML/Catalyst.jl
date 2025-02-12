@@ -339,16 +339,17 @@ function make_reaction_system(ex::Expr, name)
         spatial_ivs = $sivs
         rx_eq_vec = $rxsexprs
         us = setdiff(union($spsvar, $vsvar, $cmpsvar), $obs_syms)
-        observed = $obs_eqs
-        continuous_events = $continuous_events_expr
-        discrete_events = $discrete_events_expr
-        combinatoric_ratelaws = $combinatoric_ratelaws
-        default_reaction_metadata = $default_reaction_metadata
+        _observed = $obs_eqs
+        _continuous_events = $continuous_events_expr
+        _discrete_events = $discrete_events_expr
+        _combinatoric_ratelaws = $combinatoric_ratelaws
+        _default_reaction_metadata = $default_reaction_metadata
 
         remake_ReactionSystem_internal(
             make_ReactionSystem_internal(rx_eq_vec, $tiv, us, $psvar; name, spatial_ivs,
-                observed, continuous_events, discrete_events, combinatoric_ratelaws);
-            default_reaction_metadata)
+                observed = _observed, continuous_events = _continuous_events,
+                discrete_events = _discrete_events, combinatoric_ratelaws = _combinatoric_ratelaws);
+            default_reaction_metadata = _default_reaction_metadata)
     end))
 end
 
@@ -470,7 +471,7 @@ function extract_sps_and_ps(reactions, excluded_syms; requiredec = false)
         (!isempty(species) && requiredec) &&
             throw(UndeclaredSymbolicError("Unrecognized reactant $(join(species, ", ")) detected in reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all species must be explicitly declared with the @species option."))
     end
-    union!(excluded_syms, species)
+    excluded_syms = union(excluded_syms, species)
 
     # Loops through all rates and stoichiometries, extracting used symbols as parameters.
     parameters = OrderedSet{Union{Symbol, Expr}}()
