@@ -144,7 +144,7 @@ end
 function make_rs_expr(name; complete = true)
     rs_expr = :(ReactionSystem(Reaction[], t, [], []; name = $name))
     complete && (rs_expr = :(complete($rs_expr)))
-    return Expr(:block, :(@parameters t), rs_expr)
+    return Expr(:block, :(t = default_t()), rs_expr)
 end
 
 # When both a name and a network expression are generated, dispatch these to the internal
@@ -270,12 +270,12 @@ function make_reaction_system(ex::Expr, name)
     # Extract the lines with reactions, the lines with options, and the options. Check for input errors.
     reaction_lines = Expr[x for x in ex.args if x.head == :tuple]
     option_lines = Expr[x for x in ex.args if x.head == :macrocall]
-    options = Dict(Symbol(String(arg.args[1])[2:end]) => arg for arg in option_lines)
     allunique(arg.args[1] for arg in option_lines) ||
         error("Some options where given multiple times.")
     numlines = length(reaction_lines) + length(option_lines)
     (numlines != length(ex.args)) &&
-        error("@reaction_network input contain $(length(ex.args) - $numlines) malformed lines.")
+        error("@reaction_network input contain $(length(ex.args) - numlines) malformed lines.")
+    options = Dict(Symbol(String(arg.args[1])[2:end]) => arg for arg in option_lines)
     any(!in(option_keys), keys(options)) &&
         error("The following unsupported options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
 
@@ -316,7 +316,7 @@ function make_reaction_system(ex::Expr, name)
     psexpr_init = get_psexpr(ps_inferred, options)
     spsexpr_init = get_usexpr(sps_inferred, options; ivs)
     vsexpr_init = get_usexpr(vs_inferred, options, :variables; ivs)
-    psexpr, psvar = assign_var_to_symvar_declaration(psexpr_init, "ps")
+    psexpr, psvar = assign_var_to_symvar_declaration(psexpr_init, "ps", scalarize = false)
     spsexpr, spsvar = assign_var_to_symvar_declaration(spsexpr_init, "specs")
     vsexpr, vsvar = assign_var_to_symvar_declaration(vsexpr_init, "vars")
     cmpsexpr, cmpsvar = assign_var_to_symvar_declaration(cmpexpr_init, "comps")
@@ -328,8 +328,8 @@ function make_reaction_system(ex::Expr, name)
         # Inserts the expressions which generate the `ReactionSystem` input.
         $ivsexpr
         $psexpr
-        $spsexpr
         $vsexpr
+        $spsexpr
         $obsexpr
         $cmpsexpr
         $diffsexpr
@@ -419,12 +419,12 @@ function push_reactions!(reactions::Vector{DSLReaction}, subs::ExprValues,
     # This finds these tuples' lengths (or 1 for non-tuple forms). Inconsistent lengths yield error.
     lengs = (tup_leng(subs), tup_leng(prods), tup_leng(rate), tup_leng(metadata))
     maxlen = maximum(lengs)
-    any(!(leng == 1 || leng == maxl) for leng in lengs) &&
+    any(!(leng == 1 || leng == maxlen) for leng in lengs) &&
         error("Malformed reaction, rate: $rate, subs: $subs, prods: $prods, metadata: $metadata.")
 
     # Loops through each reaction encoded by the reaction's different components.
     # Creates a `DSLReaction` representation and adds it to `reactions`.
-    for i in 1:maxl
+    for i in 1:maxlen
         # If the `only_use_rate` metadata was not provided, this must be inferred from the arrow.
         metadata_i = get_tup_arg(metadata, i)
         if all(arg.args[1] != :only_use_rate for arg in metadata_i.args)
@@ -488,8 +488,8 @@ function extract_sps_and_ps(reactions, excluded_syms; requiredec = false)
     collect(species), collect(parameters)
 end
 
-# Function called by `extract_sps_and_ps`, recursively loops through an
-# expression and find symbols (adding them to the push_symbols vector).
+# Function called by `extract_sps_and_ps`, recursively loops through an expression and find
+# symbols (adding them to the push_symbols vector). Returns `nothing` to ensure type stability.
 function add_syms_from_expr!(push_symbols::AbstractSet, expr::ExprValues, excluded_syms)
     # If we have encountered a Symbol in the recursion, we can try extracting it.
     if expr isa Symbol
@@ -502,6 +502,7 @@ function add_syms_from_expr!(push_symbols::AbstractSet, expr::ExprValues, exclud
             add_syms_from_expr!(push_symbols, expr.args[i], excluded_syms)
         end
     end
+    nothing
 end
 
 ### DSL Output Expression Builders ###
@@ -575,22 +576,28 @@ end
 # That calls the macro and then scalarizes all the symbols created into a vector of Nums.
 # stores the created symbolic variables in a variable (whose name is generated from `name`).
 # It will also return the name used for the variable that stores the symbolic variables.
-function assign_var_to_symvar_declaration(expr_init, name)
+# If requested, performs scalarization.
+function assign_var_to_symvar_declaration(expr_init, name; scalarize = true)
     # Generates a random variable name which (in generated code) will store the produced
     # symbolic variables (e.g. `var"##ps#384"`).
     namesym = gensym(name)
 
     # If the input expression is non-empty, wrap it with additional information.
     if expr_init != :(())
-        symvec = gensym()
-        expr = quote
-            $symvec = $expr_init
-            $namesym = reduce(vcat, Symbolics.scalarize($symvec))
+        if scalarize
+            symvec = gensym()
+            expr = quote
+                $symvec = $expr_init
+                $namesym = reduce(vcat, Symbolics.scalarize($symvec))
+            end
+        else
+            expr = quote
+                $namesym = $expr_init
+            end
         end
     else
         expr = :($namesym = Num[])
     end
-
     return expr, namesym
 end
 
@@ -855,7 +862,7 @@ function read_ivs_option(options)
     if haskey(options, :ivs)
         ivs = Tuple(extract_syms(options, :ivs))
         ivsexpr = copy(options[:ivs])
-        ivsexpr.args[1] = Symbol("@", "parameters")
+        ivsexpr.args[1] = Symbol("@", "independent_variables")
     else
         ivs = (DEFAULT_IV_SYM,)
         ivsexpr = :($(DEFAULT_IV_SYM) = default_t())
