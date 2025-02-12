@@ -421,7 +421,7 @@ function push_reactions!(reactions::Vector{DSLReaction}, subs::ExprValues,
     # The rates, substrates, products, and metadata may be in a tuple form (e.g. `k, (X,Y) --> 0`).
     # This finds these tuples' lengths (or 1 for non-tuple forms). Inconsistent lengths yield error.
     lengs = (tup_leng(subs), tup_leng(prods), tup_leng(rate), tup_leng(metadata))
-    maxl = maximum(lengs)
+    maxlen = maximum(lengs)
     any(!(leng == 1 || leng == maxl) for leng in lengs) &&
         error("Malformed reaction, rate: $rate, subs: $subs, prods: $prods, metadata: $metadata.")
 
