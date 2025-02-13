@@ -444,7 +444,7 @@ let
     @test any(isequal(I), unknowns(rn))
 end
 
-# Test that Ø (Danish/Noerweigan letter), ∅ (empty set), and 0 (zero) are equivalent.
+# Test that Ø (Danish/Norwegian letter), ∅ (empty set), and 0 (zero) are equivalent.
 let
     rn1 = @reaction_network rn begin
         p, Ø --> X
@@ -462,7 +462,15 @@ let
         p, Ø --> X
         d, X --> ∅
     end
-    @test rn1 == rn2 == rn3 == rn4
+    rn5 = @reaction_network rn begin
+        p, Ø --> X
+        d, X --> 0
+    end
+    rn6 = @reaction_network rn begin
+        p, ∅ --> X
+        d, X --> 0
+    end
+    @test rn1 == rn2 == rn3 == rn4 == rn5 == rn6
 end
 
 # Tests backwards and bi-directional arrows.
