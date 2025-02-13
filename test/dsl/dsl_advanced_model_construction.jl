@@ -75,7 +75,6 @@ end
 
 ### Test Interpolation Within the DSL ###
 
-
 # Declares parameters and species used across the test.
 @parameters α k k1 k2
 @species A(t) B(t) C(t) D(t)
@@ -123,19 +122,6 @@ let
     @test rn == rn2
 end
 
-# Creates a reaction network using `eval` and internal function.
-let
-    ex = quote
-        (Ka, Depot --> Central)
-        (CL / Vc, Central --> 0)
-    end
-    # Line number nodes aren't ignored so have to be manually removed
-    Base.remove_linenums!(ex)
-    exsys = Catalyst.make_reaction_system(ex)
-    sys = @eval Catalyst $exsys
-    @test sys isa ReactionSystem
-end
-
 # Miscellaneous interpolation tests. Unsure what they do here (not related to DSL).
 let
     rx = @reaction k*h, A + 2*B --> 3*C + D
@@ -148,6 +134,20 @@ let
     rx = @reaction b+$ex, 2*$V + C--> ∅
     @parameters b
     @test rx == Reaction(b+ex, [A,C], nothing, [2,1], nothing)
+end
+
+# Creates a reaction network using `eval` and internal function.
+let
+    ex = quote
+        (Ka, Depot --> Central)
+        (CL / Vc, Central --> 0)
+    end
+    # Line number nodes aren't ignored so have to be manually removed
+    Base.remove_linenums!(ex)
+    name = QuoteNode(:rs)
+    exsys = Catalyst.make_reaction_system(ex, name)
+    sys = @eval Catalyst $exsys
+    @test sys isa ReactionSystem
 end
 
 ### Tests Reaction Metadata ###
@@ -214,8 +214,8 @@ end
 
 # Checks that repeated metadata throws errors.
 let
-    @test_throws LoadError @eval @reaction k, 0 --> X, [md1=1.0, md1=2.0]
-    @test_throws LoadError @eval @reaction_network begin
+    @test_throws Exception @eval @reaction k, 0 --> X, [md1=1.0, md1=2.0]
+    @test_throws Exception @eval @reaction_network begin
         k, 0 --> X, [md1=1.0, md1=1.0]
     end
 end
@@ -267,6 +267,24 @@ let
     end
 
     @test isequal(rn1,rn2)
+end
+
+# Tests that erroneous metadata declarations yields errors.
+let
+    # Malformed metadata/value separator.
+    @test_throws Exception @eval @reaction_network begin
+        d, X --> 0, [misc=>"Metadata should use `=`, not `=>`."]
+    end
+
+    # Malformed lhs
+    @test_throws Exception @eval @reaction_network begin
+        d, X --> 0, [misc,description=>"Metadata lhs should be a single symbol."]
+    end
+
+    # Malformed metadata separator.
+    @test_throws Exception @eval @reaction_network begin
+        d, X --> 0, [misc=>:misc; description="description"]
+    end
 end
 
 ### Other Tests ###
@@ -352,7 +370,7 @@ let
         @species (X(t))[1:2]
         (k[1],k[2]), X[1] <--> X[2]
     end
-    
+
     @parameters k[1:2]
     @species (X(t))[1:2]
     rx1 = Reaction(k[1], [X[1]], [X[2]])

@@ -86,9 +86,9 @@ ReactionSystem
 ```
 
 ## [Options for the `@reaction_network` DSL](@id api_dsl_options)
-We have [previously described](@ref dsl_advanced_options) how options permits the user to supply non-reaction information to [`ReactionSystem`](@ref) created through the DSL. Here follows a list
+We have [previously described](@ref dsl_advanced_options) how options allow one to supply additional information to a [`ReactionSystem`](@ref) created with the DSL. Here follows a list
 of all options currently available.
-- [`parameters`]:(@ref dsl_advanced_options_declaring_species_and_parameters) Allows the designation of a set of symbols as system parameter.
+- [`parameters`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system parameters.
 - [`species`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system species.
 - [`variables`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system non-species variables.
 - [`ivs`](@ref dsl_advanced_options_ivs): Allows the designation of a set of symbols as system independent variables.
@@ -100,6 +100,7 @@ of all options currently available.
 - [`continuous_events`](@ref constraint_equations_events): Allows the creation of continuous events.
 - [`discrete_events`](@ref constraint_equations_events): Allows the creation of discrete events.
 - [`combinatoric_ratelaws`](@ref faq_combinatoric_ratelaws): Takes a single option (`true` or `false`), which sets whether to use combinatorial rate laws.
+- [`require_declaration`](@ref dsl_advanced_options_require_dec): Turns off all inference of parameters, species, variables, the default differential, and observables (requiring these to be explicitly declared using e.g. `@species`).
 
 ## [ModelingToolkit and Catalyst accessor functions](@id api_accessor_functions)
 A [`ReactionSystem`](@ref) is an instance of a
