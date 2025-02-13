@@ -81,6 +81,7 @@
   end
   plot_network(brusselator)
   ```
+- The letter Ø (used in Danish/Norweigan alphabet) is now conisdred the same as ∅ (empty set). It can no longer be used as a species/parameter.
  
 ## Catalyst 14.4.1
 - Support for user-defined functions on the RHS when providing coupled equations 

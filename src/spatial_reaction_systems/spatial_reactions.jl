@@ -155,7 +155,7 @@ end
 # Loops through a rate and extracts all parameters.
 function find_parameters_in_rate!(parameters, rateex::ExprValues)
     if rateex isa Symbol
-        if rateex in [:t, :∅, :im, :nothing, CONSERVED_CONSTANT_SYMBOL]
+        if rateex in [:t, :∅, :Ø, :im, :nothing, CONSERVED_CONSTANT_SYMBOL]
             error("Forbidden term $(rateex) used in transport reaction rate.")
         elseif !(rateex in [:ℯ, :pi, :π])
             push!(parameters, rateex)

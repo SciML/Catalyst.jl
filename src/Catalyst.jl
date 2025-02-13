@@ -69,7 +69,7 @@ const ExprValues = Union{Expr, Symbol, Float64, Int, Bool}
 const CONSERVED_CONSTANT_SYMBOL = :Γ
 
 # Declares symbols which may neither be used as parameters nor unknowns.
-const forbidden_symbols_skip = Set([:ℯ, :pi, :π, :t, :∅])
+const forbidden_symbols_skip = Set([:ℯ, :pi, :π, :t, :∅, :Ø])
 const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
     forbidden_symbols_skip)
 

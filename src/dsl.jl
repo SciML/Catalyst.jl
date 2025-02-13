@@ -1,7 +1,7 @@
 ### Constants Declarations ###
 
 # Declare various arrow types symbols used for the empty set (also 0).
-const empty_set = Set{Symbol}([:∅])
+const empty_set = Set{Symbol}([:∅, :Ø])
 const fwd_arrows = Set{Symbol}([:>, :(=>), :→, :↣, :↦, :⇾, :⟶, :⟼, :⥟, :⥟, :⇀, :⇁, :⇒, :⟾])
 const bwd_arrows = Set{Symbol}([:<, :(<=), :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :↼, :↽, :⇐, :⟽,
     Symbol("<--")])
