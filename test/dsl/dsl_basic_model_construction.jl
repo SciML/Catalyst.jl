@@ -444,6 +444,35 @@ let
     @test any(isequal(I), unknowns(rn))
 end
 
+# Test that Ø (Danish/Norwegian letter), ∅ (empty set), and 0 (zero) are equivalent.
+let
+    rn1 = @reaction_network rn begin
+        p, Ø --> X
+        d, X --> Ø
+    end
+    rn2 = @reaction_network rn begin
+        p, ∅ --> X
+        d, X --> ∅
+    end
+    rn3 = @reaction_network rn begin
+        p, 0 --> X
+        d, X --> 0
+    end
+    rn4 = @reaction_network rn begin
+        p, Ø --> X
+        d, X --> ∅
+    end
+    rn5 = @reaction_network rn begin
+        p, Ø --> X
+        d, X --> 0
+    end
+    rn6 = @reaction_network rn begin
+        p, ∅ --> X
+        d, X --> 0
+    end
+    @test rn1 == rn2 == rn3 == rn4 == rn5 == rn6
+end
+
 # Tests backwards and bi-directional arrows.
 let
     rn1 = @reaction_network arrowtest begin
@@ -472,7 +501,7 @@ let
 end
 
 # Test that symbols with special meanings are handled properly.
-let 
+let
     test_network = @reaction_network begin t * k, X --> ∅ end
     @test length(species(test_network)) == 1
     @test length(parameters(test_network)) == 1
@@ -532,7 +561,7 @@ let
     @test_throws Exception @eval @reaction nothing, 0 --> X
     @test_throws Exception @eval @reaction Γ, 0 --> X
     @test_throws Exception @eval @reaction ∅, 0 --> X
-    
+
     # @reaction macro, symbols that cannot be a reactant.
     @test_throws Exception @eval @reaction 1, 0 --> im
     @test_throws Exception @eval @reaction 1, 0 --> nothing
@@ -541,13 +570,13 @@ let
     @test_throws Exception @eval @reaction 1, 0 --> pi
     @test_throws Exception @eval @reaction 1, 0 --> π
     @test_throws Exception @eval @reaction 1, 0 --> t
-    
+
     # @reaction_network macro, symbols that cannot be in the rate.
     @test_throws Exception @eval @reaction_network begin im, 0 --> X end
     @test_throws Exception @eval @reaction_network begin nothing, 0 --> X end
     @test_throws Exception @eval @reaction_network begin Γ, 0 --> X end
     @test_throws Exception @eval @reaction_network begin ∅, 0 --> X end
-    
+
     # @reaction_network macro, symbols that cannot be a reactant.
     @test_throws Exception @eval @reaction_network begin 1, 0 --> im end
     @test_throws Exception @eval @reaction_network begin 1, 0 --> nothing end
