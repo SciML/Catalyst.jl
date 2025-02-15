@@ -36,21 +36,23 @@ Catalyst release branch*.
 
 ## Development advice
 
-### Inspecting documentation of a PR
-When updating documentation it is typically useful to view how the updated documentation will look like before completing a PR. This can be done both locally and directly through GitHub. Here, some issues are very easy to see in the actually built html files, but hard to see in the text files from which these are generated.
+### Checking doc builds for errors
+When updating documentation, Catalyst will run any julia code provided within it to dynamically create figures and outputs. In addition to automatically creating these for us, it also provides an additional check that all code in documentation is correct. Here, if any of the documentation code throws an error, the build job will fail. The documentation build job can be found at the bottom of a PRs conversation, here is an example of a filed one:
+![Failed builddocs link](../assets/failed_builddocs_link.png)
+To check what errors were produced, clock on the "Details" link of the job. Next, any errors can be found at the bottom of the "Build and deploy" section (which should be opened automatically).
 
-Whenever a PR to Catalyst is created, CI will create a corresponding documenter build job. If this one passes, you can access the built documentation (which will be the new Catalyst documentation) from it. Follow these steps to view the built docs:
-1. Click on the build job (at the bottom of the PR conversation). 
-2. Expand the "Upload site as artifact" section (in the large black are).
-3. Click on the links following the "Artifact download URL: " text.
-4. This will download a zip file containing the documentations. Extract it to a location on your computer and then open the "index.html" file.
+### Inspecting documentation of a PR on branch
+When updating documentation it is typically useful to view the updated documentation in html format. Here, some errors are very easy to spot in html format, but difficult to do so in the raw text files from which these are generated. There are primarily to ways to view updated documentation, by downloading them from the PR or building the docs locally.
+
+Whenever a PR to Catalyst is created, CI will create a corresponding documenter build job. If the build job passes, you can access the built documentation (which will be the new Catalyst documentation if the PR is merged) through the following steps:
+1. Click on "Details" in the documentation build job (at the bottom of the PR conversation tab). 
+2. Expand the "Upload site as artifact" section.
+3. Click on the link at the end (which follows the "Artifact download URL: " text).
+4. This will download a zip folder containing the documentation. Extract it to a location on your computer and then open the "index.html" file.
 
 To build the Catalyst documentation locally:
-1. Run the ".julia/dev/Catalyst/docs/make.jl" file. ALternatively, open a Julia session, activate the "docs" environment, and run the file using `include("make.jl").
+1. Navigate to the ".julia/dev/Catalyst/docs/" folder and run the "make.jl" file using ">julia make.jl". Alternatively, open a Julia session, activate the "docs" environment, and run the file using `include("make.jl").
 2. Open the ".julia/dev/Catalyst/docs/build/index.html" file.
 
-
 ### Spellchecking in your code
-Especially when writing documentation, but also in other situation, it can be useful to have a spellchecker running through your code. While code can be copied into a spellchecker and checked there, it can also be very useful to (for users of VSCode) run the [Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker) extension, which will automatically provide simple spell checks for code and documentation as you write it.
-
-
+Especially when writing documentation, but also when writing normal code, it can be useful to have a spellchecker running through your texts. While code can be copied into a spellchecker and checked there, it can also be very useful to (for users of VSCode) run the [Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker) extension, which will automatically provide simple spell checks for code and documentation as you write it.
