@@ -392,11 +392,8 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
         nps = get_networkproperties(rs)
 
         # add the conservation constants as parameters and set their values
-        ps = vcat(ps, collect(eq.lhs for eq in nps.constantdefs))
+        ps = push!(ps, nps.conservedconst)
         defs = copy(MT.defaults(rs))
-        # for eq in nps.constantdefs
-        #     defs[eq.lhs] = eq.rhs
-        # end
 
         # add the dependent species as observed
         obs = copy(MT.observed(rs))

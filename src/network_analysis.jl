@@ -877,6 +877,7 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     nps.depspecs = Set(depspecs)
     nps.conservedeqs = conservedeqs
     nps.constantdefs = constantdefs
+    nps.conservedconst = constants
 
     nothing
 end
