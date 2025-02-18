@@ -86,7 +86,7 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     depspecs::Set{V} = Set{V}()
     conservedeqs::Vector{Equation} = Equation[]
     constantdefs::Vector{Equation} = Equation[]
-    conservedconst::BasicSymbolic{Real} = only(@parameters __UNINITIALIZED)
+    conservedconst::BasicSymbolic{Real} = unwrap(only(@parameters __UNINITIALIZED))
     speciesmap::Dict{V, Int} = Dict{V, Int}()
     complextorxsmap::OrderedDict{ReactionComplex{Int}, Vector{Pair{Int, Int}}} = OrderedDict{ReactionComplex{Int},Vector{Pair{Int,Int}}}()
     complexes::Vector{ReactionComplex{Int}} = Vector{ReactionComplex{Int}}(undef, 0)
