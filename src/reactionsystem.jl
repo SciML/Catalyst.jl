@@ -86,7 +86,7 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     depspecs::Set{V} = Set{V}()
     conservedeqs::Vector{Equation} = Equation[]
     constantdefs::Vector{Equation} = Equation[]
-    conservedconst::BasicSymbolic{Real} = MT.unwrap(only(@parameters __UNINITIALIZED))
+    conservedconst::BasicSymbolic{Vector{Real}} = MT.unwrap(only(@parameters __UNINITIALIZED[1:1]))
     speciesmap::Dict{V, Int} = Dict{V, Int}()
     complextorxsmap::OrderedDict{ReactionComplex{Int}, Vector{Pair{Int, Int}}} = OrderedDict{ReactionComplex{Int},Vector{Pair{Int,Int}}}()
     complexes::Vector{ReactionComplex{Int}} = Vector{ReactionComplex{Int}}(undef, 0)
@@ -97,7 +97,6 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     linkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
     stronglinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
     terminallinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
-
     checkedrobust::Bool = false
     robustspecies::Vector{Int} = Vector{Int}(undef, 0)
     deficiency::Int = -1
@@ -127,7 +126,7 @@ function reset!(nps::NetworkProperties{I, V}) where {I, V}
     empty!(nps.col_order)
     nps.rank = 0
     nps.nullity = 0
-    nps.conservedconst = only(@parameters __UNINITIALIZED)
+    nps.conservedconst = MT.unwrap(only(@parameters __UNINITIALIZED[1:1]))
     empty!(nps.indepspecs)
     empty!(nps.depspecs)
     empty!(nps.conservedeqs)
@@ -588,29 +587,44 @@ end
 """
     isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true)
 
-Tests whether the underlying species, parameters and reactions are the same in
-the two [`ReactionSystem`](@ref)s. Ignores the names of the systems in testing
-equality.
+Tests whether the underlying species, parameters and reactions are the same in the two
+[`ReactionSystem`](@ref)s. Ignores the names of the systems in testing equality.
 
 Notes:
-- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
-    considered different than `(A+1)^2`.
+- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be considered
+    different than `(A+1)^2`.
 - Does not include `defaults` in determining equality.
+
+- `ignorenames = false` is used when checking equality of sub and parent systems.
 """
-function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true)
+function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true)    
+    # metadata type fields
     if !ignorenames
         (nameof(rn1) == nameof(rn2)) || return false
     end
-
     (get_combinatoric_ratelaws(rn1) == get_combinatoric_ratelaws(rn2)) || return false
+    (MT.iscomplete(rn1) == MT.iscomplete(rn2)) || return false
+
+    # symbolic variables and parameters
     isequal(get_iv(rn1), get_iv(rn2)) || return false
     issetequal(get_sivs(rn1), get_sivs(rn2)) || return false
     issetequal(get_unknowns(rn1), get_unknowns(rn2)) || return false
+    issetequal(get_species(rn1), get_species(rn2)) || return false
     issetequal(get_ps(rn1), get_ps(rn2)) || return false
+    issetequal(MT.get_defaults(rn1), MT.get_defaults(rn2)) || return false
+
+    # equations and reactions
     issetequal(MT.get_observed(rn1), MT.get_observed(rn2)) || return false
     issetequal(get_eqs(rn1), get_eqs(rn2)) || return false
+    issetequal(MT.get_continuous_events(rn1), MT.get_continuous_events(rn2)) || return false
+    issetequal(MT.get_discrete_events(rn1), MT.get_discrete_events(rn2)) || return false
 
-    # subsystems
+    # coupled systems
+    if MT.get_parent(rn1) !== nothing && MT.get_parent(rn2) !== nothing
+        isequivalent(MT.get_parent(rn1), MT.get_parent(rn2); ignorenames) || return false
+    else
+        (MT.get_parent(rn1) === nothing && MT.get_parent(rn2) === nothing) || return false
+    end
     (length(get_systems(rn1)) == length(get_systems(rn2))) || return false
     issetequal(get_systems(rn1), get_systems(rn2)) || return false
 

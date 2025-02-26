@@ -106,6 +106,7 @@ end
 # Test equation only constructor.
 let
     @named rs2 = ReactionSystem(rxs, t)
+    rs2 = complete(rs2)
     @test Catalyst.isequivalent(rs, rs2)
 
     # Test with a type mismatch
@@ -117,7 +118,8 @@ let
     kvals = Float64.(1:length(k))
     def_p = [k => kvals]
     def_u0 = [A => 0.5, B => 1.0, C => 1.5, D => 2.0]
-    defs = merge(Dict(def_p), Dict(def_u0))
+    inits = (MT.Initial(A), MT.Initial(B), MT.Initial(C), MT.Initial(D)) .=> 0
+    defs = merge(Dict(def_p), Dict(def_u0), Dict(inits))
 
     @named rs = ReactionSystem(rxs, t, [A, B, C, D], [k]; defaults = defs)
     rs = complete(rs)
@@ -128,8 +130,7 @@ let
     @test ModelingToolkit.get_defaults(rs) ==
           ModelingToolkit.get_defaults(odesys) ==
           ModelingToolkit.get_defaults(sdesys) ==
-          ModelingToolkit.get_defaults(js) ==
-          defs
+          ModelingToolkit.get_defaults(js) == defs
 
     u0map = [A => 5.0]
     kvals[1] = 5.0
@@ -464,8 +465,9 @@ let
     rs = complete(rs)
     @test all(eq -> eq isa Reaction, ModelingToolkit.get_eqs(rs)[1:4])
     osys = complete(convert(ODESystem, rs))
+    inits = Initial.((B, C, D, E))
     @test issetequal(MT.get_unknowns(osys), [B, C, D, E])
-    @test issetequal(MT.get_ps(osys), [k1, k2, A])
+    @test issetequal(MT.get_ps(osys), [k1, k2, A, inits...])
 
     # test nonlinear systems
     u0 = [1.0, 2.0, 3.0, 4.0]
@@ -495,8 +497,9 @@ let
     @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
     rs = complete(rs)
     ssys = complete(convert(SDESystem, rs))
+    inits = Initial.((B, C, D, E))
     @test issetequal(MT.get_unknowns(ssys), [B, C, D, E])
-    @test issetequal(MT.get_ps(ssys), [A, k1, k2])
+    @test issetequal(MT.get_ps(ssys), [A, k1, k2, inits...])
     du1 = zeros(4)
     du2 = zeros(4)
     sprob = SDEProblem(ssys, u0map, tspan, pmap; check_length = false)
