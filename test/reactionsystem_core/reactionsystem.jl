@@ -1028,3 +1028,52 @@ let
     sol = solve(jprob)
     @test sol(10.0; idxs = :A) > 0
 end
+
+# tests of isequivalent
+let
+    @parameters k1 k2 k3 k4
+    @species A(t) B(t) C(t) D(t)
+    @variables V(t) X(t)
+    
+    # Define reactions
+    rx1 = Reaction(k1, [A], [B])
+    rx2 = Reaction(k2, [B], [C])
+    rx3 = Reaction(k3, [C], [D])
+    rx4 = Reaction(k4, [D], [A])
+    
+    # Define ODE equation
+    D = default_time_deriv()
+    eq = D(V) ~ -k1 * V + A
+    
+    # Define events
+    continuous_events = [[X > 1.0] => [V => V/2]]
+    discrete_events = [[X > 1.0] => [V => V/2]]
+    
+    # Define metadata
+    metadata = Dict(:description => "Comprehensive test system")
+    
+    # Define initial conditions and parameters
+    u0 = Dict([A => 1.0, B => 2.0, C => 3.0, D => 4.0, V => 5.0])
+    p = Dict([k1 => 0.1, k2 => 0.2, k3 => 0.3, k4 => 0.4])
+    defs = merge(u0, p)
+    
+    # Define observed variables
+    obs = [X ~ A + B]
+    
+    # Define a subsystem
+    sub_rx = Reaction(k1, [A], [B])
+    @named sub_rs = ReactionSystem([sub_rx], t)
+    
+    # Create the first reaction system
+    @named rs1 = ReactionSystem([rx1, rx2, rx3, rx4, eq]; 
+        continuous_events, discrete_events,  
+        metadata, observed = obs, defaults = defs, systems = [sub_rs])
+    rs1 = complete(rs1)
+    
+    # Create the second reaction system with the same components
+    @named rs2 = ReactionSystem([rx1, rx2, rx3, rx4, eq]; events = [event], metadata = metadata, observed = obs, defaults = Dict(u0...), systems = [sub_rs])
+    rs2 = complete(rs2)
+    
+    # Check equivalence
+    @test Catalyst.isequivalent(rs1, rs2)
+end

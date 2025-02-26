@@ -584,8 +584,18 @@ function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
     isequivalent(rn1, rn2; ignorenames = false)
 end
 
+function debug_comparer(fun, prop1, prop2, propname; debug = false)
+    if fun(prop1, prop2)
+        return true
+    else
+        debug && println("Comparison was false for property: ", propname, "\n    Found: ", prop1, " vs ", prop2)
+        return false
+    end
+end
+
 """
-    isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true)
+    isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true, 
+        debug = false)
 
 Tests whether the underlying species, parameters and reactions are the same in the two
 [`ReactionSystem`](@ref)s. Ignores the names of the systems in testing equality.
@@ -593,40 +603,42 @@ Tests whether the underlying species, parameters and reactions are the same in t
 Notes:
 - *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be considered
     different than `(A+1)^2`.
-- Does not include `defaults` in determining equality.
-
 - `ignorenames = false` is used when checking equality of sub and parent systems.
+- Does not check that `parent` systems are the same.
+- Pass `debug = true` to print out the field that caused the two systems to be considered
+    different.
 """
-function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true)    
+function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true,
+        debug = false)    
+
     # metadata type fields
     if !ignorenames
-        (nameof(rn1) == nameof(rn2)) || return false
+        debug_comparer(==, nameof(rn1), nameof(rn2), "name"; debug) || return false
     end
-    (get_combinatoric_ratelaws(rn1) == get_combinatoric_ratelaws(rn2)) || return false
-    (MT.iscomplete(rn1) == MT.iscomplete(rn2)) || return false
+    debug_comparer(==, get_combinatoric_ratelaws(rn1), get_combinatoric_ratelaws(rn2), 
+        "combinatoric_ratelaws"; debug) || return false
+    debug_comparer(==, MT.iscomplete(rn1), MT.iscomplete(rn2), "complete"; debug) || return false
 
     # symbolic variables and parameters
-    isequal(get_iv(rn1), get_iv(rn2)) || return false
-    issetequal(get_sivs(rn1), get_sivs(rn2)) || return false
-    issetequal(get_unknowns(rn1), get_unknowns(rn2)) || return false
-    issetequal(get_species(rn1), get_species(rn2)) || return false
-    issetequal(get_ps(rn1), get_ps(rn2)) || return false
-    issetequal(MT.get_defaults(rn1), MT.get_defaults(rn2)) || return false
+    debug_comparer(isequal, get_iv(rn1), get_iv(rn2), "ivs"; debug) || return false
+    debug_comparer(issetequal, get_sivs(rn1), get_sivs(rn2), "sivs"; debug) || return false
+    debug_comparer(issetequal, get_unknowns(rn1), get_unknowns(rn2), "unknowns"; debug) || return false
+    debug_comparer(issetequal, get_species(rn1), get_species(rn2), "species"; debug) || return false
+    debug_comparer(issetequal, get_ps(rn1), get_ps(rn2), "ps"; debug) || return false
+    debug_comparer(issetequal, MT.get_defaults(rn1), MT.get_defaults(rn2), "defaults"; debug) || return false
 
     # equations and reactions
-    issetequal(MT.get_observed(rn1), MT.get_observed(rn2)) || return false
-    issetequal(get_eqs(rn1), get_eqs(rn2)) || return false
-    issetequal(MT.get_continuous_events(rn1), MT.get_continuous_events(rn2)) || return false
-    issetequal(MT.get_discrete_events(rn1), MT.get_discrete_events(rn2)) || return false
+    debug_comparer(issetequal, MT.get_observed(rn1), MT.get_observed(rn2), "observed"; debug) || return false
+    debug_comparer(issetequal, get_eqs(rn1), get_eqs(rn2), "eqs"; debug) || return false
+    debug_comparer(issetequal, MT.get_continuous_events(rn1), MT.get_continuous_events(rn2), "cevents"; debug) || return false
+    debug_comparer(issetequal, MT.get_discrete_events(rn1), MT.get_discrete_events(rn2), "devents"; debug) || return false
 
-    # coupled systems
-    if MT.get_parent(rn1) !== nothing && MT.get_parent(rn2) !== nothing
-        isequivalent(MT.get_parent(rn1), MT.get_parent(rn2); ignorenames) || return false
-    else
-        (MT.get_parent(rn1) === nothing && MT.get_parent(rn2) === nothing) || return false
+    # coupled systems    
+    if (length(get_systems(rn1)) != length(get_systems(rn2))) 
+        println("Systems have different numbers of subsystems.")
+        return false
     end
-    (length(get_systems(rn1)) == length(get_systems(rn2))) || return false
-    issetequal(get_systems(rn1), get_systems(rn2)) || return false
+    debug_comparer(issetequal, get_systems(rn1), get_systems(rn2), "systems"; debug) || return false
 
     true
 end
