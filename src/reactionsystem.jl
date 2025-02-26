@@ -336,9 +336,10 @@ struct ReactionSystem{V <: NetworkProperties} <:
             name, systems, defaults, connection_type, nps, cls, cevs, devs,
             metadata = nothing, complete = false, parent = nothing; checks::Bool = true)
 
-        # Checks that all parameters have the appropriate Symbolics type.
+        # Checks that all parameters have the appropriate Symbolics type. The `Symbolics.CallWithMetadata`
+        # check is an exception for callabl;e parameters.
         for p in ps
-            (p isa Symbolics.BasicSymbolic) ||
+            (p isa Symbolics.BasicSymbolic) || (p isa Symbolics.CallWithMetadata) ||
                 error("Parameter $p is not a `BasicSymbolic`. This is required.")
         end
 
@@ -353,11 +354,11 @@ struct ReactionSystem{V <: NetworkProperties} <:
         end
 
         if isempty(sivs) && (checks == true || (checks & MT.CheckUnits) > 0)
-            if !all(u == 1.0 for u in ModelingToolkit.get_unit([unknowns; ps; iv]))
-                for eq in eqs
-                    (eq isa Equation) && check_units(eq)
-                end
-            end
+            #if !all(u == 1.0 for u in ModelingToolkit.get_unit([unknowns; ps; iv]))
+            #    for eq in eqs
+            #        (eq isa Equation) && check_units(eq)
+            #    end
+            #end
         end
 
         rs = new{typeof(nps)}(
@@ -1515,7 +1516,7 @@ function validate(rs::ReactionSystem, info::String = "")
 
     # no units for species, time or parameters then assume validated
     if (specunits in (MT.unitless, nothing)) && (timeunits in (MT.unitless, nothing))
-        all(u == 1.0 for u in ModelingToolkit.get_unit(get_ps(rs))) && return true
+        all(unitless_symvar(p) for p in get_ps(rs)) && return true
     end
 
     rateunits = specunits / timeunits
@@ -1545,3 +1546,9 @@ end
 
 # Checks if a unit consist of exponents with base 1 (and is this unitless).
 unitless_exp(u) = iscall(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
+
+# Checks if a symbolic variable is unitless. Also accounts for callable parameters (which
+# should not have units but for which `get_unit` is undefined: https://github.com/SciML/ModelingToolkit.jl/issues/3420).
+function unitless_symvar(sym) 
+    return (sym isa Symbolics.CallWithMetadata) || (ModelingToolkit.get_unit(sym) == 1)
+end

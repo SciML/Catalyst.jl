@@ -13,6 +13,7 @@ pages = Any[
         "model_creation/constraint_equations.md",
         "model_creation/conservation_laws.md",
         "model_creation/parametric_stoichiometry.md",
+        "model_creation/time_dependent_parameters.md",
         "model_creation/model_file_loading_and_export.md",
         "model_creation/model_visualisation.md",
         "model_creation/reactionsystem_content_accessing.md",
