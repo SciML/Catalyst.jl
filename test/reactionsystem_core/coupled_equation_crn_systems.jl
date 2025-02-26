@@ -149,7 +149,7 @@ let
     @test issetequal(equations(coupled_rs)[3:3], eqs[3:3])
 
     # Set simulation inputs.
-    u0 = [X => 0.1, A => 10.0]
+    u0 = [X => 0.1]
     tspan = (0.0, 1000.0)
     ps = [p => 1.0, d => 0.5, a => 2.0, b => 16.0]
 
@@ -158,17 +158,21 @@ let
     @test_throws Exception SteadyStateProblem(coupled_rs, u0, ps)
 
     # Checks that the correct steady state is found through ODEProblem.
-    oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true)
+    oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true, 
+        guesses = [A => 1.0])
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
     @test osol.u[end] ≈ [2.0, 3.0]
 
     # Checks that the correct steady state is found through NonlinearProblem.
-    nlprob = NonlinearProblem(coupled_rs, u0, ps)
+    u0 = [X => 0.1, A => 16.1/2]
+    nlprob = NonlinearProblem(coupled_rs, u0, ps, structural_simplify = true)
     nlsol = solve(nlprob)
     @test nlsol ≈ [2.0, 3.0]
 
     # Checks that the correct steady state is found through SteadyStateProblem.
-    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
+    u0 = [X => 0.1]
+    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true, 
+        guesses = [A => 1.0])
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
     @test sssol ≈ [2.0, 3.0]
 end
