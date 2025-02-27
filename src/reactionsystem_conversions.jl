@@ -510,6 +510,12 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
         kwargs...)
 end
 
+function remove_inits!(ps)
+    filter!(x -> !iscall(x) || !isa(operation(x), Initial), ps)
+    ps
+end
+
+
 """
 ```julia
 Base.convert(::Type{<:NonlinearSystem},rs::ReactionSystem)
