@@ -551,6 +551,9 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
         as_odes = false, include_zero_odes)
     eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
+    # remove Initial conditions from parameters
+    filter!(x -> !iscall(x) || !isa(operation(x), Initial), ps)
+    
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.
     all_differentials_permitted || nonlinear_convert_differentials_check(rs)
