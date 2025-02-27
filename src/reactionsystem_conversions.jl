@@ -510,9 +510,14 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
         kwargs...)
 end
 
+# the following remove Initial wrapped parameters (i.e. initial conditions) from ps
 function remove_inits!(ps)
     filter!(x -> !iscall(x) || !isa(operation(x), Initial), ps)
     ps
+end
+
+function remove_inits(ps)
+    filter(x -> !iscall(x) || !isa(operation(x), Initial), ps)
 end
 
 
