@@ -1046,8 +1046,8 @@ let
     eq = D(V) ~ -k1 * V + A
     
     # Define events
-    continuous_events = [[X > 1.0] => [V => V/2]]
-    discrete_events = [[X > 1.0] => [V => V/2]]
+    continuous_events = [[X ~ 0] => [X ~ -X]]
+    discrete_events = (X == 1) => [V => V/2]
     
     # Define metadata
     metadata = Dict(:description => "Comprehensive test system")
@@ -1065,13 +1065,15 @@ let
     @named sub_rs = ReactionSystem([sub_rx], t)
     
     # Create the first reaction system
-    @named rs1 = ReactionSystem([rx1, rx2, rx3, rx4, eq]; 
+    @named rs1 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t; 
         continuous_events, discrete_events,  
         metadata, observed = obs, defaults = defs, systems = [sub_rs])
     rs1 = complete(rs1)
     
     # Create the second reaction system with the same components
-    @named rs2 = ReactionSystem([rx1, rx2, rx3, rx4, eq]; events = [event], metadata = metadata, observed = obs, defaults = Dict(u0...), systems = [sub_rs])
+    rs2 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t; 
+        continuous_events, discrete_events,  
+        metadata, observed = obs, defaults = defs, systems = [sub_rs], name = :rs1)
     rs2 = complete(rs2)
     
     # Check equivalence
