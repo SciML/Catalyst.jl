@@ -392,7 +392,8 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
         nps = get_networkproperties(rs)
 
         # add the conservation constants as parameters and set their values
-        ps = push!(ps, nps.conservedconst)
+        ps = copy(ps)
+        push!(ps, nps.conservedconst)
         defs = copy(MT.defaults(rs))
 
         # add the dependent species as observed
@@ -407,11 +408,12 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     if !isempty(ceqs)
         if remove_conserved
             @info """
-                  Be careful mixing constraints and elimination of conservation laws.
-                  Catalyst does not check that the conserved equations still hold for the
-                  final coupled system of equations. Consider using `remove_conserved =
-                  false` and instead calling ModelingToolkit.structural_simplify to simplify
-                  any generated ODESystem or NonlinearSystem.
+                  Be careful mixing ODEs or algebraic equations and elimination of
+                  conservation laws. Catalyst does not check that the conserved equations
+                  still hold for the final coupled system of equations. Consider using
+                  `remove_conserved = false` and instead calling
+                  ModelingToolkit.structural_simplify to simplify any generated ODESystem or
+                  NonlinearSystem.
                   """
         end
         append!(eqs, ceqs)
@@ -563,7 +565,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
     # remove Initial conditions from parameters
-    filter!(x -> !iscall(x) || !isa(operation(x), Initial), ps)
+    remove_inits!(ps)
     
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.

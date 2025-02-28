@@ -71,6 +71,7 @@ end
 Base.Sort.defalg(::ReactionComplex) = Base.DEFAULT_UNSTABLE
 
 ### NetworkProperties Structure ###
+const __UNINITIALIZED_CONSERVED_CONSTS = MT.unwrap(only(@parameters __UNINITIALIZED[1]))
 
 #! format: off
 # Internal cache for various ReactionSystem calculated properties
@@ -86,7 +87,7 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     depspecs::Set{V} = Set{V}()
     conservedeqs::Vector{Equation} = Equation[]
     constantdefs::Vector{Equation} = Equation[]
-    conservedconst::BasicSymbolic{Vector{Real}} = MT.unwrap(only(@parameters __UNINITIALIZED[1:1]))
+    conservedconst::BasicSymbolic{Vector{Real}} = __UNINITIALIZED_CONSERVED_CONSTS
     speciesmap::Dict{V, Int} = Dict{V, Int}()
     complextorxsmap::OrderedDict{ReactionComplex{Int}, Vector{Pair{Int, Int}}} = OrderedDict{ReactionComplex{Int},Vector{Pair{Int,Int}}}()
     complexes::Vector{ReactionComplex{Int}} = Vector{ReactionComplex{Int}}(undef, 0)
@@ -126,7 +127,7 @@ function reset!(nps::NetworkProperties{I, V}) where {I, V}
     empty!(nps.col_order)
     nps.rank = 0
     nps.nullity = 0
-    nps.conservedconst = MT.unwrap(only(@parameters __UNINITIALIZED[1:1]))
+    nps.conservedconst = __UNINITIALIZED_CONSERVED_CONSTS
     empty!(nps.indepspecs)
     empty!(nps.depspecs)
     empty!(nps.conservedeqs)
@@ -148,6 +149,10 @@ function reset!(nps::NetworkProperties{I, V}) where {I, V}
     # this needs to be last due to setproperty! setting it to false
     nps.isempty = true
     nothing
+end
+
+function initialized_conserved(nps::NetworkProperties)
+    nps.conservedconst !== __UNINITIALIZED_CONSERVED_CONSTS
 end
 
 ### ReactionSystem Constructor Functions ###
