@@ -210,6 +210,7 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
     f.axis.xautolimitmargin = (0.15, 0.15)
     f.axis.yautolimitmargin = (0.15, 0.15)
     hidedecorations!(f.axis)
+    hidespines!(f.axis)
     f.axis.aspect = DataAspect()
     
     f
@@ -266,8 +267,9 @@ function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels = false, k
     f.axis.xautolimitmargin = (0.15, 0.15)
     f.axis.yautolimitmargin = (0.15, 0.15)
     hidedecorations!(f.axis)
+    hidespines!(f.axis)
     f.axis.aspect = DataAspect()
-    
+
     f
 end
 

@@ -88,18 +88,16 @@ In this section we demonstrate some of the ways that plot objects can be manipul
 f, ax, p = plot_complexes(brusselator, show_rate_labels = true)
 ```
 
-It seems like a bit of the top node is cut off. Let's show the tick marks and grid and increase the top and bottom margins by increasing `yautolimitmargin`.
+It seems like a bit of the top node is cut off. Let's increase the top and bottom margins by increasing `yautolimitmargin`.
 ```@example visualisation_graphs
-showdecorations!(ax)
-ax.yautolimitmargin = (0.1, 0.1) # defaults to (0.05, 0.05)
+ax.yautolimitmargin = (0.3, 0.3) # defaults to (0.15, 0.15)
 ax.aspect = DataAspect()
-display(F)
+display(f)
 ```
 
 There are many keyword arguments that can be passed to `plot_network` or `plot_complexes` to change the look of the graph (which get passed to the `graphplot` Makie recipe). Let's change the color of the nodes and make the inner labels a bit smaller. Let's also give the plot a title. 
 ```@example visualisation_graphs
 f, ax, p = plot_complexes(brusselator, show_rate_labels = true, node_color = :yellow, ilabels_fontsize = 10)
-ax.aspect = DataAspect()
 ax.title = "Brusselator"
 display(f)
 ```
