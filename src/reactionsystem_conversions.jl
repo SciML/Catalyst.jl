@@ -392,11 +392,9 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
         nps = get_networkproperties(rs)
 
         # add the conservation constants as parameters and set their values
-        ps = vcat(ps, collect(eq.lhs for eq in nps.constantdefs))
+        ps = copy(ps)
+        push!(ps, nps.conservedconst)
         defs = copy(MT.defaults(rs))
-        for eq in nps.constantdefs
-            defs[eq.lhs] = eq.rhs
-        end
 
         # add the dependent species as observed
         obs = copy(MT.observed(rs))
@@ -410,11 +408,12 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     if !isempty(ceqs)
         if remove_conserved
             @info """
-                  Be careful mixing constraints and elimination of conservation laws.
-                  Catalyst does not check that the conserved equations still hold for the
-                  final coupled system of equations. Consider using `remove_conserved =
-                  false` and instead calling ModelingToolkit.structural_simplify to simplify
-                  any generated ODESystem or NonlinearSystem.
+                  Be careful mixing ODEs or algebraic equations and elimination of
+                  conservation laws. Catalyst does not check that the conserved equations
+                  still hold for the final coupled system of equations. Consider using
+                  `remove_conserved = false` and instead calling
+                  ModelingToolkit.structural_simplify to simplify any generated ODESystem or
+                  NonlinearSystem.
                   """
         end
         append!(eqs, ceqs)
@@ -503,7 +502,6 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
         include_zero_odes)
     eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
-
     ODESystem(eqs, get_iv(fullrs), us, ps;
         observed = obs,
         name,
@@ -513,6 +511,17 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
         discrete_events = MT.get_discrete_events(fullrs),
         kwargs...)
 end
+
+# the following remove Initial wrapped parameters (i.e. initial conditions) from ps
+function remove_inits!(ps)
+    filter!(x -> !iscall(x) || !isa(operation(x), Initial), ps)
+    ps
+end
+
+function remove_inits(ps)
+    filter(x -> !iscall(x) || !isa(operation(x), Initial), ps)
+end
+
 
 """
 ```julia
@@ -555,6 +564,9 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
         as_odes = false, include_zero_odes)
     eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
+    # remove Initial conditions from parameters
+    remove_inits!(ps)
+    
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.
     all_differentials_permitted || nonlinear_convert_differentials_check(rs)
@@ -718,7 +730,7 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify
-        (osys = MT.structural_simplify(osys))
+        osys = MT.structural_simplify(osys)
     elseif has_alg_equations(rs)
         error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
     else

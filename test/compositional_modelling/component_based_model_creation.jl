@@ -351,7 +351,7 @@ end
 # Test throw error if there are ODE constraints and convert to NonlinearSystem.
 # Note, these can now be created.
 let
-    rn = @reaction_network rn begin
+    rn = @network_component rn begin
         @parameters k1 k2
         (k1, k2), A <--> B
     end
@@ -362,8 +362,7 @@ let
     eqs = [D(C) ~ -b * C + a * A]
     @named osys = ODESystem(eqs, t, [A, C], [a, b])
     rn2 = extend(osys, rn)
-    rn2 = complete(rn2)
-    rnodes = complete(convert(ODESystem, rn2))
+    rnodes = convert(ODESystem, complete(rn2))
 
     # Ensure right number of equations are generated.
     @variables G(t)
@@ -376,12 +375,11 @@ let
     eqs = [0 ~ -a * A + C, 0 ~ -b * C + a * A]
     @named nlsys = NonlinearSystem(eqs, [A, C], [a, b])
     rn2 = extend(nlsys, rn)
-    rn2 = complete(rn2)
-    rnodes = complete(convert(ODESystem, rn2))
-    rnnlsys = complete(convert(NonlinearSystem, rn2))
+    rn2c = complete(rn2)
+    rnodes = complete(convert(ODESystem, rn2c))
+    rnnlsys = complete(convert(NonlinearSystem, rn2c))
     @named nlsys = ODESystem(eqs, t, [A, C], [a, b])
-    rn2 = extend(nlsys, rn)
-    rn2 = complete(rn2)
+    rn2 = complete(extend(nlsys, rn))
     rnodes = convert(ODESystem, rn2)
     rnnlsys = convert(NonlinearSystem, rn2)
 end
@@ -404,7 +402,7 @@ end
 let
     @parameters b
     @species V(t) [isbcspecies = true]
-    rn = @reaction_network begin
+    rn = @network_component begin
         @parameters k
         k/$V, A + B --> C
     end

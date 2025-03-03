@@ -27,14 +27,14 @@ let
         Reaction(k, [X], [Y], [n2], [n3])
         Reaction(d, [Y], nothing)
     ]
-    rs1 = ReactionSystem(rxs1, t; name = :rs)
+    rs1 = complete(ReactionSystem(rxs1, t; name = :rs))
 
     rxs2 = [
         @reaction p, 0 --> $n1*X
         @reaction k, n2*X --> n3*Y
         @reaction $d, Y --> 0
     ]
-    rs2 = ReactionSystem(rxs2, t; name = :rs)
+    rs2 = complete(ReactionSystem(rxs2, t; name = :rs))
 
     rs3 = @reaction_network rs begin
         @parameters d::Float64 n1::Int64

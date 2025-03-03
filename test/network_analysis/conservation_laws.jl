@@ -128,7 +128,7 @@ let
 
     # Checks that steady states found using nonlinear solving and steady state simulations are identical.
     nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true, remove_conserved_warn))
-    nprob1 = NonlinearProblem{true}(nsys, u0, p)
+    nprob1 = NonlinearProblem{true}(nsys, u0, p; guesses = [nsys.Γ => [0.0]])
     nprob2 = NonlinearProblem(rn, u0, p)
     nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true, remove_conserved_warn)
     ssprob1 = SteadyStateProblem{true}(osys, u0, p)

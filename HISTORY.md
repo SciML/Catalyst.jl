@@ -1,6 +1,10 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+- `ModelingToolkit.complete` now adds initial parameters corresponding to
+  initial conditions into the internal `sys.ps` field (accessed via
+  `get_ps(sys)`). For this reason `parameters(sys)` and `get_ps(sys)` are no
+  longer equivalent for a `complete`d system (as the DSL generates).
 - The Catalyst release process is changing; certain core dependencies of
   Catalyst will now be capped to ensure Catalyst releases are only installed
   with versions of dependencies for which Catalyst CI and doc build tests pass

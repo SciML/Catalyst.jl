@@ -23,6 +23,10 @@ function unpacksys(sys)
     get_eqs(sys), get_iv(sys), get_unknowns(sys), get_ps(sys), nameof(sys), get_systems(sys)
 end
 
+function remove_inits(ps)
+    filter(x -> !iscall(x) || !isa(operation(x), Initial), ps)
+end
+
 opname(x) = iscall(x) ? nameof(operation(x)) : nameof(x)
 alleq(xs, ys) = all(isequal(x, y) for (x, y) in zip(xs, ys))
 
@@ -49,8 +53,8 @@ function basic_test(rn, N, unknowns_syms, p_syms)
     @test length(unknowns) == length(unknowns_syms)
     @test issetequal(map(opname, unknowns), unknowns_syms)
     @test all_reactants(eqs) == Set(unknowns_syms)
-    @test length(ps) == length(p_syms)
-    @test issetequal(map(opname, ps), p_syms)
+    @test length(remove_inits(ps)) == length(p_syms)
+    @test issetequal(map(opname, remove_inits(ps)), p_syms)
 end
 
 ## Run Tests ###

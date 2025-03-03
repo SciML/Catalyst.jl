@@ -106,6 +106,7 @@ end
 # Test equation only constructor.
 let
     @named rs2 = ReactionSystem(rxs, t)
+    rs2 = complete(rs2)
     @test Catalyst.isequivalent(rs, rs2)
 
     # Test with a type mismatch
@@ -117,7 +118,8 @@ let
     kvals = Float64.(1:length(k))
     def_p = [k => kvals]
     def_u0 = [A => 0.5, B => 1.0, C => 1.5, D => 2.0]
-    defs = merge(Dict(def_p), Dict(def_u0))
+    inits = (MT.Initial(A), MT.Initial(B), MT.Initial(C), MT.Initial(D)) .=> 0
+    defs = merge(Dict(def_p), Dict(def_u0), Dict(inits))
 
     @named rs = ReactionSystem(rxs, t, [A, B, C, D], [k]; defaults = defs)
     rs = complete(rs)
@@ -128,8 +130,7 @@ let
     @test ModelingToolkit.get_defaults(rs) ==
           ModelingToolkit.get_defaults(odesys) ==
           ModelingToolkit.get_defaults(sdesys) ==
-          ModelingToolkit.get_defaults(js) ==
-          defs
+          ModelingToolkit.get_defaults(js) == defs
 
     u0map = [A => 5.0]
     kvals[1] = 5.0
@@ -464,8 +465,9 @@ let
     rs = complete(rs)
     @test all(eq -> eq isa Reaction, ModelingToolkit.get_eqs(rs)[1:4])
     osys = complete(convert(ODESystem, rs))
+    inits = Initial.((B, C, D, E))
     @test issetequal(MT.get_unknowns(osys), [B, C, D, E])
-    @test issetequal(MT.get_ps(osys), [k1, k2, A])
+    @test issetequal(MT.get_ps(osys), [k1, k2, A, inits...])
 
     # test nonlinear systems
     u0 = [1.0, 2.0, 3.0, 4.0]
@@ -495,8 +497,9 @@ let
     @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
     rs = complete(rs)
     ssys = complete(convert(SDESystem, rs))
+    inits = Initial.((B, C, D, E))
     @test issetequal(MT.get_unknowns(ssys), [B, C, D, E])
-    @test issetequal(MT.get_ps(ssys), [A, k1, k2])
+    @test issetequal(MT.get_ps(ssys), [A, k1, k2, inits...])
     du1 = zeros(4)
     du2 = zeros(4)
     sprob = SDEProblem(ssys, u0map, tspan, pmap; check_length = false)
@@ -1024,4 +1027,55 @@ let
     jprob = JumpProblem(jinput; rng)
     sol = solve(jprob)
     @test sol(10.0; idxs = :A) > 0
+end
+
+# tests of isequivalent
+let
+    @parameters k1 k2 k3 k4
+    @species A(t) B(t) C(t) D(t)
+    @variables V(t) X(t)
+    
+    # Define reactions
+    rx1 = Reaction(k1, [A], [B])
+    rx2 = Reaction(k2, [B], [C])
+    rx3 = Reaction(k3, [C], [D])
+    rx4 = Reaction(k4, [D], [A])
+    
+    # Define ODE equation
+    D = default_time_deriv()
+    eq = D(V) ~ -k1 * V + A
+    
+    # Define events
+    continuous_events = [[X ~ 0] => [X ~ -X]]
+    discrete_events = (X == 1) => [V => V/2]
+    
+    # Define metadata
+    metadata = Dict(:description => "Comprehensive test system")
+    
+    # Define initial conditions and parameters
+    u0 = Dict([A => 1.0, B => 2.0, C => 3.0, D => 4.0, V => 5.0])
+    p = Dict([k1 => 0.1, k2 => 0.2, k3 => 0.3, k4 => 0.4])
+    defs = merge(u0, p)
+    
+    # Define observed variables
+    obs = [X ~ A + B]
+    
+    # Define a subsystem
+    sub_rx = Reaction(k1, [A], [B])
+    @named sub_rs = ReactionSystem([sub_rx], t)
+    
+    # Create the first reaction system
+    @named rs1 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t; 
+        continuous_events, discrete_events,  
+        metadata, observed = obs, defaults = defs, systems = [sub_rs])
+    rs1 = complete(rs1)
+    
+    # Create the second reaction system with the same components
+    rs2 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t; 
+        continuous_events, discrete_events,  
+        metadata, observed = obs, defaults = defs, systems = [sub_rs], name = :rs1)
+    rs2 = complete(rs2)
+    
+    # Check equivalence
+    @test Catalyst.isequivalent(rs1, rs2)
 end
