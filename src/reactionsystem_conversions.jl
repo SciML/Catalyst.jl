@@ -730,9 +730,9 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify
-        (osys = MT.structural_simplify(osys))
-    # elseif has_alg_equations(rs)
-    #     error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
+        osys = MT.structural_simplify(osys)
+    elseif has_alg_equations(rs)
+        error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
     else
         osys = complete(osys)
     end
