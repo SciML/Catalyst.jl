@@ -1,6 +1,6 @@
 
 # Fetch packages.
-using Catalyst, DataInterpolations, JumpProcesses, OrdinaryDiffEqDefault, StochasticDiffEq 
+using Catalyst, DataInterpolations, JumpProcesses, OrdinaryDiffEqDefault, StochasticDiffEq, Test
 
 # Sets the default `t` to use.
 t = default_t()
@@ -102,14 +102,26 @@ let
     # Checks SDE simulations.
     esde_prob_base = EnsembleProblem(SDEProblem(rs_base, u0, tend, ps_base))
     esde_prob_pIn = EnsembleProblem(SDEProblem(rs_pIn, u0, tend, ps))
-    sde_sol_mean_base = timeseries_point_mean(solve(esde_prob_base, ImplicitEM(); trajectories = 1000), 1.0:10.0).u
-    sde_sol_mean_pIn = timeseries_point_mean(solve(esde_prob_pIn, ImplicitEM(); trajectories = 1000), 1.0:10.0).u
+    sde_sol_mean_base = EnsembleAnalysis.timeseries_point_mean(solve(esde_prob_base, ImplicitEM(); trajectories = 1000), 1.0:10.0).u
+    sde_sol_mean_pIn = EnsembleAnalysis.timeseries_point_mean(solve(esde_prob_pIn, ImplicitEM(); trajectories = 1000), 1.0:10.0).u
     @test sde_sol_mean_base ≈ sde_sol_mean_pIn rtol = 1e-1 atol = 1e-1
 
     # Checks Jump simulations (cannot currently be created).
     # ejmp_prob_base = EnsembleProblem(JumpProblem(JumpInputs(rs_base, u0, tend, ps_base)))
     # ejmp_prob_pIn = EnsembleProblem(JumpProblem(JumpInputs(rs_pIn, u0, tend, ps)))
-    # jmp_sol_mean_base = timeseries_point_mean(solve(ejmp_prob_base; trajectories = 1000), 1.0:10.0).u
-    # jmp_sol_mean_pIn = timeseries_point_mean(solve(ejmp_prob_pIn; trajectories = 1000), 1.0:10.0).u
+    # jmp_sol_mean_base = EnsembleAnalysis.timeseries_point_mean(solve(ejmp_prob_base; trajectories = 1000), 1.0:10.0).u
+    # jmp_sol_mean_pIn = EnsembleAnalysis.timeseries_point_mean(solve(ejmp_prob_pIn; trajectories = 1000), 1.0:10.0).u
     @test_broken jmp_sol_mean_base ≈ jmp_sol_meanpIn rtol = 1e-1 atol = 1e-1
+end
+
+# Checks correctness for non-time functions.
+let
+    # TBC
+end
+
+### Error Checks ###
+
+# Checks that combining functional parameters with units errors.
+let
+    # TBC
 end

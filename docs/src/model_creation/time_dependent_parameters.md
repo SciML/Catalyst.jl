@@ -1,7 +1,7 @@
 # [Inputs and time-dependent (or functional) parameters](@id time_dependent_parameters)
 
 ## [Basic example](@id time_dependent_parameters_basic_example)
-Let us first consider an easy, quick-start example. We will consider a simple [birth-death model](@ref basic_CRN_library_bd), but where the birth rate is determined by an input parameter (which value depends on time). First, we [define the input parameter programmatically](@ref programmatic_CRN_construction), and its values across all time values using the [DataInterpolations.jl](@ref https://github.com/SciML/DataInterpolations.jl) package. In this example we will use the input function $pIn(t) = (2 + t)/(1 + t)$.
+Let us first consider an easy, quick-start example. We will consider a simple [birth-death model](@ref basic_CRN_library_bd), but where the birth rate is determined by an input parameter (which value depends on time). First, we [define the input parameter programmatically](@ref programmatic_CRN_construction), and its values across all time values using the [DataInterpolations.jl](https://github.com/SciML/DataInterpolations.jl) package. In this example we will use the input function $pIn(t) = (2 + t)/(1 + t)$.
 ```@example time_dependent_parameters_basic_example
 using DataInterpolations
 t = default_t()
