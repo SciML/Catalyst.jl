@@ -21,7 +21,7 @@ end
 ```
 Finally, we can simulate our model as normal, but setting the value of the `pIn` parameter to our interpolated data.
 ```@example time_dependent_parameters_basic_example
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEqDefault, Plots
 u0 = [:X => 0.5]
 ps = [:d => 2.0, pIn => spline]
 oprob = ODEProblem(bd_model, u0, tend, ps)
@@ -65,7 +65,8 @@ using OrdinaryDiffEqDefault
 u0 = [Pi => 1.0, Pa => 0.0]
 ps = [kA => 1.5, kB => 1.0, pIn => interpolated_light]
 oprob = ODEProblem(rs, u0, tend, ps)
-sol = solve()
+sol = solve(oprob)
+nothing # hide
 ```
 
 ### [Interpolating the input into the DSL] (@id time_dependent_parameters_circ_rhythm_dsl)

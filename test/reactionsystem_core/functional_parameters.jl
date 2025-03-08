@@ -115,8 +115,33 @@ let
 end
 
 # Checks correctness for non-time functions.
+# Uses an SIR model where we have modified the infection step to not scale linary with I.
+# Intended to add cases with 2d functions here as well, but this is currently not supported.
 let
-    # TBC
+    # Declares the functional parameter.
+    Is = collect(0.0:0.0001:200.0)
+    spline1d = LinearInterpolation(100.0*Is ./ (100.0 .+ Is), Is)
+    @parameters (i_rate::typeof(spline1d))(..)
+
+    # Decalres the models.
+    sir = @reaction_network begin
+        k1*100*I/(100 + I), S --> I
+        k2, I --> R
+    end
+    input = i_rate(sir.I)
+    sir_funcp = @reaction_network rs begin
+        k1*$(input), S --> I
+        k2, I --> R
+    end
+
+    # Simulates the models for the same conditions. Checks that simulations are identical.
+    u0 = [:S => 99.0, :I => 10.0, :R => 0.0]
+    ps = [:k1 => 0.01, :k2 => 0.01]
+    oprob = ODEProblem(sir, u0, 200.0, ps)
+    oprob_funcp = ODEProblem(sir_funcp, u0, 200.0, [ps; i_rate => spline1d])
+    sol = solve(oprob)
+    sol_funcp = solve(oprob_funcp)
+    @test sol.u ≈ sol_funcp.u atol = 1e-6 rtol = 1e-6
 end
 
 ### Error Checks ###
