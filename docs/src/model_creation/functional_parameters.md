@@ -33,7 +33,7 @@ plot(sol)
     For this simple example, $(2 + t)/(1 + t)$ could have been used directly as a reaction rate, technically making the functional parameter approach unnecessary.
 
 ## [Inserting a customised, time-dependent, input](@id functional_parameters_circ_rhythm)
-Let us now go through everything again, but providing some more details. Let us first consider the input parameter. We have previously described how a [time-dependent rate can model a circadian rhythm](@ef dsl_description_nonconstant_rates_time). For real applications, due to e.g. clouds, sunlight is not a perfect sine wave. Here, a common solution is to take real sunlight data from some location and use in the model. Here, we will create synthetic (noisy) data as our light input:
+Let us now go through everything again, but providing some more details. Let us first consider the input parameter. We have previously described how a [time-dependent rate can model a circadian rhythm](@ref dsl_description_nonconstant_rates_time). For real applications, due to e.g. clouds, sunlight is not a perfect sine wave. Here, a common solution is to take real sunlight data from some location and use in the model. Here, we will create synthetic (noisy) data as our light input:
 ```@example functional_parameters_circ_rhythm
 using Plots
 tend = 120.0
@@ -75,9 +75,9 @@ plot(sol)
 ### [Interpolating the input into the DSL](@id functional_parameters_circ_rhythm_dsl)
 It is possible to use time-dependent inputs when creating models [through the DSL](@ref dsl_description) as well. However, it can still be convenient to declare the input parameter programmatically as above. Next, we form an expression of it as a function of time, and then [interpolate](@ref dsl_advanced_options_symbolics_and_DSL_interpolation) it into our DSL-declaration:
 ```@example functional_parameters_circ_rhythm
-input = pIn(t)
+input = light_in(t)
 rs_dsl = @reaction_network rs begin
-    (kA*$input, kI), Pᵢ <--> Pₐ
+    (kA*$input, kD), Pᵢ <--> Pₐ
 end
 ```
 We can confirm that this model is identical to our programmatic one (and should we wish to, we can simulate it using identical syntax syntax).
@@ -87,15 +87,15 @@ rs == rs_dsl
 
 ## [Non-time functional parameters](@id functional_parameters_sir)
 Previously we have demonstrated functional parameters that are a function of time. However, functional parameters can be functions of any variable (however, currently, more than one argument is not supported). Here we will demonstrate this using a [SIR model](@ref basic_CRN_library_sir), but instead of having the infection rate scale linearly with the number of infected individuals, we instead assume we have measured data of the infection rate (as dependent on the number of infected individuals) and wish to use this instead. Normally we use the following infection reaction in the SIR model:
-```@example julia
+```julia
 @reaction k1, S + I --> 2I
 ```
 In practise, this is identical to
-```@example julia
+```julia
 @reaction k1*I, S --> I
 ```
 Due to performance reasons (especially for jump simulations) the former approach is *strongly* encouraged. Here, however, we will assume that we have measured real data of how the number of infected individuals affects the infection rate, and wish to use this in our model, i.e. something like this:
-```@example julia
+```julia
 @reaction k1*i_rate(I), S --> I
 ```
 This is a case where we can use a functional parameter, whose value depends on the value of $I$.

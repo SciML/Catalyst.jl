@@ -1,6 +1,6 @@
 
 # Fetch packages.
-using Catalyst, DataInterpolations, JumpProcesses, OrdinaryDiffEqDefault, StochasticDiffEq, Test
+using Catalyst, DataInterpolations, DynamicQuantities, JumpProcesses, OrdinaryDiffEqDefault, StochasticDiffEq, Test
 
 # Sets the default `t` to use.
 t = default_t()
