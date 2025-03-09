@@ -56,7 +56,7 @@ in_type = typeof(interpolated_light)
 @parameters kA kD (light_in::in_type)(..)
 @species Pₐ(t) Pᵢ(t)
 rxs = [
-    Reaction(kA*light_in(t), [Pᵢ], [Pₐ]),
+    Reaction(light_in(t)*kA, [Pᵢ], [Pₐ]),
     Reaction(kD, [Pₐ], [Pᵢ])
 ]
 @named rs = ReactionSystem(rxs, t)
@@ -77,7 +77,7 @@ It is possible to use time-dependent inputs when creating models [through the DS
 ```@example functional_parameters_circ_rhythm
 input = light_in(t)
 rs_dsl = @reaction_network rs begin
-    (kA*$input, kD), Pᵢ <--> Pₐ
+    ($input*kA, kD), Pᵢ <--> Pₐ
 end
 ```
 We can confirm that this model is identical to our programmatic one (and should we wish to, we can simulate it using identical syntax syntax).
@@ -115,9 +115,10 @@ using Catalyst
 @species I(default_t())
 inf_rate = I_rate(I)
 sir = @reaction_network rs begin
-    k1*$(inf_rate), S --> I
+    k1*$inf_rate, S --> I
     k2, I --> R
 end
+nothing # hide
 ```
 Finally, we can simualte our model.
 ```@example functional_parameters_sir

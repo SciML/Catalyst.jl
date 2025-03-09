@@ -354,11 +354,11 @@ struct ReactionSystem{V <: NetworkProperties} <:
         end
 
         if isempty(sivs) && (checks == true || (checks & MT.CheckUnits) > 0)
-            #if !all(u == 1.0 for u in ModelingToolkit.get_unit([unknowns; ps; iv]))
-            #    for eq in eqs
-            #        (eq isa Equation) && check_units(eq)
-            #    end
-            #end
+            if !all(unitless_symvar(sym) for sym in [unknowns; ps; iv])
+                for eq in eqs
+                    (eq isa Equation) && check_units(eq)
+                end
+            end
         end
 
         rs = new{typeof(nps)}(
@@ -1549,6 +1549,6 @@ unitless_exp(u) = iscall(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
 
 # Checks if a symbolic variable is unitless. Also accounts for callable parameters (which
 # should not have units but for which `get_unit` is undefined: https://github.com/SciML/ModelingToolkit.jl/issues/3420).
-function unitless_symvar(sym) 
+function unitless_symvar(sym)
     return (sym isa Symbolics.CallWithMetadata) || (ModelingToolkit.get_unit(sym) == 1)
 end
