@@ -57,9 +57,10 @@ function make_transport_reaction(rateex, species)
     # Checks for input errors.
     forbidden_symbol_check(union([species], parameters))
 
+
     # Creates expressions corresponding to actual code from the internal DSL representation.
-    sexprs = get_sexpr([species], Dict{Symbol, Expr}())
-    pexprs = get_pexpr(parameters, Dict{Symbol, Expr}())
+    sexprs = get_usexpr([species], Dict{Symbol, Expr}())
+    pexprs = get_psexpr(parameters, Dict{Symbol, Expr}())
     iv = :($(DEFAULT_IV_SYM) = default_t())
     trxexpr = :(TransportReaction($rateex, $species))
 
@@ -154,7 +155,7 @@ end
 # Loops through a rate and extracts all parameters.
 function find_parameters_in_rate!(parameters, rateex::ExprValues)
     if rateex isa Symbol
-        if rateex in [:t, :∅, :im, :nothing, CONSERVED_CONSTANT_SYMBOL]
+        if rateex in [:t, :∅, :Ø, :im, :nothing, CONSERVED_CONSTANT_SYMBOL]
             error("Forbidden term $(rateex) used in transport reaction rate.")
         elseif !(rateex in [:ℯ, :pi, :π])
             push!(parameters, rateex)
