@@ -1547,8 +1547,8 @@ end
 # Checks if a unit consist of exponents with base 1 (and is this unitless).
 unitless_exp(u) = iscall(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
 
-# Checks if a symbolic variable is unitless. Also accounts for callable parameters (which
-# should not have units but for which `get_unit` is undefined: https://github.com/SciML/ModelingToolkit.jl/issues/3420).
+# Checks if a symbolic variable is unitless. Also accounts for callable parameters (for
+# which `get_unit`'s` intended behaviour (or whether it should generate an error) is undefined: https://github.com/SciML/ModelingToolkit.jl/issues/3420).
 function unitless_symvar(sym)
     return (sym isa Symbolics.CallWithMetadata) || (ModelingToolkit.get_unit(sym) == 1)
 end
