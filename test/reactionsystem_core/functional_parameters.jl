@@ -8,7 +8,7 @@ t = default_t()
 ### Basic Checks ###
 
 # Checks with oscillating time function.
-# Checks that interpolating into DSL yields identical result (both simulation and model).
+# Checks that interpolating into DSL yields identical results (both simulation and model).
 # Checks that ODE simulations are correct.
 let
     # Defines an input process (modified sinus wave).
@@ -115,7 +115,7 @@ let
 end
 
 # Checks correctness for non-time functions.
-# Uses an SIR model where we have modified the infection step to not scale linary with I.
+# Uses an SIR model where we have modified the infection step to not scale linearly with I.
 # Intended to add cases with 2d functions here as well, but this is currently not supported.
 let
     # Declares the functional parameter.
@@ -134,7 +134,7 @@ let
         k2, I --> R
     end
 
-    # Simulates the models for the same conditions. Checks that simulations are identical.
+    # Simulates the models for the same conditions. Check that simulations are identical.
     u0 = [:S => 99.0, :I => 10.0, :R => 0.0]
     ps = [:k1 => 0.01, :k2 => 0.01]
     oprob = ODEProblem(sir, u0, 200.0, ps)
@@ -144,9 +144,28 @@ let
     @test sol.u ≈ sol_funcp.u atol = 1e-6 rtol = 1e-6
 end
 
-### Error Checks ###
+### Other tests ###
 
-# Checks that combining functional parameters with units errors.
+# Checks the combination of functional parameters and units.
+# Unclear what the final expected behaviour should be here (read https://github.com/SciML/ModelingToolkit.jl/issues/3420).
+# `get_unit` works when called on the functional parameters as a call (`get_unit(pIn(t))`),
+# but not just on itself (`get_unit(pIn)`). This is currently how things work, and if MTK
+# changes how things work we will at least detect it in this test.
 let
-    # TBC
+    # Defines an input process (just some decaying function of t).
+    ts = collect(0.0:0.01:1.0)
+    spline = LinearInterpolation(1 ./ (1 .+ ts), ts)
+    @parameters (pIn::typeof(spline))(..) [unit=u"1/(s*m^3)"]
+
+    # Defines a `ReactionSystem` using the input parameter (birth/death process, birth split in two parameters).
+    # Checks that the units of the reaction rates are correct.
+    @parameters t [unit=u"s"]
+    @species X(t) [unit=u"mol/m^3"]
+    @parameters p_base [unit=u"mol"] d [unit=u"1/s"]
+    rxs = [
+        Reaction(p_base*pIn(t), [], [X])
+        Reaction(d, [X], [])
+    ]
+    @named rs = ReactionSystem(rxs, t)
+    @test issetequal([Catalyst.get_unit(rx.rate) for rx in reactions(rs)], [u"mol/(s*m^3)", u"1/s"])
 end
