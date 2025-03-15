@@ -111,8 +111,8 @@ parameters(rn)
 reactions(rn)   # or equations(rn)
 ```
 !!! note
-  Previously, `ModelingToolkit.get_ps(rn)` was used by instead of `Catalyst.parameters_toplevel(rn)`.
-  While this can still be used, due to an update in ModelingToolkit, `get_ps` now also returns potential
+  Previously, `ModelingToolkit.get_ps(rn)` was recommended (rather than `Catalyst.parameters_toplevel(rn)`).
+  While it can still be used, due to an update in ModelingToolkit, `get_ps` now also returns potential
   initialisation parameters (which are added to the model by ModelingToolkit, not the user).
 
 If we want to collapse `rn` down to a single system with no subsystems we can use

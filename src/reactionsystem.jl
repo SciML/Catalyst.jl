@@ -802,6 +802,9 @@ end
 Returns the parameters of the top-level system only. Equivalent to `parameters`, but ignores
 parameters of sub-systems.
 
+WARNING:
+- This function may be removed in non-breaking changes.
+
 Arguments
 - `initial_parameters = false`: Whether initialisation parameters should be included or not.
 
@@ -809,7 +812,8 @@ Notes:
 - Implemented as a replacement of `get_ps` after this functions behaviour was (in practse)
 changed in ModelingToolkit.
 - Code mostly compied from ModelingToolkit's `parameters` function.
-- Long-term, we hope that `parameters` will get an option to only return top-level parameters.
+- Long-term, we hope that `parameters` will get an option to only return top-level parameters,
+ at which point this function will be depricated.
 """
 function parameters_toplevel(network; initial_parameters = false)
     ps = get_ps(network)

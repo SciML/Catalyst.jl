@@ -495,12 +495,14 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, ODESystem)
     check_cons_warning(remove_conserved, remove_conserved_warn)
+
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
         include_zero_odes)
     eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
+
     ODESystem(eqs, get_iv(fullrs), us, ps;
         observed = obs,
         name,

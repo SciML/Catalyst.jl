@@ -250,6 +250,6 @@ Other examples of similar pairs of functions are `get_unknowns` and `unknowns`, 
     Due to the large number of available accessor functions, most `get_` functions are not directly exported by Catalyst. Hence, these must be used as `Catalyst.get_rxs`, rather than `get_rxs` directly. Again, a full list of accessor functions and instructions on how to use them can be found in [Catalyst's API](@ref api).
 
 !!! note
-  Previously, `ModelingToolkit.get_ps(rn)` was used by instead of `Catalyst.parameters_toplevel(rn)`.
-  While this can still be used, due to an update in ModelingToolkit, `get_ps` now also returns potential
+  Previously, `ModelingToolkit.get_ps(rn)` was recommended (rather than `Catalyst.parameters_toplevel(rn)`).
+  While it can still be used, due to an update in ModelingToolkit, `get_ps` now also returns potential
   initialisation parameters (which are added to the model by ModelingToolkit, not the user).
