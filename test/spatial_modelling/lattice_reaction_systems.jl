@@ -154,7 +154,7 @@ let
     @test isequal(ModelingToolkit.get_metadata(lrs), "Metadata string")
     @test isequal(ModelingToolkit.get_eqs(lrs), rxs)
     @test isequal(ModelingToolkit.get_unknowns(lrs), [X, X2])
-    @test isequal(ModelingToolkit.get_ps(lrs), [p, d, kB, kD])
+    @test isequal(ModelingToolkit.get_ps(lrs), [p, d, kB, kD, Initial(X), Initial(X2)])
     @test isequal(ModelingToolkit.get_systems(lrs), [])
     @test isequal(independent_variables(lrs), [t])
 end
@@ -216,7 +216,7 @@ let
 end
 
 # The second argument must be a vector of AbstractSpatialReaction subtypes.
-let 
+let
     # Define an invalid spatial reaction type (not a subtype of AbstractSpatialReaction)
     struct InvalidSpatialReactionType end
 

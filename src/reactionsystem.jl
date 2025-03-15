@@ -599,7 +599,7 @@ function debug_comparer(fun, prop1, prop2, propname; debug = false)
 end
 
 """
-    isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true, 
+    isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true,
         debug = false)
 
 Tests whether the underlying species, parameters and reactions are the same in the two
@@ -614,13 +614,13 @@ Notes:
     different.
 """
 function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true,
-        debug = false)    
+        debug = false)
 
     # metadata type fields
     if !ignorenames
         debug_comparer(==, nameof(rn1), nameof(rn2), "name"; debug) || return false
     end
-    debug_comparer(==, get_combinatoric_ratelaws(rn1), get_combinatoric_ratelaws(rn2), 
+    debug_comparer(==, get_combinatoric_ratelaws(rn1), get_combinatoric_ratelaws(rn2),
         "combinatoric_ratelaws"; debug) || return false
     debug_comparer(==, MT.iscomplete(rn1), MT.iscomplete(rn2), "complete"; debug) || return false
 
@@ -638,8 +638,8 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
     debug_comparer(issetequal, MT.get_continuous_events(rn1), MT.get_continuous_events(rn2), "cevents"; debug) || return false
     debug_comparer(issetequal, MT.get_discrete_events(rn1), MT.get_discrete_events(rn2), "devents"; debug) || return false
 
-    # coupled systems    
-    if (length(get_systems(rn1)) != length(get_systems(rn2))) 
+    # coupled systems
+    if (length(get_systems(rn1)) != length(get_systems(rn2)))
         println("Systems have different numbers of subsystems.")
         return false
     end
@@ -797,12 +797,54 @@ function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
 end
 
 """
+    parameters_toplevel(network; initial_parameters = false)
+
+Returns the parameters of the top-level system only. Equivalent to `parameters`, but ignores
+parameters of sub-systems.
+
+Arguments
+- `initial_parameters = false`: Whether initialisation parameters should be included or not.
+
+Notes:
+- Implemented as a replacement of `get_ps` after this functions behaviour was (in practse)
+changed in ModelingToolkit.
+- Code mostly compied from ModelingToolkit's `parameters` function.
+- Long-term, we hope that `parameters` will get an option to only return top-level parameters.
+"""
+function parameters_toplevel(network; initial_parameters = false)
+    ps = get_ps(network)
+    if ps == SciMLBase.NullParameters()
+        return []
+    end
+    if eltype(ps) <: Pair
+        ps = first.(ps)
+    end
+    ps = unique(ps)
+    if !initial_parameters
+        if MT.is_time_dependent(network)
+            # time-dependent systems have `Initial` parameters for all their
+            # unknowns/pdeps, all of which should be hidden.
+            filter!(x -> !iscall(x) || !isa(operation(x), Initial), ps)
+        else
+            # time-independent systems only have `Initial` parameters for
+            # pdeps. Any other `Initial` parameters should be kept (e.g. initialization
+            # systems)
+            filter!(
+                x -> !iscall(x) || !isa(operation(x), Initial) ||
+                         !has_parameter_dependency_with_lhs(network, only(arguments(x))),
+                         ps)
+        end
+    end
+    return ps
+end
+
+"""
     numparams(network)
 
 Return the total number of parameters within the given system and all subsystems.
 """
 function numparams(network)
-    nps = length(get_ps(network))
+    nps = length(parameters_toplevel(network))
     for sys in get_systems(network)
         nps += numparams(sys)
     end
@@ -1548,7 +1590,7 @@ function validate(rs::ReactionSystem, info::String = "")
 
     # no units for species, time or parameters then assume validated
     if (specunits in (MT.unitless, nothing)) && (timeunits in (MT.unitless, nothing))
-        all(u == 1.0 for u in ModelingToolkit.get_unit(get_ps(rs))) && return true
+        all(u == 1.0 for u in ModelingToolkit.get_unit(parameters_toplevel(rs))) && return true
     end
 
     rateunits = specunits / timeunits

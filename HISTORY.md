@@ -1,6 +1,7 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+- An internal function, `Catalyst.parameters_toplevel` is introduced, replicating the behaviour of `parameters, but only for bottom-level systems.
 - `ModelingToolkit.complete` now adds initial parameters corresponding to
   initial conditions into the internal `sys.ps` field (accessed via
   `get_ps(sys)`). For this reason `parameters(sys)` and `get_ps(sys)` are no

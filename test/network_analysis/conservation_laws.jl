@@ -84,14 +84,14 @@ let
 end
 
 # Tests that `conservationlaws`'s caches something.
-let 
+let
     # Creates network with/without cached conservation laws.
     rn = @reaction_network rn begin
         (k1,k2), X1 <--> X2
     end
     rn_cached = deepcopy(rn)
     conservationlaws(rn_cached)
-    
+
     # Checks that equality is correct (currently equality does not consider network property caching).
     @test rn_cached == rn
     @test Catalyst.get_networkproperties(rn_cached) != Catalyst.get_networkproperties(rn)
@@ -127,20 +127,22 @@ let
     @test osol1[sps] ≈ osol2[sps] ≈ osol3[sps]
 
     # Checks that steady states found using nonlinear solving and steady state simulations are identical.
-    nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true, remove_conserved_warn))
-    nprob1 = NonlinearProblem{true}(nsys, u0, p; guesses = [nsys.Γ => [0.0]])
-    nprob2 = NonlinearProblem(rn, u0, p)
-    nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true, remove_conserved_warn)
-    ssprob1 = SteadyStateProblem{true}(osys, u0, p)
-    ssprob2 = SteadyStateProblem(rn, u0, p)
-    ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true, remove_conserved_warn)
-    nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
-    # Nonlinear problems cannot find steady states properly without removing conserved species.
-    nsol3 = solve(nprob3, NewtonRaphson(); abstol = 1e-8)
-    sssol1 = solve(ssprob1, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-    sssol2 = solve(ssprob2, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-    sssol3 = solve(ssprob3, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-    @test nsol1[sps] ≈ nsol3[sps] ≈ sssol1[sps] ≈ sssol2[sps] ≈ sssol3[sps]
+    @test_broken begin # Conservation law removal currently not working for NonlinearSystems due to MTK depricating something. https://github.com/SciML/ModelingToolkit.jl/issues/3458, https://github.com/SciML/ModelingToolkit.jl/issues/3411
+        nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true, remove_conserved_warn))
+        nprob1 = NonlinearProblem{true}(nsys, u0, p; guesses = [nsys.Γ => [0.0]])
+        nprob2 = NonlinearProblem(rn, u0, p)
+        nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true, remove_conserved_warn)
+        ssprob1 = SteadyStateProblem{true}(osys, u0, p)
+        ssprob2 = SteadyStateProblem(rn, u0, p)
+        ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true, remove_conserved_warn)
+        nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
+        # Nonlinear problems cannot find steady states properly without removing conserved species.
+        nsol3 = solve(nprob3, NewtonRaphson(); abstol = 1e-8)
+        sssol1 = solve(ssprob1, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
+        sssol2 = solve(ssprob2, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
+        sssol3 = solve(ssprob3, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
+        @test nsol1[sps] ≈ nsol3[sps] ≈ sssol1[sps] ≈ sssol2[sps] ≈ sssol3[sps]
+    end
 
     # Creates SDEProblems using various approaches.
     u0_sde = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
@@ -175,10 +177,10 @@ end
 
 # Tests simulations for various input types (using X, rn.X, and :X forms).
 # Tests that conservation laws can be generated for system with non-default parameter types.
-let 
+let
     # Prepares the model.
     rn = @reaction_network rn begin
-        @parameters kB::Int64 
+        @parameters kB::Int64
         (kB,kD), X + Y <--> XY
     end
     sps = species(rn)
@@ -211,7 +213,7 @@ let
 end
 
 # Checks that the conservation law parameter's value can be changed in simulations.
-let 
+let
     # Prepares `ODEProblem`s.
     rn = @reaction_network begin
         (k1,k2), X1 <--> X2
@@ -219,7 +221,7 @@ let
     osys = complete(convert(ODESystem, rn; remove_conserved = true, remove_conserved_warn))
     u0 = [osys.X1 => 1.0, osys.X2 => 1.0]
     ps_1 = [osys.k1 => 2.0, osys.k2 => 3.0]
-    ps_2 = [osys.k1 => 2.0, osys.k2 => 3.0, osys.Γ[1] => 4.0]
+    ps_2 = [osys.k1 => 2.0, osys.k2 => 3.0, osys.Γ => [4.0]]
     oprob1 = ODEProblem(osys, u0, 10.0, ps_1)
     oprob2 = ODEProblem(osys, u0, 10.0, ps_2)
 
@@ -309,7 +311,7 @@ end
 # Checks that conservation law elimination warnings are generated in the correct cases.
 let
     # Prepare model.
-    rn = @reaction_network begin 
+    rn = @reaction_network begin
         (k1,k2), X1 <--> X2
     end
     u0 = [:X1 => 1.0, :X2 => 2.0]
@@ -331,16 +333,19 @@ let
         @test_nowarn XProblem(rn, u0, tspan, ps; remove_conserved_warn = false)
         @test_nowarn XProblem(rn, u0, tspan, ps; remove_conserved = true, remove_conserved_warn = false)
     end
-    for XProblem in [NonlinearProblem, SteadyStateProblem]
-        @test_nowarn XProblem(rn, u0, ps)
-        @test_logs (:warn, r"You are creating a system or problem while eliminating conserved quantities. Please *") XProblem(rn, u0, ps; remove_conserved = true)
-        @test_nowarn XProblem(rn, u0, ps; remove_conserved_warn = false)
-        @test_nowarn XProblem(rn, u0, ps; remove_conserved = true, remove_conserved_warn = false)
+    # Conservation law removal currently not working for NonlinearSystems due to MTK depricating something. https://github.com/SciML/ModelingToolkit.jl/issues/3458, https://github.com/SciML/ModelingToolkit.jl/issues/3411
+    # Currently just checks whether a NonlinearProblem can be created.
+    @test_broken for XProblem in [NonlinearProblem, SteadyStateProblem]
+        XProblem(rn, u0, ps; remove_conserved = true)
+        # @test_nowarn XProblem(rn, u0, ps)
+        # @test_logs (:warn, r"You are creating a system or problem while eliminating conserved quantities. Please *") XProblem(rn, u0, ps; remove_conserved = true)
+        # @test_nowarn XProblem(rn, u0, ps; remove_conserved_warn = false)
+        # @test_nowarn XProblem(rn, u0, ps; remove_conserved = true, remove_conserved_warn = false)
     end
 end
 
 # Conservation law simulations for vectorised species.
-let 
+let
     # Prepares the model.
     t = default_t()
     @species (X(t))[1:2]

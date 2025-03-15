@@ -385,7 +385,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     # if there are BC species, put them after the independent species
     rssts = get_unknowns(rs)
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
-    ps = get_ps(rs)
+    ps = parameters_toplevel(rs)
 
     # make dependent species observables and add conservation constants as parameters
     if remove_conserved
@@ -495,7 +495,6 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, ODESystem)
     check_cons_warning(remove_conserved, remove_conserved_warn)
-
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
@@ -566,7 +565,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
 
     # remove Initial conditions from parameters
     remove_inits!(ps)
-    
+
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.
     all_differentials_permitted || nonlinear_convert_differentials_check(rs)
@@ -703,7 +702,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     # handle BC species
     sts, ispcs = get_indep_sts(flatrs)
     any(isbc, get_unknowns(flatrs)) && (sts = vcat(sts, filter(isbc, get_unknowns(flatrs))))
-    ps = get_ps(flatrs)
+    ps = parameters_toplevel(flatrs)
 
     JumpSystem(eqs, get_iv(flatrs), sts, ps;
         observed = MT.observed(flatrs),

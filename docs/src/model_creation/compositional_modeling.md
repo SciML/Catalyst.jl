@@ -95,7 +95,7 @@ reactions *only* within a given system (i.e. ignoring subsystems), we can use
 Catalyst.get_species(rn)
 ```
 ```@example ex1
-ModelingToolkit.get_ps(rn)
+Catalyst.parameters_toplevel(rn)
 ```
 ```@example ex1
 Catalyst.get_rxs(rn)
@@ -110,6 +110,10 @@ parameters(rn)
 ```@example ex1
 reactions(rn)   # or equations(rn)
 ```
+!!! note
+  Previously, `ModelingToolkit.get_ps(rn)` was used by instead of `Catalyst.parameters_toplevel(rn)`.
+  While this can still be used, due to an update in ModelingToolkit, `get_ps` now also returns potential
+  initialisation parameters (which are added to the model by ModelingToolkit, not the user).
 
 If we want to collapse `rn` down to a single system with no subsystems we can use
 ```@example ex1
