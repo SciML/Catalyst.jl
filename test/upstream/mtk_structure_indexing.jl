@@ -9,6 +9,8 @@ using StableRNGs
 rng = StableRNG(12345)
 seed = rand(rng, 1:100)
 
+# Sets the default `t` to use.
+t = default_t()
 
 ### Basic Tests ###
 
@@ -64,8 +66,7 @@ end
 
 # Tests problem indexing and updating.
 let
-    @test_broken false # A few cases fails for JumpProblem: https://github.com/SciML/ModelingToolkit.jl/issues/2838
-    for prob in deepcopy([oprob, sprob, dprob, nprob, ssprob, eoprob, esprob, edprob, enprob, essprob])
+    for prob in deepcopy([oprob, sprob, dprob, jprob, nprob, ssprob, eoprob, esprob, ejprob, edprob, enprob, essprob])
         # Get u values (including observables).
         @test prob[X] == prob[model.X] == prob[:X] == 4
         @test prob[XY] == prob[model.XY] == prob[:XY] == 9
@@ -116,8 +117,7 @@ end
 
 # Test remake function.
 let
-    @test_broken false # Cannot check result for JumpProblem: https://github.com/SciML/ModelingToolkit.jl/issues/2838
-    for prob in deepcopy([oprob, sprob, dprob, nprob, ssprob, eoprob, esprob, edprob, enprob, essprob])
+    for prob in deepcopy([oprob, sprob, dprob, jprob, nprob, ssprob, eoprob, esprob, ejprob, edprob, enprob, essprob])
         # Remake for all u0s.
         rp = remake(prob; u0 = [X => 1, Y => 2])
         @test rp[[X, Y]] == [1, 2]

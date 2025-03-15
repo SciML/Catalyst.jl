@@ -297,13 +297,12 @@ let
     base_esol = solve(base_eprob, Tsit5(); trajectories = 2, saveat = 1.0)
 
     # Simulates problems for all input types, checking that identical solutions are found.
-    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
-    # for u0 in u0_alts_vec, p in p_alts_vec
-    #     oprob = remake(base_oprob; u0, p)
-    #     @test base_sol == solve(oprob, Tsit5(); saveat = 1.0)
-    #     eprob = remake(base_eprob; u0, p)
-    #     @test base_esol == solve(eprob, Tsit5(); trajectories = 2, saveat = 1.0)
-    # end
+    for u0 in u0_alts_vec, p in p_alts_vec
+        oprob = remake(base_oprob; u0, p)
+        @test base_sol == solve(oprob, Tsit5(); saveat = 1.0)
+        eprob = remake(base_eprob; u0, p)
+        @test base_esol == solve(eprob, Tsit5(); trajectories = 2, saveat = 1.0)
+    end
 end
 
 # Perform SDE simulations (singular and ensemble).
@@ -315,13 +314,12 @@ let
     base_esol = solve(base_eprob, ImplicitEM(); seed, trajectories = 2, saveat = 1.0)
 
     # Simulates problems for all input types, checking that identical solutions are found.
-    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
-    # for u0 in u0_alts_vec, p in p_alts_vec
-    #     sprob = remake(base_sprob; u0, p)
-    #     @test base_sol == solve(sprob, ImplicitEM(); seed, saveat = 1.0)
-    #     eprob = remake(base_eprob; u0, p)
-    #     @test base_esol == solve(eprob, ImplicitEM(); seed, trajectories = 2, saveat = 1.0)
-    # end
+    for u0 in u0_alts_vec, p in p_alts_vec
+        sprob = remake(base_sprob; u0, p)
+        @test base_sol == solve(sprob, ImplicitEM(); seed, saveat = 1.0)
+        eprob = remake(base_eprob; u0, p)
+        @test base_esol == solve(eprob, ImplicitEM(); seed, trajectories = 2, saveat = 1.0)
+    end
 end
 
 # Perform jump simulations (singular and ensemble).
@@ -334,24 +332,22 @@ let
     base_esol = solve(base_eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
 
     # Simulates problems for all input types, checking that identical solutions are found.
-    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
-    # for u0 in u0_alts_vec, p in p_alts_vec
-    #     jprob = remake(base_jprob; u0, p)
-    #     @test base_sol == solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
-    #     eprob = remake(base_eprob; u0, p)
-    #     @test base_esol == solve(eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
-    # end
+    for u0 in u0_alts_vec, p in p_alts_vec
+        jprob = remake(base_jprob; u0, p)
+        @test base_sol == solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
+        eprob = remake(base_eprob; u0, p)
+        @test base_esol == solve(eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
+    end
 end
 
 # Solves a nonlinear problem (EnsembleProblems are not possible for these).
 let
     base_nlprob = NonlinearProblem(model_vec, u0_alts_vec[1], p_alts_vec[1])
     base_sol = solve(base_nlprob, NewtonRaphson())
-    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
-    # for u0 in u0_alts_vec, p in p_alts_vec
-    #     nlprob = remake(base_nlprob; u0, p)
-    #     @test base_sol == solve(nlprob, NewtonRaphson())
-    # end
+    for u0 in u0_alts_vec, p in p_alts_vec
+        nlprob = remake(base_nlprob; u0, p)
+        @test base_sol == solve(nlprob, NewtonRaphson())
+    end
 end
 
 # Perform steady state simulations (singular and ensemble).
@@ -363,13 +359,12 @@ let
     base_esol = solve(base_eprob, DynamicSS(Tsit5()); trajectories = 2)
 
     # Simulates problems for all input types, checking that identical solutions are found.
-    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
-    # for u0 in u0_alts_vec, p in p_alts_vec
-    #     ssprob = remake(base_ssprob; u0, p)
-    #     @test base_sol == solve(ssprob, DynamicSS(Tsit5()))
-    #     eprob = remake(base_eprob; u0, p)
-    #     @test base_esol == solve(eprob, DynamicSS(Tsit5()); trajectories = 2)
-    # end
+    for u0 in u0_alts_vec, p in p_alts_vec
+        ssprob = remake(base_ssprob; u0, p)
+        @test base_sol == solve(ssprob, DynamicSS(Tsit5()))
+        eprob = remake(base_eprob; u0, p)
+        @test base_esol == solve(eprob, DynamicSS(Tsit5()); trajectories = 2)
+    end
 end
 
 ### Checks Errors On Faulty Inputs ###

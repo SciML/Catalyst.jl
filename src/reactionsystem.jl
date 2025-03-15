@@ -1467,7 +1467,8 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
         balanced_bc_check = false,
         spatial_ivs = get_sivs(rs),
         continuous_events = MT.continuous_events(rs),
-        discrete_events = MT.discrete_events(rs))
+        discrete_events = MT.discrete_events(rs),
+        metadata = MT.get_metadata(rs))
 end
 
 """
