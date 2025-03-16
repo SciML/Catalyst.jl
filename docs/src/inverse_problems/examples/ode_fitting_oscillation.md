@@ -1,5 +1,5 @@
 # [Fitting Parameters for an Oscillatory System](@id parameter_estimation)
-In this example we will use [Optimization.jl](https://github.com/SciML/Optimization.jl) to fit the parameters of an oscillatory system (the Brusselator) to data. Here, special consideration is taken to avoid reaching a local minimum. Instead of fitting the entire time series directly, we will start with fitting parameter values for the first period, and then use those as an initial guess for fitting the next (and then these to find the next one, and so on). Using this procedure is advantageous for oscillatory systems, and enables us to reach the global optimum.
+In this example we will use [Optimization.jl](https://github.com/SciML/Optimization.jl) to fit the parameters of an oscillatory system (the [Brusselator](@ref basic_CRN_library_brusselator)) to data. Here, special consideration is taken to avoid reaching a local minimum. Instead of fitting the entire time series directly, we will start with fitting parameter values for the first period, and then use those as an initial guess for fitting the next (and then these to find the next one, and so on). Using this procedure is advantageous for oscillatory systems, and enables us to reach the global optimum.
 
 First, we fetch the required packages.
 ```@example pe_osc_example
@@ -18,7 +18,7 @@ brusselator = @reaction_network begin
     B, X --> Y
     1, X --> ∅
 end
-p_real = [:A => 1., :B => 2.]
+p_real = [:A => 1.0, :B => 2.0]
 nothing # hide
 ```
 
@@ -26,10 +26,10 @@ We simulate our model, and from the simulation generate sampled data points
 (to which we add noise). We will use this data to fit the parameters of our model.
 ```@example pe_osc_example
 u0 = [:X => 1.0, :Y => 1.0]
-tspan = (0.0, 30.0)
+tend = 30.0
 
-sample_times = range(tspan[1]; stop = tspan[2], length = 100)
-prob = ODEProblem(brusselator, u0, tspan, p_real)
+sample_times = range(0.0; stop = tend, length = 100)
+prob = ODEProblem(brusselator, u0, tend, p_real)
 sol_real = solve(prob, Rosenbrock23(); tstops = sample_times)
 sample_vals = Array(sol_real(sample_times))
 sample_vals .*= (1 .+ .1 * rand(Float64, size(sample_vals)) .- .05)
@@ -77,40 +77,32 @@ p_estimate = optimise_p([5.0, 5.0], 10.0)
 
 We can compare this to the real solution, as well as the sample data
 ```@example pe_osc_example
-newprob = remake(prob; tspan = (0., 10.), p = p_estimate)
-sol_estimate = solve(newprob, Rosenbrock23())
-plot(sol_real; color = [:blue :red], label = ["X real" "Y real"], linealpha = 0.2)
-scatter!(sample_times, sample_vals'; color = [:blue :red],
-         label = ["Samples of X" "Samples of Y"], alpha = 0.4)
-plot!(sol_estimate; color = [:darkblue :darkred], linestyle = :dash,
-                    label = ["X estimated" "Y estimated"], xlimit = tspan)
+function plot_opt_fit(p, tend,
+        sol_real = sol_real, sample_times = sample_times, sample_vals = sample_vals)
+    p = p_setter(prob, p)
+    newprob = remake(prob; tspan = tend, p)
+    sol_estimate = solve(newprob, Rosenbrock23())
+    plot(sol_real; color = [:blue :red], label = ["X real" "Y real"], linealpha = 0.2)
+    scatter!(sample_times, sample_vals'; color = [:blue :red],
+        label = ["Samples of X" "Samples of Y"], alpha = 0.4)
+    plot!(sol_estimate; color = [:darkblue :darkred], linestyle = :dash,
+        label = ["X estimated" "Y estimated"], xlimit = (0.0, tend))
+end
+plot_opt_fit(p_estimate, 10.0)
 ```
 
 Next, we use this parameter estimate as the input to the next iteration of our
 fitting process, this time on the interval `(0, 20)`.
 ```@example pe_osc_example
-p_estimate = optimise_p(p_estimate, 20.)
-newprob = remake(prob; tspan = (0., 20.), p = p_estimate)
-sol_estimate = solve(newprob, Rosenbrock23())
-plot(sol_real; color = [:blue :red], label = ["X real" "Y real"], linealpha = 0.2)
-scatter!(sample_times, sample_vals'; color = [:blue :red],
-         label = ["Samples of X" "Samples of Y"], alpha = 0.4)
-plot!(sol_estimate; color = [:darkblue :darkred], linestyle = :dash,
-                    label = ["X estimated" "Y estimated"], xlimit = tspan)
+p_estimate = optimise_p(p_estimate, 20.0)
+plot_opt_fit(p_estimate, 20.0)
 ```
 
 Finally, we use this estimate as the input to fit a parameter set on the full
 time interval of the sampled data.
 ```@example pe_osc_example
 p_estimate = optimise_p(p_estimate, 30.0)
-
-newprob = remake(prob; tspan = (0., 30.0), p = p_estimate)
-sol_estimate = solve(newprob, Rosenbrock23())
-plot(sol_real; color = [:blue :red], label = ["X real" "Y real"], linealpha = 0.2)
-scatter!(sample_times, sample_vals'; color = [:blue :red],
-         label = ["Samples of X" "Samples of Y"], alpha = 0.4)
-plot!(sol_estimate; color = [:darkblue :darkred], linestyle = :dash,
-                    label = ["X estimated" "Y estimated"], xlimit = tspan)
+plot_opt_fit(p_estimate, 30.0)
 ```
 
 The final parameter estimate is then
@@ -127,12 +119,5 @@ the oscillation. If we had chosen to fit a parameter set on the full interval
 immediately we would have obtained poor fit and an inaccurate estimate for the parameters.
 ```@example pe_osc_example
 p_estimate = optimise_p([5.0,5.0], 30.0)
-
-newprob = remake(prob; tspan = (0.0,30.0), p = p_estimate)
-sol_estimate = solve(newprob, Rosenbrock23())
-plot(sol_real; color = [:blue :red], label = ["X real" "Y real"], linealpha = 0.2)
-scatter!(sample_times,sample_vals'; color = [:blue :red],
-         label = ["Samples of X" "Samples of Y"], alpha = 0.4)
-plot!(sol_estimate; color = [:darkblue :darkred], linestyle = :dash,
-                    label = ["X estimated" "Y estimated"], xlimit = tspan)
+plot_opt_fit(p_estimate, 30.0)
 ```

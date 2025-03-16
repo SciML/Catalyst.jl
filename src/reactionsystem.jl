@@ -1532,7 +1532,7 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
     # generic system properties
     eqs = union(get_eqs(rs), get_eqs(sys))
     sts = union(get_unknowns(rs), get_unknowns(sys))
-    ps = union(get_ps(rs), get_ps(sys))
+    ps = union(parameters_toplevel(rs), parameters_toplevel(sys))
     obs = union(get_observed(rs), get_observed(sys))
     syss = union(get_systems(rs), get_systems(sys))
     defs = merge(get_defaults(rs), get_defaults(sys)) # prefer `sys`
