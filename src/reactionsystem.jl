@@ -235,7 +235,7 @@ const reactionsystem_fields = (
     :eqs, :rxs, :iv, :sivs, :unknowns, :species, :ps, :var_to_name,
     :observed, :name, :systems, :defaults, :connection_type,
     :networkproperties, :combinatoric_ratelaws, :continuous_events,
-    :discrete_events, :metadata, :complete, :parent)
+    :discrete_events, :metadata, :complete, :index_cache, :parent)
 
 """
 $(TYPEDEF)
