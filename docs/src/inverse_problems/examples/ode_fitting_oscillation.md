@@ -55,7 +55,7 @@ to update the parameter set in each iteration. We also provide the `set_p`, `pro
 import ModelingToolkit: setp_oop
 cache_sys = convert(ODESystem, brusselator)
 set_p = setp_oop(cache_sys, [:A, :B])
-function optimise_p(pinit, tend,
+function optimize_p(pinit, tend,
         set_p = set_p, prob = prob, sample_times = sample_times, sample_vals = sample_vals)
     function loss(p, (set_p, prob, sample_times, sample_vals))
         p = set_p(prob, p)
