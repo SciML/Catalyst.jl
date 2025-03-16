@@ -235,7 +235,7 @@ const reactionsystem_fields = (
     :eqs, :rxs, :iv, :sivs, :unknowns, :species, :ps, :var_to_name,
     :observed, :name, :systems, :defaults, :connection_type,
     :networkproperties, :combinatoric_ratelaws, :continuous_events,
-    :discrete_events, :metadata, :complete, :index_cache, :parent)
+    :discrete_events, :metadata, :complete, :parent)
 
 """
 $(TYPEDEF)
@@ -332,10 +332,6 @@ struct ReactionSystem{V <: NetworkProperties} <:
     """
     complete::Bool
     """
-    Cached data for fast symbolic indexing.
-    """
-    index_cache::Union{Nothing, MT.IndexCache}
-    """
     The hierarchical parent system before simplification that MTK now seems to require for
     hierarchical namespacing to work in indexing.
     """
@@ -344,7 +340,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, connection_type, nps, cls, cevs, devs,
-            metadata = nothing, complete = false, index_cache = nothing, parent = nothing; checks::Bool = true)
+            metadata = nothing, complete = false, parent = nothing; checks::Bool = true)
 
         # Checks that all parameters have the appropriate Symbolics type.
         for p in ps
@@ -373,7 +369,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
         rs = new{typeof(nps)}(
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, connection_type, nps, cls, cevs,
-            devs, metadata, complete, index_cache, parent)
+            devs, metadata, complete, parent)
         checks && validate(rs)
         rs
     end
