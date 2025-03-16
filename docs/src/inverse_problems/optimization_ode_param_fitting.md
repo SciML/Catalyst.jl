@@ -148,10 +148,11 @@ We can now fit our model to data and plot the results:
 ```@example optimization_paramfit_1 
 optprob_S_P = OptimizationProblem(objective_function_S_P, p_guess)
 optsol_S_P = solve(optprob_S_P, NLopt.LN_NELDERMEAD())
-oprob_fitted_S_P = remake(oprob_base; p = optsol_S_P.u)
+p = Pair.([:kB, :kD, :kP], optsol_S_P.u)
+oprob_fitted_S_P = remake(oprob_base; p)
 fitted_sol_S_P = solve(oprob_fitted_S_P)
-plot!(fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle = :dash, lw = 6, color = [:lightblue :pink])
-plot!(plt2, fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle = :dash, lw = 6, color = [:lightblue :pink]) # hide
+plot!(fitted_sol_S_P; idxs = [:S, :P], label = "Fitted solution", linestyle = :dash, lw = 6, color = [:lightblue :pink])
+plot!(plt2, fitted_sol_S_P; idxs = [:S, :P], label = "Fitted solution", linestyle = :dash, lw = 6, color = [:lightblue :pink]) # hide
 Catalyst.PNG(plot(plt2; fmt = :png, dpi = 200)) # hide
 ```
 
