@@ -164,6 +164,34 @@ end
 
 ### Other Tests ###
 
+# Checks that simulations values consistently have Float64 type.
+let
+    # Create model and check simulation value type (FLoat64 values).
+    # Generally, the tend type should not matter.
+    rn = @reaction_network begin
+        (k1,k2), X1 <--> X2
+    end
+    u0 = [:X1 => 1.0, :X2 => 3.0]
+    ps = [:k1 => 2.0, :k2 => 3.0]
+    oprob = ODEProblem(rn, u0, 1.0, ps)
+    osol = solve(oprob)
+    @test eltype(osol[:X1]) == eltype(osol[:X2]) == typeof(oprob[:X1]) == typeof(oprob[:X2]) == Float64
+
+    # Check type when input values are Int64.
+    u0 = [:X1 => 1, :X2 => 3]
+    ps = [:k1 => 2, :k2 => 3]
+    oprob = ODEProblem(rn, u0, 1, ps)
+    osol = solve(oprob)
+    @test eltype(osol[:X1]) == eltype(osol[:X2]) == typeof(oprob[:X1]) == typeof(oprob[:X2]) == Float64
+
+    # Check type when input values are Float32.
+    u0 = [:X1 => 1.0f0, :X2 => 3.0f0]
+    ps = [:k1 => 2.0f0, :k2 => 3.0f0]
+    oprob = ODEProblem(rn, u0, 1.0f0, ps)
+    osol = solve(oprob)
+    @test eltype(osol[:X1]) == eltype(osol[:X2]) == typeof(oprob[:X1]) == typeof(oprob[:X2]) == Float32
+end
+
 # Tests simulating a network without parameters.
 let
     no_param_network = @reaction_network begin 
