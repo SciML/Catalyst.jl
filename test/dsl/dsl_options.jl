@@ -1052,7 +1052,7 @@ end
 # Tries with interpolating a value into an equation.
 # Tries using rn.X notation for designating variables.
 # Tries for empty parameter vector.
-let
+@test_broken let # Related MTK issue: https://github.com/SciML/ModelingToolkit.jl/issues/3467
     c = 6.0
     rn = complete(@reaction_network begin
         @variables X(t)
@@ -1362,7 +1362,7 @@ let
     @test isequal(equations(rn3)[2], Iapp ~ 2*A*t)
 
     # Test whether the DSL and symbolic ways of creating the network generate the same system
-    @species Iapp(t) 
+    @species Iapp(t)
     @variables A(t)
     eq = [D(A) ~ Iapp, Iapp ~ f(A, t)]
     @named rn3_sym = ReactionSystem(eq, t)
