@@ -1,7 +1,27 @@
 # [Plotting Nullclines and Steady States in Phase Space](@id nullcline_plotting)
+In this tutorial we will show how to extract a system's steady states and [nullclines](https://en.wikipedia.org/wiki/Nullcline), and how to plot these in [phase space](https://en.wikipedia.org/wiki/Phase_space). Generally, while nullclines are not directly needed for much analysis, plotting these can give some understanding of a systems steady state and stability properties. While nullclines can be "brute forced", we will here use [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl) to rack their path exactly.
 
-Introduction text.
+For a ordinary differential equation
+```math
+\begin{aligned}
+\frac{dx_1}{dt} &= f_1(x_1, x_2, ..., x_3) \\
+\frac{dx_2}{dt} &= f_2(x_1, x_2, ..., x_3) \\
+                &\vdots\\
+\frac{dx_n}{dt} &= f_3(x_1, x_2, ..., x_3) \\
+\end{aligned}
+```
+The nullclines are the curves
+```math
+\begin{aligned}
+0 &= f_1(x_1, x_2, ..., x_3) \\
+0 &= f_2(x_1, x_2, ..., x_3) \\
+                &\vdots\\
+0 &= f_3(x_1, x_2, ..., x_3) \\
+\end{aligned}
+```
+where the $i$'th nullclines is the curve along which $\frac{dx_i}{dt} = 0$. Generally, nullclines are primarily computed for models with 2 variable (as only here can they be easily plotted).
 
+## [Computing nucclines and steady states for a bistable switch](@id nullcline_plotting_computation)
 For our example we will use a simple bistable switch model, consisting of two species ($X$ and $Y$) which mutually inhibits each other through repressive hill functions. We will create our model [programmatically](@ref programmatic_CRN_construction).
 ```@example nullcline_plotting
 using Catalyst
@@ -17,13 +37,27 @@ rxs = [
 @named bs_switch = ReactionSystem(rxs, t)
 bs_switch = complete(bs_switch)
 ```
+
 Next, we compute the steady states [using homotopy continuation](@ref homotopy_continuation).
 ```@example nullcline_plotting
 import HomotopyContinuation
 ps = [v => 1.0, K => 0.6, n => 4.0]
 sss = hc_steady_states(bs_switch, ps; show_progress = false)
 ```
-Next we wish to compute the nullclines. We will first extract the equations corresponding to these from our model. Next, we will compute them using [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl). To generate our equations, we first convert our model to a `NonlinearSystem`. For each nullcline equation, we also have to replace the corresponding variable with a parameter (which can be varied to compute the full nullcline curve).
+
+Finally, we will compute the nullclines. We will first extract our models steady state equations (which we do by creating a `NonlinearSystem`).
+```@example nullcline_plotting
+nlsys = convert(NonlinearSystem, bs_switch)
+eqs = equations(nlsys)
+```
+Here, each equation is an expression of two variables. To plot the corr
+
+@parameters Xval Yval
+nc_eq_X = substitute(equations(nlsys)[1], Dict([X => Xval]))
+nc_eq_Y = substitute(equations(nlsys)[2], Dict([Y => Yval]))
+```
+
+We will first extract the equations corresponding to these from our model. Next, we will compute them using [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl). To generate our equations, we first convert our model to a `NonlinearSystem`. For each nullcline equation, we also have to replace the corresponding variable with a parameter (which can be varied to compute the full nullcline curve).
 ```@example nullcline_plotting
 @parameters Xval Yval
 nlsys = convert(NonlinearSystem, bs_switch)
