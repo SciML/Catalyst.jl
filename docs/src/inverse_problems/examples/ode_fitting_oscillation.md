@@ -53,7 +53,7 @@ to update the parameter set in each iteration. We also provide the `set_p`, `pro
 `sample_times`, and `sample_vals` variables as parameters to our optimization problem.
 ```@example pe_osc_example
 import ModelingToolkit: setp_oop
-cache_sys = convert(ODESystem, brusselator)
+cache_sys = complete(convert(ODESystem, brusselator))
 set_p = setp_oop(cache_sys, [:A, :B])
 function optimize_p(pinit, tend,
         set_p = set_p, prob = prob, sample_times = sample_times, sample_vals = sample_vals)
