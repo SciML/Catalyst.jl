@@ -1052,15 +1052,16 @@ end
 # Tries with interpolating a value into an equation.
 # Tries using rn.X notation for designating variables.
 # Tries for empty parameter vector.
-@test_broken let # Related MTK issue: https://github.com/SciML/ModelingToolkit.jl/issues/3467
+let
     c = 6.0
     rn = complete(@reaction_network begin
         @variables X(t)
         @equations 2X ~ $c - X
     end)
     oprob = ODEProblem(rn, [], (0.0, 100.0); structural_simplify=true)
-    sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
-    @test sol[rn.X][end] ≈ 2.0
+    @test_broken false # Related MTK issue: https://github.com/SciML/ModelingToolkit.jl/issues/3467 
+    # sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
+    # @test sol[rn.X][end] ≈ 2.0
 end
 
 # Checks hierarchical model.
