@@ -80,9 +80,7 @@ end
         @time @safetestset "Graph visualization" begin include("extensions/graphmakie.jl") end
         @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
         @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
-
-        # BROKEN
-        # @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
+        @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
 
         # Tests stability computation (but requires the HomotopyContinuation extension).
         #@time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end

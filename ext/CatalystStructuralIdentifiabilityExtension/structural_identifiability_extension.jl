@@ -113,7 +113,9 @@ function SI.assess_identifiability(rs::ReactionSystem, args...;
     funcs_to_check = make_ftc(funcs_to_check, conseqs, vars)
 
     # Computes identifiability and converts it to a easy to read form.
-    out = SI.assess_identifiability(osys, args...; measured_quantities,
+    # The `::ODESystem` designation fixes: https://github.com/SciML/StructuralIdentifiability.jl/issues/360,
+    # however, the exact mechanisms of this is still not fully clear.
+    out = SI.assess_identifiability(osys::ODESystem, args...; measured_quantities,
         funcs_to_check, kwargs...)
     return make_output(out, funcs_to_check, consconsts)
 end
