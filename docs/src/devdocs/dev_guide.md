@@ -37,7 +37,7 @@ Catalyst release branch*.
 ## Development advice
 
 ### Checking doc builds for errors
-When updating documentation, Catalyst will run any Julia code provided within it to dynamically create figures and outputs. In addition to automatically creating these for us, it also provides an automatic check that all code in documentation is correct. Here, if any of the documentation code throws an error, the build job will fail. The documentation build job can be found at the bottom of a PRs conversation, here is an example of a failed one:
+When updating documentation, Catalyst will run any Julia code provided within example blocks to dynamically create figures and outputs. In addition to automatically creating these for us, it also provides an automatic check that all code in documentation is correct. Here, if any of the documentation code throws an error, the build job will fail. The documentation build job can be found at the bottom of a PRs conversation, here is an example of a failed one:
 ![Failed builddocs link](../assets/devdocs/failed_builddocs_link.png)
 To check what errors were produced, clock on the "Details" link of the job. Next, any errors can be found at the bottom of the "Build and deploy" section (which should be opened automatically).
 
