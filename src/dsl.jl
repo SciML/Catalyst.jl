@@ -285,7 +285,7 @@ function make_reaction_system(ex::Expr, name)
     ps_declared = extract_syms(options, :parameters)
     vs_declared = extract_syms(options, :variables)
     tiv, sivs, ivs, ivsexpr = read_ivs_option(options)
-    cmpexpr_init, cmps_declared = read_compound_option(options)
+    cmpexpr_init, cmps_declared = read_compounds_option(options)
     diffsexpr, diffs_declared = read_differentials_option(options)
     syms_declared = collect(Iterators.flatten((cmps_declared, sps_declared, ps_declared,
         vs_declared, ivs, diffs_declared)))
@@ -303,7 +303,7 @@ function make_reaction_system(ex::Expr, name)
     ps_inferred = setdiff(ps_pre_inferred, vs_inferred, diffs_inferred)
     syms_inferred = union(sps_inferred, ps_inferred, vs_inferred, diffs_inferred)
     all_syms = union(syms_declared, syms_inferred)
-    obsexpr, obs_eqs, obs_syms = read_observed_option(options, ivs,
+    obsexpr, obs_eqs, obs_syms = read_observables_option(options, ivs,
         union(sps_declared, vs_declared), all_syms; requiredec)
 
     # Read options not related to the declaration or inference of symbols.
@@ -508,6 +508,20 @@ end
 
 ### DSL Output Expression Builders ###
 
+# Given the parameters that were extracted from the reactions, and the options dictionary,
+# creates the `@parameters ...` expression for the macro output.
+function get_psexpr(parameters_extracted, options)
+    pexprs = if haskey(options, :parameters)
+        options[:parameters]
+    elseif isempty(parameters_extracted)
+        :()
+    else
+        :(@parameters)
+    end
+    foreach(p -> push!(pexprs.args, p), parameters_extracted)
+    pexprs
+end
+
 # Given the extracted species (or variables) and the option dictionary, create the
 # `@species ...` (or `@variables ..`) expression which would declare these.
 # If `key = :variables`, does this for variables (and not species).
@@ -523,20 +537,6 @@ function get_usexpr(us_extracted, options, key = :species; ivs = (DEFAULT_IV_SYM
         u isa Symbol && push!(usexpr.args, Expr(:call, u, ivs...))
     end
     usexpr
-end
-
-# Given the parameters that were extracted from the reactions, and the options dictionary,
-# creates the `@parameters ...` expression for the macro output.
-function get_psexpr(parameters_extracted, options)
-    pexprs = if haskey(options, :parameters)
-        options[:parameters]
-    elseif isempty(parameters_extracted)
-        :()
-    else
-        :(@parameters)
-    end
-    foreach(p -> push!(pexprs.args, p), parameters_extracted)
-    pexprs
 end
 
 # From the system reactions (as `DSLReaction`s) and equations (as expressions),
@@ -614,24 +614,28 @@ end
 
 ### DSL Option Handling ###
 
-# Returns the `default_reaction_metadata` output. Technically Catalyst's code could have been made
-# more generic to account for other default reaction metadata. Practically, this will likely
-# be the only relevant reaction metadata to have a default value via the DSL. If another becomes
-# relevant, the code can be rewritten to take this into account.
-# Checks if the `@default_noise_scaling` option is used. If so, use it as the default value of
-# the `default_noise_scaling` reaction metadata, otherwise, returns an empty vector.
-function read_default_noise_scaling_option(options)
-    if haskey(options, :default_noise_scaling)
-        (length(options[:default_noise_scaling].args) != 3) &&
-            error("@default_noise_scaling should only have a single expression as its input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
-        return :([:noise_scaling => $(options[:default_noise_scaling].args[3])])
+# Finds the time independent variable, and any potential spatial independent variables.
+# Returns these (individually and combined), as well as an expression for declaring them.
+function read_ivs_option(options)
+    # Creates the independent variables expressions (depends on whether the `ivs` option was used).
+    if haskey(options, :ivs)
+        ivs = Tuple(extract_syms(options, :ivs))
+        ivsexpr = copy(options[:ivs])
+        ivsexpr.args[1] = Symbol("@", "independent_variables")
+    else
+        ivs = (DEFAULT_IV_SYM,)
+        ivsexpr = :($(DEFAULT_IV_SYM) = default_t())
     end
-    return :([])
+
+    # Extracts the independent variables symbols (time and spatial), and returns the output.
+    tiv = ivs[1]
+    sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
+    return tiv, sivs, ivs, ivsexpr
 end
 
 # When compound species are declared using the "@compound begin ... end" option, get a list
 # of the compound species, and also the expression that creates them.
-function read_compound_option(options)
+function read_compounds_option(options)
     # If the compound option is used, retrieve a list of compound species and  the option line
     # that creates them (used to declare them as compounds at the end). Due to some expression
     # handling, in the case of a single compound we must change to the `@compound` macro.
@@ -648,38 +652,30 @@ function read_compound_option(options)
     return cmpexpr_init, cmps_declared
 end
 
-# Read the events (continuous or discrete) provided as options to the DSL. Returns an expression which evaluates to these.
-function read_events_option(options, event_type::Symbol)
-    # Prepares the events, if required to, converts them to block form.
-    if event_type ∉ [:continuous_events, :discrete_events]
-        error("Trying to read an unsupported event type.")
-    end
-    events_input = haskey(options, event_type) ? get_block_option(options[event_type]) :
-                   striplines(:(begin end))
-    events_input = option_block_form(events_input)
+# Creates an expression declaring differentials. Here, `tiv` is the time independent variables,
+# which is used by the default differential (if it is used).
+function read_differentials_option(options)
+    # Creates the differential expression.
+    # If differentials were provided as options, this is used as the initial expression.
+    # If the default differential (D(...)) was used in equations, this is added to the expression.
+    diffsexpr = (haskey(options, :differentials) ?
+        get_block_option(options[:differentials]) : striplines(:(begin end)))
+    diffsexpr = option_block_form(diffsexpr)
 
-    # Goes through the events, checks for errors, and adds them to the output vector.
-    events_expr = :([])
-    for arg in events_input.args
-        # Formatting error checks.
-        # NOTE: Maybe we should move these deeper into the system (rather than the DSL), throwing errors more generally?
-        if (arg isa Expr) && (arg.head != :call) || (arg.args[1] != :(=>)) ||
-           (length(arg.args) != 3)
-            error("Events should be on form `condition => affect`, separated by a `=>`. This appears not to be the case for: $(arg).")
-        end
-        if (arg isa Expr) && (arg.args[2] isa Expr) && (arg.args[2].head != :vect) &&
-           (event_type == :continuous_events)
-            error("The condition part of continuous events (the left-hand side) must be a vector. This is not the case for: $(arg).")
-        end
-        if (arg isa Expr) && (arg.args[3] isa Expr) && (arg.args[3].head != :vect)
-            error("The affect part of all events (the right-hand side) must be a vector. This is not the case for: $(arg).")
-        end
-
-        # Adds the correctly formatted event to the event creation expression.
-        push!(events_expr.args, arg)
+    # Goes through all differentials, checking that they are correctly formatted. Adds their
+    # symbol to the list of declared differential symbols.
+    diffs_declared = Union{Symbol, Expr}[]
+    for dexpr in diffsexpr.args
+        (dexpr.head != :(=)) &&
+            error("Differential declaration must have form like D = Differential(t), instead \"$(dexpr)\" was given.")
+        (dexpr.args[1] isa Symbol) ||
+            error("Differential left-hand side must be a single symbol, instead \"$(dexpr.args[1])\" was given.")
+        in(dexpr.args[1], forbidden_symbols_error) &&
+            error("A forbidden symbol ($(dexpr.args[1])) was used as a differential name.")
+        push!(diffs_declared, dexpr.args[1])
     end
 
-    return events_expr
+    return diffsexpr, diffs_declared
 end
 
 # Reads the variables options. Outputs a list of the variables inferred from the equations,
@@ -740,36 +736,10 @@ function find_D_call(expr)
     end
 end
 
-# Creates an expression declaring differentials. Here, `tiv` is the time independent variables,
-# which is used by the default differential (if it is used).
-function read_differentials_option(options)
-    # Creates the differential expression.
-    # If differentials were provided as options, this is used as the initial expression.
-    # If the default differential (D(...)) was used in equations, this is added to the expression.
-    diffsexpr = (haskey(options, :differentials) ?
-        get_block_option(options[:differentials]) : striplines(:(begin end)))
-    diffsexpr = option_block_form(diffsexpr)
-
-    # Goes through all differentials, checking that they are correctly formatted. Adds their
-    # symbol to the list of declared differential symbols.
-    diffs_declared = Union{Symbol, Expr}[]
-    for dexpr in diffsexpr.args
-        (dexpr.head != :(=)) &&
-            error("Differential declaration must have form like D = Differential(t), instead \"$(dexpr)\" was given.")
-        (dexpr.args[1] isa Symbol) ||
-            error("Differential left-hand side must be a single symbol, instead \"$(dexpr.args[1])\" was given.")
-        in(dexpr.args[1], forbidden_symbols_error) &&
-            error("A forbidden symbol ($(dexpr.args[1])) was used as a differential name.")
-        push!(diffs_declared, dexpr.args[1])
-    end
-
-    return diffsexpr, diffs_declared
-end
-
 # Reads the observables options. Outputs an expression for creating the observable variables,
 # a vector containing the observable equations, and a list of all observable symbols (this
 # list contains both those declared separately or inferred from the `@observables` option` input`).
-function read_observed_option(options, all_ivs, us_declared, all_syms; requiredec = false)
+function read_observables_option(options, all_ivs, us_declared, all_syms; requiredec = false)
     syms_unavailable = setdiff(all_syms, us_declared)
     if haskey(options, :observables)
         # Gets list of observable equations and prepares variable declaration expression.
@@ -849,30 +819,60 @@ function make_obs_eqs(observables_expr)
     return obs_eqs
 end
 
+# Read the events (continuous or discrete) provided as options to the DSL. Returns an expression which evaluates to these.
+function read_events_option(options, event_type::Symbol)
+    # Prepares the events, if required to, converts them to block form.
+    if event_type ∉ [:continuous_events, :discrete_events]
+        error("Trying to read an unsupported event type.")
+    end
+    events_input = haskey(options, event_type) ? get_block_option(options[event_type]) :
+                   striplines(:(begin end))
+    events_input = option_block_form(events_input)
+
+    # Goes through the events, checks for errors, and adds them to the output vector.
+    events_expr = :([])
+    for arg in events_input.args
+        # Formatting error checks.
+        # NOTE: Maybe we should move these deeper into the system (rather than the DSL), throwing errors more generally?
+        if (arg isa Expr) && (arg.head != :call) || (arg.args[1] != :(=>)) ||
+           (length(arg.args) != 3)
+            error("Events should be on form `condition => affect`, separated by a `=>`. This appears not to be the case for: $(arg).")
+        end
+        if (arg isa Expr) && (arg.args[2] isa Expr) && (arg.args[2].head != :vect) &&
+           (event_type == :continuous_events)
+            error("The condition part of continuous events (the left-hand side) must be a vector. This is not the case for: $(arg).")
+        end
+        if (arg isa Expr) && (arg.args[3] isa Expr) && (arg.args[3].head != :vect)
+            error("The affect part of all events (the right-hand side) must be a vector. This is not the case for: $(arg).")
+        end
+
+        # Adds the correctly formatted event to the event creation expression.
+        push!(events_expr.args, arg)
+    end
+
+    return events_expr
+end
+
+# Returns the `default_reaction_metadata` output. Technically Catalyst's code could have been made
+# more generic to account for other default reaction metadata. Practically, this will likely
+# be the only relevant reaction metadata to have a default value via the DSL. If another becomes
+# relevant, the code can be rewritten to take this into account.
+# Checks if the `@default_noise_scaling` option is used. If so, use it as the default value of
+# the `default_noise_scaling` reaction metadata, otherwise, returns an empty vector.
+function read_default_noise_scaling_option(options)
+    if haskey(options, :default_noise_scaling)
+        (length(options[:default_noise_scaling].args) != 3) &&
+            error("@default_noise_scaling should only have a single expression as its input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
+        return :([:noise_scaling => $(options[:default_noise_scaling].args[3])])
+    end
+    return :([])
+end
+
 # Reads the combinatorial ratelaw options, which determines if a combinatorial rate law should
 # be used or not. If not provided, use the default (true).
 function read_combinatoric_ratelaws_option(options)
     return haskey(options, :combinatoric_ratelaws) ?
         get_block_option(options[:combinatoric_ratelaws]) : true
-end
-
-# Finds the time independent variable, and any potential spatial independent variables.
-# Returns these (individually and combined), as well as an expression for declaring them.
-function read_ivs_option(options)
-    # Creates the independent variables expressions (depends on whether the `ivs` option was used).
-    if haskey(options, :ivs)
-        ivs = Tuple(extract_syms(options, :ivs))
-        ivsexpr = copy(options[:ivs])
-        ivsexpr.args[1] = Symbol("@", "independent_variables")
-    else
-        ivs = (DEFAULT_IV_SYM,)
-        ivsexpr = :($(DEFAULT_IV_SYM) = default_t())
-    end
-
-    # Extracts the independent variables symbols (time and spatial), and returns the output.
-    tiv = ivs[1]
-    sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
-    return tiv, sivs, ivs, ivsexpr
 end
 
 ### `@reaction` Macro & its Internals ###
