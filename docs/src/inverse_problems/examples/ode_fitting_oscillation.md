@@ -59,7 +59,7 @@ function optimize_p(pinit, tend,
         p = set_p(prob, p)
         newtimes = filter(<=(tend), sample_times)
         newprob = remake(prob; p)
-        sol = Array(solve(newprob, Rosenbrock23(); saveat = newtimes))
+        sol = Array(solve(newprob, Rosenbrock23(); saveat = newtimes, verbose = false, maxiters = 10000))
         loss = sum(abs2, sol .- sample_vals[:, 1:size(sol,2)])
         return loss
     end
