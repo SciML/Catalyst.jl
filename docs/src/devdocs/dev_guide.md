@@ -4,7 +4,7 @@
 Beginning with v15, Catalyst is using a new release process to try to ensure
 continuing stability of releases. Before making a release one should
 
-1. Create a new release branch, i.e. "release-15.0.0"
+1. Create a new release branch, i.e. "release-15.0.0".
 2. On this branch, cap major dependencies to their latest version that works and
    for which tests pass.
    - Caps need to be included in both Project.toml and docs/Project.toml.
@@ -16,13 +16,13 @@ continuing stability of releases. Before making a release one should
    issues can arise that do not lead to actual errors in the doc CI).
 4. Release via the [registration
    issue](https://github.com/SciML/Catalyst.jl/issues/127) with the
-   command:
+   command:  
    
-    ```
-    @JuliaRegistrator register branch=release-15.0.0
-    ```
+   ```
+   @JuliaRegistrator register branch=release-15.0.0
+   ```
     
-    modifying as appropriate for the version you are releasing.
+   modifying as appropriate for the version you are releasing.
 
 If there is subsequently a need to increment the version of a dependency, this
 should be done via a new release that follows the above process, and modifies
@@ -38,7 +38,9 @@ Catalyst release branch*.
 
 ### Checking doc builds for errors
 When updating documentation, Catalyst will run any Julia code provided within example blocks to dynamically create figures and outputs. In addition to automatically creating these for us, it also provides an automatic check that all code in documentation is correct. Here, if any of the documentation code throws an error, the build job will fail. The documentation build job can be found at the bottom of a PRs conversation, here is an example of a failed one:
+
 ![Failed builddocs link](../assets/devdocs/failed_builddocs_link.png)
+
 To check what errors were produced, click on the "Details" link of the job. Next, any errors can be found at the bottom of the "Build and deploy" section (which should be opened automatically).
 
 ### Inspecting documentation of a PR or branch
