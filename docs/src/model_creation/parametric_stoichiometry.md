@@ -1,4 +1,4 @@
-# [Symbolic Stochiometries](@id parametric_stoichiometry)
+# [Symbolic Stoichiometries](@id parametric_stoichiometry)
 Catalyst supports stoichiometric coefficients that involve parameters, species,
 or even general expressions. In this tutorial we show several examples of how to
 use symbolic stoichiometries, and discuss several caveats to be aware of.

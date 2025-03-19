@@ -1,4 +1,4 @@
-# [Accessing model properties](@id model_accessing)
+# [Accessing Model Properties](@id model_accessing)
 Catalyst is based around the creation, analysis, and simulation of chemical reaction network models. Catalyst stores these models in [`ReactionSystem`](@ref) structures. This page describes some basic functions for accessing the content of these structures. This includes retrieving lists of species, parameters, or reactions that a model consists of. An extensive list of relevant functions for working with `ReactionSystem` models can be found in Catalyst's [API](@ref api).
 
 !!! warning

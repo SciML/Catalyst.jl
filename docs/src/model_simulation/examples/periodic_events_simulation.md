@@ -1,4 +1,4 @@
-# [Modelling a periodic event during ODE and jump simulations](@id periodic_event_simulation_example)
+# [Modelling a Periodic Event During ODE and Jump Simulations](@id periodic_event_simulation_example)
 This tutorial will describe how to simulate systems with periodic events in ODEs and jump simulations (SDEs use identical syntax). We will consider a model with a [circadian rhythm](https://en.wikipedia.org/wiki/Circadian_rhythm), where a parameter represents the level of light. While outdoor light varies smoothly, in experimental settings a lamp is often simply turned on/off every 12 hours. Here we will model this toggling of the light using a periodic event that is triggered every 12 hours.
 
 ## [Modelling a circadian periodic event in an ODE simulation](@id periodic_event_simulation_example_ode)
