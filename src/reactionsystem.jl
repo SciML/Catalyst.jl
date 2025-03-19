@@ -848,7 +848,7 @@ end
 Return the total number of parameters within the given system and all subsystems.
 """
 function numparams(network)
-    nps = length(parameters_toplevel(network))
+    nps = length(get_ps(network))
     for sys in get_systems(network)
         nps += numparams(sys)
     end
@@ -960,6 +960,24 @@ function MT.unknowns(sys::ReactionSystem)
         return sts
     end
     return sts
+end
+
+function MT.complete(sys::ReactionSystem; flatten = true, kwargs...)
+    newunknowns = OrderedSet()
+    newparams = OrderedSet()
+    iv = get_iv(sys)
+    collect_scoped_vars!(newunknowns, newparams, sys, iv; depth = -1)
+    # don't update unknowns to not disturb `structural_simplify` order
+    # `GlobalScope`d unknowns will be picked up and added there
+    @set! sys.ps = unique!(vcat(get_ps(sys), collect(newparams)))
+    if flatten
+        newsys = flatten(sys)
+        if has_parent(newsys) && get_parent(sys) === nothing
+            @set! newsys.parent = complete(sys; split = false, flatten = false)
+        end
+        sys = newsys
+    end
+    isdefined(sys, :complete) ? (@set! sys.complete = true) : sys
 end
 
 ### Network Matrix Representations ###
@@ -1434,7 +1452,7 @@ function getsubsystypes(sys)
 end
 
 """
-    Catalyst.flatten(rs::ReactionSystem)
+    ModelingToolkit.flatten(rs::ReactionSystem)
 
 Merges all subsystems of the given [`ReactionSystem`](@ref) up into `rs`.
 
@@ -1532,7 +1550,7 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
     # generic system properties
     eqs = union(get_eqs(rs), get_eqs(sys))
     sts = union(get_unknowns(rs), get_unknowns(sys))
-    ps = union(parameters_toplevel(rs), parameters_toplevel(sys))
+    ps = union(get_ps(rs), get_ps(sys))
     obs = union(get_observed(rs), get_observed(sys))
     syss = union(get_systems(rs), get_systems(sys))
     defs = merge(get_defaults(rs), get_defaults(sys)) # prefer `sys`
@@ -1595,7 +1613,7 @@ function validate(rs::ReactionSystem, info::String = "")
 
     # no units for species, time or parameters then assume validated
     if (specunits in (MT.unitless, nothing)) && (timeunits in (MT.unitless, nothing))
-        all(u == 1.0 for u in ModelingToolkit.get_unit(parameters_toplevel(rs))) && return true
+        all(u == 1.0 for u in ModelingToolkit.get_unit(get_ps(rs))) && return true
     end
 
     rateunits = specunits / timeunits

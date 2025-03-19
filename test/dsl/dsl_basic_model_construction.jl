@@ -49,8 +49,8 @@ function basic_test(rn, N, unknowns_syms, p_syms)
     @test length(unknowns) == length(unknowns_syms)
     @test issetequal(map(opname, unknowns), unknowns_syms)
     @test all_reactants(eqs) == Set(unknowns_syms)
-    @test length(Catalyst.remove_inits(ps)) == length(p_syms)
-    @test issetequal(map(opname, Catalyst.remove_inits(ps)), p_syms)
+    @test length(ps) == length(p_syms)
+    @test issetequal(map(opname, ps), p_syms)
 end
 
 ## Run Tests ###

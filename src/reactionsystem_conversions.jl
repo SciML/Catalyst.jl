@@ -385,7 +385,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     # if there are BC species, put them after the independent species
     rssts = get_unknowns(rs)
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
-    ps = parameters_toplevel(rs)
+    ps = get_ps(rs)
 
     # make dependent species observables and add conservation constants as parameters
     if remove_conserved
@@ -513,17 +513,6 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
         kwargs...)
 end
 
-# the following remove Initial wrapped parameters (i.e. initial conditions) from ps
-function remove_inits!(ps)
-    filter!(x -> !iscall(x) || !isa(operation(x), Initial), ps)
-    ps
-end
-
-function remove_inits(ps)
-    filter(x -> !iscall(x) || !isa(operation(x), Initial), ps)
-end
-
-
 """
 ```julia
 Base.convert(::Type{<:NonlinearSystem},rs::ReactionSystem)
@@ -564,9 +553,6 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
         as_odes = false, include_zero_odes)
     eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
-
-    # remove Initial conditions from parameters
-    remove_inits!(ps)
 
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.
@@ -704,7 +690,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     # handle BC species
     sts, ispcs = get_indep_sts(flatrs)
     any(isbc, get_unknowns(flatrs)) && (sts = vcat(sts, filter(isbc, get_unknowns(flatrs))))
-    ps = parameters_toplevel(flatrs)
+    ps = get_ps(flatrs)
 
     JumpSystem(eqs, get_iv(flatrs), sts, ps;
         observed = MT.observed(flatrs),
