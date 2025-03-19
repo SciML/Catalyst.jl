@@ -49,7 +49,7 @@ let
         ps = rnd_ps(custom_function_network_1, rng; factor)
         t = rand(rng)
         @test f_eval(custom_function_network_1, u0, ps, t) ≈ f_eval(custom_function_network_2, u0, ps, t)
-        @test_broken jac_eval(custom_function_network_1, u0, ps, t) ≈ jac_eval(custom_function_network_2, u0, ps, t) # Weird error dur to some SciML update. Reported in https://github.com/SciML/ModelingToolkit.jl/issues/3447.
+        @test jac_eval(custom_function_network_1, u0, ps, t) ≈ jac_eval(custom_function_network_2, u0, ps, t)
         @test g_eval(custom_function_network_1, u0, ps, t) ≈ g_eval(custom_function_network_2, u0, ps, t)
     end
 end

@@ -264,6 +264,17 @@ Catalyst comes with the following predefined functions:
 - The repressive Hill function: $hillr(X,v,K,n) = v * (K^n)/(X^n + K^n)$.
 - The activating/repressive Hill function: $hillar(X,Y,v,K,n) = v * (X^n)/(X^n + Y^n + K^n)$.
 
+### [Registration of non-algebraic functions](@id dsl_description_nonconstant_rates_function_registration)
+Previously we showed how user-defined functions [can be used in rates directly](@ref dsl_description_nonconstant_rates_available_functions). For functions containing more complicated syntax (e.g. `for` loops or `if` statements), we must add an additional step: registering it using the `@register_symbolic` macro. Below we define a function which output depends on whether `X` is smaller or larger than a threshold value. Next, we register it using `@register_symbolic`, after which we can use it within the DSL.
+```@example dsl_basics
+threshold_func(X) = (X < 10) ? X : 10.0
+@register_symbolic threshold_func(X)
+rn = @reaction_network begin
+    threshold_func(X), 0 --> X
+    d, X --> 0
+end
+```
+
 ### [Time-dependant rates](@id dsl_description_nonconstant_rates_time)
 Previously we have assumed that the rates are independent of the time variable, $t$. However, time-dependent reactions are also possible. Here, simply use `t` to represent the time variable. E.g., to create a production/degradation model where the production rate decays as time progresses, we can use:
 ```@example dsl_basics
