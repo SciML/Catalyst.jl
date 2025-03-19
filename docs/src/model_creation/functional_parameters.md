@@ -24,7 +24,7 @@ Finally, we can simulate our model as normal, but setting the value of the `pIn`
 ```@example functional_parameters_basic_example
 using OrdinaryDiffEqDefault, Plots
 u0 = [:X => 0.5]
-ps = [:d => 2.0, pIn => spline]
+ps = [:d => 2.0, :pIn => spline]
 oprob = ODEProblem(bd_model, u0, tend, ps)
 sol = solve(oprob)
 plot(sol)
