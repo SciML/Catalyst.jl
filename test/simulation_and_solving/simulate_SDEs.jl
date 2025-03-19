@@ -383,32 +383,39 @@ end
 
 ### Other Tests ###
 
-# Checks that simulations values consistently have Float64 type.
+# Checks that solution values have types consistent with their input types.
+# Check that both float types are preserved in the solution (and problems), while integers are 
+# promoted to floats.
+# Checks that the time types are correct (`Float64` by default or possibly `Float32`), however,
+# type conversion only occurs in the solution, and integer types are preserved in problems.
 let
-    # Create model and check simulation value type (FLoat64 values).
-    # Generally, the tend type should not matter.
+    # Create model. Checks when input type is `Float64` the produced values are also `Float64`.
     rn = @reaction_network begin
         (k1,k2), X1 <--> X2
     end
-    u0 = [:X1 => 100.0, :X2 => 300.0]
+    u0 = [:X1 => 1.0, :X2 => 3.0]
     ps = [:k1 => 2.0, :k2 => 3.0]
     sprob = SDEProblem(rn, u0, 1.0, ps)
     ssol = solve(sprob, ISSEM())
     @test eltype(ssol[:X1]) == eltype(ssol[:X2]) == typeof(sprob[:X1]) == typeof(sprob[:X2]) == Float64
+    @test eltype(ssol.t) == typeof(sprob.tspan[1]) == typeof(sprob.tspan[2]) == Float64
 
-    # Check type when input values are Int64.
-    u0 = [:X1 => 100, :X2 => 300]
+    # Checks that `Int64` values are promoted to `Float64`. 
+    u0 = [:X1 => 1, :X2 => 3]
     ps = [:k1 => 2, :k2 => 3]
     sprob = SDEProblem(rn, u0, 1, ps)
     ssol = solve(sprob, ISSEM())
     @test eltype(ssol[:X1]) == eltype(ssol[:X2]) == typeof(sprob[:X1]) == typeof(sprob[:X2]) == Float64
+    @test eltype(ssol.t) == Float64
+    @test typeof(sprob.tspan[1]) == typeof(sprob.tspan[2]) == Int64
 
-    # Check type when input values are Float32.
-    u0 = [:X1 => 100.0f0, :X2 => 300.0f0]
+    # Checks when values are `Float32` (a valid type and should be preserved).
+    u0 = [:X1 => 1.0f0, :X2 => 3.0f0]
     ps = [:k1 => 2.0f0, :k2 => 3.0f0]
     sprob = SDEProblem(rn, u0, 1.0f0, ps)
     ssol = solve(sprob, ISSEM())
     @test eltype(ssol[:X1]) == eltype(ssol[:X2]) == typeof(sprob[:X1]) == typeof(sprob[:X2]) == Float32
+    @test eltype(ssol.t) == typeof(sprob.tspan[1]) == typeof(sprob.tspan[2]) == Float32
 end
 
 # Tests simulating a network without parameters.
