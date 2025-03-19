@@ -18,7 +18,7 @@ continuing stability of releases. Before making a release one should
    issue](https://github.com/SciML/Catalyst.jl/issues/127) with the
    command:  
    
-   ```
+   ```@raw html
    @JuliaRegistrator register branch=release-15.0.0
    ```
     
