@@ -130,7 +130,7 @@ sol = solve(oprob)
 plot(sol)
 ```
 !!! note
-    When declaring a functional parameter of time, it is easy to set its grid values (i.e. ensure they range from the first to the final time point). For Functional parameters that depend on species concentrations it is trickier, and one must make sure that any potential input-species values that can occur during the simulation are represented in the interpolation. In this example it is fairly straightfor
+    When declaring a functional parameter of time, it is easy to set its grid values (i.e. ensure they range from the first to the final time point). For Functional parameters that depend on species concentrations it is trickier, and one must make sure that any potential input-species values that can occur during the simulation are represented in the interpolation. 
 
 ### [Using different data interpolation approaches](@id functional_parameters_interpolation_algs)
 Up until now we have used [linear interpolation](https://en.wikipedia.org/wiki/Linear_interpolation) of our data. However, DataInterpolations.jl [supports other interpolation methods](https://docs.sciml.ai/DataInterpolations/stable/methods/). To demonstrate these we here generate a data set, and then show the linear, cubic, and constant interpolations:
