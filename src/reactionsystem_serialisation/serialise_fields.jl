@@ -46,7 +46,7 @@ SIVS_FS = (seri_has_sivs, get_sivs_string, get_sivs_annotation)
 function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool,
         top_level::Bool)
     # Fetches the system's parameters, species, and variables. Computes the `has_` `Bool`s.
-    ps_all = parameters_toplevel(rn)
+    ps_all = get_ps(rn)
     sps_all = get_species(rn)
     vars_all = filter(!isspecies, get_unknowns(rn))
     has_ps = seri_has_parameters(rn)
@@ -142,7 +142,7 @@ end
 
 # Checks if the reaction system has any parameters.
 function seri_has_parameters(rn::ReactionSystem)
-    return !isempty(parameters_toplevel(rn))
+    return !isempty(get_ps(rn))
 end
 
 # Extract a string which declares the system's parameters. Uses multiline declaration (a

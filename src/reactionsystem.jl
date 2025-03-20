@@ -797,52 +797,6 @@ function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
 end
 
 """
-    parameters_toplevel(network; initial_parameters = false)
-
-Returns the parameters of the top-level system only. Equivalent to `parameters`, but ignores
-parameters of sub-systems.
-
-WARNING:
-- This function may be removed in non-breaking changes.
-
-Arguments
-- `initial_parameters = false`: Whether initialisation parameters should be included or not.
-
-Notes:
-- Implemented as a replacement of `get_ps` after this functions behaviour was (in practse)
-changed in ModelingToolkit.
-- Code mostly compied from ModelingToolkit's `parameters` function.
-- Long-term, we hope that `parameters` will get an option to only return top-level parameters,
- at which point this function will be depricated.
-"""
-function parameters_toplevel(network; initial_parameters = false)
-    ps = get_ps(network)
-    if ps == SciMLBase.NullParameters()
-        return []
-    end
-    if eltype(ps) <: Pair
-        ps = first.(ps)
-    end
-    ps = unique(ps)
-    if !initial_parameters
-        if MT.is_time_dependent(network)
-            # time-dependent systems have `Initial` parameters for all their
-            # unknowns/pdeps, all of which should be hidden.
-            filter!(x -> !iscall(x) || !isa(operation(x), Initial), ps)
-        else
-            # time-independent systems only have `Initial` parameters for
-            # pdeps. Any other `Initial` parameters should be kept (e.g. initialization
-            # systems)
-            filter!(
-                x -> !iscall(x) || !isa(operation(x), Initial) ||
-                         !has_parameter_dependency_with_lhs(network, only(arguments(x))),
-                         ps)
-        end
-    end
-    return ps
-end
-
-"""
     numparams(network)
 
 Return the total number of parameters within the given system and all subsystems.
