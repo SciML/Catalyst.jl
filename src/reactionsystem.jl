@@ -1501,6 +1501,9 @@ Notes:
 - By default, the new `ReactionSystem` will have the same name as `sys`.
 """
 function ModelingToolkit.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
+    complete_check(sys, "ModelingToolkit.compose")
+    foreach(s -> complete_check(s, "ModelingToolkit.compose"), systems)
+
     nsys = length(systems)
     nsys == 0 && return sys
     @set! sys.name = name
@@ -1525,6 +1528,12 @@ function ModelingToolkit.compose(sys::ReactionSystem, systems::AbstractArray; na
     return sys
 end
 
+function complete_check(sys, method)
+    if MT.iscomplete(sys)  
+        error("$method requires systems to not be marked complete, but system: $(MT.get_name(sys)) is marked complete.")
+    end
+end
+
 """
     ModelingToolkit.extend(sys::AbstractSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
 
@@ -1538,6 +1547,10 @@ Notes:
 """
 function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
         name::Symbol = nameof(sys))
+
+    complete_check(sys, "ModelingToolkit.extend")
+    complete_check(rs, "ModelingToolkit.extend")
+    
     any(T -> sys isa T, (ReactionSystem, ODESystem, NonlinearSystem)) ||
         error("ReactionSystems can only be extended with ReactionSystems, ODESystems and NonlinearSystems currently. Received a $(typeof(sys)) system.")
 

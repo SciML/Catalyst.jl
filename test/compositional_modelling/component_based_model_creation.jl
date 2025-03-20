@@ -142,7 +142,7 @@ let
 
     # Test constraint system variables are accessible through Base.getproperty
     # even if they do not appear in the original ReactionSystem.
-    network = @reaction_network
+    network = @network_component
     @parameters a
     @variables x(t)
     @named constraints = NonlinearSystem([x ~ a], [x], [a])
@@ -171,8 +171,8 @@ let
     @test Set(equations(system)) == Set(equations(constraints))
 
     # Test that extending a system with constraints correctly handles default values.
-    network = @reaction_network
-    subnetwork = @reaction_network
+    network = @network_component
+    subnetwork = @network_component
     @parameters a=1 b=2
     @variables x(t)=a y(t)=b
     @named constraints = NonlinearSystem([x ~ a], [x], [a])
