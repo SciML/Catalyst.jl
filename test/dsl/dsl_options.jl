@@ -1058,10 +1058,9 @@ let
         @variables X(t)
         @equations 2X ~ $c - X
     end)
-    oprob = ODEProblem(rn, [], (0.0, 100.0); structural_simplify=true)
-    @test_broken false # Related MTK issue: https://github.com/SciML/ModelingToolkit.jl/issues/3467 
-    # sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
-    # @test sol[rn.X][end] ≈ 2.0
+    oprob = ODEProblem(rn, [], (0.0, 100.0); structural_simplify = true)
+    sol = solve(oprob, Tsit5(); abstol = 1e-9, reltol = 1e-9)
+    @test sol[rn.X][end] ≈ 2.0
 end
 
 # Checks hierarchical model.
