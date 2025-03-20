@@ -45,51 +45,44 @@ ps = [v => 1.0, K => 0.6, n => 4.0]
 sss = hc_steady_states(bs_switch, ps; show_progress = false)
 ```
 
-Finally, we will compute the nullclines. We will first extract our models steady state equations (which we do by creating a `NonlinearSystem`).
+Finally, we will compute the nullclines. We will first extract our model's steady state equations (which we do by creating a `NonlinearSystem`).
 ```@example nullcline_plotting
 nlsys = convert(NonlinearSystem, bs_switch)
 eqs = equations(nlsys)
 ```
-Here, each equation is an expression of two variables. To plot the corr
-
-@parameters Xval Yval
-nc_eq_X = substitute(equations(nlsys)[1], Dict([X => Xval]))
-nc_eq_Y = substitute(equations(nlsys)[2], Dict([Y => Yval]))
-```
-
-We will first extract the equations corresponding to these from our model. Next, we will compute them using [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl). To generate our equations, we first convert our model to a `NonlinearSystem`. For each nullcline equation, we also have to replace the corresponding variable with a parameter (which can be varied to compute the full nullcline curve).
+Here, each equation is an expression of two variables ($X$ and $Y$). We wish to plot $Y$ as a function of $X$. To do this, we will substitute the species variable $X$ with the parameter $Xpar$. This will enable us to carry out bifurcation analysis of the equations' solutions as $Xpar$ is varied
 ```@example nullcline_plotting
-@parameters Xval Yval
-nlsys = convert(NonlinearSystem, bs_switch)
-nc_eq_X = substitute(equations(nlsys)[1], Dict([X => Xval]))
-nc_eq_Y = substitute(equations(nlsys)[2], Dict([Y => Yval]))
+@parameters Xpar
+nc_eq_X = substitute(equations(nlsys)[1], Dict([X => Xpar]))
+nc_eq_Y = substitute(equations(nlsys)[2], Dict([X => Xpar]))
 ```
-Next, we compute a `NonlinerSystem` corresponding to each nullcline.
+To input these into BifurcationKit we need to convert these into `NonlinearSystem`s.
 ```@example nullcline_plotting
 @named nc_X_sys = NonlinearSystem([nc_eq_X])
 @named nc_Y_sys = NonlinearSystem([nc_eq_Y])
 nc_X_sys = complete(nc_X_sys)
 nc_Y_sys = complete(nc_Y_sys)
+nothing # hide
 ```
-Finally, for each of these, we can use BifurcationKit's `continuation` function to track the solution of the nullclines as the corresponding variable (the workflow is similar to when we used `bifurcationdiagram` [here](@ref bifurcation_diagrams)).
+Finally, for out nullcline equations, we can use BifurcationKit's `continuation` function to track their solutions across all values of $Xpar$ (the workflow is similar to when we used `bifurcationdiagram` [here](@ref bifurcation_diagrams)).
 ```@example nullcline_plotting
 using BifurcationKit
 span = (0.0, 1.2)
-function compute_nullcline(nc_sys, span, var_solve, pvar_bif)
-    bprob = BifurcationProblem(nc_sys, [var_solve => 1.0], [ps; pvar_bif => 1.0], pvar_bif; plot_var = var_solve)
-    opts_br = ContinuationPar(p_min = span[1], p_max = span[2], dsmax = 0.01) # `dsmax = 0.01` ensures a smooth plot.
+function compute_nullcline(nc_sys)
+    bprob = BifurcationProblem(nc_sys, [Y => 1.0], [ps; Xval => 0.1], Xval)
+    opts_br = ContinuationPar(p_min = span[1], p_max = span[2], dsmax = 0.01)
     return continuation(bprob, PALC(), opts_br; bothside = true)
 end
-nc_X = compute_nullcline(nc_X_sys, span, Y, Xval)
-nc_Y = compute_nullcline(nc_Y_sys, span, X, Yval)
+nc_X = compute_nullcline(nc_X_sys)
+nc_Y = compute_nullcline(nc_Y_sys)
 nothing # hide
 ```
 
-Finally, we are ready to create our plot. We will plot the steady states using `scatter`. We use the `steady_state_stability` function to [compute steady state stabilities](@ref steady_state_stability) (and use this to determine how to plot the steady state markers).
+We are ready to create our plot. We will plot the steady states using `scatter`. We use the `steady_state_stability` function to [compute steady state stabilities](@ref steady_state_stability) (and use this to determine how to plot the steady state markers).
 ```@example nullcline_plotting
 using Plots
-plot(nc_X; vars = (:x, :param), label = "dX/dt = 0", lw = 7, la = 0.7)
-plot!(nc_Y; vars = (:param, :x), label = "dY/dt = 0", lw = 7, la = 0.7)
+plot(nc_X.x, nc_X.param; label = "dX/dt = 0", lw = 7, la = 0.7)
+plot!(nc_Y.x, nc_Y.param; label = "dY/dt = 0", lw = 7, la = 0.7)
 for ss in sss
     color, markershape = if steady_state_stability(ss, bs_switch, ps)
         :blue, :circle
@@ -104,7 +97,11 @@ plot!(xlimit = span, ylimit = span, xguide = "X", yguide = "Y", legendfontsize =
 ```
 Here we can see how the steady states occur at the nullclines intersections.
 
+!!! warn
+    BifurcationKit's `continuation` function will not detect disjoint branches, and above we can only use it because we know that each nullcline consists of a single branch. To handle disjoint nullclines, consider using [deflated continuation](@ref bifurcation_diagrams_disjoint_branches) (or possibly a package like [Contour.jl](https://github.com/JuliaGeometry/Contour.jl)).
+
 ## [Plotting system directions in phase space](@id nullcline_plotting_directions)
+One useful property of nullclines is that the sign of $dX/dt$ will only switch whenever the solution crosses the $dX/dt=0$ nullcline. This mean that, within each region defined by the nullclines, the direction of the solution remains constant. Below we use this to, for each such region, plot arrows showing the solution's direction.
 
 ```@example nullcline_plotting
 nlprob = NonlinearProblem(complete(nlsys), [X => 0.0, Y => 0.0], ps)
@@ -123,3 +120,4 @@ arrow_positions = [(0.25, 0.25), (0.75, 0.75), (0.35, 0.8), (0.8, 0.35), (0.02, 
 foreach(pos -> plot_xy_arrow!(pos...), arrow_positions)
 plot!()
 ```
+This also works as a form of simple stability analysis, where we can see how the solution moves *away* from the unstable steady state, and *to* the stable ones.
