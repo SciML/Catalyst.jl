@@ -1,4 +1,4 @@
-# [Advice for performant ODE simulations](@id ode_simulation_performance)
+# [Advice for Performant ODE Simulations](@id ode_simulation_performance)
 We have previously described how to perform ODE simulations of *chemical reaction network* (CRN) models. These simulations are typically fast and require little additional consideration. However, when a model is simulated many times (e.g. as a part of solving an inverse problem), or is very large, simulation run
 times may become noticeable. Here we will give some advice on how to improve performance for these cases [^1].
 

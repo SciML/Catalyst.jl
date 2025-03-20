@@ -39,7 +39,7 @@ Here, each simulation is displayed as an individual trajectory.
 !!! note
     While not used here, the [`la` plotting option](@ref simulation_plotting_options) (which modifies line transparency) can help improve the plot visual when a large number of (overlapping) lines are plotted.
 
-Various convenience functions are available for analysing and plotting ensemble simulations (a full list can be found [here]). Here, we use these to first create an `EnsembleSummary` (retrieving each simulation's value at time points `0.0, 1.0, 2.0, ... 1000.0`). Next, we use this as an input to the `plot` command, which automatically plots the mean $X$ activity across the ensemble, while also displaying the 5% and 95% quantiles as the shaded area:
+Various convenience functions are available for analysing and plotting ensemble simulations (a full list can be found [here](https://docs.sciml.ai/DiffEqDocs/dev/features/ensemble/#Analyzing-an-Ensemble-Experiment)). Here, we use these to first create an `EnsembleSummary` (retrieving each simulation's value at time points `0.0, 1.0, 2.0, ... 1000.0`). Next, we use this as an input to the `plot` command, which automatically plots the mean $X$ activity across the ensemble, while also displaying the 5% and 95% quantiles as the shaded area:
 ```@example ensemble
 e_sumary = EnsembleAnalysis.EnsembleSummary(sols, 0.0:1.0:1000.0)
 plot(e_sumary)
