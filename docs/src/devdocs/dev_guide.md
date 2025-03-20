@@ -16,13 +16,8 @@ continuing stability of releases. Before making a release one should
    issues can arise that do not lead to actual errors in the doc CI).
 4. Release via the [registration
    issue](https://github.com/SciML/Catalyst.jl/issues/127) with the
-   command:  
-   
-   ```@raw html
-   @JuliaRegistrator register branch=release-15.0.0
-   ```
-    
-   modifying as appropriate for the version you are releasing.
+   command: `@JuliaRegistrator register branch=release-15.0.0`, modifying as appropriate
+   for the version you are releasing.
 
 If there is subsequently a need to increment the version of a dependency, this
 should be done via a new release that follows the above process, and modifies
