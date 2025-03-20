@@ -69,7 +69,7 @@ Finally, for out nullcline equations, we can use BifurcationKit's `continuation`
 using BifurcationKit
 span = (0.0, 1.2)
 function compute_nullcline(nc_sys)
-    bprob = BifurcationProblem(nc_sys, [Y => 1.0], [ps; Xval => 0.1], Xval)
+    bprob = BifurcationProblem(nc_sys, [Y => 1.0], [ps; Xpar => 0.1], Xpar)
     opts_br = ContinuationPar(p_min = span[1], p_max = span[2], dsmax = 0.01)
     return continuation(bprob, PALC(), opts_br; bothside = true)
 end
