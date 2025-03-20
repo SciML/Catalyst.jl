@@ -315,8 +315,9 @@ end
 
 ### Conservation Law Tests ###
 
-# Tests `remake` for system with conservation law elimianted.
-# Tests for ODE and SDE problems.
+# Tests `remake` for system with conservation law eliminated.
+# Tests for ODE and SDE problems. Checks that the problem, integrator, and solutions all
+# have the correct values.
 # Also checks for species/parameters with various default value dependencies.
 let
     # Defines the model.
@@ -341,7 +342,7 @@ let
         # Create the problems which we wish to check..
         u0 = [X1 => 1.0, X2 => 2.0, Y1 => 3.0, Y2 => 4.0, W => 6.0]
         ps = [k1 => 0.1, k2 => 0.2, V0 => 3.0]
-        prob1 = SDEProblem(rs, u0, 1.0, ps; remove_conserved = true)
+        prob1 = XProblem(rs, u0, 0.001, ps; remove_conserved = true)
         prob2 = remake(prob1, u0 = [X1 => 10.0])
         prob3 = remake(prob2, u0 = [X2 => 20.0])
         prob4 = remake(prob1, u0 = [X2 => 20.0, Y1 => 30.0])
@@ -352,14 +353,17 @@ let
 
         # Creates a testing function.
         function test_vals(prob, us_correct::Dict, ps_correct::Dict)
-            integ = init(prob, ImplicitEM())
+            integ = init(prob, solver)
+            sol = solve(prob, solver)
             for u in keys(us_correct)
                 @test prob[u] == us_correct[u]
                 @test integ[u] == us_correct[u]
+                @test sol[u] == us_correct[u]
             end
             for p in keys(ps_correct)
                 @test prob.ps[p] == ps_correct[p]
                 @test integ.ps[p] == ps_correct[p]
+                @test sol.ps[p] == ps_correct[p]
             end
         end
 
