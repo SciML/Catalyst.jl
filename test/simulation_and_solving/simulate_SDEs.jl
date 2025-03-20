@@ -370,7 +370,7 @@ let
     rn = compose(rn1, [rn2])
 
     # Checks that systems have the correct noise scaling terms.
-    rn = complete(set_default_noise_scaling(rn, 0.5))
+    rn = complete(set_default_noise_scaling(rn, 0.5); flatten = false)
     rn1_noise_scaling = [getnoisescaling(rx) for rx in Catalyst.get_rxs(rn)]
     rn2_noise_scaling = [getnoisescaling(rx) for rx in Catalyst.get_rxs(Catalyst.get_systems(rn)[1])]
     rn_noise_scaling = [getnoisescaling(rx) for rx in reactions(rn)]
