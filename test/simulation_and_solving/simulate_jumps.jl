@@ -224,8 +224,8 @@ end
 ### Other Tests ###
 
 # Checks that solution values have types consistent with their input types.
-# Check that both float and integer values are preserved in the solution (and problems).
-# Checks that the time values are correct (`Float64` by default or possibly `Float32`).
+# Check that both float and integer types are preserved in the solution (and problems).
+# Checks that the time types are correct (`Float64` by default or possibly `Float32`).
 # `JumpInputs` currently does not support integer time spans. When it does, we will check that
 # these produce `Float64` time values.
 let
