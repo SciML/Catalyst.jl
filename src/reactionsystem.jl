@@ -1532,6 +1532,7 @@ function complete_check(sys, method)
     if MT.iscomplete(sys)  
         error("$method requires systems to not be marked complete, but system: $(MT.get_name(sys)) is marked complete.")
     end
+    nothing
 end
 
 """
