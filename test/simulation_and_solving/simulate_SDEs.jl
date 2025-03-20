@@ -359,18 +359,18 @@ end
 # Checks that species, variables, and parameters not part of the original system is added properly.
 let
     # Creates hierarchical model.
-    rn1 = @reaction_network rn1 begin
+    rn1 = @network_component rn1 begin
         p, 0 --> X, [noise_scaling=2.0]
         d, X --> 0
     end
-    rn2 = @reaction_network rn2 begin
+    rn2 = @network_component rn2 begin
         k1, X1 --> X2, [noise_scaling=5.0]
         k2, X2 --> X1
     end
     rn = compose(rn1, [rn2])
 
     # Checks that systems have the correct noise scaling terms.
-    rn = set_default_noise_scaling(rn, 0.5)
+    rn = complete(set_default_noise_scaling(rn, 0.5))
     rn1_noise_scaling = [getnoisescaling(rx) for rx in Catalyst.get_rxs(rn)]
     rn2_noise_scaling = [getnoisescaling(rx) for rx in Catalyst.get_rxs(Catalyst.get_systems(rn)[1])]
     rn_noise_scaling = [getnoisescaling(rx) for rx in reactions(rn)]
