@@ -1489,6 +1489,13 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
         metadata = MT.get_metadata(rs))
 end
 
+function complete_check(sys, method)
+    if MT.iscomplete(sys)  
+        error("$method requires systems to not be marked complete, but system: $(MT.get_name(sys)) is marked complete.")
+    end
+    nothing
+end
+
 """
     ModelingToolkit.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
 
@@ -1526,13 +1533,6 @@ function ModelingToolkit.compose(sys::ReactionSystem, systems::AbstractArray; na
     end
 
     return sys
-end
-
-function complete_check(sys, method)
-    if MT.iscomplete(sys)  
-        error("$method requires systems to not be marked complete, but system: $(MT.get_name(sys)) is marked complete.")
-    end
-    nothing
 end
 
 """
