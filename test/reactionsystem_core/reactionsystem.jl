@@ -119,7 +119,8 @@ let
     def_p = [k => kvals]
     def_u0 = [A => 0.5, B => 1.0, C => 1.5, D => 2.0]
     inits = (MT.Initial(A), MT.Initial(B), MT.Initial(C), MT.Initial(D)) .=> 0
-    defs = merge(Dict(def_p), Dict(def_u0), Dict(inits))
+    defs = merge(Dict(def_p), Dict(def_u0))
+    fulldefs = merge(copy(defs), Dict(inits))
 
     @named rs = ReactionSystem(rxs, t, [A, B, C, D], [k]; defaults = defs)
     rs = complete(rs)
@@ -127,10 +128,12 @@ let
     sdesys = complete(convert(SDESystem, rs))
     js = complete(convert(JumpSystem, rs))
 
-    @test ModelingToolkit.get_defaults(rs) ==
-          ModelingToolkit.get_defaults(odesys) ==
-          ModelingToolkit.get_defaults(sdesys) ==
+    @test ModelingToolkit.get_defaults(rs) == 
           ModelingToolkit.get_defaults(js) == defs
+
+    # these systems add initial conditions to the defaults 
+    @test ModelingToolkit.get_defaults(odesys) ==
+          ModelingToolkit.get_defaults(sdesys) == fulldefs
 
     u0map = [A => 5.0]
     kvals[1] = 5.0
@@ -320,7 +323,7 @@ let
         for rs in [rs_prog, rs_dsl], u0 in u0_alts, p in ps_alts
             oprob_remade = remake(oprob; u0, p)
             sol = solve(oprob_remade, Vern7(); abstol = 1e-8, reltol = 1e-8)
-            @test sol[end] ≈ [0.5, 5.0, 0.2, 2.5]
+            @test sol.u[end] ≈ [0.5, 5.0, 0.2, 2.5]
         end
     end
 end

@@ -198,14 +198,12 @@ let
 
     # Test that the observables of constraint systems are accessible after
     # extending a ReactionSystem.
-    network = @reaction_network
-    subnetwork = @reaction_network
+    network = @network_component
+    subnetwork = @network_component
     @parameters a b
     @variables x(t) y(t)
     @named constraints = NonlinearSystem([x ~ a], [x], [a])
     @named subconstraints = NonlinearSystem([y ~ b], [y], [b])
-    constraints = structural_simplify(constraints)
-    subconstraints = structural_simplify(subconstraints)
 
     extended = extend(constraints, network; name = nameof(network))
     subextended = extend(subconstraints, subnetwork, name = nameof(subnetwork))

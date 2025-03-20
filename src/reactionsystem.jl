@@ -966,13 +966,13 @@ function MT.complete(sys::ReactionSystem; flatten = true, kwargs...)
     newunknowns = OrderedSet()
     newparams = OrderedSet()
     iv = get_iv(sys)
-    collect_scoped_vars!(newunknowns, newparams, sys, iv; depth = -1)
+    MT.collect_scoped_vars!(newunknowns, newparams, sys, iv; depth = -1)
     # don't update unknowns to not disturb `structural_simplify` order
     # `GlobalScope`d unknowns will be picked up and added there
     @set! sys.ps = unique!(vcat(get_ps(sys), collect(newparams)))
     if flatten
-        newsys = flatten(sys)
-        if has_parent(newsys) && get_parent(sys) === nothing
+        newsys = Catalyst.flatten(sys)
+        if MT.has_parent(newsys) && MT.get_parent(sys) === nothing
             @set! newsys.parent = complete(sys; split = false, flatten = false)
         end
         sys = newsys
