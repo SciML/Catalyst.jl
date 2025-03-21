@@ -358,7 +358,7 @@ let
             for u in keys(us_correct)
                 @test prob[u] == us_correct[u]
                 @test integ[u] == us_correct[u]
-                @test sol[u] == us_correct[u]
+                @test sol[u][1] == us_correct[u]
             end
             for p in keys(ps_correct)
                 @test prob.ps[p] == ps_correct[p]
