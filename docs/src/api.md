@@ -124,7 +124,8 @@ direct access to the corresponding internal fields of the `ReactionSystem`)
   entries in `get_species(rn)` correspond to the first `length(get_species(rn))`
   components in `get_unknowns(rn)`.
 * `ModelingToolkit.get_ps(rn)` is a vector that collects all the parameters
-  defined *within* reactions in `rn`.
+  defined *within* reactions in `rn`. This includes initialisation parameters (which
+  are added to the system by ModelingToolkit, and not the user).
 * `ModelingToolkit.get_eqs(rn)` is a vector that collects all the
   [`Reaction`](@ref)s and `Symbolics.Equation` defined within `rn`, ordering all
   `Reaction`s before `Equation`s.

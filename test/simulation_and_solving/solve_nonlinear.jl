@@ -13,25 +13,25 @@ include("../test_functions.jl")
 
 ### Basic Tests ###
 
-# Creates a simple problem and find steady states just different approaches. 
+# Creates a simple problem and find steady states just different approaches.
 # Compares to analytic solution.
-let 
+let
     # Model with easily computable steady states.
     steady_state_network_1 = @reaction_network begin
         (k1, k2), ∅ ↔ X1
         (k3, k4), ∅ ↔ 3X2
         (k5, k6*X1), ∅ ↔ X3
     end
-    
+
     # Creates NonlinearProblem.
     u0 = rnd_u0(steady_state_network_1, rng)
     ps = rnd_ps(steady_state_network_1, rng)
     nlprob = NonlinearProblem(steady_state_network_1, u0, ps)
-    
+
     # Solves it using standard algorithm and simulation based algorithm.
     sol1 = solve(nlprob; abstol=1e-12, reltol=1e-12)
     sol2 = solve(nlprob, DynamicSS(Rosenbrock23()); abstol=1e-12, reltol=1e-12)
-    
+
     # Tests solutions are correct.
     @test sol1[:X1] ≈ nlprob.ps[:k1] / nlprob.ps[:k2] atol=1e-10
     @test sol1[:X2]^3 / factorial(3) ≈ nlprob.ps[:k3] / nlprob.ps[:k4] atol=1e-10
@@ -44,7 +44,7 @@ end
 # Creates a system with multiple steady states.
 # Checks that corresponding ODEFunction return 0.0 in both cases.
 # Checks for manually computed function as well.
-let 
+let
     # Creates steady state network.
     steady_state_network_2 = @reaction_network begin
         v / 10 + hill(X, v, K, n), ∅ → X
@@ -55,11 +55,11 @@ let
     u0 = rnd_u0(steady_state_network_2, rng; min = 1.0)
     ps = rnd_ps(steady_state_network_2, rng)
     nlprob = NonlinearProblem(steady_state_network_2, u0, ps)
-    
+
     # Solves it using standard algorithm and simulation based algorithm.
     sol1 = solve(nlprob; abstol=1e-12, reltol=1e-12)
     sol2 = solve(nlprob, DynamicSS(Rosenbrock23()); abstol=1e-12, reltol=1e-12)
-    
+
     # Computes NonlinearFunction (manually and automatically).
     nlprob_eval_1 = remake(nlprob; u0 = [:X => sol1[1]])
     nlprob_eval_2 = remake(nlprob; u0 = [:X => sol2[1]])
@@ -78,7 +78,7 @@ end
 
 # Checks for system with conservation laws.
 # Checks using interfacing with output solution.
-let 
+@test_broken let  # Conservation law removal currently not working for NonlinearSystems due to MTK depricating something. https://github.com/SciML/ModelingToolkit.jl/issues/3458, https://github.com/SciML/ModelingToolkit.jl/issues/3411
     # Creates steady state network, unpack the parameter values.
     steady_state_network_3 = @reaction_network begin
         (p,d), 0 <--> X

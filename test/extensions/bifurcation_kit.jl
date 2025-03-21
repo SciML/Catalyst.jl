@@ -17,7 +17,7 @@ rng = StableRNG(12345)
 # Checks that bifurcation diagrams can be computed for systems with default values.
 # Checks that bifurcation diagrams can be computed for systems with non-constant rate.
 # Checks that not providing conserved species throws and appropriate error.
-let 
+let
     # Create model.
     extended_brusselator = @reaction_network begin
         @species W(t) = 2.0
@@ -31,25 +31,25 @@ let
     @unpack A, B, k1 = extended_brusselator
     u0_guess = [:X => 1.0, :Y => 1.0, :V => 0.0, :W => 0.0]
     p_start = [A => 1.0, B => 4.0, k1 => 0.1]
-    
+
     # Computes bifurcation diagram.
     bprob = BifurcationProblem(extended_brusselator, u0_guess, p_start, :B; plot_var = :V, u0 = [:V => 1.0])
     p_span = (0.1, 6.0)
     opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
     bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside = true)
-    
+
     # Checks computed V values are correct (Formula: V = k2*(V0+W0)/(k1*Y+k2), where Y=2*B.)
     B_vals = getfield.(bif_dia.γ.branch, :param)
     V_vals = getfield.(bif_dia.γ.branch, :x)
     @test all(V_vals .≈ 0.5*(1.0+2.0) ./ (0.1 .* 2*B_vals .+ 0.5))
-    
+
     # Checks that the bifurcation point is correct.
     @test length(bif_dia.γ.specialpoint) == 3 # Includes start and end point.
     hopf_bif_point = filter(sp -> sp.type == :hopf, bif_dia.γ.specialpoint)[1]
     @test isapprox(hopf_bif_point.param, 1.5, atol=1e-5)
 
     # Tests that an error is thrown if information of conserved species is not fully provided.
-    @test_throws Exception BifurcationProblem(extended_brusselator, u0_guess, p_start, :B; plot_var=:V, u0 = [:X => 1.0])
+    @test_throws Exception BifurcationProblem(extended_brusselator, u0_guess, p_start, :B; plot_var=:V, u0 = [])
 end
 
 # Bistable switch.
@@ -59,7 +59,7 @@ end
 # Note: Only one parameter used, as tests technically depended on internal parameter ordering
 # (Potentially the test should also be removed as it tests internal parameter stuff, however, test
 # was written a while ago when I paid less attention to this kind of stuff.)
-let 
+let
     # Creates BifurcationProblem via Catalyst.
     bistable_switch = @reaction_network begin
         0.1 + hill(X,5.0,K,3), 0 --> X
@@ -69,7 +69,7 @@ let
     u0_guess = [X => 1.0]
     p_start = [K => 2.5]
     bprob = BifurcationProblem(bistable_switch, u0_guess, p_start, K; jac=false, plot_var=X)
-    
+
     # Creates BifurcationProblem via BifurcationKit.
     function bistable_switch_BK(u, p)
         X, = u
@@ -77,7 +77,7 @@ let
         return [0.1 + 5.0*(X^3)/(X^3 + K^3) - 1.0*X]
     end
     bprob_BK = BifurcationProblem(bistable_switch_BK, [1.0], [2.5], (BifurcationKit.@optic _[1]); record_from_solution = (x, p; k...) -> x[1])
-    
+
     # Check the same function have been generated.
     bprob.u0 == bprob_BK.u0
     bprob.params == bprob_BK.params
@@ -207,14 +207,14 @@ let
 end
 
 # Checks that `BifurcationProblem`s cannot be generated from non-complete `ReactionSystems`s.
-let 
+let
     # Create model.
     incomplete_network = @network_component begin
         (p, d), 0 <--> X
     end
     u0_guess = [:X => 1.0]
     p_start = [:p => 1.0, :d => 0.2]
-    
+
     # Computes bifurcation diagram.
     @test_throws Exception BifurcationProblem(incomplete_network, u0_guess, p_start, :p)
 end
@@ -227,20 +227,20 @@ let
     end
     u0_guess = [:X => 1.0]
     p_start = [:p => 1.0, :d => 0.2]
-    
+
     # Attempts to build a BifurcationProblem.
     @test_throws Exception BifurcationProblem(rn, u0_guess, p_start, :p)
 end
 
-# Tests the bifurcation when one of the parameters depends on another parameter, initial condition, etc. 
+# Tests the bifurcation when one of the parameters depends on another parameter, initial condition, etc.
 # let
 #     rn = @reaction_network begin
-#         @parameters k ksq = k^2 
+#         @parameters k ksq = k^2
 #         (k, ksq), A <--> B
 #     end
 
 #     rn = complete(rn)
-#     u0_guess = [:A => 1., :B => 1.] 
+#     u0_guess = [:A => 1., :B => 1.]
 #     p_start = [:k => 2.]
 
 #     bprob = BifurcationProblem(rn, u0_guess, p_start, :k; plot_var = :A, u0 = [:A => 5., :B => 3.])
@@ -255,7 +255,7 @@ end
 
 #     # Test that parameter updating happens correctly in ODESystem
 #     t = default_t()
-#     kval = 4. 
+#     kval = 4.
 #     @parameters k ksq = k^2 tratechange = 10.
 #     @species A(t) B(t)
 #     rxs = [(@reaction k, A --> B), (@reaction ksq, B --> A)]
@@ -270,5 +270,5 @@ end
 #     oprob = ODEProblem(rs2, u0, tspan, p)
 #     sol = OrdinaryDiffEq.solve(oprob, Tsit5(); tstops = 10.0)
 #     xval = sol.u[end][1]
-#     @test isapprox(xval, 8 * (kval / (kval + kval^2)), atol=1e-3) 
+#     @test isapprox(xval, 8 * (kval / (kval + kval^2)), atol=1e-3)
 # end

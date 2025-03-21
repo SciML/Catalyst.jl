@@ -22,11 +22,22 @@ function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
 
     # Creates NonlinearSystem.
     Catalyst.conservationlaw_errorcheck(rs, vcat(ps, u0))
-    nsys = convert(NonlinearSystem, rs; defaults = Dict(u0),
-        remove_conserved = true, remove_conserved_warn = false)
-    nsys = complete(nsys)
+    nsys = bkext_make_nsys(rs, u0)
 
     # Makes BifurcationProblem (this call goes through the ModelingToolkit-based BifurcationKit extension).
     return BK.BifurcationProblem(nsys, u0_bif, ps, bif_par, args...; plot_var,
         record_from_solution, jac, kwargs...)
+end
+
+# Creates the NonlinearSystem for the bifurcation problem. Used to be straightforward, but MTK
+# updates have made handling of conservation laws more complicated, so we now have to do
+# more things here.
+function bkext_make_nsys(rs, u0)
+    cons_eqs = conservationlaw_constants(rs)
+    cons_default = [cons_eq.rhs for cons_eq in cons_eqs]
+    cons_default = Catalyst.get_networkproperties(rs).conservedconst => cons_default
+    defaults = Dict([u0; cons_default])
+    nsys = convert(NonlinearSystem, rs; defaults,
+        remove_conserved = true, remove_conserved_warn = false)
+    return complete(nsys)
 end

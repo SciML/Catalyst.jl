@@ -204,7 +204,7 @@ let
     @test isequal(Catalyst.getmisc(get_rxs(rs_loaded.rs2)[5]), mat_md)
 
     # Checks that `ReactionSystem` metadata fields are correct.
-    @test_broken isequal(get_metadata(rs_loaded), mat_md) # Issue in MTK: https://github.com/SciML/ModelingToolkit.jl/issues/3275
+    @test isequal(get_metadata(rs_loaded), mat_md)
     @test isequal(get_metadata(rs_loaded.rs2), dict_md)
 end
 
