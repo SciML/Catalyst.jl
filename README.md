@@ -30,6 +30,21 @@ Generated models can be used with solvers throughout the broader Julia and
 for sensitivity analysis, parameter estimation, machine learning applications,
 etc).
 
+## Installation 
+Catalyst can be installed as follows. Please note, we suggest only installing ModelingToolkit versions 9.59 and earlier for use with Catalyst at this time as changes in ModelingToolkit as of version 9.60 can break various Catalyst functionality. 
+```julia
+using Pkg
+
+# (optional but recommended) create new environment in which to install Catalyst
+Pkg.activate("catalyst_environment")
+
+# install ModelingToolkit 9.59
+Pkg.add(; name = "ModelingToolkit", version ="9.59")  
+
+# install latest Catalyst release
+Pkg.add("Catalyst")
+```
+
 ## Breaking changes and new features
 
 **NOTE:** Version 14 is a breaking release, prompted by the release of ModelingToolkit.jl version 9. This caused several breaking changes in how Catalyst models are represented and interfaced with.
