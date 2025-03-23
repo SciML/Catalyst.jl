@@ -8,7 +8,7 @@ using StableRNGs
 rng = StableRNG(12345)
 seed = rand(rng, 1:100)
 
-# Sets the default `t` to use.
+# Sets the default `t` and `D` to use.
 t = default_t()
 D = default_time_deriv()
 
