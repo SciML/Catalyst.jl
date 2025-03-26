@@ -392,11 +392,9 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
         nps = get_networkproperties(rs)
 
         # add the conservation constants as parameters and set their values
-        ps = vcat(ps, collect(eq.lhs for eq in nps.constantdefs))
+        ps = copy(ps)
+        push!(ps, nps.conservedconst)
         defs = copy(MT.defaults(rs))
-        for eq in nps.constantdefs
-            defs[eq.lhs] = eq.rhs
-        end
 
         # add the dependent species as observed
         obs = copy(MT.observed(rs))
@@ -410,11 +408,12 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     if !isempty(ceqs)
         if remove_conserved
             @info """
-                  Be careful mixing constraints and elimination of conservation laws.
-                  Catalyst does not check that the conserved equations still hold for the
-                  final coupled system of equations. Consider using `remove_conserved =
-                  false` and instead calling ModelingToolkit.structural_simplify to simplify
-                  any generated ODESystem or NonlinearSystem.
+                  Be careful mixing ODEs or algebraic equations and elimination of
+                  conservation laws. Catalyst does not check that the conserved equations
+                  still hold for the final coupled system of equations. Consider using
+                  `remove_conserved = false` and instead calling
+                  ModelingToolkit.structural_simplify to simplify any generated ODESystem or
+                  NonlinearSystem.
                   """
         end
         append!(eqs, ceqs)
@@ -718,7 +717,7 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify
-        (osys = MT.structural_simplify(osys))
+        osys = MT.structural_simplify(osys)
     elseif has_alg_equations(rs)
         error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
     else

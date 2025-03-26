@@ -88,7 +88,7 @@ let
         @species A(t) B(t) C(t) D(t)
         k*$AAA, C --> D
     end
-    rn2 = ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn)
+    rn2 = complete(ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn))
     @test rn == rn2
 
     rn = @reaction_network rn begin
@@ -96,7 +96,7 @@ let
         @species A(t) C(t) D(t)
         k, $AA + C --> D
     end
-    rn2 = ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn)
+    rn2 = complete(ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn))
     @test rn == rn2
 end
 let
@@ -105,9 +105,9 @@ let
         @parameters k1 k2
         (k1,k2), C + $A2 + $BB + $A2 <--> $BB + $BB
     end
-    rn2 = ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
+    rn2 = complete(ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
                         Reaction(k2, [B], [C, A, B], [2], [1,2,1])],
-                        t; name=:rn)
+                        t; name=:rn))
     @test rn == rn2
 end
 let
@@ -118,7 +118,7 @@ let
         @parameters α k k1 k2
         α+$kk1*$kk2*$AA, 2*$AA + B --> $AA
     end
-    rn2 = ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; name=:rn)
+    rn2 = complete(ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; name=:rn))
     @test rn == rn2
 end
 
@@ -324,13 +324,13 @@ end
 
 # Test species have the right metadata via the DSL.
 let
-    rn = @reaction_network begin
+    rn = @network_component begin
         k, 2*A + B --> C
     end
     @test issetequal(unknowns(rn), species(rn))
     @test all(isspecies, species(rn))
 
-    rn2 = @reaction_network begin
+    rn2 = @network_component begin
         @species A(t) = 1 B(t) = 2 [isbcspecies = true]
         k, A + 2*B --> 2*B
     end
@@ -341,6 +341,7 @@ let
     @named rn2 = extend(osys, rn2)
     rn2 = complete(rn2)
     @test issetequal(unknowns(rn2), species(rn2))
+    rn = complete(rn)
     @test all(isspecies, species(rn))
     @test Catalyst.isbc(ModelingToolkit.value(B))
     @test Catalyst.isbc(ModelingToolkit.value(A)) == false
@@ -363,7 +364,7 @@ let
     @species (X(t))[1:2] Y(t) C(t)
     rx = Reaction(k[1]*a+k[2], [X[1], X[2]], [Y, C], [1, V[1]], [V[2] * W, B])
     @named arrtest = ReactionSystem([rx], t)
-    @test arrtest == rn
+    @test complete(arrtest) == rn
 
     rn = @reaction_network twostate begin
         @parameters k[1:2]
@@ -376,5 +377,5 @@ let
     rx1 = Reaction(k[1], [X[1]], [X[2]])
     rx2 = Reaction(k[2], [X[2]], [X[1]])
     @named twostate = ReactionSystem([rx1, rx2], t)
-    @test twostate == rn
+    @test complete(twostate) == rn
 end

@@ -9,6 +9,8 @@ using StableRNGs
 rng = StableRNG(12345)
 seed = rand(rng, 1:100)
 
+# Sets the default `t` to use.
+t = default_t()
 
 ### Basic Tests ###
 
@@ -64,8 +66,7 @@ end
 
 # Tests problem indexing and updating.
 let
-    @test_broken false # A few cases fails for JumpProblem: https://github.com/SciML/ModelingToolkit.jl/issues/2838
-    for prob in deepcopy([oprob, sprob, dprob, nprob, ssprob, eoprob, esprob, edprob, enprob, essprob])
+    for prob in deepcopy([oprob, sprob, dprob, jprob, nprob, ssprob, eoprob, esprob, ejprob, edprob, enprob, essprob])
         # Get u values (including observables).
         @test prob[X] == prob[model.X] == prob[:X] == 4
         @test prob[XY] == prob[model.XY] == prob[:XY] == 9
@@ -116,8 +117,7 @@ end
 
 # Test remake function.
 let
-    @test_broken false # Cannot check result for JumpProblem: https://github.com/SciML/ModelingToolkit.jl/issues/2838
-    for prob in deepcopy([oprob, sprob, dprob, nprob, ssprob, eoprob, esprob, edprob, enprob, essprob])
+    for prob in deepcopy([oprob, sprob, dprob, jprob, nprob, ssprob, eoprob, esprob, ejprob, edprob, enprob, essprob])
         # Remake for all u0s.
         rp = remake(prob; u0 = [X => 1, Y => 2])
         @test rp[[X, Y]] == [1, 2]
@@ -313,6 +313,88 @@ let
     end
 end
 
+### Conservation Law Tests ###
+
+# Tests `remake` for system with conservation law eliminated.
+# Tests for ODE and SDE problems. Checks that the problem, integrator, and solutions all
+# have the correct values.
+# Also checks for species/parameters with various default value dependencies.
+let
+    # Defines the model.
+    @parameters k1 k2 V0
+    @species X1(t) X2(t) Y1(t) Y2(t) V(t) = V0 W(t)
+    @parameters v = V w = W [guess = [1.0, 1.0]]
+    rxs = [
+        Reaction(k1, [X1], [X2]),
+        Reaction(k2, [X2], [X1]),
+        Reaction(k1, [Y1], [Y2]),
+        Reaction(k2, [Y2], [Y1]),
+        Reaction(1.0, [], [V]),
+        Reaction(1.0, [], [W]),
+        Reaction(1.0, [V], []),
+        Reaction(1.0, [W], []),
+    ]
+    @named rs = ReactionSystem(rxs, t, [X1, X2, Y1, Y2, V, W], [k1, k2, V0, v, w])
+    rs = complete(rs)
+
+    # Checks for both ODE and SDE problems.
+    for (XProblem, solver) in zip([ODEProblem, SDEProblem], [Tsit5(), ImplicitEM()])
+        # Create the problems which we wish to check..
+        u0 = [X1 => 1.0, X2 => 2.0, Y1 => 3.0, Y2 => 4.0, W => 6.0]
+        ps = [k1 => 0.1, k2 => 0.2, V0 => 3.0]
+        prob1 = XProblem(rs, u0, 0.001, ps; remove_conserved = true)
+        prob2 = remake(prob1, u0 = [X1 => 10.0])
+        prob3 = remake(prob2, u0 = [X2 => 20.0])
+        prob4 = remake(prob1, u0 = [X2 => 20.0, Y1 => 30.0])
+        prob5 = remake(prob1, u0 = [X1 => 10.0, X2 => 20.0])
+        prob6 = remake(prob1, u0 = [Y2 => 40.0], p = [k1 => 0.4])
+        prob7 = remake(prob1, u0 = [X1 => 10.0, X2 => 20.0], p = [V0 => 50.0])
+        prob8 = remake(prob1, u0 = [W => 60.0])
+
+        # Creates a testing function.
+        function test_vals(prob, us_correct::Dict, ps_correct::Dict)
+            integ = init(prob, solver)
+            sol = solve(prob, solver)
+            for u in keys(us_correct)
+                @test prob[u] == us_correct[u]
+                @test integ[u] == us_correct[u]
+                @test sol[u][1] == us_correct[u]
+            end
+            for p in keys(ps_correct)
+                @test prob.ps[p] == ps_correct[p]
+                @test integ.ps[p] == ps_correct[p]
+                @test sol.ps[p] == ps_correct[p]
+            end
+        end
+
+        # Checks that all problem values are correct.
+        Γ = prob1.f.sys.Γ
+        test_vals(prob1,
+            Dict(X1 => 1.0, X2 => 2.0, Y1 => 3.0, Y2 => 4.0, V => 3.0, W => 6.0),
+            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 3.0, Γ[2] => 7.0))
+        test_vals(prob2,
+            Dict(X1 => 10.0, X2 => 2.0, Y1 => 3.0, Y2 => 4.0, V => 3.0, W => 6.0),
+            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 12.0, Γ[2] => 7.0))
+        test_vals(prob3,
+            Dict(X1 => 10.0, X2 => 20.0, Y1 => 3.0, Y2 => 4.0, V => 3.0, W => 6.0),
+            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 30.0, Γ[2] => 7.0))
+        test_vals(prob4,
+            Dict(X1 => 1.0, X2 => 20.0, Y1 => 30.0, Y2 => 4.0, V => 3.0, W => 6.0),
+            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 21.0, Γ[2] => 34.0))
+        test_vals(prob5,
+            Dict(X1 => 10.0, X2 => 20.0, Y1 => 3.0, Y2 => 4.0, V => 3.0, W => 6.0),
+            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 30.0, Γ[2] => 7.0))
+        test_vals(prob6,
+            Dict(X1 => 1.0, X2 => 2.0, Y1 => 3.0, Y2 => 40.0, V => 3.0, W => 6.0),
+            Dict(k1 => 0.4, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 3.0, Γ[2] => 43.0))
+        test_vals(prob7,
+            Dict(X1 => 10.0, X2 => 20.0, Y1 => 3.0, Y2 => 4.0, V => 50.0, W => 6.0),
+            Dict(k1 => 0.1, k2 => 0.2, V0 => 50.0, v => 50.0, w => 6.0, Γ[1] => 30.0, Γ[2] => 7.0))
+        test_vals(prob8,
+            Dict(X1 => 1.0, X2 => 2.0, Y1 => 3.0, Y2 => 4.0, V => 3.0, W => 60.0),
+            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 60.0, Γ[1] => 3.0, Γ[2] => 7.0))
+    end
+end
 
 ### Tests For Hierarchical System ###
 

@@ -216,7 +216,7 @@ let
 end
 
 # The second argument must be a vector of AbstractSpatialReaction subtypes.
-let 
+let
     # Define an invalid spatial reaction type (not a subtype of AbstractSpatialReaction)
     struct InvalidSpatialReactionType end
 

@@ -142,7 +142,7 @@ let
 
     # Test constraint system variables are accessible through Base.getproperty
     # even if they do not appear in the original ReactionSystem.
-    network = @reaction_network
+    network = @network_component
     @parameters a
     @variables x(t)
     @named constraints = NonlinearSystem([x ~ a], [x], [a])
@@ -171,8 +171,8 @@ let
     @test Set(equations(system)) == Set(equations(constraints))
 
     # Test that extending a system with constraints correctly handles default values.
-    network = @reaction_network
-    subnetwork = @reaction_network
+    network = @network_component
+    subnetwork = @network_component
     @parameters a=1 b=2
     @variables x(t)=a y(t)=b
     @named constraints = NonlinearSystem([x ~ a], [x], [a])
@@ -198,14 +198,12 @@ let
 
     # Test that the observables of constraint systems are accessible after
     # extending a ReactionSystem.
-    network = @reaction_network
-    subnetwork = @reaction_network
+    network = @network_component
+    subnetwork = @network_component
     @parameters a b
     @variables x(t) y(t)
     @named constraints = NonlinearSystem([x ~ a], [x], [a])
     @named subconstraints = NonlinearSystem([y ~ b], [y], [b])
-    constraints = structural_simplify(constraints)
-    subconstraints = structural_simplify(subconstraints)
 
     extended = extend(constraints, network; name = nameof(network))
     subextended = extend(subconstraints, subnetwork, name = nameof(subnetwork))
@@ -351,7 +349,7 @@ end
 # Test throw error if there are ODE constraints and convert to NonlinearSystem.
 # Note, these can now be created.
 let
-    rn = @reaction_network rn begin
+    rn = @network_component rn begin
         @parameters k1 k2
         (k1, k2), A <--> B
     end
@@ -362,8 +360,7 @@ let
     eqs = [D(C) ~ -b * C + a * A]
     @named osys = ODESystem(eqs, t, [A, C], [a, b])
     rn2 = extend(osys, rn)
-    rn2 = complete(rn2)
-    rnodes = complete(convert(ODESystem, rn2))
+    rnodes = convert(ODESystem, complete(rn2))
 
     # Ensure right number of equations are generated.
     @variables G(t)
@@ -376,12 +373,11 @@ let
     eqs = [0 ~ -a * A + C, 0 ~ -b * C + a * A]
     @named nlsys = NonlinearSystem(eqs, [A, C], [a, b])
     rn2 = extend(nlsys, rn)
-    rn2 = complete(rn2)
-    rnodes = complete(convert(ODESystem, rn2))
-    rnnlsys = complete(convert(NonlinearSystem, rn2))
+    rn2c = complete(rn2)
+    rnodes = complete(convert(ODESystem, rn2c))
+    rnnlsys = complete(convert(NonlinearSystem, rn2c))
     @named nlsys = ODESystem(eqs, t, [A, C], [a, b])
-    rn2 = extend(nlsys, rn)
-    rn2 = complete(rn2)
+    rn2 = complete(extend(nlsys, rn))
     rnodes = convert(ODESystem, rn2)
     rnnlsys = convert(NonlinearSystem, rn2)
 end
@@ -404,7 +400,7 @@ end
 let
     @parameters b
     @species V(t) [isbcspecies = true]
-    rn = @reaction_network begin
+    rn = @network_component begin
         @parameters k
         k/$V, A + B --> C
     end

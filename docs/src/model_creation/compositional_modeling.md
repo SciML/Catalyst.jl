@@ -95,7 +95,7 @@ reactions *only* within a given system (i.e. ignoring subsystems), we can use
 Catalyst.get_species(rn)
 ```
 ```@example ex1
-ModelingToolkit.get_ps(rn)
+Catalyst.get_ps(rn)
 ```
 ```@example ex1
 Catalyst.get_rxs(rn)
@@ -110,7 +110,6 @@ parameters(rn)
 ```@example ex1
 reactions(rn)   # or equations(rn)
 ```
-
 If we want to collapse `rn` down to a single system with no subsystems we can use
 ```@example ex1
 flatrn = Catalyst.flatten(rn)
