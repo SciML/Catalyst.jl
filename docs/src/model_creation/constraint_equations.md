@@ -43,16 +43,19 @@ eq = [D(V) ~ λ * V]
 @named osys = ODESystem(eq, t)
 
 # build the ReactionSystem with no protein initially
-rn = @reaction_network begin
+rn = @network_component begin
     @species P(t) = 0.0
     $V,   0 --> P
     1.0, P --> 0
 end
 ```
 Notice, here we interpolated the variable `V` with `$V` to ensure we use the
-same symbolic unknown variable in the `rn` as we used in building `osys`. See the
-doc section on [interpolation of variables](@ref
-dsl_advanced_options_symbolics_and_DSL_interpolation) for more information.
+same symbolic unknown variable in the `rn` as we used in building `osys`. See
+the doc section on [interpolation of variables](@ref
+dsl_advanced_options_symbolics_and_DSL_interpolation) for more information. We
+also use `@network_component` instead of `@reaction_network` as when merging
+systems together Catalyst requires that the systems have not been marked as
+`complete` (which indicates to Catalyst that a system is finalized).
 
 We can now merge the two systems into one complete `ReactionSystem` model using
 [`ModelingToolkit.extend`](@ref):

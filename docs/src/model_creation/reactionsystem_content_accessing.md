@@ -225,12 +225,12 @@ Similarly, `parameters` retrieves five different parameters. Here, we note that 
 parameters(rs)
 ```
 
-If we wish to retrieve the species (or parameters) that are specifically contained in the top-level system (and not only indirectly through its subsystems), we can use the `Catalyst.get_species` (or `Catalyst.parameters_toplevel`) functions:
+If we wish to retrieve the species (or parameters) that are specifically contained in the top-level system (and not only indirectly through its subsystems), we can use the `Catalyst.get_species` (or `ModelingToolkit.getps`) functions:
 ```@example model_accessing_hierarchical
 Catalyst.get_species(rs)
 ```
 ```@example model_accessing_hierarchical
-Catalyst.parameters_toplevel(rs)
+ModelingToolkit.get_ps(rs)
 ```
 Here, our top-level model contains a single parameter (`kₜ`), and two the two versions of the `Xᵢ` species. These are all the symbolic variables that occur in the transportation reaction (`@kₜ, $(nucleus_sys.Xᵢ) --> $(cytoplasm_sys.Xᵢ)`), which is the only reaction of the top-level system. We can apply these functions to the systems as well. However, when we do so, the systems' names are not prepended:
 ```@example model_accessing_hierarchical
@@ -248,8 +248,3 @@ Other examples of similar pairs of functions are `get_unknowns` and `unknowns`, 
 
 !!! note
     Due to the large number of available accessor functions, most `get_` functions are not directly exported by Catalyst. Hence, these must be used as `Catalyst.get_rxs`, rather than `get_rxs` directly. Again, a full list of accessor functions and instructions on how to use them can be found in [Catalyst's API](@ref api).
-
-!!! note
-  Previously, `ModelingToolkit.get_ps(rn)` was recommended (rather than `Catalyst.parameters_toplevel(rn)`).
-  While it can still be used, due to an update in ModelingToolkit, `get_ps` now also returns potential
-  initialisation parameters (which are added to the model by ModelingToolkit, not the user).
