@@ -11,9 +11,6 @@ seed = rand(rng, 1:100)
 # Fetch test networks.
 include("../test_networks.jl")
 
-# Except where we test the warnings, we do not want to print this warning.
-remove_conserved_warn = false
-
 ### Basic Tests ###
 
 # Tests basic functionality on system with known conservation laws.
@@ -117,10 +114,10 @@ let
     tspan = (0.0, 20.0)
 
     # Simulates model using ODEs and checks that simulations are identical.
-    osys = complete(convert(ODESystem, rn; remove_conserved = true, remove_conserved_warn))
+    osys = complete(convert(ODESystem, rn; remove_conserved = true))
     oprob1 = ODEProblem(osys, u0, tspan, p)
     oprob2 = ODEProblem(rn, u0, tspan, p)
-    oprob3 = ODEProblem(rn, u0, tspan, p; remove_conserved = true, remove_conserved_warn)
+    oprob3 = ODEProblem(rn, u0, tspan, p; remove_conserved = true)
     osol1 = solve(oprob1, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat= 0.2)
     osol2 = solve(oprob2, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat= 0.2)
     osol3 = solve(oprob3, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat= 0.2)
@@ -128,13 +125,13 @@ let
 
     # Checks that steady states found using nonlinear solving and steady state simulations are identical.
     @test_broken begin # Conservation law removal currently not working for NonlinearSystems due to MTK depricating something. https://github.com/SciML/ModelingToolkit.jl/issues/3458, https://github.com/SciML/ModelingToolkit.jl/issues/3411
-        nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true, remove_conserved_warn))
+        nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true))
         nprob1 = NonlinearProblem{true}(nsys, u0, p; guesses = [nsys.Γ => [0.0]])
         nprob2 = NonlinearProblem(rn, u0, p)
-        nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true, remove_conserved_warn)
+        nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true)
         ssprob1 = SteadyStateProblem{true}(osys, u0, p)
         ssprob2 = SteadyStateProblem(rn, u0, p)
-        ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true, remove_conserved_warn)
+        ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true)
         nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
         # Nonlinear problems cannot find steady states properly without removing conserved species.
         nsol3 = solve(nprob3, NewtonRaphson(); abstol = 1e-8)
@@ -147,10 +144,10 @@ let
     # Creates SDEProblems using various approaches.
     u0_sde = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
         F3 => 20.0]
-    ssys = complete(convert(SDESystem, rn; remove_conserved = true, remove_conserved_warn))
+    ssys = complete(convert(SDESystem, rn; remove_conserved = true))
     sprob1 = SDEProblem(ssys, u0_sde, tspan, p)
     sprob2 = SDEProblem(rn, u0_sde, tspan, p)
-    sprob3 = SDEProblem(rn, u0_sde, tspan, p; remove_conserved = true, remove_conserved_warn)
+    sprob3 = SDEProblem(rn, u0_sde, tspan, p; remove_conserved = true)
 
     # Checks that the SDEs f and g function evaluates to the same thing.
     ind_us = ModelingToolkit.get_unknowns(ssys)
@@ -191,9 +188,9 @@ let
     u0_2 = [rn.X => 2.0, rn.Y => 3.0, rn.XY => 4.0]
     u0_3 = [:X => 2.0, :Y => 3.0, :XY => 4.0]
     ps = (kB => 2, kD => 1.5)
-    oprob1 = ODEProblem(rn, u0_1, 10.0, ps; remove_conserved = true, remove_conserved_warn)
-    oprob2 = ODEProblem(rn, u0_2, 10.0, ps; remove_conserved = true, remove_conserved_warn)
-    oprob3 = ODEProblem(rn, u0_3, 10.0, ps; remove_conserved = true, remove_conserved_warn)
+    oprob1 = ODEProblem(rn, u0_1, 10.0, ps; remove_conserved = true)
+    oprob2 = ODEProblem(rn, u0_2, 10.0, ps; remove_conserved = true)
+    oprob3 = ODEProblem(rn, u0_3, 10.0, ps; remove_conserved = true)
     @test solve(oprob1)[sps] ≈ solve(oprob2)[sps] ≈ solve(oprob3)[sps]
 end
 
@@ -205,7 +202,7 @@ let
     end
     u0 = Dict([:X1 => 100.0, :X2 => 120.0])
     ps = [:k1 => 0.2, :k2 => 0.15]
-    sprob = SDEProblem(rn, u0, 10.0, ps; remove_conserved = true, remove_conserved_warn)
+    sprob = SDEProblem(rn, u0, 10.0, ps; remove_conserved = true)
 
     # Checks that conservation laws hold in all simulations.
     sol = solve(sprob, ImplicitEM(); seed)
@@ -218,7 +215,7 @@ let
     rn = @reaction_network begin
         (k1,k2), X1 <--> X2
     end
-    osys = complete(convert(ODESystem, rn; remove_conserved = true, remove_conserved_warn))
+    osys = complete(convert(ODESystem, rn; remove_conserved = true))
     u0 = [osys.X1 => 1.0, osys.X2 => 1.0]
     ps_1 = [osys.k1 => 2.0, osys.k2 => 3.0]
     ps_2 = [osys.k1 => 2.0, osys.k2 => 3.0, osys.Γ => [4.0]]
@@ -245,7 +242,7 @@ let
         Reaction(k2, [X2], [X1])
     ]
     @named rs = ReactionSystem(rxs, t)
-    osys = convert(ODESystem, complete(rs); remove_conserved = true, remove_conserved_warn = false)
+    osys = convert(ODESystem, complete(rs); remove_conserved = true)
     osys = complete(osys)
     @unpack Γ = osys
 
@@ -288,7 +285,7 @@ let
     rn = @reaction_network begin
         (k1,k2), X1 <--> X2
     end
-    @test_throws ArgumentError convert(JumpSystem, rn; remove_conserved = true, remove_conserved_warn)
+    @test_throws ArgumentError convert(JumpSystem, rn; remove_conserved = true)
 end
 
 # Checks that `conserved` metadata is added correctly to parameters.
@@ -299,49 +296,13 @@ let
         (k1,k2), X1 <--> X2
         (k1,k2), Y1 <--> Y2
     end
-    osys = convert(ODESystem, rs; remove_conserved = true, remove_conserved_warn)
+    osys = convert(ODESystem, rs; remove_conserved = true)
 
     # Checks that the correct parameters have the `conserved` metadata.
     @test Catalyst.isconserved(osys.Γ[1])
     @test Catalyst.isconserved(osys.Γ[2])
     @test !Catalyst.isconserved(osys.k1)
     @test !Catalyst.isconserved(osys.k2)
-end
-
-# Checks that conservation law elimination warnings are generated in the correct cases.
-let
-    # Prepare model.
-    rn = @reaction_network begin
-        (k1,k2), X1 <--> X2
-    end
-    u0 = [:X1 => 1.0, :X2 => 2.0]
-    tspan = (0.0, 1.0)
-    ps = [:k1 => 3.0, :k2 => 4.0]
-
-    # Check warnings in system conversion.
-    for XSystem in [ODESystem, SDESystem, NonlinearSystem]
-        @test_nowarn convert(XSystem, rn)
-        @test_logs (:warn, r"You are creating a system or problem while eliminating conserved quantities. Please *") convert(XSystem, rn; remove_conserved = true)
-        @test_nowarn convert(XSystem, rn; remove_conserved_warn = false)
-        @test_nowarn convert(XSystem, rn; remove_conserved = true, remove_conserved_warn = false)
-    end
-
-    # Checks during problem creation (separate depending on whether they have a time span or not).
-    for XProblem in [ODEProblem, SDEProblem]
-        @test_nowarn XProblem(rn, u0, tspan, ps)
-        @test_logs (:warn, r"You are creating a system or problem while eliminating conserved quantities. Please *") XProblem(rn, u0, tspan, ps; remove_conserved = true)
-        @test_nowarn XProblem(rn, u0, tspan, ps; remove_conserved_warn = false)
-        @test_nowarn XProblem(rn, u0, tspan, ps; remove_conserved = true, remove_conserved_warn = false)
-    end
-    # Conservation law removal currently not working for NonlinearSystems due to MTK depricating something. https://github.com/SciML/ModelingToolkit.jl/issues/3458, https://github.com/SciML/ModelingToolkit.jl/issues/3411
-    # Currently just checks whether a NonlinearProblem can be created.
-    @test_broken for XProblem in [NonlinearProblem, SteadyStateProblem]
-        XProblem(rn, u0, ps; remove_conserved = true)
-        # @test_nowarn XProblem(rn, u0, ps)
-        # @test_logs (:warn, r"You are creating a system or problem while eliminating conserved quantities. Please *") XProblem(rn, u0, ps; remove_conserved = true)
-        # @test_nowarn XProblem(rn, u0, ps; remove_conserved_warn = false)
-        # @test_nowarn XProblem(rn, u0, ps; remove_conserved = true, remove_conserved_warn = false)
-    end
 end
 
 # Conservation law simulations for vectorised species.
