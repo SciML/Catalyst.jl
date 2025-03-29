@@ -220,3 +220,47 @@ let
     @test (means1[1] - means1[2]) < .1 * means1[1]
     @test (means2[1] - means2[2]) < .1 * means2[1]
 end
+
+### Other Tests ###
+
+# Checks that solution values have types consistent with their input types.
+# Check that both float and integer types are preserved in the solution (and problems).
+# Checks that the time types are correct (`Float64` by default or possibly `Float32`).
+# `JumpInputs` currently does not support integer time spans. When it does, we will check that
+# these produce `Float64` time values.
+let
+    # Create model. Checks when input type is `Float64` the produced values are also `Float64`.
+    rn = @reaction_network begin
+        (k1,k2), X1 <--> X2
+    end
+    u0 = [:X1 => 1.0, :X2 => 3.0]
+    ps = [:k1 => 2.0, :k2 => 3.0]
+    jprob = JumpProblem(JumpInputs(rn, u0, (0.0, 1.0), ps))
+    jsol = solve(jprob)
+    @test eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Float64
+    @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float64
+
+    # Checks that `Int64` gives `Int64` species values.
+    u0 = [:X1 => 1 :X2 => 3]
+    ps = [:k1 => 2, :k2 => 3]
+    jprob = JumpProblem(JumpInputs(rn, u0, (0.0, 1.0), ps))
+    jsol = solve(jprob)
+    @test eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int64
+    @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float64
+
+    # Checks when values are `Float32` (a valid type and should be preserved).
+    u0 = [:X1 => 1.0f0, :X2 => 3.0f0]
+    ps = [:k1 => 2.0f0, :k2 => 3.0f0]
+    jprob = JumpProblem(JumpInputs(rn, u0, (0.0f0, 1.0f0), ps))
+    jsol = solve(jprob)
+    @test eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Float32
+    @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float32
+
+    # Checks when values are `Int32` (a valid species type and should be preserved).
+    u0 = [:X1 => Int32(1), :X2 => Int32(3)]
+    ps = [:k1 => Int32(2), :k2 => Int32(3)]
+    jprob = JumpProblem(JumpInputs(rn, u0, (0.0, 1.0), ps))
+    jsol = solve(jprob)
+    @test eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int32
+    @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float64
+end
