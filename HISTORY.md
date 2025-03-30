@@ -14,7 +14,7 @@
   use `Tsit5` install `OrdinaryDiffEqTsit5`, etc. The possible sub-libraries, each containing different solvers,
   can be viewed [here](https://github.com/SciML/OrdinaryDiffEq.jl/tree/master/lib).
 - It should now be safe to use `remake` on problems which have had conservation laws removed.
-  The warning regarding this when eliminating conservation laws have been removed (in conjecture
+  The warning regarding this when eliminating conservation laws have been removed (in conjunction
   with the `remove_conserved_warn` argument for disabling this warning).
 - New formula for inferring variables from equations (declared using the `@equations` options) in the DSL. The order of inference of species/variables/parameters is now:
     (1) Every symbol explicitly declared using `@species`, `@variables`, and `@parameters` are assigned to the correct category.
