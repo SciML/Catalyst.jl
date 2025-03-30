@@ -86,3 +86,14 @@ Finally, the `conservationlaws` function yields a $m \times n$ matrix, where $n$
 conservationlaws(rs)
 ```
 I.e. in this case we have a single conserved quantity, which contains a single copy each of the system's two species.
+
+## [Updating conservation law values directly](@id conservation_laws_prob_updating)
+Previously we noted that creation law elimination adds the conservation law as a parameter of the system, e.g. as in the case of this dimerisation system:
+```@example conservation_laws_prob_updating
+using Catalyst # hide
+rn = @reaction_network begin
+    (kD,kU), 2X <--> X2
+end
+parameters(convert(ODESystem, rn; remove_conserved = true))
+```
+Ad advantage of this is that we can set the conserved quantity#s value directly in simulations. E.g. 
