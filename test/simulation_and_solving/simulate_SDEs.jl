@@ -407,7 +407,6 @@ let
     ssol = solve(sprob, ISSEM())
     @test eltype(ssol[:X1]) == eltype(ssol[:X2]) == typeof(sprob[:X1]) == typeof(sprob[:X2]) == Float64
     @test eltype(ssol.t) == Float64
-    @test typeof(sprob.tspan[1]) == typeof(sprob.tspan[2]) == Int64
 
     # Checks when values are `Float32` (a valid type and should be preserved).
     u0 = [:X1 => 1.0f0, :X2 => 3.0f0]

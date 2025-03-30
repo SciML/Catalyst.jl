@@ -167,8 +167,7 @@ end
 # Checks that solution values have types consistent with their input types.
 # Check that both float types are preserved in the solution (and problems), while integers are 
 # promoted to floats.
-# Checks that the time types are correct (`Float64` by default or possibly `Float32`), however,
-# type conversion only occurs in the solution, and integer types are preserved in problems.
+# Checks that the time types are correct (`Float64` by default or possibly `Float32`).
 let
     # Create model. Checks when input type is `Float64` the produced values are also `Float64`.
     rn = @reaction_network begin
@@ -188,7 +187,6 @@ let
     osol = solve(oprob)
     @test eltype(osol[:X1]) == eltype(osol[:X2]) == typeof(oprob[:X1]) == typeof(oprob[:X2]) == Float64
     @test eltype(osol.t) == Float64
-    @test typeof(oprob.tspan[1]) == typeof(oprob.tspan[2]) == Int64
 
     # Checks when values are `Float32` (a valid type and should be preserved).
     u0 = [:X1 => 1.0f0, :X2 => 3.0f0]
