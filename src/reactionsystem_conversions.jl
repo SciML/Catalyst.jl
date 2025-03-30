@@ -554,6 +554,12 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
         as_odes = false, include_zero_odes)
     eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
+    # Makes modifications to handle conservation laws. Currently requires special consideration 
+    # due to MTK updates. Long-term, hopefully we can have a unified solution across all systems.
+    # This, current, NonlinearSystem solution is based on https://github.com/SciML/ModelingToolkit.jl/issues/3458#issuecomment-2725487268.
+    eqs, obs, initialization_eqs = handle_nlsys_cons_laws(rs, eqs, obs, remove_conserved)
+    us = union(species(rs), us)
+
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.
     all_differentials_permitted || nonlinear_convert_differentials_check(rs)
@@ -561,10 +567,26 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
 
     NonlinearSystem(eqs, us, ps;
         name,
-        observed = obs,
+        observed = obs, initialization_eqs,
         defaults = _merge(defaults, defs),
         checks,
         kwargs...)
+end
+
+# If conservation laws have been eliminated, update the equations and observables to reflect this.
+# Also creates the `initialization_eqs` vector that is provided to the `NonlinearSystem` constructor.
+function handle_nlsys_cons_laws(rs::ReactionSystem, eqs, obs, remove_conserved)
+    # If `remove_conserved = false`, return input without modification. Else, split observables
+    # into normal ones and conservation law ones.
+    remove_conserved || (return eqs, obs, Vector{Equation}())
+    conseqs = obs[end - Catalyst.get_networkproperties(rs).nullity + 1:end]
+    obs = obs[1:end - Catalyst.get_networkproperties(rs).nullity]
+
+    # Adds the conservation laws to the equations, and their modified version to `initialization_eqs`.
+    eqs = [eqs; conseqs]
+    u0_ps_dict = Dict(u => Initial(u) for u in species(rs))
+    initialization_eqs = [Symbolics.substitute(conseq, u0_ps_dict) for conseq in conseqs]
+    return eqs, obs, initialization_eqs
 end
 
 # Ideally, when `ReactionSystem`s are converted to `NonlinearSystem`s, any coupled ODEs should be
