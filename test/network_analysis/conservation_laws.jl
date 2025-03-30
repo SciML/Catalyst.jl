@@ -285,7 +285,7 @@ end
 # values. If it has been explicitly udpated, the corresponding elimianted quantity will have its
 # vaue updated to accomodate new Γ/species values (also, the elimianted species's value can not longer be changed).
 let
-    # Prepares an `ODEProblem` with conserved quantities eliminated. Computes the conservation equation.
+    # Prepares the problem inputs and computes the conservation equation.
     rn = @reaction_network begin
         (k1,k2), 2X1 <--> X2
         (k3,k4), X1 + X2 <--> X3
@@ -296,12 +296,9 @@ let
     conserved_quantity = conservationlaw_constants(rn)[1].rhs
 
     # Loops through the tests for different problem types.
-    oprob_old = ODEProblem(rn, u0, 1.0, ps; remove_conserved = true)
-    sprob_old = SDEProblem(rn, u0, 1.0, ps; remove_conserved = true)
-
-    for prob in [oprob_old, sprob_old]
-        prob_old = prob
-        
+    oprob = ODEProblem(rn, u0, 1.0, ps; remove_conserved = true)
+    sprob = SDEProblem(rn, u0, 1.0, ps; remove_conserved = true)
+    for prob_old in [oprob, sprob]
         # For a couple of iterations, updates the problem, ensuring that when a species is updated:
         # - Only that species and the conservation constant have their values updated.
         # The `≈` is because sometimes the computed values will not be fully exact.
