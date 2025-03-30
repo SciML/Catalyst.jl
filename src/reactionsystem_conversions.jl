@@ -755,12 +755,13 @@ function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         name = nameof(rs), include_zero_odes = true,
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, remove_conserved_warn = true, checks = false,
-        check_length = false, all_differentials_permitted = false, kwargs...)
+        check_length = false, structural_simplify = remove_conserved, 
+        all_differentials_permitted = false,  kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, include_zero_odes,
         checks, all_differentials_permitted, remove_conserved, remove_conserved_warn)
-    nlsys = complete(nlsys)
+    nlsys = structural_simplify ? MT.structural_simplify(nlsys) : complete(nlsys)
     return NonlinearProblem(nlsys, u0map, pmap, args...; check_length,
         kwargs...)
 end
