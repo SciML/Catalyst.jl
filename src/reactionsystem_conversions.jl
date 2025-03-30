@@ -684,8 +684,6 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false, 
         structural_simplify = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
         remove_conserved)
 
@@ -698,7 +696,7 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
         osys = complete(osys)
     end
 
-    return ODEProblem(osys, u0map, tspan, pmap, args...; check_length, kwargs...)
+    return ODEProblem(osys, u0, tspan, p, args...; check_length, kwargs...)
 end
 
 # NonlinearProblem from AbstractReactionNetwork
@@ -708,12 +706,10 @@ function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, checks = false, check_length = false, 
         all_differentials_permitted = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
     nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, include_zero_odes,
         checks, all_differentials_permitted, remove_conserved)
     nlsys = complete(nlsys)
-    return NonlinearProblem(nlsys, u0map, pmap, args...; check_length,
+    return NonlinearProblem(nlsys, u0, p, args...; check_length,
         kwargs...)
 end
 
@@ -723,8 +719,6 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, checks = false, check_length = false, remove_conserved = false,
         structural_simplify = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
     sde_sys = convert(SDESystem, rs; name, combinatoric_ratelaws,
         include_zero_odes, checks, remove_conserved)
 
@@ -738,7 +732,7 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
     end
 
     p_matrix = zeros(length(get_unknowns(sde_sys)), numreactions(rs))
-    return SDEProblem(sde_sys, u0map, tspan, pmap, args...; check_length,
+    return SDEProblem(sde_sys, u0, tspan, p, args...; check_length,
         noise_rate_prototype = p_matrix, kwargs...)
 end
 
@@ -758,8 +752,8 @@ struct JumpInputs{S <: MT.JumpSystem, T <: SciMLBase.AbstractODEProblem}
 end
 
 """
-    jumpinput = JumpInputs(rs::ReactionSystem, u0map, tspan,
-                    pmap = DiffEqBase.NullParameters;
+    jumpinput = JumpInputs(rs::ReactionSystem, u0, tspan,
+                    p = DiffEqBase.NullParameters;
                     name = nameof(rs),
                     combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                     checks = false, kwargs...)
@@ -791,13 +785,11 @@ plot(sol, idxs = :A)
 function JumpInputs(rs::ReactionSystem, u0, tspan, p = DiffEqBase.NullParameters();
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         checks = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
     jsys = complete(convert(JumpSystem, rs; name, combinatoric_ratelaws, checks))
     if MT.has_variableratejumps(jsys)
-        prob = ODEProblem(jsys, u0map, tspan, pmap; kwargs...)
+        prob = ODEProblem(jsys, u0, tspan, p; kwargs...)
     else
-        prob = DiscreteProblem(jsys, u0map, tspan, pmap; kwargs...)
+        prob = DiscreteProblem(jsys, u0, tspan, p; kwargs...)
     end
     JumpInputs(jsys, prob)
 end
@@ -821,11 +813,9 @@ function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
         name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         checks = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
     jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks)
     jsys = complete(jsys)
-    return DiscreteProblem(jsys, u0map, tspan, pmap, args...; kwargs...)
+    return DiscreteProblem(jsys, u0, tspan, p, args...; kwargs...)
 end
 
 # JumpProblem from AbstractReactionNetwork
@@ -852,8 +842,6 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, include_zero_odes = true, checks = false, 
         structural_simplify = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
         remove_conserved)
 
@@ -866,7 +854,7 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
         osys = complete(osys)
     end
 
-    return SteadyStateProblem(osys, u0map, pmap, args...; check_length, kwargs...)
+    return SteadyStateProblem(osys, u0, p, args...; check_length, kwargs...)
 end
 
 ### Symbolic Variable/Symbol Conversions ###
