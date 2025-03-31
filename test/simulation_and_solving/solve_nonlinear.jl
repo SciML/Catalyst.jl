@@ -101,3 +101,34 @@ end
     @test f_eval(steady_state_network_3, [:X => sol1[X], :Y => sol1[Y], :Y2 => sol1[Y2], :XY2 => sol1[XY2]], p, 0.0) ≈ [0.0, 0.0, 0.0, 0.0] atol=1e-10
     @test f_eval(steady_state_network_3, [:X => sol2[X], :Y => sol2[Y], :Y2 => sol2[Y2], :XY2 => sol2[XY2]], p, 0.0) ≈ [0.0, 0.0, 0.0, 0.0] atol=1e-10
 end
+
+### Other Tests ###
+
+# Checks that solution values have types consistent with their input types.
+# Check for values that types that should be preserved (`Float64` and `Float32`) and types
+# that should be converted to the default (conversion of `Int64 to `Float64`).
+let
+    # Create model. Checks when input type is `Float64` that the problem and solution types are `Float64`.
+    rn = @reaction_network begin
+        (k1,k2), X1 <--> X2
+    end
+    u0 = [:X1 => 1.0, :X2 => 3.0]
+    ps = [:k1 => 2.0, :k2 => 3.0]
+    nlprob = NonlinearProblem(rn, u0, ps)
+    nlsol = solve(nlprob)
+    @test eltype(nlsol[:X1]) == eltype(nlsol[:X2]) == typeof(nlprob[:X1]) == typeof(nlprob[:X2]) == Float64
+
+    # Checks that input type `Int64` is converted to `Float64`.
+    u0 = [:X1 => 1, :X2 => 3]
+    ps = [:k1 => 2, :k2 => 3]
+    nlprob = NonlinearProblem(rn, u0, ps)
+    nlsol = solve(nlprob)
+    @test eltype(nlsol[:X1]) == eltype(nlsol[:X2]) == typeof(nlprob[:X1]) == typeof(nlprob[:X2]) == Float64
+
+    # Checks that input type `Float32` is preserved
+    u0 = [:X1 => 1.0f0, :X2 => 3.0f0]
+    ps = [:k1 => 2.0f0, :k2 => 3.0f0]
+    nlprob = NonlinearProblem(rn, u0, ps)
+    nlsol = solve(nlprob)
+    @test eltype(nlsol[:X1]) == eltype(nlsol[:X2]) == typeof(nlprob[:X1]) == typeof(nlprob[:X2]) == Float32
+end
