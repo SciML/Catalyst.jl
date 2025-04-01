@@ -279,6 +279,53 @@ let
     @test integrator.ps[k2] == 0.6
 end
 
+### Jacobian Tests ###
+
+# Checks that conservation law elimination generates a system with a non-singular Jacobian.
+# Does this for different system types (ODE, SDE, and Nonlinear).
+# Checks singularity by checking whether the Jacobian have high enough a condition number 
+# (when evaluated at the steady state).
+let
+    # Creates the model (contains both conserved and non-conserved species).
+    rn = @reaction_network begin
+        (p,d), 0 <--> X
+        d, XY --> Y
+        (k1,k2), X + Y <--> XY
+        (k3,k4), 2Y <--> Y2
+    end
+
+    # Finds a steady state at which we will compute the Jacobian.
+    u0_ss_init = [:X => 0.0, :Y => 4.0, :XY => 0.0, :Y2 => 0.0]
+    ps = [:p => 1.0, :d => 0.5, :k1 => 1.0, :k2 => 2.0, :k3 => 3.0, :k4 => 4.0]
+    ssprob = SteadyStateProblem(rn, u0_ss_init, ps)
+    ss = solve(ssprob, DynamicSS(Vern7()))
+    ss = [sp => ss[sp] for sp in unknowns(rn)]
+
+    # Creates a function which evaluates whether the Jacobian is singular.
+    # Singularity means infinite condition number (here it is about 1e17).
+    function is_singular(prob; infthres = 1e12)
+        J = zeros(length(prob.u0), length(prob.u0))
+        (prob isa NonlinearProblem) ? prob.f.jac(J, prob.u0, prob.p) : prob.f.jac(J, prob.u0, prob.p, 0.0)
+        return cond(J) > infthres
+    end
+
+    # Creates problems (with Jacobian and W/O conservation law elimination) which singularity we wish to test.
+    oprob = ODEProblem(rn, ss, 1.0, ps; jac = true)
+    oprob_rc = ODEProblem(rn, ss, 1.0, ps; jac = true, remove_conserved = true)
+    sprob = SDEProblem(rn, ss, 1.0, ps; jac = true)
+    sprob_rc = SDEProblem(rn, ss, 1.0, ps; jac = true, remove_conserved = true)
+    nlprob = NonlinearProblem(rn, ss, ps; jac = true)
+    nlprob_rc = NonlinearProblem(rn, ss, ps; jac = true, remove_conserved = true)
+
+    # Checks that removing conservation laws generates non-singular Jacobian (and else that it is singular).
+    @test is_singular(oprob) == true
+    @test !is_singular(oprob_rc) == true
+    @test is_singular(sprob) == true
+    @test !is_singular(sprob_rc) == true
+    @test is_singular(nlprob) == true
+    @test !is_singular(nlprob_rc) == true
+end
+
 ### Other Tests ###
 
 # Checks that `JumpSystem`s with conservation laws cannot be generated.
