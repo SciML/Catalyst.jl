@@ -1,5 +1,5 @@
 # [Working with Conservation Laws](@id conservation_laws)
-Catalyst can detect, and eliminate for differential-equation based models, *conserved quantities*, i.e. linear combinations of species which are conserved via the chemistry. This functionality is both automatically utilised by Catalyst (e.g. to [remove singular Jacobians during steady state computations](@ref homotopy_continuation_conservation_laws)), but is also available for users to utilise directly (e.g. to potentially [improve simulation performance](@ref ode_simulation_performance_conservation_laws)).
+Catalyst can detect, and eliminate for differential-equation based models, *conserved quantities*, i.e. linear combinations of species which are conserved via their chemistry. This functionality is both automatically utilised by Catalyst (e.g. to [remove singular Jacobians during steady state computations](@ref homotopy_continuation_conservation_laws)), but is also available for users to utilise directly (e.g. to potentially [improve simulation performance](@ref ode_simulation_performance_conservation_laws)).
 
 To illustrate conserved quantities, let us consider the following [two-state](@ref basic_CRN_library_two_states) model:
 ```@example conservation_laws
@@ -39,7 +39,7 @@ Using the `unknowns` function we can confirm that the ODE only has a single unkn
 ```@example conservation_laws
 unknowns(osys)
 ```
-Next, using `parameters` we note that an additional parameter, `Γ[1]` has been added to the system:
+Next, using `parameters` we note that an additional parameter, `Γ` has been added to the system:
 ```@example conservation_laws
 parameters(osys)
 ```
@@ -53,7 +53,7 @@ ps = [:k₁ => 10.0, :k₂ => 2.0]
 oprob = ODEProblem(rs, u0, (0.0, 1.0), ps; remove_conserved = true)
 nothing # hide
 ```
-Here, while `Γ[1]` becomes a parameter of the new system, it has a [default value](@ref dsl_advanced_options_default_vals) equal to the corresponding conservation law. Hence, its value is computed from the initial condition `[:X₁ => 80.0, :X₂ => 20.0]`, and does not need to be provided in the parameter vector. Next, we can simulate and plot our model using normal syntax:
+Here, while `Γ` becomes a parameter of the new system, it has a [default value](@ref dsl_advanced_options_default_vals) equal to the corresponding conservation law. Hence, its value is computed from the initial condition `[:X₁ => 80.0, :X₂ => 20.0]`, and does not need to be provided in the parameter vector. Next, we can simulate and plot our model using normal syntax:
 ```@example conservation_laws
 sol = solve(oprob)
 plot(sol)
@@ -66,7 +66,7 @@ While `X₂` is an observable (and not unknown) of the ODE, we can [access it](@
 sol[:X₂]
 ```
 !!! note
-    Generally, `remove_conserved = true` should not change any model workflows. I.e. anything that works without this option should also work when an `ODEProblem` is created using `remove_conserved = true`.
+    Generally, `remove_conserved = true` should not change any modelling workflows. I.e. anything that works without this option should also work when an `ODEProblem` is created using `remove_conserved = true`.
 
 !!! note
     The `remove_conserved = true` option is available when creating `SDEProblem`s, `NonlinearProblem`s, and `SteadyStateProblem`s (and their corresponding systems). However, it cannot be used when creating `JumpProblem`s.
