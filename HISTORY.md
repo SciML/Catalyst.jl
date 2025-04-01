@@ -48,6 +48,7 @@
   *not* to do this as it has signifcant performance costs with ModelingToolkit
   v9. Note, scalarized parameter arrays passed to the two-argument
   `ReactionSystem` constructor may become unscalarized.
+- Functional (e.g. time-dependent) parameters can now be used in Catalyst models. These can e.g. be used to incorporate arbitrary time-dependent functions (as a parameter) in a model. For more details on how to use these, please read: https://docs.sciml.ai/Catalyst/stable/model_creation/functional_parameters/.
 - Scoped species/variables/parameters are now treated similar to the latest MTK
   releases (≥ 9.49).
 - The structural identifiability extension is currently disabled due to issues
