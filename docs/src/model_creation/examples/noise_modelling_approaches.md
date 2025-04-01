@@ -89,6 +89,7 @@ repressilator_Kin = @reaction_network begin
     hillr(Y,v,K,n), ∅ --> Z
     d, (X, Y, Z) --> ∅
 end
+nothing # hide
 ```
 Finally, we will again perform ensemble simulations of our model. This time, at the beginning of each simulation, we will use `make_K_series` to generate a new $K$, and set this as the `K_in` parameter's value.
 ```@example noise_modelling_approaches
@@ -109,6 +110,7 @@ Finally, we will observe an interesting phenomenon for ensembles of stochastic o
 ```@example noise_modelling_approaches
 sol_intrinsic = solve(eprob_intrinsic, ImplicitEM(); trajectories = 200)
 sol_extrinsic = solve(eprob_extrinsic; trajectories = 200)
+nothing # hide
 ```
 Next, we can use the `EnsembleSummary` interface to plot each ensemble's mean activity (as well as 5% and 95% quantiles) over time:
 ```@example noise_modelling_approaches
