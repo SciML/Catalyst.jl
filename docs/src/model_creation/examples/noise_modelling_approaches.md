@@ -112,8 +112,8 @@ sol_extrinsic = solve(eprob_extrinsic; trajectories = 200)
 ```
 Next, we can use the `EnsembleSummary` interface to plot each ensemble's mean activity (as well as 5% and 95% quantiles) over time:
 ```@example noise_modelling_approaches
-e_sumary_intrinsic = EnsembleAnalysis.EnsembleSummary(sols, 0.0:1.0:tend)
-e_sumary_extrinsic = EnsembleAnalysis.EnsembleSummary(sols, 0.0:1.0:tend)
+e_sumary_intrinsic = EnsembleAnalysis.EnsembleSummary(sol_intrinsic, 0.0:1.0:tend)
+e_sumary_extrinsic = EnsembleAnalysis.EnsembleSummary(sol_extrinsic, 0.0:1.0:tend)
 plot(e_sumary_intrinsic; label = "Intrinsic noise", idxs = 1)
 plot!(e_sumary_extrinsic; label = "Extrinsic noise", idxs = 1)
 ```
