@@ -305,7 +305,7 @@ let
     # Singularity means infinite condition number (here it is about 1e17).
     function is_singular(prob; infthres = 1e12)
         J = zeros(length(prob.u0), length(prob.u0))
-        (prob isa NonlinearProblem) ? prob.f.jac(J, prob.u0, prob.p) : prob.f.jac(J, prob.u0, prob.p, 0.0)
+        ModelingToolkit.is_time_dependent(prob) ? prob.f.jac(J, prob.u0, prob.p, 0.0) : prob.f.jac(J, prob.u0, prob.p)
         return cond(J) > infthres
     end
 
