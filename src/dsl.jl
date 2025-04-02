@@ -650,7 +650,7 @@ function read_compounds_option(options)
         cmpexpr_init = options[:compounds]
         cmpexpr_init.args[3] = option_block_form(get_block_option(cmpexpr_init))
         cmps_declared = [find_varinfo_in_declaration(arg.args[2])[1]
-                            for arg in cmpexpr_init.args[3].args]
+                         for arg in cmpexpr_init.args[3].args]
         (length(cmps_declared) == 1) && (cmpexpr_init.args[1] = Symbol("@compound"))
     else  # If option is not used, return empty vectors and expressions.
         cmpexpr_init = :()
@@ -666,7 +666,7 @@ function read_differentials_option(options)
     # If differentials were provided as options, this is used as the initial expression.
     # If the default differential (D(...)) was used in equations, this is added to the expression.
     diffsexpr = (haskey(options, :differentials) ?
-        get_block_option(options[:differentials]) : striplines(:(begin end)))
+                 get_block_option(options[:differentials]) : striplines(:(begin end)))
     diffsexpr = option_block_form(diffsexpr)
 
     # Goes through all differentials, checking that they are correctly formatted. Adds their
@@ -688,10 +688,12 @@ end
 # Reads the variables options. Outputs a list of the variables inferred from the equations,
 # as well as the equation vector. If the default differential was used, update the `diffsexpr`
 # expression so that this declares this as well.
-function read_equations_option!(diffsexpr, options, syms_unavailable, tiv; requiredec = false)
+function read_equations_option!(
+        diffsexpr, options, syms_unavailable, tiv; requiredec = false)
     # Prepares the equations. First, extract equations from the provided option (converting to block form if required).
     # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
-    eqs_input = haskey(options, :equations) ? get_block_option(options[:equations]) : :(begin end)
+    eqs_input = haskey(options, :equations) ? get_block_option(options[:equations]) :
+                :(begin end)
     eqs_input = option_block_form(eqs_input)
     equations = Expr[]
     ModelingToolkit.parse_equations!(Expr(:block), equations,
@@ -746,7 +748,8 @@ end
 # Reads the observables options. Outputs an expression for creating the observable variables,
 # a vector containing the observable equations, and a list of all observable symbols (this
 # list contains both those declared separately or inferred from the `@observables` option` input`).
-function read_observables_option(options, all_ivs, us_declared, all_syms; requiredec = false)
+function read_observables_option(
+        options, all_ivs, us_declared, all_syms; requiredec = false)
     syms_unavailable = setdiff(all_syms, us_declared)
     if haskey(options, :observables)
         # Gets list of observable equations and prepares variable declaration expression.
@@ -772,7 +775,8 @@ function read_observables_option(options, all_ivs, us_declared, all_syms; requir
                 error("An observable ($obs_name) uses a name that already have been already been declared or inferred as another model property.")
             (obs_name in us_declared) && is_escaped_expr(obs_eq.args[2]) &&
                 error("An interpolated observable have been used, which has also been explicitly declared within the system using either @species or @variables. This is not permitted.")
-            ((obs_name in us_declared) || is_escaped_expr(obs_eq.args[2])) && !isnothing(metadata) &&
+            ((obs_name in us_declared) || is_escaped_expr(obs_eq.args[2])) &&
+                !isnothing(metadata) &&
                 error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the observable was also declared separately (using either @species or @variables). When this is done, metadata should instead be provided within the original @species or @variable declaration.")
 
             # This bit adds the observables to the @variables vector which is given as output.
@@ -789,7 +793,8 @@ function read_observables_option(options, all_ivs, us_declared, all_syms; requir
                 ivs_get_expr_sorted = :(sort($(ivs_get_expr);
                     by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $all_ivs)))
 
-                obs_expr = insert_independent_variable(obs_eq.args[2], :($ivs_get_expr_sorted...))
+                obs_expr = insert_independent_variable(
+                    obs_eq.args[2], :($ivs_get_expr_sorted...))
                 push!(obsexpr.args[1].args, obs_expr)
             end
 
@@ -879,7 +884,7 @@ end
 # be used or not. If not provided, use the default (true).
 function read_combinatoric_ratelaws_option(options)
     return haskey(options, :combinatoric_ratelaws) ?
-        get_block_option(options[:combinatoric_ratelaws]) : true
+           get_block_option(options[:combinatoric_ratelaws]) : true
 end
 
 ### `@reaction` Macro & its Internals ###
@@ -984,7 +989,8 @@ function recursive_escape_functions!(expr::ExprValues, syms_skip = [])
     (typeof(expr) != Expr) && (return expr)
     foreach(i -> expr.args[i] = recursive_escape_functions!(expr.args[i], syms_skip),
         1:length(expr.args))
-    if (expr.head == :call) && !isdefined(Catalyst, expr.args[1]) && expr.args[1] ∉ syms_skip
+    if (expr.head == :call) && !isdefined(Catalyst, expr.args[1]) &&
+       expr.args[1] ∉ syms_skip
         expr.args[1] = esc(expr.args[1])
     end
     expr

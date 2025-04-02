@@ -103,10 +103,12 @@ function make_compound(expr)
 
     # If no ivs were given, inserts  an expression which evaluates to the union of the ivs
     # for the species the compound depends on.
-    ivs_get_expr = :(unique(reduce( vcat, (sorted_arguments(ModelingToolkit.unwrap(comp))
+    ivs_get_expr = :(unique(reduce(
+        vcat, (sorted_arguments(ModelingToolkit.unwrap(comp))
         for comp in $components))))
     if isempty(ivs)
-        species_expr = Catalyst.insert_independent_variable(species_expr, :($ivs_get_expr...))
+        species_expr = Catalyst.insert_independent_variable(
+            species_expr, :($ivs_get_expr...))
     end
 
     # Creates the found expressions that will create the compound species.
