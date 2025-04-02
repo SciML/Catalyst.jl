@@ -101,7 +101,8 @@ function lattice_animation(
 
     # Creates the base figure (which is modified in the animation).
     fig, ax, hm = heatmap(x_vals, y_vals, vals[1];
-        axis = (xgridvisible = false, ygridvisible = false, xlabel = "Compartment", ylabel = "Compartment"),
+        axis = (xgridvisible = false, ygridvisible = false,
+            xlabel = "Compartment", ylabel = "Compartment"),
         colormap, colorrange = (plot_min, plot_max),
         kwargs...)
     ttitle && (ax.title = "Time: $(round(t[1]; sigdigits = 3))")
