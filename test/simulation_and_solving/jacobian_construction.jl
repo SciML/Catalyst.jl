@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, DiffEqBase, Test
+using Catalyst, DiffEqBase, OrdinaryDiffEqRosenbrock, Test
 
 # Sets stable rng number.
 using StableRNGs
@@ -140,4 +140,34 @@ let
         mat = factor*rand(rng, length(u0), length(u0))
         @test jac_sparse * mat ≈ jac * mat
     end
+end
+
+# Tests that simulations with different Jacobian and sparsity options are identical.
+let
+    # Creates model (vaguely messy model without conserved quantities).
+    rn = @reaction_network begin
+        (v0 + mm(X,v,K),d), 0 <--> X + 2Y
+        (k1,k2), X + Y <--> XY
+        (k1,k2), X + Y2 <--> XY2
+        (k3,k4), XY + XY2 <--> X2Y3
+        1.0, (XY,XY2,X2Y3) --> 0
+        mm(X2Y3,v,K), 0 --> Z
+        (k3*X,k4*Y), 3Z <--> Z3
+        d, Z --> 0
+    end
+
+    # Generates initial conditions and parameter values. Creates problems with/o (sparse/dense) jacobian.
+    u0 = rnd_u0(rn, rng)
+    ps = rnd_ps(rn, rng)
+    oprob = ODEProblem(rn, u0, 1.0, ps; jac = false, sparse = false)
+    oprob_j = ODEProblem(rn, u0, 1.0, ps; jac = true, sparse = false)
+    oprob_s = ODEProblem(rn, u0, 1.0, ps; jac = false, sparse = true)
+    oprob_js = ODEProblem(rn, u0, 1.0, ps; jac = true, sparse = true)
+
+    # Simulates system with implicit solver. Checks that all solutions are identical.
+    sol = solve(oprob, Rosenbrock23(), saveat = 0.1, abstol = 1e-8, reltol = 1e-8)
+    sol_j = solve(oprob_j, Rosenbrock23(), saveat = 0.1, abstol = 1e-8, reltol = 1e-8)
+    sol_s = solve(oprob_s, Rosenbrock23(), saveat = 0.1, abstol = 1e-8, reltol = 1e-8)
+    sol_js = solve(oprob_sj, Rosenbrock23(), saveat = 0.1, abstol = 1e-8, reltol = 1e-8)
+    @test  sol ≈ sol_j ≈ sol_s ≈ sol_js
 end
