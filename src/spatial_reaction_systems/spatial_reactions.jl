@@ -57,7 +57,6 @@ function make_transport_reaction(rateex, species)
     # Checks for input errors.
     forbidden_symbol_check(union([species], parameters))
 
-
     # Creates expressions corresponding to actual code from the internal DSL representation.
     sexprs = get_usexpr([species], Dict{Symbol, Expr}())
     pexprs = get_psexpr(parameters, Dict{Symbol, Expr}())
