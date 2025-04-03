@@ -168,6 +168,6 @@ let
     sol = solve(oprob, Rosenbrock23(), saveat = 0.1, abstol = 1e-8, reltol = 1e-8)
     sol_j = solve(oprob_j, Rosenbrock23(), saveat = 0.1, abstol = 1e-8, reltol = 1e-8)
     sol_s = solve(oprob_s, Rosenbrock23(), saveat = 0.1, abstol = 1e-8, reltol = 1e-8)
-    sol_js = solve(oprob_sj, Rosenbrock23(), saveat = 0.1, abstol = 1e-8, reltol = 1e-8)
+    sol_js = solve(oprob_js, Rosenbrock23(), saveat = 0.1, abstol = 1e-8, reltol = 1e-8)
     @test  sol ≈ sol_j ≈ sol_s ≈ sol_js
 end
