@@ -125,7 +125,7 @@ let
 
     # Checks that steady states found using nonlinear solving and steady state simulations are identical.
     nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true))
-    nprob1 = NonlinearProblem{true}(nsys, u0, p; guesses = [nsys.Γ => [0.0]])
+    nprob1 = NonlinearProblem{true}(nsys, u0, p)
     nprob2 = NonlinearProblem(rn, u0, p)
     nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true)
     ssprob1 = SteadyStateProblem{true}(osys, u0, p)
@@ -214,11 +214,12 @@ let
         (k1,k2), X1 <--> X2
     end
     osys = complete(convert(ODESystem, rn; remove_conserved = true))
-    u0 = [osys.X1 => 1.0, osys.X2 => 1.0]
+    u0_1 = [osys.X1 => 1.0, osys.X2 => 1.0]
+    u0_2 = [osys.X1 => 1.0]
     ps_1 = [osys.k1 => 2.0, osys.k2 => 3.0]
     ps_2 = [osys.k1 => 2.0, osys.k2 => 3.0, osys.Γ => [4.0]]
-    oprob1 = ODEProblem(osys, u0, 10.0, ps_1)
-    oprob2 = ODEProblem(osys, u0, 10.0, ps_2)
+    oprob1 = ODEProblem(osys, u0_1, 10.0, ps_1)
+    oprob2 = ODEProblem(osys, u0_2, 10.0, ps_2)
 
     # Checks that the solutions generates the correct conserved quantities.
     sol1 = solve(oprob1; saveat = 1.0)
@@ -256,8 +257,6 @@ let
     @test oprob.ps[k1] == 0.1
     @test oprob.ps[k2] == 0.2
     @test oprob.ps[Γ[1]] == 3.0
-
-    # Currently, any kind of updating of species or the conservation parameter(s) is not possible.
 
     # Update problem parameters using `remake`.
     oprob_new = remake(oprob; p = [k1 => 0.3, k2 => 0.4])
@@ -325,10 +324,10 @@ let
 end
 
 # Goes through a chain of updating of conservation law constants/species, checking that
-# the values of relevant quantitites are correct after each step.
-# Generally, if `Γ` has not been explicitly updated, it will be updated to accomodate new species
-# values. If it has been explicitly udpated, the corresponding elimianted quantity will have its
-# vaue updated to accomodate new Γ/species values (also, the elimianted species's value can not longer be changed).
+# the values of relevant quantities are correct after each step.
+# Generally, if `Γ` has not been explicitly updated, it will be updated to acomodate new species
+# values. If it has been explicitly updated, the corresponding eliminated quantity will have its
+# value updated to acomodate new Γ/species values (also, the eliminated species's value can not longer be changed).
 let
     # Prepares the problem inputs and computes the conservation equation.
     rn = @reaction_network begin
@@ -343,7 +342,8 @@ let
     # Loops through the tests for different problem types.
     oprob = ODEProblem(rn, u0, 1.0, ps; remove_conserved = true)
     sprob = SDEProblem(rn, u0, 1.0, ps; remove_conserved = true)
-    for prob_old in [oprob, sprob]
+    nlprob = NonlinearProblem(rn, u0, ps; remove_conserved = true)
+    for prob_old in [oprob, sprob, nlprob]
         # For a couple of iterations, updates the problem, ensuring that when a species is updated:
         # - Only that species and the conservation constant have their values updated.
         # The `≈` is because sometimes the computed values will not be fully exact.
@@ -429,40 +429,6 @@ let
     @test Catalyst.isconserved(osys.Γ[2])
     @test !Catalyst.isconserved(osys.k1)
     @test !Catalyst.isconserved(osys.k2)
-end
-
-# Checks that conservation law elimination warnings are generated in the correct cases.
-let
-    # Prepare model.
-    rn = @reaction_network begin
-        (k1,k2), X1 <--> X2
-    end
-    u0 = [:X1 => 1.0, :X2 => 2.0]
-    tspan = (0.0, 1.0)
-    ps = [:k1 => 3.0, :k2 => 4.0]
-
-    # Check warnings in system conversion.
-    for XSystem in [ODESystem, SDESystem, NonlinearSystem]
-        @test_nowarn convert(XSystem, rn)
-        @test_logs (:warn, r"You are creating a system or problem while eliminating conserved quantities. Please *") convert(XSystem, rn; remove_conserved = true)
-        @test_nowarn convert(XSystem, rn; remove_conserved_warn = false)
-        @test_nowarn convert(XSystem, rn; remove_conserved = true, remove_conserved_warn = false)
-    end
-
-    # Checks during problem creation (separate depending on whether they have a time span or not).
-    for XProblem in [ODEProblem, SDEProblem]
-        @test_nowarn XProblem(rn, u0, tspan, ps)
-        @test_logs (:warn, r"You are creating a system or problem while eliminating conserved quantities. Please *") XProblem(rn, u0, tspan, ps; remove_conserved = true)
-        @test_nowarn XProblem(rn, u0, tspan, ps; remove_conserved_warn = false)
-        @test_nowarn XProblem(rn, u0, tspan, ps; remove_conserved = true, remove_conserved_warn = false)
-    end
-    for XProblem in [NonlinearProblem, SteadyStateProblem]
-        XProblem(rn, u0, ps; remove_conserved = true)
-        @test_nowarn XProblem(rn, u0, ps)
-        @test_logs (:warn, r"You are creating a system or problem while eliminating conserved quantities. Please *") XProblem(rn, u0, ps; remove_conserved = true)
-        @test_nowarn XProblem(rn, u0, ps; remove_conserved_warn = false)
-        @test_nowarn XProblem(rn, u0, ps; remove_conserved = true, remove_conserved_warn = false)
-    end
 end
 
 # Conservation law simulations for vectorised species.

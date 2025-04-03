@@ -723,10 +723,10 @@ function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         p = DiffEqBase.NullParameters(), args...;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, checks = false, check_length = false, 
-        all_differentials_permitted = false, kwargs...)
+        structural_simplify = remove_conserved, all_differentials_permitted = false, kwargs...)
     nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, checks, 
         all_differentials_permitted, remove_conserved)
-    nlsys = complete(nlsys)
+    nlsys = structural_simplify ? MT.structural_simplify(nlsys) : complete(nlsys)
     return NonlinearProblem(nlsys, u0, p, args...; check_length,
         kwargs...)
 end
