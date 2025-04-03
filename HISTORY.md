@@ -50,8 +50,6 @@
   `ReactionSystem` constructor may become unscalarized.
 - Scoped species/variables/parameters are now treated similar to the latest MTK
   releases (≥ 9.49).
-- The structural identifiability extension is currently disabled due to issues
-  StructuralIdentifiability has with Julia 1.10.5 and 1.11.
 - A tutorial on making interactive plot displays using Makie has been added.
 - The BifurcationKit extension has been updated to v.4.
 - There is a new DSL option `@require_declaration` that will turn off automatic inferring for species, parameters, and variables in the DSL. For example, the following will now error:
