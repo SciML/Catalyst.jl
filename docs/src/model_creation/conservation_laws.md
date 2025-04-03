@@ -39,7 +39,7 @@ Using the `unknowns` function we can confirm that the ODE only has a single unkn
 ```@example conservation_laws
 unknowns(osys)
 ```
-Next, using `parameters` we note that an additional parameter, `Γ` has been added to the system:
+Next, using `parameters` we note that an additional (vector) parameter, `Γ` has been added to the system:
 ```@example conservation_laws
 parameters(osys)
 ```
