@@ -381,12 +381,16 @@ end
 
 # merge constraint components with the ReactionSystem components
 # also handles removing BC and constant species
-function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved = false)
+function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved = false,
+        treat_conserved_as_eqs = false)
     # if there are BC species, put them after the independent species
     rssts = get_unknowns(rs)
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
     ps = get_ps(rs)
-
+    initeqs = Equation[]
+    defs = MT.defaults(rs)
+    obs = MT.observed(rs)
+    
     # make dependent species observables and add conservation constants as parameters
     if remove_conserved
         nps = get_networkproperties(rs)
@@ -394,14 +398,23 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
         # add the conservation constants as parameters and set their values
         ps = copy(ps)
         push!(ps, nps.conservedconst)
-        defs = copy(MT.defaults(rs))
 
-        # add the dependent species as observed
-        obs = copy(MT.observed(rs))
-        append!(obs, nps.conservedeqs)
-    else
-        defs = MT.defaults(rs)
-        obs = MT.observed(rs)
+        if treat_conserved_as_eqs
+            # add back previously removed dependent species
+            sts = union(sts, nps.depspecs)       
+
+            # treat conserved eqs as normal eqs
+            append!(eqs, conservedequations(rs))
+
+            # add initialization equations for conserved parameters
+            initialmap = Dict(u => Initial(u) for u in species(rs))
+            conseqs = conservationlaw_constants(rs)
+            initeqs = [Symbolics.substitute(conseq, initialmap) for conseq in conseqs]        
+        else
+            # add the dependent species as observed
+            obs = copy(obs)
+            append!(obs, conservedequations(rs))
+        end
     end
 
     ceqs = Equation[eq for eq in get_eqs(rs) if eq isa Equation]
@@ -419,8 +432,9 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
         append!(eqs, ceqs)
     end
 
-    eqs, sts, ps, obs, defs
+    eqs, sts, ps, obs, defs, initeqs
 end
+
 
 # used by flattened systems that don't support constraint equations currently
 function error_if_constraints(::Type{T}, sys::ReactionSystem) where {T <: MT.AbstractSystem}
@@ -509,13 +523,17 @@ Keyword args and default values:
   ignored. Defaults to the value given when the `ReactionSystem` was constructed (which
   itself defaults to true).
 - `remove_conserved=false`, if set to `true` will calculate conservation laws of the
-  underlying set of reactions (ignoring constraint equations), and then apply them to reduce
-  the number of equations.
+  underlying set of reactions (ignoring coupled ODE or algebraic equations). For each
+  conservation law one steady-state equation is eliminated, and replaced with the
+  conservation law. This ensures a non-singular Jacobian. When using this option, it is
+  recommended to call `ModelingToolkit.structural_simplify` on the converted system to then
+  eliminate the conservation laws from the system equations.
 """
 function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        include_zero_odes = true, remove_conserved = false, checks = false,
-        default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
+        remove_conserved = false, checks = false,
+        default_u0 = Dict(), default_p = Dict(), 
+        defaults = _merge(Dict(default_u0), Dict(default_p)),
         all_differentials_permitted = false, kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
@@ -527,44 +545,25 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     # Generates system equations.
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
-    ists, ispcs = get_indep_sts(fullrs, remove_conserved)
+    ists, ispcs = get_indep_sts(fullrs)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
-        as_odes = false, include_zero_odes)
-    eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
-
-    # Makes modifications to handle conservation laws. Currently requires special consideration 
-    # due to MTK updates. Long-term, hopefully we can have a unified solution across all systems.
-    # This, current, NonlinearSystem solution is based on https://github.com/SciML/ModelingToolkit.jl/issues/3458#issuecomment-2725487268.
-    eqs, obs, initialization_eqs = handle_nlsys_cons_laws(rs, eqs, obs, remove_conserved)
-    us = union(species(rs), us)
+        as_odes = false, include_zero_odes = false)
+    eqs, us, ps, obs, defs, initeqs = addconstraints!(eqs, fullrs, ists, ispcs; 
+        remove_conserved, treat_conserved_as_eqs = true)
 
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.
     all_differentials_permitted || nonlinear_convert_differentials_check(rs)
     eqs = [remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
 
-    NonlinearSystem(eqs, us, ps;
+    nsys = NonlinearSystem(eqs, us, ps;
         name,
-        observed = obs, initialization_eqs,
+        observed = obs, initialization_eqs = initeqs,
         defaults = _merge(defaults, defs),
         checks,
         kwargs...)
-end
 
-# If conservation laws have been eliminated, update the equations and observables to reflect this.
-# Also creates the `initialization_eqs` vector that is provided to the `NonlinearSystem` constructor.
-function handle_nlsys_cons_laws(rs::ReactionSystem, eqs, obs, remove_conserved)
-    # If `remove_conserved = false`, return input without modification. Else, split observables
-    # into normal ones and conservation law ones.
-    remove_conserved || (return eqs, obs, Vector{Equation}())
-    conseqs = obs[end - Catalyst.get_networkproperties(rs).nullity + 1:end]
-    obs = obs[1:end - Catalyst.get_networkproperties(rs).nullity]
-
-    # Adds the conservation laws to the equations, and their modified version to `initialization_eqs`.
-    eqs = [eqs; conseqs]
-    u0_ps_dict = Dict(u => Initial(u) for u in species(rs))
-    initialization_eqs = [Symbolics.substitute(conseq, u0_ps_dict) for conseq in conseqs]
-    return eqs, obs, initialization_eqs
+    return nsys
 end
 
 # Ideally, when `ReactionSystem`s are converted to `NonlinearSystem`s, any coupled ODEs should be
@@ -724,12 +723,11 @@ end
 # NonlinearProblem from AbstractReactionNetwork
 function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         p = DiffEqBase.NullParameters(), args...;
-        name = nameof(rs), include_zero_odes = true,
-        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, checks = false, check_length = false, 
         all_differentials_permitted = false, kwargs...)
-    nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, include_zero_odes,
-        checks, all_differentials_permitted, remove_conserved)
+    nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, checks, 
+        all_differentials_permitted, remove_conserved)
     nlsys = complete(nlsys)
     return NonlinearProblem(nlsys, u0, p, args...; check_length,
         kwargs...)
