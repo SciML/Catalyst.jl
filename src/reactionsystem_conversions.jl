@@ -545,7 +545,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     # Generates system equations.
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
-    ists, ispcs = get_indep_sts(fullrs)
+    ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
         as_odes = false, include_zero_odes = false)
     eqs, us, ps, obs, defs, initeqs = addconstraints!(eqs, fullrs, ists, ispcs; 
