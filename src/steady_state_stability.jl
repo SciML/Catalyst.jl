@@ -118,7 +118,7 @@ function steady_state_jac(rs::ReactionSystem; u0 = [sp => 0.0 for sp in unknowns
     # Creates an `ODEProblem` with a Jacobian. Dummy values for `u0` and `ps` must be provided.
     ps = [p => 0.0 for p in parameters(rs)]
     return ODEProblem(rs, u0, 0, ps; jac = true, combinatoric_ratelaws,
-        remove_conserved = true, remove_conserved_warn = false)
+        remove_conserved = true)
 end
 
 # Converts a `u` vector from a vector of values to a map.
