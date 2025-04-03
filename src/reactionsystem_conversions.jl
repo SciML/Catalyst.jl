@@ -556,14 +556,12 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     all_differentials_permitted || nonlinear_convert_differentials_check(rs)
     eqs = [remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
 
-    nsys = NonlinearSystem(eqs, us, ps;
+    NonlinearSystem(eqs, us, ps;
         name,
         observed = obs, initialization_eqs = initeqs,
         defaults = _merge(defaults, defs),
         checks,
         kwargs...)
-
-    return nsys
 end
 
 # Ideally, when `ReactionSystem`s are converted to `NonlinearSystem`s, any coupled ODEs should be
