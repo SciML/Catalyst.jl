@@ -10,16 +10,7 @@ For an ordinary differential equation
 \frac{dx_n}{dt} &= f_n(x_1, x_2, ..., x_n) \\
 \end{aligned}
 ```
-the nullclines are the curves
-```math
-\begin{aligned}
-0 &= f_1(x_1, x_2, ..., x_n) \\
-0 &= f_2(x_1, x_2, ..., x_n) \\
-                &\vdots\\
-0 &= f_n(x_1, x_2, ..., x_n) \\
-\end{aligned}
-```
-where the $i$'th nullclines is the curve along which $\frac{dx_i}{dt} = 0$. Generally, nullclines are primarily computed for models with 2 variables (as these can be easily plotted).
+the $i$'th nullcline is the surface along which $\frac{dx_i}{dt} = 0$, i.e. the implicit surface given by $f_i(x_1,\dots,x_n) = 0$. Nullclines are frequently used when visualizing the phase-planes of two-dimensional models (as these can be easily plotted).
 
 ## [Computing nullclines and steady states for a bistable switch](@id nullcline_plotting_computation)
 For our example we will use a simple bistable switch model, consisting of two species ($X$ and $Y$) which mutually inhibit each other through repressive Hill functions. We will create our model [programmatically](@ref programmatic_CRN_construction).
