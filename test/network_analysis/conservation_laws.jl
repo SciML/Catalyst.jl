@@ -124,7 +124,7 @@ let
     @test osol1[sps] ≈ osol2[sps] ≈ osol3[sps]
 
     # Checks that steady states found using nonlinear solving and steady state simulations are identical.
-    nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true))
+    nsys = structural_simplify(convert(NonlinearSystem, rn; remove_conserved = true))
     nprob1 = NonlinearProblem{true}(nsys, u0, p)
     nprob2 = NonlinearProblem(rn, u0, p)
     nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true)
