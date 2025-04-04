@@ -344,51 +344,50 @@ let
     sol2 = solve(op, Tsit5())
     @test norm(sol.u - sol2.u) ≈ 0
 
-    # Temporary disabled due to and error on Julia `pre` build.
-    # # Rest unpacking variables.
-    # function unpacktest(rn)
-    #     Catalyst.@unpacksys rn
-    #     u₀ = [S1 => 999.0, I1 => 1.0, R1 => 0.0]
-    #     p = [α1 => 1e-4, β1 => 0.01]
-    #     op = ODEProblem(rn, u₀, (0.0, 250.0), p)
-    #     solve(op, Tsit5())
-    # end
-    # rn = @reaction_network begin
-    #     α1, S1 + I1 --> 2I1
-    #     β1, I1 --> R1
-    # end
-    # sol3 = unpacktest(rn)
-    # @test norm(sol.u - sol3.u) ≈ 0
-#
-    # # Test symmap_to_varmap.
-    # sir = @network_component sir begin
-    #     β, S + I --> 2I
-    #     ν, I --> R
-    # end
-    # subsys = @network_component subsys begin
-    #     k, A --> B
-    # end
-    # @named sys = compose(sir, [subsys])
-    # sir = complete(sir)
-    # sys = complete(sys)
-#
-    # symmap = [:S => 1.0, :I => 1.0, :R => 1.0, :subsys₊A => 1.0, :subsys₊B => 1.0]
-    # u0map = symmap_to_varmap(sys, symmap)
-    # pmap = symmap_to_varmap(sys, [:β => 1.0, :ν => 1.0, :subsys₊k => 1.0])
-    # @test isequal(u0map[4][1], subsys.A)
-    # @test isequal(u0map[1][1], @nonamespace sir.S)
-#
-    # u0map = symmap_to_varmap(sir, [:S => 999.0, :I => 1.0, :R => 0.0])
-    # pmap = symmap_to_varmap(sir, [:β => 1e-4, :ν => 0.01])
-    # op = ODEProblem(sir, u0map, tspan, pmap)
-    # sol4 = solve(op, Tsit5())
-    # @test norm(sol.u - sol4.u) ≈ 0
-#
-    # u0map = [:S => 999.0, :I => 1.0, :R => 0.0]
-    # pmap = (:β => 1e-4, :ν => 0.01)
-    # op = ODEProblem(sir, u0map, tspan, pmap)
-    # sol5 = solve(op, Tsit5())
-    # @test norm(sol.u - sol5.u) ≈ 0
+    # Rest unpacking variables.
+    function unpacktest(rn)
+        Catalyst.@unpacksys rn
+        u₀ = [S1 => 999.0, I1 => 1.0, R1 => 0.0]
+        p = [α1 => 1e-4, β1 => 0.01]
+        op = ODEProblem(rn, u₀, (0.0, 250.0), p)
+        solve(op, Tsit5())
+    end
+    rn = @reaction_network begin
+        α1, S1 + I1 --> 2I1
+        β1, I1 --> R1
+    end
+    sol3 = unpacktest(rn)
+    @test norm(sol.u - sol3.u) ≈ 0
+
+    # Test symmap_to_varmap.
+    sir = @network_component sir begin
+        β, S + I --> 2I
+        ν, I --> R
+    end
+    subsys = @network_component subsys begin
+        k, A --> B
+    end
+    @named sys = compose(sir, [subsys])
+    sir = complete(sir)
+    sys = complete(sys)
+
+    symmap = [:S => 1.0, :I => 1.0, :R => 1.0, :subsys₊A => 1.0, :subsys₊B => 1.0]
+    u0map = symmap_to_varmap(sys, symmap)
+    pmap = symmap_to_varmap(sys, [:β => 1.0, :ν => 1.0, :subsys₊k => 1.0])
+    @test isequal(u0map[4][1], subsys.A)
+    @test isequal(u0map[1][1], @nonamespace sir.S)
+
+    u0map = symmap_to_varmap(sir, [:S => 999.0, :I => 1.0, :R => 0.0])
+    pmap = symmap_to_varmap(sir, [:β => 1e-4, :ν => 0.01])
+    op = ODEProblem(sir, u0map, tspan, pmap)
+    sol4 = solve(op, Tsit5())
+    @test norm(sol.u - sol4.u) ≈ 0
+
+    u0map = [:S => 999.0, :I => 1.0, :R => 0.0]
+    pmap = (:β => 1e-4, :ν => 0.01)
+    op = ODEProblem(sir, u0map, tspan, pmap)
+    sol5 = solve(op, Tsit5())
+    @test norm(sol.u - sol5.u) ≈ 0
 end
 
 # Tests non-integer stoichiometry.
