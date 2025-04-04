@@ -38,7 +38,7 @@ end
 # Evaluates the the drift function of the ODE corresponding to a reaction network.
 # Also checks that in place and out of place evaluations are identical.
 function f_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true)
-    prob = ODEProblem(rs, u, (0.0, 0.0), p; combinatoric_ratelaws)
+    prob = ODEProblem(rs, u, 0.0, p; combinatoric_ratelaws)
     du = zeros(length(u))
     prob.f(du, prob.u0, prob.p, t)
     @test du == prob.f(prob.u0, prob.p, t)
@@ -47,9 +47,9 @@ end
 
 # Evaluates the the Jacobian of the drift function of the ODE corresponding to a reaction network.
 # Also checks that in place and out of place evaluations are identical.
-function jac_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true)
-    prob = ODEProblem(rs, u, (0.0, 0.0), p; jac = true, combinatoric_ratelaws)
-    J = zeros(length(u), length(u))
+function jac_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, sparse = false)
+    prob = ODEProblem(rs, u, 0.0, p; jac = true, combinatoric_ratelaws, sparse)
+    J = sparse ? deepcopy(prob.f.jac_prototype) : zeros(length(u), length(u))
     prob.f.jac(J, prob.u0, prob.p, t)
     @test J == prob.f.jac(prob.u0, prob.p, t)
     return J
@@ -58,7 +58,7 @@ end
 # Evaluates the the diffusion function of the SDE corresponding to a reaction network.
 # Also checks that in place and out of place evaluations are identical.
 function g_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true)
-    prob = SDEProblem(rs, u, (0.0, 0.0), p; combinatoric_ratelaws)
+    prob = SDEProblem(rs, u, 0.0, p; combinatoric_ratelaws)
     dW = zeros(length(u), numreactions(rs))
     prob.g(dW, prob.u0, prob.p, t)
     @test dW == prob.g(prob.u0, prob.p, t)
