@@ -99,7 +99,7 @@ let
     @named nsys = NonlinearSystem(connections, [], [])
     @named ssrepressilator = ReactionSystem(t; systems = [nsys, sys₁, sys₂, sys₃])
     ssrepressilator = complete(ssrepressilator)
-    @named nlrepressilator = convert(NonlinearSystem, ssrepressilator, include_zero_odes = false)
+    @named nlrepressilator = convert(NonlinearSystem, ssrepressilator)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
@@ -112,7 +112,7 @@ let
     # Flattening.
     fsys = Catalyst.flatten(ssrepressilator)
     fsys = complete(fsys)
-    @named nlrepressilator = convert(NonlinearSystem, fsys, include_zero_odes = false)
+    @named nlrepressilator = convert(NonlinearSystem, fsys)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
@@ -130,7 +130,7 @@ let
                                 [])
     @named repressilator2 = ReactionSystem(connections, t; systems = [sys₁, sys₂, sys₃])
     repressilator2 = complete(repressilator2)
-    @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes = false)
+    @named nlrepressilator = convert(NonlinearSystem, repressilator2)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
@@ -249,7 +249,7 @@ let
     repressilator2 = Catalyst.flatten(repressilator2)
     repressilator2 = extend(csys, repressilator2)
     repressilator2 = complete(repressilator2)
-    @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes = false)
+    @named nlrepressilator = convert(NonlinearSystem, repressilator2)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
