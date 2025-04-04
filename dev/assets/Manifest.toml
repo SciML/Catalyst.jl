@@ -1224,9 +1224,9 @@ weakdeps = ["StaticArrays"]
 
 [[deps.FractalDimensions]]
 deps = ["ComplexityMeasures", "Distances", "Distributions", "HypothesisTests", "Neighborhood", "ProgressMeter", "Random", "Reexport", "Roots", "Scratch", "SpecialFunctions", "StateSpaceSets", "Statistics"]
-git-tree-sha1 = "f76d8eb8130259e59a2d0f4f20cea77c0d773d3d"
+git-tree-sha1 = "4972ff41c5959e33ca4e4ef03f6e7e4b00ef025d"
 uuid = "4665ce21-e117-4649-aed8-08bbe5ccbead"
-version = "1.9.2"
+version = "1.9.3"
 
 [[deps.FreeType]]
 deps = ["CEnum", "FreeType2_jll"]
