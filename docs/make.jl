@@ -2,6 +2,7 @@ using Documenter
 using Catalyst, ModelingToolkit
 # Add packages for plotting
 using GraphMakie, CairoMakie
+#using MultiDocumenter
 
 docpath = Base.source_dir()
 assetpath = joinpath(docpath, "src", "assets")
@@ -39,14 +40,42 @@ makedocs(sitename = "Catalyst.jl",
         collapselevel = 1,
         assets = ["assets/favicon.ico"],
         canonical = "https://docs.sciml.ai/Catalyst/stable/"),
-    modules = [Catalyst, ModelingToolkit, 
-               isdefined(Base, :get_extension) ? Base.get_extension(Catalyst, :CatalystGraphMakieExtension) :
-               Catalyst.CatalystGraphMakieExtension],
+    modules = [Catalyst, ModelingToolkit,
+        isdefined(Base, :get_extension) ?
+        Base.get_extension(Catalyst, :CatalystGraphMakieExtension) :
+        Catalyst.CatalystGraphMakieExtension],
     doctest = false,
     clean = true,
     pages = pages,
     pagesonly = true,
     warnonly = [:missing_docs])
 
+#clonedir = mktempdir()
+
+#docs = [MultiDocumenter.MultiDocRef(
+#        upstream = joinpath(@__DIR__, "build"),
+#        path = "docs",
+#        name = "Catalyst",
+#        fix_canonical_url = false,
+#        ),
+#        MultiDocumenter.MultiDocRef(
+#        upstream = joinpath(clonedir, "build"),
+#        path = "NetworkAnalysis",
+#        name = "CatalystNetworkAnalysis",
+#        giturl = "https://github.com/SciML/CatalystNetworkAnalysis.jl",
+#        )]
+
 deploydocs(repo = "github.com/SciML/Catalyst.jl.git";
     push_preview = true)
+
+#outpath = joinpath(@__DIR__, "build")
+#MultiDocumenter.make(outpath, docs;
+#                     assets_dir = "docs/src/assets",
+#                     search_engine = MultiDocumenter.SearchConfig(index_versions = [
+#                                                                      "stable",
+#                                                                  ],
+#                                                                  engine = MultiDocumenter.FlexSearch),
+#                     brand_image = MultiDocumenter.BrandImage("https://sciml.ai",
+#                                                              joinpath("assets",
+#                                                                       "logo.png")))
+#

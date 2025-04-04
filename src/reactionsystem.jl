@@ -594,7 +594,8 @@ function debug_comparer(fun, prop1, prop2, propname; debug = false)
     if fun(prop1, prop2)
         return true
     else
-        debug && println("Comparison was false for property: ", propname, "\n    Found: ", prop1, " vs ", prop2)
+        debug && println("Comparison was false for property: ", propname,
+            "\n    Found: ", prop1, " vs ", prop2)
         return false
     end
 end
@@ -623,28 +624,38 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
     end
     debug_comparer(==, get_combinatoric_ratelaws(rn1), get_combinatoric_ratelaws(rn2),
         "combinatoric_ratelaws"; debug) || return false
-    debug_comparer(==, MT.iscomplete(rn1), MT.iscomplete(rn2), "complete"; debug) || return false
+    debug_comparer(==, MT.iscomplete(rn1), MT.iscomplete(rn2), "complete"; debug) ||
+        return false
 
     # symbolic variables and parameters
     debug_comparer(isequal, get_iv(rn1), get_iv(rn2), "ivs"; debug) || return false
     debug_comparer(issetequal, get_sivs(rn1), get_sivs(rn2), "sivs"; debug) || return false
-    debug_comparer(issetequal, get_unknowns(rn1), get_unknowns(rn2), "unknowns"; debug) || return false
-    debug_comparer(issetequal, get_species(rn1), get_species(rn2), "species"; debug) || return false
+    debug_comparer(issetequal, get_unknowns(rn1), get_unknowns(rn2), "unknowns"; debug) ||
+        return false
+    debug_comparer(issetequal, get_species(rn1), get_species(rn2), "species"; debug) ||
+        return false
     debug_comparer(issetequal, get_ps(rn1), get_ps(rn2), "ps"; debug) || return false
-    debug_comparer(issetequal, MT.get_defaults(rn1), MT.get_defaults(rn2), "defaults"; debug) || return false
+    debug_comparer(
+        issetequal, MT.get_defaults(rn1), MT.get_defaults(rn2), "defaults"; debug) ||
+        return false
 
     # equations and reactions
-    debug_comparer(issetequal, MT.get_observed(rn1), MT.get_observed(rn2), "observed"; debug) || return false
+    debug_comparer(
+        issetequal, MT.get_observed(rn1), MT.get_observed(rn2), "observed"; debug) ||
+        return false
     debug_comparer(issetequal, get_eqs(rn1), get_eqs(rn2), "eqs"; debug) || return false
-    debug_comparer(issetequal, MT.get_continuous_events(rn1), MT.get_continuous_events(rn2), "cevents"; debug) || return false
-    debug_comparer(issetequal, MT.get_discrete_events(rn1), MT.get_discrete_events(rn2), "devents"; debug) || return false
+    debug_comparer(issetequal, MT.get_continuous_events(rn1),
+        MT.get_continuous_events(rn2), "cevents"; debug) || return false
+    debug_comparer(issetequal, MT.get_discrete_events(rn1),
+        MT.get_discrete_events(rn2), "devents"; debug) || return false
 
     # coupled systems
     if (length(get_systems(rn1)) != length(get_systems(rn2)))
         println("Systems have different numbers of subsystems.")
         return false
     end
-    debug_comparer(issetequal, get_systems(rn1), get_systems(rn2), "systems"; debug) || return false
+    debug_comparer(issetequal, get_systems(rn1), get_systems(rn2), "systems"; debug) ||
+        return false
 
     true
 end
@@ -1445,7 +1456,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
 end
 
 function complete_check(sys, method)
-    if MT.iscomplete(sys)  
+    if MT.iscomplete(sys)
         error("$method with one or more `ReactionSystem`s requires systems to not be marked complete, but system: $(MT.get_name(sys)) is marked complete.")
     end
     nothing
@@ -1462,7 +1473,8 @@ Notes:
 - Returns a new `ReactionSystem` and does not modify `rs`.
 - By default, the new `ReactionSystem` will have the same name as `sys`.
 """
-function ModelingToolkit.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
+function ModelingToolkit.compose(
+        sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
     complete_check(sys, "ModelingToolkit.compose")
     foreach(s -> complete_check(s, "ModelingToolkit.compose"), systems)
 
@@ -1503,10 +1515,9 @@ Notes:
 """
 function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
         name::Symbol = nameof(sys))
-
     complete_check(sys, "ModelingToolkit.extend")
     complete_check(rs, "ModelingToolkit.extend")
-    
+
     any(T -> sys isa T, (ReactionSystem, ODESystem, NonlinearSystem)) ||
         error("ReactionSystems can only be extended with ReactionSystems, ODESystems and NonlinearSystems currently. Received a $(typeof(sys)) system.")
 
