@@ -2955,9 +2955,9 @@ version = "0.1.4"
 
 [[deps.ProgressMeter]]
 deps = ["Distributed", "Printf"]
-git-tree-sha1 = "8f6bc219586aef8baf0ff9a5fe16ee9c70cb65e4"
+git-tree-sha1 = "1efcd8b38f007101ec6c4ff42df9aedd1b5450de"
 uuid = "92933f4c-e287-5a05-a399-4b506db050ca"
-version = "1.10.2"
+version = "1.10.3"
 
 [[deps.ProjectiveVectors]]
 deps = ["LinearAlgebra", "StaticArrays"]
