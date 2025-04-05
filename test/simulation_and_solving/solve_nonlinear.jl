@@ -78,7 +78,7 @@ end
 
 # Checks for system with conservation laws.
 # Checks using interfacing with output solution.
-@test_broken let  # Conservation law removal currently not working for NonlinearSystems due to MTK depricating something. https://github.com/SciML/ModelingToolkit.jl/issues/3458, https://github.com/SciML/ModelingToolkit.jl/issues/3411
+let
     # Creates steady state network, unpack the parameter values.
     steady_state_network_3 = @reaction_network begin
         (p,d), 0 <--> X
