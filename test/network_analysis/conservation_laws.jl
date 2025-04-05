@@ -328,6 +328,7 @@ end
 # Generally, if `Γ` has not been explicitly updated, it will be updated to acomodate new species
 # values. If it has been explicitly updated, the corresponding eliminated quantity will have its
 # value updated to acomodate new Γ/species values (also, the eliminated species's value can not longer be changed).
+# Also checks that quantities are correctly updated in integrators and solutions derived from problems.
 let
     # Prepares the problem inputs and computes the conservation equation.
     rn = @reaction_network begin
@@ -343,7 +344,7 @@ let
     oprob = ODEProblem(rn, u0, 1.0, ps; remove_conserved = true)
     sprob = SDEProblem(rn, u0, 1.0, ps; remove_conserved = true)
     nlprob = NonlinearProblem(rn, u0, ps; remove_conserved = true)
-    for prob_old in [oprob, sprob, nlprob]
+    for (prob_old, solver) in zip([oprob, sprob, nlprob], [Tsit5(), ImplicitEM(), NewtonRaphson()])
         # For a couple of iterations, updates the problem, ensuring that when a species is updated:
         # - Only that species and the conservation constant have their values updated.
         # The `≈` is because sometimes the computed values will not be fully exact.
@@ -365,6 +366,20 @@ let
             @test X3_new ≈ prob_new[:X3]
             @test substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => prob_old[X2], X3 => X3_new])) ≈ prob_new.ps[:Γ][1]
             prob_old = prob_new
+
+            # Checks that integrator and solutions have identical content to problem.
+            integrator = init(prob_new, solver)
+            sol = solve(prob_new, solver; maxiters = 1, verbose = false)
+            @test prob_new.ps[:Γ][1] == integrator.ps[:Γ][1] == sol.ps[:Γ][1]
+            if ModelingToolkit.is_time_dependent(prob_new)
+                @test prob_new[:X1] == integrator[:X1] == sol[:X1][1]
+                @test prob_new[:X2] == integrator[:X2] == sol[:X2][1]
+                @test prob_new[:X3] == integrator[:X3] == sol[:X3][1]
+            else
+                @test prob_new[:X1] == integrator[:X1]
+                @test prob_new[:X2] == integrator[:X2]
+                @test prob_new[:X3] == integrator[:X3]
+            end
         end
 
         # Similarly, but now also updates the conservation constant. Here, once Γ has been updated:
@@ -400,6 +415,20 @@ let
             @test prob_old[:X3] ≈ prob_new[:X3]
             @test prob_old.ps[:Γ][1] ≈ prob_new.ps[:Γ][1]
             prob_old = prob_new
+
+            # Checks that integrator and solutions have identical content to problem.
+            integrator = init(prob_new, solver)
+            sol = solve(prob_new, solver; maxiters = 1, verbose = false)
+            @test prob_new.ps[:Γ][1] == integrator.ps[:Γ][1] == sol.ps[:Γ][1]
+            if ModelingToolkit.is_time_dependent(prob_new)
+                @test prob_new[:X1] == integrator[:X1] == sol[:X1][1]
+                @test prob_new[:X2] == integrator[:X2] == sol[:X2][1]
+                @test prob_new[:X3] == integrator[:X3] == sol[:X3][1]
+            else
+                @test prob_new[:X1] == integrator[:X1]
+                @test prob_new[:X2] == integrator[:X2]
+                @test prob_new[:X3] == integrator[:X3]
+            end
         end
     end
 end
