@@ -92,7 +92,7 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
         has_equations, has_observed, has_defaults, has_continuous_events,
         has_discrete_events, has_systems, has_connection_type)
     annotate || (@string_prepend! "\n" file_text)
-    annotate && @string_prepend! "\n# Serialised using Catalyst version v$(Catalyst.VERSION)." file_text
+    annotate && top_level && @string_prepend! "\n# Serialised using Catalyst version v$(Catalyst.VERSION)." file_text
     @string_prepend! "let" file_text
     @string_append! file_text "\n\n" rs_creation_code "\n\nend"
 
