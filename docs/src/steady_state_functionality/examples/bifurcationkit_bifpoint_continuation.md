@@ -106,3 +106,22 @@ sol_nosc = OrdinaryDiffEqDefault.solve(oprob_nosc)
 sol_osc = OrdinaryDiffEqDefault.solve(oprob_osc)
 plot(plot(sol_nosc; title = "No oscillation"), plot(sol_osc; title = "Oscillation"); size = (1000, 400), lw = 4)
 ```
+
+
+---
+## [Citation](@id bifurcation_kit_citation)
+If you use this functionality in your research, please cite the following paper to support the author of the BifurcationKit package:
+```
+@misc{veltz:hal-02902346,
+  title = {{BifurcationKit.jl}},
+  author = {Veltz, Romain},
+  url = {https://hal.archives-ouvertes.fr/hal-02902346},
+  institution = {{Inria Sophia-Antipolis}},
+  year = {2020},
+  month = Jul,
+  keywords = {pseudo-arclength-continuation ; periodic-orbits ; floquet ; gpu ; bifurcation-diagram ; deflation ; newton-krylov},
+  pdf = {https://hal.archives-ouvertes.fr/hal-02902346/file/354c9fb0d148262405609eed2cb7927818706f1f.tar.gz},
+  hal_id = {hal-02902346},
+  hal_version = {v1},
+}
+```
