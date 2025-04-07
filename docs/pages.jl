@@ -43,7 +43,10 @@ pages = Any[
         "steady_state_functionality/nonlinear_solve.md",
         "steady_state_functionality/steady_state_stability_computation.md",
         "steady_state_functionality/bifurcation_diagrams.md",
-        "steady_state_functionality/dynamical_systems.md"
+        "steady_state_functionality/dynamical_systems.md",
+        "Examples" => Any[
+            "steady_state_functionality/examples/bifurcationkit_bifpoint_continuation.md"
+        ]
     ],
     "Inverse problems" => Any[
         "inverse_problems/petab_ode_param_fitting.md",

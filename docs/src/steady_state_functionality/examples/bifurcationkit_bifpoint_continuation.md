@@ -1,0 +1,4 @@
+# # [Tracking Bifurcation Point w.r.t. Secondary Parameters using BifurcationKit](@id bifurcationkit_bifpoint_continuation)
+Previously, we have shown how to [compute bifurcation diagrams](@ref bifurcation_diagrams) using [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl). In this tutorial we will show how to, after computing the initial diagram, we can track of the position of a bifurcation point moves as a secondary parameter is changed.
+
+We will first compute the bifurcation diagram, using the same approach as in the [corresponding tutorial](@ref bifurcation_diagrams). For this example, we will use the oscillating [Repressilator](@ref basic_CRN_library_repressilator) model.
