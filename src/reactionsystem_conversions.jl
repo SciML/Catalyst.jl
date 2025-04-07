@@ -517,30 +517,35 @@ Base.convert(::Type{<:NonlinearSystem},rs::ReactionSystem)
 Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.NonlinearSystem`.
 
 Keyword args and default values:
-- `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,
+- `combinatoric_ratelaws = true` uses factorial scaling factors in calculating the rate law,
   i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. Set
   `combinatoric_ratelaws=false` for a ratelaw of `k*S^2`, i.e. the scaling factor is
   ignored. Defaults to the value given when the `ReactionSystem` was constructed (which
   itself defaults to true).
-- `remove_conserved=false`, if set to `true` will calculate conservation laws of the
+- `remove_conserved = false`, if set to `true` will calculate conservation laws of the
   underlying set of reactions (ignoring coupled ODE or algebraic equations). For each
   conservation law one steady-state equation is eliminated, and replaced with the
   conservation law. This ensures a non-singular Jacobian. When using this option, it is
   recommended to call `ModelingToolkit.structural_simplify` on the converted system to then
   eliminate the conservation laws from the system equations.
+- `conseqs_remake_warn = true`: Currently, `NonlinearProblem`s created from `NonlinearSystem`s
+  where the `remove_conserved = true` option has been used cannot be reliably updated (e.g. via
+ `remake`). To make the users aware of this, we provid a warning when ``remove_conserved = true`.
+ By setting `conseqs_remake_warn = false`, this warning can be turned off.
 """
 function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        remove_conserved = false, checks = false,
+        remove_conserved = false, conseqs_remake_warn = true, checks = false,
         default_u0 = Dict(), default_p = Dict(), 
         defaults = _merge(Dict(default_u0), Dict(default_p)),
         all_differentials_permitted = false, kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
-    if !isautonomous(rs)
+    remove_conserved && conseqs_remake_warn &&
+        @warn "You are creating a NonlinearSystem (possibly via calling NonlinearProblem) while eliminating conserved quantities. Please note that due to current limitations / design choices in ModelingToolkit (which Catalyst is based on), NonlinearProblems with eliminated conservation laws cannot be reliably updated (e.g. via remake). You must instead create a new NonlinearProblem. Hopefully, this will be fixed in future releases. You can use the option `conseqs_remake_warn = false` to turn this warning off."
+    isautonomous(rs) ||
         error("Attempting to convert a non-autonomous `ReactionSystem` (e.g. where some rate depend on $(get_iv(rs))) to a `NonlinearSystem`. This is not possible. if you are intending to compute system steady states, consider creating and solving a `SteadyStateProblem.")
-    end
 
     # Generates system equations.
     fullrs = Catalyst.flatten(rs)
@@ -722,10 +727,10 @@ end
 function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         p = DiffEqBase.NullParameters(), args...;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        remove_conserved = false, checks = false, check_length = false, 
+        remove_conserved = false, conseqs_remake_warn = true, checks = false, check_length = false, 
         structural_simplify = remove_conserved, all_differentials_permitted = false, kwargs...)
     nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, checks, 
-        all_differentials_permitted, remove_conserved)
+        all_differentials_permitted, remove_conserved, conseqs_remake_warn)
     nlsys = structural_simplify ? MT.structural_simplify(nlsys) : complete(nlsys)
     return NonlinearProblem(nlsys, u0, p, args...; check_length,
         kwargs...)

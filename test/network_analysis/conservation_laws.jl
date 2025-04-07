@@ -124,10 +124,10 @@ let
     @test osol1[sps] ≈ osol2[sps] ≈ osol3[sps]
 
     # Checks that steady states found using nonlinear solving and steady state simulations are identical.
-    nsys = structural_simplify(convert(NonlinearSystem, rn; remove_conserved = true))
+    nsys = structural_simplify(convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false))
     nprob1 = NonlinearProblem{true}(nsys, u0, p)
     nprob2 = NonlinearProblem(rn, u0, p)
-    nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true)
+    nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false)
     ssprob1 = SteadyStateProblem{true}(osys, u0, p)
     ssprob2 = SteadyStateProblem(rn, u0, p)
     ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true)
@@ -312,7 +312,7 @@ let
     sprob = SDEProblem(rn, ss, 1.0, ps; jac = true)
     sprob_rc = SDEProblem(rn, ss, 1.0, ps; jac = true, remove_conserved = true)
     nlprob = NonlinearProblem(rn, ss, ps; jac = true)
-    nlprob_rc = NonlinearProblem(rn, ss, ps; jac = true, remove_conserved = true)
+    nlprob_rc = NonlinearProblem(rn, ss, ps; jac = true, remove_conserved = true, conseqs_remake_warn = false)
 
     # Checks that removing conservation laws generates non-singular Jacobian (and else that it is singular).
     @test is_singular(oprob) == true
@@ -343,7 +343,7 @@ let
     # Loops through the tests for different problem types.
     oprob = ODEProblem(rn, u0, 1.0, ps; remove_conserved = true)
     sprob = SDEProblem(rn, u0, 1.0, ps; remove_conserved = true)
-    nlprob = NonlinearProblem(rn, u0, ps; remove_conserved = true)
+    nlprob = NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = false)
     for (prob_old, solver) in zip([oprob, sprob, nlprob], [Tsit5(), ImplicitEM(), NewtonRaphson()])
         # For a couple of iterations, updates the problem, ensuring that when a species is updated:
         # - Only that species and the conservation constant have their values updated.
@@ -481,4 +481,21 @@ let
     # sol = solve(oprob, Vern7())
     # @test sol[X[1]][end] ≈ 8.0
     # @test sol[X[2]][end] ≈ 4.0
+end
+
+# Check conservation law elimination warnings for NonlinearSystems,
+let
+    # Create models.
+    rn = @reaction_network begin
+        (k1,k2), X1 <--> X2
+        (k3,k4), X1 + X2 <--> X3
+    end
+    u0 = [:X1 => 1.0, :X2 => 1.0, :X3 => 1.0]
+    ps = [:k1 => 0.1, :k2 => 0.2, :k3 => 0.3, :k4 => 0.4]
+    
+    # Checks that the warning si given and can be supressed for the variosu cases.
+    @test_nowarn convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false)
+    @test_logs (:warn, r"You are creating a NonlinearSystem *") convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = true)
+    @test_nowarn NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = false)
+    @test_logs (:warn, r"You are creating a NonlinearSystem *") NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = true)
 end
