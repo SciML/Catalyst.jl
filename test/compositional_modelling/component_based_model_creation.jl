@@ -507,12 +507,12 @@ let
     @variables x3(t) x4(t) x5(t)
     x2 = ParentScope(x2)
     x3 = ParentScope(ParentScope(x3))
-    x4 = DelayParentScope(x4, 2)
+    x4 = DelayParentScope(x4)
     x5 = GlobalScope(x5)
     @parameters p1 p2 p3 p4 p5
     p2 = ParentScope(p2)
     p3 = ParentScope(ParentScope(p3))
-    p4 = DelayParentScope(p4, 2)
+    p4 = DelayParentScope(p4)
     p5 = GlobalScope(p5)
     rxs = [Reaction(p1, nothing, [x1]), Reaction(p2, [x2], nothing), 
            D(x3) ~ p3, D(x4) ~ p4, D(x5) ~ p5]
@@ -530,11 +530,11 @@ let
     sys3 = sys3 ∘ sys2
     @test length(unknowns(sys3)) == 4
     @test any(isequal(x3), unknowns(sys3))
-    @test any(isequal(x4), unknowns(sys3))
+    @test any(endswith("x4") ∘ string ∘ getname, unknowns(sys3))
     @test length(species(sys3)) == 2
     @test length(parameters(sys3)) == 4
     @test any(isequal(p3), parameters(sys3))
-    @test any(isequal(p4), parameters(sys3))
+    @test any(endswith("p4") ∘ string ∘ getname, parameters(sys3))
     sys4 = complete(sys3)
     @test length(unknowns(sys3)) == 4
     @test length(parameters(sys4)) == 5
