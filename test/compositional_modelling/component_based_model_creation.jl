@@ -4,7 +4,7 @@
 
 # Fetch packages.
 using Catalyst, LinearAlgebra, OrdinaryDiffEqTsit5, SciMLNLSolve, Test
-using ModelingToolkit: nameof
+using ModelingToolkit: nameof, getname
 
 # Sets the default `t` to use.
 t = default_t()
