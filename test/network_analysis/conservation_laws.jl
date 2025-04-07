@@ -124,7 +124,7 @@ let
     @test osol1[sps] ≈ osol2[sps] ≈ osol3[sps]
 
     # Checks that steady states found using nonlinear solving and steady state simulations are identical.
-    nsys = structural_simplify(convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false))
+    nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false))
     nprob1 = NonlinearProblem{true}(nsys, u0, p)
     nprob2 = NonlinearProblem(rn, u0, p)
     nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false)
@@ -484,7 +484,8 @@ let
     # @test sol[X[2]][end] ≈ 4.0
 end
 
-# Check conservation law elimination warnings for NonlinearSystems,
+# Check conservation law elimination warnings (and the disabling of these) for `NonlinearSystem`s
+# and `NonlinearProblem`s.
 let
     # Create models.
     rn = @reaction_network begin

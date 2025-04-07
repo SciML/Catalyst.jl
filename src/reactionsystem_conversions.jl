@@ -525,9 +525,7 @@ Keyword args and default values:
 - `remove_conserved = false`, if set to `true` will calculate conservation laws of the
   underlying set of reactions (ignoring coupled ODE or algebraic equations). For each
   conservation law one steady-state equation is eliminated, and replaced with the
-  conservation law. This ensures a non-singular Jacobian. When using this option, it is
-  recommended to call `ModelingToolkit.structural_simplify` on the converted system to then
-  eliminate the conservation laws from the system equations.
+  conservation law. This ensures a non-singular Jacobian.
 - `conseqs_remake_warn = true`: Currently, `NonlinearProblem`s created from `NonlinearSystem`s
   where the `remove_conserved = true` option has been used cannot be reliably updated (e.g. via
  `remake`). To make the users aware of this, we provid a warning when ``remove_conserved = true`.
