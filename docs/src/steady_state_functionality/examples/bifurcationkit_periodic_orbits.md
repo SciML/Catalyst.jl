@@ -1,5 +1,5 @@
-# [Computing  Periodic Orbits (Oscillations) Using BifurcationKit.jl](@id bifurcationkit_periodic_orbits)
-Previously, we have shown how to [compute bifurcation diagrams](@ref bifurcation_diagrams) using [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl). In this tutorial we will consider a system which exhibits an oscillation and show how to use BifurcationKit to track not just the system's (potentially unstable) steady state, but also the periodic orbit itself.
+# [Computing Periodic Orbits (Oscillations) Using BifurcationKit.jl](@id bifurcationkit_periodic_orbits)
+Previously, we have shown how to [compute bifurcation diagrams](@ref bifurcation_diagrams) using [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl). In this tutorial we will consider a system which exhibits an oscillation and show how to use BifurcationKit to track not just the system's (potentially unstable) steady state, but also the periodic orbit itself. More information on how to track periodic orbits can be found in the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/).
 
 ## [Computing the bifurcation diagram for the Repressilator](@id bifurcationkit_periodic_orbits_bifdia)
 We will first compute the bifurcation diagram, using the same approach as in the [corresponding tutorial](@ref bifurcation_diagrams). For this example, we will use the oscillating [Repressilator](@ref basic_CRN_library_repressilator) model.
@@ -91,3 +91,22 @@ Previously, we had `record_from_solution` record the periodic orbit's period. Th
 plot(br_po, vars = (:param, :period); xguide = bif_par, yguide = "Period", xlimit = v_span, ylimit = (0.0, Inf))
 ```
 In the plot we see that the period start at around $18$ time units, and slowly increase with $v$.
+
+
+---
+## [Citation](@id bifurcation_kit_citation)
+If you use this functionality in your research, please cite the following paper to support the author of the BifurcationKit package:
+```
+@misc{veltz:hal-02902346,
+  title = {{BifurcationKit.jl}},
+  author = {Veltz, Romain},
+  url = {https://hal.archives-ouvertes.fr/hal-02902346},
+  institution = {{Inria Sophia-Antipolis}},
+  year = {2020},
+  month = Jul,
+  keywords = {pseudo-arclength-continuation ; periodic-orbits ; floquet ; gpu ; bifurcation-diagram ; deflation ; newton-krylov},
+  pdf = {https://hal.archives-ouvertes.fr/hal-02902346/file/354c9fb0d148262405609eed2cb7927818706f1f.tar.gz},
+  hal_id = {hal-02902346},
+  hal_version = {v1},
+}
+```
