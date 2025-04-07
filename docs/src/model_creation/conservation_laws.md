@@ -134,6 +134,8 @@ If the value of the conservation law parameter $Γ$'s value *has never been spec
 
 !!! warn
     When updating the values of problems with conservation laws it is additionally important to use `remake` (as opposed to direct indexing, e.g. setting `oprob[:X₁] = 16.0`).
+!!!
+    The updating of `NonlinearProblem`s where conservation laws have been eliminated is currently not supported (for other problem types, however, such updates are fine). Hopefully this will be possible in future updates, but for now, a new `NonlinearProblem` will have to be created.
 
 ### [Extracting the conservation law parameter's symbolic variable](@id conservation_laws_prob_updating_symvar)
 Catalyst represents its models using the [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl) computer algebraic system, something which allows the user to [form symbolic expressions of model components](@ref simulation_structure_interfacing_symbolic_representation). If you wish to extract and use the symbolic variable corresponding to a model's conserved quantities, you can use the following syntax:
