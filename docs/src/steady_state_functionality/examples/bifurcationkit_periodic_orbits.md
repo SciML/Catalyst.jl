@@ -44,7 +44,7 @@ prob_nosc = ODEProblem(repressilator, u_guess, 80.0, p_nosc)
 prob_osc = ODEProblem(repressilator, u_guess, 80.0, p_osc)
 sol_nosc = OrdinaryDiffEqDefault.solve(prob_nosc)
 sol_osc = OrdinaryDiffEqDefault.solve(prob_osc)
-plot(plot(sol_nosc; title = "v = 5"), plot(sol_osc; title = "v = 15"), size = (1000,400))
+plot(plot(sol_nosc; title = "v = 5"), plot(sol_osc; title = "v = 15"), size = (1000,400), lw = 4)
 ```
 
 ## [Tracking the periodic orbits](@id bifurcationkit_periodic_orbits_pos)
