@@ -91,11 +91,11 @@ perturb_solution(x, _, _) = (x  .+ 0.1 .* rand(length(x)))
 defalg = DefCont(; deflation_operator, perturb_solution)
 nothing # hide
 ```
-Next we compute our bifurcation diagram using `defalg` (instead of `PALC()` as previous) as our method. We also use a range of additional continuation parameter options to ensure a smooth tracking of the solution.
+Next we compute our bifurcation diagram using `defalg` (instead of `PALC()` as previous) as our method. We also use a range of additional continuation parameter options to ensure a smooth tracking of the solution. Here we have 
 ```@example ex1
 newton_options = NewtonPar(max_iterations = 10)
 cont_par = ContinuationPar(; p_min = p_span[1], p_max = p_span[2], ds = 0.001, max_steps = 10000, newton_options)
-bif_dia = continuation(bprob, alg, cont_par; plot = false, verbosity = 0)
+bif_dia = continuation(bprob, defalg, cont_par; plot = false, verbosity = 0)
 nothing # hide
 ```
 Finally we can plot the diagram, noting that (unlike previously) we are able to compute the full diagram.
