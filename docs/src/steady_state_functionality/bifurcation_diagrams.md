@@ -4,7 +4,7 @@ Bifurcation diagrams describe how, for a dynamical system, the quantity and type
 
 This tutorial briefly introduces how to use Catalyst with BifurcationKit through basic examples, with BifurcationKit.jl providing [a more extensive documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/). Especially for more complicated systems, where careful tuning of algorithm options might be required, reading the BifurcationKit documentation is recommended. Finally, BifurcationKit provides many additional features not described here, including [computation of periodic orbits](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/), [tracking of bifurcation points along secondary parameters](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/branchswitching/), and [bifurcation computations for PDEs](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/tutorials/tutorials/#PDEs:-bifurcations-of-equilibria).
 
-## Basic example
+## [Basic example](@id bifurcation_diagrams_basic_example)
 For this example, we will use a modified version of the model from Wilhelm (2009)[^2] (which
 demonstrates a bistable switch as the parameter $k1$ is varied). We declare the model using Catalyst:
 ```@example ex1
@@ -55,7 +55,7 @@ plot(bif_dia; xguide = "k1", yguide = "X")
 ```
 Here, the steady state concentration of $X$ is shown as a function of $k1$'s value. Stable steady states are shown with thick lines, unstable ones with thin lines. The two [fold bifurcation points](https://en.wikipedia.org/wiki/Saddle-node_bifurcation) are marked with "bp".
 
-## Additional `ContinuationPar` options
+## [Additional `ContinuationPar` options](@id bifurcation_diagrams_continuationpar)
 Most of the options required by the `bifurcationdiagram` function are provided through the `ContinuationPar` structure. For full details, please read the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.ContinuationPar). However, a few common options, and how they affect the continuation computation, are described here:
 - `p_min` and `p_max`: Set the interval over which the bifurcation diagram is computed (with the continuation stopping if it reaches these bounds).
 - `dsmin` and `dsmax`: The minimum and maximum length of the continuation steps (in the bifurcation parameter's value).
@@ -74,7 +74,7 @@ nothing # hide
 ```
 (however, in this case these additional settings have no significant effect on the result)
 
-## Bifurcation diagrams with disjoint branches
+## [Bifurcation diagrams with disjoint branches](@id bifurcation_diagrams_disjoint_branches)
 Let's consider the previous case, but instead compute the bifurcation diagram over the interval $(2.0,15.0)$:
 ```@example ex1
 p_span = (2.0, 15.0)
@@ -85,7 +85,7 @@ plot(bif_dia; xguide = "k1", yguide = "X")
 Here, in the bistable region, we only see a single branch. The reason is that the continuation algorithm starts at our initial guess (here made at $k1 = 4.0$ for $(X,Y) = (5.0,2.0)$) and tracks the diagram from there. However, with the upper bound set at $k1=15.0$ the bifurcation diagram has a disjoint branch structure, preventing the full diagram from being computed by continuation alone. In this case it could be solved by increasing the bound from $k1=15.0$, however, this is not possible in all cases. In these cases, *deflation* can be used. This is described in the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/tutorials/tutorials2/#Snaking-computed-with-deflation).
 
 
-## Systems with conservation laws
+## [Systems with conservation laws](@id bifurcation_diagrams_cons_laws)
 Some systems are under-determined at steady state, so that for a given parameter set they have an infinite number of possible steady state solutions, preventing bifurcation diagrams from being computed. Similar to when we [compute steady states for fixed parameter values](@ref homotopy_continuation_conservation_laws), we can utilise Catalyst's ability to detect and eliminate conservation laws to resolve this issue. This requires us to provide information of the species concentrations at which we wish to compute the bifurcation diagram (to determine the values of conserved quantities). These are provided to the `BifurcationProblem` using the `u0` argument.
 
 To illustrate this, we will create a simple model of a kinase that is produced and degraded (at rates $p$ and $d$). The kinase facilitates the phosphorylation of a protein ($X$), which is dephosphorylated at a constant rate. For this system, we will compute a bifurcation diagram, showing how the concentration of the phosphorylated protein ($Xp$) depends on the degradation rate of the kinase ($d$). We will set the total amount of protein ($X+Xp$) to $1.0$.
