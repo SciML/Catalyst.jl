@@ -16,7 +16,7 @@ Next, we create a `BifurcationProblem` for our model. We will compute the bifurc
 ```@example bifurcationkit_bifpoint_continuation
 using BifurcationKit
 bif_par = :v
-u_guess = [:X => 15.0, :Y => 15.0, :Z => 15.0]
+u_guess = [:X => 20.0, :Y => 15.0, :Z => 15.0]
 p_start = [:v => 10.0, :K => 15.0, :n => 3, :d => 0.2]
 plot_var = :X
 bprob = BifurcationProblem(repressilator, u_guess, p_start, bif_par; plot_var)
@@ -63,8 +63,10 @@ nothing # hide
 ```
 We can now plot how the position of the bifurcation point changes with $K$. Here, we use `vars = (:p1, :x)` to designate that we wish to plot (across the continuation branch) the plotting variable ($X$, which we designated when we created our `BifurcationProblem`) against the first parameter ($v$).
 ```@example bifurcationkit_bifpoint_continuation
-plot(bifdia; branchlabel = "Continuation of steady state w.r.t. v, (K = 15)", linewidthstable = 6, linewidthunstable = 3, markersize = 5)
-plot!(cont_hopf; vars = (:p1, :x), xlimit = v_span, xguide = bif_par, yguide = plot_var, branchlabel = "Continuation of Hopf bifurcation w.r.t. K")
+plot(bifdia; branchlabel = "Continuation of steady state w.r.t. v, (K = 15)", linewidthstable = 6, 
+    linewidthunstable = 3, markersize = 5)
+plot!(cont_hopf; vars = (:p1, :x), xlimit = v_span, xguide = bif_par, yguide = plot_var, 
+    branchlabel = "Continuation of Hopf bifurcation w.r.t. K")
 ```
 In this case we cannot see directly which part of the $K$ continuation branch corresponds to low values, however, for low $K$ the Hopf bifurcation occurs for much lower values of $v$ (and corresponds to lower steady state values of $X$). We can check this by e.g. re-computing the Hopf branch for `K_span = (0.01, 20.0)` and see that the rightmost part of the branch is shortened. 
 
@@ -82,7 +84,8 @@ Finally, we have already noted that the Hopf bifurcation splits parameter space 
 ```@example bifurcationkit_bifpoint_continuation
 xlimit = extrema(getfield.(cont_hopf.branch, :p1))
 ylimit = extrema(getfield.(cont_hopf.branch, :p2))
-plot(cont_hopf; vars = (:p1, :p2), xlimit, ylimit, branchlabel = "Hopf bifurcation", xguide = "v", yguide = "K", lw = 6)
+plot(cont_hopf; vars = (:p1, :p2), xlimit, ylimit, branchlabel = "Hopf bifurcation", 
+    xguide = "v", yguide = "K", lw = 6)
 ```
 Next, we colour parameter space according to whether the steady state is stable (blue) or unstable (red). We also mark two sample values (one in each region).
 ```@example bifurcationkit_bifpoint_continuation
@@ -95,11 +98,11 @@ scatter!(sample2; label = "Non-oscillatory parameter set", markersize = 7)
 ```
 Finally, we can perform one simulation using each of the parameter samples, confirming that one corresponds to an oscillation, while the other one does not.
 ```@example bifurcationkit_bifpoint_continuation
-ps_osc = [:v => sample1[1], :K => sample1[2], :n => 3, :d => 0.2]
 ps_nosc = [:v => sample2[1], :K => sample2[2], :n => 3, :d => 0.2]
-oprob_osc = ODEProblem(repressilator, u_guess, 100.0, ps_osc)
+ps_osc = [:v => sample1[1], :K => sample1[2], :n => 3, :d => 0.2]
 oprob_nosc = ODEProblem(repressilator, u_guess, 100.0, ps_nosc)
-sol_osc = OrdinaryDiffEqDefault.solve(oprob_osc)
+oprob_osc = ODEProblem(repressilator, u_guess, 100.0, ps_osc)
 sol_nosc = OrdinaryDiffEqDefault.solve(oprob_nosc)
-plot(plot(sol_osc; title = "Oscillation"), plot(sol_nosc; title = "No oscillation"); size = (1000, 400), lw = 4)
+sol_osc = OrdinaryDiffEqDefault.solve(oprob_osc)
+plot(plot(sol_nosc; title = "No oscillation"), plot(sol_osc; title = "Oscillation"); size = (1000, 400), lw = 4)
 ```
