@@ -51,7 +51,7 @@ function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     # Creates the appropriate nonlinear system, and converts parameters to a form that can
     # be substituted in later.
     rs = Catalyst.expand_registered_functions(rs)
-    ns = complete(convert(NonlinearSystem, rs; remove_conserved = true))
+    ns = complete(convert(NonlinearSystem, rs; remove_conserved = true, conseqs_remake_warn = false))
     pre_varmap = [symmap_to_varmap(rs, u0)..., symmap_to_varmap(rs, ps)...]
     Catalyst.conservationlaw_errorcheck(rs, pre_varmap)
     p_dict = make_p_val_dict(pre_varmap, rs, ns)

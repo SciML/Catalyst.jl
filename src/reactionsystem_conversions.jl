@@ -543,7 +543,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
     remove_conserved && conseqs_remake_warn &&
-        @warn "You are creating a NonlinearSystem (possibly via calling NonlinearProblem) while eliminating conserved quantities. Please note that due to current limitations / design choices in ModelingToolkit (which Catalyst is based on), NonlinearProblems with eliminated conservation laws cannot be reliably updated (e.g. via remake). You must instead create a new NonlinearProblem. Hopefully, this will be fixed in future releases. You can use the option `conseqs_remake_warn = false` to turn this warning off."
+        @warn "You are creating a NonlinearSystem (possibly via calling NonlinearProblem) while eliminating conserved quantities. Please note that due to current limitations / design choices in ModelingToolkit (which Catalyst is based on), species values of NonlinearProblems with eliminated conservation laws cannot be reliably updated (e.g. via remake). Updating of parameters is still supported. You must instead create a new NonlinearProblem. Hopefully, this will be fixed in future releases. You can use the option `conseqs_remake_warn = false` to turn this warning off."
     isautonomous(rs) ||
         error("Attempting to convert a non-autonomous `ReactionSystem` (e.g. where some rate depend on $(get_iv(rs))) to a `NonlinearSystem`. This is not possible. if you are intending to compute system steady states, consider creating and solving a `SteadyStateProblem.")
 
