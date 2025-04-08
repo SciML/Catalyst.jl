@@ -95,7 +95,7 @@ In the plot we see that the period starts at around $18$ time units, and slowly 
 
 
 ---
-## [Citation](@id bifurcation_kit_citation)
+## [Citation](@id bifurcationkit_periodic_orbits_citation)
 If you use this functionality in your research, please cite the following paper to support the author of the BifurcationKit package:
 ```
 @misc{veltz:hal-02902346,
