@@ -45,7 +45,7 @@ pages = Any[
         "steady_state_functionality/bifurcation_diagrams.md",
         "steady_state_functionality/dynamical_systems.md",
         "Examples" => Any[
-            "steady_state_functionality/examples/bifurcationkit_bifpoint_continuation.md"
+            "steady_state_functionality/examples/bifurcationkit_codim2.md"
         ]
     ],
     "Inverse problems" => Any[
