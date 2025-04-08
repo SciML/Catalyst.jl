@@ -323,7 +323,7 @@ rn = @reaction_network begin
 end
 ```
 
-## [What to be aware of when using `remake` with conservation law elimination and NonlinearProblems](@id faq_remake_nonlinprob)
+## [What to be aware of when using `remake` with conservation law elimination and NonlinearProblems?](@id faq_remake_nonlinprob)
 
 When constructing `NonlinearSystem`s or `NonlinearProblem`s with `remove_conserved = true`, i.e.
 ```julia
