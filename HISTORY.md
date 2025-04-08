@@ -17,10 +17,10 @@
   viewed [here](https://github.com/SciML/OrdinaryDiffEq.jl/tree/master/lib).
 - It should now be safe to use `remake` on problems which have had conservation
   laws removed with the exception of `NonlinearProblem`s or `NonlinearSystem`s.
-  Here it is safe to use `remake` if only updated `u0` values, but it is not
-  safe to update the value of the conserved constant, `Γ`. See [the
-  FAQ](https://docs.sciml.ai/Catalyst/stable/faqs/#faq_remake_nonlinprob) for
-  details.
+  For NonlinearProblems it is safe to use `remake` if only updating `u0` values,
+  but it is not safe to update the value of the conserved constant, `Γ`. See
+  [the FAQ](https://docs.sciml.ai/Catalyst/stable/faqs/#faq_remake_nonlinprob)
+  for details.
 - New formula for inferring variables from equations (declared using the
   `@equations` options) in the DSL. The order of inference of
   species/variables/parameters is now:
