@@ -124,20 +124,32 @@ let
     @test osol1[sps] ≈ osol2[sps] ≈ osol3[sps]
 
     # Checks that steady states found using nonlinear solving and steady state simulations are identical.
-    nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false))
+    nsys = convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false)
+    nsys_ss = structural_simplify(nsys)
+    nsys = complete(nsys)
     nprob1 = NonlinearProblem{true}(nsys, u0, p)
-    nprob2 = NonlinearProblem(rn, u0, p)
-    nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false)
+    nprob1b = NonlinearProblem{true}(nsys_ss, u0, p)
+    nprob2 = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false)
+    nprob2b = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false, 
+        structural_simplify = true)
+    nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
+    nsol1b = solve(nprob1b, NewtonRaphson(); abstol = 1e-8)
+    nsol2 = solve(nprob2, NewtonRaphson(); abstol = 1e-8)
+    nsol2b = solve(nprob2b, NewtonRaphson(); abstol = 1e-8)
+    # Nonlinear problems cannot find steady states properly without removing conserved species.
+
     ssprob1 = SteadyStateProblem{true}(osys, u0, p)
     ssprob2 = SteadyStateProblem(rn, u0, p)
     ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true)
-    nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
-    # Nonlinear problems cannot find steady states properly without removing conserved species.
-    nsol3 = solve(nprob3, NewtonRaphson(); abstol = 1e-8)
     sssol1 = solve(ssprob1, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
     sssol2 = solve(ssprob2, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
     sssol3 = solve(ssprob3, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-    @test nsol1[sps] ≈ nsol3[sps] ≈ sssol1[sps] ≈ sssol2[sps] ≈ sssol3[sps]
+    @test nsol1[sps] ≈ nsol1b[sps] 
+    @test nsol1[sps] ≈ nsol2[sps] 
+    @test nsol1[sps] ≈ nsol2b[sps] 
+    @test nsol1[sps] ≈ sssol1[sps]
+    @test nsol1[sps] ≈ sssol2[sps] 
+    @test nsol1[sps] ≈ sssol3[sps]
 
     # Creates SDEProblems using various approaches.
     u0_sde = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
@@ -490,14 +502,100 @@ let
     # Create models.
     rn = @reaction_network begin
         (k1,k2), X1 <--> X2
-        (k3,k4), X1 + X2 <--> X3
+        (k3,k4), X1 + X2 --> 2X3
     end
-    u0 = [:X1 => 1.0, :X2 => 1.0, :X3 => 1.0]
+    u0 = [:X1 => 1.0, :X2 => 2.0, :X3 => 3.0]
     ps = [:k1 => 0.1, :k2 => 0.2, :k3 => 0.3, :k4 => 0.4]
     
     # Checks that the warning si given and can be supressed for the variosu cases.
     @test_nowarn convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false)
-    @test_logs (:warn, r"You are creating a NonlinearSystem *") convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = true)
+    @test_logs (:warn, r"Note, when constructing*") convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = true)
     @test_nowarn NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = false)
-    @test_logs (:warn, r"You are creating a NonlinearSystem *") NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = true)
+    @test_logs (:warn, Catalyst.NONLIN_PROB_REMAKE_WARNING) NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = true)
+
+    # @variables X1 X2 X3
+    # @parameters k1 k2 k3 k4 Γ[1:1] = missing [guess = ones(1)]
+    # eqs = [
+    #     0 ~ -k1*X1 + k2*X2 - k3*X1*X2 + (1//2)*k4*((-X1 - X2 + Γ[1])^2),
+    #     0 ~ k1*X1 - k2*X2 - k3*X1*X2 + (1//2)*k4*((-X1 - X2 + Γ[1])^2),
+    #     0 ~ -X1 - X2 - X3 + Γ[1]
+    # ]
+    # initeqs = [Γ[1] ~ Initial(X1) + Initial(X3) + Initial(X2)]
+    # @named nlsys = NonlinearSystem(eqs, [X1, X2, X3], [k1, k2, k3, k4, Γ]; 
+    #     initialization_eqs = initeqs)
+
+    
+    # WITHOUT structural_simplify
+    nlsys = convert(NonlinearSystem, rn; remove_conserved = true, 
+        conseqs_remake_warn = false)
+    nlsys1 = complete(nlsys)
+    nlprob1 = NonlinearProblem(nlsys1, u0, ps)
+
+    @test nlprob1[:X1] == 1.0
+    @test nlprob1[:X2] == 2.0
+    @test nlprob1[:X3] == 3.0
+    @test nlprob1.ps[:Γ][1] == 6.0
+    integ1 = init(nlprob1, NewtonRaphson())
+    @test integ1[:X1] == 1.0
+    @test integ1[:X2] == 2.0
+    @test integ1[:X3] == 3.0
+    @test integ1.ps[:Γ][1] == 6.0
+
+    nlprob1b = remake(nlprob1; u0 = [:X3 => nothing], p = [:Γ => [4.0]])
+    @test nlprob1b[:X1] == 1.0   
+    @test nlprob1b[:X2] == 2.0   
+    @test_broken nlprob1b[:X3] == 1.0
+    @test nlprob1b.ps[:Γ][1] == 4.0
+    integ1 = init(nlprob1b, NewtonRaphson())
+    @test integ1[:X1] == 1.0
+    @test integ1[:X2] == 2.0
+    @test_broken integ1[:X3] == 1.0
+    @test integ1.ps[:Γ][1] == 4.0
+
+    nlprob1c = remake(nlprob1; u0 = [:X2 => nothing], p = [:Γ => [4.0]])
+    @test nlprob1c[:X1] == 1.0
+    @test_broken nlprob1c[:X2] == 0.0
+    @test nlprob1c[:X3] == 3.0
+    @test nlprob1c.ps[:Γ][1] == 4.0
+    integ1 = init(nlprob1b, NewtonRaphson())
+    @test integ1[:X1] == 1.0
+    @test_broken integ1[:X2] == 0.0
+    @test integ1[:X3] == 3.0
+    @test integ1.ps[:Γ][1] == 4.0
+    
+    # WITH structural_simplify
+    nlsys2 = structural_simplify(nlsys)
+    nlprob2 = NonlinearProblem(nlsys2, u0, ps)
+
+    @test nlprob2[:X1] == 1.0
+    @test nlprob2[:X2] == 2.0
+    @test nlprob2[:X3] == 3.0
+    @test nlprob2.ps[:Γ][1] == 6.0
+    integ2 = init(nlprob2, NewtonRaphson())
+    @test integ2[:X1] == 1.0
+    @test integ2[:X2] == 2.0
+    @test integ2[:X3] == 3.0
+    @test integ2.ps[:Γ][1] == 6.0
+
+    nlprob2b = remake(nlprob2; u0 = [:X3 => nothing], p = [:Γ => [4.0]])
+    @test nlprob2b[:X1] == 1.0   
+    @test nlprob2b[:X2] == 2.0   
+    @test nlprob2b[:X3] == 1.0   
+    @test nlprob2b.ps[:Γ][1] == 4.0 
+    integ2 = init(nlprob2b, NewtonRaphson())
+    @test integ2[:X1] == 1.0  
+    @test integ2[:X2] == 2.0  
+    @test integ2[:X3] == 1.0  
+    @test integ2.ps[:Γ][1] == 4.0 
+
+    nlprob2c = remake(nlprob2; u0 = [:X2 => nothing], p = [:Γ => [4.0]])
+    @test nlprob2c[:X1] == 1.0   
+    @test_broken nlprob2c[:X2] == 0.0 
+    @test_broken nlprob2c[:X3] == 3.0
+    @test nlprob2c.ps[:Γ][1] == 4.0 
+    integ2 = init(nlprob2c, NewtonRaphson())
+    @test integ2[:X1] == 1.0  
+    @test_broken integ2[:X2] == 0.0 
+    @test_broken integ2[:X3] == 3.0
+    @test integ2.ps[:Γ][1] == 4.0 
 end
