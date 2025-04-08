@@ -89,7 +89,7 @@ Here we can see that, as $v$ increases, the oscillation amplitude increases with
 
 Previously, we had `record_from_solution` record the periodic orbit's period. This means that we can plot it as well. Here, we plot it against $v$ using `vars = (:param, :period)`.
 ```@example bifurcationkit_periodic_orbits
-plot(br_po, vars = (:param, :period); xguide = bif_par, yguide = "Period", xlimit = v_span, ylimit = (0.0, Inf))
+plot(br_po, vars = (:param, :period); xguide = bif_par, yguide = "Period length", xlimit = v_span, ylimit = (0.0, Inf))
 ```
 In the plot we see that the period starts at around $18$ time units, and slowly increase with $v$.
 
