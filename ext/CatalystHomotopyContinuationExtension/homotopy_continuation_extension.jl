@@ -51,13 +51,10 @@ function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     # Creates the appropriate nonlinear system, and converts parameters to a form that can
     # be substituted in later.
     rs = Catalyst.expand_registered_functions(rs)
-    ns = complete(convert(NonlinearSystem, rs;
-        remove_conserved = true, remove_conserved_warn = false))
+    ns = complete(convert(NonlinearSystem, rs; remove_conserved = true))
     pre_varmap = [symmap_to_varmap(rs, u0)..., symmap_to_varmap(rs, ps)...]
     Catalyst.conservationlaw_errorcheck(rs, pre_varmap)
-    p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns);
-        defaults = ModelingToolkit.defaults(ns))
-    p_dict = Dict(parameters(ns) .=> p_vals)
+    p_dict = make_p_val_dict(pre_varmap, rs, ns)
 
     # Step by step convert the equation to something HC can work on (adds conserved equations,
     # inserts parameter values and put everything on a side, converts e.g. 2.0 to 2, remove
@@ -68,6 +65,25 @@ function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     eqs = [remove_denominators(common_denominator(eq)) for eq in eqs]
     ss_poly = Catalyst.to_multivariate_poly(eqs)
     return poly_type_convert(ss_poly)
+end
+
+# Function for making a map from parameter values (including conservation law constants) to
+# their values. Previously a simple call, but made complicated due to various MTK updates so
+# not all delegated to a specific function.
+function make_p_val_dict(pre_varmap, rs, ns)
+    # Creates a parameter vector with conservation parameters expanded (i.e. Γ[1], Γ[2], not `Γ`).
+    ps_no_cons = filter(p -> !Catalyst.isconserved(p), parameters(ns))
+    ps_cons_expanded = getfield.(conservationlaw_constants(rs), :lhs)
+    ps = [ps_no_cons; ps_cons_expanded]
+
+    # Creates a dictionary with the correct default values/equations (again expanding `Γ` to Γ[1], Γ[2]).
+    defaults = ModelingToolkit.defaults(ns)
+    filter!(p -> !Catalyst.isconserved(p[1]), defaults)
+    foreach(conseq -> defaults[conseq.lhs] = conseq.rhs, conservationlaw_constants(rs))
+
+    # Creates and return the full parameter value dictionary.p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, all_ps; defaults = def_dict)
+    p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, ps; defaults)
+    return Dict(ps .=> p_vals)
 end
 
 # Parses and expression and return a version where any exponents that are Float64 (but an int, like 2.0) are turned into Int64s.

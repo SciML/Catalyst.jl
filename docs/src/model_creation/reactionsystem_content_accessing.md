@@ -225,12 +225,12 @@ Similarly, `parameters` retrieves five different parameters. Here, we note that 
 parameters(rs)
 ```
 
-If we wish to retrieve the species (or parameters) that are specifically contained in the top-level system (and not only indirectly through its subsystems), we can use the `Catalyst.get_species` (or `Catalyst.get_ps`) functions:
+If we wish to retrieve the species (or parameters) that are specifically contained in the top-level system (and not only indirectly through its subsystems), we can use the `Catalyst.get_species` (or `ModelingToolkit.getps`) functions:
 ```@example model_accessing_hierarchical
 Catalyst.get_species(rs)
 ```
 ```@example model_accessing_hierarchical
-Catalyst.get_ps(rs)
+ModelingToolkit.get_ps(rs)
 ```
 Here, our top-level model contains a single parameter (`kₜ`), and two the two versions of the `Xᵢ` species. These are all the symbolic variables that occur in the transportation reaction (`@kₜ, $(nucleus_sys.Xᵢ) --> $(cytoplasm_sys.Xᵢ)`), which is the only reaction of the top-level system. We can apply these functions to the systems as well. However, when we do so, the systems' names are not prepended:
 ```@example model_accessing_hierarchical

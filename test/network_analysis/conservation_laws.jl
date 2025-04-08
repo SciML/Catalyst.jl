@@ -11,9 +11,6 @@ seed = rand(rng, 1:100)
 # Fetch test networks.
 include("../test_networks.jl")
 
-# Except where we test the warnings, we do not want to print this warning.
-remove_conserved_warn = false
-
 ### Basic Tests ###
 
 # Tests basic functionality on system with known conservation laws.
@@ -84,14 +81,14 @@ let
 end
 
 # Tests that `conservationlaws`'s caches something.
-let 
+let
     # Creates network with/without cached conservation laws.
     rn = @reaction_network rn begin
         (k1,k2), X1 <--> X2
     end
     rn_cached = deepcopy(rn)
     conservationlaws(rn_cached)
-    
+
     # Checks that equality is correct (currently equality does not consider network property caching).
     @test rn_cached == rn
     @test Catalyst.get_networkproperties(rn_cached) != Catalyst.get_networkproperties(rn)
@@ -117,38 +114,40 @@ let
     tspan = (0.0, 20.0)
 
     # Simulates model using ODEs and checks that simulations are identical.
-    osys = complete(convert(ODESystem, rn; remove_conserved = true, remove_conserved_warn))
+    osys = complete(convert(ODESystem, rn; remove_conserved = true))
     oprob1 = ODEProblem(osys, u0, tspan, p)
     oprob2 = ODEProblem(rn, u0, tspan, p)
-    oprob3 = ODEProblem(rn, u0, tspan, p; remove_conserved = true, remove_conserved_warn)
+    oprob3 = ODEProblem(rn, u0, tspan, p; remove_conserved = true)
     osol1 = solve(oprob1, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat= 0.2)
     osol2 = solve(oprob2, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat= 0.2)
     osol3 = solve(oprob3, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat= 0.2)
     @test osol1[sps] ≈ osol2[sps] ≈ osol3[sps]
 
     # Checks that steady states found using nonlinear solving and steady state simulations are identical.
-    nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true, remove_conserved_warn))
-    nprob1 = NonlinearProblem{true}(nsys, u0, p)
-    nprob2 = NonlinearProblem(rn, u0, p)
-    nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true, remove_conserved_warn)
-    ssprob1 = SteadyStateProblem{true}(osys, u0, p)
-    ssprob2 = SteadyStateProblem(rn, u0, p)
-    ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true, remove_conserved_warn)
-    nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
-    # Nonlinear problems cannot find steady states properly without removing conserved species.
-    nsol3 = solve(nprob3, NewtonRaphson(); abstol = 1e-8)
-    sssol1 = solve(ssprob1, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-    sssol2 = solve(ssprob2, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-    sssol3 = solve(ssprob3, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-    @test nsol1[sps] ≈ nsol3[sps] ≈ sssol1[sps] ≈ sssol2[sps] ≈ sssol3[sps]
+    @test_broken begin # Conservation law removal currently not working for NonlinearSystems due to MTK depricating something. https://github.com/SciML/ModelingToolkit.jl/issues/3458, https://github.com/SciML/ModelingToolkit.jl/issues/3411
+        nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true))
+        nprob1 = NonlinearProblem{true}(nsys, u0, p; guesses = [nsys.Γ => [0.0]])
+        nprob2 = NonlinearProblem(rn, u0, p)
+        nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true)
+        ssprob1 = SteadyStateProblem{true}(osys, u0, p)
+        ssprob2 = SteadyStateProblem(rn, u0, p)
+        ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true)
+        nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
+        # Nonlinear problems cannot find steady states properly without removing conserved species.
+        nsol3 = solve(nprob3, NewtonRaphson(); abstol = 1e-8)
+        sssol1 = solve(ssprob1, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
+        sssol2 = solve(ssprob2, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
+        sssol3 = solve(ssprob3, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
+        @test nsol1[sps] ≈ nsol3[sps] ≈ sssol1[sps] ≈ sssol2[sps] ≈ sssol3[sps]
+    end
 
     # Creates SDEProblems using various approaches.
     u0_sde = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
         F3 => 20.0]
-    ssys = complete(convert(SDESystem, rn; remove_conserved = true, remove_conserved_warn))
+    ssys = complete(convert(SDESystem, rn; remove_conserved = true))
     sprob1 = SDEProblem(ssys, u0_sde, tspan, p)
     sprob2 = SDEProblem(rn, u0_sde, tspan, p)
-    sprob3 = SDEProblem(rn, u0_sde, tspan, p; remove_conserved = true, remove_conserved_warn)
+    sprob3 = SDEProblem(rn, u0_sde, tspan, p; remove_conserved = true)
 
     # Checks that the SDEs f and g function evaluates to the same thing.
     ind_us = ModelingToolkit.get_unknowns(ssys)
@@ -175,10 +174,10 @@ end
 
 # Tests simulations for various input types (using X, rn.X, and :X forms).
 # Tests that conservation laws can be generated for system with non-default parameter types.
-let 
+let
     # Prepares the model.
     rn = @reaction_network rn begin
-        @parameters kB::Int64 
+        @parameters kB::Int64
         (kB,kD), X + Y <--> XY
     end
     sps = species(rn)
@@ -189,9 +188,9 @@ let
     u0_2 = [rn.X => 2.0, rn.Y => 3.0, rn.XY => 4.0]
     u0_3 = [:X => 2.0, :Y => 3.0, :XY => 4.0]
     ps = (kB => 2, kD => 1.5)
-    oprob1 = ODEProblem(rn, u0_1, 10.0, ps; remove_conserved = true, remove_conserved_warn)
-    oprob2 = ODEProblem(rn, u0_2, 10.0, ps; remove_conserved = true, remove_conserved_warn)
-    oprob3 = ODEProblem(rn, u0_3, 10.0, ps; remove_conserved = true, remove_conserved_warn)
+    oprob1 = ODEProblem(rn, u0_1, 10.0, ps; remove_conserved = true)
+    oprob2 = ODEProblem(rn, u0_2, 10.0, ps; remove_conserved = true)
+    oprob3 = ODEProblem(rn, u0_3, 10.0, ps; remove_conserved = true)
     @test solve(oprob1)[sps] ≈ solve(oprob2)[sps] ≈ solve(oprob3)[sps]
 end
 
@@ -203,7 +202,7 @@ let
     end
     u0 = Dict([:X1 => 100.0, :X2 => 120.0])
     ps = [:k1 => 0.2, :k2 => 0.15]
-    sprob = SDEProblem(rn, u0, 10.0, ps; remove_conserved = true, remove_conserved_warn)
+    sprob = SDEProblem(rn, u0, 10.0, ps; remove_conserved = true)
 
     # Checks that conservation laws hold in all simulations.
     sol = solve(sprob, ImplicitEM(); seed)
@@ -211,15 +210,15 @@ let
 end
 
 # Checks that the conservation law parameter's value can be changed in simulations.
-let 
+let
     # Prepares `ODEProblem`s.
     rn = @reaction_network begin
         (k1,k2), X1 <--> X2
     end
-    osys = complete(convert(ODESystem, rn; remove_conserved = true, remove_conserved_warn))
+    osys = complete(convert(ODESystem, rn; remove_conserved = true))
     u0 = [osys.X1 => 1.0, osys.X2 => 1.0]
     ps_1 = [osys.k1 => 2.0, osys.k2 => 3.0]
-    ps_2 = [osys.k1 => 2.0, osys.k2 => 3.0, osys.Γ[1] => 4.0]
+    ps_2 = [osys.k1 => 2.0, osys.k2 => 3.0, osys.Γ => [4.0]]
     oprob1 = ODEProblem(osys, u0, 10.0, ps_1)
     oprob2 = ODEProblem(osys, u0, 10.0, ps_2)
 
@@ -229,6 +228,8 @@ let
     @test all(sol1[osys.X1 + osys.X2] .== 2.0)
     @test all(sol2[osys.X1 + osys.X2] .== 4.0)
 end
+
+### Problem `remake`ing and Updating Tests ###
 
 # Tests system problem updating when conservation laws are eliminated.
 # Checks that the correct values are used after the conservation law species are updated.
@@ -243,11 +244,10 @@ let
         Reaction(k2, [X2], [X1])
     ]
     @named rs = ReactionSystem(rxs, t)
-    osys = convert(ODESystem, complete(rs); remove_conserved = true, remove_conserved_warn = false)
-    osys = complete(osys)
+    osys = complete(convert(ODESystem, complete(rs); remove_conserved = true))
     @unpack Γ = osys
 
-    # Creates an `ODEProblem`.
+    # Creates the various problem types.
     u0 = [X1 => 1.0, X2 => 2.0]
     ps = [k1 => 0.1, k2 => 0.2]
     oprob = ODEProblem(osys, u0, (0.0, 1.0), ps)
@@ -279,6 +279,86 @@ let
     @test integrator.ps[k2] == 0.6
 end
 
+# Goes through a chain of updating of conservation law constants/species, checking that
+# the values of relevant quantitites are correct after each step.
+# Generally, if `Γ` has not been explicitly updated, it will be updated to accomodate new species
+# values. If it has been explicitly udpated, the corresponding elimianted quantity will have its
+# vaue updated to accomodate new Γ/species values (also, the elimianted species's value can not longer be changed).
+let
+    # Prepares the problem inputs and computes the conservation equation.
+    rn = @reaction_network begin
+        (k1,k2), 2X1 <--> X2
+        (k3,k4), X1 + X2 <--> X3
+    end
+    @unpack X1, X2, X3 = rn
+    u0 = [X1 => 1.0, X2 => 1.0, X3 => 1.0]
+    ps = [:k1 => 0.1, :k2 => 0.2, :k3 => 0.3, :k4 => 0.4]
+    conserved_quantity = conservationlaw_constants(rn)[1].rhs
+
+    # Loops through the tests for different problem types.
+    oprob = ODEProblem(rn, u0, 1.0, ps; remove_conserved = true)
+    sprob = SDEProblem(rn, u0, 1.0, ps; remove_conserved = true)
+    for prob_old in [oprob, sprob]
+        # For a couple of iterations, updates the problem, ensuring that when a species is updated:
+        # - Only that species and the conservation constant have their values updated.
+        # The `≈` is because sometimes the computed values will not be fully exact.
+        for _ = 1:3
+            # Updates X2, checks the values of all species and Γ, then sets which is the old problem.
+            X2_new = rand(rng, 1.0:10.0)
+            prob_new = remake(prob_old; u0 = [:X2 => X2_new])
+            @test prob_old[:X1] ≈ prob_new[:X1]
+            @test X2_new ≈ prob_new[:X2]
+            @test prob_old[:X3] ≈ prob_new[:X3]
+            @test substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => X2_new, X3 => prob_old[X3]])) ≈ prob_new.ps[:Γ][1]
+            prob_old = prob_new
+
+            # Updates X3, checks the values of all species and Γ, then sets which is the old problem.
+            X3_new = rand(rng, 1.0:10.0)
+            prob_new = remake(prob_old; u0 = [:X3 => X3_new])
+            @test prob_old[:X1] ≈ prob_new[:X1]
+            @test prob_old[:X2] ≈ prob_new[:X2]
+            @test X3_new ≈ prob_new[:X3]
+            @test substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => prob_old[X2], X3 => X3_new])) ≈ prob_new.ps[:Γ][1]
+            prob_old = prob_new
+        end
+
+        # Similarly, but now also updates the conservation constant. Here, once Γ has been updated:
+        # - The conservation law constant will be kept fixed, and secondary updates are made to the
+        # eliminated species.
+        # Assumes that X3 is the eliminated species.
+        # The random Γ is ensured to be large enough not to generate negative values in the eliminated species.
+        for _ in 1:3
+            # Updates Γ, checks the values of all species and Γ, then sets which is the old problem.
+            Γ_new = substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => prob_old[X2], X3 => 0])) + rand(rng, 0.0:5.0)
+            prob_new = remake(prob_old; p = [:Γ => [Γ_new]], warn_initialize_determined = false)
+            @test prob_old[:X1] ≈ prob_new[:X1]
+            @test prob_old[:X2] ≈ prob_new[:X2]
+            @test Γ_new ≈ prob_new.ps[:Γ][1]
+            @test substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => prob_old[X2], X3 => prob_new[X3]])) ≈ prob_new.ps[:Γ][1]
+            prob_old = prob_new
+
+            # Updates X1 (non-eliminated species), checks the values of all species and Γ, then sets which is the old problem.
+            # Note that now, `X3` will have its value modified (not and `Γ` remains unchanged).
+            X1_new = rand(rng, 1.0:10.0)
+            prob_new = remake(prob_old; u0 = [:X1 => X1_new])
+            @test X1_new ≈ prob_new[:X1]
+            @test prob_old[:X2] ≈ prob_new[:X2]
+            @test prob_old.ps[:Γ][1] ≈ prob_new.ps[:Γ][1]
+            @test substitute(conserved_quantity, Dict([X1 => X1_new, X2 => prob_old[X2], X3 => prob_new[X3]])) ≈ prob_new.ps[:Γ][1]
+            prob_old = prob_new
+
+            # Updates X3 (the eliminated species). Right now, this will have no effect on `X3` (or the system).
+            X3_new = rand(rng, 1.0:10.0)
+            prob_new = remake(prob_old; u0 = [:X3 => X3_new], warn_initialize_determined = false)
+            @test prob_old[:X1] ≈ prob_new[:X1]
+            @test prob_old[:X2] ≈ prob_new[:X2]
+            @test prob_old[:X3] ≈ prob_new[:X3]
+            @test prob_old.ps[:Γ][1] ≈ prob_new.ps[:Γ][1]
+            prob_old = prob_new
+        end
+    end
+end
+
 ### Other Tests ###
 
 # Checks that `JumpSystem`s with conservation laws cannot be generated.
@@ -286,7 +366,7 @@ let
     rn = @reaction_network begin
         (k1,k2), X1 <--> X2
     end
-    @test_throws ArgumentError convert(JumpSystem, rn; remove_conserved = true, remove_conserved_warn)
+    @test_throws ArgumentError convert(JumpSystem, rn; remove_conserved = true)
 end
 
 # Checks that `conserved` metadata is added correctly to parameters.
@@ -297,7 +377,7 @@ let
         (k1,k2), X1 <--> X2
         (k1,k2), Y1 <--> Y2
     end
-    osys = convert(ODESystem, rs; remove_conserved = true, remove_conserved_warn)
+    osys = convert(ODESystem, rs; remove_conserved = true)
 
     # Checks that the correct parameters have the `conserved` metadata.
     @test Catalyst.isconserved(osys.Γ[1])
@@ -306,41 +386,8 @@ let
     @test !Catalyst.isconserved(osys.k2)
 end
 
-# Checks that conservation law elimination warnings are generated in the correct cases.
-let
-    # Prepare model.
-    rn = @reaction_network begin 
-        (k1,k2), X1 <--> X2
-    end
-    u0 = [:X1 => 1.0, :X2 => 2.0]
-    tspan = (0.0, 1.0)
-    ps = [:k1 => 3.0, :k2 => 4.0]
-
-    # Check warnings in system conversion.
-    for XSystem in [ODESystem, SDESystem, NonlinearSystem]
-        @test_nowarn convert(XSystem, rn)
-        @test_logs (:warn, r"You are creating a system or problem while eliminating conserved quantities. Please *") convert(XSystem, rn; remove_conserved = true)
-        @test_nowarn convert(XSystem, rn; remove_conserved_warn = false)
-        @test_nowarn convert(XSystem, rn; remove_conserved = true, remove_conserved_warn = false)
-    end
-
-    # Checks during problem creation (separate depending on whether they have a time span or not).
-    for XProblem in [ODEProblem, SDEProblem]
-        @test_nowarn XProblem(rn, u0, tspan, ps)
-        @test_logs (:warn, r"You are creating a system or problem while eliminating conserved quantities. Please *") XProblem(rn, u0, tspan, ps; remove_conserved = true)
-        @test_nowarn XProblem(rn, u0, tspan, ps; remove_conserved_warn = false)
-        @test_nowarn XProblem(rn, u0, tspan, ps; remove_conserved = true, remove_conserved_warn = false)
-    end
-    for XProblem in [NonlinearProblem, SteadyStateProblem]
-        @test_nowarn XProblem(rn, u0, ps)
-        @test_logs (:warn, r"You are creating a system or problem while eliminating conserved quantities. Please *") XProblem(rn, u0, ps; remove_conserved = true)
-        @test_nowarn XProblem(rn, u0, ps; remove_conserved_warn = false)
-        @test_nowarn XProblem(rn, u0, ps; remove_conserved = true, remove_conserved_warn = false)
-    end
-end
-
 # Conservation law simulations for vectorised species.
-let 
+let
     # Prepares the model.
     t = default_t()
     @species (X(t))[1:2]

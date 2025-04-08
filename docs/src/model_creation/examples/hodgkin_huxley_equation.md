@@ -138,16 +138,18 @@ We observe three action potentials due to the steady applied current.
 As an illustration of how one can construct models from individual components,
 we now separately construct and compose the model components.
 
-We start by defining systems to model each ionic current:
+We start by defining systems to model each ionic current. Note we now use
+`@network_component` instead of `@reaction_network` as we want the models to be
+composable and not marked as finalized.
 ```@example hh1
-IKmodel = @reaction_network IKmodel begin
+IKmodel = @network_component IKmodel begin
     @parameters ḡK = 36.0 EK = -82.0 
     @variables V(t) Iₖ(t)
     (αₙ(V), βₙ(V)), n′ <--> n
     @equations Iₖ ~ ḡK*n^4*(V-EK)
 end
 
-INamodel = @reaction_network INamodel begin
+INamodel = @network_component INamodel begin
     @parameters ḡNa = 120.0 ENa = 45.0 
     @variables V(t) Iₙₐ(t)
     (αₘ(V), βₘ(V)), m′ <--> m
@@ -155,7 +157,7 @@ INamodel = @reaction_network INamodel begin
     @equations Iₙₐ ~ ḡNa*m^3*h*(V-ENa) 
 end
 
-ILmodel = @reaction_network ILmodel begin
+ILmodel = @network_component ILmodel begin
     @parameters ḡL = .3 EL = -59.0 
     @variables V(t) Iₗ(t)
     @equations Iₗ ~ ḡL*(V-EL)
@@ -165,7 +167,7 @@ nothing # hide
 
 We next define the voltage dynamics with unspecified values for the currents
 ```@example hh1
-hhmodel2 = @reaction_network hhmodel2 begin
+hhmodel2 = @network_component hhmodel2 begin
     @parameters C = 1.0 I₀ = 0.0
     @variables V(t) Iₖ(t) Iₙₐ(t) Iₗ(t)
     @equations D(V) ~ -1/C * (Iₖ + Iₙₐ + Iₗ) + Iapp(t,I₀)

@@ -392,11 +392,9 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
         nps = get_networkproperties(rs)
 
         # add the conservation constants as parameters and set their values
-        ps = vcat(ps, collect(eq.lhs for eq in nps.constantdefs))
+        ps = copy(ps)
+        push!(ps, nps.conservedconst)
         defs = copy(MT.defaults(rs))
-        for eq in nps.constantdefs
-            defs[eq.lhs] = eq.rhs
-        end
 
         # add the dependent species as observed
         obs = copy(MT.observed(rs))
@@ -410,11 +408,12 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     if !isempty(ceqs)
         if remove_conserved
             @info """
-                  Be careful mixing constraints and elimination of conservation laws.
-                  Catalyst does not check that the conserved equations still hold for the
-                  final coupled system of equations. Consider using `remove_conserved =
-                  false` and instead calling ModelingToolkit.structural_simplify to simplify
-                  any generated ODESystem or NonlinearSystem.
+                  Be careful mixing ODEs or algebraic equations and elimination of
+                  conservation laws. Catalyst does not check that the conserved equations
+                  still hold for the final coupled system of equations. Consider using
+                  `remove_conserved = false` and instead calling
+                  ModelingToolkit.structural_simplify to simplify any generated ODESystem or
+                  NonlinearSystem.
                   """
         end
         append!(eqs, ceqs)
@@ -450,21 +449,6 @@ diff_2_zero(expr) = (Symbolics.is_derivative(expr) ? 0 : expr)
 
 COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be converted to other system types. A ReactionSystem can be marked as complete using the `complete` function."
 
-# Used to, when required, display a warning about conservation law removal and remake.
-function check_cons_warning(remove_conserved, remove_conserved_warn)
-    (remove_conserved && remove_conserved_warn) || return
-    @warn "You are creating a system or problem while eliminating conserved quantities. Please note,
-        due to limitations / design choices in ModelingToolkit if you use the created system to
-        create a problem (e.g. an `ODEProblem`), or are directly creating a problem, you *should not*
-        modify that problem's initial conditions for species (e.g. using `remake`). Changing initial
-        conditions must be done by creating a new Problem from your reaction system or the
-        ModelingToolkit system you converted it into with the new initial condition map.
-        Modification of parameter values is still possible, *except* for the modification of any
-        conservation law constants ($CONSERVED_CONSTANT_SYMBOL), which is not possible. You might
-        get this warning when creating a problem directly.
-
-        You can remove this warning by setting `remove_conserved_warn = false`."
-end
 
 ### System Conversions ###
 
@@ -483,19 +467,16 @@ Keyword args and default values:
 - `remove_conserved=false`, if set to `true` will calculate conservation laws of the
   underlying set of reactions (ignoring constraint equations), and then apply them to reduce
   the number of equations.
-- `remove_conserved_warn = true`: If `true`, if also `remove_conserved = true`, there will be
-  a warning regarding limitations of modifying problems generated from the created system.
 """
 function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        include_zero_odes = true, remove_conserved = false, remove_conserved_warn = true,
+        include_zero_odes = true, remove_conserved = false,
         checks = false, default_u0 = Dict(), default_p = Dict(),
         defaults = _merge(Dict(default_u0), Dict(default_p)),
         kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, ODESystem)
-    check_cons_warning(remove_conserved, remove_conserved_warn)
 
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
@@ -530,19 +511,15 @@ Keyword args and default values:
 - `remove_conserved=false`, if set to `true` will calculate conservation laws of the
   underlying set of reactions (ignoring constraint equations), and then apply them to reduce
   the number of equations.
-- `remove_conserved_warn = true`: If `true`, if also `remove_conserved = true`, there will be
-  a warning regarding limitations of modifying problems generated from the created system.
 """
 function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
-        remove_conserved_warn = true, default_u0 = Dict(), default_p = Dict(),
-        defaults = _merge(Dict(default_u0), Dict(default_p)),
+        default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
         all_differentials_permitted = false, kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
-    check_cons_warning(remove_conserved, remove_conserved_warn)
     if !isautonomous(rs)
         error("Attempting to convert a non-autonomous `ReactionSystem` (e.g. where some rate depend on $(get_iv(rs))) to a `NonlinearSystem`. This is not possible. if you are intending to compute system steady states, consider creating and solving a `SteadyStateProblem.")
     end
@@ -613,19 +590,15 @@ Notes:
 - `remove_conserved=false`, if set to `true` will calculate conservation laws of the
   underlying set of reactions (ignoring constraint equations), and then apply them to reduce
   the number of equations.
-- `remove_conserved_warn = true`: If `true`, if also `remove_conserved = true`, there will be
-  a warning regarding limitations of modifying problems generated from the created system.
 """
 function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, checks = false, remove_conserved = false,
-        remove_conserved_warn = true, default_u0 = Dict(), default_p = Dict(),
-        defaults = _merge(Dict(default_u0), Dict(default_p)),
+        default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
         kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, SDESystem)
-    check_cons_warning(remove_conserved, remove_conserved_warn)
 
     flatrs = Catalyst.flatten(rs)
 
@@ -709,23 +682,21 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
         p = DiffEqBase.NullParameters(), args...;
         check_length = false, name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        include_zero_odes = true, remove_conserved = false, remove_conserved_warn = true,
-        checks = false, structural_simplify = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
+        include_zero_odes = true, remove_conserved = false, checks = false, 
+        structural_simplify = false, kwargs...)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
-        remove_conserved, remove_conserved_warn)
+        remove_conserved)
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify
-        (osys = MT.structural_simplify(osys))
+        osys = MT.structural_simplify(osys)
     elseif has_alg_equations(rs)
         error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
     else
         osys = complete(osys)
     end
 
-    return ODEProblem(osys, u0map, tspan, pmap, args...; check_length, kwargs...)
+    return ODEProblem(osys, u0, tspan, p, args...; check_length, kwargs...)
 end
 
 # NonlinearProblem from AbstractReactionNetwork
@@ -733,14 +704,12 @@ function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         p = DiffEqBase.NullParameters(), args...;
         name = nameof(rs), include_zero_odes = true,
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        remove_conserved = false, remove_conserved_warn = true, checks = false,
-        check_length = false, all_differentials_permitted = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
+        remove_conserved = false, checks = false, check_length = false, 
+        all_differentials_permitted = false, kwargs...)
     nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, include_zero_odes,
-        checks, all_differentials_permitted, remove_conserved, remove_conserved_warn)
+        checks, all_differentials_permitted, remove_conserved)
     nlsys = complete(nlsys)
-    return NonlinearProblem(nlsys, u0map, pmap, args...; check_length,
+    return NonlinearProblem(nlsys, u0, p, args...; check_length,
         kwargs...)
 end
 
@@ -749,11 +718,9 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         p = DiffEqBase.NullParameters(), args...;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, checks = false, check_length = false, remove_conserved = false,
-        remove_conserved_warn = true, structural_simplify = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
+        structural_simplify = false, kwargs...)
     sde_sys = convert(SDESystem, rs; name, combinatoric_ratelaws,
-        include_zero_odes, checks, remove_conserved, remove_conserved_warn)
+        include_zero_odes, checks, remove_conserved)
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify
@@ -765,7 +732,7 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
     end
 
     p_matrix = zeros(length(get_unknowns(sde_sys)), numreactions(rs))
-    return SDEProblem(sde_sys, u0map, tspan, pmap, args...; check_length,
+    return SDEProblem(sde_sys, u0, tspan, p, args...; check_length,
         noise_rate_prototype = p_matrix, kwargs...)
 end
 
@@ -785,8 +752,8 @@ struct JumpInputs{S <: MT.JumpSystem, T <: SciMLBase.AbstractODEProblem}
 end
 
 """
-    jumpinput = JumpInputs(rs::ReactionSystem, u0map, tspan,
-                    pmap = DiffEqBase.NullParameters;
+    jumpinput = JumpInputs(rs::ReactionSystem, u0, tspan,
+                    p = DiffEqBase.NullParameters;
                     name = nameof(rs),
                     combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                     checks = false, kwargs...)
@@ -818,13 +785,11 @@ plot(sol, idxs = :A)
 function JumpInputs(rs::ReactionSystem, u0, tspan, p = DiffEqBase.NullParameters();
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         checks = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
     jsys = complete(convert(JumpSystem, rs; name, combinatoric_ratelaws, checks))
     if MT.has_variableratejumps(jsys)
-        prob = ODEProblem(jsys, u0map, tspan, pmap; kwargs...)
+        prob = ODEProblem(jsys, u0, tspan, p; kwargs...)
     else
-        prob = DiscreteProblem(jsys, u0map, tspan, pmap; kwargs...)
+        prob = DiscreteProblem(jsys, u0, tspan, p; kwargs...)
     end
     JumpInputs(jsys, prob)
 end
@@ -848,11 +813,9 @@ function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
         name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         checks = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
     jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks)
     jsys = complete(jsys)
-    return DiscreteProblem(jsys, u0map, tspan, pmap, args...; kwargs...)
+    return DiscreteProblem(jsys, u0, tspan, p, args...; kwargs...)
 end
 
 # JumpProblem from AbstractReactionNetwork
@@ -877,12 +840,10 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
         p = DiffEqBase.NullParameters(), args...;
         check_length = false, name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        remove_conserved = false, remove_conserved_warn = true, include_zero_odes = true,
-        checks = false, structural_simplify = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
+        remove_conserved = false, include_zero_odes = true, checks = false, 
+        structural_simplify = false, kwargs...)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
-        remove_conserved, remove_conserved_warn)
+        remove_conserved)
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify
@@ -893,7 +854,7 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
         osys = complete(osys)
     end
 
-    return SteadyStateProblem(osys, u0map, pmap, args...; check_length, kwargs...)
+    return SteadyStateProblem(osys, u0, p, args...; check_length, kwargs...)
 end
 
 ### Symbolic Variable/Symbol Conversions ###

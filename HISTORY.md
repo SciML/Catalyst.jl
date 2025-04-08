@@ -13,6 +13,9 @@
   solver that auto-switches between explicit and implicit methods, install `OrdinaryDiffEqDefault`. To 
   use `Tsit5` install `OrdinaryDiffEqTsit5`, etc. The possible sub-libraries, each containing different solvers,
   can be viewed [here](https://github.com/SciML/OrdinaryDiffEq.jl/tree/master/lib).
+- It should now be safe to use `remake` on problems which have had conservation laws removed.
+  The warning regarding this when eliminating conservation laws have been removed (in conjunction
+  with the `remove_conserved_warn` argument for disabling this warning).
 - New formula for inferring variables from equations (declared using the `@equations` options) in the DSL. The order of inference of species/variables/parameters is now:
     (1) Every symbol explicitly declared using `@species`, `@variables`, and `@parameters` are assigned to the correct category.
     (2) Every symbol used as a reaction reactant is inferred as a species.
@@ -51,8 +54,6 @@
 - Functional (e.g. time-dependent) parameters can now be used in Catalyst models. These can e.g. be used to incorporate arbitrary time-dependent functions (as a parameter) in a model. For more details on how to use these, please read: https://docs.sciml.ai/Catalyst/stable/model_creation/functional_parameters/.
 - Scoped species/variables/parameters are now treated similar to the latest MTK
   releases (≥ 9.49).
-- The structural identifiability extension is currently disabled due to issues
-  StructuralIdentifiability has with Julia 1.10.5 and 1.11.
 - A tutorial on making interactive plot displays using Makie has been added.
 - The BifurcationKit extension has been updated to v.4.
 - There is a new DSL option `@require_declaration` that will turn off automatic inferring for species, parameters, and variables in the DSL. For example, the following will now error:
