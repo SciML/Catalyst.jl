@@ -50,7 +50,7 @@ plot(plot(sol_nosc; title = "v = 5"), plot(sol_osc; title = "v = 15"), size = (1
 ## [Tracking the periodic orbits](@id bifurcationkit_periodic_orbits_pos)
 Next, we will use BifurcationKit.jl's [`continuation` function](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.continuation) (the [`bifurcationdiagram` function](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.bifurcationdiagram), which we previously have used, works by calling `continuation` recursively) to track the periodic orbit which appears with the Hopf bifurcation point.
 
-Firs,t we set the options for the continuation. Just like for bifurcation diagrams we must set our [continuation parameters](@id bifurcation_diagrams_continuationpar). Here we will use the same one as for the initial diagram (however, additional ones can be supplied).
+Firs,t we set the options for the continuation. Just like for bifurcation diagrams we must set our [continuation parameters](@ref bifurcation_diagrams_continuationpar). Here we will use the same one as for the initial diagram (however, additional ones can be supplied).
 ```@example bifurcationkit_periodic_orbits
 opts_po = ContinuationPar(opts_br)
 nothing # hide
