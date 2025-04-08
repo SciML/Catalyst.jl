@@ -47,7 +47,7 @@ sol_osc = OrdinaryDiffEqDefault.solve(prob_osc)
 plot(plot(sol_nosc; title = "v = 5"), plot(sol_osc; title = "v = 15"), size = (1000,400), lw = 4)
 ```
 
-## [Tracking the bifurcation point w.r.t. a second parameter](@id bifurcationkit_bifpoint_continuation_codim2)
+## [Tracking the bifurcation point w.r.t. a second parameter](@id bifurcationkit_bifpoint_continuation_codim2_2ndpar_cont)
 Next, we will investigate how the Hopf bifurcation point moves (in $v$-$X$ space) as a second parameter ($K$) is changed. To do this we will use BifurcationKit.jl's [`continuation` function](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.continuation) (the [`bifurcationdiagram` function](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.bifurcationdiagram), which we previously have used, works by calling `continuation` recursively). We will call it on the Hopf bifurcation point. First, we will designate the parameter we wish to change, as well as which interval to change it. For this, we compute the parameter index (`K_idx`) that BifurcationKit will see (a smoother interface for this will hopefully be added in the future). We also create a new `ContinuationPar`, to which we add our $K$ interval.
 ```@example bifurcationkit_bifpoint_continuation
 K_span = (0.01, 27.0)
