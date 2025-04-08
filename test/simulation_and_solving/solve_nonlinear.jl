@@ -90,7 +90,7 @@ let
     # Creates NonlinearProblem.
     u0 = [steady_state_network_3.X => rand(), steady_state_network_3.Y => rand() + 1.0, steady_state_network_3.Y2 => rand() + 3.0, steady_state_network_3.XY2 => 0.0]
     p = [:p => rand()+1.0, :d => 0.5, :k1 => 1.0, :k2 => 2.0, :k3 => 3.0, :k4 => 4.0]
-    nl_prob_1 = NonlinearProblem(steady_state_network_3, u0, p; remove_conserved = true)
+    nl_prob_1 = NonlinearProblem(steady_state_network_3, u0, p; remove_conserved = true, conseqs_remake_warn = false)
     nl_prob_2 = NonlinearProblem(steady_state_network_3, u0, p)
 
     # Solves it using standard algorithm and simulation based algorithm.

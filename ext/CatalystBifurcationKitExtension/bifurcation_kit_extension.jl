@@ -37,6 +37,6 @@ function bkext_make_nsys(rs, u0)
     cons_default = [cons_eq.rhs for cons_eq in cons_eqs]
     cons_default = Catalyst.get_networkproperties(rs).conservedconst => cons_default
     defaults = Dict([u0; cons_default])
-    nsys = convert(NonlinearSystem, rs; defaults, remove_conserved = true)
+    nsys = convert(NonlinearSystem, rs; defaults, remove_conserved = true, conseqs_remake_warn = false)
     return complete(nsys)
 end

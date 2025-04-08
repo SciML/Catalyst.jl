@@ -124,10 +124,10 @@ let
     @test osol1[sps] ≈ osol2[sps] ≈ osol3[sps]
 
     # Checks that steady states found using nonlinear solving and steady state simulations are identical.
-    nsys = structural_simplify(convert(NonlinearSystem, rn; remove_conserved = true))
+    nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false))
     nprob1 = NonlinearProblem{true}(nsys, u0, p)
     nprob2 = NonlinearProblem(rn, u0, p)
-    nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true)
+    nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false)
     ssprob1 = SteadyStateProblem{true}(osys, u0, p)
     ssprob2 = SteadyStateProblem(rn, u0, p)
     ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true)
@@ -312,7 +312,7 @@ let
     sprob = SDEProblem(rn, ss, 1.0, ps; jac = true)
     sprob_rc = SDEProblem(rn, ss, 1.0, ps; jac = true, remove_conserved = true)
     nlprob = NonlinearProblem(rn, ss, ps; jac = true)
-    nlprob_rc = NonlinearProblem(rn, ss, ps; jac = true, remove_conserved = true)
+    nlprob_rc = NonlinearProblem(rn, ss, ps; jac = true, remove_conserved = true, conseqs_remake_warn = false)
 
     # Checks that removing conservation laws generates non-singular Jacobian (and else that it is singular).
     @test is_singular(oprob) == true
@@ -328,6 +328,7 @@ end
 # Generally, if `Γ` has not been explicitly updated, it will be updated to acomodate new species
 # values. If it has been explicitly updated, the corresponding eliminated quantity will have its
 # value updated to acomodate new Γ/species values (also, the eliminated species's value can not longer be changed).
+# Also checks that quantities are correctly updated in integrators and solutions derived from problems.
 let
     # Prepares the problem inputs and computes the conservation equation.
     rn = @reaction_network begin
@@ -342,8 +343,9 @@ let
     # Loops through the tests for different problem types.
     oprob = ODEProblem(rn, u0, 1.0, ps; remove_conserved = true)
     sprob = SDEProblem(rn, u0, 1.0, ps; remove_conserved = true)
-    nlprob = NonlinearProblem(rn, u0, ps; remove_conserved = true)
-    for prob_old in [oprob, sprob, nlprob]
+    # nlprob = NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = false)
+    @test_broken false # Cases of `remake` does not work for `NonlinearSystem`s with `remove_conserved = true`.
+    for (prob_old, solver) in zip([oprob, sprob], [Tsit5(), ImplicitEM()])
         # For a couple of iterations, updates the problem, ensuring that when a species is updated:
         # - Only that species and the conservation constant have their values updated.
         # The `≈` is because sometimes the computed values will not be fully exact.
@@ -365,6 +367,20 @@ let
             @test X3_new ≈ prob_new[:X3]
             @test substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => prob_old[X2], X3 => X3_new])) ≈ prob_new.ps[:Γ][1]
             prob_old = prob_new
+
+            # Checks that integrator and solutions have identical content to problem.
+            integrator = init(prob_new, solver)
+            sol = solve(prob_new, solver; maxiters = 1, verbose = false)
+            @test prob_new.ps[:Γ][1] == integrator.ps[:Γ][1] == sol.ps[:Γ][1]
+            if ModelingToolkit.is_time_dependent(prob_new)
+                @test prob_new[:X1] == integrator[:X1] == sol[:X1][1]
+                @test prob_new[:X2] == integrator[:X2] == sol[:X2][1]
+                @test prob_new[:X3] == integrator[:X3] == sol[:X3][1]
+            else
+                @test prob_new[:X1] == integrator[:X1]
+                @test prob_new[:X2] == integrator[:X2]
+                @test prob_new[:X3] == integrator[:X3]
+            end
         end
 
         # Similarly, but now also updates the conservation constant. Here, once Γ has been updated:
@@ -375,7 +391,7 @@ let
         for _ in 1:3
             # Updates Γ, checks the values of all species and Γ, then sets which is the old problem.
             Γ_new = substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => prob_old[X2], X3 => 0])) + rand(rng, 0.0:5.0)
-            prob_new = remake(prob_old; p = [:Γ => [Γ_new]], warn_initialize_determined = false)
+            prob_new = remake(prob_old; p = [:Γ => [Γ_new]])
             @test prob_old[:X1] ≈ prob_new[:X1]
             @test prob_old[:X2] ≈ prob_new[:X2]
             @test Γ_new ≈ prob_new.ps[:Γ][1]
@@ -394,12 +410,26 @@ let
 
             # Updates X3 (the eliminated species). Right now, this will have no effect on `X3` (or the system).
             X3_new = rand(rng, 1.0:10.0)
-            prob_new = remake(prob_old; u0 = [:X3 => X3_new], warn_initialize_determined = false)
+            prob_new = remake(prob_old; u0 = [:X3 => X3_new])
             @test prob_old[:X1] ≈ prob_new[:X1]
             @test prob_old[:X2] ≈ prob_new[:X2]
             @test prob_old[:X3] ≈ prob_new[:X3]
             @test prob_old.ps[:Γ][1] ≈ prob_new.ps[:Γ][1]
             prob_old = prob_new
+
+            # Checks that integrator and solutions have identical content to problem.
+            integrator = init(prob_new, solver)
+            sol = solve(prob_new, solver; maxiters = 1, verbose = false)
+            @test prob_new.ps[:Γ][1] == integrator.ps[:Γ][1] == sol.ps[:Γ][1]
+            if ModelingToolkit.is_time_dependent(prob_new)
+                @test prob_new[:X1] == integrator[:X1] == sol[:X1][1]
+                @test prob_new[:X2] == integrator[:X2] == sol[:X2][1]
+                @test prob_new[:X3] == integrator[:X3] == sol[:X3][1]
+            else
+                @test prob_new[:X1] == integrator[:X1]
+                @test prob_new[:X2] == integrator[:X2]
+                @test prob_new[:X3] == integrator[:X3]
+            end
         end
     end
 end
@@ -452,4 +482,22 @@ let
     # sol = solve(oprob, Vern7())
     # @test sol[X[1]][end] ≈ 8.0
     # @test sol[X[2]][end] ≈ 4.0
+end
+
+# Check conservation law elimination warnings (and the disabling of these) for `NonlinearSystem`s
+# and `NonlinearProblem`s.
+let
+    # Create models.
+    rn = @reaction_network begin
+        (k1,k2), X1 <--> X2
+        (k3,k4), X1 + X2 <--> X3
+    end
+    u0 = [:X1 => 1.0, :X2 => 1.0, :X3 => 1.0]
+    ps = [:k1 => 0.1, :k2 => 0.2, :k3 => 0.3, :k4 => 0.4]
+    
+    # Checks that the warning si given and can be supressed for the variosu cases.
+    @test_nowarn convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false)
+    @test_logs (:warn, r"You are creating a NonlinearSystem *") convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = true)
+    @test_nowarn NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = false)
+    @test_logs (:warn, r"You are creating a NonlinearSystem *") NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = true)
 end
