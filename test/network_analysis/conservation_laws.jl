@@ -502,7 +502,7 @@ let
     # Create models.
     rn = @reaction_network begin
         (k1,k2), X1 <--> X2
-        (k3,k4), X1 + X2 --> 2X3
+        (k3,k4), X1 + X2 <--> 2X3
     end
     u0 = [:X1 => 1.0, :X2 => 2.0, :X3 => 3.0]
     ps = [:k1 => 0.1, :k2 => 0.2, :k3 => 0.3, :k4 => 0.4]
