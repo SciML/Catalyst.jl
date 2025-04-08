@@ -91,7 +91,7 @@ Next, we colour parameter space according to whether the steady state is stable 
 ```@example bifurcationkit_codim2
 sample1 = (15.0, 10.0)
 sample2 = (5.0, 15.0)
-plot(cont_hopf; vars = (:p1, :p2), fillrange = ylimit[2])
+plot(cont_hopf; vars = (:p1, :p2), fillrange = ylimit[2], xguide = "v", yguide = "K")
 plot!(cont_hopf; vars = (:p1, :p2), fillrange = ylimit[1], xlimit, ylimit)
 scatter!(sample1; label = "Oscillatory parameter set", markersize = 7)
 scatter!(sample2; label = "Non-oscillatory parameter set", markersize = 7)
