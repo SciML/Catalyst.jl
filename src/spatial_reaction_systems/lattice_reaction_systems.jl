@@ -155,7 +155,7 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
 
         # Additional error checks.
         if any(haskey(Symbolics.unwrap(symvar).metadata, Symbolics.ArrayShapeCtx)
-        for symvar in [ps; species(rs)])
+                for symvar in [ps; species(rs)])
             throw(ArgumentError("Some species and/or parameters used to create the `LatticeReactionSystem` are array variables ($(filter(symvar -> haskey(Symbolics.unwrap(symvar).metadata, Symbolics.ArrayShapeCtx), [ps; species(rs)]))). This is currently not supported."))
         end
 

@@ -30,6 +30,7 @@ function forbidden_symbol_check(syms)
         error("The following symbol(s) are used as species or parameters: $used_forbidden_syms, this is not permitted.")
 end
 
+
 ### Catalyst-specific Expressions Manipulation ###
 
 # Many option inputs can be on a form `@option input` or `@option begin ... end`. In both these

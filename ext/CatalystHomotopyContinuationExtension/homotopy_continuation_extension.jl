@@ -139,8 +139,7 @@ function common_denominator(expr)
         den ^= pow
         return num / den
     end
-    return maketerm(BasicSymbolic, operation(expr),
-        map(common_denominator, arguments(expr)), metadata(expr))
+    return maketerm(BasicSymbolic, operation(expr), map(common_denominator, arguments(expr)), metadata(expr))
 end
 
 # If the input is a fraction, removes the denominator.
