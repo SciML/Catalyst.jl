@@ -39,7 +39,7 @@ g = Graph(repressilator)
 ![Repressilator solution](../assets/repressilator.svg)
 
 We also showed in the [Introduction to Catalyst](@ref introduction_to_catalyst) tutorial that
-the reaction rate equation ODE model for the repressilator is
+the reaction rate equation (RRE) ODE model for the repressilator is
 ```math
 \begin{aligned}
 \frac{dm_1(t)}{dt} =& \frac{\alpha K^{n}}{K^{n} + \left( {P_3}\left( t \right) \right)^{n}} - \delta {m_1}\left( t \right) + \gamma \\
@@ -109,8 +109,8 @@ facilitate analysis of a variety of reaction network properties. Consider a simp
 reaction system like
 ```@example s1
 rn = @reaction_network begin
- k, 2*A + 3*B --> A + 2*C + D
- b, C + D --> 2*A + 3*B
+ k, 2A + 3B --> A + 2C + D
+ b, C + D --> 2A + 3B
 end
 ```
 We can think of the first reaction as converting the *reaction complex*,
@@ -257,7 +257,9 @@ isequal(A_k, B * K)
 ```
 
 Note that we have used `isequal` instead of `==` here because `laplacianmat`
-returns a `Matrix{Num}`, since some of its entries are symbolic rate constants.
+returns a `Matrix{Num}`, since some of its entries are symbolic rate constants
+(symbolic variables and `Num`s cannot be compared using `==`, since `a == b`
+is interpreted as a symbolic expression).
 
 In sum, we have that
 ```math
@@ -286,7 +288,7 @@ fluxmat(rn, parammap)
 laplacianmat(rn, parammap)
 ```
 
-# Symbolic ODE functions
+## Symbolic ODE functions
 In some cases it might be useful to generate the function defining the system of ODEs as a symbolic Julia function that can be used for further analysis. This can be done using Symbolics' [`build_function`](https://docs.sciml.ai/Symbolics/stable/getting_started/#Building-Functions), which takes a symbolic expression and a set of desired arguments, and converts it into a Julia function taking those arguments.
 
 Let's build the full symbolic function corresponding to our ODE system. `build_function` will return two expressions, one for a function that outputs a new vector for the result, and one for a function that modifies the input in-place. Either expression can then be evaluated to return a Julia function.
@@ -327,7 +329,7 @@ f(c, ks)
 
 Note also that `f` can take any vector with the right dimension (i.e. the number of species), not just a vector of `Number`, so it can be used to build, e.g. a vector of polynomials in Nemo for commutative algebraic methods.
 
-# Properties of matrix null spaces
+## Properties of matrix null spaces
 The null spaces of the matrices discussed in this section often have special meaning. Below we will discuss some of these properties.
 
 Recall that we may write the net stoichiometry matrix ``N = YB``.
@@ -336,7 +338,7 @@ Recall that we may write the net stoichiometry matrix ``N = YB``.
 
 [Complex balance](@ref network_analysis_complex_and_detailed_balance) can be compactly formulated as the following: a set of steady state reaction fluxes is complex-balanced if it is in the nullspace of the incidence matrix ``B``.
 
-# API Section for matrices and vectors
+## API Section for matrices and vectors
 We have that: 
 - ``N`` is the `netstoichmat`
 - ``Z`` is the `complexstoichmat`
