@@ -369,7 +369,7 @@ function get_reactions(exprs::Vector{Expr})
         # bundled, is disabled. See discussion in https://github.com/SciML/Catalyst.jl/issues/1219.
         if !in(arrow, double_arrows) && Meta.isexpr(rate, :tuple) &&
                 !Meta.isexpr(reaction.args[2], :tuple) && !Meta.isexpr(reaction.args[3], :tuple)
-            error("Bundling of reactions with multiple rates but singular substrates and product sets is disallowed. This error is potentially due to a bidirectional (`<-->`) reaction being types as `-->`.")
+            error("Bundling of reactions with multiple rates but singular substrates and product sets is disallowed. This error is potentially due to a bidirectional (`<-->`) reaction being incorrectly typed as `-->`.")
         end
 
         # Checks which type of line is used, and calls `push_reactions!` on the processed line.
