@@ -108,7 +108,7 @@ end
 
 # this doesn't work with constraint equations currently
 function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
-        remove_conserved = false)
+        remove_conserved = false, expand_catalyst_funs = true)
     # as BC species should ultimately get an equation, we include them in the noise matrix
     num_bcsts = count(isbc, get_unknowns(rs))
 
@@ -124,7 +124,9 @@ function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
     end
 
     for (j, rx) in enumerate(get_rxs(rs))
-        rlsqrt = sqrt(abs(oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)))
+        rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws, 
+            expand_catalyst_funs)
+        rlsqrt = sqrt(abs(rl))
         hasnoisescaling(rx) && (rlsqrt *= getnoisescaling(rx))
         remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
 
@@ -173,9 +175,12 @@ Notes:
   the ratelaw is `k*S*(S-1)`, i.e. the rate law is not normalized by the scaling
   factor.
 """
-function jumpratelaw(rx; combinatoric_ratelaw = true)
+function jumpratelaw(rx; combinatoric_ratelaw = true, expand_catalyst_funs = true)
     @unpack rate, substrates, substoich, only_use_rate = rx
+    
     rl = rate
+    expand_catalyst_funs && (rl = expand_registered_functions(rl))
+
     if !only_use_rate
         coef = eltype(substoich) <: Number ? one(eltype(substoich)) : 1
         for (i, stoich) in enumerate(substoich)
@@ -317,7 +322,7 @@ function get_depgraph(rs)
     eqeq_dependencies(jdeps, vdeps).fadjlist
 end
 
-function assemble_jumps(rs; combinatoric_ratelaws = true)
+function assemble_jumps(rs; combinatoric_ratelaws = true, expand_catalyst_funs = true)
     meqs = MassActionJump[]
     ceqs = ConstantRateJump[]
     veqs = VariableRateJump[]
@@ -365,7 +370,8 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
         if (!isvrj) && ismassaction(rx, rs; rxvars, haveivdep = false, unknownset)
             push!(meqs, makemajump(rx; combinatoric_ratelaw = combinatoric_ratelaws))
         else
-            rl = jumpratelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)
+            rl = jumpratelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws, 
+                expand_catalyst_funs)
             affect = Vector{Equation}()
             for (spec, stoich) in rx.netstoich
                 # don't change species that are constant or BCs
@@ -569,7 +575,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
-        as_odes = false, include_zero_odes = false)
+        as_odes = false, include_zero_odes = false, expand_catalyst_funs)
     eqs, us, ps, obs, defs, initeqs = addconstraints!(eqs, fullrs, ists, ispcs; 
         remove_conserved, treat_conserved_as_eqs = true)
 
@@ -648,9 +654,9 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     remove_conserved && conservationlaws(flatrs)
     ists, ispcs = get_indep_sts(flatrs, remove_conserved)
     eqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws, include_zero_odes,
-        remove_conserved)
-    noiseeqs = assemble_diffusion(flatrs, ists, ispcs;
-        combinatoric_ratelaws, remove_conserved)
+        remove_conserved, expand_catalyst_funs)
+    noiseeqs = assemble_diffusion(flatrs, ists, ispcs; combinatoric_ratelaws, 
+        remove_conserved, expand_catalyst_funs)
     eqs, us, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
 
     if any(isbc, get_unknowns(flatrs))
@@ -701,7 +707,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     (length(MT.continuous_events(flatrs)) > 0) &&
         (@warn "continuous_events will be dropped as they are not currently supported by JumpSystems.")
 
-    eqs = assemble_jumps(flatrs; combinatoric_ratelaws)
+    eqs = assemble_jumps(flatrs; combinatoric_ratelaws, expand_catalyst_funs)
 
     # handle BC species
     sts, ispcs = get_indep_sts(flatrs)
