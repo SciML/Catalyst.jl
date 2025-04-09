@@ -79,7 +79,7 @@ These three different approaches are summed up in the following table:
 ```
 
 ## [Performing (ODE) simulations](@id simulation_intro_ODEs)
-The following section gives a (more throughout than [previous]) introduction of how to simulate Catalyst models. This is exemplified using ODE simulations (some ODE-specific options will also be discussed). Later on, we will describe things specific to [SDE](@ref simulation_intro_SDEs) and [jump](@ref simulation_intro_jumps) simulations. All ODE simulations are performed using the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package, which full documentation can be found [here](https://docs.sciml.ai/OrdinaryDiffEq/stable/). A dedicated section giving advice on how to optimise ODE simulation performance can be found [here](@ref ode_simulation_performance)
+The following section gives a (more throughout than [previously](@ref introduction_to_catalyst_massaction_ode)) introduction of how to simulate Catalyst models. This is exemplified using ODE simulations (some ODE-specific options will also be discussed). Later on, we will describe things specific to [SDE](@ref simulation_intro_SDEs) and [jump](@ref simulation_intro_jumps) simulations. All ODE simulations are performed using the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package, which full documentation can be found [here](https://docs.sciml.ai/OrdinaryDiffEq/stable/). A dedicated section giving advice on how to optimise ODE simulation performance can be found [here](@ref ode_simulation_performance)
 
 To perform any simulation, we must first define our model, as well as the simulation's initial conditions, time span, and parameter values. Here we will use a simple [two-state model](@ref basic_CRN_library_two_states):
 ```@example simulation_intro_ode
@@ -123,6 +123,9 @@ sol = solve(oprob, Rodas5P())
 nothing # hide
 ```
 A full list of available solvers is provided [here](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/), and a discussion on optimal solver choices [here](@ref ode_simulation_performance_solvers).
+
+!!! note
+    Unlike most other libraries, OrdinaryDiffEq is split into multiple libraries. This is due to it implementing a large number of ODE solvers (most of which a user will not use). Splitting the library improves its loading times. At the highest level, there is OrdinaryDiffEq.jl (imported through `using OrdinaryDiffEq`). This exports all solvers, and is primarily useful if you want to try a wide range of different solvers for a specific problem. Next there is OrdinaryDiffEqDefault.jl (imported through `using OrdinaryDiffEq`). This exports the automated default solver (which selects a solver for the user). It is likely the best one to use for simple workflows. Then there are multiple solver-specific libraries, such as [OrdinaryDiffEqTsit5.jl](https://docs.sciml.ai/OrdinaryDiffEq/stable/explicit/Tsit5/) and [OrdinaryDiffEqRosenbrock.jl](https://docs.sciml.ai/OrdinaryDiffEq/stable/semiimplicit/Rosenbrock/) (a full list can be found [here](https://docs.sciml.ai/OrdinaryDiffEq/stable/)). Each of these exports a specific set of solvers, and are useful if you know in advance which solver you wish to use.
 
 Additional options can be provided as keyword arguments. E.g. the `maxiters` arguments determines the maximum number of simulation time steps (before the simulation is terminated). This defaults to `1e5`, but can be modified through:
 ```@example simulation_intro_ode
