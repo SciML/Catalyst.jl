@@ -19,7 +19,7 @@ ps = [:v0 => 0.1, :v => 2.5, :Kᵢ => 1000.0, :Kₐ => 40.0, :n => 3.0, :deg => 
 sprob = SDEProblem(sa_model, u0, tspan, ps)
 nothing # hide 
 ```
-We can now create a simple `EnsembleProblem` and perform an ensemble simulation (as described [here](@ref ensemble_simulations)). Please note that the system s an event which modifies its parameters, hence we must add the `safetycopy = true` argument to `EnsembleProblem` (else, subsequent simulations would start with $K = Kₐ$).
+We can now create a simple `EnsembleProblem` and perform an ensemble simulation (as described [here](@ref ensemble_simulations)). Please note that the system has an event which modifies its parameters, hence we must add the `safetycopy = true` argument to `EnsembleProblem` (else, subsequent simulations would start with $K = Kₐ$).
 ```@example activation_time_distribution_measurement
 using Plots, StochasticDiffEq
 eprob = EnsembleProblem(sprob; safetycopy = true)
