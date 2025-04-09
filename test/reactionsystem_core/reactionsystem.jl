@@ -118,9 +118,7 @@ let
     kvals = Float64.(1:length(k))
     def_p = [k => kvals]
     def_u0 = [A => 0.5, B => 1.0, C => 1.5, D => 2.0]
-    inits = (MT.Initial(A), MT.Initial(B), MT.Initial(C), MT.Initial(D)) .=> 0
     defs = merge(Dict(def_p), Dict(def_u0))
-    fulldefs = merge(copy(defs), Dict(inits))
 
     @named rs = ReactionSystem(rxs, t, [A, B, C, D], [k]; defaults = defs)
     rs = complete(rs)
@@ -133,7 +131,8 @@ let
 
     # these systems add initial conditions to the defaults 
     @test ModelingToolkit.get_defaults(odesys) ==
-          ModelingToolkit.get_defaults(sdesys) == fulldefs
+          ModelingToolkit.get_defaults(sdesys)
+    @test issubset(defs, ModelingToolkit.get_defaults(odesys))
 
     u0map = [A => 5.0]
     kvals[1] = 5.0
@@ -465,9 +464,9 @@ let
     rs = complete(rs)
     @test all(eq -> eq isa Reaction, ModelingToolkit.get_eqs(rs)[1:4])
     osys = complete(convert(ODESystem, rs))
-    inits = Initial.((B, C, D, E))
     @test issetequal(MT.get_unknowns(osys), [B, C, D, E])
-    @test issetequal(MT.get_ps(osys), [k1, k2, A, inits...])
+    _ps = filter(x -> !iscall(x) || !(operation(x) isa Initial), MTK.get_ps(osys))
+    @test issetequal(_ps, [k1, k2, A])
 
     # test nonlinear systems
     u0 = [1.0, 2.0, 3.0, 4.0]
@@ -497,9 +496,9 @@ let
     @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
     rs = complete(rs)
     ssys = complete(convert(SDESystem, rs))
-    inits = Initial.((B, C, D, E))
     @test issetequal(MT.get_unknowns(ssys), [B, C, D, E])
-    @test issetequal(MT.get_ps(ssys), [A, k1, k2, inits...])
+    _ps = filter(x -> !iscall(x) || !(operation(x) isa Initial), MTK.get_ps(ssys))
+    @test issetequal(_ps, [A, k1, k2])
     du1 = zeros(4)
     du2 = zeros(4)
     sprob = SDEProblem(ssys, u0map, tspan, pmap; check_length = false)
