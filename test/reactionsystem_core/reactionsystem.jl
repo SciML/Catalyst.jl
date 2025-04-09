@@ -465,7 +465,7 @@ let
     @test all(eq -> eq isa Reaction, ModelingToolkit.get_eqs(rs)[1:4])
     osys = complete(convert(ODESystem, rs))
     @test issetequal(MT.get_unknowns(osys), [B, C, D, E])
-    _ps = filter(x -> !iscall(x) || !(operation(x) isa Initial), MTK.get_ps(osys))
+    _ps = filter(x -> !iscall(x) || !(operation(x) isa Initial), MT.get_ps(osys))
     @test issetequal(_ps, [k1, k2, A])
 
     # test nonlinear systems
@@ -497,7 +497,7 @@ let
     rs = complete(rs)
     ssys = complete(convert(SDESystem, rs))
     @test issetequal(MT.get_unknowns(ssys), [B, C, D, E])
-    _ps = filter(x -> !iscall(x) || !(operation(x) isa Initial), MTK.get_ps(ssys))
+    _ps = filter(x -> !iscall(x) || !(operation(x) isa Initial), MT.get_ps(ssys))
     @test issetequal(_ps, [A, k1, k2])
     du1 = zeros(4)
     du2 = zeros(4)
