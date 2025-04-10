@@ -47,7 +47,7 @@ end
 
         # Tests ODE, SDE, jump simulations, nonlinear solving, and steady state simulations.
         @time @safetestset "ODE System Simulations" begin include("simulation_and_solving/simulate_ODEs.jl") end
-        #@time @safetestset "Automatic Jacobian Construction" begin include("simulation_and_solving/jacobian_construction.jl") end
+        @time @safetestset "Automatic Jacobian Construction" begin include("simulation_and_solving/jacobian_construction.jl") end
         @time @safetestset "SDE System Simulations" begin include("simulation_and_solving/simulate_SDEs.jl") end
         @time @safetestset "Jump System Simulations" begin include("simulation_and_solving/simulate_jumps.jl") end
         @time @safetestset "Nonlinear and SteadyState System Solving" begin include("simulation_and_solving/solve_nonlinear.jl") end
