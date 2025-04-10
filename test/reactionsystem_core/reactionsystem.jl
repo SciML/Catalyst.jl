@@ -497,7 +497,7 @@ let
     rs = complete(rs)
     ssys = complete(convert(SDESystem, rs))
     @test issetequal(MT.get_unknowns(ssys), [B, C, D, E])
-    _ps = filter(x -> !iscall(x) || !(operation(x) isa Initial), MT.get_ps(ssys))
+    _ps = filter(!isinitial, MT.get_ps(ssys))
     @test issetequal(_ps, [A, k1, k2])
     du1 = zeros(4)
     du2 = zeros(4)
