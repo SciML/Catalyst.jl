@@ -51,7 +51,7 @@ function jac_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, spa
     prob = ODEProblem(rs, u, 0.0, p; jac = true, combinatoric_ratelaws, sparse)
     J = sparse ? deepcopy(prob.f.jac_prototype) : zeros(length(u), length(u))
     prob.f.jac(J, prob.u0, prob.p, t)
-    @test J ≈ prob.f.jac(prob.u0, prob.p, t)
+    @test J ≈ prob.f.jac(prob.u0, prob.p, t) atol = 1e-14 rtol = 1e-14
     return J
 end
 
