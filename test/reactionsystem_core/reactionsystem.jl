@@ -465,7 +465,7 @@ let
     @test all(eq -> eq isa Reaction, ModelingToolkit.get_eqs(rs)[1:4])
     osys = complete(convert(ODESystem, rs))
     @test issetequal(MT.get_unknowns(osys), [B, C, D, E])
-    _ps = filter(x -> !iscall(x) || !(operation(x) isa Initial), MT.get_ps(osys))
+    _ps = filter(!isinitial, MT.get_ps(osys))
     @test issetequal(_ps, [k1, k2, A])
 
     # test nonlinear systems
