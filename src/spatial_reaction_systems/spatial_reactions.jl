@@ -103,28 +103,32 @@ function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReacti
     if any(isequal(tr.species, s) && !isequivalent(tr.species, s) for s in species(rs))
         error("A transport reaction used a species, $(tr.species), with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and use it during transport reaction creation.")
     end
-    # No `for` loop, just weird formatting by the formatter.
     if any(isequal(rs_p, tr_p) && !isequivalent(rs_p, tr_p)
-    for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate))
+            for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate))
         error("A transport reaction used a parameter with metadata not matching its lattice reaction system. Please fetch this parameter from the reaction system and use it during transport reaction creation.")
     end
 
     # Checks that no edge parameter occurs among rates of non-spatial reactions.
-    # No `for` loop, just weird formatting by the formatter.
     if any(!isempty(intersect(Symbolics.get_variables(r.rate), edge_parameters))
-    for r in reactions(rs))
+            for r in reactions(rs))
         error("Edge parameter(s) were found as a rate of a non-spatial reaction.")
     end
 end
 
 # Since MTK's "isequal" ignores metadata, we have to use a special function that accounts for this.
 # This is important because whether something is an edge parameter is defined in metadata.
+# MTK potentially start adding there own metadata to system symbolic variables, to prevent breakage
+# for this we now also have al list of `ignored_metadata` (which MTK will add to `ReactionSystem`)
+# metadata. Long-term the solution is to permit the creation of spatial reactions within
+# a `ReactionSystem` when it is created.
 const ep_metadata = Catalyst.EdgeParameter => true
-function isequivalent(sym1, sym2)
+function isequivalent(sym1, sym2; ignored_metadata = [MT.SymScope])
     isequal(sym1, sym2) || (return false)
-    if any((md1 != ep_metadata) && !(md1 in sym2.metadata) for md1 in sym1.metadata)
+    if any((md1 != ep_metadata) && (md1[1] ∉ ignored_metadata) && (md1 ∉ sym2.metadata)
+            for md1 in sym1.metadata)
         return false
-    elseif any((md2 != ep_metadata) && !(md2 in sym1.metadata) for md2 in sym2.metadata)
+    elseif any((md2 != ep_metadata) && (md2[1] ∉ ignored_metadata) && (md2 ∉ sym1.metadata)
+            for md2 in sym2.metadata)
         return false
     elseif typeof(sym1) != typeof(sym2)
         return false
