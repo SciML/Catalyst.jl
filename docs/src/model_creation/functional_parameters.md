@@ -34,6 +34,7 @@ plot(sol)
 !!! note
     For this simple example, $(2 + t)/(1 + t)$ could have been used directly as a reaction rate (or written as a normal function), technically making the functional parameter approach unnecessary. However, here we used this function as a simple example of how discrete data can be made continuous using DataInterpolations, and then have its values inserted using a (functional) parameter.
 
+
 ## [Inserting a customised, time-dependent, input](@id functional_parameters_circ_rhythm)
 Let us now go through everything again, but providing some more details. Let us first consider the input parameter. We have previously described how a [time-dependent rate can model a circadian rhythm](@ref dsl_description_nonconstant_rates_time). For real applications, due to e.g. clouds, sunlight is not a perfect sine wave. Here, a common solution is to take real sunlight data from some location and use in the model. Here, we will create synthetic (noisy) data as our light input:
 ```@example functional_parameters_circ_rhythm

@@ -4,7 +4,7 @@
 
 # Fetch packages.
 using Catalyst, LinearAlgebra, OrdinaryDiffEqTsit5, SciMLNLSolve, Test
-using ModelingToolkit: nameof
+using ModelingToolkit: nameof, getname
 
 # Sets the default `t` to use.
 t = default_t()
@@ -99,7 +99,7 @@ let
     @named nsys = NonlinearSystem(connections, [], [])
     @named ssrepressilator = ReactionSystem(t; systems = [nsys, sys₁, sys₂, sys₃])
     ssrepressilator = complete(ssrepressilator)
-    @named nlrepressilator = convert(NonlinearSystem, ssrepressilator, include_zero_odes = false)
+    @named nlrepressilator = convert(NonlinearSystem, ssrepressilator)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
@@ -112,7 +112,7 @@ let
     # Flattening.
     fsys = Catalyst.flatten(ssrepressilator)
     fsys = complete(fsys)
-    @named nlrepressilator = convert(NonlinearSystem, fsys, include_zero_odes = false)
+    @named nlrepressilator = convert(NonlinearSystem, fsys)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
@@ -130,7 +130,7 @@ let
                                 [])
     @named repressilator2 = ReactionSystem(connections, t; systems = [sys₁, sys₂, sys₃])
     repressilator2 = complete(repressilator2)
-    @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes = false)
+    @named nlrepressilator = convert(NonlinearSystem, repressilator2)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
@@ -249,7 +249,7 @@ let
     repressilator2 = Catalyst.flatten(repressilator2)
     repressilator2 = extend(csys, repressilator2)
     repressilator2 = complete(repressilator2)
-    @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes = false)
+    @named nlrepressilator = convert(NonlinearSystem, repressilator2)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
@@ -507,12 +507,12 @@ let
     @variables x3(t) x4(t) x5(t)
     x2 = ParentScope(x2)
     x3 = ParentScope(ParentScope(x3))
-    x4 = DelayParentScope(x4, 2)
+    x4 = DelayParentScope(x4)
     x5 = GlobalScope(x5)
     @parameters p1 p2 p3 p4 p5
     p2 = ParentScope(p2)
     p3 = ParentScope(ParentScope(p3))
-    p4 = DelayParentScope(p4, 2)
+    p4 = DelayParentScope(p4)
     p5 = GlobalScope(p5)
     rxs = [Reaction(p1, nothing, [x1]), Reaction(p2, [x2], nothing), 
            D(x3) ~ p3, D(x4) ~ p4, D(x5) ~ p5]
@@ -530,11 +530,11 @@ let
     sys3 = sys3 ∘ sys2
     @test length(unknowns(sys3)) == 4
     @test any(isequal(x3), unknowns(sys3))
-    @test any(isequal(x4), unknowns(sys3))
+    @test any(endswith("x4") ∘ string ∘ getname, unknowns(sys3))
     @test length(species(sys3)) == 2
     @test length(parameters(sys3)) == 4
     @test any(isequal(p3), parameters(sys3))
-    @test any(isequal(p4), parameters(sys3))
+    @test any(endswith("p4") ∘ string ∘ getname, parameters(sys3))
     sys4 = complete(sys3)
     @test length(unknowns(sys3)) == 4
     @test length(parameters(sys4)) == 5

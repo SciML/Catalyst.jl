@@ -23,7 +23,8 @@ pages = Any[
             "model_creation/examples/basic_CRN_library.md",
             "model_creation/examples/programmatic_generative_linear_pathway.md",
             "model_creation/examples/hodgkin_huxley_equation.md",
-            "model_creation/examples/smoluchowski_coagulation_equation.md"
+            "model_creation/examples/smoluchowski_coagulation_equation.md",
+            "model_creation/examples/noise_modelling_approaches.md",
         ]
     ],
     "Model simulation and visualization" => Any[
@@ -45,6 +46,7 @@ pages = Any[
         "steady_state_functionality/bifurcation_diagrams.md",
         "steady_state_functionality/dynamical_systems.md",
         "Examples" => Any[
+            "steady_state_functionality/examples/bifurcationkit_periodic_orbits.md"
             "steady_state_functionality/examples/bifurcationkit_codim2.md"
         ]
     ],

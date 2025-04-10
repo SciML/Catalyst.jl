@@ -124,22 +124,32 @@ let
     @test osol1[sps] ≈ osol2[sps] ≈ osol3[sps]
 
     # Checks that steady states found using nonlinear solving and steady state simulations are identical.
-    @test_broken begin # Conservation law removal currently not working for NonlinearSystems due to MTK depricating something. https://github.com/SciML/ModelingToolkit.jl/issues/3458, https://github.com/SciML/ModelingToolkit.jl/issues/3411
-        nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true))
-        nprob1 = NonlinearProblem{true}(nsys, u0, p; guesses = [nsys.Γ => [0.0]])
-        nprob2 = NonlinearProblem(rn, u0, p)
-        nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true)
-        ssprob1 = SteadyStateProblem{true}(osys, u0, p)
-        ssprob2 = SteadyStateProblem(rn, u0, p)
-        ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true)
-        nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
-        # Nonlinear problems cannot find steady states properly without removing conserved species.
-        nsol3 = solve(nprob3, NewtonRaphson(); abstol = 1e-8)
-        sssol1 = solve(ssprob1, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-        sssol2 = solve(ssprob2, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-        sssol3 = solve(ssprob3, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-        @test nsol1[sps] ≈ nsol3[sps] ≈ sssol1[sps] ≈ sssol2[sps] ≈ sssol3[sps]
-    end
+    nsys = convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false)
+    nsys_ss = structural_simplify(nsys)
+    nsys = complete(nsys)
+    nprob1 = NonlinearProblem{true}(nsys, u0, p)
+    nprob1b = NonlinearProblem{true}(nsys_ss, u0, p)
+    nprob2 = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false)
+    nprob2b = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false, 
+        structural_simplify = true)
+    nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
+    nsol1b = solve(nprob1b, NewtonRaphson(); abstol = 1e-8)
+    nsol2 = solve(nprob2, NewtonRaphson(); abstol = 1e-8)
+    nsol2b = solve(nprob2b, NewtonRaphson(); abstol = 1e-8)
+    # Nonlinear problems cannot find steady states properly without removing conserved species.
+
+    ssprob1 = SteadyStateProblem{true}(osys, u0, p)
+    ssprob2 = SteadyStateProblem(rn, u0, p)
+    ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true)
+    sssol1 = solve(ssprob1, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
+    sssol2 = solve(ssprob2, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
+    sssol3 = solve(ssprob3, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
+    @test nsol1[sps] ≈ nsol1b[sps] 
+    @test nsol1[sps] ≈ nsol2[sps] 
+    @test nsol1[sps] ≈ nsol2b[sps] 
+    @test nsol1[sps] ≈ sssol1[sps]
+    @test nsol1[sps] ≈ sssol2[sps] 
+    @test nsol1[sps] ≈ sssol3[sps]
 
     # Creates SDEProblems using various approaches.
     u0_sde = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
@@ -216,11 +226,12 @@ let
         (k1,k2), X1 <--> X2
     end
     osys = complete(convert(ODESystem, rn; remove_conserved = true))
-    u0 = [osys.X1 => 1.0, osys.X2 => 1.0]
+    u0_1 = [osys.X1 => 1.0, osys.X2 => 1.0]
+    u0_2 = [osys.X1 => 1.0]
     ps_1 = [osys.k1 => 2.0, osys.k2 => 3.0]
     ps_2 = [osys.k1 => 2.0, osys.k2 => 3.0, osys.Γ => [4.0]]
-    oprob1 = ODEProblem(osys, u0, 10.0, ps_1)
-    oprob2 = ODEProblem(osys, u0, 10.0, ps_2)
+    oprob1 = ODEProblem(osys, u0_1, 10.0, ps_1)
+    oprob2 = ODEProblem(osys, u0_2, 10.0, ps_2)
 
     # Checks that the solutions generates the correct conserved quantities.
     sol1 = solve(oprob1; saveat = 1.0)
@@ -259,8 +270,6 @@ let
     @test oprob.ps[k2] == 0.2
     @test oprob.ps[Γ[1]] == 3.0
 
-    # Currently, any kind of updating of species or the conservation parameter(s) is not possible.
-
     # Update problem parameters using `remake`.
     oprob_new = remake(oprob; p = [k1 => 0.3, k2 => 0.4])
     @test oprob_new.ps[k1] == 0.3
@@ -279,11 +288,59 @@ let
     @test integrator.ps[k2] == 0.6
 end
 
+### Jacobian Tests ###
+
+# Checks that conservation law elimination generates a system with a non-singular Jacobian.
+# Does this for different system types (ODE, SDE, and Nonlinear).
+# Checks singularity by checking whether the Jacobian have high enough a condition number 
+# (when evaluated at the steady state).
+let
+    # Creates the model (contains both conserved and non-conserved species).
+    rn = @reaction_network begin
+        (p,d), 0 <--> X
+        d, XY --> Y
+        (k1,k2), X + Y <--> XY
+        (k3,k4), 2Y <--> Y2
+    end
+
+    # Finds a steady state at which we will compute the Jacobian.
+    u0_ss_init = [:X => 0.0, :Y => 4.0, :XY => 0.0, :Y2 => 0.0]
+    ps = [:p => 1.0, :d => 0.5, :k1 => 1.0, :k2 => 2.0, :k3 => 3.0, :k4 => 4.0]
+    ssprob = SteadyStateProblem(rn, u0_ss_init, ps)
+    ss = solve(ssprob, DynamicSS(Vern7()))
+    ss = [sp => ss[sp] for sp in unknowns(rn)]
+
+    # Creates a function which evaluates whether the Jacobian is singular.
+    # Singularity means infinite condition number (here it is about 1e17).
+    function is_singular(prob; infthres = 1e12)
+        J = zeros(length(prob.u0), length(prob.u0))
+        ModelingToolkit.is_time_dependent(prob) ? prob.f.jac(J, prob.u0, prob.p, 0.0) : prob.f.jac(J, prob.u0, prob.p)
+        return cond(J) > infthres
+    end
+
+    # Creates problems (with Jacobian and W/O conservation law elimination) which singularity we wish to test.
+    oprob = ODEProblem(rn, ss, 1.0, ps; jac = true)
+    oprob_rc = ODEProblem(rn, ss, 1.0, ps; jac = true, remove_conserved = true)
+    sprob = SDEProblem(rn, ss, 1.0, ps; jac = true)
+    sprob_rc = SDEProblem(rn, ss, 1.0, ps; jac = true, remove_conserved = true)
+    nlprob = NonlinearProblem(rn, ss, ps; jac = true)
+    nlprob_rc = NonlinearProblem(rn, ss, ps; jac = true, remove_conserved = true, conseqs_remake_warn = false)
+
+    # Checks that removing conservation laws generates non-singular Jacobian (and else that it is singular).
+    @test is_singular(oprob) == true
+    @test !is_singular(oprob_rc) == true
+    @test is_singular(sprob) == true
+    @test !is_singular(sprob_rc) == true
+    @test is_singular(nlprob) == true
+    @test !is_singular(nlprob_rc) == true
+end
+
 # Goes through a chain of updating of conservation law constants/species, checking that
-# the values of relevant quantitites are correct after each step.
-# Generally, if `Γ` has not been explicitly updated, it will be updated to accomodate new species
-# values. If it has been explicitly udpated, the corresponding elimianted quantity will have its
-# vaue updated to accomodate new Γ/species values (also, the elimianted species's value can not longer be changed).
+# the values of relevant quantities are correct after each step.
+# Generally, if `Γ` has not been explicitly updated, it will be updated to acomodate new species
+# values. If it has been explicitly updated, the corresponding eliminated quantity will have its
+# value updated to acomodate new Γ/species values (also, the eliminated species's value can not longer be changed).
+# Also checks that quantities are correctly updated in integrators and solutions derived from problems.
 let
     # Prepares the problem inputs and computes the conservation equation.
     rn = @reaction_network begin
@@ -298,7 +355,9 @@ let
     # Loops through the tests for different problem types.
     oprob = ODEProblem(rn, u0, 1.0, ps; remove_conserved = true)
     sprob = SDEProblem(rn, u0, 1.0, ps; remove_conserved = true)
-    for prob_old in [oprob, sprob]
+    # nlprob = NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = false)
+    @test_broken false # Cases of `remake` does not work for `NonlinearSystem`s with `remove_conserved = true`.
+    for (prob_old, solver) in zip([oprob, sprob], [Tsit5(), ImplicitEM()])
         # For a couple of iterations, updates the problem, ensuring that when a species is updated:
         # - Only that species and the conservation constant have their values updated.
         # The `≈` is because sometimes the computed values will not be fully exact.
@@ -320,6 +379,20 @@ let
             @test X3_new ≈ prob_new[:X3]
             @test substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => prob_old[X2], X3 => X3_new])) ≈ prob_new.ps[:Γ][1]
             prob_old = prob_new
+
+            # Checks that integrator and solutions have identical content to problem.
+            integrator = init(prob_new, solver)
+            sol = solve(prob_new, solver; maxiters = 1, verbose = false)
+            @test prob_new.ps[:Γ][1] == integrator.ps[:Γ][1] == sol.ps[:Γ][1]
+            if ModelingToolkit.is_time_dependent(prob_new)
+                @test prob_new[:X1] == integrator[:X1] == sol[:X1][1]
+                @test prob_new[:X2] == integrator[:X2] == sol[:X2][1]
+                @test prob_new[:X3] == integrator[:X3] == sol[:X3][1]
+            else
+                @test prob_new[:X1] == integrator[:X1]
+                @test prob_new[:X2] == integrator[:X2]
+                @test prob_new[:X3] == integrator[:X3]
+            end
         end
 
         # Similarly, but now also updates the conservation constant. Here, once Γ has been updated:
@@ -330,7 +403,7 @@ let
         for _ in 1:3
             # Updates Γ, checks the values of all species and Γ, then sets which is the old problem.
             Γ_new = substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => prob_old[X2], X3 => 0])) + rand(rng, 0.0:5.0)
-            prob_new = remake(prob_old; p = [:Γ => [Γ_new]], warn_initialize_determined = false)
+            prob_new = remake(prob_old; p = [:Γ => [Γ_new]])
             @test prob_old[:X1] ≈ prob_new[:X1]
             @test prob_old[:X2] ≈ prob_new[:X2]
             @test Γ_new ≈ prob_new.ps[:Γ][1]
@@ -349,12 +422,26 @@ let
 
             # Updates X3 (the eliminated species). Right now, this will have no effect on `X3` (or the system).
             X3_new = rand(rng, 1.0:10.0)
-            prob_new = remake(prob_old; u0 = [:X3 => X3_new], warn_initialize_determined = false)
+            prob_new = remake(prob_old; u0 = [:X3 => X3_new])
             @test prob_old[:X1] ≈ prob_new[:X1]
             @test prob_old[:X2] ≈ prob_new[:X2]
             @test prob_old[:X3] ≈ prob_new[:X3]
             @test prob_old.ps[:Γ][1] ≈ prob_new.ps[:Γ][1]
             prob_old = prob_new
+
+            # Checks that integrator and solutions have identical content to problem.
+            integrator = init(prob_new, solver)
+            sol = solve(prob_new, solver; maxiters = 1, verbose = false)
+            @test prob_new.ps[:Γ][1] == integrator.ps[:Γ][1] == sol.ps[:Γ][1]
+            if ModelingToolkit.is_time_dependent(prob_new)
+                @test prob_new[:X1] == integrator[:X1] == sol[:X1][1]
+                @test prob_new[:X2] == integrator[:X2] == sol[:X2][1]
+                @test prob_new[:X3] == integrator[:X3] == sol[:X3][1]
+            else
+                @test prob_new[:X1] == integrator[:X1]
+                @test prob_new[:X2] == integrator[:X2]
+                @test prob_new[:X3] == integrator[:X3]
+            end
         end
     end
 end
@@ -407,4 +494,108 @@ let
     # sol = solve(oprob, Vern7())
     # @test sol[X[1]][end] ≈ 8.0
     # @test sol[X[2]][end] ≈ 4.0
+end
+
+# Check conservation law elimination warnings (and the disabling of these) for `NonlinearSystem`s
+# and `NonlinearProblem`s.
+let
+    # Create models.
+    rn = @reaction_network begin
+        (k1,k2), X1 <--> X2
+        (k3,k4), X1 + X2 <--> 2X3
+    end
+    u0 = [:X1 => 1.0, :X2 => 2.0, :X3 => 3.0]
+    ps = [:k1 => 0.1, :k2 => 0.2, :k3 => 0.3, :k4 => 0.4]
+    
+    # Checks that the warning si given and can be supressed for the variosu cases.
+    @test_nowarn convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false)
+    @test_logs (:warn, r"Note, when constructing*") convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = true)
+    @test_nowarn NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = false)
+    @test_logs (:warn, Catalyst.NONLIN_PROB_REMAKE_WARNING) NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = true)
+
+    # @variables X1 X2 X3
+    # @parameters k1 k2 k3 k4 Γ[1:1] = missing [guess = ones(1)]
+    # eqs = [
+    #     0 ~ -k1*X1 + k2*X2 - k3*X1*X2 + (1//2)*k4*((-X1 - X2 + Γ[1])^2),
+    #     0 ~ k1*X1 - k2*X2 - k3*X1*X2 + (1//2)*k4*((-X1 - X2 + Γ[1])^2),
+    #     0 ~ -X1 - X2 - X3 + Γ[1]
+    # ]
+    # initeqs = [Γ[1] ~ Initial(X1) + Initial(X3) + Initial(X2)]
+    # @named nlsys = NonlinearSystem(eqs, [X1, X2, X3], [k1, k2, k3, k4, Γ]; 
+    #     initialization_eqs = initeqs)
+
+    
+    # WITHOUT structural_simplify
+    nlsys = convert(NonlinearSystem, rn; remove_conserved = true, 
+        conseqs_remake_warn = false)
+    nlsys1 = complete(nlsys)
+    nlprob1 = NonlinearProblem(nlsys1, u0, ps)
+
+    @test nlprob1[:X1] == 1.0
+    @test nlprob1[:X2] == 2.0
+    @test nlprob1[:X3] == 3.0
+    @test nlprob1.ps[:Γ][1] == 6.0
+    integ1 = init(nlprob1, NewtonRaphson())
+    @test integ1[:X1] == 1.0
+    @test integ1[:X2] == 2.0
+    @test integ1[:X3] == 3.0
+    @test integ1.ps[:Γ][1] == 6.0
+
+    nlprob1b = remake(nlprob1; u0 = [:X3 => nothing], p = [:Γ => [4.0]])
+    @test nlprob1b[:X1] == 1.0   
+    @test nlprob1b[:X2] == 2.0   
+    @test_broken nlprob1b[:X3] == 1.0
+    @test nlprob1b.ps[:Γ][1] == 4.0
+    integ1 = init(nlprob1b, NewtonRaphson())
+    @test integ1[:X1] == 1.0
+    @test integ1[:X2] == 2.0
+    @test_broken integ1[:X3] == 1.0
+    @test integ1.ps[:Γ][1] == 4.0
+
+    nlprob1c = remake(nlprob1; u0 = [:X2 => nothing], p = [:Γ => [4.0]])
+    @test nlprob1c[:X1] == 1.0
+    @test_broken nlprob1c[:X2] == 0.0
+    @test nlprob1c[:X3] == 3.0
+    @test nlprob1c.ps[:Γ][1] == 4.0
+    integ1 = init(nlprob1b, NewtonRaphson())
+    @test integ1[:X1] == 1.0
+    @test_broken integ1[:X2] == 0.0
+    @test integ1[:X3] == 3.0
+    @test integ1.ps[:Γ][1] == 4.0
+    
+    # WITH structural_simplify
+    nlsys2 = structural_simplify(nlsys)
+    nlprob2 = NonlinearProblem(nlsys2, u0, ps)
+
+    @test nlprob2[:X1] == 1.0
+    @test nlprob2[:X2] == 2.0
+    @test nlprob2[:X3] == 3.0
+    @test nlprob2.ps[:Γ][1] == 6.0
+    integ2 = init(nlprob2, NewtonRaphson())
+    @test integ2[:X1] == 1.0
+    @test integ2[:X2] == 2.0
+    @test integ2[:X3] == 3.0
+    @test integ2.ps[:Γ][1] == 6.0
+
+    nlprob2b = remake(nlprob2; u0 = [:X3 => nothing], p = [:Γ => [4.0]])
+    @test nlprob2b[:X1] == 1.0   
+    @test nlprob2b[:X2] == 2.0   
+    @test nlprob2b[:X3] == 1.0   
+    @test nlprob2b.ps[:Γ][1] == 4.0 
+    integ2 = init(nlprob2b, NewtonRaphson())
+    @test integ2[:X1] == 1.0  
+    @test integ2[:X2] == 2.0  
+    @test integ2[:X3] == 1.0  
+    @test integ2.ps[:Γ][1] == 4.0 
+
+    nlprob2c = remake(nlprob2; u0 = [:X2 => nothing], p = [:Γ => [4.0]])
+    @test nlprob2c[:X1] == 1.0   
+    @test_broken nlprob2c[:X2] == 0.0 
+    @test_broken nlprob2c[:X3] == 3.0
+    @test nlprob2c.ps[:Γ][1] == 4.0 
+    integ2 = init(nlprob2c, NewtonRaphson())
+    @test integ2[:X1] == 1.0  
+    @test_broken integ2[:X2] == 0.0 
+    @test_broken integ2[:X3] == 3.0
+    @test integ2.ps[:Γ][1] == 4.0 
 end

@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, OrdinaryDiffEqVerner, OrdinaryDiffEqRosenbrock, Test
+using Catalyst, OrdinaryDiffEqRosenbrock, OrdinaryDiffEqTsit5, OrdinaryDiffEqVerner, Test
 
 # Sets stable rng number.
 using StableRNGs
@@ -176,7 +176,7 @@ let
     u0 = [:X1 => 1.0, :X2 => 3.0]
     ps = [:k1 => 2.0, :k2 => 3.0]
     oprob = ODEProblem(rn, u0, 1.0, ps)
-    osol = solve(oprob)
+    osol = solve(oprob, Tsit5())
     @test eltype(osol[:X1]) == eltype(osol[:X2]) == typeof(oprob[:X1]) == typeof(oprob[:X2]) == Float64
     @test eltype(osol.t) == typeof(oprob.tspan[1]) == typeof(oprob.tspan[2]) == Float64
 
@@ -184,7 +184,7 @@ let
     u0 = [:X1 => 1, :X2 => 3]
     ps = [:k1 => 2, :k2 => 3]
     oprob = ODEProblem(rn, u0, 1, ps)
-    osol = solve(oprob)
+    osol = solve(oprob, Tsit5())
     @test eltype(osol[:X1]) == eltype(osol[:X2]) == typeof(oprob[:X1]) == typeof(oprob[:X2]) == Float64
     @test eltype(osol.t) == Float64
 
@@ -192,8 +192,8 @@ let
     u0 = [:X1 => 1.0f0, :X2 => 3.0f0]
     ps = [:k1 => 2.0f0, :k2 => 3.0f0]
     oprob = ODEProblem(rn, u0, 1.0f0, ps)
-    osol = solve(oprob)
-    @test eltype(osol[:X1]) == eltype(osol[:X2]) == typeof(oprob[:X1]) == typeof(oprob[:X2]) == Float32
+    osol = solve(oprob, Tsit5())
+    @test_broken eltype(osol[:X1]) == eltype(osol[:X2]) == typeof(oprob[:X1]) == typeof(oprob[:X2]) == Float32 # https://github.com/SciML/ModelingToolkit.jl/issues/3553
     @test eltype(osol.t) == typeof(oprob.tspan[1]) == typeof(oprob.tspan[2]) == Float32
 end
 

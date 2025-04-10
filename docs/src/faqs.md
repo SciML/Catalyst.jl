@@ -271,7 +271,7 @@ so the reaction
 ```@example faq7
 using Catalyst
 rn = @reaction_network begin
-  k, X --> ∅
+    k, X --> ∅
 end
 convert(ODESystem, rn)
 ```
@@ -280,7 +280,7 @@ using any of the following non-filled arrows when declaring the reaction: `<=`,
 `⇐`, `⟽`, `=>`, `⇒`, `⟾`, `⇔`, `⟺`. This means that the reaction
 ```@example faq7
 rn = @reaction_network begin
-  k, X => ∅
+    k, X => ∅
 end
 convert(ODESystem, rn)
 ```
@@ -290,7 +290,7 @@ will be degraded at a constant rate even when very small or equal to 0).
 Note, stoichiometric coefficients are still included, i.e. the reaction
 ```@example faq7
 rn = @reaction_network begin
-  k, 2*X ⇒ ∅
+    k, 2*X ⇒ ∅
 end
 convert(ODESystem, rn)
 ```
@@ -303,7 +303,7 @@ ModelingToolkit. e.g., this is should work
 using Catalyst
 myHill(x) = 2*x^3/(x^3+1.5^3)
 rn = @reaction_network begin
-  myHill(X), ∅ --> X
+    myHill(X), ∅ --> X
 end
 ```
 In some cases, it may be necessary or desirable to register functions with
@@ -322,3 +322,137 @@ rn = @reaction_network begin
     (k1, k2), A <--> B
 end
 ```
+
+## [What to be aware of when using `remake` with conservation law elimination and NonlinearProblems?](@id faq_remake_nonlinprob)
+
+When constructing `NonlinearSystem`s or `NonlinearProblem`s with `remove_conserved = true`, i.e.
+```julia
+# for rn a ReactionSystem
+nsys = convert(NonlinearSystem, rn; remove_conserved = true)
+
+# or 
+nprob = NonlinearProblem(rn, u0, p; remove_conserved = true)
+```
+`remake` is currently unable to correctly update all `u0` values when the
+conserved constant(s), `Γ`, are updated. As an example consider the following
+```@example faq_remake
+using Catalyst, NonlinearSolve
+rn = @reaction_network begin
+    (k₁,k₂), X₁ <--> X₂
+    (k₃,k₄), X₁ + X₂ --> 2X₃
+end
+u0 = [:X₁ => 1.0, :X₂ => 2.0, :X₃ => 3.0]
+ps = [:k₁ => 0.1, :k₂ => 0.2, :k₃ => 0.3, :k₄ => 0.4]
+nlsys = convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false)
+nlsys = complete(nlsys)
+equations(nlsys)
+```
+If we generate a `NonlinearProblem` from this system the conservation constant,
+`Γ[1]`, is automatically set to `X₁ + X₂ + X₃ = 6` and the initial values are
+those in `u0`. i.e if
+```@example faq_remake
+nlprob1 = NonlinearProblem(nlsys, u0, ps)
+```
+then
+```@example faq_remake
+nlprob1[(:X₁, :X₂, :X₃)] == (1.0, 2.0, 3.0)
+```
+and
+```@example faq_remake
+nlprob1.ps[:Γ][1] == 6.0
+```
+If we now try to change a value of `X₁`, `X₂`, or `X₃` using `remake`, the
+conserved constant will be recalculated. i.e. if
+```@example faq_remake
+nlprob2 = remake(nlprob1; u0 = [:X₂ => 3.0])
+```
+compare  
+```@example faq_remake
+println("Correct u0 is: ", (1.0, 3.0, 3.0), "\n", "remade value is: ", nlprob2[(:X₁, :X₂, :X₃)]) 
+```
+and
+```@example faq_remake
+println("Correct Γ is: ", 7.0, "\n", "remade value is: ", nlprob2.ps[:Γ][1])
+```
+However, if we try to directly change the value of `Γ` it is not always the case
+that a `u0` value will correctly update so that the conservation law is
+conserved. Consider
+```@example faq_remake
+nlprob3 = remake(nlprob1; u0 = [:X₂ => nothing], p = [:Γ => [4.0]])
+```
+Setting `[:X₂ => nothing]` for other problem types communicates that the
+`u0` value for `X₂` should be solved for. However, if we examine the values we
+find
+```@example faq_remake
+println("Correct u0 is: ", (1.0, 0.0, 3.0), "\n", "remade value is: ", nlprob3[(:X₁, :X₂, :X₃)]) 
+```
+and
+```@example faq_remake
+println("Correct Γ is: ", 4.0, "\n", "remade value is: ", nlprob3.ps[:Γ][1])
+```
+As such, the `u0` value for `X₂` has not updated, and the conservation law is
+now violated by the `u0` values, i.e,
+```@example faq_remake
+(nlprob3[:X₁] + nlprob3[:X₂] + nlprob3[:X₃]) == nlprob3.ps[:Γ][1] 
+```
+Currently, the only way to avoid this issue is to manually specify updated
+values for the `u0` components, which will ensure that `Γ` updates appropriately
+as in the first example. i.e. we manually set `X₂` to the value it should be and
+`Γ` will be updated accordingly:
+```@example faq_remake
+nlprob4 = remake(nlprob1; u0 = [:X₂ => 0.0])
+```
+so that
+```@example faq_remake
+println("Correct u0 is: ", (1.0, 0.0, 3.0), "\n", "remade value is: ", nlprob4[(:X₁, :X₂, :X₃)]) 
+```
+and
+```@example faq_remake
+println("Correct Γ is: ", 4.0, "\n", "remade value is: ", nlprob4.ps[:Γ][1])
+```
+
+Finally, we note there is one extra consideration to take into account if using
+`structural_simplify`. In this case one of `X₁`, `X₂`, or `X₃` will be moved to
+being an observed. It will then always correspond to the updated value if one
+tries to manually change `Γ`. Let's see what happens here directly
+```@example faq_remake
+nlsys = convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false)
+nlsys = structural_simplify(nlsys)
+nlprob1 = NonlinearProblem(nlsys, u0, ps)
+```
+We can now try to change just `Γ` and implicitly the observed variable that was
+removed will be assumed to have changed its initial value to compensate for it.
+Let's confirm this. First we find the observed variable that was elminated.
+```@example faq_remake
+obs_unknown = only(observed(nlsys)).lhs
+```
+We can figure out its index in `u0` via
+```@example faq_remake
+obs_symbol = ModelingToolkit.getname(obs_unknown)
+obsidx = findfirst(p -> p[1] == obs_symbol, u0)
+```
+Let's now remake 
+```@example faq_remake
+nlprob2 = remake(nlprob1; u0 = [obs_unknown => nothing], p = [:Γ => [8.0]])
+```
+Here we indicate that the observed variable should be treated as unspecified
+during initialization. Since the observed variable is not considered an unknown,
+everything now works, with the observed variable's assumed initial value
+adjusted to allow `Γ = 8`:
+```@example faq_remake
+correct_u0 = last.(u0)
+correct_u0[obsidx] = 8 - sum(correct_u0) + correct_u0[obsidx]
+println("Correct u0 is: ", (1.0, 2.0, 5.0), "\n", "remade value is: ", nlprob2[(:X₁, :X₂, :X₃)]) 
+```
+and `Γ` becomes
+```@example faq_remake
+println("Correct Γ is: ", 8.0, "\n", "remade value is: ", nlprob2.ps[:Γ][1])
+```
+Unfortunately, as with our first example, trying to enforce that a
+non-eliminated species should have its initial value updated instead of the
+observed species will not work.
+
+*Summary:* it is not recommended to directly update `Γ` via `remake`, but to
+instead update values of the initial guesses in `u0` to obtain a desired `Γ`. At
+this time the behavior when updating `Γ` can result in `u0` values that do not
+satisfy the conservation law defined by `Γ` as illustrated above. 
