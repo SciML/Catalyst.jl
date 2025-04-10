@@ -109,19 +109,5 @@ plot(plot(sol_nosc; title = "No oscillation"), plot(sol_osc; title = "Oscillatio
 
 
 ---
-## [Citation](@id bifurcationkit_codim2_citation)
-If you use this functionality in your research, please cite the following paper to support the author of the BifurcationKit package:
-```
-@misc{veltz:hal-02902346,
-  title = {{BifurcationKit.jl}},
-  author = {Veltz, Romain},
-  url = {https://hal.archives-ouvertes.fr/hal-02902346},
-  institution = {{Inria Sophia-Antipolis}},
-  year = {2020},
-  month = Jul,
-  keywords = {pseudo-arclength-continuation ; periodic-orbits ; floquet ; gpu ; bifurcation-diagram ; deflation ; newton-krylov},
-  pdf = {https://hal.archives-ouvertes.fr/hal-02902346/file/354c9fb0d148262405609eed2cb7927818706f1f.tar.gz},
-  hal_id = {hal-02902346},
-  hal_version = {v1},
-}
-```
+## [Citation](@id bifurcationkit_periodic_orbits_citation)
+If you use BifurcationKit.jl for your work, we ask that you **cite** the following paper!! Open source development strongly depends on this. It is referenced on [HAL-Inria](https://hal.archives-ouvertes.fr/hal-02902346) with *bibtex* entry [CITATION.bib](https://github.com/bifurcationkit/BifurcationKit.jl/blob/master/CITATION.bib).
