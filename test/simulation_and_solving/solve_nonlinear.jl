@@ -78,7 +78,7 @@ end
 
 # Checks for system with conservation laws.
 # Checks using interfacing with output solution.
-@test_broken let  # Conservation law removal currently not working for NonlinearSystems due to MTK depricating something. https://github.com/SciML/ModelingToolkit.jl/issues/3458, https://github.com/SciML/ModelingToolkit.jl/issues/3411
+let
     # Creates steady state network, unpack the parameter values.
     steady_state_network_3 = @reaction_network begin
         (p,d), 0 <--> X
@@ -90,7 +90,7 @@ end
     # Creates NonlinearProblem.
     u0 = [steady_state_network_3.X => rand(), steady_state_network_3.Y => rand() + 1.0, steady_state_network_3.Y2 => rand() + 3.0, steady_state_network_3.XY2 => 0.0]
     p = [:p => rand()+1.0, :d => 0.5, :k1 => 1.0, :k2 => 2.0, :k3 => 3.0, :k4 => 4.0]
-    nl_prob_1 = NonlinearProblem(steady_state_network_3, u0, p; remove_conserved = true)
+    nl_prob_1 = NonlinearProblem(steady_state_network_3, u0, p; remove_conserved = true, conseqs_remake_warn = false)
     nl_prob_2 = NonlinearProblem(steady_state_network_3, u0, p)
 
     # Solves it using standard algorithm and simulation based algorithm.

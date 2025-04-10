@@ -44,7 +44,7 @@ etc).
 - [Optimization.jl](https://github.com/SciML/Optimization.jl), [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl), and [PEtab.jl](https://github.com/sebapersson/PEtab.jl) can all be used to [fit model parameters to data](https://sebapersson.github.io/PEtab.jl/stable/Define_in_julia/).
 - [GlobalSensitivity.jl](https://github.com/SciML/GlobalSensitivity.jl) can be used to perform [global sensitivity analysis](@ref global_sensitivity_analysis) of model behaviors.
 - [SciMLSensitivity.jl](https://github.com/SciML/SciMLSensitivity.jl) can be used to compute local sensitivities of functions containing forward model simulations.
-<!--- [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) can be used to perform structural identifiability analysis.-->
+- [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) can be used to perform structural identifiability analysis.
 
 #### [Features of packages built upon Catalyst](@id doc_index_features_other_packages)
 - Catalyst [`ReactionSystem`](@ref)s can be [imported from SBML files](@ref model_file_import_export_sbml) via [SBMLImporter.jl](https://github.com/sebapersson/SBMLImporter.jl) and [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), and [from BioNetGen .net files](@ref model_file_import_export_sbml_rni_net) and various stoichiometric matrix network representations using [ReactionNetworkImporters.jl](https://github.com/SciML/ReactionNetworkImporters.jl).
