@@ -45,7 +45,7 @@ eprob = EnsembleProblem(sprob; output_func, safetycopy = true)
 esol = solve(eprob, ImplicitEM(); trajectories = 250, callback)
 nothing # hide
 ```
-Finally, we can plot the distribution of activation times. For this, we will use the [`histogram`](@ref https://docs.juliaplots.org/latest/series_types/histogram/) function (with the `normalize = true` argument to create a probability density function). An alternative we also recommend is [StatsPlots.jl](https://docs.juliaplots.org/latest/generated/statsplots/)'s `density` function (which creates a smoothed histogram that is also easier to combine with other plots). The input to `density` is the activation times (which our output function has saved to `esol.u`).
+Finally, we can plot the distribution of activation times. For this, we will use the [`histogram`](https://docs.juliaplots.org/latest/series_types/histogram/) function (with the `normalize = true` argument to create a probability density function). An alternative we also recommend is [StatsPlots.jl](https://docs.juliaplots.org/latest/generated/statsplots/)'s `density` function (which creates a smoothed histogram that is also easier to combine with other plots). The input to `density` is the activation times (which our output function has saved to `esol.u`).
 ```@example activation_time_distribution_measurement
 histogram(esol.u; normalize = true, label = "Activation time distribution", xlabel = "Activation time")
 ```
