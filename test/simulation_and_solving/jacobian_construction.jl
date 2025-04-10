@@ -102,7 +102,7 @@ let
             return J
         end
         @test eval_jac(oprob_jac, false) == eval_jac(sprob_jac, false) == eval_jac(nlprob_jac, false)
-        @test_broken eval_jac(oprob_sjac, true) == eval_jac(sprob_sjac, true) == eval_jac(nlprob_sjac, true) # https://github.com/SciML/ModelingToolkit.jl/issues/3527
+        @test eval_jac(oprob_sjac, true) == eval_jac(sprob_sjac, true) == eval_jac(nlprob_sjac, true)
     end
 end
 
