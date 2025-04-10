@@ -96,13 +96,15 @@ let
         nlprob_sjac = NonlinearProblem(rn, u0, ps; jac = true, sparse = true)
 
         # Checks that Jacobians ar identical.
+        # Approx is due to https://github.com/SciML/ModelingToolkit.jl/issues/3554.
         function eval_jac(prob, sparse)
             J = sparse ? deepcopy(prob.f.jac_prototype) : zeros(length(prob.u0), length(prob.u0))
             ModelingToolkit.is_time_dependent(prob) ? prob.f.jac(J, prob.u0, prob.p, 0.0) : prob.f.jac(J, prob.u0, prob.p)
             return J
         end
         @test eval_jac(oprob_jac, false) == eval_jac(sprob_jac, false) == eval_jac(nlprob_jac, false)
-        @test eval_jac(oprob_sjac, true) == eval_jac(sprob_sjac, true) == eval_jac(nlprob_sjac, true)
+        @test eval_jac(oprob_sjac, true) ≈ eval_jac(sprob_sjac, true) atol = 1e-14 rtol = 1e-14
+        @test eval_jac(oprob_sjac, true) ≈ eval_jac(nlprob_sjac, true) atol = 1e-14 rtol = 1e-14
     end
 end
 
@@ -136,7 +138,8 @@ let
         jac_sparse = jac_eval(rn, u0, ps, t_val; sparse = true)
 
         # Check correctness (both by converting to sparse jac to dense, and through multiplication with other matrix).
-        @test Matrix(jac_sparse) == jac
+        # Approx is due to https://github.com/SciML/ModelingToolkit.jl/issues/3554.
+        @test Matrix(jac_sparse) ≈ jac atol = 1e-14 rtol = 1e-14
         mat = factor*rand(rng, length(u0), length(u0))
         @test jac_sparse * mat ≈ jac * mat
     end
