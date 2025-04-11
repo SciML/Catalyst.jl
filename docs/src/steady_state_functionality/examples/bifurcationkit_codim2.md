@@ -48,11 +48,18 @@ plot(plot(sol_nosc; title = "v = 5"), plot(sol_osc; title = "v = 15"), size = (1
 ```
 
 ## [Tracking the bifurcation point w.r.t. a second parameter](@id bifurcationkit_codim2_2ndpar_cont)
-Next, we will investigate how the Hopf bifurcation point moves (in $v$-$X$ space) as a second parameter ($K$) is changed. To do this we will use BifurcationKit.jl's [`continuation` function](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.continuation) (the [`bifurcationdiagram` function](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.bifurcationdiagram), which we previously have used, works by calling `continuation` recursively). We will call it on the Hopf bifurcation point. First, we will designate the parameter we wish to change, as well as which interval to change it. For this, we compute the parameter index (`K_idx`) that BifurcationKit will see (a smoother interface for this will hopefully be added in the future). We also create a new `ContinuationPar`, to which we add our $K$ interval.
+Next, we will investigate how the Hopf bifurcation point moves (in $v$-$X$ space) as a second parameter ($K$) is changed. To do this we will use BifurcationKit.jl's [`continuation` function](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.continuation) (the [`bifurcationdiagram` function](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.bifurcationdiagram), which we previously have used, works by calling `continuation` recursively). We will call it on the Hopf bifurcation point. First we need to retrieve some indexes that are required to make Catalyst (which primarily indexes through symbols) work with BifurcationKit (which primarily indexes through numbers). A smoother interface for this will hopefully be added in the future.
+```@example bifurcationkit_codim2
+K_idx = findfirst(isequal(repressilator.K), parameters(complete(convert(NonlinearSystem, repressilator))))
+v_idx = findfirst(isequal(repressilator.v), parameters(complete(convert(NonlinearSystem, repressilator))))
+K_sym = Symbol(:p, K_idx)
+v_sym = Symbol(:p, v_idx)
+nothing # hide
+```
+Next we designate the interval over which we wish to change $K$, and from this create a new `ContinuationPar`.
 ```@example bifurcationkit_codim2
 K_span = (0.01, 27.0)
 opts_br_2 = ContinuationPar(p_min = K_span[1], p_max = K_span[2])
-K_idx = findfirst(isequal(repressilator.K), parameters(complete(convert(NonlinearSystem, repressilator))))
 nothing # hide
 ```
 Now we can compute the continuation of the Hopf bifurcation. First we must extract a branch from our bifurcation diagram (using [`get_branch`](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/library/#BifurcationKit.get_branch)), as `continuation` cannot work on bifurcation diagrams directly (our bifurcation diagram consists of a single branch, which we here extract). Next, we can call `continuation` on it, designating that we wish to perform continuation from the second point on the branch (which corresponds to the Hopf bifurcation, the first point is one of the branch's two endpoints).
@@ -61,11 +68,11 @@ branch = get_branch(bifdia, ()).γ
 cont_hopf = continuation(branch, 2, (@optic _[K_idx]), opts_br_2; start_with_eigen = true, bothside = true)
 nothing # hide
 ```
-We can now plot how the position of the bifurcation point changes with $K$. Here, we use `vars = (:p1, :x)` to designate that we wish to plot (across the continuation branch) the plotting variable ($X$, which we designated when we created our `BifurcationProblem`) against the first parameter ($v$).
+We can now plot how the position of the bifurcation point changes with $K$. Here, we use `vars = (v_sym, :x)` to designate that we wish to plot (across the continuation branch) the plotting variable ($X$, which we designated when we created our `BifurcationProblem`) against the first parameter ($v$).
 ```@example bifurcationkit_codim2
 plot(bifdia; branchlabel = "Continuation of steady state w.r.t. v, (K = 15)", linewidthstable = 6, 
     linewidthunstable = 3, markersize = 5)
-plot!(cont_hopf; vars = (:p1, :x), xlimit = v_span, xguide = bif_par, yguide = plot_var, 
+plot!(cont_hopf; vars = (v_sym, :x), xlimit = v_span, xguide = bif_par, yguide = plot_var, 
     branchlabel = "Continuation of Hopf bifurcation w.r.t. K")
 ```
 In this case we cannot see directly which part of the $K$ continuation branch corresponds to low values, however, for low $K$ the Hopf bifurcation occurs for much lower values of $v$ (and corresponds to lower steady state values of $X$). We can check this by e.g. re-computing the Hopf branch for `K_span = (0.01, 20.0)` and see that the rightmost part of the branch is shortened. 
@@ -80,19 +87,19 @@ plot!(bifdia_2; xguide = bif_par, yguide = plot_var, branchlabel = "Continuation
 ```
 Here we see that the Hopf bifurcation point of the new diagram also lies on the Hopf continuation line.
 
-Finally, we have already noted that the Hopf bifurcation splits parameter space into one part where the system oscillates and one where it doesn't. Previously we plotted the Hopf continuation in $v$-$X$ space, however, it is also possible to plot it in $v$-$K$ space using the `vars = (:p1, :p2)` argument:
+Finally, we have already noted that the Hopf bifurcation splits parameter space into one part where the system oscillates and one where it doesn't. Previously we plotted the Hopf continuation in $v$-$X$ space, however, it is also possible to plot it in $v$-$K$ space using the `vars = (v_sym, K_sym)` argument:
 ```@example bifurcationkit_codim2
-xlimit = extrema(getfield.(cont_hopf.branch, :p1))
-ylimit = extrema(getfield.(cont_hopf.branch, :p2))
-plot(cont_hopf; vars = (:p1, :p2), xlimit, ylimit, branchlabel = "Hopf bifurcation", 
+xlimit = extrema(getfield.(cont_hopf.branch, v_sym))
+ylimit = extrema(getfield.(cont_hopf.branch, K_sym))
+plot(cont_hopf; vars = (v_sym, K_sym), xlimit, ylimit, branchlabel = "Hopf bifurcation", 
     xguide = "v", yguide = "K", lw = 6)
 ```
 Next, we colour parameter space according to whether the steady state is stable (blue) or unstable (red). We also mark two sample values (one in each region).
 ```@example bifurcationkit_codim2
 sample1 = (15.0, 10.0)
 sample2 = (5.0, 15.0)
-plot(cont_hopf; vars = (:p1, :p2), fillrange = ylimit[2], xguide = "v", yguide = "K")
-plot!(cont_hopf; vars = (:p1, :p2), fillrange = ylimit[1], xlimit, ylimit)
+plot(cont_hopf; vars = (v_sym, K_sym), fillrange = ylimit[2], xguide = "v", yguide = "K")
+plot!(cont_hopf; vars = (v_sym, K_sym), fillrange = ylimit[1], xlimit, ylimit)
 scatter!(sample1; label = "Oscillatory parameter set", markersize = 7)
 scatter!(sample2; label = "Non-oscillatory parameter set", markersize = 7)
 ```
