@@ -76,6 +76,21 @@
   functions (as a parameter) in a model. For more details on how to use these,
   please read:
   https://docs.sciml.ai/Catalyst/stable/model_creation/functional_parameters/.
+- We have introduced a restriction on bundling of reactions in the DSL. Now,
+  bundling is not permitted if multiple rates are provided but only one set each
+  of substrates/products. E.g. this model:
+ ```julia
+  @reaction_network begin
+    (k1,k2), X --> Y
+  end
+ ```
+  will now throw an error. The reason that users attempting to write bi-directional 
+  reactions but typing `-->` instead of `<-->` would get a wrong model. We decided that
+  this kind of bundling was unlikely to be used, and throwing errors for people who
+  made the typo was more important. 
+
+  If you use this type of bundling and it indeed is useful to you, please raise and issue
+  and we will see if we can sort something out.
 - Scoped species/variables/parameters are now treated similar to the latest MTK
   releases (≥ 9.49).
 - A tutorial on making interactive plot displays using Makie has been added.

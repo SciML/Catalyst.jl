@@ -339,7 +339,7 @@ conserved constant(s), `Γ`, are updated. As an example consider the following
 using Catalyst, NonlinearSolve
 rn = @reaction_network begin
     (k₁,k₂), X₁ <--> X₂
-    (k₃,k₄), X₁ + X₂ --> 2X₃
+    (k₃,k₄), X₁ + X₂ <--> 2X₃
 end
 u0 = [:X₁ => 1.0, :X₂ => 2.0, :X₃ => 3.0]
 ps = [:k₁ => 0.1, :k₂ => 0.2, :k₃ => 0.3, :k₄ => 0.4]
