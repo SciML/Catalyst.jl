@@ -76,7 +76,7 @@ let
         (k₁, k₂), E + S1 <--> ES1
         (k₃, k₄), E + S2 <--> ES2
         (k₅, k₆),  S2 + ES1 <--> ES1S2
-        (k₆, k₇), ES1S2 --> S1 + ES2
+        (k₆, k₇), ES1S2 <--> S1 + ES2
         k₈, ES1S2 --> E+P
         (k₉, k₁₀), S1 <--> 0
         (k₁₀, k₁₁), 0 <--> S2
@@ -159,7 +159,7 @@ let
         k4, D --> E
         (k5, k6), E <--> 2F
         k7, 2F --> D
-        (k8, k9), D + E --> G
+        k8, D + E --> G
     end
 
     rcs, D = reactioncomplexes(rn)
