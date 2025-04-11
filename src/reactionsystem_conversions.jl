@@ -491,6 +491,9 @@ Keyword args and default values:
 - `remove_conserved=false`, if set to `true` will calculate conservation laws of the
   underlying set of reactions (ignoring constraint equations), and then apply them to reduce
   the number of equations.
+- `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
+  with their rational function representation when converting to another system type. Set to
+  `false`` to disable.
 """
 function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
@@ -557,6 +560,9 @@ Keyword args and default values:
   conservation laws. See the [FAQ
   entry](https://docs.sciml.ai/Catalyst/stable/faqs/#faq_remake_nonlinprob) for more
   details.
+- `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
+  with their rational function representation when converting to another system type. Set to
+  `false`` to disable.
 """
 function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
@@ -637,6 +643,9 @@ Notes:
 - `remove_conserved=false`, if set to `true` will calculate conservation laws of the
   underlying set of reactions (ignoring constraint equations), and then apply them to reduce
   the number of equations.
+- `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
+  with their rational function representation when converting to another system type. Set to
+  `false`` to disable.
 """
 function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
@@ -690,6 +699,9 @@ Notes:
   differential equations.
 - Does not currently support continuous events as these are not supported by
   `ModelingToolkit.JumpSystems`.
+- `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
+  with their rational function representation when converting to another system type. Set to
+  `false`` to disable.
 """
 function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
@@ -775,6 +787,9 @@ Keyword args and default values:
   conservation laws. See the [FAQ
   entry](https://docs.sciml.ai/Catalyst/stable/faqs/#faq_remake_nonlinprob) for more
   details.
+- `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
+  with their rational function representation when converting to another system type. Set to
+  `false`` to disable.
 """
 function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         p = DiffEqBase.NullParameters(), args...;
