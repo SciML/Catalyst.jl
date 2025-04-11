@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, LinearAlgebra, OrdinaryDiffEqTsit5, SciMLNLSolve, Test
+using Catalyst, LinearAlgebra, OrdinaryDiffEqTsit5, NonlinearSolve, Test
 using ModelingToolkit: nameof, getname
 
 # Sets the default `t` to use.
@@ -103,7 +103,7 @@ let
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
-    sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
+    sol = solve(nlprob; abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
     @test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
@@ -116,7 +116,7 @@ let
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
-    sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
+    sol = solve(nlprob; abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
     @test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
@@ -134,7 +134,7 @@ let
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
-    sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
+    sol = solve(nlprob; abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
     @test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
@@ -253,7 +253,7 @@ let
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
-    sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
+    sol = solve(nlprob; abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
     @test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
@@ -503,7 +503,7 @@ end
 let
     t = default_t()
     D = default_time_deriv()
-    @species x1(t) x2(t) 
+    @species x1(t) x2(t)
     @variables x3(t) x4(t) x5(t)
     x2 = ParentScope(x2)
     x3 = ParentScope(ParentScope(x3))
@@ -514,7 +514,7 @@ let
     p3 = ParentScope(ParentScope(p3))
     p4 = DelayParentScope(p4)
     p5 = GlobalScope(p5)
-    rxs = [Reaction(p1, nothing, [x1]), Reaction(p2, [x2], nothing), 
+    rxs = [Reaction(p1, nothing, [x1]), Reaction(p2, [x2], nothing),
            D(x3) ~ p3, D(x4) ~ p4, D(x5) ~ p5]
     @named sys1 = ReactionSystem(rxs, t)
     @test isequal(x1, only(unknowns(sys1)))
