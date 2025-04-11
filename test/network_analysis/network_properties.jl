@@ -148,10 +148,10 @@ let
     @test length(slcs) == 3
     @test length(tslcs) == 2
     @test issubset([[1,2], [3,4,5], [6,7]], slcs)
-    @test issubset([[3,4,5], [6,7]], tslcs) 
+    @test issubset([[3,4,5], [6,7]], tslcs)
 end
 
-# b) Makes the D + E --> G reaction irreversible. Thus, (D+E) becomes a non-terminal linkage class. Checks whether correctly identifies both (A, B+C) and (D+E) as non-terminal 
+# b) Makes the D + E --> G reaction irreversible. Thus, (D+E) becomes a non-terminal linkage class. Checks whether correctly identifies both (A, B+C) and (D+E) as non-terminal
 let
     rn = @reaction_network begin
         (k1, k2), A <--> B + C
@@ -168,10 +168,10 @@ let
     @test length(slcs) == 4
     @test length(tslcs) == 2
     @test issubset([[1,2], [3,4,5], [6], [7]], slcs)
-    @test issubset([[3,4,5], [7]], tslcs) 
+    @test issubset([[3,4,5], [7]], tslcs)
 end
 
-# From a), makes the B + C <--> D reaction reversible. Thus, the non-terminal (A, B+C) linkage class gets absorbed into the terminal (A, B+C, D, E, 2F) linkage class, and the terminal linkage classes and strong linkage classes coincide. 
+# From a), makes the B + C <--> D reaction reversible. Thus, the non-terminal (A, B+C) linkage class gets absorbed into the terminal (A, B+C, D, E, 2F) linkage class, and the terminal linkage classes and strong linkage classes coincide.
 let
     rn = @reaction_network begin
         (k1, k2), A <--> B + C
@@ -188,13 +188,13 @@ let
     @test length(slcs) == 2
     @test length(tslcs) == 2
     @test issubset([[1,2,3,4,5], [6,7]], slcs)
-    @test issubset([[1,2,3,4,5], [6,7]], tslcs) 
+    @test issubset([[1,2,3,4,5], [6,7]], tslcs)
 end
 
 # Simple test for strong and terminal linkage classes
 let
     rn = @reaction_network begin
-        (k1, k2), A <--> 2B 
+        (k1, k2), A <--> 2B
         k3, A --> C + D
         (k4, k5), C + D <--> E
         k6, 2B --> F
@@ -209,7 +209,7 @@ let
     @test length(slcs) == 3
     @test length(tslcs) == 2
     @test issubset([[1,2], [3,4], [5,6,7]], slcs)
-    @test issubset([[3,4], [5,6,7]], tslcs) 
+    @test issubset([[3,4], [5,6,7]], tslcs)
 end
 
 # Cycle Test: Open Reaction Network
@@ -261,7 +261,7 @@ let
         k2, C + D --> E + F
         k3, C + D --> 2G + H
         k4, 2G + H --> 3I
-        k5, E + F --> J 
+        k5, E + F --> J
         k6, 3I --> K
     end
 
@@ -273,7 +273,7 @@ end
 
 ### Other Network Properties Tests ###
 
-# Tests outgoing complexes matrices (1). 
+# Tests outgoing complexes matrices (1).
 # Checks using dense and sparse representation.
 let
     # Declares network.
@@ -283,7 +283,7 @@ let
         k3, X1 --> X2
         k4, X1 + X2 --> X2
     end
-    
+
     # Compares to manually computed matrix.
     cmplx_out_mat = [
         -1 0 0 0 -1;
@@ -368,17 +368,17 @@ let
                MAPK.KKPP * MAPK.KKPase,
                MAPK.KKPP * MAPK.K,
                MAPK.KKPPK,
-               MAPK.KKPP * MAPK.KP, 
+               MAPK.KKPP * MAPK.KP,
                MAPK.KPKKPP,
                MAPK.KPP * MAPK.KKPP,
                MAPK.KP * MAPK.KPase,
-               MAPK.KPKPase, 
-               MAPK.KKPPKPase, 
+               MAPK.KPKPase,
+               MAPK.KKPPKPase,
                MAPK.K * MAPK.KPase,
                MAPK.KPP * MAPK.KPase,
               ]
     @test isequal(Φ, truevec)
-    
+
     K = Catalyst.fluxmat(MAPK)
     # Construct flux matrix from incidence matrix
     mat = Matrix{Any}(zeros(30, 26))
@@ -391,12 +391,12 @@ let
     @test isequal(K, mat)
     @test isequal(K[1, 1], MAPK.k₁)
     @test all(==(0), K[1, 2:end])
-    @test isequal(K[2, 2], MAPK.k₂) 
+    @test isequal(K[2, 2], MAPK.k₂)
     @test all(==(0), vcat(K[2,1], K[2,3:end]))
     @test isequal(K[3, 2], MAPK.k₃)
     @test all(==(0), vcat(K[3,1], K[3,3:end]))
     @test count(k -> !isequal(k, 0), K) == length(reactions(MAPK))
-    
+
     A_k = Catalyst.laplacianmat(MAPK)
     @test all(col -> sum(col) == 0, eachcol(A_k))
 
@@ -415,7 +415,7 @@ let
     ratetup = Tuple(ratevec)
 
     @test Catalyst.fluxmat(MAPK, ratemap) == Catalyst.fluxmat(MAPK, ratevec) == Catalyst.fluxmat(MAPK, ratetup)
-    
+
     K = Catalyst.fluxmat(MAPK, ratemap)
     A_k = Catalyst.laplacianmat(MAPK, ratemap)
     @test all(col -> sum(col) == 0, eachcol(A_k))
@@ -428,7 +428,7 @@ let
     @test all(iszero, simplify(numeqs - Y*A_k*Φ))
 end
 
-# Test handling for weird complexes and combinatoric rate laws. 
+# Test handling for weird complexes and combinatoric rate laws.
 let
     rn = @reaction_network begin
         k1, 2X + Y + 3Z --> ∅
