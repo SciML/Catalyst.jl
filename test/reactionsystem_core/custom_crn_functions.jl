@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, Test
+using Catalyst, Test, LinearAlgebra
 using ModelingToolkit: get_continuous_events, get_discrete_events
 using Symbolics: derivative
 
