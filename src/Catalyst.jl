@@ -110,11 +110,13 @@ export @reaction_network, @network_component, @reaction, @species
 # Network analysis functionality.
 include("network_analysis.jl")
 export reactioncomplexmap, reactioncomplexes, incidencemat
-export complexstoichmat, laplacianmat, fluxmat, massactionvector, complexoutgoingmat
+export complexstoichmat, laplacianmat, fluxmat, massactionvector, complexoutgoingmat, adjacencymat
 export incidencematgraph, linkageclasses, stronglinkageclasses,
        terminallinkageclasses, deficiency, subnetworks
 export linkagedeficiencies, isreversible, isweaklyreversible
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
+export satisfiesdeficiencyone, satisfiesdeficiencyzero
+export iscomplexbalanced, isdetailedbalanced, robustspecies
 
 # registers CRN specific functions using Symbolics.jl
 include("registered_functions.jl")
