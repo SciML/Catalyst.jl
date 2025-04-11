@@ -34,6 +34,7 @@ let
     file_string_annotated = read("test_serialisation_annotated.jl", String)
     file_string = read("test_serialisation.jl", String)
     file_string_annotated_real = """let
+    # Serialised using Catalyst version v$(Catalyst.VERSION).
 
     # Independent variable:
     @parameters t
