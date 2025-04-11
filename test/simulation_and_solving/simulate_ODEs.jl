@@ -193,7 +193,7 @@ let
     ps = [:k1 => 2.0f0, :k2 => 3.0f0]
     oprob = ODEProblem(rn, u0, 1.0f0, ps)
     osol = solve(oprob, Tsit5())
-    @test eltype(osol[:X1]) == eltype(osol[:X2]) == typeof(oprob[:X1]) == typeof(oprob[:X2]) == Float32
+    @test_broken eltype(osol[:X1]) == eltype(osol[:X2]) == typeof(oprob[:X1]) == typeof(oprob[:X2]) == Float32 # https://github.com/SciML/ModelingToolkit.jl/issues/3553
     @test eltype(osol.t) == typeof(oprob.tspan[1]) == typeof(oprob.tspan[2]) == Float32
 end
 
