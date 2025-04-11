@@ -1445,7 +1445,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
 end
 
 function complete_check(sys, method)
-    if MT.iscomplete(sys)  
+    if MT.iscomplete(sys)
         error("$method with one or more `ReactionSystem`s requires systems to not be marked complete, but system: $(MT.get_name(sys)) is marked complete.")
     end
     nothing
@@ -1506,7 +1506,7 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
 
     complete_check(sys, "ModelingToolkit.extend")
     complete_check(rs, "ModelingToolkit.extend")
-    
+
     any(T -> sys isa T, (ReactionSystem, ODESystem, NonlinearSystem)) ||
         error("ReactionSystems can only be extended with ReactionSystems, ODESystems and NonlinearSystems currently. Received a $(typeof(sys)) system.")
 

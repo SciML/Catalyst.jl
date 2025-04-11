@@ -75,7 +75,7 @@ function expression_2_string(expr;
     return repr(strip_called_expr)
 end
 
-# Converts a vector of symbolics (e.g. the species or parameter vectors) to a string vector. Strips 
+# Converts a vector of symbolics (e.g. the species or parameter vectors) to a string vector. Strips
 # any calls (e.g. X(t) becomes X). E.g. a species vector [X, Y, Z] is converted to "[X, Y, Z]".
 function syms_2_strings(syms)
     strip_called_syms = [strip_call(Symbolics.unwrap(sym)) for sym in syms]
@@ -150,6 +150,7 @@ x_2_string(x::Symbol) = ":$x"
 x_2_string(x::Number) = string(x)
 x_2_string(x::Pair) = "$(x_2_string(x[1])) => $(x_2_string(x[2]))"
 x_2_string(x::Nothing) = "nothing"
+x_2_string(x::Function) = String(Symbol(x))
 function x_2_string(x::Vector)
     output = "["
     for val in x
@@ -188,11 +189,11 @@ end
 
 ### Symbolics Metadata Handling ###
 
-# For a Symbolic, retrieve all metadata that needs to be added to its declaration. Certain metadata 
+# For a Symbolic, retrieve all metadata that needs to be added to its declaration. Certain metadata
 # (such as default values and whether a variable is a species or not) are skipped (these are stored
 # in the `SKIPPED_METADATA` constant).
 # Because it is impossible to retrieve the keyword used to declare individual metadata from the
-# metadata entry, these must be stored manually (in `RECOGNISED_METADATA`). If one of these are 
+# metadata entry, these must be stored manually (in `RECOGNISED_METADATA`). If one of these are
 # encountered, a warning is thrown and it is skipped (we could also throw an error). I have asked
 # Shashi, and he claims there is not alternative (general) solution.
 function get_metadata_to_declare(sym)
@@ -205,31 +206,32 @@ function get_metadata_to_declare(sym)
     return metadata_keys
 end
 
-# Converts a given metadata into the string used to declare it. 
+# Converts a given metadata into the string used to declare it.
 function metadata_2_string(sym, metadata)
     return RECOGNISED_METADATA[metadata] * " = " * x_2_string(sym.metadata[metadata])
 end
 
 # List of all recognised metadata (we should add as many as possible), and th keyword used to declare
 # them in code.
-const RECOGNISED_METADATA = Dict([Catalyst.ParameterConstantSpecies => "isconstantspecies"
-                                  Catalyst.VariableBCSpecies => "isbcspecies"
-                                  Catalyst.VariableSpecies => "isspecies"
-                                  Catalyst.EdgeParameter => "edgeparameter"
-                                  Catalyst.CompoundSpecies => "iscompound"
-                                  Catalyst.CompoundComponents => "components"
-                                  Catalyst.CompoundCoefficients => "coefficients"
-                                  ModelingToolkit.VariableDescription => "description"
-                                  ModelingToolkit.VariableBounds => "bounds"
-                                  ModelingToolkit.VariableUnit => "unit"
-                                  ModelingToolkit.VariableConnectType => "connect"
-                                  ModelingToolkit.VariableNoiseType => "noise"
-                                  ModelingToolkit.VariableInput => "input"
-                                  ModelingToolkit.VariableOutput => "output"
-                                  ModelingToolkit.VariableIrreducible => "irreducible"
-                                  ModelingToolkit.VariableStatePriority => "state_priority"
-                                  ModelingToolkit.VariableMisc => "misc"
-                                  ModelingToolkit.TimeDomain => "timedomain"])
+const RECOGNISED_METADATA = Dict([Catalyst.ParameterConstantSpecies => "isconstantspecies",
+                                  Catalyst.VariableBCSpecies => "isbcspecies",
+                                  Catalyst.VariableSpecies => "isspecies",
+                                  Catalyst.EdgeParameter => "edgeparameter",
+                                  Catalyst.CompoundSpecies => "iscompound",
+                                  Catalyst.CompoundComponents => "components",
+                                  Catalyst.CompoundCoefficients => "coefficients",
+                                  ModelingToolkit.VariableDescription => "description",
+                                  ModelingToolkit.VariableBounds => "bounds",
+                                  ModelingToolkit.VariableUnit => "unit",
+                                  ModelingToolkit.VariableConnectType => "connect",
+                                  ModelingToolkit.VariableNoiseType => "noise",
+                                  ModelingToolkit.VariableInput => "input",
+                                  ModelingToolkit.VariableOutput => "output",
+                                  ModelingToolkit.VariableIrreducible => "irreducible",
+                                  ModelingToolkit.VariableStatePriority => "state_priority",
+                                  ModelingToolkit.VariableMisc => "misc",
+                                  ModelingToolkit.TimeDomain => "timedomain",
+                                  Symbolics.SymLatexWrapper => "latexwrapper"])
 
 # List of metadata that does not need to be explicitly declared to be added (or which is handled separately).
 const SKIPPED_METADATA = [ModelingToolkit.MTKVariableTypeCtx, Symbolics.VariableSource,
@@ -237,7 +239,7 @@ const SKIPPED_METADATA = [ModelingToolkit.MTKVariableTypeCtx, Symbolics.Variable
 
 ### Generic Expression Handling ###
 
-# Potentially strips the call for a symbolics. E.g. X(t) becomes X (but p remains p). This is used 
+# Potentially strips the call for a symbolics. E.g. X(t) becomes X (but p remains p). This is used
 # when variables are written to files, as in code they are used without the call part.
 function strip_call(sym)
     return iscall(sym) ? Sym{Real}(Symbolics.getname(sym)) : sym

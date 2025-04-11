@@ -23,11 +23,13 @@ macro species(ex...)
     lastarg = vars.args[end]
 
     # start adding metadata statements where the vector of symbols was previously declared
+    # adds `[latexwrapper = string]` metadata which improves latexify printing.
     idx = length(vars.args)
     resize!(vars.args, idx + length(lastarg.args) + 1)
     for sym in lastarg.args
-        vars.args[idx] = :($sym = ModelingToolkit.wrap(setmetadata(
-            ModelingToolkit.value($sym), Catalyst.VariableSpecies, true)))
+        vars.args[idx] = :($sym = ModelingToolkit.wrap(setmetadata(setmetadata(
+            ModelingToolkit.value($sym), Catalyst.VariableSpecies, true),
+            Symbolics.SymLatexWrapper, string)))
         idx += 1
     end
 
@@ -519,6 +521,10 @@ function get_psexpr(parameters_extracted, options)
         :(@parameters)
     end
     foreach(p -> push!(pexprs.args, p), parameters_extracted)
+
+    # Adds the `SymLatexWrapper` metadata to all parameter's declaration.
+    insert_metadata!(pexprs, [:(latexwrapper = string)])
+
     pexprs
 end
 
@@ -536,6 +542,10 @@ function get_usexpr(us_extracted, options, key = :species; ivs = (DEFAULT_IV_SYM
     for u in us_extracted
         u isa Symbol && push!(usexpr.args, Expr(:call, u, ivs...))
     end
+
+    # For variables (but not species), adds the `SymLatexWrapper` metadata to all parameter's declaration.
+    (key == :variables) && insert_metadata!(usexpr, [:(latexwrapper = string)])
+
     usexpr
 end
 
