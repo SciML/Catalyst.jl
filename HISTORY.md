@@ -123,7 +123,27 @@
   plot_network(brusselator)
   ```
 - The letter Ø (used in Danish/Norwegian alphabet) is now conisdred the same as ∅ (empty set). It can no longer be used as a species/parameter.
- 
+- When converting a Catalyst `ReactionSystem` to a ModelingToolkit system, for
+  example an `ODESystem`, Catalyst defined functions like `hill(A,B,C,D)` are
+  now replaced with the explicit rational function they represent in the
+  equations of the generated system. For example `mm(X,v,K)` will be replaced
+  with `v*X / (X + K)`. This can be disabled by passing the keyword argument
+  `expand_catalyst_funs = false`. e.g.
+  ```julia
+  using Catalyst
+  rn = @reaction_network begin
+    hill(X,v,K,n), A --> 0
+  end
+  osys = convert(ODESystem, rn)
+  ```
+  generates an ODE system with `D(A) ~ ~ -((v*A(t)*(X^n)) / (K^n + X^n))`, while
+  ```julia
+  osys = convert(ODESystem, rn; expand_catalyst_funs = false)
+  ```
+  generates an ODE system with `D(A) ~ -A(t)*hill(X, v, K, n)`. This keyword
+  argument can also be passed to problems defined over `ReactionSystem`s, i.e.
+  when calling `ODEProblem(rn, u0, tspan, p; expand_catalyst_funs = false)`.
+
 ## Catalyst 14.4.1
 - Support for user-defined functions on the RHS when providing coupled equations 
   for CRNs using the @equations macro. For example, the following now works: 
