@@ -23,7 +23,8 @@ pages = Any[
             "model_creation/examples/basic_CRN_library.md",
             "model_creation/examples/programmatic_generative_linear_pathway.md",
             "model_creation/examples/hodgkin_huxley_equation.md",
-            "model_creation/examples/smoluchowski_coagulation_equation.md"
+            "model_creation/examples/smoluchowski_coagulation_equation.md",
+            "model_creation/examples/noise_modelling_approaches.md",
         ]
     ],
     "Model simulation and visualization" => Any[
@@ -35,6 +36,7 @@ pages = Any[
         "model_simulation/sde_simulation_performance.md",
         "Examples" => Any[
             "model_simulation/examples/periodic_events_simulation.md",
+            "model_simulation/examples/activation_time_distribution_measurement.md",
             "model_simulation/examples/interactive_brusselator_simulation.md"
         ]
     ],
@@ -43,7 +45,11 @@ pages = Any[
         "steady_state_functionality/nonlinear_solve.md",
         "steady_state_functionality/steady_state_stability_computation.md",
         "steady_state_functionality/bifurcation_diagrams.md",
-        "steady_state_functionality/dynamical_systems.md"
+        "steady_state_functionality/dynamical_systems.md",
+        "Examples" => Any[
+            "steady_state_functionality/examples/bifurcationkit_periodic_orbits.md"
+            "steady_state_functionality/examples/bifurcationkit_codim2.md"
+        ]
     ],
     "Inverse problems" => Any[
         "inverse_problems/petab_ode_param_fitting.md",
