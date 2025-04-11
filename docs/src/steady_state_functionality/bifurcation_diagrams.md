@@ -65,7 +65,7 @@ Most of the options required by the `bifurcationdiagram` function are provided t
 The previous bifurcation diagram can be computed, with these various options specified, in the following way:
 ```@example ex1
 p_span = (2.0, 20.0)
-newton_options = NewtonPar(tol = 1e-9, max_iterations = 10)
+newton_options = NewtonPar(tol = 1e-9, max_iterations = 20)
 opts_br = ContinuationPar(; p_min = p_span[1], p_max = p_span[2], ds = 0.005, 
                           dsmin = 0.001, dsmax = 0.01, max_steps = 1000, newton_options)
 bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
