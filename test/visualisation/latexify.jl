@@ -283,6 +283,7 @@ end
 
 # Checks that the `SymLatexWrapper` metadata option is correctly added to all symbolics created
 # by the DSL. Checks that this is also the case for species created through the `@species` macro.
+# Currently only implemented for species.
 let
     # Via the DSL (@reaction_network).
     rn1 = @reaction_network begin
@@ -292,36 +293,39 @@ let
         @equations D(V) ~ - V
         k1, 0 --> X
     end
-    @test all(hasmetadata(u, Symbolics.SymLatexWrapper) && (getmetadata(u, Symbolics.SymLatexWrapper) == string) for u in unknowns(rn1))
-    @test all(hasmetadata(p, Symbolics.SymLatexWrapper) && (getmetadata(p, Symbolics.SymLatexWrapper) == string) for p in parameters(rn1))
+    @test_broken all(hasmetadata(u, Symbolics.SymLatexWrapper) && (getmetadata(u, Symbolics.SymLatexWrapper) == string) for u in unknowns(rn1))
+    @test_broken all(hasmetadata(p, Symbolics.SymLatexWrapper) && (getmetadata(p, Symbolics.SymLatexWrapper) == string) for p in parameters(rn1))
 
     # Via the DSL but using `begin .. end` in declarations and additional options.
     rn2 = @reaction_network begin
         @species begin
+            X(t)
             Y(t), [description = "A species"]
             Z(t) = 1.0
         end
         @variables begin
+            V(t)
             W(t), [description = "A variable"]
             U(t) = 2.0
         end
-        @variables begin
-            q(t), [description = "A parameter"]
-            r(t) = 3.0
+        @parameters begin
+            k1
+            q, [description = "A parameter"]
+            r = 3.0
         end
         @equations D(V) ~ - V
         k1, 0 --> X
     end
-    @test all(hasmetadata(u, Symbolics.SymLatexWrapper) && (getmetadata(u, Symbolics.SymLatexWrapper) == string) for u in unknowns(rn2))
-    @test all(hasmetadata(p, Symbolics.SymLatexWrapper) && (getmetadata(p, Symbolics.SymLatexWrapper) == string) for p in parameters(rn2))
+    @test_broken all(hasmetadata(u, Symbolics.SymLatexWrapper) && (getmetadata(u, Symbolics.SymLatexWrapper) == string) for u in unknowns(rn2))
+    @test_broken all(hasmetadata(p, Symbolics.SymLatexWrapper) && (getmetadata(p, Symbolics.SymLatexWrapper) == string) for p in parameters(rn2))
 
     # Via the DSL (@reaction).
     rx = @reaction p, 0 --> x
-    hasmetadata(rx.rate, Symbolics.SymLatexWrapper) && (getmetadata(rx.rate, Symbolics.SymLatexWrapper) == string)
-    hasmetadata(rx.products[1], Symbolics.SymLatexWrapper) && (getmetadata(rx.products[1], Symbolics.SymLatexWrapper) == string)
+    @test_broken hasmetadata(rx.rate, Symbolics.SymLatexWrapper) && (getmetadata(rx.rate, Symbolics.SymLatexWrapper) == string)
+    @test hasmetadata(rx.products[1], Symbolics.SymLatexWrapper) && (getmetadata(rx.products[1], Symbolics.SymLatexWrapper) == string)
 
     # Via the @species.
     t = default_t()
     @species XYZ(t)
-    getmetadata(XYZ, Symbolics.SymLatexWrapper) == string
+    @test hasmetadata(XYZ, Symbolics.SymLatexWrapper) && (getmetadata(XYZ, Symbolics.SymLatexWrapper) == string)
 end

@@ -521,10 +521,6 @@ function get_psexpr(parameters_extracted, options)
         :(@parameters)
     end
     foreach(p -> push!(pexprs.args, p), parameters_extracted)
-
-    # Adds the `SymLatexWrapper` metadata to all parameter's declaration.
-    insert_metadata!(pexprs, [:(latexwrapper = string)])
-
     pexprs
 end
 
@@ -542,10 +538,6 @@ function get_usexpr(us_extracted, options, key = :species; ivs = (DEFAULT_IV_SYM
     for u in us_extracted
         u isa Symbol && push!(usexpr.args, Expr(:call, u, ivs...))
     end
-
-    # For variables (but not species), adds the `SymLatexWrapper` metadata to all parameter's declaration.
-    (key == :variables) && insert_metadata!(usexpr, [:(latexwrapper = string)])
-
     usexpr
 end
 

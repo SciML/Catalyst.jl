@@ -134,14 +134,3 @@ function insert_independent_variable(expr_in, iv_expr)
     end
     return expr
 end
-
-
-# For a symbolic variable declaration expression (@parameters, @variables, @species), inserts
-# metadata to the declaration (each metadata in input vector is inserted). E.g.
-# @parameters X(t) [description = "A species"] Y(t)
-# becomes
-# @parameters X(t) [description = "A species", new_md=new_md_value] Y(t) [new_md=new_md_value]
-# handles expressions with/without begin/end statements.
-function insert_metadata!(symexprs, mds::Vector{Expr})
-
-end
