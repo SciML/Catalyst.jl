@@ -93,31 +93,6 @@ function find_varinfo_in_declaration(expr::ExprValues)
     return (;ivs, idxs, default, metadata)
 end
 
-# Sometimes (when declared on a single line, e.g. `@variables X [misc = 4] Y [misc = 5]`)
-# the symbolic variable are metadata never form a single expression, but are simply separate
-# (but adjacent) expressions in a longer expression array. This dispatch extracts the same
-# information, but from this case. The input is the vector of all expressions, and the index
-# of the symbolic variable which information we wish to extract.
-function find_varinfo_in_declaration(exprs::Vector, idx::Integer)
-    if (idx != length(exprs)) && Meta.isexpr(exprs[idx + 1], :vect)
-        expr, (ivs, idxs, default, metadata) = find_varinfo_in_declaration(exprs[idx])
-        return expr => (ivs, idxs, default, exprs[idx + 1])
-    end
-    return find_varinfo_in_declaration(exprs[idx])
-end
-
-# Checks an expression that declares several symbolic variables (either using `@variables ...`
-# or using `@variables begin ... end`). Returns a dictionary with each information, using the
-# form used in find_varinfo_in_declaration.
-function find_all_varinfo_in_declaration(exprs)
-    # (1)) Removes the macro call (2) Handles the `@variables begin .. end` case
-    # (3) Find all indexes with variables (4) Extract their information.
-    exprs = exprs.args[3:end]
-    _head_equisexpral(exprs[1], :block) && (exprs = exprs[1].args)
-    var_idxs = findall(!Meta.isexpr(expr, :vect) for expr in exprs)
-    return Dict([find_varinfo_in_declaration(exprs, var_idx) for var_idx in var_idxs])
-end
-
 # Converts an expression of the forms:
 # X
 # X = 1.0
