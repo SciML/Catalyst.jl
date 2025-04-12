@@ -97,7 +97,7 @@ Pkg.add("Plots")
 ```
 is also needed.
 
-It is **strongly** recommended to run Catalyst in its own environment with the
+It is **strongly** recommended to install and use Catalyst in its own environment with the
 minimal set of needed packages. For example, to install Catalyst and Plots in a
 new environment named `catalyst_project` (saved in the current directory) one
 can say
@@ -113,6 +113,17 @@ Pkg.activate(; temp = true)
 Pkg.add("Catalyst")
 Pkg.add("Plots")
 ```
+
+After installation, we suggest running 
+```julia
+Pkg.status("Catalyst")
+```
+to confirm that the latest version of Catalyst was installed (and not an older version). 
+If you have installed into a new environment this should always be the case. However, if you 
+installed into an existing environment, such as the default Julia global environment, the presence
+of incompatible versions of other pre-installed packages could lead to older versions of Catalyst 
+being installed. In this case we again recommend creating a new environment and installing Catalyst 
+there to obtain the latest version.
 
 A more thorough guide for setting up Catalyst and installing Julia packages can be found [here](@ref catalyst_for_new_julia_users_packages).
 
