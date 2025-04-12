@@ -9,7 +9,7 @@ Let us first consider an easy, quick-start example (the next section will discus
 using Catalyst, DataInterpolations, Plots
 t = default_t()
 tend = 10.0
-ts = collect(0.0:0.01:tend)
+ts = collect(0.0:0.05:tend)
 spline = LinearInterpolation((2 .+ ts) ./ (1 .+ ts), ts)
 @parameters (pIn::typeof(spline))(..)
 plot(spline)
