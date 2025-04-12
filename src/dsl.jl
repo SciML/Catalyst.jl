@@ -757,7 +757,7 @@ function read_observables_option(options, all_ivs, us_declared, all_syms; requir
 
         for (idx, obs_eq) in enumerate(obs_eqs.args)
             # Extract the observable, checks for errors.
-            obs_name, ivs, defaults, metadata = find_varinfo_in_declaration(obs_eq.args[2])
+            obs_name, ivs, _, defaults, metadata = find_varinfo_in_declaration(obs_eq.args[2])
 
             # Error checks.
             (requiredec && !in(obs_name, us_declared)) &&

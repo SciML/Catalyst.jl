@@ -87,10 +87,13 @@ function find_varinfo_in_declaration(expr::ExprValues)
         ivs = expr.args[2:end]
         expr = expr.args[1]
     end
+    isnothing(ivs) && (ivs = [])
 
+    # If escaped expression, extract symbol. Checks that the expression is a symbol (e.g. `X` in `:(X(t))`).
+    Meta.isexpr(expr, :escape) && (expr = expr.args[1])
     (expr isa Symbol) ||
         error("Erroneous expression encountered in `find_varinfo_in_declaration` (got `$expr` after processing, this should be a symbol).")
-    return (;ivs, idxs, default, metadata)
+    return (;sym = expr, ivs, idxs, default, metadata)
 end
 
 # Converts an expression of the forms:
