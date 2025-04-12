@@ -48,7 +48,7 @@ Whenever a PR to Catalyst is created, CI will create a corresponding documenter 
 4. This will download a zip folder containing the documentation. Extract it to a location on your computer and then open the "index.html" file.
 
 To build the Catalyst documentation locally:
-1. Navigate to the ".julia/dev/Catalyst/docs/" folder and run the "make.jl" file using ">julia make.jl". Alternatively, open a Julia session, activate the "docs" environment, and run the file using `include("make.jl").
+1. Navigate to the ".julia/dev/Catalyst/docs/" folder, and run the "make.jl" file using ">julia --project=. make.jl". Alternatively, open a Julia session, activate the "docs" environment, and run the file using `include("make.jl").
 2. Open the ".julia/dev/Catalyst/docs/build/index.html" file.
 
 ### [Spellchecking in your code](@id devdocs_advice_codespellchecker)

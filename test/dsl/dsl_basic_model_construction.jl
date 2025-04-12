@@ -179,7 +179,7 @@ let
     different_arrow_8 = @reaction_network begin
         p, 2X1 < ∅
         k1, X2 ← X1
-        (k2, k3), X3 ⟻ X2
+        (k2, k3), X3 ⟻ (X2,X2)
         d, ∅ ↼ X3
     end
     push!(identical_networks_1, reaction_networks_standard[8] => different_arrow_8)
@@ -298,10 +298,11 @@ let
 
     no_parameters_10 = @reaction_network begin
         0.01, ∅ ⟶ X1
-        (3.1, 3.2), X1 → X2
-        (0.0, 2.1), X2 → X3
-        (901.0, 63.5), X3 → X4
-        (7, 8), X4 → X5
+        (3.1, 3.2), (X1,X1) → X2
+        (0.0, 2.1), X2 → (X3,X3)
+        (901.0, 63.5), (X3,X3) → (X4,X4)
+        7, X4 → X5
+        8, X4 → X5
         1.0, X5 ⟶ ∅
     end
     push!(identical_networks_3, reaction_networks_standard[10] => no_parameters_10)
@@ -589,5 +590,22 @@ let
     # Checks that non-supported arrow type usage yields error.
     @test_throws Exception @eval @reaction_network begin
         d, X ⇻ 0
+    end
+end
+
+# Tests that bundling, but where the rate only have been given multiple alternatives, errors.
+# Checks for two, more than two, and for functional rates. Uses different arrow types and directions.
+let
+    @test_throws Exception @eval @reaction_network begin
+        (k1,k2), X --> 0
+    end
+    @test_throws Exception @eval @reaction_network begin
+        (k1,k2,k3), X → 0
+    end
+    @test_throws Exception @eval @reaction_network begin
+        (k1,k1), X => Y
+    end
+    @test_throws Exception @eval @reaction_network begin
+        (mm(X,v1,K1),mm(X,v2,K2)), 0 <-- 0
     end
 end

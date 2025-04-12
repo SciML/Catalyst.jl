@@ -316,7 +316,8 @@ let
     @parameters p1=1.0 p2=2.0 k1=4.0 k2=5.0 v=8.0 K=9.0 n=3 d=10.0
     @species X(t)=4.0 Y(t)=3.0 X2Y(t)=2.0 Z(t)=1.0
         (p1,p2), 0 --> (X,Y)
-        (k1,k2), 2X + Y --> X2Y
+        k1, 2X + Y --> X2Y
+        k2, 2X + Y --> X2Y
         hill(X2Y,v,K,n), 0 --> Z
         d, (X,Y,X2Y,Z) --> 0
     end
@@ -327,7 +328,8 @@ let
     @parameters p1=1.0 p2 k1=4.0 k2 v=8.0 K n=3 d
     @species X(t)=4.0 Y(t) X2Y(t) Z(t)=1.0
         (p1,p2), 0 --> (X,Y)
-        (k1,k2), 2X + Y --> X2Y
+        k1, 2X + Y --> X2Y
+        k2, 2X + Y --> X2Y
         hill(X2Y,v,K,n), 0 --> Z
         d, (X,Y,X2Y,Z) --> 0
     end
@@ -339,7 +341,8 @@ let
     @parameters p1 p2 k1 k2 v K n d
     @species X(t) Y(t) X2Y(t) Z(t)
         (p1,p2), 0 --> (X,Y)
-        (k1,k2), 2X + Y --> X2Y
+        k1, 2X + Y --> X2Y
+        k2, 2X + Y --> X2Y
         hill(X2Y,v,K,n), 0 --> Z
         d, (X,Y,X2Y,Z) --> 0
     end

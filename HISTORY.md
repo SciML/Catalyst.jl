@@ -1,6 +1,8 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+
+## Catalyst 15.0
 - The Catalyst release process is changing; certain core dependencies of
   Catalyst will now be capped to ensure Catalyst releases are only installed
   with versions of dependencies for which Catalyst CI and doc build tests pass
@@ -76,6 +78,21 @@
   functions (as a parameter) in a model. For more details on how to use these,
   please read:
   https://docs.sciml.ai/Catalyst/stable/model_creation/functional_parameters/.
+- We have introduced a restriction on bundling of reactions in the DSL. Now,
+  bundling is not permitted if multiple rates are provided but only one set each
+  of substrates/products. E.g. this model:
+  ```julia
+  @reaction_network begin
+    (k1,k2), X --> Y
+  end
+  ```
+  will now throw an error. The reason that users attempting to write bi-directional 
+  reactions but typing `-->` instead of `<-->` would get a wrong model. We decided that
+  this kind of bundling was unlikely to be used, and throwing errors for people who
+  made the typo was more important. 
+
+  If you use this type of bundling and it indeed is useful to you, please raise and issue
+  and we will see if we can sort something out.
 - Scoped species/variables/parameters are now treated similar to the latest MTK
   releases (≥ 9.49).
 - A tutorial on making interactive plot displays using Makie has been added.
@@ -107,8 +124,28 @@
   end
   plot_network(brusselator)
   ```
-- The letter Ø (used in Danish/Norwegian alphabet) is now conisdred the same as ∅ (empty set). It can no longer be used as a species/parameter.
- 
+- The letter Ø (used in Danish/Norwegian alphabet) is now considered the same as ∅ (empty set). It can no longer be used as a species/parameter.
+- When converting a Catalyst `ReactionSystem` to a ModelingToolkit system, for
+  example an `ODESystem`, Catalyst defined functions like `hill(A,B,C,D)` are
+  now replaced with the explicit rational function they represent in the
+  equations of the generated system. For example `mm(X,v,K)` will be replaced
+  with `v*X / (X + K)`. This can be disabled by passing the keyword argument
+  `expand_catalyst_funs = false`. e.g.
+  ```julia
+  using Catalyst
+  rn = @reaction_network begin
+    hill(X,v,K,n), A --> 0
+  end
+  osys = convert(ODESystem, rn)
+  ```
+  generates an ODE system with `D(A) ~ -((v*A(t)*(X^n)) / (K^n + X^n))`, while
+  ```julia
+  osys = convert(ODESystem, rn; expand_catalyst_funs = false)
+  ```
+  generates an ODE system with `D(A) ~ -A(t)*hill(X, v, K, n)`. This keyword
+  argument can also be passed to problems defined over `ReactionSystem`s, i.e.
+  when calling `ODEProblem(rn, u0, tspan, p; expand_catalyst_funs = false)`.
+
 ## Catalyst 14.4.1
 - Support for user-defined functions on the RHS when providing coupled equations 
   for CRNs using the @equations macro. For example, the following now works: 

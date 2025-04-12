@@ -188,6 +188,15 @@ end
 ```
 However, like for the above model, bundling reactions too zealously can reduce (rather than improve) a model's readability.
 
+The one exception to reaction bundling is that we do not permit the user to provide multiple rates but only set one set each for the substrates and products. I.e.
+```julia
+rn_erroneous = @reaction_network begin
+    (k1,k2), X --> Y
+end
+```
+is not permitted (due to this notation's similarity to a bidirectional reaction). However, if multiples are provided for substrates and/or products, like `(k1,k2), (X1,X2) --> Y`, then bundling works.
+
+
 ## [Non-constant reaction rates](@id dsl_description_nonconstant_rates)
 So far we have assumed that all reaction rates are constant (being either a number of a parameter). Non-constant rates that depend on one (or several) species are also possible. More generally, the rate can be any valid expression of parameters and species.
 

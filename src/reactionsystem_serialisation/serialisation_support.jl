@@ -234,8 +234,13 @@ const RECOGNISED_METADATA = Dict([Catalyst.ParameterConstantSpecies => "isconsta
                                   Symbolics.SymLatexWrapper => "latexwrapper"])
 
 # List of metadata that does not need to be explicitly declared to be added (or which is handled separately).
-const SKIPPED_METADATA = [ModelingToolkit.MTKVariableTypeCtx, Symbolics.SymLatexWrapper, Symbolics.VariableSource,
-    Symbolics.VariableDefaultValue, Catalyst.VariableSpecies]
+const SKIPPED_METADATA = [
+    Catalyst.VariableSpecies,
+    ModelingToolkit.MTKVariableTypeCtx,
+    ModelingToolkit.SymScope,
+    Symbolics.SymLatexWrapper,
+    Symbolics.VariableDefaultValue,
+    Symbolics.VariableSource]
 
 ### Generic Expression Handling ###
 
