@@ -18,7 +18,7 @@ end
 
 # Checks if an expression is an escaped expression (e.g. on the form `$(Expr(:escape, :Y))`)
 function is_escaped_expr(expr)
-    return (expr isa Expr) && (expr.head == :escape) && (length(expr.args) == 1)
+    return Meta.isexpr(expr, :escape) && (length(expr.args) == 1)
 end
 
 ### Parameters/Species/Variables Symbols Correctness Checking ###
@@ -52,52 +52,70 @@ function option_block_form(expr)
     return Expr(:block, expr)
 end
 
-# In variable/species/parameters on the forms like:
+# In variable/species/parameters on the forms like (examples, 16 alternatives in total):
 # X
-# X = 1.0
-# X, [metadata=true]
-# X = 1.0, [metadata=true]
-# X(t)
-# X(t) = 1.0
-# X(t), [metadata=true]
-# X(t) = 1.0, [metadata=true]
-# Finds the: Variable name (X), Independent variable name(s) ([t]), default value (2.0), and metadata (:([metadata=true])).
-# If a field does not exist (e.g. independent variable in `X, [metadata=true]`), gives nothing.
-# The independent variables are given as a vector (empty if none given).
-# Does not support e.g. "X [metadata=true]" (when metadata does not have a comma before).
-function find_varinfo_in_declaration(expr)
-    # Handles the $(Expr(:escape, :Y)) case:
-    is_escaped_expr(expr) && (return find_varinfo_in_declaration(expr.args[1]))
+# X = 1.0, [misc=5]
+# X(t)[1:2]
+# X(t) = 1.0, [misc=5]
+# X(t)[1:2] = 1.0, [misc = 5]
+# Finds the: Variable name (X), Independent variable name(s) ([t]), indexes (1:2),
+# default value (1.0), and metadata (:([metadata=true])).
+# Information that does not exist (e.g. independent variable in `X, [metadata=true]`), is
+# returned as `nothing`.
+# The independent variables are returned as a vector (empty if none given).
+function find_varinfo_in_declaration(expr::ExprValues)
+    # Initialises values. Step by step, reads one and scales it away from the expression
+    metadata = default = idxs = ivs = nothing
 
-    # Case: X
-    (expr isa Symbol) && (return expr, [], nothing, nothing)
-    # Case: X(t)
-    (expr.head == :call) && (return expr.args[1], expr.args[2:end], nothing, nothing)
-    if expr.head == :(=)
-        # Case: X = 1.0
-        (expr.args[1] isa Symbol) && (return expr.args[1], [], expr.args[2], nothing)
-        # Case: X(t) = 1.0
-        (expr.args[1].head == :call) &&
-            (return expr.args[1].args[1], expr.args[1].args[2:end], expr.args[2].args[1],
-            nothing)
+    # Reads and removes metadata (e.g. `[misc = 5]` in `:(X(t)[1:2] = 1.0, [misc = 5])`).
+    if Meta.isexpr(expr, :tuple)
+        metadata = expr.args[2]
+        expr = expr.args[1]
     end
-    if expr.head == :tuple
-        # Case: X, [metadata=true]
-        (expr.args[1] isa Symbol) && (return expr.args[1], [], nothing, expr.args[2])
-        # Case: X(t), [metadata=true]
-        (expr.args[1].head == :call) &&
-            (return expr.args[1].args[1], expr.args[1].args[2:end], nothing, expr.args[2])
-        if expr.args[1].head == :(=)
-            # Case: X = 1.0, [metadata=true]
-            (expr.args[1].args[1] isa Symbol) &&
-                (return expr.args[1].args[1], [], expr.args[1].args[2], expr.args[2])
-            # Case: X(t) = 1.0, [metadata=true]
-            (expr.args[1].args[1].head == :call) &&
-                (return expr.args[1].args[1].args[1], expr.args[1].args[1].args[2:end],
-                expr.args[1].args[2].args[1], expr.args[2])
-        end
+    # Reads and removes metadata (e.g. `1.0` in `:(X(t)[1:2] = 1.0)`).
+    if Meta.isexpr(expr, :(=))
+        default = expr.args[2]
+        expr = expr.args[1]
     end
-    error("Unable to detect the variable declared in expression: $expr.")
+    # Reads and removes indexes (e.g. `[1:2]` in `:(X(t)[1:2])`).
+    if Meta.isexpr(expr, :ref)
+        idxs = expr.args[2]
+        expr = expr.args[1]
+    end
+    # Reads and removes independent variables (e.g. `t` in `:(X(t))`).
+    if Meta.isexpr(expr, :call)
+        ivs = expr.args[2:end]
+        expr = expr.args[1]
+    end
+
+    (expr isa Symbol) ||
+        error("Erroneous expression encountered in `find_varinfo_in_declaration` (got `$expr` after processing, this should be a symbol).")
+    return (;ivs, idxs, default, metadata)
+end
+
+# Sometimes (when declared on a single line, e.g. `@variables X [misc = 4] Y [misc = 5]`)
+# the symbolic variable are metadata never form a single expression, but are simply separate
+# (but adjacent) expressions in a longer expression array. This dispatch extracts the same
+# information, but from this case. The input is the vector of all expressions, and the index
+# of the symbolic variable which information we wish to extract.
+function find_varinfo_in_declaration(exprs::Vector, idx::Integer)
+    if (idx != length(exprs)) && Meta.isexpr(exprs[idx + 1], :vect)
+        expr, (ivs, idxs, default, metadata) = find_varinfo_in_declaration(exprs[idx])
+        return expr => (ivs, idxs, default, exprs[idx + 1])
+    end
+    return find_varinfo_in_declaration(exprs[idx])
+end
+
+# Checks an expression that declares several symbolic variables (either using `@variables ...`
+# or using `@variables begin ... end`). Returns a dictionary with each information, using the
+# form used in find_varinfo_in_declaration.
+function find_all_varinfo_in_declaration(exprs)
+    # (1)) Removes the macro call (2) Handles the `@variables begin .. end` case
+    # (3) Find all indexes with variables (4) Extract their information.
+    exprs = exprs.args[3:end]
+    _head_equisexpral(exprs[1], :block) && (exprs = exprs[1].args)
+    var_idxs = findall(!Meta.isexpr(expr, :vect) for expr in exprs)
+    return Dict([find_varinfo_in_declaration(exprs, var_idx) for var_idx in var_idxs])
 end
 
 # Converts an expression of the forms:
