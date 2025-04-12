@@ -112,7 +112,7 @@ the graph.
 save("repressilator_graph.png", g)
 ```
 
-## Mass action ODE models
+## [Mass action ODE models](@id introduction_to_catalyst_massaction_ode)
 Let's now use our `ReactionSystem` to generate and solve a corresponding mass
 action ODE model. We first convert the system to a `ModelingToolkit.ODESystem`
 by
