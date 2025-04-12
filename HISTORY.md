@@ -1,6 +1,8 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+
+## Catalyst 15.0
 - The Catalyst release process is changing; certain core dependencies of
   Catalyst will now be capped to ensure Catalyst releases are only installed
   with versions of dependencies for which Catalyst CI and doc build tests pass
@@ -79,11 +81,11 @@
 - We have introduced a restriction on bundling of reactions in the DSL. Now,
   bundling is not permitted if multiple rates are provided but only one set each
   of substrates/products. E.g. this model:
- ```julia
+  ```julia
   @reaction_network begin
     (k1,k2), X --> Y
   end
- ```
+  ```
   will now throw an error. The reason that users attempting to write bi-directional 
   reactions but typing `-->` instead of `<-->` would get a wrong model. We decided that
   this kind of bundling was unlikely to be used, and throwing errors for people who
