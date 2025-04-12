@@ -124,7 +124,7 @@
   end
   plot_network(brusselator)
   ```
-- The letter Ø (used in Danish/Norwegian alphabet) is now conisdred the same as ∅ (empty set). It can no longer be used as a species/parameter.
+- The letter Ø (used in Danish/Norwegian alphabet) is now considered the same as ∅ (empty set). It can no longer be used as a species/parameter.
 - When converting a Catalyst `ReactionSystem` to a ModelingToolkit system, for
   example an `ODESystem`, Catalyst defined functions like `hill(A,B,C,D)` are
   now replaced with the explicit rational function they represent in the
@@ -138,7 +138,7 @@
   end
   osys = convert(ODESystem, rn)
   ```
-  generates an ODE system with `D(A) ~ ~ -((v*A(t)*(X^n)) / (K^n + X^n))`, while
+  generates an ODE system with `D(A) ~ -((v*A(t)*(X^n)) / (K^n + X^n))`, while
   ```julia
   osys = convert(ODESystem, rn; expand_catalyst_funs = false)
   ```
