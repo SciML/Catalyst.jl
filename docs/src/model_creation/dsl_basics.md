@@ -190,7 +190,7 @@ However, like for the above model, bundling reactions too zealously can reduce (
 
 The one exception to reaction bundling is that we do not permit the user to provide multiple rates but only set one set each for the substrates and products. I.e.
 ```julia
-rn = @reaction_network begin
+rn_erroneous = @reaction_network begin
     (k1,k2), X --> Y
 end
 ```
