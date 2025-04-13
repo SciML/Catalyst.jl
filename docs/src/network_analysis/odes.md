@@ -14,7 +14,7 @@ in Catalyst as well](@ref dsl_advanced_options_constant_species).
 ## [Network representation of the Repressilator `ReactionSystem`](@id network_analysis_repressilator_representation)
 We first load Catalyst and construct our model of the repressilator
 ```@example s1
-using Catalyst
+using Catalyst, CairoMakie, GraphMakie, NetworkLayout
 repressilator = @reaction_network Repressilator begin
        hillr(P₃,α,K,n), ∅ --> m₁
        hillr(P₁,α,K,n), ∅ --> m₂
@@ -34,10 +34,10 @@ In the [Model Visualization](@ref visualisation_graphs)
 tutorial we showed how the above network could be visualized as a
 species-reaction graph. There, species are represented by the nodes of the graph
 and edges show the reactions in which a given species is a substrate or product.
-```julia
-g = Graph(repressilator)
+
+```@example s1
+g = plot_network(repressilator)
 ```
-![Repressilator solution](../assets/repressilator.svg)
 
 We also showed in the [Introduction to Catalyst](@ref introduction_to_catalyst) tutorial that
 the reaction rate equation (RRE) ODE model for the repressilator is
@@ -197,7 +197,7 @@ plot_complexes(rn)
 ```
 
 while for the repressilator we find
-```julia
+```@example s1
 plot_complexes(repressilator)
 ```
 
@@ -211,15 +211,15 @@ So far we have covered two equivalent descriptions of the chemical reaction netw
 ```math
 \begin{align}
 \frac{d\mathbf{x}}{dt} &= N \mathbf{v}(\mathbf{x}(t),t) \\
-&= Z B \mathbf{v}(\mathbf{x}(t),t)
+&= Z B \mathbf{v}(\mathbf{x}(t),t).
 \end{align}
 ```
 
-In this section we discuss a further decomposition of the ODEs. Recall that the reaction rate vector $\mathbf{v}$, which is a vector of length $R$ whose elements are the rate expressions for each reaction. Its elements can be written as 
+In this section we discuss a further decomposition of the ODEs. Recall the reaction rate vector $\mathbf{v}$, which is a vector of length $R$ whose elements are the rate expressions for each reaction. Its elements can be written as 
 ```math
 \mathbf{v}_{y \rightarrow y'} = k_{y \rightarrow y'} \mathbf{x}^y,
 ```
-where $\mathbf{x}^y = \prod_s x_s^{y_s}$, the mass-action product of the complex $y$, where $y$ is the substrate complex of the reaction $y \rightarrow y'$. We can define a new vector called the mass action vector $\Phi(\mathbf{x}(t))$, a vector of length $C$ whose elements are the mass action products of each complex: 
+where $\mathbf{x}^y = \prod_s x_s^{y_s}$ denotes the mass-action product of the substrate complex $y$ from the $y \rightarrow y'$ reaction. We can define a new vector called the mass action vector $\Phi(\mathbf{x}(t))$, a vector of length $C$ whose elements are the mass action products of each complex: 
 ```@example s1
 Φ = massactionvector(rn)
 ```
@@ -262,24 +262,24 @@ returns a `Matrix{Num}`, since some of its entries are symbolic rate constants
 (symbolic variables and `Num`s cannot be compared using `==`, since `a == b`
 is interpreted as a symbolic expression).
 
-In sum, we have that
+In summary, we have that
 ```math
 \begin{align}
 \frac{d\mathbf{x}}{dt} &= N \mathbf{v}(\mathbf{x}(t),t) \\
 &= N K \Phi(\mathbf{x}(t),t) \\
-&= Z B K \Phi(\mathbf{x}(t),t). 
+&= Z B K \Phi(\mathbf{x}(t),t) \\ 
 &= Z A_k \Phi(\mathbf{x}(t),t). 
 \end{align}
 ```
 
-All three of the objects introduced in this section (the flux matrix, mass-action vector, Laplacian matrix) will return symbolic outputs by default, but can be made to return numerical outputs if values are specified. 
+All three of the objects introduced in this section (the flux matrix, mass-action vector, and Laplacian matrix) will return symbolic outputs by default, but can be made to return numerical outputs if values are specified. 
 For example, `massactionvector` will return a numerical output if a set of species concentrations is supplied using a dictionary, tuple, or vector of Symbol-value pairs.
 ```@example s1
 concmap = Dict([:A => 3., :B => 5., :C => 2.4, :D => 1.5])
 massactionvector(rn, concmap)
 ```
 
-`fluxmat` and `laplacianmat` will return numeric matrices if a set of rate constants and other aprameters are supplied the same way.
+`fluxmat` and `laplacianmat` will return numeric matrices if a set of rate constants and other parameters are supplied the same way.
 ```@example s1
 parammap = Dict([:k => 12., :b => 8.])
 fluxmat(rn, parammap)
@@ -303,7 +303,7 @@ f = eval(f_oop_expr)
 c = [3., 5., 2., 6.]
 f(c)
 ```
-The generated `f` now corresponds to the $f(\mathbf{x}(t))$ on the right-hand side of $\frac{d\mathbf{x}(t)}{dt} = f(\mathbf{x}(t))$. Given a vector of species concentrations $c$, `ode_func` will return the rate of change of each species. Steady state concentration vectors `c_ss` will satisfy `f(c_ss) = zeros(length(species(rn)))`.
+The generated `f` now corresponds to the $f(\mathbf{x}(t))$ on the right-hand side of $\frac{d\mathbf{x}(t)}{dt} = f(\mathbf{x}(t))$. Given a vector of species concentrations $c$, `f` will return the rate of change of each species. Steady state concentration vectors `c_ss` will satisfy `f(c_ss) = zeros(length(species(rn)))`.
 
 Above we have generated a numeric rate matrix to substitute the rate constants into the symbolic expressions. We could have used a symbolic rate matrix, but then we would need to define the parameters `k, b`, so that the function `f` knows what `k` and `b` in its output refer to.
 ```@example s1
@@ -333,7 +333,7 @@ Note also that `f` can take any vector with the right dimension (i.e. the number
 ## Properties of matrix null spaces
 The null spaces of the matrices discussed in this section often have special meaning. Below we will discuss some of these properties.
 
-Recall that we may write the net stoichiometry matrix ``N = YB``.
+Recall that we may write the net stoichiometry matrix ``N = ZB``, where `Z` is the complex stoichiometry matrix and `B` is the incidence matrix of the graph.
 
 [Conservation laws](@ref conservation_laws) arise as left null eigenvectors of the net stoichiometry matrix ``N``, and cycles arise as right null eigenvectors of the stoichiometry matrix. A cycle may be understood as a sequence of reactions that leaves the overall species composition unchanged. These do not necessarily have to correspond to actual cycles in the graph.
 

@@ -262,8 +262,11 @@ which we see is mass action and has deficiency zero, but is not weakly
 reversible. As such, we can conclude that for any choice of rate constants the
 RRE ODEs cannot have a positive equilibrium solution.
 
-```@docs; canonical=false
-satisfiesdeficiencyzero
+There is an API function [`satisfiesdeficiencyzero`](@ref) that will let us check
+all these conditions easily:
+
+```@example s1
+satisfiesdeficiencyzero(def0_rn)
 ```
 
 ## Deficiency One Theorem
@@ -282,8 +285,31 @@ stoichiometric compatibility class for any choice of rate constants and paramete
 the deficiency zero theorem, networks obeying the deficiency one theorem are not guaranteed 
 to have stable solutions.
 
-```@docs; canonical=false
-satisfiesdeficiencyone
+Let's look at an example network.
+
+```@example s1
+def1_network = @reaction_network begin
+    (k1, k2), A <--> 2B
+    k3, C --> 2D
+    k4, 2D --> C + E
+    (k5, k6), C + E <--> E + 2D
+end
+plot_complexes(def1_network)
+```
+
+We can see from the complex graph that there are two linkage classes, the deficiency of the bottom one is zero and the deficiency of the top one is one.
+The total deficiency is one:
+
+```@example s1
+deficiency(def1_network)
+```
+
+And there is only one terminal linkage class in each, so our network satisfies all three conditions.
+As in the deficiency zero case, there is the API function [`satisfiesdeficiencyone`](@ref)
+for quickly checking these conditions:
+
+```@example s1
+satisfiesdeficiencyone(def1_network)
 ```
 
 ## [Complex and Detailed Balance](@id network_analysis_complex_and_detailed_balance)
@@ -296,7 +322,7 @@ Note that detailed balance at a given steady state implies complex balance for t
 i.e. detailed balance is a stronger property than complex balance.
 
 Remarkably, having just one positive steady state that is complex (detailed) balance implies that 
-complex (detailed) balance obtains at *every* positive steady state, so we say that a network 
+complex (detailed) balance holds for *every* positive steady state, so we say that a network 
 is complex (detailed) balanced if any one of its steady states are complex (detailed) balanced. 
 Additionally, there will be exactly one steady state in every positive stoichiometric 
 compatibility class, and this steady state is asymptotically stable. (For proofs of these results,
@@ -328,7 +354,7 @@ isdetailedbalanced
 
 ## [Concentration Robustness](@id network_analysis_concentration_robustness)
 Certain reaction networks have species that do not change their concentration,
-regardless of the system is perturbed to a different stoichiometric compatibility
+regardless of whether the system is perturbed to a different stoichiometric compatibility
 class. This is a very useful property to have in biological contexts, where it might
 be important to keep the concentration of a critical species relatively stable in
 the face of changes in its environment. 

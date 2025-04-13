@@ -29,8 +29,7 @@ pages = Any[
     "Network Analysis" => Any[
         "network_analysis/odes.md",
         "network_analysis/crn_theory.md",
-        "network_analysis/network_properties.md",
-        "network_analysis/advanced_analysis.md"
+        "network_analysis/network_properties.md"
     ],
     "Model simulation and visualization" => Any[
         "model_simulation/simulation_introduction.md",

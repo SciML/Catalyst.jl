@@ -86,7 +86,7 @@ ReactionSystem
 ```
 
 ## [Options for the `@reaction_network` DSL](@id api_dsl_options)
-We have [previously described](@ref dsl_advanced_options) how options permits the user to supply non-reaction information to [`ReactionSystem`](@ref) created through the DSL. Here follows a list
+We have [previously described](@ref dsl_advanced_options) how options permit the user to supply non-reaction information to [`ReactionSystem`](@ref) created through the DSL. Here follows a list
 of all options currently available.
 - [`parameters`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system parameters.
 - [`species`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system species.
