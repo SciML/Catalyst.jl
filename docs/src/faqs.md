@@ -188,37 +188,10 @@ nothing  # hide
 while using ModelingToolkit symbolic variables we have
 ```@example faq4
 t = default_t()
-@parameters α β
-@species S(t) I(t) R(t)
-u0 = [S => 999.0, I => 1.0, R => 0.0]
-p  = (α => 1e-4, β => .01)
+u0 = [rn.S => 999.0, rn.I => 1.0, rn.R => 0.0]
+p  = (rn.α => 1e-4, rn.β => .01)
 op2  = ODEProblem(rn, u0, (0.0, 250.0), p)
 nothing  # hide
-```
-*Note,* while symbolic mappings as in the last example will work with *any*
-`ModelingToolkit.AbstractSystem`, for example if one `convert`s `rn` to an
-`ODESystem`, `Symbol`-based mappings only work when passing a `ReactionSystem`
-directly into a problem type. That is, the following does not work
-```@julia
-osys = convert(ODESystem, rn)
-
-# this fails
-u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
-p  = (:α => 1e-4, :β => .01)
-op  = ODEProblem(osys, u0, (0.0, 250.0), p)
-```
-In this case one must either use a symbolic mapping as was used to make `op2` in
-the second example, or one can use the `symmap_to_varmap` function to convert the
-`Symbol` mapping to a symbolic mapping. I.e. this works
-```@example faq4
-osys = convert(ODESystem, rn)
-osys = complete(osys)
-
-# this works
-u0 = symmap_to_varmap(rn, [:S => 999.0, :I => 1.0, :R => 0.0])
-p  = symmap_to_varmap(rn, (:α => 1e-4, :β => .01))
-op  = ODEProblem(osys, u0, (0.0, 250.0), p)
-nothing # hide
 ```
 
 ## How to include non-reaction terms in equations for a chemical species?
