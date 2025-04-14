@@ -5,7 +5,7 @@ This tutorial demonstrates how to
 1. Create a custom objective function which minimiser corresponds to the parameter set optimally fitting the data.
 2. Use Optimization.jl to minimize this objective function and find the parameter set providing the optimal fit.
 
-For simple parameter fitting problems (such as the one outlined below), [PEtab.jl often provides a more straightforward parameter fitting interface](@ref petab_parameter_fitting). However, Optimization.jl provides additional flexibility in defining your objective function. Indeed, it can also be used in other contexts, such as [finding parameter sets that maximise the magnitude of some system behaviour](@ref behaviour_optimisation). More details on how to use Optimization.jl can be found in its [documentation](https://docs.sciml.ai/DiffEqOptimizationParamEstim/stable/).
+For simple parameter fitting problems (such as the one outlined below), [PEtab.jl often provides a more straightforward parameter fitting interface](https://github.com/sebapersson/PEtab.jl). However, Optimization.jl provides additional flexibility in defining your objective function. Indeed, it can also be used in other contexts, such as [finding parameter sets that maximise the magnitude of some system behaviour](@ref behaviour_optimisation). More details on how to use Optimization.jl can be found in its [documentation](https://docs.sciml.ai/DiffEqOptimizationParamEstim/stable/).
 
 ## [Basic example](@id optimization_parameter_fitting_basics)
 
