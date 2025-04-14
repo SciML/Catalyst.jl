@@ -47,9 +47,10 @@ Pkg.add("Catalyst")
 
 ## Breaking changes and new features
 
-**NOTE:** Version 14 is a breaking release, prompted by the release of ModelingToolkit.jl version 9. This caused several breaking changes in how Catalyst models are represented and interfaced with.
-
-Breaking changes and new functionality are summarized in the [HISTORY.md](HISTORY.md) file. Furthermore, a migration guide on how to adapt your workflows to the new v14 update can be found [here](https://docs.sciml.ai/Catalyst/stable/v14_migration_guide/).
+**NOTE:** Version 15 is a breaking release, though most breaking changes are
+likely to only impact libraries being developed on top of Catalyst. Please
+see the [HISTORY.md](HISTORY.md) file for a summary of breaking changes and new
+functionality. 
 
 ## Tutorials and documentation
 
