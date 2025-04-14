@@ -47,9 +47,10 @@ Pkg.add("Catalyst")
 
 ## Breaking changes and new features
 
-**NOTE:** Version 14 is a breaking release, prompted by the release of ModelingToolkit.jl version 9. This caused several breaking changes in how Catalyst models are represented and interfaced with.
-
-Breaking changes and new functionality are summarized in the [HISTORY.md](HISTORY.md) file. Furthermore, a migration guide on how to adapt your workflows to the new v14 update can be found [here](https://docs.sciml.ai/Catalyst/stable/v14_migration_guide/).
+**NOTE:** Version 15 is a breaking release, though most breaking changes are
+likely to only impact libraries being developed on top of Catalyst. Please
+see the [HISTORY.md](HISTORY.md) file for a summary of breaking changes and new
+functionality. 
 
 ## Tutorials and documentation
 
@@ -87,7 +88,7 @@ be found in its corresponding research paper, [Catalyst: Fast and flexible model
 - Model steady states can be [computed through homotopy continuation](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/homotopy_continuation/) using [HomotopyContinuation.jl](https://github.com/JuliaHomotopyContinuation/HomotopyContinuation.jl) (which can find *all* steady states of systems with multiple ones), by [forward ODE simulations](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/nonlinear_solve/#steady_state_solving_simulation) using [SteadyStateDiffEq.jl](https://github.com/SciML/SteadyStateDiffEq.jl), or by [numerically solving steady-state nonlinear equations](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/nonlinear_solve/#steady_state_solving_nonlinear) using [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl).
 - [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl) can be used to [compute bifurcation diagrams](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/bifurcation_diagrams/) of model steady states (including finding periodic orbits).
 - [DynamicalSystems.jl](https://github.com/JuliaDynamics/DynamicalSystems.jl) can be used to compute model [basins of attraction](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/dynamical_systems/#dynamical_systems_basins_of_attraction), [Lyapunov spectrums](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/dynamical_systems/#dynamical_systems_lyapunov_exponents), and other dynamical system properties.
-- [Optimization.jl](https://github.com/SciML/Optimization.jl), [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl), and [PEtab.jl](https://github.com/sebapersson/PEtab.jl) can all be used to [fit model parameters to data](https://sebapersson.github.io/PEtab.jl/stable/Define_in_julia/).
+- [Optimization.jl](https://github.com/SciML/Optimization.jl) and [PEtab.jl](https://github.com/sebapersson/PEtab.jl) can all be used to [fit model parameters to data](https://sebapersson.github.io/PEtab.jl/stable/Define_in_julia/).
 - [GlobalSensitivity.jl](https://github.com/SciML/GlobalSensitivity.jl) can be used to perform [global sensitivity analysis](https://docs.sciml.ai/Catalyst/stable/inverse_problems/global_sensitivity_analysis/) of model behaviors.
 - [SciMLSensitivity.jl](https://github.com/SciML/SciMLSensitivity.jl) can be used to compute local sensitivities of functions containing forward model simulations.
 - [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) can be used to [perform structural identifiability analysis](https://docs.sciml.ai/Catalyst/stable/inverse_problems/structural_identifiability/).
