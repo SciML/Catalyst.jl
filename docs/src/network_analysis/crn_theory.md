@@ -364,7 +364,7 @@ that can be checked relatively easily. One example is for deficiency one network
 
 **Theorem (a sufficient condition for concentration robustness for deficiency one networks)**: If there are two *non-terminal* reaction complexes that differ only in species ``s``, then the system is absolutely concentration robust with respect to ``s``. 
 
-This is the check provided by the API function `robustspecies(rn)`. More general concentration robustness analysis can be done using the [CatalystNetworkAnalysis](@ref catalyst_network_analysis) package.
+This is the check provided by the API function `robustspecies(rn)`. More general concentration robustness analysis can be done using the forthcoming CatalystNetworkAnalysis package.
 
 ```@docs; canonical=false
 robustspecies

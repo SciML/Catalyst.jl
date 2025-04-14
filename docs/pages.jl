@@ -26,11 +26,6 @@ pages = Any[
             "model_creation/examples/noise_modelling_approaches.md",
         ]
     ],
-    "Network Analysis" => Any[
-        "network_analysis/odes.md",
-        "network_analysis/crn_theory.md",
-        "network_analysis/network_properties.md"
-    ],
     "Model simulation and visualization" => Any[
         "model_simulation/simulation_introduction.md",
         "model_simulation/simulation_plotting.md",
@@ -43,6 +38,11 @@ pages = Any[
             "model_simulation/examples/activation_time_distribution_measurement.md",
             "model_simulation/examples/interactive_brusselator_simulation.md"
         ]
+    ],
+    "Network Analysis" => Any[
+        "network_analysis/odes.md",
+        "network_analysis/crn_theory.md",
+        "network_analysis/network_properties.md"
     ],
     "Steady state analysis" => Any[
         "steady_state_functionality/homotopy_continuation.md",
