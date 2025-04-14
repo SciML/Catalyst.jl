@@ -17,7 +17,6 @@ pages = Any[
         "model_creation/model_file_loading_and_export.md",
         "model_creation/model_visualisation.md",
         "model_creation/reactionsystem_content_accessing.md",
-        "model_creation/network_analysis.md",
         "model_creation/chemistry_related_functionality.md",
         "Examples" => Any[
             "model_creation/examples/basic_CRN_library.md",
@@ -40,6 +39,11 @@ pages = Any[
             "model_simulation/examples/interactive_brusselator_simulation.md"
         ]
     ],
+    "Network Analysis" => Any[
+        "network_analysis/odes.md",
+        "network_analysis/crn_theory.md",
+        "network_analysis/network_properties.md"
+    ],
     "Steady state analysis" => Any[
         "steady_state_functionality/homotopy_continuation.md",
         "steady_state_functionality/nonlinear_solve.md",
@@ -52,7 +56,7 @@ pages = Any[
         ]
     ],
     "Inverse problems" => Any[
-        "inverse_problems/petab_ode_param_fitting.md",
+        #"inverse_problems/petab_ode_param_fitting.md",
         "inverse_problems/optimization_ode_param_fitting.md",
         "inverse_problems/behaviour_optimisation.md",
         "inverse_problems/structural_identifiability.md",
@@ -69,6 +73,9 @@ pages = Any[
         "spatial_modelling/spatial_jump_simulations.md"
     ],
     "FAQs" => "faqs.md",
-    "API" => "api.md",
+    "API" => Any[
+                 "api/core_api.md",
+                 "api/network_analysis_api.md"
+                ],
     "Developer Documentation" => "devdocs/dev_guide.md"
 ]
