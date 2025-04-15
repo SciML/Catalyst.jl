@@ -788,7 +788,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     # handle coupled ODEs and BC species    
     if (PhysicalScale.ODE in unique_scales) || has_nonreactions(flatrs)       
         odeeqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws, 
-            remove_conserved = false, include_zero_odes, physical_scales)
+            remove_conserved = false, physical_scales)
         append!(eqs, odeeqs)
         eqs, us, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; 
             remove_conserved = false)
@@ -959,7 +959,7 @@ function JumpInputs(rs::ReactionSystem, u0, tspan, p = DiffEqBase.NullParameters
 
     if MT.has_variableratejumps(jsys) || MT.has_equations(jsys) || 
             !isempty(MT.continuous_events(jsys))
-        prob = ODEProblem(jsys, u0map, tspan, pmap; kwargs...)
+        prob = ODEProblem(jsys, u0, tspan, p; kwargs...)
     else
         prob = DiscreteProblem(jsys, u0, tspan, p; kwargs...)
     end
