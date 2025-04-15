@@ -22,9 +22,10 @@ Notes:
     `combinatoric_ratelaw=false` then the ratelaw is `k*S^2`, i.e. the scaling
     factor is ignored.
 """
-function oderatelaw(rx; combinatoric_ratelaw = true)
+function oderatelaw(rx; combinatoric_ratelaw = true, expand_catalyst_funs = true)
     @unpack rate, substrates, substoich, only_use_rate = rx
     rl = rate
+    expand_catalyst_funs && (rl = expand_registered_functions(rl))
 
     # if the stoichiometric coefficients are not integers error if asking to scale rates
     !all(s -> s isa Union{Integer, Symbolic}, substoich) &&
@@ -47,7 +48,7 @@ end
 drop_dynamics(s) = isconstant(s) || isbc(s) || (!isspecies(s))
 
 function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserved = false, 
-        physical_scales = nothing)
+        physical_scales = nothing, expand_catalyst_funs = true)
     nps = get_networkproperties(rs)
     species_to_idx = Dict(x => i for (i, x) in enumerate(ispcs))
     rhsvec = Any[0 for _ in ispcs]
@@ -62,7 +63,8 @@ function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserv
         !((physical_scales === nothing) || 
             (physical_scales[rxidx] == PhysicalScale.ODE)) && continue
 
-        rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)
+        rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws, 
+            expand_catalyst_funs)
         remove_conserved && (rl = substitute(rl, depspec_submap))
         for (spec, stoich) in rx.netstoich
             # dependent species don't get an ODE, so are skipped
@@ -95,10 +97,10 @@ function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserv
 end
 
 function assemble_drift(rs, ispcs; combinatoric_ratelaws = true, as_odes = true,
-        include_zero_odes = true, remove_conserved = false, physical_scales = nothing)
-
+        include_zero_odes = true, remove_conserved = false, physical_scales = nothing,
+        expand_catalyst_funs = true)
     rhsvec = assemble_oderhs(rs, ispcs; combinatoric_ratelaws, remove_conserved, 
-        physical_scales)
+        physical_scales, expand_catalyst_funs)
     if as_odes
         D = Differential(get_iv(rs))
         eqs = [Equation(D(x), rhs)
@@ -111,7 +113,7 @@ end
 
 # this doesn't work with constraint equations currently
 function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
-        remove_conserved = false)
+        remove_conserved = falsem , expand_catalyst_funs = true)
     # as BC species should ultimately get an equation, we include them in the noise matrix
     num_bcsts = count(isbc, get_unknowns(rs))
 
@@ -127,7 +129,9 @@ function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
     end
 
     for (j, rx) in enumerate(get_rxs(rs))
-        rlsqrt = sqrt(abs(oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)))
+        rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws, 
+            expand_catalyst_funs)
+        rlsqrt = sqrt(abs(rl))
         hasnoisescaling(rx) && (rlsqrt *= getnoisescaling(rx))
         remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
 
@@ -176,9 +180,12 @@ Notes:
   the ratelaw is `k*S*(S-1)`, i.e. the rate law is not normalized by the scaling
   factor.
 """
-function jumpratelaw(rx; combinatoric_ratelaw = true)
+function jumpratelaw(rx; combinatoric_ratelaw = true, expand_catalyst_funs = true)
     @unpack rate, substrates, substoich, only_use_rate = rx
+
     rl = rate
+    expand_catalyst_funs && (rl = expand_registered_functions(rl))
+
     if !only_use_rate
         coef = eltype(substoich) <: Number ? one(eltype(substoich)) : 1
         for (i, stoich) in enumerate(substoich)
@@ -360,7 +367,8 @@ function classify_vrjs(rs, physcales)
     isvrjvec
 end
 
-function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = nothing)
+function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = nothing, 
+        expand_catalyst_funs = true)
     meqs = MassActionJump[]
     ceqs = ConstantRateJump[]
     veqs = VariableRateJump[]
@@ -389,7 +397,8 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
         if (!isvrj) && ismassaction(rx, rs; rxvars, haveivdep = false, unknownset)
             push!(meqs, makemajump(rx; combinatoric_ratelaw = combinatoric_ratelaws))
         else
-            rl = jumpratelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)
+            rl = jumpratelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws, 
+                expand_catalyst_funs)
             affect = Vector{Equation}()
             for (spec, stoich) in rx.netstoich
                 # don't change species that are constant or BCs
@@ -409,46 +418,58 @@ end
 
 # merge constraint components with the ReactionSystem components
 # also handles removing BC and constant species
-function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved = false)
+function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved = false,
+        treat_conserved_as_eqs = false)
     # if there are BC species, put them after the independent species
     rssts = get_unknowns(rs)
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
     ps = get_ps(rs)
-
+    initeqs = Equation[]
+    defs = MT.defaults(rs)
+    obs = MT.observed(rs)
+    
     # make dependent species observables and add conservation constants as parameters
     if remove_conserved
         nps = get_networkproperties(rs)
 
         # add the conservation constants as parameters and set their values
-        ps = vcat(ps, collect(eq.lhs for eq in nps.constantdefs))
-        defs = copy(MT.defaults(rs))
-        for eq in nps.constantdefs
-            defs[eq.lhs] = eq.rhs
-        end
+        ps = copy(ps)
+        push!(ps, nps.conservedconst)
 
-        # add the dependent species as observed
-        obs = copy(MT.observed(rs))
-        append!(obs, nps.conservedeqs)
-    else
-        defs = MT.defaults(rs)
-        obs = MT.observed(rs)
+        if treat_conserved_as_eqs
+            # add back previously removed dependent species
+            sts = union(sts, nps.depspecs)       
+
+            # treat conserved eqs as normal eqs
+            append!(eqs, conservedequations(rs))
+
+            # add initialization equations for conserved parameters
+            initialmap = Dict(u => Initial(u) for u in species(rs))
+            conseqs = conservationlaw_constants(rs)
+            initeqs = [Symbolics.substitute(conseq, initialmap) for conseq in conseqs]        
+        else
+            # add the dependent species as observed
+            obs = copy(obs)
+            append!(obs, conservedequations(rs))
+        end
     end
 
     ceqs = Equation[eq for eq in get_eqs(rs) if eq isa Equation]
     if !isempty(ceqs)
         if remove_conserved
             @info """
-                  Be careful mixing constraints and elimination of conservation laws.
-                  Catalyst does not check that the conserved equations still hold for the
-                  final coupled system of equations. Consider using `remove_conserved =
-                  false` and instead calling ModelingToolkit.structural_simplify to simplify
-                  any generated ODESystem or NonlinearSystem.
+                  Be careful mixing ODEs or algebraic equations and elimination of
+                  conservation laws. Catalyst does not check that the conserved equations
+                  still hold for the final coupled system of equations. Consider using
+                  `remove_conserved = false` and instead calling
+                  ModelingToolkit.structural_simplify to simplify any generated ODESystem or
+                  NonlinearSystem.
                   """
         end
         append!(eqs, ceqs)
     end
 
-    eqs, sts, ps, obs, defs
+    eqs, sts, ps, obs, defs, initeqs
 end
 
 # used by flattened systems that don't support constraint equations currently
