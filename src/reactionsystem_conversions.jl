@@ -788,7 +788,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     # handle coupled ODEs and BC species    
     if (PhysicalScale.ODE in unique_scales) || has_nonreactions(flatrs)       
         odeeqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws, 
-            remove_conserved = false, physical_scales, include_zero_odes = false)
+            remove_conserved = false, physical_scales, include_zero_odes = true)
         append!(eqs, odeeqs)
         eqs, us, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; 
             remove_conserved = false)
