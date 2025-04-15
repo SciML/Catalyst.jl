@@ -391,6 +391,7 @@ let
     eq = D(V) ~ λ*V
     cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
     @named hybrid = ReactionSystem([rx, eq], t; continuous_events = cevents)
+    hybrid = complete(hybrid)
     rn = @reaction_network hybrid begin
         @parameters λ
         k*V, 0 --> A
