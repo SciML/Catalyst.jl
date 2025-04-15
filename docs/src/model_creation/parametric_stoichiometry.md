@@ -1,4 +1,4 @@
-# [Symbolic Stochiometries](@id parametric_stoichiometry)
+# [Symbolic Stoichiometries](@id parametric_stoichiometry)
 Catalyst supports stoichiometric coefficients that involve parameters, species,
 or even general expressions. In this tutorial we show several examples of how to
 use symbolic stoichiometries, and discuss several caveats to be aware of.
@@ -173,9 +173,8 @@ bval = 70
 k₋val = 0.001
 k₊val = 0.05
 kₚval = pmean * γₚval * (k₋val * pmean^2 + k₊val) / (k₊val * bval)
-p = symmap_to_varmap(jsys, (:k₊ => k₊val, :k₋ => k₋val, :kₚ => kₚval,
-                            :γₚ => γₚval, :b => bval))
-u₀ = symmap_to_varmap(jsys, [:G₊ => 1, :G₋ => 0, :P => 1])
+p = (:k₊ => k₊val, :k₋ => k₋val, :kₚ => kₚval, :γₚ => γₚval, :b => bval)
+u₀ = [:G₊ => 1, :G₋ => 0, :P => 1]
 tspan = (0., 6.0)   # time interval to solve over
 dprob = DiscreteProblem(jsys, u₀, tspan, p)
 jprob = JumpProblem(jsys, dprob, Direct())

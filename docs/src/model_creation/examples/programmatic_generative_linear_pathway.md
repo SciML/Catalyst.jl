@@ -1,4 +1,4 @@
-# [Programmatic, generative, modelling of a linear pathway](@id programmatic_generative_linear_pathway)
+# [Programmatic, Generative, Modelling of a Linear Pathway](@id programmatic_generative_linear_pathway)
 This example will show how to use programmatic, generative, modelling to model a system implicitly. I.e. rather than listing all system reactions explicitly, the reactions are implicitly generated from a simple set of rules. This example is specifically designed to show how [programmatic modelling](@ref programmatic_CRN_construction) enables *generative workflows* (demonstrating one of its advantages as compared to [DSL-based modelling](@ref dsl_description)). In our example, we will model linear pathways, so we will first introduce these. Next, we will model them first using the DSL, and then using a generative programmatic workflow.
 
 ## [Linear pathways](@id programmatic_generative_linear_pathway_intro)

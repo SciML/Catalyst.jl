@@ -8,7 +8,7 @@ using StableRNGs
 rng = StableRNG(12345)
 seed = rand(rng, 1:100)
 
-# Sets the default `t` to use.
+# Sets the default `t` and `D` to use.
 t = default_t()
 D = default_time_deriv()
 
@@ -149,7 +149,7 @@ let
     @test issetequal(equations(coupled_rs)[3:3], eqs[3:3])
 
     # Set simulation inputs.
-    u0 = [X => 0.1, A => 10.0]
+    u0 = [X => 0.1]
     tspan = (0.0, 1000.0)
     ps = [p => 1.0, d => 0.5, a => 2.0, b => 16.0]
 
@@ -158,17 +158,21 @@ let
     @test_throws Exception SteadyStateProblem(coupled_rs, u0, ps)
 
     # Checks that the correct steady state is found through ODEProblem.
-    oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true)
+    oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true, 
+        guesses = [A => 1.0])
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
     @test osol.u[end] ≈ [2.0, 3.0]
 
     # Checks that the correct steady state is found through NonlinearProblem.
-    nlprob = NonlinearProblem(coupled_rs, u0, ps)
+    u0 = [X => 0.1, A => 16.1/2]
+    nlprob = NonlinearProblem(coupled_rs, u0, ps, structural_simplify = true)
     nlsol = solve(nlprob)
-    @test nlsol ≈ [2.0, 3.0]
+    @test nlsol[[X,A]] ≈ [2.0, 3.0]
 
     # Checks that the correct steady state is found through SteadyStateProblem.
-    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
+    u0 = [X => 0.1]
+    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true, 
+        guesses = [A => 1.0])
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
     @test sssol ≈ [2.0, 3.0]
 end
@@ -197,13 +201,15 @@ let
     coupled_rs = complete(coupled_rs)
 
     # Set simulation inputs.
-    u0 = (X => 1.0, A => 2.0, B => 3.0, C => 4.0)
+    u0 = (X => 2.0, A => 4.0, B => 1.0, C => 2.0)
     ps = (p => 1.0, d => 2.0, a => 3.0, b => 4.0, c => 5.0)
 
     # Creates and solves a ODE, SteadyState, and Nonlinear problems.
     # Success is tested by checking that the same steady state solution is found.
-    oprob = ODEProblem(coupled_rs, u0, (0.0, 1000.0), ps; structural_simplify = true)
-    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
+    oprob = ODEProblem(coupled_rs, u0, (0.0, 1000.0), ps; structural_simplify = true, 
+        warn_initialize_determined = false)
+    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true, 
+        warn_initialize_determined = false)
     nlprob = NonlinearProblem(coupled_rs, u0, ps)
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
@@ -280,14 +286,15 @@ let
     @named coupled_rs = ReactionSystem(eqs, τ)
     coupled_rs = complete(coupled_rs)
 
-    # Checks that systems created from coupled reaction systems contain the correct content (in the correct order).
+    # Checks that systems created from coupled reaction systems contain the correct content 
     osys = convert(ODESystem, coupled_rs)
     ssys = convert(SDESystem, coupled_rs)
     nlsys = convert(NonlinearSystem, coupled_rs)
+    initps = Initial.((X, X2, A, B))
+    fullps = union(initps, [k1, k2, k, b1, b2])
     for sys in [coupled_rs, osys, ssys, nlsys]
         @test issetequal(parameters(sys), [k1, k2, k, b1, b2])
-        @test issetequal(unknowns(sys)[1:2], [X, X2])
-        @test issetequal(unknowns(sys)[3:4], [A, B])
+        @test issetequal(unknowns(sys), [A, B, X, X2])    
     end
 end
 
@@ -373,7 +380,7 @@ end
     ps = [A1 => 0.1, B1 => 1.0, C1 => 10.0]
 
     # Create ODE structures.
-    oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true)
+    oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
     oint = init(oprob, Tsit5())
     osol = solve(oprob, Tsit5())
 
@@ -478,7 +485,7 @@ let # SDEs are currently broken with structural simplify (https://github.com/Sci
     @test_throws Exception SDEProblem(coupled_rs, u0, tspan, ps)
 
     # Checks the algebraic equation holds.
-    sprob = SDEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true)
+    sprob = SDEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
     ssol = solve(sprob, ImplicitEM())
     @test (2 .+ ps[k1] * ssol[:A]) ≈ (3 .+ ps[k2] * ssol[:X])
 end
@@ -603,7 +610,7 @@ let
         coupled_sir_ordered = complete(coupled_sir_ordered)
 
         # Checks that ODE an simulation of the system achieves the correct steady state.
-        oprob_ordered = ODEProblem(coupled_sir_ordered, u0, tspan, ps; structural_simplify = true)
+        oprob_ordered = ODEProblem(coupled_sir_ordered, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
         solve(oprob_ordered, Vern7(); abstol = 1e-8, reltol = 1e-8, saveat = 1.0)
     end
 
@@ -623,7 +630,7 @@ let
         coupled_sir_messy = complete(coupled_sir_messy)
 
         # Checks that ODE an simulation of the system achieves the correct steady state.
-        oprob_messy = ODEProblem(coupled_sir_messy, u0, tspan, ps; structural_simplify = true)
+        oprob_messy = ODEProblem(coupled_sir_messy, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
         solve(oprob_messy, Vern7(); abstol = 1e-8, reltol = 1e-8, saveat = 1.0)
     end
 
@@ -691,8 +698,8 @@ let
     # Test most likely redundant, but seem useful to have one test like this to be sure.
     u0 = [X1 => 0.1, X2 => 0.2, X3 => 0.2, X_tot => 0.6, N => 10.0, X_conc => 10.0]
     ps = [p => 1.0, k1 => 1.2, k2 => 1.5, d => 2.0, v => 0.2, n => 0.5, x_scale => 2.0]
-    oprob_prog = ODEProblem(rs_prog, u0, (0.0, 10.0), ps; structural_simplify = true)
-    oprob_dsl = ODEProblem(rs_dsl, u0, (0.0, 10.0), ps; structural_simplify = true)
+    oprob_prog = ODEProblem(rs_prog, u0, (0.0, 10.0), ps; structural_simplify = true, warn_initialize_determined = false)
+    oprob_dsl = ODEProblem(rs_dsl, u0, (0.0, 10.0), ps; structural_simplify = true, warn_initialize_determined = false)
     @test solve(oprob_prog, Rosenbrock23()) == solve(oprob_dsl, Rosenbrock23())
 end
 
@@ -991,7 +998,7 @@ let
     rs = complete(rs)
     u0 = [S1 => 1.0, S2 => 2.0]
     ps = [p1 => 2.0, p2 => 3.0]
-    @test_throws Exception ODEProblem(rs, u0, (0.0, 1.0), ps; structural_simplify = true)
+    @test_throws Exception ODEProblem(rs, u0, (0.0, 1.0), ps; structural_simplify = true, warn_initialize_determined = false)
 
     # Coupled system overconstrained due to additional algebraic equations (with variables).
     eqs = [

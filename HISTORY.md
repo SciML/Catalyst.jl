@@ -1,39 +1,56 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+
+## Catalyst 15.0
 - The Catalyst release process is changing; certain core dependencies of
   Catalyst will now be capped to ensure Catalyst releases are only installed
   with versions of dependencies for which Catalyst CI and doc build tests pass
   (at the time the release is made). If you need a dependency version increased,
   please open an issue and we can update it and make a new Catalyst release once
-  testing against the newer dependency version is complete. 
-- New formula for inferring variables from equations (declared using the `@equations` options) in the DSL. The order of inference of species/variables/parameters is now:
-    (1) Every symbol explicitly declared using `@species`, `@variables`, and `@parameters` are assigned to the correct category.
-    (2) Every symbol used as a reaction reactant is inferred as a species.
-    (3) Every symbol not declared in (1) or (2) that occurs in an expression provided after `@equations` is inferred as a variable.
-    (4) Every symbol not declared in (1), (2), or (3) that occurs either as a reaction rate or stoichiometric coefficient is inferred to be a parameter.
-E.g. in
-```julia
-@reaction_network begin
-    @equations V1 + S ~ V2^2
-    (p + S + V1), S --> 0
-end
-```
-`S` is inferred as a species, `V1` and `V2` as variables, and `p` as a parameter. The previous special cases for the `@observables`, `@compounds`, and `@differentials` options still hold. Finally, the `@require_declaration` options (described in more detail below) can now be used to require everything to be explicitly declared.
-- New formula for determining whether the default differentials have been used within an `@equations` option. Now, if any expression `D(...)` is encountered (where `...` can be anything), this is inferred as usage of the default differential D. E.g. in the following equations `D` is inferred as a differential with respect to the default independent variable:
-```julia
-@reaction_network begin
-  @equations D(V) + V ~ 1
-end
-@reaction_network begin
-  @equations D(D(V)) ~ 1
-end
-```
-Please note that this cannot be used at the same time as `D` is used to represent a species, variable, or parameter (including is these are implicitly designated as such by e.g. appearing as a reaction reactant). 
-- Array symbolics support is more consistent with ModelingToolkit v9. Parameter
-  arrays are no longer scalarized by Catalyst, while species and variables
-  arrays still are (as in ModelingToolkit). As such, parameter arrays should now
-  be specified as arrays in value mappings, i.e.
+  testing against the newer dependency version is complete.
+- **BREAKING:** New formula for inferring variables from equations (declared
+  using the `@equations` options) in the DSL. The order of inference of
+  species/variables/parameters is now:
+    1. Every symbol explicitly declared using `@species`, `@variables`, and
+       `@parameters` are assigned to the correct category.
+    2. Every symbol used as a reaction reactant is inferred as a species.
+    3. Every symbol not declared in (1) or (2) that occurs in an expression
+       provided after `@equations` is inferred as a variable.
+    4. Every symbol not declared in (1), (2), or (3) that occurs either as a
+       reaction rate or stoichiometric coefficient is inferred to be a
+       parameter. E.g. in
+       ```julia
+       @reaction_network begin
+           @equations V1 + S ~ V2^2
+           (p + S + V1), S --> 0
+       end
+       ```
+       `S` is inferred as a species, `V1` and `V2` as variables, and `p` as a
+       parameter. The previous special cases for the `@observables`, `@compounds`,
+       and `@differentials` options still hold. Finally, the `@require_declaration`
+       options (described in more detail below) can now be used to require everything
+       to be explicitly declared.
+- **BREAKING:** New formula for determining whether the default differentials
+  have been used within an `@equations` option. Now, if any expression `D(...)`
+  is encountered (where `...` can be anything), this is inferred as usage of the
+  default differential D. E.g. in the following equations `D` is inferred as a
+  differential with respect to the default independent variable:
+  ```julia
+  @reaction_network begin
+    @equations D(V) + V ~ 1
+  end
+  @reaction_network begin
+    @equations D(D(V)) ~ 1
+  end
+  ```
+  Please note that this cannot be used at the same time as `D` is used to
+  represent a species, variable, or parameter (including if these are implicitly
+  designated as such by e.g. appearing as a reaction reactant). 
+- **BREAKING:** Array symbolics support is more consistent with ModelingToolkit
+  v9. Parameter arrays are no longer scalarized by Catalyst, while species and
+  variables arrays still are (as in ModelingToolkit). As such, parameter arrays
+  should now be specified as arrays in value mappings, i.e.
   ```julia
   @parameters k[1:4]
   pmap = [k => rand(4)]
@@ -42,13 +59,86 @@ Please note that this cannot be used at the same time as `D` is used to represen
   *not* to do this as it has signifcant performance costs with ModelingToolkit
   v9. Note, scalarized parameter arrays passed to the two-argument
   `ReactionSystem` constructor may become unscalarized.
+- **BREAKING:** We have introduced a restriction on bundling of reactions in the
+  DSL. Now, bundling is not permitted if multiple rates are provided but only
+  one set each of substrates/products. E.g. this model:
+  ```julia
+  @reaction_network begin
+    (k1,k2), X --> Y
+  end
+  ```
+  will now throw an error. The reason that users attempting to write
+  bi-directional reactions but typing `-->` instead of `<-->` would get a wrong
+  model. We decided that this kind of bundling was unlikely to be used, and
+  throwing errors for people who made the typo was more important. If you use
+  this type of bundling and it indeed is useful to you, please raise and issue
+  and we will see if we can sort something out.
+- **BREAKING:** Catalyst's network visualization capability has shifted from
+  using Graphviz to [GraphMakie.jl](https://graph.makie.org/stable/). To use
+  this functionality, load the GraphMakie extension by installing `Catalyst` and
+  `GraphMakie`, along with a Makie backend like `CairoMakie` or `GLMakie`. There
+  are two new methods for visualizing graphs: `plot_network` and
+  `plot_complexes`, which respectively display the species-reaction graph and
+  complex graph.
+  ```julia
+  using Catalyst, GraphMakie, GLMakie
+  brusselator = @reaction_network begin
+     A, ∅ --> X
+     1, 2X + Y --> 3X
+     B, X --> Y
+     1, X --> ∅
+  end
+  plot_network(brusselator)
+  ```
+- **BREAKING:** The letter Ø (used in Danish/Norwegian alphabet) is now
+  considered the same as ∅ (empty set). It can no longer be used as a
+  species/parameter.
+- **BREAKING:** When converting a Catalyst `ReactionSystem` to a ModelingToolkit
+  system, for example an `ODESystem`, Catalyst defined functions like
+  `hill(A,B,C,D)` are now replaced with the explicit rational function they
+  represent in the equations of the generated system. For example `mm(X,v,K)`
+  will be replaced with `v*X / (X + K)`. This can be disabled by passing the
+  keyword argument `expand_catalyst_funs = false`. e.g.
+  ```julia
+  using Catalyst
+  rn = @reaction_network begin
+    hill(X,v,K,n), A --> 0
+  end
+  osys = convert(ODESystem, rn)
+  ```
+  generates an ODE system with `D(A) ~ -((v*A(t)*(X^n)) / (K^n + X^n))`, while
+  ```julia
+  osys = convert(ODESystem, rn; expand_catalyst_funs = false)
+  ```
+  generates an ODE system with `D(A) ~ -A(t)*hill(X, v, K, n)`. This keyword
+  argument can also be passed to problems defined over `ReactionSystem`s, i.e.
+  when calling `ODEProblem(rn, u0, tspan, p; expand_catalyst_funs = false)`.
+- It is no longer recommended to install and use the full OrdinaryDiffEq library
+  to access specific ODE solvers. Instead, only install the specific
+  OrdinaryDiffEq sub-libraries that contain the desired solver. This
+  significantly reduces installation and package loading times. I.e. to use the
+  default solver that auto-switches between explicit and implicit methods,
+  install `OrdinaryDiffEqDefault`. To use `Tsit5` install `OrdinaryDiffEqTsit5`,
+  etc. The possible sub-libraries, each containing different solvers, can be
+  viewed [here](https://github.com/SciML/OrdinaryDiffEq.jl/tree/master/lib).
+- It should now be safe to use `remake` on problems which have had conservation
+  laws removed with the exception of `NonlinearProblem`s or `NonlinearSystem`s.
+  For NonlinearProblems it is safe to use `remake` if only updating `u0` values,
+  but it is not safe to update the value of the conserved constant, `Γ`. See
+  [the FAQ](https://docs.sciml.ai/Catalyst/stable/faqs/#faq_remake_nonlinprob)
+  for details.
+- Functional (e.g. time-dependent) parameters can now be used in Catalyst
+  models. These can e.g. be used to incorporate arbitrary time-dependent
+  functions (as a parameter) in a model. For more details on how to use these,
+  please read:
+  https://docs.sciml.ai/Catalyst/stable/model_creation/functional_parameters/.
 - Scoped species/variables/parameters are now treated similar to the latest MTK
   releases (≥ 9.49).
-- The structural identifiability extension is currently disabled due to issues
-  StructuralIdentifiability has with Julia 1.10.5 and 1.11.
 - A tutorial on making interactive plot displays using Makie has been added.
 - The BifurcationKit extension has been updated to v.4.
-- There is a new DSL option `@require_declaration` that will turn off automatic inferring for species, parameters, and variables in the DSL. For example, the following will now error:
+- There is a new DSL option `@require_declaration` that will turn off automatic
+  inferring for species, parameters, and variables in the DSL. For example, the
+  following will now error:
   ```julia
   rn = @reaction_network begin
     @require_declaration
@@ -64,18 +154,7 @@ Please note that this cannot be used at the same time as `D` is used to represen
     (k1, k2), A <--> B
   end
   ```
-- Catalyst's network visualization capability has shifted from using Graphviz to [GraphMakie.jl](https://graph.makie.org/stable/). To use this functionality, load the GraphMakie extension by installing `Catalyst` and `GraphMakie`, along with a Makie backend like `GLMakie`. There are two new methods for visualizing graphs: `plot_network` and `plot_complexes`, which respectively display the species-reaction graph and complex graph.
-  ```julia
-  using Catalyst, GraphMakie, GLMakie
-  brusselator = @reaction_network begin
-     A, ∅ --> X
-     1, 2X + Y --> 3X
-     B, X --> Y
-     1, X --> ∅
-  end
-  plot_network(brusselator)
-  ```
- 
+
 ## Catalyst 14.4.1
 - Support for user-defined functions on the RHS when providing coupled equations 
   for CRNs using the @equations macro. For example, the following now works: 

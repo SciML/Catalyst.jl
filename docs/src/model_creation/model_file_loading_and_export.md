@@ -56,7 +56,7 @@ end
 
 In addition to transferring models between Julia sessions, the `save_reactionsystem` function can also be used or print a model to a text file where you can easily inspect its components.
 
-## [Loading and Saving arbitrary Julia variables using Serialization.jl](@id model_file_import_export_julia_serialisation)
+## [Loading and saving arbitrary Julia variables using Serialization.jl](@id model_file_import_export_julia_serialisation)
 Julia provides a general and lightweight interface for loading and saving Julia structures to and from files that it can be good to be aware of. It is called [Serialization.jl](https://docs.julialang.org/en/v1/stdlib/Serialization/) and provides two functions, `serialize` and `deserialize`. The first allows us to write a Julia structure to a file. E.g. if we wish to save a parameter set associated with our model, we can use
 ```@example file_handling_2
 using Serialization

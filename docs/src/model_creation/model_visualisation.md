@@ -36,7 +36,7 @@ If you wish to copy the output to your [clipboard](https://en.wikipedia.org/wiki
     For a model to be nicely displayed you have to use an IDE that actually supports this (such as a [notebook](https://jupyter.org/)). Other environments (such as [the Julia REPL](https://docs.julialang.org/en/v1/stdlib/REPL/)) will simply return the full LaTeX code which would generate the desired expression. 
 
 ## [Displaying model networks](@id visualisation_graphs)
-Catalyst uses `GraphMakie` to display representations of chemical reaction networks, including the complex graph and the species-reaction graph (which is similar to the [Petri net](https://en.wikipedia.org/wiki/Petri_net) representation). To get started, import Catalyst, GraphMakie, and NetworkLayout to load the `CatalystGraphMakieExtension` extension, and then load a Makie backend (`CairoMakie` is a good lightweight choice).
+Catalyst uses [GraphMakie.jl](https://github.com/MakieOrg/GraphMakie.jl) to display representations of chemical reaction networks, including the complex graph and the species-reaction graph (which is similar to the [Petri net](https://en.wikipedia.org/wiki/Petri_net) representation). To get started, import Catalyst, GraphMakie, and NetworkLayout to load the `CatalystGraphMakieExtension` extension, and then load a Makie backend ([`CairoMakie`](https://github.com/MakieOrg/Makie.jl) is a good lightweight choice). Here, while Catalyst primarily uses [Plots.jl](https://github.com/JuliaPlots/Plots.jl) for plotting, [Makie](https://github.com/MakieOrg/Makie.jl) is used for displaying network graphs. Makie can also be used for plotting more generally (and is also a preferred option for some).
 
 ```@example visualisation_graphs
 using Catalyst, GraphMakie, NetworkLayout
@@ -88,20 +88,18 @@ In this section we demonstrate some of the ways that plot objects can be manipul
 f, ax, p = plot_complexes(brusselator, show_rate_labels = true)
 ```
 
-It seems like a bit of the top node is cut off. Let's hide the tick marks and grid and increase the top and bottom margins by increasing `yautolimitmargin`.
+It seems like a bit of the top node is cut off. Let's increase the top and bottom margins by increasing `yautolimitmargin`.
 ```@example visualisation_graphs
-hidedecorations!(ax)
-ax.yautolimitmargin = (0.1, 0.1) # defaults to (0.05, 0.05)
+ax.yautolimitmargin = (0.3, 0.3) # defaults to (0.15, 0.15)
 ax.aspect = DataAspect()
+f
 ```
 
-There are many keyword arguments that can be passed to `plot_network` or `plot_complexes` to change the look of the graph (which get passed to the `graphplot` Makie recipe). Let's change the color of the nodes and make the inner labels a bit smaller. As before, we hide the tick marks and grid. Let's also give the plot a title. 
+There are many keyword arguments that can be passed to `plot_network` or `plot_complexes` to change the look of the graph (which get passed to the `graphplot` Makie recipe). Let's change the color of the nodes and make the inner labels a bit smaller. Let's also give the plot a title. 
 ```@example visualisation_graphs
 f, ax, p = plot_complexes(brusselator, show_rate_labels = true, node_color = :yellow, ilabels_fontsize = 10)
-hidedecorations!(ax)
-ax.yautolimitmargin = (0.1, 0.1) # defaults to (0.05, 0.05)
-ax.aspect = DataAspect()
 ax.title = "Brusselator"
+f
 ```
 
 Most of the kwargs that modify the nodes or edges will also accept a vector with the same length as the number of nodes or edges, respectively. See [here](https://graph.makie.org/stable/#The-graphplot-Recipe) for a full list of keyword arguments to `graph_plot`. Note that `plot_complexes` and `plot_network` default to `layout = Stress()` rather than `layout = Spring()`, since `Stress()` is better at generating plots with fewer edge crossings. More layout options and customizations (such as pinning nodes to certain positions) can be found in the [`NetworkLayout` documentation](https://juliagraphs.org/NetworkLayout.jl/stable/).
@@ -109,6 +107,7 @@ Most of the kwargs that modify the nodes or edges will also accept a vector with
 Once a graph is already created we can also change the keyword arguments by modifying the fields of the `Plot` object `p`.
 ```@example visualisation_graphs
 p.node_color = :orange
+f
 ```
 
 Custom node positions can also be given, if the automatic layout is unsatisfactory.
@@ -116,6 +115,7 @@ Custom node positions can also be given, if the automatic layout is unsatisfacto
 fixedlayout = [(0,0), (1,0), (0,1), (1,1), (2,0)]
 p.layout = fixedlayout
 autolimits!(ax)
+f
 ```
 
 Makie graph plots can be made to be interactive, allowing one to drag nodes and edges. To do this, we retrieve the axis from the GraphMakie plot, and then register the interactions. **Note that this can only be done if `GLMakie` is the installed Makie backend. See the [GraphMakie docs](https://graph.makie.org/stable/#Predefined-Interactions) for more information about the types of interactions one can register.** Below is a non-interactive code example that shows how to do this:

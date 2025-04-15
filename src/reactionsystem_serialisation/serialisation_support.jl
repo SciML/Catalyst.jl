@@ -75,7 +75,7 @@ function expression_2_string(expr;
     return repr(strip_called_expr)
 end
 
-# Converts a vector of symbolics (e.g. the species or parameter vectors) to a string vector. Strips 
+# Converts a vector of symbolics (e.g. the species or parameter vectors) to a string vector. Strips
 # any calls (e.g. X(t) becomes X). E.g. a species vector [X, Y, Z] is converted to "[X, Y, Z]".
 function syms_2_strings(syms)
     strip_called_syms = [strip_call(Symbolics.unwrap(sym)) for sym in syms]
@@ -188,11 +188,11 @@ end
 
 ### Symbolics Metadata Handling ###
 
-# For a Symbolic, retrieve all metadata that needs to be added to its declaration. Certain metadata 
+# For a Symbolic, retrieve all metadata that needs to be added to its declaration. Certain metadata
 # (such as default values and whether a variable is a species or not) are skipped (these are stored
 # in the `SKIPPED_METADATA` constant).
 # Because it is impossible to retrieve the keyword used to declare individual metadata from the
-# metadata entry, these must be stored manually (in `RECOGNISED_METADATA`). If one of these are 
+# metadata entry, these must be stored manually (in `RECOGNISED_METADATA`). If one of these are
 # encountered, a warning is thrown and it is skipped (we could also throw an error). I have asked
 # Shashi, and he claims there is not alternative (general) solution.
 function get_metadata_to_declare(sym)
@@ -205,7 +205,7 @@ function get_metadata_to_declare(sym)
     return metadata_keys
 end
 
-# Converts a given metadata into the string used to declare it. 
+# Converts a given metadata into the string used to declare it.
 function metadata_2_string(sym, metadata)
     return RECOGNISED_METADATA[metadata] * " = " * x_2_string(sym.metadata[metadata])
 end
@@ -232,12 +232,16 @@ const RECOGNISED_METADATA = Dict([Catalyst.ParameterConstantSpecies => "isconsta
                                   ModelingToolkit.TimeDomain => "timedomain"])
 
 # List of metadata that does not need to be explicitly declared to be added (or which is handled separately).
-const SKIPPED_METADATA = [ModelingToolkit.MTKVariableTypeCtx, Symbolics.VariableSource,
-    Symbolics.VariableDefaultValue, Catalyst.VariableSpecies]
+const SKIPPED_METADATA = [
+    Catalyst.VariableSpecies,
+    ModelingToolkit.MTKVariableTypeCtx,
+    ModelingToolkit.SymScope,
+    Symbolics.VariableDefaultValue,
+    Symbolics.VariableSource]
 
 ### Generic Expression Handling ###
 
-# Potentially strips the call for a symbolics. E.g. X(t) becomes X (but p remains p). This is used 
+# Potentially strips the call for a symbolics. E.g. X(t) becomes X (but p remains p). This is used
 # when variables are written to files, as in code they are used without the call part.
 function strip_call(sym)
     return iscall(sym) ? Sym{Real}(Symbolics.getname(sym)) : sym

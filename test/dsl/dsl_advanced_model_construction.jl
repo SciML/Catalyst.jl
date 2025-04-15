@@ -75,7 +75,6 @@ end
 
 ### Test Interpolation Within the DSL ###
 
-
 # Declares parameters and species used across the test.
 @parameters α k k1 k2
 @species A(t) B(t) C(t) D(t)
@@ -89,7 +88,7 @@ let
         @species A(t) B(t) C(t) D(t)
         k*$AAA, C --> D
     end
-    rn2 = ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn)
+    rn2 = complete(ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn))
     @test rn == rn2
 
     rn = @reaction_network rn begin
@@ -97,7 +96,7 @@ let
         @species A(t) C(t) D(t)
         k, $AA + C --> D
     end
-    rn2 = ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn)
+    rn2 = complete(ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn))
     @test rn == rn2
 end
 let
@@ -106,9 +105,9 @@ let
         @parameters k1 k2
         (k1,k2), C + $A2 + $BB + $A2 <--> $BB + $BB
     end
-    rn2 = ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
+    rn2 = complete(ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
                         Reaction(k2, [B], [C, A, B], [2], [1,2,1])],
-                        t; name=:rn)
+                        t; name=:rn))
     @test rn == rn2
 end
 let
@@ -119,21 +118,8 @@ let
         @parameters α k k1 k2
         α+$kk1*$kk2*$AA, 2*$AA + B --> $AA
     end
-    rn2 = ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; name=:rn)
+    rn2 = complete(ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; name=:rn))
     @test rn == rn2
-end
-
-# Creates a reaction network using `eval` and internal function.
-let
-    ex = quote
-        (Ka, Depot --> Central)
-        (CL / Vc, Central --> 0)
-    end
-    # Line number nodes aren't ignored so have to be manually removed
-    Base.remove_linenums!(ex)
-    exsys = Catalyst.make_reaction_system(ex)
-    sys = @eval Catalyst $exsys
-    @test sys isa ReactionSystem
 end
 
 # Miscellaneous interpolation tests. Unsure what they do here (not related to DSL).
@@ -148,6 +134,20 @@ let
     rx = @reaction b+$ex, 2*$V + C--> ∅
     @parameters b
     @test rx == Reaction(b+ex, [A,C], nothing, [2,1], nothing)
+end
+
+# Creates a reaction network using `eval` and internal function.
+let
+    ex = quote
+        (Ka, Depot --> Central)
+        (CL / Vc, Central --> 0)
+    end
+    # Line number nodes aren't ignored so have to be manually removed
+    Base.remove_linenums!(ex)
+    name = QuoteNode(:rs)
+    exsys = Catalyst.make_reaction_system(ex, name)
+    sys = @eval Catalyst $exsys
+    @test sys isa ReactionSystem
 end
 
 ### Tests Reaction Metadata ###
@@ -214,8 +214,8 @@ end
 
 # Checks that repeated metadata throws errors.
 let
-    @test_throws LoadError @eval @reaction k, 0 --> X, [md1=1.0, md1=2.0]
-    @test_throws LoadError @eval @reaction_network begin
+    @test_throws Exception @eval @reaction k, 0 --> X, [md1=1.0, md1=2.0]
+    @test_throws Exception @eval @reaction_network begin
         k, 0 --> X, [md1=1.0, md1=1.0]
     end
 end
@@ -269,6 +269,24 @@ let
     @test isequal(rn1,rn2)
 end
 
+# Tests that erroneous metadata declarations yields errors.
+let
+    # Malformed metadata/value separator.
+    @test_throws Exception @eval @reaction_network begin
+        d, X --> 0, [misc=>"Metadata should use `=`, not `=>`."]
+    end
+
+    # Malformed lhs
+    @test_throws Exception @eval @reaction_network begin
+        d, X --> 0, [misc,description=>"Metadata lhs should be a single symbol."]
+    end
+
+    # Malformed metadata separator.
+    @test_throws Exception @eval @reaction_network begin
+        d, X --> 0, [misc=>:misc; description="description"]
+    end
+end
+
 ### Other Tests ###
 
 # Test floating point stoichiometry work.
@@ -306,13 +324,13 @@ end
 
 # Test species have the right metadata via the DSL.
 let
-    rn = @reaction_network begin
+    rn = @network_component begin
         k, 2*A + B --> C
     end
     @test issetequal(unknowns(rn), species(rn))
     @test all(isspecies, species(rn))
 
-    rn2 = @reaction_network begin
+    rn2 = @network_component begin
         @species A(t) = 1 B(t) = 2 [isbcspecies = true]
         k, A + 2*B --> 2*B
     end
@@ -323,6 +341,7 @@ let
     @named rn2 = extend(osys, rn2)
     rn2 = complete(rn2)
     @test issetequal(unknowns(rn2), species(rn2))
+    rn = complete(rn)
     @test all(isspecies, species(rn))
     @test Catalyst.isbc(ModelingToolkit.value(B))
     @test Catalyst.isbc(ModelingToolkit.value(A)) == false
@@ -345,20 +364,20 @@ let
     @species (X(t))[1:2] Y(t) C(t)
     rx = Reaction(k[1]*a+k[2], [X[1], X[2]], [Y, C], [1, V[1]], [V[2] * W, B])
     @named arrtest = ReactionSystem([rx], t)
-    @test arrtest == rn
+    @test complete(arrtest) == rn
 
     rn = @reaction_network twostate begin
         @parameters k[1:2]
         @species (X(t))[1:2]
         (k[1],k[2]), X[1] <--> X[2]
     end
-    
+
     @parameters k[1:2]
     @species (X(t))[1:2]
     rx1 = Reaction(k[1], [X[1]], [X[2]])
     rx2 = Reaction(k[2], [X[2]], [X[1]])
     @named twostate = ReactionSystem([rx1, rx2], t)
-    @test twostate == rn
+    @test complete(twostate) == rn
 end
 
 ############## tests related to hybrid systems ###################

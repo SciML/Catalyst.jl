@@ -113,7 +113,9 @@ function SI.assess_identifiability(rs::ReactionSystem, args...;
     funcs_to_check = make_ftc(funcs_to_check, conseqs, vars)
 
     # Computes identifiability and converts it to a easy to read form.
-    out = SI.assess_identifiability(osys, args...; measured_quantities,
+    # The `::ODESystem` designation fixes: https://github.com/SciML/StructuralIdentifiability.jl/issues/360,
+    # however, the exact mechanisms of this is still not fully clear.
+    out = SI.assess_identifiability(osys::ODESystem, args...; measured_quantities,
         funcs_to_check, kwargs...)
     return make_output(out, funcs_to_check, consconsts)
 end
@@ -167,7 +169,7 @@ function make_osys(rs::ReactionSystem; remove_conserved = true)
         error("Identifiability should only be computed for complete systems. A ReactionSystem can be marked as complete using the `complete` function.")
     end
     rs = complete(Catalyst.expand_registered_functions(flatten(rs)))
-    osys = complete(convert(ODESystem, rs; remove_conserved, remove_conserved_warn = false))
+    osys = complete(convert(ODESystem, rs; remove_conserved))
     vars = [unknowns(rs); parameters(rs)]
 
     # Computes equations for system conservation laws.

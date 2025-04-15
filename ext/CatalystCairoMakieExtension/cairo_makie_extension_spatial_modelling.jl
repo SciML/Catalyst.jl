@@ -1,6 +1,6 @@
 ### 1d Lattice Simulation Plots/Animations ###
 
-# Internal dispatch for the plotting of a lattice simulation on a 1d lattice (Cartesian or masked). 
+# Internal dispatch for the plotting of a lattice simulation on a 1d lattice (Cartesian or masked).
 function lattice_plot(
         sol, sp, lrs::LatticeReactionSystem{Q, R, <:Catalyst.GridLattice{1, S}, T};
         t = sol.t[end], markersize = 20, kwargs...) where {Q, R, S, T}
@@ -12,7 +12,7 @@ function lattice_plot(
         markersize = markersize, kwargs...)
 end
 
-# Internal dispatch for the animation of a lattice simulation on a 1d lattice (Cartesian or masked). 
+# Internal dispatch for the animation of a lattice simulation on a 1d lattice (Cartesian or masked).
 function lattice_animation(
         sol, sp, lrs::LatticeReactionSystem{Q, R, <:Catalyst.GridLattice{1, S}, T},
         filename::String;
@@ -40,7 +40,7 @@ function lattice_animation(
     return nothing
 end
 
-# Internal dispatch for the kymographs of a lattice simulation on a 1d lattice (Cartesian or masked). 
+# Internal dispatch for the kymographs of a lattice simulation on a 1d lattice (Cartesian or masked).
 function lattice_kymograph(
         sol, sp, lrs::LatticeReactionSystem{Q, R, <:Catalyst.GridLattice{1, S}, T};
         colormap = :BuGn_7,
@@ -64,7 +64,7 @@ end
 
 ### 2d Lattice Simulation Plots/Animations ###
 
-# Internal dispatch for the plotting of a lattice simulation on a 2d lattice (Cartesian or masked). 
+# Internal dispatch for the plotting of a lattice simulation on a 2d lattice (Cartesian or masked).
 function lattice_plot(sol, sp,
         lrs::LatticeReactionSystem{Q, R, <:Catalyst.GridLattice{2, S}, T}; t = sol.t[end],
         colormap = :BuGn_7, plot_min = nothing, plot_max = nothing,
@@ -80,14 +80,14 @@ function lattice_plot(sol, sp,
     return heatmap(x_vals,
         y_vals,
         vals;
-        axis = (xlabel = "Time", ylabel = "Compartment",
+        axis = (xlabel = "Compartment", ylabel = "Compartment",
             xgridvisible = false, ygridvisible = false),
         colormap,
         colorrange = (plot_min, plot_max),
         kwargs...)
 end
 
-# Internal dispatch for the animation of a lattice simulation on a 2d lattice (Cartesian or masked). 
+# Internal dispatch for the animation of a lattice simulation on a 2d lattice (Cartesian or masked).
 function lattice_animation(
         sol, sp, lrs::LatticeReactionSystem{Q, R, <:Catalyst.GridLattice{2, S}, T},
         filename::String;
@@ -101,7 +101,7 @@ function lattice_animation(
 
     # Creates the base figure (which is modified in the animation).
     fig, ax, hm = heatmap(x_vals, y_vals, vals[1];
-        axis = (xgridvisible = false, ygridvisible = false),
+        axis = (xgridvisible = false, ygridvisible = false, xlabel = "Compartment", ylabel = "Compartment"),
         colormap, colorrange = (plot_min, plot_max),
         kwargs...)
     ttitle && (ax.title = "Time: $(round(t[1]; sigdigits = 3))")
@@ -116,14 +116,14 @@ end
 
 ### 3d Lattice Simulation Plots/Animations (Errors Only) ###
 
-# Internal dispatch for the plotting of a lattice simulation on a 3d lattice (Cartesian or masked). 
+# Internal dispatch for the plotting of a lattice simulation on a 3d lattice (Cartesian or masked).
 function lattice_plot(
         sol, sp, lrs::LatticeReactionSystem{Q, R, <:Catalyst.GridLattice{3, S}, T};
         kwargs...) where {Q, R, S, T}
     throw(ArgumentError("The `lattice_plot` function does not support 3d Cartesian/masked lattices."))
 end
 
-# Internal dispatch for the animation of a lattice simulation on a 3d lattice (Cartesian or masked). 
+# Internal dispatch for the animation of a lattice simulation on a 3d lattice (Cartesian or masked).
 function lattice_animation(
         sol, sp, lrs::LatticeReactionSystem{Q, R, <:Catalyst.GridLattice{3, S}, T},
         filename::String; kwargs...) where {Q, R, S, T}
