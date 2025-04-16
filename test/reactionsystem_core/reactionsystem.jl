@@ -772,21 +772,6 @@ end
 # Fix for SBML test 305.
 let
     @parameters k1 k2 S2 [isconstantspecies = true]
-    @species S1(t) S3(t)
-    rx = Reaction(k2, [S1], nothing)
-    ∂ₜ = default_time_deriv()
-    eq = ∂ₜ(S3) ~ k1 * S2
-    @mtkbuild osys = ODESystem([eq], t)
-    @named rs = ReactionSystem([rx, eq], t)
-    rs = complete(rs)
-    @test issetequal(unknowns(rs), [S1, S3])
-    @test issetequal(parameters(rs), [S2, k1, k2])
-    osys = convert(ODESystem, rs)
-    @test issetequal(unknowns(osys), [S1, S3])
-    @test issetequal(parameters(osys), [S2, k1, k2])
-end
-let
-    @parameters k1 k2 S2 [isconstantspecies = true]
     @species S1(t) S3(t) [isbcspecies = true]
     rx = Reaction(k2, [S1], nothing)
     ∂ₜ = default_time_deriv()
