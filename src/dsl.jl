@@ -984,7 +984,8 @@ function recursive_escape_functions!(expr::ExprValues, syms_skip = [])
     (typeof(expr) != Expr) && (return expr)
     foreach(i -> expr.args[i] = recursive_escape_functions!(expr.args[i], syms_skip),
         1:length(expr.args))
-    if (expr.head == :call) && !isdefined(Catalyst, expr.args[1]) && expr.args[1] ∉ syms_skip
+    if (expr.head == :call) && (expr.args[1] isa Symbol) &&!isdefined(Catalyst, expr.args[1]) && 
+            expr.args[1] ∉ syms_skip
         expr.args[1] = esc(expr.args[1])
     end
     expr
