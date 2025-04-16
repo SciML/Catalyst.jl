@@ -14,11 +14,10 @@ spline = LinearInterpolation((2 .+ ts) ./ (1 .+ ts), ts)
 @parameters (pIn::typeof(spline))(..)
 plot(spline)
 ```
-Next, we create our model, [interpolating](@ref dsl_advanced_options_symbolics_and_DSL_interpolation) the input parameter into it (making it a function of `t`).
+Next, we create our model, [interpolating](@ref dsl_advanced_options_symbolics_and_DSL_interpolation) the input parameter into the `@reaction_network` declaration.
 ```@example functional_parameters_basic_example
-input = pIn(default_t())
 bd_model = @reaction_network begin
-    $input, 0 --> X
+    $pIn(t), 0 --> X
     d, X --> 0
 end
 ```
@@ -76,11 +75,10 @@ plot(sol)
 ```
 
 ### [Interpolating the input into the DSL](@id functional_parameters_circ_rhythm_dsl)
-It is possible to use time-dependent inputs when creating models [through the DSL](@ref dsl_description) as well. However, it can still be convenient to declare the input parameter programmatically as above. Using it, we form an expression of it as a function of time, and then [interpolate](@ref dsl_advanced_options_symbolics_and_DSL_interpolation) it into our DSL-declaration:
+It is possible to use time-dependent inputs when creating models [through the DSL](@ref dsl_description) as well. However, it can still be convenient to declare the input parameter programmatically as above. Next, we can [interpolate](@ref dsl_advanced_options_symbolics_and_DSL_interpolation) it into our DSL-declaration (ensuring to also make it a function of `t`):
 ```@example functional_parameters_circ_rhythm
-input = light_in(t)
 rs_dsl = @reaction_network rs begin
-    (kA*$input, kD), Pᵢ <--> Pₐ
+    (kA*$light_in(t), kD), Pᵢ <--> Pₐ
 end
 ```
 We can confirm that this model is identical to our programmatic one (and should we wish to, we can simulate it using identical syntax).
@@ -112,14 +110,12 @@ I_rate = LinearInterpolation(I_measured, I_grid)
 plot(I_rate; label = "Measured infection rate")
 plot!(I_grid, I_grid; label = "Normal SIR infection rate")
 ```
-Next, we create our model (using the DSL approach). As `I_rate` will be a function of $I$ we will need to declare this species first as well.
+Next, we create our model (using the DSL approach).
 ```@example functional_parameters_sir
 using Catalyst
 @parameters (inf_rate::typeof(I_rate))(..)
-@species I(default_t())
-inf_rate_in = inf_rate(I)
 sir = @reaction_network rs begin
-    k1*$inf_rate_in, S --> I
+    k1*$inf_rate(I), S --> I
     k2, I --> R
 end
 nothing # hide
