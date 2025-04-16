@@ -340,7 +340,7 @@ rn = @reaction_network begin
 end
 ```
 
-It is possible to turn off all inference (requiring all symbols to be declared using `@parameters`, `@species`, and `@variables`) through the `@require_declaration` option.
+It is possible to turn off all inference (requiring all symbols to be declared using `@parameters`, `@species`, and `@variables`) through the [`@require_declaration` option](@ref faq_require_declaration).
 
 ## [How can I turn off automatic inferring of species and parameters when using the DSL?](@id faq_require_declaration)
 This option can be set using the `@require_declaration` option inside `@reaction_network`. In this case all the species, parameters, and variables in the system must be pre-declared using one of the `@species`, `@parameters`, or `@variables` macros. For more information about what is inferred automatically and not, please see the section on [`@require_declaration`](@ref dsl_advanced_options_require_dec).
