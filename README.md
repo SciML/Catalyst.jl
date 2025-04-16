@@ -38,9 +38,6 @@ using Pkg
 # (optional but recommended) create new environment in which to install Catalyst
 Pkg.activate("catalyst_environment")
 
-# install ModelingToolkit 9.59
-Pkg.add(; name = "ModelingToolkit", version ="9.59")  
-
 # install latest Catalyst release
 Pkg.add("Catalyst")
 ```
