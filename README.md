@@ -31,7 +31,7 @@ for sensitivity analysis, parameter estimation, machine learning applications,
 etc).
 
 ## Installation 
-Catalyst can be installed as follows. Please note, we suggest only installing ModelingToolkit versions 9.59 and earlier for use with Catalyst at this time as changes in ModelingToolkit as of version 9.60 can break various Catalyst functionality. 
+Catalyst can be installed as follows. 
 ```julia
 using Pkg
 
@@ -43,6 +43,15 @@ Pkg.add(; name = "ModelingToolkit", version ="9.59")
 
 # install latest Catalyst release
 Pkg.add("Catalyst")
+```
+
+Because as of V15 Catalyst caps the version of certain dependencies, this can lead to older, 
+uncapped versions of Catalyst being installed if one already has an unsupported dependency 
+installed (i.e. when installing into an existing environment). For this reason, after 
+installation it is recommended to confirm that the latest version of Catalyst was added 
+by checking 
+```julia
+Pkg.status("Catalyst")
 ```
 
 ## Breaking changes and new features
