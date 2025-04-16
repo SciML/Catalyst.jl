@@ -67,22 +67,19 @@ end
 ```
 It has an infinite number of steady states. To make steady state finding possible, information of the system's conserved quantities (here $C = X1 + X2$) must be provided. Since these can be computed from system initial conditions (`u0`, i.e. those provided when performing ODE simulations), designating an `u0` is often the best way. There are two ways to do this. First, one can perform [forward ODE simulation-based steady state finding](@ref steady_state_solving_simulation), using the initial condition as the initial `u` guess. Alternatively, any conserved quantities can be eliminated when the `NonlinearProblem` is created. This feature is supported by [Catalyst's conservation law finding and elimination feature](@ref conservation_laws).
 
-!!! warn
-    For Catalyst versions >14.4.1, handling of conservation laws in `NonlinearProblem`s through the `remove_conserved = true` argument has been temporarily disabled. This is due to an upstream update in ModelingToolkit.jl. We aim to re-enable this as soon as possible. Currently, to find steady states of these systems, either use [homotopy continuation](@ref homotopy_continuation), the [simulation based approach](@ref steady_state_solving_simulation), or temporarily downgrade Catalyst to version 14.4.1. The remaining code of this section is left on display (and the text with it), but is not run dynamically, and cannot be run without generating an error.
-
 To eliminate conservation laws we simply provide the `remove_conserved = true` argument to `NonlinearProblem`:
-```julia
+```@example steady_state_solving_claws
 p = [:k1 => 2.0, :k2 => 3.0]
 u_guess = [:X1 => 3.0, :X2 => 1.0]
 nl_prob = NonlinearProblem(two_state_model, u_guess, p; remove_conserved = true)
 nothing # hide
 ```
 here it is important that the quantities used in `u_guess` correspond to the conserved quantities we wish to use. E.g. here the conserved quantity $X1 + X2 = 3.0 + 1.0 = 4$ holds for the initial condition, and will hence also hold in the computed steady state as well. We can now find the steady states using `solve` like before:
-```julia
+```@example steady_state_solving_claws
 sol = solve(nl_prob)
 ```
 We note that the output only provides a single value. The reason is that the actual system solved only contains a single equation (the other being eliminated with the conserved quantity). To find the values of $X1$ and $X2$ we can [directly query the solution object for these species' values, using the species themselves as inputs](@ref simulation_structure_interfacing_solutions):
-```julia
+```@example steady_state_solving_claws
 sol[[:X1, :X2]]
 ```
 
