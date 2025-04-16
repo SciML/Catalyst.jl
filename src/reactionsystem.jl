@@ -387,7 +387,7 @@ end
 # or somehwere within the differential expression).
 function is_species_diff(expr)
     Symbolics.is_derivative(expr) || return false
-    return hasnode(ex -> (ex isa Symbolics.BasicSymbolic) && isspecies(ex), expr)
+    return hasnode(ex -> (ex isa Symbolics.BasicSymbolic) && isspecies(ex) && !isbc(ex), expr)
 end
 
 # Four-argument constructor. Permits additional inputs as optional arguments.
