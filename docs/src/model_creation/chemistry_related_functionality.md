@@ -55,7 +55,7 @@ When multiple compounds are created, they can be created simultaneously using th
 end
 ```
 
-### [Creating compound species within the DSL](@ref chemistry_functionality_compounds_DSL)
+### [Creating compound species within the DSL](@id chemistry_functionality_compounds_DSL)
 It is also possible to declare species as compound species within the `@reaction_network` DSL, using the `@compounds` options:
 ```@example chem1
 rn = @reaction_network begin
@@ -99,7 +99,7 @@ nothing # hide
 ```
 In all of these cases, the left-hand side must be enclosed within `()`.
 
-### [Compounds with multiple independent variables](@ref chemistry_functionality_compounds_mult_ivs)
+### [Compounds with multiple independent variables](@id chemistry_functionality_compounds_mult_ivs)
 While we generally do not need to specify independent variables for compound, if the components (together) have more than one independent variable, this *must be done*:
 ```@example chem1
 t = default_t()
