@@ -75,7 +75,7 @@ plot(sol)
 ```
 
 ### [Interpolating the input into the DSL](@id functional_parameters_circ_rhythm_dsl)
-It is possible to use time-dependent inputs when creating models [through the DSL](@ref dsl_description) as well. However, it can still be convenient to declare the input parameter programmatically as above. Next, we ca [interpolate](@ref dsl_advanced_options_symbolics_and_DSL_interpolation) it into our DSL-declaration (ensuring to also make it a function of `t`):
+It is possible to use time-dependent inputs when creating models [through the DSL](@ref dsl_description) as well. However, it can still be convenient to declare the input parameter programmatically as above. Next, we can [interpolate](@ref dsl_advanced_options_symbolics_and_DSL_interpolation) it into our DSL-declaration (ensuring to also make it a function of `t`):
 ```@example functional_parameters_circ_rhythm
 rs_dsl = @reaction_network rs begin
     (kA*$light_in(t), kD), Pᵢ <--> Pₐ
