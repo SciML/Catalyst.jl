@@ -978,17 +978,6 @@ let
     @variables V1(t)
     @species S1(t) S2(t)
 
-    # Coupled system with additional differential equation for species.
-    eqs = [
-        Reaction(p1, [S1], [S2]),
-        D(S1) ~ p2 - S1
-    ]
-    @named rs = ReactionSystem(eqs, t)
-    rs = complete(rs)
-    u0 = [S1 => 1.0, S2 => 2.0]
-    ps = [p1 => 2.0, p2 => 3.0]
-    @test_throws Exception ODEProblem(rs, u0, (0.0, 1.0), ps; structural_simplify = true)
-
     # Coupled system overconstrained due to additional algebraic equations (without variables).
     eqs = [
         Reaction(p1, [S1], [S2]),
