@@ -283,7 +283,66 @@ In some cases, it may be necessary or desirable to register functions with
 Symbolics.jl before their use in Catalyst, see the discussion
 [here](https://symbolics.juliasymbolics.org/stable/manual/functions/).
 
-## How can I turn off automatic inferring of species and parameters when using the DSL?
+## [How does the Catalyst DSL (`@reaction_network`) infer what different symbols represent?](@id faq_dsl_sym_inference)
+When declaring a model using the Catalyst DSL, e.g.
+```@example faq_dsl_inference
+using Catalyst
+rn = @reaction_network begin
+ (p,d), 0 <--> X
+end
+```
+Catalyst can automatically infer that `X` is a species and `p` and `d` are parameters. In total, Catalyst can infer the following quantities:
+- Species (from reaction reactants).
+- Parameters (from reaction rates and stoichiometries).
+- (non-species) Variables (from the `@equations` option).
+- Differential functions (from the `@equations` option).
+- Observables (from the [`@observables` option](@ref dsl_advanced_options_observables)).
+- Compound species (from the [`@compounds` option](@ref chemistry_functionality_compounds_DSL)).
+
+Inference of species, variables, and parameters follows the following steps:
+1. Every symbol [explicitly declared](@ref dsl_advanced_options_declaring_species_and_parameters) using the `@species`, `@variables`, and `@parameters` options are assigned to the corresponding category.
+2. Every symbol not declared in (1) that occurs as a reaction reactant is inferred as a species.
+3. Every symbol not declared in (1) or (2) that occurs in an expression provided after `@equations` is inferred as a variable.
+4. Every symbol not declared in (1), (2), or (3) that occurs either as a reaction rate or stoichiometric coefficient is inferred to be a parameter.
+
+Here, in 
+```@example faq_dsl_inference
+using Catalyst
+rn = @reaction_network begin
+    @parameters p1
+    @equations V ~ X + p1
+ X + V + p1 + p2, 0 --> X
+end
+```
+`p` is first set as a parameter (as it is explicitly declared as such). Next, `X` is inferred as a species. Next, `V` is inferred as a variable. Finally, `p2` is inferred as a parameter.
+
+Next, if any expression `D(...)` (where `...` can be anything) is encountered within the `@equations` option, `D` is inferred to be the differential with respect to the default independent variable (typically `t`). Note that using  `D` in this way, while also using it in another form (e.g. in a reaction rate) will produce an error.
+
+Any symbol used as the left-hand side within the `@observables` option is inferred to be an observable. These are by default assumed to be *variables*. It is possible to simultaneously explicitly declare an observable using the `@species` or `@variables` options (in the former case, the observable will be treated as a species instead). Using observables within most other expressions (e.g. as a reactant) will produce an error.
+
+Any symbol declared as a compound using the `@compound` option is automatically inferred to be a system species.
+
+Symbols occurring within other expressions will not be inferred as anything. These must either occur in one of the forms described above (which enables Catalyst to infer what they are) or be explicitly declared. E.g. having a parameter which only occurs in an event:
+```julia
+using Catalyst
+rn_error = @reaction_network begin
+    @discrete_events 1.0 => [X ~ X + Xadd] 
+ d, X --> 0
+end
+```
+is not permitted. E.g. here `Xadd` must be explicitly declared as a parameter using `@parameters`:
+```@example faq_dsl_inference
+using Catalyst
+rn = @reaction_network begin
+    @parameters Xadd
+    @discrete_events 1.0 => [X ~ X + Xadd] 
+ d, X --> 0
+end
+```
+
+It is possible to turn off all inference (requiring all symbols to be declared using `@parameters`, `@species`, and `@variables`) through the [`@require_declaration` option](@ref faq_require_declaration).
+
+## [How can I turn off automatic inferring of species and parameters when using the DSL?](@id faq_require_declaration)
 This option can be set using the `@require_declaration` option inside `@reaction_network`. In this case all the species, parameters, and variables in the system must be pre-declared using one of the `@species`, `@parameters`, or `@variables` macros. For more information about what is inferred automatically and not, please see the section on [`@require_declaration`](@ref dsl_advanced_options_require_dec).
 
 ```@example faq9
