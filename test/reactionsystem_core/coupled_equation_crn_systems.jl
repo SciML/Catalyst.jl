@@ -978,17 +978,6 @@ let
     @variables V1(t)
     @species S1(t) S2(t)
 
-    # Coupled system with additional differential equation for species.
-    eqs = [
-        Reaction(p1, [S1], [S2]),
-        D(S1) ~ p2 - S1
-    ]
-    @named rs = ReactionSystem(eqs, t)
-    rs = complete(rs)
-    u0 = [S1 => 1.0, S2 => 2.0]
-    ps = [p1 => 2.0, p2 => 3.0]
-    @test_throws Exception ODEProblem(rs, u0, (0.0, 1.0), ps; structural_simplify = true)
-
     # Coupled system overconstrained due to additional algebraic equations (without variables).
     eqs = [
         Reaction(p1, [S1], [S2]),
@@ -1011,4 +1000,33 @@ let
     u0 = [S1 => 1.0, S2 => 2.0, V1 => 0.1]
     ps = [p1 => 2.0, p2 => 3.0]
     @test_throws Exception ODEProblem(rs, u0, (0.0, 1.0), ps; structural_simplify = true)
+end
+
+# Checks that equations cannot contain differentials with respect to species.
+let
+    # Basic case.
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(X) ~ 1.0
+        d, X --> 0
+    end
+
+    # Complicated differential.
+    @test_throws Exception @eval @reaction_network begin        
+        @equations V + X^2 ~ 1.0 - D(V + log(1 + X))
+        d, X --> 0
+    end
+
+    # Case where the species is declared, but not part of a reaction.
+    @test_throws Exception @eval @reaction_network begin
+        @species Y(t)
+        @equations D(Y) ~ 1.0
+        d, X --> 0
+    end
+
+    # Case where the equation also declares a new non-species variable.
+    # At some point something like this could be supported, however, not right now.
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(V) ~ 1.0 + D(X)
+        d, X --> 0
+    end
 end
