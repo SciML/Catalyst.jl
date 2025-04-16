@@ -1012,3 +1012,32 @@ let
     ps = [p1 => 2.0, p2 => 3.0]
     @test_throws Exception ODEProblem(rs, u0, (0.0, 1.0), ps; structural_simplify = true)
 end
+
+# Checks that equations cannot contain differentials with respect to species.
+let
+    # Basic case.
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(X) ~ 1.0
+        d, X --> 0
+    end
+
+    # Complicated differential.
+    @test_throws Exception @eval @reaction_network begin        
+        @equations V + X^2 ~ 1.0 - D(V + log(1 + X))
+        d, X --> 0
+    end
+
+    # Case where the species is declared, but not part of a reaction.
+    @test_throws Exception @eval @reaction_network begin
+        @species Y(t)
+        @equations D(Y) ~ 1.0
+        d, X --> 0
+    end
+
+    # Case where the equation also declares a new non-species variable.
+    # At some point something like this could be supported, however, not right now.
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(V) ~ 1.0 + D(X)
+        d, X --> 0
+    end
+end

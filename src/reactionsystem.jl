@@ -367,6 +367,13 @@ struct ReactionSystem{V <: NetworkProperties} <:
             end
         end
 
+        # Checks that no (non-reaction) equation contains a differential w.r.t. a species.
+        for eq in eqs
+            (eq isa Reaction) && continue
+            (hasnode(is_species_diff, eq.lhs) || hasnode(is_species_diff, eq.rhs)) &&
+                error("An equation ($eq) contains a differential with respect to a species. This is currently not supported. If this is a functionality you require, please raise an issue on the Catalyst GitHub page and we can consider the best way to implement it.")
+        end
+
         rs = new{typeof(nps)}(
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, connection_type, nps, cls, cevs,
@@ -374,6 +381,13 @@ struct ReactionSystem{V <: NetworkProperties} <:
         checks && validate(rs)
         rs
     end
+end
+
+# Checks if a symbolic expression constains a differential with respect to a species (either directly
+# or somehwere within the differential expression).
+function is_species_diff(expr)
+    Symbolics.is_derivative(expr) || return false
+    return hasnode(ex -> (ex isa Symbolics.BasicSymbolic) && isspecies(ex), expr)
 end
 
 # Four-argument constructor. Permits additional inputs as optional arguments.
@@ -482,7 +496,7 @@ function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
     make_ReactionSystem_internal(rxs, iv, [], []; kwargs...)
 end
 
-# One-argument constructor. Creates an emtoy `ReactionSystem` from a time independent variable only.
+# One-argument constructor. Creates an empty `ReactionSystem` from a time independent variable only.
 function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
