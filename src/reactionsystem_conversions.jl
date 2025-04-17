@@ -979,22 +979,30 @@ function Base.show(io::IO, mime::MIME"text/plain", jinputs::JumpInputs)
     summary(io, jinputs)
 end
 
+# DROP IN CATALYST 16
 # DiscreteProblem from AbstractReactionNetwork
 function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
         p = DiffEqBase.NullParameters(), args...; name = nameof(rs), 
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs), checks = false, 
         expand_catalyst_funs = true, kwargs...)
+    Base.depwarn("DiscreteProblem(rn::ReactionSystem, ...) is deprecated and will be \
+        removed in Catalyst 16. Use JumpInputs(rn, ...) instead.", 
+        :DiscreteProblem)
     jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks, 
         expand_catalyst_funs)
     jsys = complete(jsys)
     return DiscreteProblem(jsys, u0, tspan, p, args...; kwargs...)
 end
 
+# DROP IN CATALYST 16
 # JumpProblem from AbstractReactionNetwork
-function JumpProcesses.JumpProblem(rs::ReactionSystem, prob,
+function JumpProcesses.JumpProblem(rs::ReactionSystem, prob::AbstractDEProblem,
         aggregator = JumpProcesses.NullAggregator(); name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         expand_catalyst_funs = true, checks = false, kwargs...)
+    Base.depwarn("JumpProblem(rn::ReactionSystem, prob, ...) is \
+        deprecated and will be removed in Catalyst 16. Use \ 
+        JumpProblem(JumpInputs(rn, ...), ...) insead.", :JumpProblem)
     jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, 
         expand_catalyst_funs, checks)
     jsys = complete(jsys)
