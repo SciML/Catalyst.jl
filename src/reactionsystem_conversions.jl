@@ -996,12 +996,12 @@ end
 
 # DROP IN CATALYST 16
 # JumpProblem from AbstractReactionNetwork
-function JumpProcesses.JumpProblem(rs::ReactionSystem, prob::AbstractDEProblem,
+function JumpProcesses.JumpProblem(rs::ReactionSystem, prob::SciMLBase.AbstractDEProblem,
         aggregator = JumpProcesses.NullAggregator(); name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         expand_catalyst_funs = true, checks = false, kwargs...)
     Base.depwarn("JumpProblem(rn::ReactionSystem, prob, ...) is \
-        deprecated and will be removed in Catalyst 16. Use \ 
+        deprecated and will be removed in Catalyst 16. Use \
         JumpProblem(JumpInputs(rn, ...), ...) insead.", :JumpProblem)
     jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, 
         expand_catalyst_funs, checks)
