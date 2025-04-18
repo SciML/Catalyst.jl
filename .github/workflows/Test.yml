@@ -30,6 +30,7 @@ jobs:
           - "pre"
         group:
           - Core
+          - Hybrid
           - IO
           - Spatial
           - Extensions

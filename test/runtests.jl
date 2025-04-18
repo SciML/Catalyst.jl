@@ -57,6 +57,10 @@ end
         @time @safetestset "MTK Problem Inputs" begin include("upstream/mtk_problem_inputs.jl") end
     end
 
+    if GROUP == "All" || GROUP == "Hybrid"
+        @time @safetestset "ReactionSystem Hybrid Solvers" begin include("simulation_and_solving/hybrid_models.jl") end
+    end
+
     if GROUP == "All" || GROUP == "IO"
         @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
         # BROKEN
