@@ -72,6 +72,16 @@ while the jump process propensity function is
 ```math
 a(\mathbf{X}(t)) = k A (A-1) B.
 ```
+One can also specify during system construction that by default combinatoric
+scalings should be disabled, i.e.
+```@example math_examples
+using Catalyst
+rn = @reaction_network begin
+    @combinatoric_ratelaws false
+    k, 3A + 2B --> A + 3D
+end
+osys = convert(ODESystem, rn)
+```
 
 ## [Reaction Rate Equation (RRE) ODE Models](@id math_models_in_catalyst_rre_odes)
 The RRE ODE models Catalyst creates for a general system correspond to the coupled system of ODEs given by
