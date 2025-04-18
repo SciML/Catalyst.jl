@@ -95,6 +95,7 @@ let
         α, 0 --> Y
         (α * (1 + Y)), 0 --> X, [physical_scale = PhysicalScale.ODE]
     end    
+    t = Catalyst.default_t()
     cevents = [t ~ 0.2] => (affect!, [], [], [], nothing)
     @named rn2 = ReactionSystem([], t; continuous_events = cevents)
     rn = complete(extend(rn2, rn))
