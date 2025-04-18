@@ -328,6 +328,7 @@ function get_depgraph(rs)
     eqeq_dependencies(jdeps, vdeps).fadjlist
 end
 
+# note that reactions that are not constant rate are treated as vrjs here
 function classify_vrjs(rs, physcales)
     # first we determine vrjs with an explicit time-dependent rate
     rxs = get_rxs(rs)
@@ -335,7 +336,7 @@ function classify_vrjs(rs, physcales)
     havevrjs = false
     rxvars = Set()
     for (i, rx) in enumerate(rxs)
-        if physcales[i] == PhysicalScale.VariableRateJump
+        if physcales[i] in NON_CONSTANT_JUMP_SCALES
             isvrjvec[i] = true
             havevrjs = true
             continue
@@ -368,7 +369,7 @@ function classify_vrjs(rs, physcales)
 end
 
 function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = nothing, 
-        expand_catalyst_funs = true)
+        expand_catalyst_funs = true, save_positions = (true, true))
     meqs = MassActionJump[]
     ceqs = ConstantRateJump[]
     veqs = VariableRateJump[]
@@ -380,15 +381,18 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
     else
         physcales = physical_scales
     end
-    jump_scales = (PhysicalScale.Jump, PhysicalScale.VariableRateJump)
-    (isempty(get_rxs(rs)) || !any(in(jump_scales), physcales)) &&
+
+    (isempty(get_rxs(rs)) || !any(in(JUMP_SCALES), physcales)) &&
         error("Must have at least one reaction that will be represented as a jump when constructing a JumpSystem.")
+
+    # note isvrjvec indicates which reactions are not constant rate jumps
+    # it may be that a given jump has isvrjvec[i] = true but has a physical 
     isvrjvec = classify_vrjs(rs, physcales)
 
     rxvars = []
     for (i, rx) in enumerate(rxs)
         # only process reactions that should give jumps
-        (physcales[i] in jump_scales) || continue
+        (physcales[i] in JUMP_SCALES) || continue
 
         empty!(rxvars)
         (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
@@ -405,7 +409,7 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
                 (!drop_dynamics(spec)) && push!(affect, spec ~ spec + stoich)
             end
             if isvrj 
-                push!(veqs, VariableRateJump(rl, affect))
+                push!(veqs, VariableRateJump(rl, affect; save_positions))
             else
                 push!(ceqs, ConstantRateJump(rl, affect))
             end
@@ -760,12 +764,15 @@ Notes:
 - `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
   with their rational function representation when converting to another system type. Set to
   `false`` to disable.
+- `save_positions = (true, true)`, indicates whether for any reaction classified as a
+  `VariableRateJump` to save the solution before and/or after the jump occurs. Defaults to
+  true for both.
 """
 function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = nothing, checks = false, default_u0 = Dict(), default_p = Dict(),
         defaults = _merge(Dict(default_u0), Dict(default_p)), expand_catalyst_funs = true, 
-        physical_scales = nothing, kwargs...)
+        save_positions = (true, true), physical_scales = nothing, kwargs...)
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, JumpSystem)
     (remove_conserved !== nothing) &&
@@ -782,7 +789,8 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
         error("Physical scales must currently be one of $admissible_scales for hybrid systems.")
 
     # basic jump states and equations
-    eqs = assemble_jumps(flatrs; combinatoric_ratelaws, expand_catalyst_funs, physical_scales)
+    eqs = assemble_jumps(flatrs; combinatoric_ratelaws, expand_catalyst_funs, 
+        physical_scales, save_positions)
     ists, ispcs = get_indep_sts(flatrs)
 
     # handle coupled ODEs and BC species    
@@ -921,13 +929,36 @@ struct JumpInputs{S <: MT.JumpSystem, T <: SciMLBase.AbstractODEProblem}
 end
 
 """
-    jumpinput = JumpInputs(rs::ReactionSystem, u0, tspan,
-                    p = DiffEqBase.NullParameters;
-                    name = nameof(rs),
-                    combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                    checks = false, kwargs...)
+```julia
+JumpInputs(rs::ReactionSystem, u0, tspan,
+            p = DiffEqBase.NullParameters;
+            name = nameof(rs),
+            combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+            checks = false, physical_scales = nothing, 
+            expand_catalyst_funs = true, 
+            save_positions = (true, true),
+            remake_warn = true, kwargs...)
+```
 
-    Constructs the input to build a JumpProblem for the given reaction system.
+Constructs the input to build a JumpProblem for the given reaction system.
+
+Keyword args and default values:
+- `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,
+  i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S*(S-1)/2!`. Set
+  `combinatoric_ratelaws=false` for a ratelaw of `k*S*(S-1)`, i.e. the scaling factor is
+  ignored. Defaults to the value given when the `ReactionSystem` was constructed (which
+  itself defaults to true).
+- `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
+  with their rational function representation when converting to another system type. Set to
+  `false`` to disable.
+- `remake_warn = true`, if `true`, a warning is thrown if the system includes ODEs, variable
+  rate jumps, or continuous events. This is because `remake` does not work for such
+  problems, and instead both `JumpInputs` and then `JumpProblem` must be called again if one
+  wishs to change any parameter or initial condition values. This warning can be disabled by
+  passing `remake_warn = false`.
+- `save_positions = (true, true)`, indicates whether for any reaction classified as a
+  `VariableRateJump` whether to save the solution before and/or after the jump occurs.
+  Defaults to true for both.
 
 Example:
 ```julia
@@ -953,13 +984,17 @@ plot(sol, idxs = :A)
 """
 function JumpInputs(rs::ReactionSystem, u0, tspan, p = DiffEqBase.NullParameters();
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        checks = false, physical_scales = nothing, expand_catalyst_funs = true, kwargs...)
+        checks = false, physical_scales = nothing, expand_catalyst_funs = true, 
+        save_positions = (true, true), remake_warn = true, kwargs...)
     jsys = complete(convert(JumpSystem, rs; name, combinatoric_ratelaws, checks, 
-        physical_scales, expand_catalyst_funs))
+        physical_scales, expand_catalyst_funs, save_positions))
 
     if MT.has_variableratejumps(jsys) || MT.has_equations(jsys) || 
             !isempty(MT.continuous_events(jsys))
         prob = ODEProblem(jsys, u0, tspan, p; kwargs...)
+        if remake_warn
+            @warn "JumpInputs has detected the system includes ODEs, variable rate jumps, or continuous events. Please note that currently remake does not work for such problems, and both JumpInputs and then JumpProblem must be called again if you wish to change any parameter or initial condition values. This warning can be disabled by passing JumpInputs the keyword argument `remake_warn = false`."    
+        end
     else
         prob = DiscreteProblem(jsys, u0, tspan, p; kwargs...)
     end
