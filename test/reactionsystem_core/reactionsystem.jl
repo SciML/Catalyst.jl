@@ -992,25 +992,90 @@ let
     @test size(nps.incidencemat) == (3,3)
 end
 
-# test JumpInputs function auto problem selection
-let
-    rn = @reaction_network begin
-        k*(1 + sin(t)), 0 --> A
-    end
-    jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
-    @test jinput.prob isa ODEProblem
-    jprob = JumpProblem(jinput; rng)
-    sol = solve(jprob, Tsit5())
-    @test sol(10.0; idxs = :A) > 0
+########## tests related to hybrid systems ##########
 
-    rn = @reaction_network begin
-        k, 0 --> A
-    end
-    jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
-    @test jinput.prob isa DiscreteProblem
-    jprob = JumpProblem(jinput; rng)
-    sol = solve(jprob)
-    @test sol(10.0; idxs = :A) > 0
+massactionjumps(js::JumpSystem) = equations(js).x[1]
+constantratejumps(js::JumpSystem) = equations(js).x[2]
+variableratejumps(js::JumpSystem) = equations(js).x[3]
+odeeqs(js::JumpSystem) = equations(js).x[4]
+
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ k
+    @variables V(t)
+    @species A(t) B(t) C(t)
+    rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing),
+        Reaction(k, [A, B], nothing), Reaction(λ, [C], [A])]
+    eqs = [D(V) ~ λ*V*C]
+    cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
+    @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
+    rs = complete(rs)
+    jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
+    @test jinput.prob isa ODEProblem
+    sys = jinput.sys
+    @test sys isa JumpSystem
+    @test MT.has_equations(sys)
+    @test length(massactionjumps(sys)) == 1
+    @test isempty(constantratejumps(sys)) 
+    @test length(variableratejumps(sys)) == 3
+    @test length(odeeqs(sys)) == 4
+    @test length(continuous_events(sys)) == 1
+end
+
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ k
+    @variables V(t)
+    @species A(t) B(t) C(t)
+    metadata = [:physical_scale => PhysicalScale.ODE]
+    rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing; metadata),
+        Reaction(k, [A, B], nothing), Reaction(λ, [C], [A])]
+    eqs = [D(V) ~ λ*V*C]
+    cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
+    @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
+    rs = complete(rs)
+    jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
+    @test jinput.prob isa ODEProblem
+    sys = jinput.sys
+    @test sys isa JumpSystem
+    @test MT.has_equations(sys)
+    @test length(massactionjumps(sys)) == 1
+    @test isempty(constantratejumps(sys)) 
+    @test length(variableratejumps(sys)) == 2
+    @test length(odeeqs(sys)) == 4
+    odes = union(eqs, [D(A) ~ 0, D(B) ~ -λ*A*B, D(C) ~ 0])
+    @test issetequal(odes, odeeqs(sys))
+    @test length(continuous_events(sys)) == 1
+end
+
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ k
+    @variables V(t)
+    @species A(t) B(t) C(t)
+    md1 = [:physical_scale => PhysicalScale.ODE]
+    md2 = [:physical_scale => PhysicalScale.VariableRateJump]
+    rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing; metadata = md1),
+        Reaction(k, [A, B], nothing), Reaction(λ, [C], [A]; metadata = md2)]
+    eqs = [D(V) ~ λ*V*C]
+    cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
+    @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
+    rs = complete(rs)
+    jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
+    @test jinput.prob isa ODEProblem
+    sys = jinput.sys
+    @test sys isa JumpSystem
+    @test MT.has_equations(sys)
+    @test isempty(massactionjumps(sys)) 
+    @test isempty(constantratejumps(sys)) 
+    @test length(variableratejumps(sys)) == 3
+    @test length(odeeqs(sys)) == 4
+    odes = union(eqs, [D(A) ~ 0, D(B) ~ -λ*A*B, D(C) ~ 0])
+    @test issetequal(odes, odeeqs(sys))
+    @test length(continuous_events(sys)) == 1
 end
 
 # tests of isequivalent
