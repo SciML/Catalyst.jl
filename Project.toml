@@ -37,7 +37,6 @@ Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 NetworkLayout = "46757867-2c16-5918-afeb-47bfcb05e46a"
 StructuralIdentifiability = "220ca800-aa68-49bb-acd8-6037fa93a544"
 
-
 [extensions]
 CatalystBifurcationKitExtension = "BifurcationKit"
 CatalystCairoMakieExtension = "CairoMakie"
@@ -54,6 +53,7 @@ DiffEqBase = "6.165.0"
 DocStringExtensions = "0.8, 0.9"
 DynamicPolynomials = "0.6"
 DynamicQuantities = "1"
+EnumX = "1"
 GraphMakie = "0.5"
 Graphs = "1.4"
 HomotopyContinuation = "2.9"

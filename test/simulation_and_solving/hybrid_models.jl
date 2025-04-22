@@ -324,6 +324,7 @@ let
 
     # Checks case: X Float32 (non-default float), Y Float32 (non-default). Everything is converted to Float32.
     u0 = (:X => 1.0f0, :Y => 1.0f0)
+    ps = [:d => 0.5f0]
     prob = JumpProblem(JumpInputs(rn, u0, (0.0, 1.0), ps; remake_warn = false))
     int = init(prob, Tsit5())
     sol = solve(prob, Tsit5())
