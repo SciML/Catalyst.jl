@@ -1183,10 +1183,7 @@ Notes:
   the symbolic variables being defined in the `Main` module.
 """
 macro unpacksys(rn)
-    quote
-        ex = Catalyst.__unpacksys($(esc(rn)))
-        Base.eval($(__module__), ex)
-    end
+    Catalyst.__unpacksys((esc(rn)))
 end
 
 """
