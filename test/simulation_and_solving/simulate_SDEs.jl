@@ -413,7 +413,7 @@ let
     ps = [:k1 => 2.0f0, :k2 => 3.0f0]
     sprob = SDEProblem(rn, u0, 1.0f0, ps)
     ssol = solve(sprob, ISSEM())
-    @test_broken eltype(ssol[:X1]) == eltype(ssol[:X2]) == typeof(sprob[:X1]) == typeof(sprob[:X2]) == Float32
+    @test eltype(ssol[:X1]) == eltype(ssol[:X2]) == typeof(sprob[:X1]) == typeof(sprob[:X2]) == Float32
     @test eltype(ssol.t) == typeof(sprob.tspan[1]) == typeof(sprob.tspan[2]) == Float32
 end
 
