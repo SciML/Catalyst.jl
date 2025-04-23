@@ -58,13 +58,13 @@ let
     jinputs = JumpInputs(rn, u0map, tspan, pmap; save_positions = (false, false))
     jprob = JumpProblem(jinputs; rng, save_positions = (false, false))
     times = range(0.0, tspan[2], length = 100)
-    Nsims = 4000
+    Nsims = 4000 
     Xv = zeros(length(times))
     Yv = zeros(length(times))
     for n in 1:Nsims
         sol = solve(jprob, Tsit5(); saveat = times, seed)
-        Xv .+= sol(times; idxs = :X)
-        Yv .+= sol(times; idxs = :Y)
+        Xv .+= sol[:X]
+        Yv .+= sol[:Y]
         seed += 1
     end
     Xv ./= Nsims
