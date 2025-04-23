@@ -346,7 +346,7 @@ let
 
     # Rest unpacking variables.
     function unpacktest(rn)
-        Catalyst.@unpacksys rn
+        @unpack S1, I1, R1, α1, β1 = rn
         u₀ = [S1 => 999.0, I1 => 1.0, R1 => 0.0]
         p = [α1 => 1e-4, β1 => 0.01]
         op = ODEProblem(rn, u₀, (0.0, 250.0), p)

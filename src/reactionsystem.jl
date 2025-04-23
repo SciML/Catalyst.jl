@@ -1148,47 +1148,6 @@ function reactionsystem_uptodate_check()
     end
 end
 
-# used in the `__unpacksys` function.
-function __unpacksys(rn)
-    ex = :(begin end)
-    for key in keys(get_var_to_name(rn))
-        var = MT.getproperty(rn, key, namespace = false)
-        push!(ex.args, :($key = $var))
-    end
-    ex
-end
-
-"""
-    @unpacksys sys::ModelingToolkit.AbstractSystem
-
-Loads all species, variables, parameters, and observables defined in `sys` as
-variables within the calling module.
-
-For example,
-```julia
-sir = @reaction_network SIR begin
-    β, S + I --> 2I
-    ν, I --> R
-end
-@unpacksys sir
-```
-will load the symbolic variables, `S`, `I`, `R`, `ν` and `β`.
-
-Notes:
-- Can not be used to load species, variables, or parameters of subsystems or
-  constraints. Either call `@unpacksys` on those systems directly, or
-  [`flatten`](@ref) to collate them into one system before calling.
-- Note that this places symbolic variables within the calling module's scope, so
-  calling from a function defined in a script or the REPL will still result in
-  the symbolic variables being defined in the `Main` module.
-"""
-macro unpacksys(rn)
-    quote
-        ex = Catalyst.__unpacksys($(esc(rn)))
-        Base.eval($(__module__), ex)
-    end
-end
-
 """
     setdefaults!(rn, newdefs)
 
