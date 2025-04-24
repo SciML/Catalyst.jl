@@ -339,7 +339,7 @@ end
 # the values of relevant quantities are correct after each step.
 # Generally, if `Γ` has not been explicitly updated, it will be updated to acomodate new species
 # values. If it has been explicitly updated, the corresponding eliminated quantity will have its
-# value updated to acomodate new Γ/species values (also, the eliminated species's value can not longer be changed).
+# value updated to acomodate new Γ/species values (however, we have to manually designate this by setting it to `nothing`).
 # Also checks that quantities are correctly updated in integrators and solutions derived from problems.
 let
     # Prepares the problem inputs and computes the conservation equation.
@@ -362,7 +362,7 @@ let
         # - Only that species and the conservation constant have their values updated.
         # The `≈` is because sometimes the computed values will not be fully exact.
         for _ = 1:3
-            # Updates X2, checks the values of all species and Γ, then sets which is the old problem.
+            # Updates X2, checks the values of all species and Γ, then resets `prob_old`.
             X2_new = rand(rng, 1.0:10.0)
             prob_new = remake(prob_old; u0 = [:X2 => X2_new])
             @test prob_old[:X1] ≈ prob_new[:X1]
@@ -371,7 +371,7 @@ let
             @test substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => X2_new, X3 => prob_old[X3]])) ≈ prob_new.ps[:Γ][1]
             prob_old = prob_new
 
-            # Updates X3, checks the values of all species and Γ, then sets which is the old problem.
+            # Updates X3, checks the values of all species and Γ, then resets `prob_old`.
             X3_new = rand(rng, 1.0:10.0)
             prob_new = remake(prob_old; u0 = [:X3 => X3_new])
             @test prob_old[:X1] ≈ prob_new[:X1]
@@ -398,35 +398,37 @@ let
         # Similarly, but now also updates the conservation constant. Here, once Γ has been updated:
         # - The conservation law constant will be kept fixed, and secondary updates are made to the
         # eliminated species.
-        # Assumes that X3 is the eliminated species.
+        # Assumes that X3 is the eliminated species. In most updates, designate its as `nothing` (to
+        # ensure that its value is updated to acommodate the new conservation law).
         # The random Γ is ensured to be large enough not to generate negative values in the eliminated species.
         for _ in 1:3
-            # Updates Γ, checks the values of all species and Γ, then sets which is the old problem.
+            # Updates Γ, checks the values of all species and Γ, then resets `prob_old`.
             Γ_new = substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => prob_old[X2], X3 => 0])) + rand(rng, 0.0:5.0)
-            prob_new = remake(prob_old; p = [:Γ => [Γ_new]])
+            prob_new = remake(prob_old; u0 = [:X3 => nothing], p = [:Γ => [Γ_new]])
             @test prob_old[:X1] ≈ prob_new[:X1]
             @test prob_old[:X2] ≈ prob_new[:X2]
             @test Γ_new ≈ prob_new.ps[:Γ][1]
             @test substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => prob_old[X2], X3 => prob_new[X3]])) ≈ prob_new.ps[:Γ][1]
             prob_old = prob_new
 
-            # Updates X1 (non-eliminated species), checks the values of all species and Γ, then sets which is the old problem.
-            # Note that now, `X3` will have its value modified (not and `Γ` remains unchanged).
+            # Updates X1 (non-eliminated species), checks the values of all species and Γ, then resets `prob_old`.
+            # Note that now, `X3` will have its value modified (and `Γ` remains unchanged).
             X1_new = rand(rng, 1.0:10.0)
-            prob_new = remake(prob_old; u0 = [:X1 => X1_new])
+            prob_new = remake(prob_old; u0 = [:X1 => X1_new, :X3 => nothing])
             @test X1_new ≈ prob_new[:X1]
             @test prob_old[:X2] ≈ prob_new[:X2]
             @test prob_old.ps[:Γ][1] ≈ prob_new.ps[:Γ][1]
             @test substitute(conserved_quantity, Dict([X1 => X1_new, X2 => prob_old[X2], X3 => prob_new[X3]])) ≈ prob_new.ps[:Γ][1]
             prob_old = prob_new
 
-            # Updates X3 (the eliminated species). Right now, this will have no effect on `X3` (or the system).
+            # Updates X3 (the eliminated species). Since we reset Γ, this has its value modified to 
+            # accommodate the new value of X3.
             X3_new = rand(rng, 1.0:10.0)
-            prob_new = remake(prob_old; u0 = [:X3 => X3_new])
+            prob_new = remake(prob_old; u0 = [:X3 => X3_new], p = [:Γ => nothing])
             @test prob_old[:X1] ≈ prob_new[:X1]
             @test prob_old[:X2] ≈ prob_new[:X2]
-            @test prob_old[:X3] ≈ prob_new[:X3]
-            @test prob_old.ps[:Γ][1] ≈ prob_new.ps[:Γ][1]
+            @test X3_new ≈ prob_new[:X3]
+            @test substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => prob_old[X2], X3 => X3_new])) ≈ prob_new.ps[:Γ][1]
             prob_old = prob_new
 
             # Checks that integrator and solutions have identical content to problem.
