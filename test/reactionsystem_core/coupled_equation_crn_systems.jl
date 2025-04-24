@@ -214,7 +214,7 @@ let
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
     nlsol = solve(nlprob; abstol = 1e-8, reltol = 1e-8)
-    @test osol.u[end] ≈ sssol ≈ nlsol
+    @test osol[[A, B, C, X], end] ≈ sssol[[A, B, C, X]] ≈ nlsol[[A, B, C, X]]
 end
 
 
