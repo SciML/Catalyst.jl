@@ -33,7 +33,7 @@ begin
     oprob = ODEProblem(model, u0_vals, tspan, p_vals)
     sprob = SDEProblem(model,u0_vals, tspan, p_vals)
     dprob = DiscreteProblem(model, u0_vals, tspan, p_vals)
-    jprob = JumpProblem(model, deepcopy(dprob), Direct(); rng)
+    jprob = JumpProblem(JumpInputs(model, u0_vals, tspan, p_vals); rng)
     nprob = NonlinearProblem(model, u0_vals, p_vals)
     ssprob = SteadyStateProblem(model, u0_vals, p_vals)
     problems = [oprob, sprob, dprob, jprob, nprob, ssprob]
@@ -344,7 +344,7 @@ let
         ps = [k1 => 0.1, k2 => 0.2, V0 => 3.0]
         prob1 = XProblem(rs, u0, 0.001, ps; remove_conserved = true)
         Γ = prob1.f.sys.Γ
-        
+
         # Creates various `remake` version of the problem.
         prob2 = remake(prob1, u0 = [X1 => 10.0])
         prob3 = remake(prob2, u0 = [X2 => 20.0])
@@ -431,8 +431,8 @@ let
     # Creates a JumpProblem and integrator. Checks that the initial mass action rate is correct.
     u0 = [:A => 1, :B => 2, :C => 3]
     ps = [:p1 => 3.0, :p2 => 2.0]
-    dprob = DiscreteProblem(rn, u0, (0.0, 1.0), ps)
-    jprob = JumpProblem(rn, dprob, Direct())
+    jin = JumpInputs(rn, u0, (0.0, 1.0), ps)
+    jprob = JumpProblem(jin)
     jint = init(jprob, SSAStepper())
     @test jprob.massaction_jump.scaled_rates[1] == 6.0
 

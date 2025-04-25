@@ -113,12 +113,12 @@ let
         @test prob.ps[α] isa Int64
     end
 
-    # Handles `DiscreteProblem`s and `JumpProblem`s (these cannot contain continuous events or variables).
+    # Handles `JumpInput`s and `JumpProblem`s (these cannot contain continuous events or variables).
     discrete_events = [2.0 => [A ~ A + α]]
     @named rs_de_2 = ReactionSystem(rxs, t; discrete_events)
     rs_de_2 = complete(rs_de_2)
-    dprob = DiscreteProblem(rs_de_2, u0, (0.0, 10.0), ps)
-    jprob = JumpProblem(rs_de_2, dprob, Direct())
+    jin = JumpInputs(rs_de_2, u0, (0.0, 10.0), ps)
+    jprob = JumpProblem(jin)
     for prob in [dprob, jprob]
         @test dprob[A] == 2
         @test dprob.ps[α] == 1
@@ -358,13 +358,13 @@ let
     # Simulates the model for conditions where it *definitely* will cross `X = 1000.0`
     u0 = [:X => 999]
     ps = [:p => 10.0, :d => 0.001]
-    dprob = DiscreteProblem(rn, u0, (0.0, 2.0), ps)
-    jprob = JumpProblem(rn, dprob, Direct(); rng)
+    jin = JumpInputs(rn, u0, (0.0, 2.0), ps)
+    jprob = JumpProblem(jin; rng)
     sol = solve(jprob, SSAStepper(); seed)
 
     # Checks that all `e` parameters have been updated properly.
     @test sol.ps[:e1] == 1
-    @test sol.ps[:e2] == 1 
+    @test sol.ps[:e2] == 1
     @test sol.ps[:e3] == 1
 end
 
@@ -434,10 +434,10 @@ let
     # Checks for Jump simulations. (note, non-seed dependant test should be created instead)
     # Note that periodic discrete events are currently broken for jump processes (and unlikely to be fixed soon due to have events are implemented).
     callback = CallbackSet(cb_disc_1, cb_disc_2, cb_disc_3)
-    dprob = DiscreteProblem(rn, u0, tspan, ps)
-    dprob_events = DiscreteProblem(rn_dics_events, u0, tspan, ps)
-    jprob = JumpProblem(rn, dprob, Direct(); rng)
-    jprob_events = JumpProblem(rn_dics_events, dprob_events, Direct(); rng)
+    jin = JumpInputs(rn, u0, tspan, ps)
+    jin_events = JumpInputs(rn_dics_events, u0, tspan, ps)
+    jprob = JumpProblem(jin)
+    jprob_events = JumpProblem(jin_events; rng)
     sol = solve(jprob, SSAStepper(); seed, callback)
     sol_events = solve(jprob_events, SSAStepper(); seed)
     @test_broken sol == sol_events  # seems to be not identical in the sample paths
