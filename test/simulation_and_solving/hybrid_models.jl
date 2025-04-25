@@ -33,12 +33,12 @@ let
         @continuous_events begin
             [V ~ 2.0] => [V ~ V/2, A ~ A/2]
         end
-    end        
-    jinput = JumpInputs(rn, [:A => 0, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4], 
+    end
+    jinput = JumpInputs(rn, [:A => 0, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4],
         remake_warn = false)
     @test jinput.prob isa ODEProblem
     jprob = JumpProblem(jinput; rng)
-    sol = solve(jprob, Tsit5()) 
+    sol = solve(jprob, Tsit5())
 end
 
 # solution correctness tests
@@ -47,10 +47,10 @@ let
     Random.seed!(rng, seed)
     rn = @reaction_network begin
         β, X --> 0
-        β, Y --> 0  
+        β, Y --> 0
         α, 0 --> Y
         (α * (1 + Y)), 0 --> X, [physical_scale = PhysicalScale.ODE]
-    end    
+    end
     p = (α = 6.0, β = 2.0, X₀ = 2.0, Y₀ = 1.0)
     u0map = [:X => p.X₀, :Y => p.Y₀]
     pmap = [:α => p.α, :β => p.β]
@@ -58,7 +58,7 @@ let
     jinputs = JumpInputs(rn, u0map, tspan, pmap; save_positions = (false, false))
     jprob = JumpProblem(jinputs; rng, save_positions = (false, false))
     times = range(0.0, tspan[2], length = 100)
-    Nsims = 4000 
+    Nsims = 4000
     Xv = zeros(length(times))
     Yv = zeros(length(times))
     for n in 1:Nsims
@@ -91,10 +91,10 @@ let
     end
     rn = @network_component begin
         β, X --> 0
-        β, Y --> 0  
+        β, Y --> 0
         α, 0 --> Y
         (α * (1 + Y)), 0 --> X, [physical_scale = PhysicalScale.ODE]
-    end    
+    end
     t = Catalyst.default_t()
     cevents = [t ~ 0.2] => (affect!, [], [], [], nothing)
     @named rn2 = ReactionSystem([], t; continuous_events = cevents)
@@ -116,7 +116,7 @@ end
 
 # Checks that a disjoint hybrid model (i.e. where the Jump and ODE parts do not interact) gives the
 # same results as simulating the two parts separately.
-let 
+let
     # Creates the disjoint ODE/Jump models, and the hybrid model combining both.
     rn_ode = @reaction_network begin
         A, ∅ → X
@@ -144,7 +144,7 @@ let
     ps_ode = [:A => 1.0, :B => 4.0]
     ps_jump = [:p => 2.0, :d => 0.1, :k1 => 0.2, :k2 => 1.0]
     ps_hybrid = [ps_ode; ps_jump]
-    tspan = (0.0, 1000.0)
+    tspan = (0.0, 10000.0)
     ode_prob = ODEProblem(rn_ode, u0_ode, tspan, ps_ode)
     jump_prob = JumpProblem(JumpInputs(rn_jump, u0_jump, tspan, ps_jump; remake_warn = false); save_positions = (false,false))
     hybrid_prob = JumpProblem(JumpInputs(rn_hybrid, u0_hybrid, tspan, ps_hybrid; remake_warn = false); save_positions = (false,false))
@@ -246,8 +246,8 @@ end
 # Checks that various model options (observables, events, defaults and metadata, differential equations,
 # non-default_iv) works for hybrid models.
 let
-    # Creates the model (X species is pure jump, Y is pure ODE, and  Z1,Z2 are mixed). 
-    # Hybrid species have non-constant rates containing the two other species. 
+    # Creates the model (X species is pure jump, Y is pure ODE, and  Z1,Z2 are mixed).
+    # Hybrid species have non-constant rates containing the two other species.
     rn = @reaction_network begin
         @ivs τ
         @differentials Δ = Differential(τ)
@@ -282,7 +282,7 @@ let
 end
 
 # Checks the types of species when various combinations of default/non-default types are used.
-let 
+let
     # Creates model and parameter set. Model have one pure ODE and one pure Jump species.
     rn = @reaction_network begin
         d, X --> 0
