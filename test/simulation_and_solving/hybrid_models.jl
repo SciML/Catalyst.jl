@@ -146,8 +146,8 @@ let
     ps_hybrid = [ps_ode; ps_jump]
     tspan = (0.0, 10000.0)
     ode_prob = ODEProblem(rn_ode, u0_ode, tspan, ps_ode)
-    jump_prob = JumpProblem(JumpInputs(rn_jump, u0_jump, tspan, ps_jump; remake_warn = false); save_positions = (false,false); rng)
-    hybrid_prob = JumpProblem(JumpInputs(rn_hybrid, u0_hybrid, tspan, ps_hybrid; remake_warn = false); save_positions = (false,false); rng)
+    jump_prob = JumpProblem(JumpInputs(rn_jump, u0_jump, tspan, ps_jump; remake_warn = false); save_positions = (false,false), rng)
+    hybrid_prob = JumpProblem(JumpInputs(rn_hybrid, u0_hybrid, tspan, ps_hybrid; remake_warn = false); save_positions = (false,false), rng)
 
     # Performs simulations. Checks that ODE parts are identical. Check that jump parts have similar statistics.
     ode_sol = solve(ode_prob, Tsit5(); saveat = 1.0, abstol = 1e-10, reltol = 1e-10)
