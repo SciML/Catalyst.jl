@@ -118,12 +118,10 @@ let
     @named rs_de_2 = ReactionSystem(rxs, t; discrete_events)
     rs_de_2 = complete(rs_de_2)
     jin = JumpInputs(rs_de_2, u0, (0.0, 10.0), ps)
-    jprob = JumpProblem(jin)
-    for prob in [dprob, jprob]
-        @test dprob[A] == 2
-        @test dprob.ps[α] == 1
-        @test dprob.ps[α] isa Int64
-    end
+    jprob = JumpProblem(JumpInputs(rs_de_2, u0, (0.0, 10.0), ps))
+    @test jprob[A] == 2
+    @test jprob.ps[α] == 1
+    @test jprob.ps[α] isa Int64
 end
 
 

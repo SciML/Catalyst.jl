@@ -666,8 +666,8 @@ let
     @named rs = ReactionSystem(rxs, t, [S, I], [])
     rs = complete(rs)
     js = complete(convert(JumpSystem, rs))
-    jin = JumpInputs(js, [S => 1, I => 1], (0.0, 10.0))
-    jprob = JumpProblem(jin; rng)
+    dprob = DiscreteProblem(js, [S => 1, I => 1], (0.0, 10.0))
+    jprob = JumpProblem(js, dprob, Direct(); rng)
     sol = solve(jprob, SSAStepper())
 
     # Test for https://github.com/SciML/ModelingToolkit.jl/issues/1042.
