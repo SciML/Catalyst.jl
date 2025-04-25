@@ -101,7 +101,7 @@ let
     rn = complete(extend(rn2, rn))
     tspan = (0.0, 200.0)
     jinputs = JumpInputs(rn, u0map, tspan, pmap; save_positions = (false, false))
-    jprob = JumpProblem(jinputs; rng, save_positions = (false, false); rng)
+    jprob = JumpProblem(jinputs; rng, save_positions = (false, false))
     Xsamp = 0.0
     Nsims = 4000
     for n in 1:Nsims
