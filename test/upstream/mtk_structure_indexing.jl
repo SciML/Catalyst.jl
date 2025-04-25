@@ -353,14 +353,17 @@ let
         prob6 = remake(prob1, u0 = [Y2 => 40.0], p = [k1 => 0.4])
         prob7 = remake(prob1, u0 = [X1 => 10.0, X2 => 20.0], p = [V0 => 50.0])
         prob8 = remake(prob1, u0 = [W => 60.0])
-        prob9 = remake(prob2; p = [Γ => [10.0, 20.0]])        
-        prob10 = remake(prob1; u0 = [Y1 => 20.0], p = [Γ => [20.0, 30.0], k1 => 0.4])
+        prob9 = remake(prob2; u0 = [X2 => nothing, Y2 => nothing],
+                       p = [Γ => [10.0, 20.0]])
+        prob10 = remake(prob1; u0 = [Y1 => 20.0, Y2 => nothing, X2 => nothing],
+                        p = [Γ => [20.0, 30.0], k1 => 0.4])
         prob11 = remake(prob10, u0 = [X1 => 10.0], p = [k2 => 0.5])
 
         # Creates a testing function.
         function test_vals(prob, us_correct::Dict, ps_correct::Dict)
             integ = init(prob, solver)
             sol = solve(prob, solver)
+            @test SciMLBase.successful_retcode(sol)
             for u in keys(us_correct)
                 @test prob[u] == us_correct[u]
                 @test integ[u] == us_correct[u]
@@ -396,9 +399,6 @@ let
         test_vals(prob7,
             Dict(X1 => 10.0, X2 => 20.0, Y1 => 3.0, Y2 => 4.0, V => 50.0, W => 6.0),
             Dict(k1 => 0.1, k2 => 0.2, V0 => 50.0, v => 50.0, w => 6.0, Γ[1] => 30.0, Γ[2] => 7.0))
-        test_vals(prob8,
-            Dict(X1 => 1.0, X2 => 2.0, Y1 => 3.0, Y2 => 4.0, V => 3.0, W => 60.0),
-            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 60.0, Γ[1] => 3.0, Γ[2] => 7.0))
         test_vals(prob8,
             Dict(X1 => 1.0, X2 => 2.0, Y1 => 3.0, Y2 => 4.0, V => 3.0, W => 60.0),
             Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 60.0, Γ[1] => 3.0, Γ[2] => 7.0))
