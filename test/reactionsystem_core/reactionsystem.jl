@@ -126,10 +126,10 @@ let
     sdesys = complete(convert(SDESystem, rs))
     js = complete(convert(JumpSystem, rs))
 
-    @test ModelingToolkit.get_defaults(rs) == 
+    @test ModelingToolkit.get_defaults(rs) ==
           ModelingToolkit.get_defaults(js) == defs
 
-    # these systems add initial conditions to the defaults 
+    # these systems add initial conditions to the defaults
     @test ModelingToolkit.get_defaults(odesys) ==
           ModelingToolkit.get_defaults(sdesys)
     @test issubset(defs, ModelingToolkit.get_defaults(odesys))
@@ -551,9 +551,9 @@ let
                                    (@reaction k1, $A --> B2),
                                    (@reaction 10 * k1, ∅ --> B3)], t)
     rn = complete(rn)
-    dprob = DiscreteProblem(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
+    jin = JumpInputs(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
                             [k1 => 1.0])
-    jprob = JumpProblem(rn, dprob, Direct(); rng, save_positions = (false, false))
+    jprob = JumpProblem(jin; rng, save_positions = (false, false))
     umean = zeros(4)
     Nsims = 40000
     for i in 1:Nsims
@@ -1017,7 +1017,7 @@ let
     @test sys isa JumpSystem
     @test MT.has_equations(sys)
     @test length(massactionjumps(sys)) == 1
-    @test isempty(constantratejumps(sys)) 
+    @test isempty(constantratejumps(sys))
     @test length(variableratejumps(sys)) == 3
     @test length(odeeqs(sys)) == 4
     @test length(continuous_events(sys)) == 1
@@ -1042,7 +1042,7 @@ let
     @test sys isa JumpSystem
     @test MT.has_equations(sys)
     @test length(massactionjumps(sys)) == 1
-    @test isempty(constantratejumps(sys)) 
+    @test isempty(constantratejumps(sys))
     @test length(variableratejumps(sys)) == 2
     @test length(odeeqs(sys)) == 4
     odes = union(eqs, [D(A) ~ 0, D(B) ~ -λ*A*B, D(C) ~ 0])
@@ -1069,8 +1069,8 @@ let
     sys = jinput.sys
     @test sys isa JumpSystem
     @test MT.has_equations(sys)
-    @test isempty(massactionjumps(sys)) 
-    @test isempty(constantratejumps(sys)) 
+    @test isempty(massactionjumps(sys))
+    @test isempty(constantratejumps(sys))
     @test length(variableratejumps(sys)) == 3
     @test length(odeeqs(sys)) == 4
     odes = union(eqs, [D(A) ~ 0, D(B) ~ -λ*A*B, D(C) ~ 0])
