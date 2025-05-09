@@ -150,6 +150,7 @@ x_2_string(x::Symbol) = ":$x"
 x_2_string(x::Number) = string(x)
 x_2_string(x::Pair) = "$(x_2_string(x[1])) => $(x_2_string(x[2]))"
 x_2_string(x::Nothing) = "nothing"
+x_2_string(x::Function) = String(Symbol(x))
 function x_2_string(x::Vector)
     output = "["
     for val in x
@@ -212,30 +213,32 @@ end
 
 # List of all recognised metadata (we should add as many as possible), and th keyword used to declare
 # them in code.
-const RECOGNISED_METADATA = Dict([Catalyst.ParameterConstantSpecies => "isconstantspecies"
-                                  Catalyst.VariableBCSpecies => "isbcspecies"
-                                  Catalyst.VariableSpecies => "isspecies"
-                                  Catalyst.EdgeParameter => "edgeparameter"
-                                  Catalyst.CompoundSpecies => "iscompound"
-                                  Catalyst.CompoundComponents => "components"
-                                  Catalyst.CompoundCoefficients => "coefficients"
-                                  ModelingToolkit.VariableDescription => "description"
-                                  ModelingToolkit.VariableBounds => "bounds"
-                                  ModelingToolkit.VariableUnit => "unit"
-                                  ModelingToolkit.VariableConnectType => "connect"
-                                  ModelingToolkit.VariableNoiseType => "noise"
-                                  ModelingToolkit.VariableInput => "input"
-                                  ModelingToolkit.VariableOutput => "output"
-                                  ModelingToolkit.VariableIrreducible => "irreducible"
-                                  ModelingToolkit.VariableStatePriority => "state_priority"
-                                  ModelingToolkit.VariableMisc => "misc"
-                                  ModelingToolkit.TimeDomain => "timedomain"])
+const RECOGNISED_METADATA = Dict([Catalyst.ParameterConstantSpecies => "isconstantspecies",
+                                  Catalyst.VariableBCSpecies => "isbcspecies",
+                                  Catalyst.VariableSpecies => "isspecies",
+                                  Catalyst.EdgeParameter => "edgeparameter",
+                                  Catalyst.CompoundSpecies => "iscompound",
+                                  Catalyst.CompoundComponents => "components",
+                                  Catalyst.CompoundCoefficients => "coefficients",
+                                  ModelingToolkit.VariableDescription => "description",
+                                  ModelingToolkit.VariableBounds => "bounds",
+                                  ModelingToolkit.VariableUnit => "unit",
+                                  ModelingToolkit.VariableConnectType => "connect",
+                                  ModelingToolkit.VariableNoiseType => "noise",
+                                  ModelingToolkit.VariableInput => "input",
+                                  ModelingToolkit.VariableOutput => "output",
+                                  ModelingToolkit.VariableIrreducible => "irreducible",
+                                  ModelingToolkit.VariableStatePriority => "state_priority",
+                                  ModelingToolkit.VariableMisc => "misc",
+                                  ModelingToolkit.TimeDomain => "timedomain",
+                                  Symbolics.SymLatexWrapper => "latexwrapper"])
 
 # List of metadata that does not need to be explicitly declared to be added (or which is handled separately).
 const SKIPPED_METADATA = [
     Catalyst.VariableSpecies,
     ModelingToolkit.MTKVariableTypeCtx,
     ModelingToolkit.SymScope,
+    Symbolics.SymLatexWrapper,
     Symbolics.VariableDefaultValue,
     Symbolics.VariableSource]
 
