@@ -26,15 +26,15 @@ end
 Next, we compute the steady states [using homotopy continuation](@ref homotopy_continuation).
 ```@example nullcline_plotting
 import HomotopyContinuation
-ps = [v => 1.0, K => 0.6, n => 4.0]
+ps = [:v => 1.0, :K => 0.6, :n => 4.0]
 sss = hc_steady_states(bs_switch, ps; show_progress = false)
 ```
 
 Finally, we will compute the nullclines. First we create a function which, for species values $(X,Y)$, returns the evaluation of the model's ODE's right-hand side.
 ```@example nullcline_plotting
-nlprob = NonlinearProblem(bs_switch, [X => 0.0, Y => 0.0], ps)
+nlprob = NonlinearProblem(bs_switch, [:X => 0.0, :Y => 0.0], ps)
 function get_XY(Xval, Yval)
-    prob = Catalyst.remake(nlprob; u0 = [X => Xval, Y => Yval])
+    prob = Catalyst.remake(nlprob; u0 = [:X => Xval, :Y => Yval])
     return nlprob.f(prob.u0, prob.p)
 end
 ```
@@ -61,7 +61,7 @@ scatter!([], []; color = :blue, markershape = :circle, label = "Stable stead sta
 scatter!([], []; color = :red, markershape = :star4, label = "Unstable stead state")
 
 # Finishing touches.
-plot!(xlimit = span, ylimit = span, xguide = "X", yguide = "Y", legendfontsize = 10, size = (600,600))
+plot!(xguide = "X", yguide = "Y", legendfontsize = 10, size = (600,600))
 ```
 Here we can see how the steady states occur at the nullclines intersections.
 
