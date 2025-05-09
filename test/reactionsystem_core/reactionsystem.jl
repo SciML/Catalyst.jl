@@ -106,6 +106,7 @@ end
 # Test equation only constructor.
 let
     @named rs2 = ReactionSystem(rxs, t)
+    rs2 = complete(rs2)
     @test Catalyst.isequivalent(rs, rs2)
 
     # Test with a type mismatch
@@ -126,10 +127,12 @@ let
     js = complete(convert(JumpSystem, rs))
 
     @test ModelingToolkit.get_defaults(rs) ==
-          ModelingToolkit.get_defaults(odesys) ==
-          ModelingToolkit.get_defaults(sdesys) ==
-          ModelingToolkit.get_defaults(js) ==
-          defs
+          ModelingToolkit.get_defaults(js) == defs
+
+    # these systems add initial conditions to the defaults
+    @test ModelingToolkit.get_defaults(odesys) ==
+          ModelingToolkit.get_defaults(sdesys)
+    @test issubset(defs, ModelingToolkit.get_defaults(odesys))
 
     u0map = [A => 5.0]
     kvals[1] = 5.0
@@ -306,9 +309,7 @@ let
     ]
     ps_alts = [
         [p => [1.0, 10.0], d1 => 5.0, d2 => 4.0, k => 2.0],
-        [p[1] => 1.0, p[2] => 10.0, d1 => 5.0, d2 => 4.0, k => 2.0],
         [rs_dsl.p => [1.0, 10.0], rs_dsl.d1 => 5.0, rs_dsl.d2 => 4.0, rs_dsl.k => 2.0],
-        [rs_dsl.p[1] => 1.0, p[2] => 10.0, rs_dsl.d1 => 5.0, rs_dsl.d2 => 4.0, rs_dsl.k => 2.0],
         [:p => [1.0, 10.0], :d1 => 5.0, :d2 => 4.0, :k => 2.0]
     ]
 
@@ -318,12 +319,11 @@ let
     # have slight differences, so checking for both here to be certain.
     for rs in [rs_prog, rs_dsl]
         oprob = ODEProblem(rs, u0_alts[1], (0.0, 10000.), ps_alts[1])
-        @test_broken false # Cannot currently `remake` this problem/
-        # for rs in [rs_prog, rs_dsl], u0 in u0_alts, p in ps_alts
-        #     oprob_remade = remake(oprob; u0, p)
-        #     sol = solve(oprob_remade, Vern7(); abstol = 1e-8, reltol = 1e-8)
-        #     @test sol[end] ≈ [0.5, 5.0, 0.2, 2.5]
-        # end
+        for rs in [rs_prog, rs_dsl], u0 in u0_alts, p in ps_alts
+            oprob_remade = remake(oprob; u0, p)
+            sol = solve(oprob_remade, Vern7(); abstol = 1e-8, reltol = 1e-8)
+            @test sol.u[end] ≈ [0.5, 5.0, 0.2, 2.5]
+        end
     end
 end
 
@@ -465,7 +465,8 @@ let
     @test all(eq -> eq isa Reaction, ModelingToolkit.get_eqs(rs)[1:4])
     osys = complete(convert(ODESystem, rs))
     @test issetequal(MT.get_unknowns(osys), [B, C, D, E])
-    @test issetequal(MT.get_ps(osys), [k1, k2, A])
+    _ps = filter(!isinitial, MT.get_ps(osys))
+    @test issetequal(_ps, [k1, k2, A])
 
     # test nonlinear systems
     u0 = [1.0, 2.0, 3.0, 4.0]
@@ -496,7 +497,8 @@ let
     rs = complete(rs)
     ssys = complete(convert(SDESystem, rs))
     @test issetequal(MT.get_unknowns(ssys), [B, C, D, E])
-    @test issetequal(MT.get_ps(ssys), [A, k1, k2])
+    _ps = filter(!isinitial, MT.get_ps(ssys))
+    @test issetequal(_ps, [A, k1, k2])
     du1 = zeros(4)
     du2 = zeros(4)
     sprob = SDEProblem(ssys, u0map, tspan, pmap; check_length = false)
@@ -549,9 +551,9 @@ let
                                    (@reaction k1, $A --> B2),
                                    (@reaction 10 * k1, ∅ --> B3)], t)
     rn = complete(rn)
-    dprob = DiscreteProblem(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
+    jin = JumpInputs(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
                             [k1 => 1.0])
-    jprob = JumpProblem(rn, dprob, Direct(); rng, save_positions = (false, false))
+    jprob = JumpProblem(jin; rng, save_positions = (false, false))
     umean = zeros(4)
     Nsims = 40000
     for i in 1:Nsims
@@ -649,9 +651,9 @@ let
     @species X(t)
     rx = Reaction(d, [X], [])
     @test_broken false # (not sure how to mark a `@test_throws` as broken)
-    # @test_throws rs1 = ReactionSystem([rx], t, [X, x_sp,], [d, x_p]; name = :rs)
-    # @test_throws rs2 = ReactionSystem([rx], t, [X, X, x_v], [d, x_p]; name = :rs)
-    # @test_throws rs2 = ReactionSystem([rx], t, [X, x_sp, x_v], [d]; name = :rs)
+    # @test_throws ReactionSystem([rx], t, [X, x_sp,], [d, x_p]; name = :rs)
+    # @test_throws ReactionSystem([rx], t, [X, X, x_v], [d, x_p]; name = :rs)
+    # @test_throws ReactionSystem([rx], t, [X, x_sp, x_v], [d]; name = :rs)
 end
 
 ### Other Tests ###
@@ -768,21 +770,6 @@ let
 end
 
 # Fix for SBML test 305.
-let
-    @parameters k1 k2 S2 [isconstantspecies = true]
-    @species S1(t) S3(t)
-    rx = Reaction(k2, [S1], nothing)
-    ∂ₜ = default_time_deriv()
-    eq = ∂ₜ(S3) ~ k1 * S2
-    @mtkbuild osys = ODESystem([eq], t)
-    @named rs = ReactionSystem([rx, eq], t)
-    rs = complete(rs)
-    @test issetequal(unknowns(rs), [S1, S3])
-    @test issetequal(parameters(rs), [S2, k1, k2])
-    osys = convert(ODESystem, rs)
-    @test issetequal(unknowns(osys), [S1, S3])
-    @test issetequal(parameters(osys), [S2, k1, k2])
-end
 let
     @parameters k1 k2 S2 [isconstantspecies = true]
     @species S1(t) S3(t) [isbcspecies = true]
@@ -1005,23 +992,139 @@ let
     @test size(nps.incidencemat) == (3,3)
 end
 
-# test JumpInputs function auto problem selection
-let
-    rn = @reaction_network begin
-        k*(1 + sin(t)), 0 --> A
-    end
-    jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
-    @test jinput.prob isa ODEProblem
-    jprob = JumpProblem(jinput; rng)
-    sol = solve(jprob, Tsit5())
-    @test sol(10.0; idxs = :A) > 0
+########## tests related to hybrid systems ##########
 
-    rn = @reaction_network begin
-        k, 0 --> A
-    end
-    jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
-    @test jinput.prob isa DiscreteProblem
-    jprob = JumpProblem(jinput; rng)
-    sol = solve(jprob)
-    @test sol(10.0; idxs = :A) > 0
+massactionjumps(js::JumpSystem) = equations(js).x[1]
+constantratejumps(js::JumpSystem) = equations(js).x[2]
+variableratejumps(js::JumpSystem) = equations(js).x[3]
+odeeqs(js::JumpSystem) = equations(js).x[4]
+
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ k
+    @variables V(t)
+    @species A(t) B(t) C(t)
+    rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing),
+        Reaction(k, [A, B], nothing), Reaction(λ, [C], [A])]
+    eqs = [D(V) ~ λ*V*C]
+    cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
+    @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
+    rs = complete(rs)
+    jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
+    @test jinput.prob isa ODEProblem
+    sys = jinput.sys
+    @test sys isa JumpSystem
+    @test MT.has_equations(sys)
+    @test length(massactionjumps(sys)) == 1
+    @test isempty(constantratejumps(sys))
+    @test length(variableratejumps(sys)) == 3
+    @test length(odeeqs(sys)) == 4
+    @test length(continuous_events(sys)) == 1
+end
+
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ k
+    @variables V(t)
+    @species A(t) B(t) C(t)
+    metadata = [:physical_scale => PhysicalScale.ODE]
+    rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing; metadata),
+        Reaction(k, [A, B], nothing), Reaction(λ, [C], [A])]
+    eqs = [D(V) ~ λ*V*C]
+    cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
+    @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
+    rs = complete(rs)
+    jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
+    @test jinput.prob isa ODEProblem
+    sys = jinput.sys
+    @test sys isa JumpSystem
+    @test MT.has_equations(sys)
+    @test length(massactionjumps(sys)) == 1
+    @test isempty(constantratejumps(sys))
+    @test length(variableratejumps(sys)) == 2
+    @test length(odeeqs(sys)) == 4
+    odes = union(eqs, [D(A) ~ 0, D(B) ~ -λ*A*B, D(C) ~ 0])
+    @test issetequal(odes, odeeqs(sys))
+    @test length(continuous_events(sys)) == 1
+end
+
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ k
+    @variables V(t)
+    @species A(t) B(t) C(t)
+    md1 = [:physical_scale => PhysicalScale.ODE]
+    md2 = [:physical_scale => PhysicalScale.VariableRateJump]
+    rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing; metadata = md1),
+        Reaction(k, [A, B], nothing), Reaction(λ, [C], [A]; metadata = md2)]
+    eqs = [D(V) ~ λ*V*C]
+    cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
+    @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
+    rs = complete(rs)
+    jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
+    @test jinput.prob isa ODEProblem
+    sys = jinput.sys
+    @test sys isa JumpSystem
+    @test MT.has_equations(sys)
+    @test isempty(massactionjumps(sys))
+    @test isempty(constantratejumps(sys))
+    @test length(variableratejumps(sys)) == 3
+    @test length(odeeqs(sys)) == 4
+    odes = union(eqs, [D(A) ~ 0, D(B) ~ -λ*A*B, D(C) ~ 0])
+    @test issetequal(odes, odeeqs(sys))
+    @test length(continuous_events(sys)) == 1
+end
+
+# tests of isequivalent
+let
+    @parameters k1 k2 k3 k4
+    @species A(t) B(t) C(t) D(t)
+    @variables V(t) X(t)
+
+    # Define reactions
+    rx1 = Reaction(k1, [A], [B])
+    rx2 = Reaction(k2, [B], [C])
+    rx3 = Reaction(k3, [C], [D])
+    rx4 = Reaction(k4, [D], [A])
+
+    # Define ODE equation
+    D = default_time_deriv()
+    eq = D(V) ~ -k1 * V + A
+
+    # Define events
+    continuous_events = [[X ~ 0] => [X ~ -X]]
+    discrete_events = (X == 1) => [V => V/2]
+
+    # Define metadata
+    metadata = Dict(:description => "Comprehensive test system")
+
+    # Define initial conditions and parameters
+    u0 = Dict([A => 1.0, B => 2.0, C => 3.0, D => 4.0, V => 5.0])
+    p = Dict([k1 => 0.1, k2 => 0.2, k3 => 0.3, k4 => 0.4])
+    defs = merge(u0, p)
+
+    # Define observed variables
+    obs = [X ~ A + B]
+
+    # Define a subsystem
+    sub_rx = Reaction(k1, [A], [B])
+    @named sub_rs = ReactionSystem([sub_rx], t)
+
+    # Create the first reaction system
+    @named rs1 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t;
+        continuous_events, discrete_events,
+        metadata, observed = obs, defaults = defs, systems = [sub_rs])
+    rs1 = complete(rs1)
+
+    # Create the second reaction system with the same components
+    rs2 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t;
+        continuous_events, discrete_events,
+        metadata, observed = obs, defaults = defs, systems = [sub_rs], name = :rs1)
+    rs2 = complete(rs2)
+
+    # Check equivalence
+    @test Catalyst.isequivalent(rs1, rs2)
 end

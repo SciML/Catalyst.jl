@@ -18,7 +18,7 @@ end
 
 # Checks if an expression is an escaped expression (e.g. on the form `$(Expr(:escape, :Y))`)
 function is_escaped_expr(expr)
-    return (expr isa Expr) && (expr.head == :escape) && (length(expr.args) == 1)
+    return Meta.isexpr(expr, :escape) && (length(expr.args) == 1)
 end
 
 ### Parameters/Species/Variables Symbols Correctness Checking ###
@@ -52,52 +52,48 @@ function option_block_form(expr)
     return Expr(:block, expr)
 end
 
-# In variable/species/parameters on the forms like:
+# In variable/species/parameters on the forms like (examples, 16 alternatives in total):
 # X
-# X = 1.0
-# X, [metadata=true]
-# X = 1.0, [metadata=true]
-# X(t)
-# X(t) = 1.0
-# X(t), [metadata=true]
-# X(t) = 1.0, [metadata=true]
-# Finds the: Variable name (X), Independent variable name(s) ([t]), default value (2.0), and metadata (:([metadata=true])).
-# If a field does not exist (e.g. independent variable in `X, [metadata=true]`), gives nothing.
-# The independent variables are given as a vector (empty if none given).
-# Does not support e.g. "X [metadata=true]" (when metadata does not have a comma before).
-function find_varinfo_in_declaration(expr)
-    # Handles the $(Expr(:escape, :Y)) case:
-    is_escaped_expr(expr) && (return find_varinfo_in_declaration(expr.args[1]))
+# X = 1.0, [misc=5]
+# X(t)[1:2]
+# X(t) = 1.0, [misc=5]
+# X(t)[1:2] = 1.0, [misc = 5]
+# Finds the: Variable name (X), Independent variable name(s) ([t]), indexes (1:2),
+# default value (1.0), and metadata (:([metadata=true])).
+# Information that does not exist (e.g. independent variable in `X, [metadata=true]`), is
+# returned as `nothing`.
+# The independent variables are returned as a vector (empty if none given).
+function find_varinfo_in_declaration(expr::ExprValues)
+    # Initialises values. Step by step, reads one and scales it away from the expression
+    metadata = default = idxs = ivs = nothing
 
-    # Case: X
-    (expr isa Symbol) && (return expr, [], nothing, nothing)
-    # Case: X(t)
-    (expr.head == :call) && (return expr.args[1], expr.args[2:end], nothing, nothing)
-    if expr.head == :(=)
-        # Case: X = 1.0
-        (expr.args[1] isa Symbol) && (return expr.args[1], [], expr.args[2], nothing)
-        # Case: X(t) = 1.0
-        (expr.args[1].head == :call) &&
-            (return expr.args[1].args[1], expr.args[1].args[2:end], expr.args[2].args[1],
-            nothing)
+    # Reads and removes metadata (e.g. `[misc = 5]` in `:(X(t)[1:2] = 1.0, [misc = 5])`).
+    if Meta.isexpr(expr, :tuple)
+        metadata = expr.args[2]
+        expr = expr.args[1]
     end
-    if expr.head == :tuple
-        # Case: X, [metadata=true]
-        (expr.args[1] isa Symbol) && (return expr.args[1], [], nothing, expr.args[2])
-        # Case: X(t), [metadata=true]
-        (expr.args[1].head == :call) &&
-            (return expr.args[1].args[1], expr.args[1].args[2:end], nothing, expr.args[2])
-        if expr.args[1].head == :(=)
-            # Case: X = 1.0, [metadata=true]
-            (expr.args[1].args[1] isa Symbol) &&
-                (return expr.args[1].args[1], [], expr.args[1].args[2], expr.args[2])
-            # Case: X(t) = 1.0, [metadata=true]
-            (expr.args[1].args[1].head == :call) &&
-                (return expr.args[1].args[1].args[1], expr.args[1].args[1].args[2:end],
-                expr.args[1].args[2].args[1], expr.args[2])
-        end
+    # Reads and removes metadata (e.g. `1.0` in `:(X(t)[1:2] = 1.0)`).
+    if Meta.isexpr(expr, :(=))
+        default = expr.args[2]
+        expr = expr.args[1]
     end
-    error("Unable to detect the variable declared in expression: $expr.")
+    # Reads and removes indexes (e.g. `[1:2]` in `:(X(t)[1:2])`).
+    if Meta.isexpr(expr, :ref)
+        idxs = expr.args[2]
+        expr = expr.args[1]
+    end
+    # Reads and removes independent variables (e.g. `t` in `:(X(t))`).
+    if Meta.isexpr(expr, :call)
+        ivs = expr.args[2:end]
+        expr = expr.args[1]
+    end
+    isnothing(ivs) && (ivs = [])
+
+    # If escaped expression, extract symbol. Checks that the expression is a symbol (e.g. `X` in `:(X(t))`).
+    Meta.isexpr(expr, :escape) && (expr = expr.args[1])
+    (expr isa Symbol) ||
+        error("Erroneous expression encountered in `find_varinfo_in_declaration` (got `$expr` after processing, this should be a symbol).")
+    return (;sym = expr, ivs, idxs, default, metadata)
 end
 
 # Converts an expression of the forms:

@@ -64,7 +64,8 @@ end
 reaction_networks_standard[8] = @reaction_network rns8 begin
     p, ∅ → 2X1
     k1, X1 → X2
-    (k2, k3), X2 → X3
+    k2, X2 → X3
+    k3, X2 → X3
     d, X3 → ∅
 end
 
@@ -78,10 +79,10 @@ end
 
 reaction_networks_standard[10] = @reaction_network rns10 begin
     p, ∅ ⟶ X1
-    (k1, k2), X1 → X2
-    (k3, k4), X2 → X3
-    (k5, k6), X3 → X4
-    (k7, k8), X4 → X5
+    (k1, k2), (X1,X1) → X2
+    (k3, k4), (X2,X2) → X3
+    (k5, k6), (X3,X3) → X4
+    (k7, k8), (X4,X4) → X5
     d, X5 ⟶ ∅
 end
 

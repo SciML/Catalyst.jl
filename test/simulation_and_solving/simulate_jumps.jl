@@ -130,12 +130,12 @@ let
             zip(catalyst_networks, manual_networks, u0_syms, ps_syms, u0s, ps, sps)
 
         # Simulates the Catalyst-created model.
-        dprob_1 = DiscreteProblem(rn_catalyst, u0_1, (0.0, 10000.0), ps_1)
-        jprob_1 = JumpProblem(rn_catalyst, dprob_1, Direct(); rng)
+        jin_1 = JumpInputs(rn_catalyst, u0_1, (0.0, 10000.0), ps_1)
+        jprob_1 = JumpProblem(jin_1, Direct(); rng)
         sol1 = solve(jprob_1, SSAStepper(); seed, saveat = 1.0)
 
         # simulate using auto-alg
-        jprob_1b = JumpProblem(rn_catalyst, dprob_1; rng)
+        jprob_1b = JumpProblem(jin_1; rng)
         sol1b = solve(jprob_1; seed, saveat = 1.0)
         @test mean(sol1[sp]) ≈ mean(sol1b[sp]) rtol = 1e-1
 
@@ -157,8 +157,8 @@ let
     for rn in reaction_networks_all
         u0 = rnd_u0_Int64(rn, rng)
         ps = rnd_ps(rn, rng)
-        dprob = DiscreteProblem(rn, u0, (0.0, 1.0), ps)
-        jprob = JumpProblem(rn, dprob, Direct(); rng)
+        jin = JumpInputs(rn, u0, (0.0, 1.0), ps)
+        jprob = JumpProblem(jin; rng)
         @test SciMLBase.successful_retcode(solve(jprob, SSAStepper()))
     end
 end
@@ -169,8 +169,8 @@ let
         (1.2, 5), X1 ↔ X2
     end
     u0 = rnd_u0_Int64(no_param_network, rng)
-    dprob = DiscreteProblem(no_param_network, u0, (0.0, 1000.0))
-    jprob = JumpProblem(no_param_network, dprob, Direct(); rng)
+    jin = JumpInputs(no_param_network, u0, (0.0, 1000.0))
+    jprob = JumpProblem(jin; rng)
     sol = solve(jprob, SSAStepper())
     @test mean(sol[:X1]) > mean(sol[:X2])
 end
@@ -219,4 +219,48 @@ let
     end
     @test (means1[1] - means1[2]) < .1 * means1[1]
     @test (means2[1] - means2[2]) < .1 * means2[1]
+end
+
+### Other Tests ###
+
+# Checks that solution values have types consistent with their input types.
+# Check that both float and integer types are preserved in the solution (and problems).
+# Checks that the time types are correct (`Float64` by default or possibly `Float32`).
+# `JumpInputs` currently does not support integer time spans. When it does, we will check that
+# these produce `Float64` time values.
+let
+    # Create model. Checks when input type is `Float64` the produced values are also `Float64`.
+    rn = @reaction_network begin
+        (k1,k2), X1 <--> X2
+    end
+    u0 = [:X1 => 1.0, :X2 => 3.0]
+    ps = [:k1 => 2.0, :k2 => 3.0]
+    jprob = JumpProblem(JumpInputs(rn, u0, (0.0, 1.0), ps))
+    jsol = solve(jprob)
+    @test eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Float64
+    @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float64
+
+    # Checks that `Int64` gives `Int64` species values.
+    u0 = [:X1 => 1 :X2 => 3]
+    ps = [:k1 => 2, :k2 => 3]
+    jprob = JumpProblem(JumpInputs(rn, u0, (0.0, 1.0), ps))
+    jsol = solve(jprob)
+    @test eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int64
+    @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float64
+
+    # Checks when values are `Float32` (a valid type and should be preserved).
+    u0 = [:X1 => 1.0f0, :X2 => 3.0f0]
+    ps = [:k1 => 2.0f0, :k2 => 3.0f0]
+    jprob = JumpProblem(JumpInputs(rn, u0, (0.0f0, 1.0f0), ps))
+    jsol = solve(jprob)
+    @test eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Float32
+    @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float32
+
+    # Checks when values are `Int32` (a valid species type and should be preserved).
+    u0 = [:X1 => Int32(1), :X2 => Int32(3)]
+    ps = [:k1 => Int32(2), :k2 => Int32(3)]
+    jprob = JumpProblem(JumpInputs(rn, u0, (0.0, 1.0), ps))
+    jsol = solve(jprob)
+    @test eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int32
+    @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float64
 end

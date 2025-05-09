@@ -312,22 +312,24 @@ let
         (d1, d2), (A, B) --> 0
     end
 
-    rn27 = @reaction_network rnname begin
+    rn27 = @network_component rnname begin
     @parameters p1=1.0 p2=2.0 k1=4.0 k2=5.0 v=8.0 K=9.0 n=3 d=10.0
     @species X(t)=4.0 Y(t)=3.0 X2Y(t)=2.0 Z(t)=1.0
         (p1,p2), 0 --> (X,Y)
-        (k1,k2), 2X + Y --> X2Y
+        k1, 2X + Y --> X2Y
+        k2, 2X + Y --> X2Y
         hill(X2Y,v,K,n), 0 --> Z
         d, (X,Y,X2Y,Z) --> 0
     end
     u0_27 = []
     p_27 = []
 
-    rn28 = @reaction_network rnname begin
+    rn28 = @network_component rnname begin
     @parameters p1=1.0 p2 k1=4.0 k2 v=8.0 K n=3 d
     @species X(t)=4.0 Y(t) X2Y(t) Z(t)=1.0
         (p1,p2), 0 --> (X,Y)
-        (k1,k2), 2X + Y --> X2Y
+        k1, 2X + Y --> X2Y
+        k2, 2X + Y --> X2Y
         hill(X2Y,v,K,n), 0 --> Z
         d, (X,Y,X2Y,Z) --> 0
     end
@@ -339,7 +341,8 @@ let
     @parameters p1 p2 k1 k2 v K n d
     @species X(t) Y(t) X2Y(t) Z(t)
         (p1,p2), 0 --> (X,Y)
-        (k1,k2), 2X + Y --> X2Y
+        k1, 2X + Y --> X2Y
+        k2, 2X + Y --> X2Y
         hill(X2Y,v,K,n), 0 --> Z
         d, (X,Y,X2Y,Z) --> 0
     end
@@ -409,7 +412,7 @@ let
     @species A(t) B1(t) B2(t) C(t)
     rx = Reaction(k1*k2 + V3, [A, B1], [C, B2], [V1, 2], [V2, 1])
     @named tester = ReactionSystem([rx], t)
-    @test tester == rn
+    @test complete(tester) == rn
 
     sts = (A, B1, B2, C, V1, V2, V3)
     spcs = (A, B1, B2, C)
@@ -520,7 +523,7 @@ let
     rx = Reaction(k*k2*D, [A, B], [C, C2], [E, 1], [F, 1])
     @named ivstest = ReactionSystem([rx], s; spatial_ivs = [x])
 
-    @test ivstest == rn
+    @test complete(ivstest) == rn
     @test issetequal(unknowns(rn), [D, E, F, A, B, C, C2])
     @test issetequal(species(rn), [A, B, C, C2])
     @test isequal(ModelingToolkit.get_iv(rn), s)
@@ -1058,8 +1061,8 @@ let
         @variables X(t)
         @equations 2X ~ $c - X
     end)
-    oprob = ODEProblem(rn, [], (0.0, 100.0); structural_simplify=true)
-    sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
+    oprob = ODEProblem(rn, [], (0.0, 100.0); structural_simplify = true)
+    sol = solve(oprob, Tsit5(); abstol = 1e-9, reltol = 1e-9)
     @test sol[rn.X][end] ≈ 2.0
 end
 
@@ -1084,9 +1087,9 @@ let
 
     rn = complete(compose(base_rn, [internal_rn]))
 
-    u0 = [V1 => 1.0, X => 3.0, internal_rn.V2 => 2.0, internal_rn.X => 4.0]
+    u0 = [X => 3.0, internal_rn.X => 4.0]
     ps = [p => 1.0, d => 0.2, internal_rn.p => 2.0, internal_rn.d => 0.5]
-    oprob = ODEProblem(rn, u0, (0.0, 1000.0), ps; structural_simplify=true)
+    oprob = ODEProblem(rn, u0, (0.0, 1000.0), ps; structural_simplify=true, guesses = [V1 => 1.0, internal_rn.V2 => 2.0])
     sol = solve(oprob, Rosenbrock23(); abstol=1e-9, reltol=1e-9)
 
     @test sol[X][end] ≈ 5.0
@@ -1362,7 +1365,8 @@ let
     @test isequal(equations(rn3)[2], Iapp ~ 2*A*t)
 
     # Test whether the DSL and symbolic ways of creating the network generate the same system
-    @species Iapp(t) A(t)
+    @species Iapp(t)
+    @variables A(t)
     eq = [D(A) ~ Iapp, Iapp ~ f(A, t)]
     @named rn3_sym = ReactionSystem(eq, t)
     rn3_sym = complete(rn3_sym)
@@ -1468,3 +1472,5 @@ let
         @observables X2 ~ X1
     end
 end
+
+nothing

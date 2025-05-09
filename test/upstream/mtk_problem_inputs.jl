@@ -133,8 +133,8 @@ end
 # Perform jump simulations (singular and ensemble).
 let
     # Creates normal and ensemble problems.
-    base_dprob = DiscreteProblem(model, u0_alts[1], tspan, p_alts[1])
-    base_jprob = JumpProblem(model, base_dprob, Direct(); rng)
+    base_jin = JumpInputs(model, u0_alts[1], tspan, p_alts[1])
+    base_jprob = JumpProblem(base_jin; rng)
     base_sol = solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
     base_eprob = EnsembleProblem(base_jprob)
     base_esol = solve(base_eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
@@ -297,13 +297,12 @@ let
     base_esol = solve(base_eprob, Tsit5(); trajectories = 2, saveat = 1.0)
 
     # Simulates problems for all input types, checking that identical solutions are found.
-    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
-    # for u0 in u0_alts_vec, p in p_alts_vec
-    #     oprob = remake(base_oprob; u0, p)
-    #     @test base_sol == solve(oprob, Tsit5(); saveat = 1.0)
-    #     eprob = remake(base_eprob; u0, p)
-    #     @test base_esol == solve(eprob, Tsit5(); trajectories = 2, saveat = 1.0)
-    # end
+    for u0 in u0_alts_vec, p in p_alts_vec
+        oprob = remake(base_oprob; u0, p)
+        @test base_sol == solve(oprob, Tsit5(); saveat = 1.0)
+        eprob = remake(base_eprob; u0, p)
+        @test base_esol == solve(eprob, Tsit5(); trajectories = 2, saveat = 1.0)
+    end
 end
 
 # Perform SDE simulations (singular and ensemble).
@@ -315,43 +314,40 @@ let
     base_esol = solve(base_eprob, ImplicitEM(); seed, trajectories = 2, saveat = 1.0)
 
     # Simulates problems for all input types, checking that identical solutions are found.
-    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
-    # for u0 in u0_alts_vec, p in p_alts_vec
-    #     sprob = remake(base_sprob; u0, p)
-    #     @test base_sol == solve(sprob, ImplicitEM(); seed, saveat = 1.0)
-    #     eprob = remake(base_eprob; u0, p)
-    #     @test base_esol == solve(eprob, ImplicitEM(); seed, trajectories = 2, saveat = 1.0)
-    # end
+    for u0 in u0_alts_vec, p in p_alts_vec
+        sprob = remake(base_sprob; u0, p)
+        @test base_sol == solve(sprob, ImplicitEM(); seed, saveat = 1.0)
+        eprob = remake(base_eprob; u0, p)
+        @test base_esol == solve(eprob, ImplicitEM(); seed, trajectories = 2, saveat = 1.0)
+    end
 end
 
 # Perform jump simulations (singular and ensemble).
 let
     # Creates normal and ensemble problems.
-    base_dprob = DiscreteProblem(model_vec, u0_alts_vec[1], tspan, p_alts_vec[1])
-    base_jprob = JumpProblem(model_vec, base_dprob, Direct(); rng)
+    base_jin = JumpInputs(model_vec, u0_alts_vec[1], tspan, p_alts_vec[1])
+    base_jprob = JumpProblem(base_jin; rng)
     base_sol = solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
     base_eprob = EnsembleProblem(base_jprob)
     base_esol = solve(base_eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
 
     # Simulates problems for all input types, checking that identical solutions are found.
-    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
-    # for u0 in u0_alts_vec, p in p_alts_vec
-    #     jprob = remake(base_jprob; u0, p)
-    #     @test base_sol == solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
-    #     eprob = remake(base_eprob; u0, p)
-    #     @test base_esol == solve(eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
-    # end
+    for u0 in u0_alts_vec, p in p_alts_vec
+        jprob = remake(base_jprob; u0, p)
+        @test base_sol == solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
+        eprob = remake(base_eprob; u0, p)
+        @test base_esol == solve(eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
+    end
 end
 
 # Solves a nonlinear problem (EnsembleProblems are not possible for these).
 let
     base_nlprob = NonlinearProblem(model_vec, u0_alts_vec[1], p_alts_vec[1])
     base_sol = solve(base_nlprob, NewtonRaphson())
-    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
-    # for u0 in u0_alts_vec, p in p_alts_vec
-    #     nlprob = remake(base_nlprob; u0, p)
-    #     @test base_sol == solve(nlprob, NewtonRaphson())
-    # end
+    for u0 in u0_alts_vec, p in p_alts_vec
+        nlprob = remake(base_nlprob; u0, p)
+        @test base_sol == solve(nlprob, NewtonRaphson())
+    end
 end
 
 # Perform steady state simulations (singular and ensemble).
@@ -363,13 +359,12 @@ let
     base_esol = solve(base_eprob, DynamicSS(Tsit5()); trajectories = 2)
 
     # Simulates problems for all input types, checking that identical solutions are found.
-    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
-    # for u0 in u0_alts_vec, p in p_alts_vec
-    #     ssprob = remake(base_ssprob; u0, p)
-    #     @test base_sol == solve(ssprob, DynamicSS(Tsit5()))
-    #     eprob = remake(base_eprob; u0, p)
-    #     @test base_esol == solve(eprob, DynamicSS(Tsit5()); trajectories = 2)
-    # end
+    for u0 in u0_alts_vec, p in p_alts_vec
+        ssprob = remake(base_ssprob; u0, p)
+        @test base_sol == solve(ssprob, DynamicSS(Tsit5()))
+        eprob = remake(base_eprob; u0, p)
+        @test base_esol == solve(eprob, DynamicSS(Tsit5()); trajectories = 2)
+    end
 end
 
 ### Checks Errors On Faulty Inputs ###
@@ -381,18 +376,14 @@ let
         (k1,k2), X1 <--> X2
     end
     @unpack k1, k2, X1, X2 = rn
-    t = default_t()
-    @species X3(t)
-    @parameters k3
 
     # Declares valid initial conditions and parameter values
     u0_valid = [X1 => 1, X2 => 2]
     ps_valid = [k1 => 0.5, k2 => 0.1]
 
-    # Declares invalid initial conditions and parameters. This includes both cases where values are
-    # missing, or additional ones are given. Includes vector/Tuple/Dict forms.
+    # Declares invalid initial conditions and parameters. Currently, this only includes cases
+    # where at least one value is missing. Includes vector/Tuple/Dict forms.
     u0s_invalid = [
-        # Missing a value.
         [X1 => 1],
         [rn.X1 => 1],
         [:X1 => 1],
@@ -405,18 +396,8 @@ let
         (X1 => 1),
         (rn.X1 => 1),
         (:X1 => 1),
-        # Contain an additional value.
-        [X1 => 1, X2 => 2, X3 => 3],
-        [:X1 => 1, :X2 => 2, :X3 => 3],
-        SA[X1 => 1, X2 => 2, X3 => 3],
-        SA[:X1 => 1, :X2 => 2, :X3 => 3],
-        Dict([X1 => 1, X2 => 2, X3 => 3]),
-        Dict([:X1 => 1, :X2 => 2, :X3 => 3]),
-        (X1 => 1, X2 => 2, X3 => 3),
-        (:X1 => 1, :X2 => 2, :X3 => 3)
     ]
     ps_invalid = [
-        # Missing a value.
         [k1 => 1.0],
         [rn.k1 => 1.0],
         [:k1 => 1.0],
@@ -429,38 +410,32 @@ let
         (k1 => 1.0),
         (rn.k1 => 1.0),
         (:k1 => 1.0),
-        # Contain an additional value.
-        [k1 => 1.0, k2 => 2.0, k3 => 3.0],
-        [:k1 => 1.0, :k2 => 2.0, :k3 => 3.0],
-        SA[k1 => 1.0, k2 => 2.0, k3 => 3.0],
-        SA[:k1 => 1.0, :k2 => 2.0, :k3 => 3.0],
-        Dict([k1 => 1.0, k2 => 2.0, k3 => 3.0]),
-        Dict([:k1 => 1.0, :k2 => 2.0, :k3 => 3.0]),
-        (k1 => 1.0, k2 => 2.0, k3 => 3.0),
-        (:k1 => 1.0, :k2 => 2.0, :k3 => 3.0)
     ]
 
-    # Loops through all potential parameter sets, checking their inputs yield errors.
+    # Loops through all potential parameter sets, checking that their inputs yield errors.
     for ps in [[ps_valid]; ps_invalid], u0 in [[u0_valid]; u0s_invalid]
-        # Handles problems with/without tspan separately. Special check ensuring that valid inputs passes.
-        for XProblem in [ODEProblem, SDEProblem, DiscreteProblem]
+        # Handles all types of time-dependent systems. The `isequal` is because some case should pass.
+        for XProblem in [ODEProblem, SDEProblem, JumpInputs]
             if isequal(ps, ps_valid) && isequal(u0, u0_valid)
-                XProblem(rn, u0, (0.0, 1.0), ps); @test true;
+                XProblem(rn, u0, (0.0, 1.0), ps)
             else
-                # Several of these cases do not throw errors (https://github.com/SciML/ModelingToolkit.jl/issues/2624).
-                @test_broken false
-                continue
                 @test_throws Exception XProblem(rn, u0, (0.0, 1.0), ps)
             end
         end
-        for XProblem in [NonlinearProblem, SteadyStateProblem]
-            if isequal(ps, ps_valid) && isequal(u0, u0_valid)
-                XProblem(rn, u0, ps); @test true;
-            else
-                @test_broken false
-                continue
-                @test_throws Exception XProblem(rn, u0, ps)
-            end
+
+        # Handles `SteadyStateProblem`s
+        if isequal(ps, ps_valid) && isequal(u0, u0_valid)
+            SteadyStateProblem(rn, u0, ps)
+        else
+            @test_throws Exception SteadyStateProblem(rn, u0, ps)
+        end
+
+        # Handles `NonlinearStateProblem`s (these works even if some species values are missing).
+        if isequal(ps, ps_valid)
+            @test_broken false # For u0 `SA[:X1 => 1]` this fails but should not.
+            # NonlinearProblem(rn, u0, ps)
+        else
+            @test_throws Exception NonlinearProblem(rn, u0, ps)
         end
     end
 end

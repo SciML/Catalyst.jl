@@ -99,7 +99,7 @@ function make_compound(expr)
     # - Any ivs attached to it (ivs, e.g. `[]` or `[t,x]`).
     # - The expression which creates the compound (species_expr, e.g. `CO2 = 1.0, [metadata=true]`).
     species_expr = expr.args[2]
-    species_name, ivs, _, _ = find_varinfo_in_declaration(expr.args[2])
+    species_name, ivs, _, _, _ = find_varinfo_in_declaration(expr.args[2])
 
     # If no ivs were given, inserts  an expression which evaluates to the union of the ivs
     # for the species the compound depends on.

@@ -1,4 +1,4 @@
-# [Chemistry-related functionality](@id chemistry_functionality)
+# [Chemistry-related Functionality](@id chemistry_functionality)
 
 While Catalyst has primarily been designed around the modelling of biological systems, reaction network models are also common in chemistry. This section describes two types of functionality, that while of general interest, should be especially useful in the modelling of chemical systems.
 - The `@compound` option, which enables the user to designate that a specific species is composed of certain subspecies.
@@ -7,7 +7,7 @@ While Catalyst has primarily been designed around the modelling of biological sy
 
 ## [Modelling with compound species](@id chemistry_functionality_compounds)
 
-### Creating compound species programmatically
+### [Creating compound species programmatically](@id chemistry_functionality_compounds_programmatic)
 We will first show how to create compound species through [programmatic model construction](@ref programmatic_CRN_construction), and then demonstrate using the DSL. To create a compound species, use the `@compound` macro, first designating the compound, followed by its components (and their stoichiometries). In this example, we will create a CO₂ molecule, consisting of one C atom and two O atoms. First, we create species corresponding to the components:
 ```@example chem1
 using Catalyst
@@ -55,7 +55,7 @@ When multiple compounds are created, they can be created simultaneously using th
 end
 ```
 
-### Creating compound species within the DSL
+### [Creating compound species within the DSL](@id chemistry_functionality_compounds_DSL)
 It is also possible to declare species as compound species within the `@reaction_network` DSL, using the `@compounds` options:
 ```@example chem1
 rn = @reaction_network begin
@@ -81,7 +81,7 @@ end
 ```
 as the components `C`, `H`, and `O` are not declared as species anywhere. Please also note that only `@compounds` can be used as an option in the DSL, not `@compound`.
 
-### Designating metadata and default values for compounds
+### [Designating metadata and default values for compounds](@id chemistry_functionality_compounds_metadata)
 Just like for normal species, it is possible to designate metadata and default values for compounds. Metadata is provided after the compound name, but separated from it by a `,`:
 ```@example chem1
 @compound (CO2, [unit="mol"]) ~ C + 2O
@@ -99,7 +99,7 @@ nothing # hide
 ```
 In all of these cases, the left-hand side must be enclosed within `()`.
 
-### Compounds with multiple independent variables
+### [Compounds with multiple independent variables](@id chemistry_functionality_compounds_mult_ivs)
 While we generally do not need to specify independent variables for compound, if the components (together) have more than one independent variable, this *must be done*:
 ```@example chem1
 t = default_t()

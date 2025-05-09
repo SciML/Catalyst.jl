@@ -71,6 +71,7 @@ end
 Base.Sort.defalg(::ReactionComplex) = Base.DEFAULT_UNSTABLE
 
 ### NetworkProperties Structure ###
+const __UNINITIALIZED_CONSERVED_CONSTS = MT.unwrap(only(@parameters __UNINITIALIZED[1]))
 
 #! format: off
 # Internal cache for various ReactionSystem calculated properties
@@ -86,6 +87,7 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     depspecs::Set{V} = Set{V}()
     conservedeqs::Vector{Equation} = Equation[]
     constantdefs::Vector{Equation} = Equation[]
+    conservedconst::BasicSymbolic{Vector{Real}} = __UNINITIALIZED_CONSERVED_CONSTS
     speciesmap::Dict{V, Int} = Dict{V, Int}()
     complextorxsmap::OrderedDict{ReactionComplex{Int}, Vector{Pair{Int, Int}}} = OrderedDict{ReactionComplex{Int},Vector{Pair{Int,Int}}}()
     complexes::Vector{ReactionComplex{Int}} = Vector{ReactionComplex{Int}}(undef, 0)
@@ -96,7 +98,6 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     linkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
     stronglinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
     terminallinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
-
     checkedrobust::Bool = false
     robustspecies::Vector{Int} = Vector{Int}(undef, 0)
     deficiency::Int = -1
@@ -126,6 +127,7 @@ function reset!(nps::NetworkProperties{I, V}) where {I, V}
     empty!(nps.col_order)
     nps.rank = 0
     nps.nullity = 0
+    nps.conservedconst = __UNINITIALIZED_CONSERVED_CONSTS
     empty!(nps.indepspecs)
     empty!(nps.depspecs)
     empty!(nps.conservedeqs)
@@ -147,6 +149,10 @@ function reset!(nps::NetworkProperties{I, V}) where {I, V}
     # this needs to be last due to setproperty! setting it to false
     nps.isempty = true
     nothing
+end
+
+function initialized_conserved(nps::NetworkProperties)
+    nps.conservedconst !== __UNINITIALIZED_CONSERVED_CONSTS
 end
 
 ### ReactionSystem Constructor Functions ###
@@ -336,9 +342,10 @@ struct ReactionSystem{V <: NetworkProperties} <:
             name, systems, defaults, connection_type, nps, cls, cevs, devs,
             metadata = nothing, complete = false, parent = nothing; checks::Bool = true)
 
-        # Checks that all parameters have the appropriate Symbolics type.
+        # Checks that all parameters have the appropriate Symbolics type. The `Symbolics.CallWithMetadata`
+        # check is an exception for callabl;e parameters.
         for p in ps
-            (p isa Symbolics.BasicSymbolic) ||
+            (p isa Symbolics.BasicSymbolic) || (p isa Symbolics.CallWithMetadata) ||
                 error("Parameter $p is not a `BasicSymbolic`. This is required.")
         end
 
@@ -353,11 +360,18 @@ struct ReactionSystem{V <: NetworkProperties} <:
         end
 
         if isempty(sivs) && (checks == true || (checks & MT.CheckUnits) > 0)
-            if !all(u == 1.0 for u in ModelingToolkit.get_unit([unknowns; ps; iv]))
+            if !all(unitless_symvar(sym) for sym in [unknowns; ps; iv])
                 for eq in eqs
                     (eq isa Equation) && check_units(eq)
                 end
             end
+        end
+
+        # Checks that no (non-reaction) equation contains a differential w.r.t. a species.
+        for eq in eqs
+            (eq isa Reaction) && continue
+            (hasnode(is_species_diff, eq.lhs) || hasnode(is_species_diff, eq.rhs)) &&
+                error("An equation ($eq) contains a differential with respect to a species. This is currently not supported. If this is a functionality you require, please raise an issue on the Catalyst GitHub page and we can consider the best way to implement it.")
         end
 
         rs = new{typeof(nps)}(
@@ -367,6 +381,13 @@ struct ReactionSystem{V <: NetworkProperties} <:
         checks && validate(rs)
         rs
     end
+end
+
+# Checks if a symbolic expression constains a differential with respect to a species (either directly
+# or somehwere within the differential expression).
+function is_species_diff(expr)
+    Symbolics.is_derivative(expr) || return false
+    return hasnode(ex -> (ex isa Symbolics.BasicSymbolic) && isspecies(ex) && !isbc(ex), expr)
 end
 
 # Four-argument constructor. Permits additional inputs as optional arguments.
@@ -475,7 +496,7 @@ function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
     make_ReactionSystem_internal(rxs, iv, [], []; kwargs...)
 end
 
-# One-argument constructor. Creates an emtoy `ReactionSystem` from a time independent variable only.
+# One-argument constructor. Creates an empty `ReactionSystem` from a time independent variable only.
 function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
@@ -583,34 +604,61 @@ function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
     isequivalent(rn1, rn2; ignorenames = false)
 end
 
-"""
-    isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true)
+function debug_comparer(fun, prop1, prop2, propname; debug = false)
+    if fun(prop1, prop2)
+        return true
+    else
+        debug && println("Comparison was false for property: ", propname, "\n    Found: ", prop1, " vs ", prop2)
+        return false
+    end
+end
 
-Tests whether the underlying species, parameters and reactions are the same in
-the two [`ReactionSystem`](@ref)s. Ignores the names of the systems in testing
-equality.
+"""
+    isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true,
+        debug = false)
+
+Tests whether the underlying species, parameters and reactions are the same in the two
+[`ReactionSystem`](@ref)s. Ignores the names of the systems in testing equality.
 
 Notes:
-- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
-    considered different than `(A+1)^2`.
-- Does not include `defaults` in determining equality.
+- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be considered
+    different than `(A+1)^2`.
+- `ignorenames = false` is used when checking equality of sub and parent systems.
+- Does not check that `parent` systems are the same.
+- Pass `debug = true` to print out the field that caused the two systems to be considered
+    different.
 """
-function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true)
+function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true,
+        debug = false)
+
+    # metadata type fields
     if !ignorenames
-        (nameof(rn1) == nameof(rn2)) || return false
+        debug_comparer(==, nameof(rn1), nameof(rn2), "name"; debug) || return false
     end
+    debug_comparer(==, get_combinatoric_ratelaws(rn1), get_combinatoric_ratelaws(rn2),
+        "combinatoric_ratelaws"; debug) || return false
+    debug_comparer(==, MT.iscomplete(rn1), MT.iscomplete(rn2), "complete"; debug) || return false
 
-    (get_combinatoric_ratelaws(rn1) == get_combinatoric_ratelaws(rn2)) || return false
-    isequal(get_iv(rn1), get_iv(rn2)) || return false
-    issetequal(get_sivs(rn1), get_sivs(rn2)) || return false
-    issetequal(get_unknowns(rn1), get_unknowns(rn2)) || return false
-    issetequal(get_ps(rn1), get_ps(rn2)) || return false
-    issetequal(MT.get_observed(rn1), MT.get_observed(rn2)) || return false
-    issetequal(get_eqs(rn1), get_eqs(rn2)) || return false
+    # symbolic variables and parameters
+    debug_comparer(isequal, get_iv(rn1), get_iv(rn2), "ivs"; debug) || return false
+    debug_comparer(issetequal, get_sivs(rn1), get_sivs(rn2), "sivs"; debug) || return false
+    debug_comparer(issetequal, get_unknowns(rn1), get_unknowns(rn2), "unknowns"; debug) || return false
+    debug_comparer(issetequal, get_species(rn1), get_species(rn2), "species"; debug) || return false
+    debug_comparer(issetequal, get_ps(rn1), get_ps(rn2), "ps"; debug) || return false
+    debug_comparer(issetequal, MT.get_defaults(rn1), MT.get_defaults(rn2), "defaults"; debug) || return false
 
-    # subsystems
-    (length(get_systems(rn1)) == length(get_systems(rn2))) || return false
-    issetequal(get_systems(rn1), get_systems(rn2)) || return false
+    # equations and reactions
+    debug_comparer(issetequal, MT.get_observed(rn1), MT.get_observed(rn2), "observed"; debug) || return false
+    debug_comparer(issetequal, get_eqs(rn1), get_eqs(rn2), "eqs"; debug) || return false
+    debug_comparer(issetequal, MT.get_continuous_events(rn1), MT.get_continuous_events(rn2), "cevents"; debug) || return false
+    debug_comparer(issetequal, MT.get_discrete_events(rn1), MT.get_discrete_events(rn2), "devents"; debug) || return false
+
+    # coupled systems
+    if (length(get_systems(rn1)) != length(get_systems(rn2)))
+        println("Systems have different numbers of subsystems.")
+        return false
+    end
+    debug_comparer(issetequal, get_systems(rn1), get_systems(rn2), "systems"; debug) || return false
 
     true
 end
@@ -824,6 +872,16 @@ function numreactions(network)
 end
 
 """
+    has_nonreactions(network)
+
+Check if the given `network` has any non-reaction equations such as ODEs or algebraic
+equations.
+"""
+function has_nonreactions(network)
+    numreactions(network) != length(equations(network))
+end
+
+"""
     nonreactions(network)
 
 Return the non-reaction equations within the network (i.e. algebraic and differential equations).
@@ -881,6 +939,24 @@ function MT.unknowns(sys::ReactionSystem)
         return sts
     end
     return sts
+end
+
+function MT.complete(sys::ReactionSystem; flatten = true, kwargs...)
+    newunknowns = OrderedSet()
+    newparams = OrderedSet()
+    iv = get_iv(sys)
+    MT.collect_scoped_vars!(newunknowns, newparams, sys, iv; depth = -1)
+    # don't update unknowns to not disturb `structural_simplify` order
+    # `GlobalScope`d unknowns will be picked up and added there
+    @set! sys.ps = unique!(vcat(get_ps(sys), collect(newparams)))
+    if flatten
+        newsys = Catalyst.flatten(sys)
+        if MT.has_parent(newsys) && MT.get_parent(sys) === nothing
+            @set! newsys.parent = complete(sys; split = false, flatten = false)
+        end
+        sys = newsys
+    end
+    isdefined(sys, :complete) ? (@set! sys.complete = true) : sys
 end
 
 ### Network Matrix Representations ###
@@ -1069,47 +1145,6 @@ end
 function reactionsystem_uptodate_check()
     if fieldnames(ReactionSystem) != reactionsystem_fields
         @warn "The `ReactionSystem` structure have been modified without this being taken into account in the functionality you are attempting to use. Please report this at https://github.com/SciML/Catalyst.jl/issues. Proceed with caution, as there might be errors in whichever functionality you are attempting to use."
-    end
-end
-
-# used in the `__unpacksys` function.
-function __unpacksys(rn)
-    ex = :(begin end)
-    for key in keys(get_var_to_name(rn))
-        var = MT.getproperty(rn, key, namespace = false)
-        push!(ex.args, :($key = $var))
-    end
-    ex
-end
-
-"""
-    @unpacksys sys::ModelingToolkit.AbstractSystem
-
-Loads all species, variables, parameters, and observables defined in `sys` as
-variables within the calling module.
-
-For example,
-```julia
-sir = @reaction_network SIR begin
-    β, S + I --> 2I
-    ν, I --> R
-end
-@unpacksys sir
-```
-will load the symbolic variables, `S`, `I`, `R`, `ν` and `β`.
-
-Notes:
-- Can not be used to load species, variables, or parameters of subsystems or
-  constraints. Either call `@unpacksys` on those systems directly, or
-  [`flatten`](@ref) to collate them into one system before calling.
-- Note that this places symbolic variables within the calling module's scope, so
-  calling from a function defined in a script or the REPL will still result in
-  the symbolic variables being defined in the `Main` module.
-"""
-macro unpacksys(rn)
-    quote
-        ex = Catalyst.__unpacksys($(esc(rn)))
-        Base.eval($(__module__), ex)
     end
 end
 
@@ -1355,7 +1390,7 @@ function getsubsystypes(sys)
 end
 
 """
-    Catalyst.flatten(rs::ReactionSystem)
+    ModelingToolkit.flatten(rs::ReactionSystem)
 
 Merges all subsystems of the given [`ReactionSystem`](@ref) up into `rs`.
 
@@ -1388,7 +1423,15 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
         balanced_bc_check = false,
         spatial_ivs = get_sivs(rs),
         continuous_events = MT.continuous_events(rs),
-        discrete_events = MT.discrete_events(rs))
+        discrete_events = MT.discrete_events(rs),
+        metadata = MT.get_metadata(rs))
+end
+
+function complete_check(sys, method)
+    if MT.iscomplete(sys)  
+        error("$method with one or more `ReactionSystem`s requires systems to not be marked complete, but system: $(MT.get_name(sys)) is marked complete.")
+    end
+    nothing
 end
 
 """
@@ -1403,6 +1446,9 @@ Notes:
 - By default, the new `ReactionSystem` will have the same name as `sys`.
 """
 function ModelingToolkit.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
+    complete_check(sys, "ModelingToolkit.compose")
+    foreach(s -> complete_check(s, "ModelingToolkit.compose"), systems)
+
     nsys = length(systems)
     nsys == 0 && return sys
     @set! sys.name = name
@@ -1440,6 +1486,10 @@ Notes:
 """
 function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
         name::Symbol = nameof(sys))
+
+    complete_check(sys, "ModelingToolkit.extend")
+    complete_check(rs, "ModelingToolkit.extend")
+    
     any(T -> sys isa T, (ReactionSystem, ODESystem, NonlinearSystem)) ||
         error("ReactionSystems can only be extended with ReactionSystems, ODESystems and NonlinearSystems currently. Received a $(typeof(sys)) system.")
 
@@ -1515,7 +1565,7 @@ function validate(rs::ReactionSystem, info::String = "")
 
     # no units for species, time or parameters then assume validated
     if (specunits in (MT.unitless, nothing)) && (timeunits in (MT.unitless, nothing))
-        all(u == 1.0 for u in ModelingToolkit.get_unit(get_ps(rs))) && return true
+        all(unitless_symvar(p) for p in get_ps(rs)) && return true
     end
 
     rateunits = specunits / timeunits
@@ -1545,3 +1595,9 @@ end
 
 # Checks if a unit consist of exponents with base 1 (and is this unitless).
 unitless_exp(u) = iscall(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
+
+# Checks if a symbolic variable is unitless. Also accounts for callable parameters (for
+# which `get_unit`'s` intended behaviour (or whether it should generate an error) is undefined: https://github.com/SciML/ModelingToolkit.jl/issues/3420).
+function unitless_symvar(sym)
+    return (sym isa Symbolics.CallWithMetadata) || (ModelingToolkit.get_unit(sym) == 1)
+end

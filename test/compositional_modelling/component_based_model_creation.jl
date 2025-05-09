@@ -3,8 +3,8 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, LinearAlgebra, OrdinaryDiffEqTsit5, SciMLNLSolve, Test
-using ModelingToolkit: nameof
+using Catalyst, LinearAlgebra, OrdinaryDiffEqTsit5, NonlinearSolve, Test
+using ModelingToolkit: nameof, getname
 
 # Sets the default `t` to use.
 t = default_t()
@@ -99,11 +99,11 @@ let
     @named nsys = NonlinearSystem(connections, [], [])
     @named ssrepressilator = ReactionSystem(t; systems = [nsys, sys₁, sys₂, sys₃])
     ssrepressilator = complete(ssrepressilator)
-    @named nlrepressilator = convert(NonlinearSystem, ssrepressilator, include_zero_odes = false)
+    @named nlrepressilator = convert(NonlinearSystem, ssrepressilator)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
-    sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
+    sol = solve(nlprob; abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
     @test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
@@ -112,11 +112,11 @@ let
     # Flattening.
     fsys = Catalyst.flatten(ssrepressilator)
     fsys = complete(fsys)
-    @named nlrepressilator = convert(NonlinearSystem, fsys, include_zero_odes = false)
+    @named nlrepressilator = convert(NonlinearSystem, fsys)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
-    sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
+    sol = solve(nlprob; abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
     @test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
@@ -130,11 +130,11 @@ let
                                 [])
     @named repressilator2 = ReactionSystem(connections, t; systems = [sys₁, sys₂, sys₃])
     repressilator2 = complete(repressilator2)
-    @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes = false)
+    @named nlrepressilator = convert(NonlinearSystem, repressilator2)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
-    sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
+    sol = solve(nlprob; abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
     @test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
@@ -142,7 +142,7 @@ let
 
     # Test constraint system variables are accessible through Base.getproperty
     # even if they do not appear in the original ReactionSystem.
-    network = @reaction_network
+    network = @network_component
     @parameters a
     @variables x(t)
     @named constraints = NonlinearSystem([x ~ a], [x], [a])
@@ -171,8 +171,8 @@ let
     @test Set(equations(system)) == Set(equations(constraints))
 
     # Test that extending a system with constraints correctly handles default values.
-    network = @reaction_network
-    subnetwork = @reaction_network
+    network = @network_component
+    subnetwork = @network_component
     @parameters a=1 b=2
     @variables x(t)=a y(t)=b
     @named constraints = NonlinearSystem([x ~ a], [x], [a])
@@ -198,14 +198,12 @@ let
 
     # Test that the observables of constraint systems are accessible after
     # extending a ReactionSystem.
-    network = @reaction_network
-    subnetwork = @reaction_network
+    network = @network_component
+    subnetwork = @network_component
     @parameters a b
     @variables x(t) y(t)
     @named constraints = NonlinearSystem([x ~ a], [x], [a])
     @named subconstraints = NonlinearSystem([y ~ b], [y], [b])
-    constraints = structural_simplify(constraints)
-    subconstraints = structural_simplify(subconstraints)
 
     extended = extend(constraints, network; name = nameof(network))
     subextended = extend(subconstraints, subnetwork, name = nameof(subnetwork))
@@ -251,11 +249,11 @@ let
     repressilator2 = Catalyst.flatten(repressilator2)
     repressilator2 = extend(csys, repressilator2)
     repressilator2 = complete(repressilator2)
-    @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes = false)
+    @named nlrepressilator = convert(NonlinearSystem, repressilator2)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
-    sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
+    sol = solve(nlprob; abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
     @test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
@@ -351,7 +349,7 @@ end
 # Test throw error if there are ODE constraints and convert to NonlinearSystem.
 # Note, these can now be created.
 let
-    rn = @reaction_network rn begin
+    rn = @network_component rn begin
         @parameters k1 k2
         (k1, k2), A <--> B
     end
@@ -362,8 +360,7 @@ let
     eqs = [D(C) ~ -b * C + a * A]
     @named osys = ODESystem(eqs, t, [A, C], [a, b])
     rn2 = extend(osys, rn)
-    rn2 = complete(rn2)
-    rnodes = complete(convert(ODESystem, rn2))
+    rnodes = convert(ODESystem, complete(rn2))
 
     # Ensure right number of equations are generated.
     @variables G(t)
@@ -376,12 +373,11 @@ let
     eqs = [0 ~ -a * A + C, 0 ~ -b * C + a * A]
     @named nlsys = NonlinearSystem(eqs, [A, C], [a, b])
     rn2 = extend(nlsys, rn)
-    rn2 = complete(rn2)
-    rnodes = complete(convert(ODESystem, rn2))
-    rnnlsys = complete(convert(NonlinearSystem, rn2))
+    rn2c = complete(rn2)
+    rnodes = complete(convert(ODESystem, rn2c))
+    rnnlsys = complete(convert(NonlinearSystem, rn2c))
     @named nlsys = ODESystem(eqs, t, [A, C], [a, b])
-    rn2 = extend(nlsys, rn)
-    rn2 = complete(rn2)
+    rn2 = complete(extend(nlsys, rn))
     rnodes = convert(ODESystem, rn2)
     rnnlsys = convert(NonlinearSystem, rn2)
 end
@@ -404,7 +400,7 @@ end
 let
     @parameters b
     @species V(t) [isbcspecies = true]
-    rn = @reaction_network begin
+    rn = @network_component begin
         @parameters k
         k/$V, A + B --> C
     end
@@ -507,18 +503,18 @@ end
 let
     t = default_t()
     D = default_time_deriv()
-    @species x1(t) x2(t) 
+    @species x1(t) x2(t)
     @variables x3(t) x4(t) x5(t)
     x2 = ParentScope(x2)
     x3 = ParentScope(ParentScope(x3))
-    x4 = DelayParentScope(x4, 2)
+    x4 = DelayParentScope(x4)
     x5 = GlobalScope(x5)
     @parameters p1 p2 p3 p4 p5
     p2 = ParentScope(p2)
     p3 = ParentScope(ParentScope(p3))
-    p4 = DelayParentScope(p4, 2)
+    p4 = DelayParentScope(p4)
     p5 = GlobalScope(p5)
-    rxs = [Reaction(p1, nothing, [x1]), Reaction(p2, [x2], nothing), 
+    rxs = [Reaction(p1, nothing, [x1]), Reaction(p2, [x2], nothing),
            D(x3) ~ p3, D(x4) ~ p4, D(x5) ~ p5]
     @named sys1 = ReactionSystem(rxs, t)
     @test isequal(x1, only(unknowns(sys1)))
@@ -534,11 +530,11 @@ let
     sys3 = sys3 ∘ sys2
     @test length(unknowns(sys3)) == 4
     @test any(isequal(x3), unknowns(sys3))
-    @test any(isequal(x4), unknowns(sys3))
+    @test any(endswith("x4") ∘ string ∘ getname, unknowns(sys3))
     @test length(species(sys3)) == 2
     @test length(parameters(sys3)) == 4
     @test any(isequal(p3), parameters(sys3))
-    @test any(isequal(p4), parameters(sys3))
+    @test any(endswith("p4") ∘ string ∘ getname, parameters(sys3))
     sys4 = complete(sys3)
     @test length(unknowns(sys3)) == 4
     @test length(parameters(sys4)) == 5

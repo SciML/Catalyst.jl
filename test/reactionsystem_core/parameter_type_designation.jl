@@ -74,13 +74,13 @@ let
     oprob = ODEProblem(rs, u0, (0.0, 1.0), p_alts[1])
     sprob = SDEProblem(rs, u0, (0.0, 1.0), p_alts[1])
     dprob = DiscreteProblem(rs, u0, (0.0, 1.0), p_alts[1])
-    jprob = JumpProblem(rs, dprob, Direct(); rng)
+    jprob = JumpProblem(JumpInputs(rs, u0, (0.0, 1.0), p_alts[1]); rng)
     nprob = NonlinearProblem(rs, u0, p_alts[1])
 
-    oinit = init(oprob, Tsit5()) 
-    sinit = init(sprob, ImplicitEM()) 
-    jinit = init(jprob, SSAStepper()) 
-    ninit = init(nprob, NewtonRaphson()) 
+    oinit = init(oprob, Tsit5())
+    sinit = init(sprob, ImplicitEM())
+    jinit = init(jprob, SSAStepper())
+    ninit = init(nprob, NewtonRaphson())
 
     osol = solve(oprob, Tsit5())
     ssol = solve(sprob, ImplicitEM(); seed)
@@ -113,7 +113,7 @@ let
         @test unwrap(mtk_struct.ps[p5]) == 3//2
         @test unwrap(mtk_struct.ps[d5]) == Float32(1.5)
     end
-    
+
     # Checks all stored variables (these should always be `Float64`).
     for mtk_struct in [oprob, sprob, dprob, jprob, nprob, oinit, sinit, jinit, ninit]
         # Checks that all variables have the correct type.

@@ -2,7 +2,6 @@
 
 # Fetch packages.
 using DiffEqBase, Catalyst, JumpProcesses, Statistics, Test
-using ModelingToolkit: get_unknowns, get_ps
 
 # Sets stable rng number.
 using StableRNGs
@@ -26,7 +25,7 @@ base_higher_order_network = @reaction_network begin
     d, 2X10 ⟼ ∅
 end
 
-# Tests that ODE and SDE functions are correct (by comparing to network with manually written higher order rates). 
+# Tests that ODE and SDE functions are correct (by comparing to network with manually written higher order rates).
 let
     higher_order_network_alt1 = @reaction_network begin
         p, ∅ ⟾ X1
@@ -51,7 +50,7 @@ let
     end
 end
 
-# Tests that Jump Systems are correct (by comparing to network with manually written higher order rates). 
+# Tests that Jump Systems are correct (by comparing to network with manually written higher order rates).
 let
     # Declares the reactions using Catalyst, but defines the propensities manually.
     higher_order_network_alt1 = @reaction_network begin
@@ -84,20 +83,20 @@ let
     affect7!(int) = (int.u[9] -= 10; int.u[10] += 1;)
     affect8!(int) = (int.u[10] -= 2;)
 
-    higher_order_network_alt2 = ConstantRateJump.([rate1, rate2, rate3, rate4, rate5, rate6, rate7, rate8], 
+    higher_order_network_alt2 = ConstantRateJump.([rate1, rate2, rate3, rate4, rate5, rate6, rate7, rate8],
                                 [affect1!, affect2!, affect3!, affect4!, affect5!, affect6!, affect7!, affect8!])
 
-    # Prepares JumpProblem via Catalyst.       
+    # Prepares JumpProblem via Catalyst.
     u0_base = rnd_u0_Int64(base_higher_order_network, rng)
     ps_base = rnd_ps(base_higher_order_network, rng)
-    dprob_base = DiscreteProblem(base_higher_order_network, u0_base, (0.0, 100.0), ps_base)
-    jprob_base = JumpProblem(base_higher_order_network, dprob_base, Direct(); rng = StableRNG(1234))
+    jin_base = JumpInputs(base_higher_order_network, u0_base, (0.0, 100.0), ps_base)
+    jprob_base = JumpProblem(jin_base; rng = StableRNG(1234))
 
-    # Prepares JumpProblem partially declared manually.   
-    dprob_alt1 = DiscreteProblem(higher_order_network_alt1, u0_base, (0.0, 100.0), ps_base)
-    jprob_alt1 = JumpProblem(higher_order_network_alt1, dprob_alt1, Direct(); rng = StableRNG(1234))
+    # Prepares JumpProblem partially declared manually.
+    jin_alt1 = JumpInputs(higher_order_network_alt1, u0_base, (0.0, 100.0), ps_base)
+    jprob_alt1 = JumpProblem(jin_alt1; rng = StableRNG(1234))
 
-    # Prepares JumpProblem via manually declared system.    
+    # Prepares JumpProblem via manually declared system.
     u0_alt2 = map_to_vec(u0_base, [:X1, :X2, :X3, :X4, :X5, :X6, :X7, :X8, :X9, :X10])
     ps_alt2 = map_to_vec(ps_base, [:p, :r1, :r2, :K, :r3, :r4, :r5, :r6, :d])
     dprob_alt2 = DiscreteProblem(u0_alt2, (0.0, 100.0), ps_alt2)
@@ -107,7 +106,7 @@ let
     sol_base = solve(jprob_base, SSAStepper(); seed, saveat = 1.0)
     sol_alt1 = solve(jprob_alt1, SSAStepper(); seed, saveat = 1.0)
     sol_alt2 = solve(jprob_alt2, SSAStepper(); seed, saveat = 1.0)
-    
+
     # Checks that species means in the simulations are similar
     @test mean(sol_base[:X10]) ≈ mean(sol_alt1[:X10]) atol = 1e-1 rtol = 1e-1
     @test mean(sol_alt1[:X10]) ≈ mean(sol_alt2[10,:]) atol = 1e-1 rtol = 1e-1

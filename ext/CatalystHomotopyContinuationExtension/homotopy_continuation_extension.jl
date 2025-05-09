@@ -1,16 +1,16 @@
 ### Homotopy Continuation Based Steady State Finding ###
 
 """
-    hc_steady_states(rs::ReactionSystem, ps; filter_negative=true, neg_thres=-1e-20, u0=typeof(ps)(), kwargs...)
+    hc_steady_states(rs::ReactionSystem, ps; filter_negative = true, neg_thres = -1e-16, u0 = typeof(ps)(), kwargs...)
 
 Uses homotopy continuation via HomotopyContinuation.jl to find the steady states of the ODE system corresponding to the provided reaction system.
 
 Arguments:
 - `rs::ReactionSystem`: The reaction system for which we want to find the steady states.
 - `ps`: The parameter values for which we want to find the steady states.
-- `filter_negative=true`: If set to true, solutions with any species concentration <neg_thres is removed from the output.
-- `neg_thres=-1e-20`: Determine the minimum values for which a species concentration is to be considered non-negative. Species concentrations ``> neg_thres`` but `< 0.0` are set to `0.0`.
-- `u0=nothing`: Initial conditions for which we want to find the steady states. For systems with conservation laws this are required to compute conserved quantities. Initial conditions are not required for all species, only those involved in conserved quantities (if this set is unknown, it is recommended to provide initial conditions for all species).
+- `filter_negative = true`: If set to true, solutions with any species concentration <neg_thres is removed from the output.
+- `neg_thres = -1e-15`: Determine the minimum values for which a species concentration is to be considered non-negative. Species concentrations ``> neg_thres`` but `< 0.0` are set to `0.0`.
+- `u0 = nothing`: Initial conditions for which we want to find the steady states. For systems with conservation laws this are required to compute conserved quantities. Initial conditions are not required for all species, only those involved in conserved quantities (if this set is unknown, it is recommended to provide initial conditions for all species).
 - `kwargs...`: any additional arguments (like `show_progress= true`) are passed into HomotopyContinuation.jl's `solve` call.
 
 Examples
@@ -36,7 +36,7 @@ Notes:
 ```
   """
 function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative = true,
-        neg_thres = -1e-20, u0 = [], kwargs...)
+        neg_thres = -1e-15, u0 = [], kwargs...)
     if !isautonomous(rs)
         error("Attempting to compute steady state for a non-autonomous system (e.g. where some rate depend on $(get_iv(rs))). This is not possible.")
     end
@@ -51,13 +51,10 @@ function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     # Creates the appropriate nonlinear system, and converts parameters to a form that can
     # be substituted in later.
     rs = Catalyst.expand_registered_functions(rs)
-    ns = complete(convert(NonlinearSystem, rs;
-        remove_conserved = true, remove_conserved_warn = false))
+    ns = complete(convert(NonlinearSystem, rs; remove_conserved = true, conseqs_remake_warn = false))
     pre_varmap = [symmap_to_varmap(rs, u0)..., symmap_to_varmap(rs, ps)...]
     Catalyst.conservationlaw_errorcheck(rs, pre_varmap)
-    p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns);
-        defaults = ModelingToolkit.defaults(ns))
-    p_dict = Dict(parameters(ns) .=> p_vals)
+    p_dict = make_p_val_dict(pre_varmap, rs, ns)
 
     # Step by step convert the equation to something HC can work on (adds conserved equations,
     # inserts parameter values and put everything on a side, converts e.g. 2.0 to 2, remove
@@ -68,6 +65,25 @@ function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     eqs = [remove_denominators(common_denominator(eq)) for eq in eqs]
     ss_poly = Catalyst.to_multivariate_poly(eqs)
     return poly_type_convert(ss_poly)
+end
+
+# Function for making a map from parameter values (including conservation law constants) to
+# their values. Previously a simple call, but made complicated due to various MTK updates so
+# not all delegated to a specific function.
+function make_p_val_dict(pre_varmap, rs, ns)
+    # Creates a parameter vector with conservation parameters expanded (i.e. Γ[1], Γ[2], not `Γ`).
+    ps_no_cons = filter(p -> !Catalyst.isconserved(p), parameters(ns))
+    ps_cons_expanded = getfield.(conservationlaw_constants(rs), :lhs)
+    ps = [ps_no_cons; ps_cons_expanded]
+
+    # Creates a dictionary with the correct default values/equations (again expanding `Γ` to Γ[1], Γ[2]).
+    defaults = ModelingToolkit.defaults(ns)
+    filter!(p -> !Catalyst.isconserved(p[1]), defaults)
+    foreach(conseq -> defaults[conseq.lhs] = conseq.rhs, conservationlaw_constants(rs))
+
+    # Creates and return the full parameter value dictionary.p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, all_ps; defaults = def_dict)
+    p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, ps; defaults)
+    return Dict(ps .=> p_vals)
 end
 
 # Parses and expression and return a version where any exponents that are Float64 (but an int, like 2.0) are turned into Int64s.
@@ -148,7 +164,7 @@ function reorder_sols!(sols, ss_poly, rs::ReactionSystem)
 end
 
 # Filters away solutions with negative species concentrations (and for neg_thres < val < 0.0, sets val=0.0).
-function filter_negative_f(sols; neg_thres = -1e-20)
+function filter_negative_f(sols; neg_thres = -1e-15)
     for sol in sols, idx in 1:length(sol)
         (neg_thres < sol[idx] < 0) && (sol[idx] = 0)
     end

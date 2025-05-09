@@ -24,6 +24,7 @@ end
         @time @safetestset "Custom CRN Functions" begin include("reactionsystem_core/custom_crn_functions.jl") end
         @time @safetestset "Coupled CRN/Equation Systems" begin include("reactionsystem_core/coupled_equation_crn_systems.jl") end
         @time @safetestset "Events" begin include("reactionsystem_core/events.jl") end
+        @time @safetestset "Functional Parameters" begin include("reactionsystem_core/functional_parameters.jl") end
 
         # Tests model creation via the @reaction_network DSL.
         @time @safetestset "DSL Basic Model Construction" begin include("dsl/dsl_basic_model_construction.jl") end
@@ -56,6 +57,10 @@ end
         @time @safetestset "MTK Problem Inputs" begin include("upstream/mtk_problem_inputs.jl") end
     end
 
+    if GROUP == "All" || GROUP == "Hybrid"
+        @time @safetestset "ReactionSystem Hybrid Solvers" begin include("simulation_and_solving/hybrid_models.jl") end
+    end
+
     if GROUP == "All" || GROUP == "IO"
         @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
         # BROKEN
@@ -80,12 +85,8 @@ end
         @time @safetestset "Graph visualization" begin include("extensions/graphmakie.jl") end
         @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
         @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
-
-        # BROKEN
-        # @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
-
-        # Tests stability computation (but requires the HomotopyContinuation extension).
-        #@time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
+        @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
+        @time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
 
         # Test spatial plotting, using CairoMakie and GraphMakie
         @time @safetestset "Lattice Simulation Plotting" begin include("extensions/lattice_simulation_plotting.jl") end

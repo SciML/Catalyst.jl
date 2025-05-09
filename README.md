@@ -30,11 +30,33 @@ Generated models can be used with solvers throughout the broader Julia and
 for sensitivity analysis, parameter estimation, machine learning applications,
 etc).
 
+## Installation 
+Catalyst can be installed as follows. 
+```julia
+using Pkg
+
+# (optional but recommended) create new environment in which to install Catalyst
+Pkg.activate("catalyst_environment")
+
+# install latest Catalyst release
+Pkg.add("Catalyst")
+```
+
+Because as of V15 Catalyst caps the version of certain dependencies, this can lead to older, 
+uncapped versions of Catalyst being installed if one already has an unsupported dependency 
+installed (i.e. when installing into an existing environment). For this reason, after 
+installation it is recommended to confirm that the latest version of Catalyst was added 
+by checking 
+```julia
+Pkg.status("Catalyst")
+```
+
 ## Breaking changes and new features
 
-**NOTE:** Version 14 is a breaking release, prompted by the release of ModelingToolkit.jl version 9. This caused several breaking changes in how Catalyst models are represented and interfaced with.
-
-Breaking changes and new functionality are summarized in the [HISTORY.md](HISTORY.md) file. Furthermore, a migration guide on how to adapt your workflows to the new v14 update can be found [here](https://docs.sciml.ai/Catalyst/stable/v14_migration_guide/).
+**NOTE:** Version 15 is a breaking release, though most breaking changes are
+likely to only impact libraries being developed on top of Catalyst. Please
+see the [HISTORY.md](HISTORY.md) file for a summary of breaking changes and new
+functionality. 
 
 ## Tutorials and documentation
 
@@ -66,16 +88,16 @@ be found in its corresponding research paper, [Catalyst: Fast and flexible model
 - [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) Can be used to numerically solver generated reaction rate equation ODE models.
 - [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) can be used to numerically solve generated Chemical Langevin Equation SDE models.
 - [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) can be used to numerically sample generated Stochastic Chemical Kinetics Jump Process models.
-- Support for [parallelization of all simulations](https://docs.sciml.ai/Catalyst/stable/model_simulation/ode_simulation_performance/#ode_simulation_performance_parallelisation), including parallelization of [ODE simulations on GPUs](https://docs.sciml.ai/Catalyst/stable/model_simulation/ode_simulation_performance/#ode_simulation_performance_parallelisation_GPU) using [DiffEqGPU.jl](https://github.com/SciML/DiffEqGPU.jl).
+- Support for [parallelization of all simulations](https://docs.sciml.ai/Catalyst/stable/model_simulation/ode_simulation_performance/#ode_simulation_performance_parallelisation), including parallelization of [ODE](https://docs.sciml.ai/Catalyst/stable/model_simulation/ode_simulation_performance/#ode_simulation_performance_parallelisation_GPU) and [SDE](https://docs.sciml.ai/Catalyst/stable/model_simulation/sde_simulation_performance/#sde_simulation_performance_parallelisation_GPU) simulations on GPUs using [DiffEqGPU.jl](https://github.com/SciML/DiffEqGPU.jl).
 - [Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to [generate LaTeX expressions](https://docs.sciml.ai/Catalyst/stable/model_creation/model_visualisation/#visualisation_latex) corresponding to generated mathematical models or the underlying set of reactions.
-- [Graphviz](https://graphviz.org/) can be used to generate and [visualize reaction network graphs](https://docs.sciml.ai/Catalyst/stable/model_creation/model_visualisation/#visualisation_graphs) (reusing the Graphviz interface created in [Catlab.jl](https://algebraicjulia.github.io/Catlab.jl/stable/)).
+- [GraphMakie](https://github.com/MakieOrg/GraphMakie.jl) can be used to generate and [visualize reaction network graphs](https://docs.sciml.ai/Catalyst/stable/model_creation/model_visualisation/#visualisation_graphs).
 - Model steady states can be [computed through homotopy continuation](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/homotopy_continuation/) using [HomotopyContinuation.jl](https://github.com/JuliaHomotopyContinuation/HomotopyContinuation.jl) (which can find *all* steady states of systems with multiple ones), by [forward ODE simulations](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/nonlinear_solve/#steady_state_solving_simulation) using [SteadyStateDiffEq.jl](https://github.com/SciML/SteadyStateDiffEq.jl), or by [numerically solving steady-state nonlinear equations](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/nonlinear_solve/#steady_state_solving_nonlinear) using [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl).
 - [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl) can be used to [compute bifurcation diagrams](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/bifurcation_diagrams/) of model steady states (including finding periodic orbits).
 - [DynamicalSystems.jl](https://github.com/JuliaDynamics/DynamicalSystems.jl) can be used to compute model [basins of attraction](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/dynamical_systems/#dynamical_systems_basins_of_attraction), [Lyapunov spectrums](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/dynamical_systems/#dynamical_systems_lyapunov_exponents), and other dynamical system properties.
-- [Optimization.jl](https://github.com/SciML/Optimization.jl), [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl), and [PEtab.jl](https://github.com/sebapersson/PEtab.jl) can all be used to [fit model parameters to data](https://sebapersson.github.io/PEtab.jl/stable/Define_in_julia/).
+- [Optimization.jl](https://github.com/SciML/Optimization.jl) and [PEtab.jl](https://github.com/sebapersson/PEtab.jl) can all be used to [fit model parameters to data](https://sebapersson.github.io/PEtab.jl/stable/Define_in_julia/).
 - [GlobalSensitivity.jl](https://github.com/SciML/GlobalSensitivity.jl) can be used to perform [global sensitivity analysis](https://docs.sciml.ai/Catalyst/stable/inverse_problems/global_sensitivity_analysis/) of model behaviors.
 - [SciMLSensitivity.jl](https://github.com/SciML/SciMLSensitivity.jl) can be used to compute local sensitivities of functions containing forward model simulations.
-<!-- - [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) can be used to [perform structural identifiability analysis](https://docs.sciml.ai/Catalyst/stable/inverse_problems/structural_identifiability/). -->
+- [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) can be used to [perform structural identifiability analysis](https://docs.sciml.ai/Catalyst/stable/inverse_problems/structural_identifiability/).
 
 #### Features of packages built upon Catalyst
 - Catalyst [`ReactionSystem`](@ref)s can be [imported from SBML files](https://docs.sciml.ai/Catalyst/stable/model_creation/model_file_loading_and_export/#Loading-SBML-files-using-SBMLImporter.jl-and-SBMLToolkit.jl) via [SBMLImporter.jl](https://github.com/sebapersson/SBMLImporter.jl) and [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), and [from BioNetGen .net files](https://docs.sciml.ai/Catalyst/stable/model_creation/model_file_loading_and_export/#file_loading_rni_net) and various stoichiometric matrix network representations using [ReactionNetworkImporters.jl](https://github.com/SciML/ReactionNetworkImporters.jl).
@@ -137,9 +159,9 @@ model. Here we instead show how various Catalyst features can compose to create
 a much more advanced model. Our model describes how the volume of a cell ($V$)
 is affected by a growth factor ($G$). The growth factor only promotes growth
 while in its phosphorylated form ($G^P$). The phosphorylation of $G$ ($G \to G^P$)
-is promoted by sunlight (modeled as the cyclic sinusoid $k_a (\sin(t) + 1)$),
-which phosphorylates the growth factor (producing $G^P$). When the cell reaches a
-critical volume ($V_m$) it undergoes cell division. First, we declare our model:
+is promoted by sunlight, which is modeled as the cyclic sinusoid $k_a (\sin(t) + 1)$. 
+When the cell reaches a critical volume ($V_m$) it undergoes cell division. First, we 
+declare our model:
 ```julia
 using Catalyst
 cell_model = @reaction_network begin
