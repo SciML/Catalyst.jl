@@ -1,5 +1,5 @@
 # [Plotting Nullclines and Steady States in Phase Space](@id nullcline_plotting)
-In this tutorial we will show how to extract a system's steady states and [nullclines](https://en.wikipedia.org/wiki/Nullcline), and how to plot these in [phase space](https://en.wikipedia.org/wiki/Phase_space). Generally, while nullclines are not directly needed for much analysis, plotting these can give some understanding of a system's steady state and stability properties.
+In this tutorial we will show how to extract a system's steady states and [nullclines](https://en.wikipedia.org/wiki/Nullcline), and how to plot these in [phase space](https://en.wikipedia.org/wiki/Phase_space). Generally, while nullclines are not directly needed for most types analysis, plotting these can give some understanding of a system's steady state and stability properties.
 
 For an ordinary differential equation
 ```math
@@ -32,10 +32,10 @@ sss = hc_steady_states(bs_switch, ps; show_progress = false)
 
 Finally, we will compute the nullclines. First we create a function which, for species values $(X,Y)$, returns the evaluation of the model's ODE's right-hand side.
 ```@example nullcline_plotting
-nlprob = NonlinearProblem(complete(nlsys), [X => 0.0, Y => 0.0], ps)
+nlprob = NonlinearProblem(bs_switch, [X => 0.0, Y => 0.0], ps)
 function get_XY(Xval, Yval)
     prob = Catalyst.remake(nlprob; u0 = [X => Xval, Y => Yval])
-    return prob[equations(nlsys)[2].rhs], prob[equations(nlsys)[1].rhs]
+    return nlprob.f(prob.u0, prob.p)
 end
 ```
 Next, we plot our nullclines by using Plot.jl's [`contour` function](https://docs.juliaplots.org/latest/series_types/contour/). Here, we plot the $0$ contour lines (which corresponds to the nullclines) for both the $X$ and $Y$ nullclines. We will plot the steady states using `scatter`. We use the `steady_state_stability` function to [compute steady state stabilities](@ref steady_state_stability) (and use this to determine how to plot the steady state markers).
