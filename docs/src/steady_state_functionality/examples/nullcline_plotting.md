@@ -37,14 +37,15 @@ function get_XY(Xval, Yval)
     prob = Catalyst.remake(nlprob; u0 = [:X => Xval, :Y => Yval])
     return nlprob.f(prob.u0, prob.p)
 end
+nothing # hide
 ```
 Next, we plot our nullclines by using Plot.jl's [`contour` function](https://docs.juliaplots.org/latest/series_types/contour/). Here, we plot the $0$ contour lines (which corresponds to the nullclines) for both the $X$ and $Y$ nullclines. We will plot the steady states using `scatter`. We use the `steady_state_stability` function to [compute steady state stabilities](@ref steady_state_stability) (and use this to determine how to plot the steady state markers).
 ```@example nullcline_plotting
 using Plots
 # Plot the nullclines. Line labels added in separate `plot` commands (due to how the `contour` works).
 plt_mesh = 0:0.02:1.25
-contour(plt_mesh, plt_mesh, (x,y) -> get_XY(x,y)[1]; levels = [0.0], lw = 7, la = 0.7, color = 1, cbar=false)
-contour!(plt_mesh, plt_mesh, (x,y) -> get_XY(x,y)[2]; levels = [0.0], lw = 7, la = 0.7, color = 2, cbar=false)
+contour(plt_mesh, plt_mesh, (x,y) -> get_XY(x,y)[1]; levels = [0.0], lw = 7, la = 0.7, color = 1, cbar = false)
+contour!(plt_mesh, plt_mesh, (x,y) -> get_XY(x,y)[2]; levels = [0.0], lw = 7, la = 0.7, color = 2, cbar = false)
 plot!([]; label = "dX/dt = 0", lw = 7, la = 0.7, color = 1)
 plot!([]; label = "dY/dt = 0", lw = 7, la = 0.7, color = 2)
 
@@ -61,7 +62,7 @@ scatter!([], []; color = :blue, markershape = :circle, label = "Stable stead sta
 scatter!([], []; color = :red, markershape = :star4, label = "Unstable stead state")
 
 # Finishing touches.
-plot!(xguide = "X", yguide = "Y", legendfontsize = 10, size = (600,600))
+plot!(xguide = "X", yguide = "Y", xlimit = (0.0, 1.25), ylimit = (0.0, 1.25), legendfontsize = 10, size = (600,600), legend = :topright)
 ```
 Here we can see how the steady states occur at the nullclines intersections.
 
