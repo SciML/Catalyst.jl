@@ -51,7 +51,8 @@ pages = Any[
         "steady_state_functionality/bifurcation_diagrams.md",
         "steady_state_functionality/dynamical_systems.md",
         "Examples" => Any[
-            "steady_state_functionality/examples/bifurcationkit_periodic_orbits.md"
+            "steady_state_functionality/examples/nullcline_plotting.md",
+            "steady_state_functionality/examples/bifurcationkit_periodic_orbits.md",
             "steady_state_functionality/examples/bifurcationkit_codim2.md"
         ]
     ],
