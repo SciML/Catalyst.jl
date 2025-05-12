@@ -33,6 +33,7 @@ pages = Any[
         "model_simulation/ensemble_simulations.md",
         "model_simulation/ode_simulation_performance.md",
         "model_simulation/sde_simulation_performance.md",
+        "model_simulation/finite_state_projection_simulation.md",
         "Examples" => Any[
             "model_simulation/examples/periodic_events_simulation.md",
             "model_simulation/examples/activation_time_distribution_measurement.md",
