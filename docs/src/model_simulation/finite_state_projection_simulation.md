@@ -1,4 +1,16 @@
 # [Solving the chemical master equation using FiniteStateProjection.jl](@id finite-state_projection)
+Previously we have shown how *stochastic chemical kinetics* describe how chemical reaction network models can be [exactly simulated](@ref simulation_intro_jumps) (using e.g. Gillespie's algorithm). We also described how the [SDE](@ref simulation_intro_SDEs) and [ODE](@ref simulation_intro_ODEs) approaches were approximation of these jump simulations, and only valid for large copy numbers. To gain a good understanding of the system's time-development, we typically have to carry out a large number of jump simulations. Here, an alternative approach is instead to simulate the *full probability distribution of the system*. This corresponds to the distribution from which these jump simulations are drawn.
+
+[*The chemical master equation*](https://en.wikipedia.org/wiki/Master_equation) (CME) describes the time development of this distribution[^1]. In fact, this equation is at the core of chemical reaction network kinetics, with all other approaches (such as ODE, SDE, and Jump simulations) being derived as various approximations of it. The CME is a system of ODEs, with one variable *for each possible state of the system*. Each of these variables describes the probability of the system being in that state, over time. For a system with a single species $X$, the CME looks like
+```math
+\begin{aligned}
+\frac{dp(x=0)}{dt} &= f_0(p(x=0), p(x=1), ...) \\
+\frac{dp(x=1)}{dt} &= f_0(p(x=0), p(x=1), ...) \\
+\frac{dp(x=2)}{dt} &= f_0(p(x=0), p(x=1), ...) \\
+                &\vdots\\
+\end{aligned}
+```
+Here, we note that, since (for almost all chemical reaction networks) there is a non-zero probability that $X$ is any specific integer value, the CME have an infinite number of variables. Hence, it cannot be solved practically. However, one notes that for high enough species values, the probability of the system attaining such values becomes negligibly small. Here, a truncated version of the CME can be solved practically. An approach for this is the *finite state projection*[^2]. Below we describe how to use the [FiniteStateProjection.jl](https://github.com/SciML/FiniteStateProjection.jl) package to solve the truncated CME. While this approach can be very powerful, we note that for system's with many species, even the truncated CME typically have too many states to be feasible to solve.
 
 ## [Finite state projection simulation of single-species model](@id state_projection_one_species)
 For this example we will use a simple [birth-death model](@ref basic_CRN_library_bd), where a single species ($X$) is created and degraded at constant rates ($p$ and $d$, respectively).
@@ -46,35 +58,45 @@ nothing # hide
 ```
 Finally, we can plot the $X$'s probability distribution at various time point's of the simulation. Again, we will uset he `bar` function to plot teh distribution, and the interface described [here](@ref simulation_structure_interfacing_solutions) to acess the simulation at various timestamps.
 ```@example state_projection_one_species
-bar(osol(1.0);  width = 1.0, linecolor = 1, alpha = 0.7, linealpha = 0.7, label = "t = 1.0")
-bar!(osol(2.0); linecolor = 1, alpha = 0.7, linealpha = 0.7, label = "t = 2.0")
-bar!(osol(5.0); linecolor = 1, alpha = 0.7, linealpha = 0.7, label = "t = 5.0")
-bar!(osol(10.0); linecolor = 1, alpha = 0.7, linealpha = 0.7, label = "t = 10.0")
+bar(osol(1.0);  bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 1.0")
+bar!(osol(2.0); bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 2.0")
+bar!(osol(5.0); bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 5.0")
+bar!(osol(10.0); bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 10.0")
 ```
 
 ## [Finite state projection simulation of multi-species model](@id state_projection_multi_species)
+Next, we will consider a system with more than one species. The workflow will be identical, however, we will have to make an additional consideration regarding our initial conditions. We will also need to use a different plotting approach.
 
+For this example we will consider a simple dimerisation model. In it, $X$ gets produced and degraded at constant rates, and can also dimerise to form $X₂$.
 ```@example state_projection_multi_species
 using Catalyst # hide
 rs = @reaction_network begin
     (p,d), 0 <--> X
-    (kB,kD), 2X <--> X2
+    (kB,kD), 2X <--> X₂
 end
 ```
 
+Next, we will declare our parameter values and initial condition. In this case, the initial condition is a matrix where element $(i,j)$ denotes the initial probability that $(X(0),X₂(0)) = (i-1,j-1)$. In this case, we will use an initial condition where we know that $(X(0),X₂(0)) = (0,0)$.
 ```@example state_projection_multi_species
 ps = [:p => 1.0, :d => 0.2, :kB => 2.0, :kD => 5.0]
 u0 = zeros(25,25)
 u0[1,1] = 1.0
 ```
-
+In the next step, however, we have to make an additional consideration. Since we have more than one species, we have to define which dimension of the initial condition (and hence also the output solution) correspond to which species. Here we provide a second argument to `FSPSystem`, which is a vector listing all species in the order they occur in the `u0` array.
 ```@example state_projection_multi_species
-using OrdinaryDiffEqRosenbrock, Plots # hide
-fsp_sys = FSPSystem(rs, [:X, :X2])
+using FiniteStateProjection # hide
+fsp_sys = FSPSystem(rs, [:X, :X₂])
+nothing # hide
+```
+Finally, we can simulate the model just like in the 1-dimensional case. Here we will specifically use the `Rodas5P()` ODE solver (as it performs noticeably better than teh default choice).
+```@example state_projection_multi_species
+using Plots # hide
+using OrdinaryDiffEqRosenbrock
 oprob = ODEProblem(fsp_sys, u0, 100.0, ps)
 @time osol = solve(oprob, Rodas5P())
-heatmap(osol[end]; xguide = "X2", yguide = "X")
+heatmap(osol[end]; xguide = "X₂", yguide = "X")
 ```
+Here we perform a simulation with a long time span ($t = 100$) aiming to find the system's steady state distribution. Next, we plot it using the `heatmap` function.
 
 ## [Finite state projection steady state simulations](@id state_projection_steady_state_sim)
 Previously we described how the [SteadyStateDiffEq.jl](https://github.com/SciML/SteadyStateDiffEq.jl) package can be used to [find an ODE's steady state through forward simulation](@ref steady_state_stability). The same interface can be used for ODEs generated through FiniteStateProjection.jl. Below we use this to find the steady state of the dimerisation example studied in the last example.
@@ -82,5 +104,11 @@ Previously we described how the [SteadyStateDiffEq.jl](https://github.com/SciML/
 using SteadyStateDiffEq, OrdinaryDiffEqRosenbrock
 ssprob = SteadyStateProblem(fsp_sys, u0, ps)
 sssol = solve(ssprob, DynamicSS(Rodas5P()))
-heatmap(sssol; xguide = "X2", yguide = "X")
+heatmap(sssol; xguide = "X₂", yguide = "X")
 ```
+
+
+---
+## References
+[^1]: [Daniel T. Gillespie, *A rigorous derivation of the chemical master equation*, Physica A: Statistical Mechanics and its Applications (1992).](https://www.sciencedirect.com/science/article/abs/pii/037843719290283V)
+[^2]: [Brian Munsky, Mustafa Khammash, *The finite state projection algorithm for the solution of the chemical master equation*, Journal of Chemical Physics (2006).](https://pubs.aip.org/aip/jcp/article-abstract/124/4/044104/561868/The-finite-state-projection-algorithm-for-the?redirectedFrom=fulltext)
