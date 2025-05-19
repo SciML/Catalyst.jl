@@ -85,7 +85,7 @@ bar(u0, label = "t = 0.0")
 We also plot the full distribution using the `bar` function. Finally, the initial condition vector defines the finite space onto which we project the CME. I.e. we will assume that, throughout the entire simulation, the probability of $X$ reaching values outside this initial vector is negligible. 
 
 !!! warning
-  This last bit is important. Even if the probability seems to be very small on the boundary provided by the initial condition, there is still a risk that probability will "leak". Here, it can be good to make simulations using different projections, ensuring that the results are consistent (especially for longer simulations).
+    This last bit is important. Even if the probability seems to be very small on the boundary provided by the initial condition, there is still a risk that probability will "leak". Here, it can be good to make simulations using different projections, ensuring that the results are consistent (especially for longer simulations).
 
 Now, we can finally create an `ODEProblem` using our `FSPSystem`, initial conditions, and the parameters declared previously. We can simulate this `ODEProblem` like any other ODE.
 ```@example state_projection_one_species
@@ -100,7 +100,7 @@ bar(osol(1.0);  bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 1.0")
 bar!(osol(2.0); bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 2.0")
 bar!(osol(5.0); bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 5.0")
 bar!(osol(10.0); bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 10.0",
- xguide = "X (copy numbers)", yguide = "Probability density")
+  xguide = "X (copy numbers)", yguide = "Probability density")
 ```
 
 ## [Finite state projection simulation of multi-species model](@id state_projection_multi_species)
