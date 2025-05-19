@@ -2,7 +2,7 @@
 ```@raw html
 <details><summary><strong>Quick-start example</strong></summary>
 ```
-The following code provides a brief example of hwo to simulate the chemical master equation using the FiniteStateProjection.jl package.
+The following code provides a brief example of how to simulate the chemical master equation using the [FiniteStateProjection.jl](https://github.com/SciML/FiniteStateProjection.jl) package.
 ```julia
 # Create reaction network model (a bistable switch).
 using Catalyst
@@ -66,6 +66,7 @@ jprob = JumpProblem(JumpInputs(rs, u0, tspan, ps))
 eprob = EnsembleProblem(jprob)
 esol = solve(eprob, SSAStepper(); trajectories = 10)
 plot(esol; ylimit = (0.0, Inf))
+Catalyst.PNG(plot(esol; ylimit = (0.0, Inf), fmt = :png, dpi = 200)) # hide
 ```
 Using chemical master equation simulations, we want to simulate how the *full probability distribution* of these jump simulations develops across the simulation time frame. 
 
@@ -82,8 +83,9 @@ u0[6] = 1.0
 bar(u0, label = "t = 0.0")
 ```
 We also plot the full distribution using the `bar` function. Finally, the initial condition vector defines the finite space onto which we project the CME. I.e. we will assume that, throughout the entire simulation, the probability of $X$ reaching values outside this initial vector is negligible. 
-!!! warn
- This last bit is important. Even if the probability seems to be very small on the boundary provided by the initial condition, there is still a risk that probability will "leak". Here, it can be good to make simulations using different projections, ensuring that the results are consistent (especially for longer simulations).
+
+!!! warning
+  This last bit is important. Even if the probability seems to be very small on the boundary provided by the initial condition, there is still a risk that probability will "leak". Here, it can be good to make simulations using different projections, ensuring that the results are consistent (especially for longer simulations).
 
 Now, we can finally create an `ODEProblem` using our `FSPSystem`, initial conditions, and the parameters declared previously. We can simulate this `ODEProblem` like any other ODE.
 ```@example state_projection_one_species
@@ -92,7 +94,7 @@ oprob = ODEProblem(fsp_sys, u0, tspan, ps)
 osol = solve(oprob)
 nothing # hide
 ```
-Finally, we can plot $X$'s probability distribution at various simulation time points. Again, we will use the `bar` function to plot the distribution, and the interface described [here](@ref simulation_structure_interfacing_solutions) to access the simulation at various time points.
+Finally, we can plot $X$'s probability distribution at various simulation time points. Again, we will use the `bar` function to plot the distribution, and the interface described [here](@ref simulation_structure_interfacing_solutions) to access the simulation at specified time points.
 ```@example state_projection_one_species
 bar(osol(1.0);  bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 1.0")
 bar!(osol(2.0); bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 2.0")
@@ -117,6 +119,7 @@ Next, we will declare our parameter values and initial condition. In this case, 
 ps = [:p => 1.0, :d => 0.2, :kB => 2.0, :kD => 5.0]
 u0 = zeros(25,25)
 u0[6,1] = 1.0
+nothing # hide
 ```
 In the next step, however, we have to make an additional consideration. Since we have more than one species, we have to define which dimension of the initial condition (and hence also the output solution) corresponds to which species. Here we provide a second argument to `FSPSystem`, which is a vector listing all species in the order they occur in the `u0` array.
 ```@example state_projection_multi_species
@@ -128,11 +131,11 @@ Finally, we can simulate the model just like in the 1-dimensional case. In this 
 ```@example state_projection_multi_species
 using Plots # hide
 using OrdinaryDiffEqRosenbrock
-oprob = ODEProblem(fsp_sys, u0, 100.0, ps)
+oprob = ODEProblem(fsp_sys, u0, 200.0, ps)
 osol = solve(oprob, Rodas5P())
 heatmap(osol[end]; xguide = "X₂", yguide = "X")
 ```
-Here we perform a simulation with a long time span ($t = 100$) aiming to find the system's steady state distribution. Next, we plot it using the `heatmap` function.
+Here we perform a simulation with a long time span ($t = 200.0$) aiming to find the system's steady state distribution. Next, we plot it using the `heatmap` function.
 
 ## [Finite state projection steady state simulations](@id state_projection_steady_state_sim)
 Previously, we have shown how the [SteadyStateDiffEq.jl](https://github.com/SciML/SteadyStateDiffEq.jl) package can be used to [find an ODE's steady state through forward simulation](@ref steady_state_stability). The same interface can be used for ODEs generated through FiniteStateProjection. Below, we use this to find the steady state of the dimerisation example studied in the last example.
