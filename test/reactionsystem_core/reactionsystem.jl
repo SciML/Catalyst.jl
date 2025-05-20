@@ -322,7 +322,7 @@ let
         for rs in [rs_prog, rs_dsl], u0 in u0_alts, p in ps_alts
             oprob_remade = remake(oprob; u0, p)
             sol = solve(oprob_remade, Vern7(); abstol = 1e-8, reltol = 1e-8)
-            @test sol.u[end] ≈ [0.5, 5.0, 0.2, 2.5]
+            @test sol[[X[1], X[2], Y1 ,Y2]][end] ≈ [0.5, 5.0, 0.2, 2.5]
         end
     end
 end
