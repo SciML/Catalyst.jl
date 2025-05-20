@@ -72,7 +72,7 @@ Catalyst.PNG(plot(esol; ylimit = (0.0, Inf), fmt = :png, dpi = 200)) # hide
 ```
 Using chemical master equation simulations, we want to simulate how the *full probability distribution* of these jump simulations develops across the simulation time frame. 
 
-As a first step, we import the FiniteStateProjection package. Next, we convert our [`ReactionSystem`](@ref) to a `FSPSystem` (from which we later will generate an ODE).
+As a first step, we import the FiniteStateProjection package. Next, we convert our [`ReactionSystem`](@ref) to a `FSPSystem` (from which we later will generate the ODEs that correspond to the truncated CME).
 ```@example state_projection_one_species
 using FiniteStateProjection
 fsp_sys = FSPSystem(rs)
