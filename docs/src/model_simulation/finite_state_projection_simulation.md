@@ -17,8 +17,6 @@ Pkg.add("SteadyStateDiffEq")
 ```@raw html
 </details>
 ```
-  \
-
 ```@raw html
 <details><summary><strong>Quick-start example</strong></summary>
 ```
@@ -63,12 +61,13 @@ One can study the dynamics of stochastic chemical kinetics models by simulating 
 ```math
 \begin{aligned}
 \frac{dP(X=0)}{dt} &= d \cdot P(X=1) - p \cdot P(X=0) \\
-\frac{dP(X=1)}{dt} &= p \cdot P(X=0) + 2d \cdot P(X=2) - (p + d) P(X=1) \\
+\frac{dP(X=1)}{dt} &= p \cdot P(X=0) + d \cdot 2P(X=2) - (p + d) P(X=1) \\
  &\vdots\\
-\frac{dP(X=i)}{dt} &= p \cdot P(X=i-1) + (i + 1)d \cdot P(X=i+1) - (p + i\cdot d) P(X=i)
+\frac{dP(X=i)}{dt} &= p \cdot P(X=i-1) + d \cdot (i + 1)P(X=i+1) - (p + D \cdot i) P(X=i) \\
+ &\vdots\\
 \end{aligned}
 ```
-A general form of the CME is provided [here](@ref math_models_in_catalyst_sck_jumps). For chemical reaction networks in which the total population is bounded, the CME corresponds to a finite set of ODEs. In contrast, for networks in which the system can (in theory) become unbounded, such as networks that include zero order reactions like $\varnothing \to A$, the CME will correspond to an infinite set of ODEs. Even in the finite case, the number of ODEs corresponds to the number of possible state vectors, i.e. vectors with components representing the integer populations of each species in the network. Therefore, for even simple reaction networks there can be many more ODEs than can be represented in typical levels of computer memory, and it becomes infeasible to numerically solve the full system of ODEs that correspond to the CME. However, in many cases the probability of the system attaining species values outside some small range can become negligibly small. Here, a truncated, approximating, version of the CME can be solved practically. An approach for this is the *finite state projection method*[^2]. Below we describe how to use the [FiniteStateProjection.jl](https://github.com/SciML/FiniteStateProjection.jl) package to solve the truncated CME (with the package's [documentation](https://docs.sciml.ai/FiniteStateProjection/dev/) providing a more extensive description). While the CME approach can be very powerful, we note that even for systems with a few species, the truncated CME typically has too many states for it to be feasible to solve the full set of ODEs.
+A general form of the CME is provided [here](@ref math_models_in_catalyst_sck_jumps). For chemical reaction networks in which the total population is bounded, the CME corresponds to a finite set of ODEs. In contrast, for networks in which the system can (in theory) become unbounded, such as networks that include zero order reactions like $\varnothing \to X$, the CME will correspond to an infinite set of ODEs. Even in the finite case, the number of ODEs corresponds to the number of possible state vectors, i.e. vectors with components representing the integer populations of each species in the network. Therefore, for even simple reaction networks there can be many more ODEs than can be represented in typical levels of computer memory, and it becomes infeasible to numerically solve the full system of ODEs that correspond to the CME. However, in many cases the probability of the system attaining species values outside some small range can become negligibly small. Here, a truncated, approximating, version of the CME can be solved practically. An approach for this is the *finite state projection method*[^2]. Below we describe how to use the [FiniteStateProjection.jl](https://github.com/SciML/FiniteStateProjection.jl) package to solve the truncated CME (with the package's [documentation](https://docs.sciml.ai/FiniteStateProjection/dev/) providing a more extensive description). While the CME approach can be very powerful, we note that even for systems with a few species, the truncated CME typically has too many states for it to be feasible to solve the full set of ODEs.
 
 ## [Finite state projection simulation of single-species model](@id state_projection_one_species)
 For this example, we will use a simple [birth-death model](@ref basic_CRN_library_bd), where a single species ($X$) is created and degraded at constant rates ($p$ and $d$, respectively).
@@ -107,7 +106,7 @@ bar(u0, label = "t = 0.0")
 We also plot the full distribution using the `bar` function. Finally, the initial condition vector defines the finite space onto which we project the CME. I.e. we will assume that, throughout the entire simulation, the probability of $X$ reaching values outside this initial vector is negligible. 
 
 !!! warning
-    This last bit is important. Even if the probability seems to be very small on the boundary provided by the initial condition, there is still a risk that probability will "leak". Here, it can be good to make simulations using different projections, ensuring that the results are consistent (especially for longer simulations). It is also possible to (at any time point) sum up the total probability density to gain a measure of how much has "leaked" (ideally, this number should be as close to 1 as possible).
+    This last bit is important. Even if the probability seems to be very small on the boundary provided by the initial condition, there is still a risk that probability will "leak". Here, it can be good to make simulations using different projections, ensuring that the results are consistent (especially for longer simulations). It is also possible to (at any time point) sum up the total probability density to gain a measure of how much has "leaked" (ideally, this sum should be as close to 1 as possible).
 
 Now, we can finally create an `ODEProblem` using our `FSPSystem`, initial conditions, and the parameters declared previously. We can simulate this `ODEProblem` like any other ODE.
 ```@example state_projection_one_species
@@ -183,7 +182,7 @@ for endpoint in esol
 end
 heatmap(0:24, 0:24, ss_jump ./length(esol); xguide = "X₂", yguide = "X")
 ```
-Here we used an ensemble [output function](@ref activation_time_distribution_measurement) to only save the final state of each simulation (and then plot these using `heatmap`).
+Here we used an ensemble [output function](@ref activation_time_distribution_measurement) to only save each simulation's final state (and plot these using `heatmap`).
 
 
 ---
