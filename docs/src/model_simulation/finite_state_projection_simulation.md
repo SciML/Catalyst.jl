@@ -183,7 +183,7 @@ for endpoint in esol
 end
 heatmap(0:24, 0:24, ss_jump ./length(esol); xguide = "X₂", yguide = "X")
 ```
-Here we used an ensemble [output function]() to only save the final state of each simulation (and then plot these using `heatmap`).
+Here we used an ensemble [output function](@ref activation_time_distribution_measurement) to only save the final state of each simulation (and then plot these using `heatmap`).
 
 
 ---
