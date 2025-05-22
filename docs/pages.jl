@@ -62,9 +62,9 @@ pages = Any[
         "inverse_problems/behaviour_optimisation.md",
         "inverse_problems/structural_identifiability.md",
         "inverse_problems/global_sensitivity_analysis.md",
-        "Examples" => Any[
-            "inverse_problems/examples/ode_fitting_oscillation.md"
-        ]
+        #"Examples" => Any[
+        #    "inverse_problems/examples/ode_fitting_oscillation.md"
+        #]
     ],
     "Spatial modelling" => Any[
         "spatial_modelling/lattice_reaction_systems.md",
