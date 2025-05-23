@@ -46,14 +46,14 @@ oprob = ODEProblem(fsp_sys, u0, tspan, ps)
 # Plot solution as a heatmap at a specific time point.
 using OrdinaryDiffEqRosenbrock, Plots
 osol = solve(oprob, Rodas5P())
-heatmap(osol(50.0); xguide = "Y", yguide = "X")
+heatmap(0:19, 0:19, osol(50.0); xguide = "Y", yguide = "X")
 ```
 ```@raw html
 </details>
 ```
   \
   
-As previously discussed, [*stochastic chemical kinetics*](@ref math_models_in_catalyst_sck_jumps) models are mathematically given by jump processes that capture the exact times at which individual reactions occur, and the exact (integer) amounts of each chemical species at a given time. They represent a more microscopic model than [Chemical Langevin SDE](@ref math_models_in_catalyst_cle_sdes) models and [Reaction Rate Equation ODE](@ref math_models_in_catalyst_rre_odes) models, which can be interpreted as approximations to stochastic chemical kinetics models in the large population limit.
+As previously discussed, [*stochastic chemical kinetics*](@ref math_models_in_catalyst_sck_jumps) models are mathematically given by jump processes that capture the exact times at which individual reactions occur, and the exact (integer) amounts of each chemical species at a given time. They represent a more microscopic model than [chemical Langevin equation SDE](@ref math_models_in_catalyst_cle_sdes) and [reaction rate equation ODE](@ref math_models_in_catalyst_rre_odes) models, which can be interpreted as approximations to stochastic chemical kinetics models in the large population limit.
 
 One can study the dynamics of stochastic chemical kinetics models by simulating the stochastic processes using Monte Carlo methods. For example, they can be [exactly sampled](@ref simulation_intro_jumps) using [Stochastic Simulation Algorithms](https://en.wikipedia.org/wiki/Gillespie_algorithm) (SSAs), which are also often referred to as Gillespie's method. To gain a good understanding of a system's dynamics, one typically has to carry out a large number of jump process simulations to minimize sampling error. To avoid such sampling error, an alternative approach is to solve ODEs for the *full probability distribution* that these processes have a given value at each time. Knowing this distribution, one can then calculate any statistic of interest that can be sampled via running many SSA simulations.
 
@@ -67,7 +67,7 @@ One can study the dynamics of stochastic chemical kinetics models by simulating 
  &\vdots\\
 \end{aligned}
 ```
-A general form of the CME is provided [here](@ref math_models_in_catalyst_sck_jumps). For chemical reaction networks in which the total population is bounded, the CME corresponds to a finite set of ODEs. In contrast, for networks in which the system can (in theory) become unbounded, such as networks that include zero order reactions like $\varnothing \to X$, the CME will correspond to an infinite set of ODEs. Even in the finite case, the number of ODEs corresponds to the number of possible state vectors, i.e. vectors with components representing the integer populations of each species in the network. Therefore, for even simple reaction networks there can be many more ODEs than can be represented in typical levels of computer memory, and it becomes infeasible to numerically solve the full system of ODEs that correspond to the CME. However, in many cases the probability of the system attaining species values outside some small range can become negligibly small. Here, a truncated, approximating, version of the CME can be solved practically. An approach for this is the *finite state projection method*[^2]. Below we describe how to use the [FiniteStateProjection.jl](https://github.com/SciML/FiniteStateProjection.jl) package to solve the truncated CME (with the package's [documentation](https://docs.sciml.ai/FiniteStateProjection/dev/) providing a more extensive description). While the CME approach can be very powerful, we note that even for systems with a few species, the truncated CME typically has too many states for it to be feasible to solve the full set of ODEs.
+A general form of the CME is provided [here](@ref math_models_in_catalyst_sck_jumps). For chemical reaction networks in which the total population is bounded, the CME corresponds to a finite set of ODEs. In contrast, for networks in which the system can (in theory) become unbounded, such as networks that include zero order reactions like $\varnothing \to X$, the CME will correspond to an infinite set of ODEs. Even in the finite case, the number of ODEs corresponds to the number of possible state vectors (i.e. vectors with components representing the integer populations of each species in the network) can become unmanageably large. Therefore, for even simple reaction networks there can be many more ODEs than can be represented in typical levels of computer memory, and it becomes infeasible to numerically solve the full system of ODEs that correspond to the CME. However, in many cases the probability of the system attaining species values outside some small range can become negligibly small. Here, a truncated, approximating, version of the CME can be solved practically. An approach for this is the *finite state projection method*[^2]. Below we describe how to use the [FiniteStateProjection.jl](https://github.com/SciML/FiniteStateProjection.jl) package to solve the truncated CME (with the package's [documentation](https://docs.sciml.ai/FiniteStateProjection/dev/) providing a more extensive description). While the CME approach can be very powerful, we note that even for systems with a few species, the truncated CME typically has too many states for it to be feasible to solve the full set of ODEs.
 
 ## [Finite state projection simulation of single-species model](@id state_projection_one_species)
 For this example, we will use a simple [birth-death model](@ref basic_CRN_library_bd), where a single species ($X$) is created and degraded at constant rates ($p$ and $d$, respectively).
@@ -106,7 +106,7 @@ bar(u0, label = "t = 0.0")
 We also plot the full distribution using the `bar` function. Finally, the initial condition vector defines the finite space onto which we project the CME. I.e. we will assume that, throughout the entire simulation, the probability of $X$ reaching values outside this initial vector is negligible. 
 
 !!! warning
-    This last bit is important. Even if the probability seems to be very small on the boundary provided by the initial condition, there is still a risk that probability will "leak". Here, it can be good to make simulations using different projections, ensuring that the results are consistent (especially for longer simulations). It is also possible to (at any time point) sum up the total probability density to gain a measure of how much has "leaked" (ideally, this sum should be as close to 1 as possible).
+    This last bit is important. Even if the probability seems to be very small on the boundary provided by the initial condition, there is still a risk that probability will "leak". Here, it can be good to make simulations using different projections, ensuring that the results are consistent (especially for longer simulations). It is also possible to (at any time point) sum up the total probability density to gain a measure of how much has "leaked" (ideally, this sum should be as close to 1 as possible). While solving the CME over a very large space will ensure correctness, a too large a space comes with an unnecessary performance penalty.
 
 Now, we can finally create an `ODEProblem` using our `FSPSystem`, initial conditions, and the parameters declared previously. We can simulate this `ODEProblem` like any other ODE.
 ```@example state_projection_one_species
@@ -117,15 +117,15 @@ nothing # hide
 ```
 Finally, we can plot $X$'s probability distribution at various simulation time points. Again, we will use the `bar` function to plot the distribution, and the interface described [here](@ref simulation_structure_interfacing_solutions) to access the simulation at specified time points.
 ```@example state_projection_one_species
-bar(osol(1.0);  bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 1.0")
-bar!(osol(2.0); bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 2.0")
-bar!(osol(5.0); bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 5.0")
-bar!(osol(10.0); bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 10.0",
+bar(0:74, osol(1.0); bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 1.0")
+bar!(0:74, osol(2.0); bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 2.0")
+bar!(0:74, osol(5.0); bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 5.0")
+bar!(0:74, osol(10.0); bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t = 10.0",
     xguide = "X (copy numbers)", yguide = "Probability density")
 ```
 
 ## [Finite state projection simulation of multi-species model](@id state_projection_multi_species)
-Next, we will consider a system with more than one species. The workflow will be identical, however, we will have to make an additional consideration regarding our initial conditions, simulation performance, and plotting approach.
+Next, we will consider a system with more than one species. The workflow will be identical, however, we will have to make an additional consideration regarding the initial condition, simulation performance, and plotting approach.
 
 For this example, we will consider a simple dimerisation model. In it, $X$ gets produced and degraded at constant rates, and can also dimerise to form $X₂$.
 ```@example state_projection_multi_species
@@ -152,11 +152,11 @@ Finally, we can simulate the model just like in the 1-dimensional case. In this 
 ```@example state_projection_multi_species
 using Plots # hide
 using OrdinaryDiffEqRosenbrock
-oprob = ODEProblem(fsp_sys, u0, 200.0, ps)
+oprob = ODEProblem(fsp_sys, u0, 100.0, ps)
 osol = solve(oprob, Rodas5P())
 heatmap(0:24, 0:24, osol[end]; xguide = "X₂", yguide = "X")
 ```
-Here we perform a simulation with a long time span ($t = 200.0$) aiming to find the system's steady state distribution. Next, we plot it using the `heatmap` function.
+Here we perform a simulation with a long time span ($t = 100.0$) aiming to find the system's steady state distribution. Next, we plot it using the `heatmap` function.
 
 !!! warning
     The `heatmap` function "flips" the plot contrary to what many would consider intuitive. I.e. here the x-axis corresponds to the second species ($X₂$) and the y-axis to the first species ($X$).
