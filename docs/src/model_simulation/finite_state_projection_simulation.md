@@ -5,7 +5,7 @@
 The following code sets up an environment for running the code on this page.
 ```julia
 using Pkg
-Pkg.activate(".")
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("Catalyst")
 Pkg.add("FiniteStateProjection")
 Pkg.add("JumpProcesses")
@@ -60,10 +60,10 @@ One can study the dynamics of stochastic chemical kinetics models by simulating 
 [*The chemical master equation*](https://en.wikipedia.org/wiki/Master_equation) (CME) describes the time development of this probability distribution[^1], and is given by a (possibly infinite) coupled system of ODEs (with one ODE for each possible chemical state, i.e. number configuration, of the system). For a simple [birth-death model](@ref basic_CRN_library_bd) ($\varnothing \xrightleftharpoons[d]{p} X$) the CME looks like
 ```math
 \begin{aligned}
-\frac{dP(X=0)}{dt} &= d \cdot P(X=1) - p \cdot P(X=0) \\
-\frac{dP(X=1)}{dt} &= p \cdot P(X=0) + d \cdot 2P(X=2) - (p + d) P(X=1) \\
+\frac{dP(X(t)=0)}{dt} &= d \cdot P(X(t)=1) - p \cdot P(X(t)=0) \\
+\frac{dP(X(t)=1)}{dt} &= p \cdot P(X(t)=0) + d \cdot 2P(X(t)=2) - (p + d) P(X(t)=1) \\
  &\vdots\\
-\frac{dP(X=i)}{dt} &= p \cdot P(X=i-1) + d \cdot (i + 1)P(X=i+1) - (p + D \cdot i) P(X=i) \\
+\frac{dP(X(t)=i)}{dt} &= p \cdot P(X(t)=i-1) + d \cdot (i + 1)P(X(t)=i+1) - (p + D \cdot i) P(X(t)=i) \\
  &\vdots\\
 \end{aligned}
 ```
@@ -148,7 +148,7 @@ using FiniteStateProjection # hide
 fsp_sys = FSPSystem(rs, [:X, :X₂])
 nothing # hide
 ```
-Finally, we can simulate the model just like in the 1-dimensional case. As we are simulating an ODE with $25⋅25 = 625$ states, we need to make some considerations regarding performance. In this case, we will simply specify the `Rodas5P()` ODE solver (more extensive advice on performance can be found [here](@ref ode_simulation_performance)).
+Finally, we can simulate the model just like in the 1-dimensional case. As we are simulating an ODE with $25⋅25 = 625$ states, we need to make some considerations regarding performance. In this case, we will simply specify the `Rodas5P()` ODE solver (more extensive advice on performance can be found [here](@ref ode_simulation_performance)). Here, we perform a simulation with a long time span ($t = 100.0$), aiming to find the system's steady state distribution. Next, we plot it using the `heatmap` function.
 ```@example state_projection_multi_species
 using Plots # hide
 using OrdinaryDiffEqRosenbrock
@@ -156,7 +156,6 @@ oprob = ODEProblem(fsp_sys, u0, 100.0, ps)
 osol = solve(oprob, Rodas5P())
 heatmap(0:24, 0:24, osol[end]; xguide = "X₂", yguide = "X")
 ```
-Here we perform a simulation with a long time span ($t = 100.0$) aiming to find the system's steady state distribution. Next, we plot it using the `heatmap` function.
 
 !!! warning
     The `heatmap` function "flips" the plot contrary to what many would consider intuitive. I.e. here the x-axis corresponds to the second species ($X₂$) and the y-axis to the first species ($X$).
