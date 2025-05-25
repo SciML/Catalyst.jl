@@ -148,7 +148,7 @@ using FiniteStateProjection # hide
 fsp_sys = FSPSystem(rs, [:X, :X₂])
 nothing # hide
 ```
-Finally, we can simulate the model just like in the 1-dimensional case. In this case, however, we are simulating an ODE with $25⋅25 = 625$ states, which means we need to make some considerations regarding performance. In this case, we will simply specify the `Rodas5P()` ODE solver (more extensive advice on performance can be found [here](@ref ode_simulation_performance)).
+Finally, we can simulate the model just like in the 1-dimensional case. As we are simulating an ODE with $25⋅25 = 625$ states, we need to make some considerations regarding performance. In this case, we will simply specify the `Rodas5P()` ODE solver (more extensive advice on performance can be found [here](@ref ode_simulation_performance)).
 ```@example state_projection_multi_species
 using Plots # hide
 using OrdinaryDiffEqRosenbrock
