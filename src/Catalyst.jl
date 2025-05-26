@@ -4,7 +4,7 @@ $(DocStringExtensions.README)
 module Catalyst
 
 using DocStringExtensions
-using SparseArrays, DiffEqBase, Reexport, Setfield
+using SparseArrays, DiffEqBase, Reexport, Setfield, EnumX
 using LaTeXStrings, Latexify, Requires
 using LinearAlgebra, Combinatorics
 using JumpProcesses: JumpProcesses, JumpProblem,
@@ -14,7 +14,7 @@ using JumpProcesses: JumpProcesses, JumpProblem,
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit
 const MT = ModelingToolkit
-using DynamicQuantities#, Unitful # Having Unitful here as well currently gives an error.
+using DynamicQuantities #, Unitful # Having Unitful here as well currently gives an error.
 
 @reexport using ModelingToolkit
 using Symbolics
@@ -78,7 +78,10 @@ const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYM
 # The `Reaction` structure and its functions.
 include("reaction.jl")
 export isspecies
-export Reaction
+export Reaction, PhysicalScale
+
+# Union type for `Reaction`s and `Equation`s.
+const CatalystEqType = Union{Reaction, Equation}
 
 # The `ReactionSystem` structure and its functions.
 include("reactionsystem.jl")
@@ -110,11 +113,13 @@ export @reaction_network, @network_component, @reaction, @species
 # Network analysis functionality.
 include("network_analysis.jl")
 export reactioncomplexmap, reactioncomplexes, incidencemat
-export complexstoichmat, laplacianmat, fluxmat, massactionvector, complexoutgoingmat
+export complexstoichmat, laplacianmat, fluxmat, massactionvector, complexoutgoingmat, adjacencymat
 export incidencematgraph, linkageclasses, stronglinkageclasses,
        terminallinkageclasses, deficiency, subnetworks
 export linkagedeficiencies, isreversible, isweaklyreversible
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
+export satisfiesdeficiencyone, satisfiesdeficiencyzero
+export iscomplexbalanced, isdetailedbalanced, robustspecies
 
 # registers CRN specific functions using Symbolics.jl
 include("registered_functions.jl")

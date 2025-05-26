@@ -367,6 +367,13 @@ struct ReactionSystem{V <: NetworkProperties} <:
             end
         end
 
+        # Checks that no (non-reaction) equation contains a differential w.r.t. a species.
+        for eq in eqs
+            (eq isa Reaction) && continue
+            (hasnode(is_species_diff, eq.lhs) || hasnode(is_species_diff, eq.rhs)) &&
+                error("An equation ($eq) contains a differential with respect to a species. This is currently not supported. If this is a functionality you require, please raise an issue on the Catalyst GitHub page and we can consider the best way to implement it.")
+        end
+
         rs = new{typeof(nps)}(
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, connection_type, nps, cls, cevs,
@@ -374,6 +381,13 @@ struct ReactionSystem{V <: NetworkProperties} <:
         checks && validate(rs)
         rs
     end
+end
+
+# Checks if a symbolic expression constains a differential with respect to a species (either directly
+# or somehwere within the differential expression).
+function is_species_diff(expr)
+    Symbolics.is_derivative(expr) || return false
+    return hasnode(ex -> (ex isa Symbolics.BasicSymbolic) && isspecies(ex) && !isbc(ex), expr)
 end
 
 # Four-argument constructor. Permits additional inputs as optional arguments.
@@ -482,7 +496,7 @@ function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
     make_ReactionSystem_internal(rxs, iv, [], []; kwargs...)
 end
 
-# One-argument constructor. Creates an emtoy `ReactionSystem` from a time independent variable only.
+# One-argument constructor. Creates an empty `ReactionSystem` from a time independent variable only.
 function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
@@ -858,6 +872,16 @@ function numreactions(network)
 end
 
 """
+    has_nonreactions(network)
+
+Check if the given `network` has any non-reaction equations such as ODEs or algebraic
+equations.
+"""
+function has_nonreactions(network)
+    numreactions(network) != length(equations(network))
+end
+
+"""
     nonreactions(network)
 
 Return the non-reaction equations within the network (i.e. algebraic and differential equations).
@@ -1121,47 +1145,6 @@ end
 function reactionsystem_uptodate_check()
     if fieldnames(ReactionSystem) != reactionsystem_fields
         @warn "The `ReactionSystem` structure have been modified without this being taken into account in the functionality you are attempting to use. Please report this at https://github.com/SciML/Catalyst.jl/issues. Proceed with caution, as there might be errors in whichever functionality you are attempting to use."
-    end
-end
-
-# used in the `__unpacksys` function.
-function __unpacksys(rn)
-    ex = :(begin end)
-    for key in keys(get_var_to_name(rn))
-        var = MT.getproperty(rn, key, namespace = false)
-        push!(ex.args, :($key = $var))
-    end
-    ex
-end
-
-"""
-    @unpacksys sys::ModelingToolkit.AbstractSystem
-
-Loads all species, variables, parameters, and observables defined in `sys` as
-variables within the calling module.
-
-For example,
-```julia
-sir = @reaction_network SIR begin
-    β, S + I --> 2I
-    ν, I --> R
-end
-@unpacksys sir
-```
-will load the symbolic variables, `S`, `I`, `R`, `ν` and `β`.
-
-Notes:
-- Can not be used to load species, variables, or parameters of subsystems or
-  constraints. Either call `@unpacksys` on those systems directly, or
-  [`flatten`](@ref) to collate them into one system before calling.
-- Note that this places symbolic variables within the calling module's scope, so
-  calling from a function defined in a script or the REPL will still result in
-  the symbolic variables being defined in the `Main` module.
-"""
-macro unpacksys(rn)
-    quote
-        ex = Catalyst.__unpacksys($(esc(rn)))
-        Base.eval($(__module__), ex)
     end
 end
 

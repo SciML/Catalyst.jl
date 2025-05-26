@@ -41,9 +41,8 @@ let
     rs_pIn = complete(rs_pIn)
 
     # Defines a `ReactionSystem` with the input parameter (DSL).
-    input = pIn(t)
     rs_pIn_dsl = @reaction_network rs_pIn begin
-        ($input,d), 0 <--> X
+        ($pIn(t),d), 0 <--> X
         (k1*X,k2), Y1 <--> Y2
     end
 
@@ -123,14 +122,13 @@ let
     spline1d = LinearInterpolation(100.0*Is ./ (100.0 .+ Is), Is)
     @parameters (i_rate::typeof(spline1d))(..)
 
-    # Decalres the models.
+    # Declares the models.
     sir = @reaction_network begin
         k1*100*I/(100 + I), S --> I
         k2, I --> R
     end
-    input = i_rate(sir.I)
     sir_funcp = @reaction_network rs begin
-        k1*$(input), S --> I
+        k1*$i_rate(I), S --> I
         k2, I --> R
     end
 
@@ -168,4 +166,30 @@ let
     ]
     @named rs = ReactionSystem(rxs, t)
     @test issetequal([Catalyst.get_unit(rx.rate) for rx in reactions(rs)], [u"mol/(s*m^3)", u"1/s"])
+end
+
+# Tests that a functional parameter can be interpolated as the function only, as a function of a 
+# symbolic variable, or interpolated with the functional parameter and argument separately.
+let 
+    # Prepares the functional parameter.
+    ts = collect(0.0:0.1:1.0)
+    spline = LinearInterpolation(log.(ts), ts)
+    t_var = default_t()
+    @parameters (pIn::typeof(spline))(..)
+    pIn_func = pIn(t_var)
+
+    # Creates models using different approaches, check that all yield the same model.
+    rn1 = @reaction_network rn begin
+        p, 0 --> X
+        $pIn_func, 0 --> X
+    end
+    rn2 = @reaction_network rn begin
+        p, 0 --> X
+        $pIn(t), 0 --> X
+    end
+    rn3 = @reaction_network rn begin
+        p, 0 --> X
+        $pIn($t_var), 0 --> X
+    end
+    @test rn1 == rn2 == rn3
 end

@@ -72,6 +72,16 @@ while the jump process propensity function is
 ```math
 a(\mathbf{X}(t)) = k A (A-1) B.
 ```
+One can also specify during system construction that by default combinatoric
+scalings should be disabled, i.e.
+```@example math_examples
+using Catalyst
+rn = @reaction_network begin
+    @combinatoric_ratelaws false
+    k, 3A + 2B --> A + 3D
+end
+osys = convert(ODESystem, rn)
+```
 
 ## [Reaction Rate Equation (RRE) ODE Models](@id math_models_in_catalyst_rre_odes)
 The RRE ODE models Catalyst creates for a general system correspond to the coupled system of ODEs given by
@@ -100,7 +110,7 @@ Likewise, the following drops the combinatoric scaling factors, giving unscaled 
 osys = convert(ODESystem, rn; combinatoric_ratelaws = false)
 ```
 
-## Chemical Langevin Equation (CLE) SDE Models
+## [Chemical Langevin Equation (CLE) SDE Models](@id math_models_in_catalyst_cle_sdes)
 The CLE SDE models Catalyst creates for a general system correspond to the coupled system of SDEs given by
 ```math
 d X_m = \sum_{k=1}^K \nu_m^k a_k(\mathbf{X}(t),t) dt + \sum_{k=1}^K \nu_m^k \sqrt{a_k(\mathbf{X}(t),t)} dW_k(t), \quad m = 1,\dots,M,
@@ -127,7 +137,7 @@ dC(t) &= \frac{3}{2} k_1 A^{2} B \, dt + 3 \sqrt{\frac{k_1}{2} A^{2} B} \, dW_1(
 \end{align}
 ```
 
-## Stochastic Chemical Kinetics Jump Process Models
+## [Stochastic Chemical Kinetics Jump Process Models](@id math_models_in_catalyst_sck_jumps)
 The stochastic chemical kinetics jump process models Catalyst creates for a general system correspond to the coupled system of jump processes, in the time change representation, given by
 ```math
 X_m(t) = X_m(0) + \sum_{k=1}^K \nu_m^k Y_k\left( \int_{0}^t a_k(\mathbf{X}(s^-),s) \, ds \right), \quad m = 1,\dots,M.

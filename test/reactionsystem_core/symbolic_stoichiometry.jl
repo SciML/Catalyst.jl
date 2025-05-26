@@ -19,7 +19,7 @@ include("../test_functions.jl")
 ### Base Tests ###
 
 # Checks that systems with symbolic stoichiometries, created using different approaches, are identical.
-let 
+let
     @parameters p k d::Float64 n1::Int64 n2 n3
     @species X(t) Y(t)
     rxs1 = [
@@ -71,7 +71,7 @@ begin
 end
 
 # Compares the Catalyst-generated ODE function to a manually computed ODE function.
-let 
+let
     # With combinatoric ratelaws.
     function oderhs(u, p, t)
         k,α = p
@@ -89,7 +89,7 @@ let
     end
     @test f_eval(rs, u0_1, ps_1, τ) ≈ oderhs(u0_2, ps_2, τ)
 
-    # Without combinatoric ratelaws. 
+    # Without combinatoric ratelaws.
     function oderhs_no_crl(u, p, t)
         k,α = p
         A,B,C,D = u
@@ -108,8 +108,8 @@ let
 end
 
 # Compares the Catalyst-generated SDE noise function to a manually computed SDE noise function.
-let 
-    # With combinatoric ratelaws. 
+let
+    # With combinatoric ratelaws.
     function sdenoise(u, p, t)
         k,α = p
         A,B,C,D = u
@@ -126,7 +126,7 @@ let
     end
     @test g_eval(rs, u0_1, ps_1, τ) ≈ sdenoise(u0_2, ps_2, τ)
 
-    # Without combinatoric ratelaws. 
+    # Without combinatoric ratelaws.
     function sdenoise_no_crl(u, p, t)
         k,α = p
         A,B,C,D = u
@@ -192,7 +192,7 @@ end
 # Tests symbolic stoichiometries in simulations.
 # Tests for decimal numbered symbolic stoichiometries.
 let
-    # Declares models. The references models have the `n` parameters so they can use the same 
+    # Declares models. The references models have the `n` parameters so they can use the same
     # parameter vectors as the non-reference ones.
     rs_int = @reaction_network begin
         @parameters n::Int64
@@ -211,9 +211,9 @@ let
         (k1, k2), 2.5*X1 <--> X2
     end
 
-    # Set simulation settings. Initial conditions are design to start, more or less, at 
+    # Set simulation settings. Initial conditions are design to start, more or less, at
     # steady state concentrations.
-    # Values are selected so that stochastic tests should always pass within the bounds (independent 
+    # Values are selected so that stochastic tests should always pass within the bounds (independent
     # of seed).
     u0_int = [:X1 => 150, :X2 => 600]
     u0_dec = [:X1 => 100, :X2 => 600]
@@ -247,10 +247,10 @@ let
     @test mean(ssol_dec[:X1]) ≈ mean(ssol_dec_ref[:X1]) atol = 2*1e0
 
     # Test Jump simulations with integer coefficients.
-    dprob_int = DiscreteProblem(rs_int, u0_int, tspan_stoch, ps_int)
-    dprob_int_ref = DiscreteProblem(rs_ref_int, u0_int, tspan_stoch, ps_int)
-    jprob_int = JumpProblem(rs_int, dprob_int, Direct(); rng, save_positions = (false, false))
-    jprob_int_ref = JumpProblem(rs_ref_int, dprob_int_ref, Direct(); rng, save_positions = (false, false))
+    jin_int = JumpInputs(rs_int, u0_int, tspan_stoch, ps_int)
+    jin_int_ref = JumpInputs(rs_ref_int, u0_int, tspan_stoch, ps_int)
+    jprob_int = JumpProblem(jin_int; rng, save_positions = (false, false))
+    jprob_int_ref = JumpProblem(jin_int_ref; rng, save_positions = (false, false))
     jsol_int = solve(jprob_int, SSAStepper(); seed, saveat = 1.0)
     jsol_int_ref = solve(jprob_int_ref, SSAStepper(); seed, saveat = 1.0)
     @test mean(jsol_int[:X1]) ≈ mean(jsol_int_ref[:X1]) atol = 1e-2 rtol = 1e-2
@@ -265,11 +265,11 @@ let
         @parameters n::Int64 k::Int64
         i, S + n*I --> k*I
         r, n*I --> n*R
-    end      
+    end
     sir_ref = @reaction_network begin
         i, S + I --> 2I
         r, I --> R
-    end  
+    end
 
     ps = [:i => 1e-4, :r => 1e-2, :n => 1.0, :k => 2.0]
     ps_ref = [:i => 1e-4, :r => 1e-2]
@@ -283,10 +283,10 @@ let
     @test solve(oprob, Tsit5()) ≈ solve(oprob_ref, Tsit5())
 
     # Jumps. First ensemble problems for each systems is created.
-    dprob = DiscreteProblem(sir, u0, tspan, ps) 
-    dprob_ref = DiscreteProblem(sir_ref, u0, tspan, ps_ref) 
-    jprob = JumpProblem(sir, dprob, Direct(); rng, save_positions = (false, false)) 
-    jprob_ref = JumpProblem(sir_ref, dprob_ref, Direct(); rng, save_positions = (false, false)) 
+    jin = JumpInputs(sir, u0, tspan, ps)
+    jin_ref = JumpInputs(sir_ref, u0, tspan, ps_ref)
+    jprob = JumpProblem(jin; rng, save_positions = (false, false))
+    jprob_ref = JumpProblem(jin_ref; rng, save_positions = (false, false))
     eprob = EnsembleProblem(jprob)
     eprob_ref = EnsembleProblem(jprob_ref)
 

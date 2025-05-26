@@ -52,6 +52,7 @@ Here we use `nothing` where the DSL used ``\varnothing``. Finally, we are ready
 to construct our [`ReactionSystem`](@ref) as
 ```@example ex
 @named repressilator = ReactionSystem(rxs, t)
+repressilator = complete(repressilator)
 nothing     # hide
 ```
 Notice, the model is named `repressilator`. A name must always be specified when
@@ -62,7 +63,7 @@ Alternatively, one can use the `name = :repressilator` keyword argument to the
 `ReactionSystem` constructor.
 
 !!! warning
-       All `ReactionSystem`s created via the symbolic interface (i.e. by calling `ReactionSystem` with some input, rather than using `@reaction_network`) are not marked as complete. To simulate them, they must first be marked as *complete*, indicating to Catalyst and ModelingToolkit that they represent finalized models. This can be done using the `complete` function, i.e. by calling `repressilator = complete(repressilator)`. An expanded description on *completeness* can be found [here](@ref completeness_note).
+       All `ReactionSystem`s created via the symbolic interface (i.e. by calling `ReactionSystem` with some input, rather than using `@reaction_network`) are not marked as complete. To simulate them, they must first be marked as *complete*, indicating to Catalyst and ModelingToolkit that they represent finalized models. This can be done using the `complete` function, as above. An expanded description on *completeness* can be found [here](@ref completeness_note).
 
 We can check that this is the same model as the one we defined via the DSL as
 follows (this requires that we use the same names for rates, species and the

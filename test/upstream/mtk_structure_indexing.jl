@@ -33,7 +33,7 @@ begin
     oprob = ODEProblem(model, u0_vals, tspan, p_vals)
     sprob = SDEProblem(model,u0_vals, tspan, p_vals)
     dprob = DiscreteProblem(model, u0_vals, tspan, p_vals)
-    jprob = JumpProblem(model, deepcopy(dprob), Direct(); rng)
+    jprob = JumpProblem(JumpInputs(model, u0_vals, tspan, p_vals); rng)
     nprob = NonlinearProblem(model, u0_vals, p_vals)
     ssprob = SteadyStateProblem(model, u0_vals, p_vals)
     problems = [oprob, sprob, dprob, jprob, nprob, ssprob]
@@ -344,7 +344,7 @@ let
         ps = [k1 => 0.1, k2 => 0.2, V0 => 3.0]
         prob1 = XProblem(rs, u0, 0.001, ps; remove_conserved = true)
         Γ = prob1.f.sys.Γ
-        
+
         # Creates various `remake` version of the problem.
         prob2 = remake(prob1, u0 = [X1 => 10.0])
         prob3 = remake(prob2, u0 = [X2 => 20.0])
@@ -353,14 +353,17 @@ let
         prob6 = remake(prob1, u0 = [Y2 => 40.0], p = [k1 => 0.4])
         prob7 = remake(prob1, u0 = [X1 => 10.0, X2 => 20.0], p = [V0 => 50.0])
         prob8 = remake(prob1, u0 = [W => 60.0])
-        prob9 = remake(prob2; p = [Γ => [10.0, 20.0]])        
-        prob10 = remake(prob1; u0 = [Y1 => 20.0], p = [Γ => [20.0, 30.0], k1 => 0.4])
+        prob9 = remake(prob2; u0 = [X2 => nothing, Y2 => nothing],
+                       p = [Γ => [10.0, 20.0]])
+        prob10 = remake(prob1; u0 = [Y1 => 20.0, Y2 => nothing, X2 => nothing],
+                        p = [Γ => [20.0, 30.0], k1 => 0.4])
         prob11 = remake(prob10, u0 = [X1 => 10.0], p = [k2 => 0.5])
 
         # Creates a testing function.
         function test_vals(prob, us_correct::Dict, ps_correct::Dict)
             integ = init(prob, solver)
             sol = solve(prob, solver)
+            @test SciMLBase.successful_retcode(sol)
             for u in keys(us_correct)
                 @test prob[u] == us_correct[u]
                 @test integ[u] == us_correct[u]
@@ -399,9 +402,6 @@ let
         test_vals(prob8,
             Dict(X1 => 1.0, X2 => 2.0, Y1 => 3.0, Y2 => 4.0, V => 3.0, W => 60.0),
             Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 60.0, Γ[1] => 3.0, Γ[2] => 7.0))
-        test_vals(prob8,
-            Dict(X1 => 1.0, X2 => 2.0, Y1 => 3.0, Y2 => 4.0, V => 3.0, W => 60.0),
-            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 60.0, Γ[1] => 3.0, Γ[2] => 7.0))
         test_vals(prob9,
             Dict(X1 => 10.0, X2 => 0.0, Y1 => 3.0, Y2 => 17.0, V => 3.0, W => 6.0),
             Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 10.0, Γ[2] => 20.0))
@@ -431,8 +431,8 @@ let
     # Creates a JumpProblem and integrator. Checks that the initial mass action rate is correct.
     u0 = [:A => 1, :B => 2, :C => 3]
     ps = [:p1 => 3.0, :p2 => 2.0]
-    dprob = DiscreteProblem(rn, u0, (0.0, 1.0), ps)
-    jprob = JumpProblem(rn, dprob, Direct())
+    jin = JumpInputs(rn, u0, (0.0, 1.0), ps)
+    jprob = JumpProblem(jin)
     jint = init(jprob, SSAStepper())
     @test jprob.massaction_jump.scaled_rates[1] == 6.0
 

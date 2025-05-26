@@ -736,7 +736,7 @@ end
 # Searches an expression `expr` and returns true if it has any subexpression `D(...)` (where `...` can be anything).
 # Used to determine whether the default differential D has been used in any equation provided to `@equations`.
 function find_D_call(expr)
-    return if Base.isexpr(expr, :call) && expr.args[1] == :D
+    return if Meta.isexpr(expr, :call) && expr.args[1] == :D
         true
     elseif expr isa Expr
         any(find_D_call, expr.args)
@@ -759,7 +759,7 @@ function read_observables_option(options, all_ivs, us_declared, all_syms; requir
 
         for (idx, obs_eq) in enumerate(obs_eqs.args)
             # Extract the observable, checks for errors.
-            obs_name, ivs, defaults, metadata = find_varinfo_in_declaration(obs_eq.args[2])
+            obs_name, ivs, _, defaults, metadata = find_varinfo_in_declaration(obs_eq.args[2])
 
             # Error checks.
             (requiredec && !in(obs_name, us_declared)) &&
@@ -986,7 +986,8 @@ function recursive_escape_functions!(expr::ExprValues, syms_skip = [])
     (typeof(expr) != Expr) && (return expr)
     foreach(i -> expr.args[i] = recursive_escape_functions!(expr.args[i], syms_skip),
         1:length(expr.args))
-    if (expr.head == :call) && !isdefined(Catalyst, expr.args[1]) && expr.args[1] ∉ syms_skip
+    if (expr.head == :call) && (expr.args[1] isa Symbol) &&!isdefined(Catalyst, expr.args[1]) && 
+            expr.args[1] ∉ syms_skip
         expr.args[1] = esc(expr.args[1])
     end
     expr

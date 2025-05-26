@@ -47,17 +47,17 @@ let
     # Checks that the correct steady state is found through ODEProblem.
     oprob = ODEProblem(coupled_rs, u0, tspan, ps)
     osol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
-    @test osol.u[end] ≈ [2.0, 1.0]
+    @test osol[[X,A]][end] ≈ [2.0, 1.0]
 
     # Checks that the correct steady state is found through NonlinearProblem.
     nlprob = NonlinearProblem(coupled_rs, u0, ps)
     nlsol = solve(nlprob; abstol = 1e-8, reltol = 1e-8)
-    @test nlsol ≈ [2.0, 1.0]
+    @test nlsol[[X,A]] ≈ [2.0, 1.0]
 
     # Checks that the correct steady state is found through SteadyStateProblem.
     ssprob = SteadyStateProblem(coupled_rs, u0, ps)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
-    @test sssol ≈ [2.0, 1.0]
+    @test sssol[[X,A]] ≈ [2.0, 1.0]
 end
 
 # Checks that coupled systems created via the DSL, extension, and programmatically are identical.
@@ -116,7 +116,7 @@ let
     for coupled_rs in [coupled_rs_prog, coupled_rs_extended, coupled_rs_dsl]
         oprob = ODEProblem(coupled_rs, u0, tspan, ps)
         osol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
-        osol.u[end] ≈ [10.0, 10.0, 11.0, 11.0]
+        osol[[A,B,X1,X2]][end] ≈ [10.0, 10.0, 11.0, 11.0]
     end
 end
 
@@ -158,10 +158,10 @@ let
     @test_throws Exception SteadyStateProblem(coupled_rs, u0, ps)
 
     # Checks that the correct steady state is found through ODEProblem.
-    oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true, 
+    oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true,
         guesses = [A => 1.0])
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
-    @test osol.u[end] ≈ [2.0, 3.0]
+    @test osol[[X,A]][end] ≈ [2.0, 3.0]
 
     # Checks that the correct steady state is found through NonlinearProblem.
     u0 = [X => 0.1, A => 16.1/2]
@@ -171,10 +171,10 @@ let
 
     # Checks that the correct steady state is found through SteadyStateProblem.
     u0 = [X => 0.1]
-    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true, 
+    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true,
         guesses = [A => 1.0])
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
-    @test sssol ≈ [2.0, 3.0]
+    @test sssol[[X,A]] ≈ [2.0, 3.0]
 end
 
 
@@ -206,15 +206,15 @@ let
 
     # Creates and solves a ODE, SteadyState, and Nonlinear problems.
     # Success is tested by checking that the same steady state solution is found.
-    oprob = ODEProblem(coupled_rs, u0, (0.0, 1000.0), ps; structural_simplify = true, 
+    oprob = ODEProblem(coupled_rs, u0, (0.0, 1000.0), ps; structural_simplify = true,
         warn_initialize_determined = false)
-    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true, 
+    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true,
         warn_initialize_determined = false)
     nlprob = NonlinearProblem(coupled_rs, u0, ps)
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
     nlsol = solve(nlprob; abstol = 1e-8, reltol = 1e-8)
-    @test osol.u[end] ≈ sssol ≈ nlsol
+    @test osol[[A, B, C, X], end] ≈ sssol[[A, B, C, X]] ≈ nlsol[[A, B, C, X]]
 end
 
 
@@ -286,7 +286,7 @@ let
     @named coupled_rs = ReactionSystem(eqs, τ)
     coupled_rs = complete(coupled_rs)
 
-    # Checks that systems created from coupled reaction systems contain the correct content 
+    # Checks that systems created from coupled reaction systems contain the correct content
     osys = convert(ODESystem, coupled_rs)
     ssys = convert(SDESystem, coupled_rs)
     nlsys = convert(NonlinearSystem, coupled_rs)
@@ -294,7 +294,7 @@ let
     fullps = union(initps, [k1, k2, k, b1, b2])
     for sys in [coupled_rs, osys, ssys, nlsys]
         @test issetequal(parameters(sys), [k1, k2, k, b1, b2])
-        @test issetequal(unknowns(sys), [A, B, X, X2])    
+        @test issetequal(unknowns(sys), [A, B, X, X2])
     end
 end
 
@@ -978,17 +978,6 @@ let
     @variables V1(t)
     @species S1(t) S2(t)
 
-    # Coupled system with additional differential equation for species.
-    eqs = [
-        Reaction(p1, [S1], [S2]),
-        D(S1) ~ p2 - S1
-    ]
-    @named rs = ReactionSystem(eqs, t)
-    rs = complete(rs)
-    u0 = [S1 => 1.0, S2 => 2.0]
-    ps = [p1 => 2.0, p2 => 3.0]
-    @test_throws Exception ODEProblem(rs, u0, (0.0, 1.0), ps; structural_simplify = true)
-
     # Coupled system overconstrained due to additional algebraic equations (without variables).
     eqs = [
         Reaction(p1, [S1], [S2]),
@@ -1011,4 +1000,33 @@ let
     u0 = [S1 => 1.0, S2 => 2.0, V1 => 0.1]
     ps = [p1 => 2.0, p2 => 3.0]
     @test_throws Exception ODEProblem(rs, u0, (0.0, 1.0), ps; structural_simplify = true)
+end
+
+# Checks that equations cannot contain differentials with respect to species.
+let
+    # Basic case.
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(X) ~ 1.0
+        d, X --> 0
+    end
+
+    # Complicated differential.
+    @test_throws Exception @eval @reaction_network begin
+        @equations V + X^2 ~ 1.0 - D(V + log(1 + X))
+        d, X --> 0
+    end
+
+    # Case where the species is declared, but not part of a reaction.
+    @test_throws Exception @eval @reaction_network begin
+        @species Y(t)
+        @equations D(Y) ~ 1.0
+        d, X --> 0
+    end
+
+    # Case where the equation also declares a new non-species variable.
+    # At some point something like this could be supported, however, not right now.
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(V) ~ 1.0 + D(X)
+        d, X --> 0
+    end
 end
