@@ -42,15 +42,6 @@ Pkg.activate("catalyst_environment")
 Pkg.add("Catalyst")
 ```
 
-Because as of V15 Catalyst caps the version of certain dependencies, this can lead to older, 
-uncapped versions of Catalyst being installed if one already has an unsupported dependency 
-installed (i.e. when installing into an existing environment). For this reason, after 
-installation it is recommended to confirm that the latest version of Catalyst was added 
-by checking 
-```julia
-Pkg.status("Catalyst")
-```
-
 ## Breaking changes and new features
 
 **NOTE:** Version 15 is a breaking release, though most breaking changes are
