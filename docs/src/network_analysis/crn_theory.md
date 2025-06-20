@@ -19,7 +19,7 @@ Let us illustrate some of the types of network properties that
 Catalyst can determine.
 
 To begin, consider the following reaction network:
-```@example s1
+```@example s1b
 using Catalyst
 rn = @reaction_network begin
     (k1,k2), A + B <--> C
@@ -31,7 +31,8 @@ rn = @reaction_network begin
 end
 ```
 with graph
-```@example s1
+```@example s1b
+using CairoMakie, GraphMakie, NetworkLayout
 plot_complexes(rn)
 ```
 
@@ -45,7 +46,7 @@ these for a given network, returning a vector of the integer indices of reaction
 complexes participating in each set of linkage-classes. Note, indices of
 reaction complexes can be determined from the ordering returned by
 [`reactioncomplexes`](@ref).
-```@example s1
+```@example s1b
 # we must first calculate the reaction complexes -- they are cached in rn
 reactioncomplexes(rn)
 
@@ -54,19 +55,19 @@ lcs = linkageclasses(rn)
 ```
 It can often be convenient to obtain the disconnected sub-networks as distinct
 `ReactionSystem`s, which are returned by the [`subnetworks`](@ref) function:
-```@example s1
+```@example s1b
 subnets = subnetworks(rn)
 
 # check the reactions in each subnetwork
 reactions.(subnets)
 ```
 The graphs of the reaction complexes in the two sub-networks are then
-```@example s1
+```@example s1b
   plot_complexes(subnets[1])
 ```
 
 and,
-```@example s1
+```@example s1b
  plot_complexes(subnets[2])
 ```
 
@@ -84,7 +85,7 @@ to the number of independent species in a chemical reaction network. That is, if
 we calculate the linear conservation laws of a network, and use them to
 eliminate the dependent species of the network, we will have ``r`` independent
 species remaining. For our current example the conservation laws are given by
-```@example s1
+```@example s1b
 # first we calculate the conservation laws -- they are cached in rn
 conservationlaws(rn)
 
@@ -95,11 +96,11 @@ show(stdout, MIME"text/plain"(), ans) # hide
 Here the parameters `Γ[i]` represent the constants of the three
 conservation laws, and we see that there are three dependent species that could
 be eliminated. As
-```@example s1
+```@example s1b
 numspecies(rn)
 ```
 we find that there are five independent species. Let's check this is correct:
-```@example s1
+```@example s1b
 using LinearAlgebra
 rank(netstoichmat(rn)) == 5
 ```
@@ -112,7 +113,7 @@ The deficiency, ``\delta``, of a reaction network is defined as
 \delta = \textrm{(number of complexes)} - \textrm{(number of linkage classes)} - \textrm{(rank)}.
 ```
 For our network this is ``7 - 2 - 5 = 0``, which we can calculate in Catalyst as
-```@example s1
+```@example s1b
 # first we calculate the reaction complexes of rn and cache them in rn
 reactioncomplexes(rn)
 
@@ -130,7 +131,7 @@ A reaction network is *reversible* if the "arrows" of the reactions are
 symmetric so that every reaction is accompanied by its reverse reaction.
 Catalyst's API provides the [`isreversible`](@ref) function to determine whether
 a reaction network is reversible. As an example, consider
-```@example s1
+```@example s1b
 rn = @reaction_network begin
   (k1,k2),A <--> B
   (k3,k4),A + C <--> D
@@ -145,7 +146,7 @@ reactioncomplexes(rn)
 isreversible(rn)
 ```
 Consider another example,
-```@example s1
+```@example s1b
 rn = @reaction_network begin
   (k1,k2),A <--> B
   k3, A + C --> D
@@ -155,7 +156,7 @@ end
 reactioncomplexes(rn)
 isreversible(rn)
 ```
-```@example s1
+```@example s1b
 plot_complexes(rn)
 ```
 
@@ -164,7 +165,7 @@ However, it satisfies a weaker property in that there is a path from each
 reaction complex back to itself within its associated subgraph. This is known as
 *weak reversibility*. One can test a network for weak reversibility by using
 the [`isweaklyreversible`](@ref) function:
-```@example s1
+```@example s1b
 # need subnetworks from the reaction network first
 subnets = subnetworks(rn)
 isweaklyreversible(rn, subnets)
@@ -219,12 +220,12 @@ With these definitions we can now see how knowing the deficiency and weak
 reversibility of the network can tell us about its steady state behavior.
 Consider the previous example, which we know is weakly reversible. Its
 deficiency is
-```@example s1
+```@example s1b
 deficiency(rn)
 ```
 We also verify that the system is purely mass action (though it is apparent
 from the network's definition):
-```@example s1
+```@example s1b
 all(rx -> ismassaction(rx, rn), reactions(rn))
 ```
 We can therefore apply the Deficiency Zero Theorem to draw conclusions about the
@@ -245,7 +246,7 @@ exactly one equilibrium solution which will be positive and locally
 asymptotically stable.
 
 As a final example, consider the following network from [^1]
-```@example s1
+```@example s1b
 def0_rn = @reaction_network begin
   (k1,k2),A <--> 2B
   (k3,k4), A + C <--> D
@@ -265,7 +266,7 @@ RRE ODEs cannot have a positive equilibrium solution.
 There is an API function [`satisfiesdeficiencyzero`](@ref) that will let us check
 all these conditions easily:
 
-```@example s1
+```@example s1b
 satisfiesdeficiencyzero(def0_rn)
 ```
 
@@ -287,7 +288,7 @@ to have stable solutions.
 
 Let's look at an example network.
 
-```@example s1
+```@example s1b
 def1_network = @reaction_network begin
     (k1, k2), A <--> 2B
     k3, C --> 2D
@@ -300,7 +301,7 @@ plot_complexes(def1_network)
 We can see from the complex graph that there are two linkage classes, the deficiency of the bottom one is zero and the deficiency of the top one is one.
 The total deficiency is one:
 
-```@example s1
+```@example s1b
 deficiency(def1_network)
 ```
 
@@ -308,7 +309,7 @@ And there is only one terminal linkage class in each, so our network satisfies a
 As in the deficiency zero case, there is the API function [`satisfiesdeficiencyone`](@ref)
 for quickly checking these conditions:
 
-```@example s1
+```@example s1b
 satisfiesdeficiencyone(def1_network)
 ```
 
@@ -330,13 +331,13 @@ please consult Martin Feinberg's *Foundations of Chemical Reaction Network Theor
 knowing that a network is complex balanced is really quite powerful.
 
 Let's check whether the deficiency 0 reaction network that we defined above is complex balanced by providing a set of rates:
-```@example s1
+```@example s1b
 rates = Dict([:k1 => 2.4, :k2 => 4., :k3 => 10., :k4 => 5.5, :k5 => 0.4])
 iscomplexbalanced(rn, rates)
 ```
 
 We can do a similar check for detailed balance.
-```@example s1
+```@example s1b
 isdetailedbalanced(rn, rates)
 ```
 
