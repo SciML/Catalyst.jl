@@ -164,7 +164,7 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
     ns = length(species(rn))
     nodecolors = vcat([:skyblue3 for i in 1:ns], 
                       [:green for i in ns+1:nv(srg)])
-    ilabels = vcat(map(s -> String(tosymbol(s, escape=false)), species(rn)),
+    ilabels = vcat(map(spectostr, species(rn)),
                    ["R$i" for i in 1:nv(srg)-ns])
 
     ssm = substoichmat(rn)
@@ -273,6 +273,17 @@ function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels = false, k
     f
 end
 
+function spectostr(spec)
+    spec = Symbolics.value(spec)
+    if iscall(spec) && operation(spec) == getindex
+        (spec, idxs...) = arguments(spec)
+        idxs = join(idxs, ", ")
+        String(tosymbol(spec, escape = false))*"["*idxs*"]"
+    else
+        String(tosymbol(spec, escape = false))
+    end
+end
+
 function complexelem_tostr(e::Catalyst.ReactionComplexElement, specstrs) 
     if e.speciesstoich == 1
         return "$(specstrs[e.speciesid])"  
@@ -285,7 +296,7 @@ end
 function complexlabels(rn::ReactionSystem)
     labels = String[]
 
-    specstrs = map(s -> String(tosymbol(s, escape=false)), species(rn))
+    specstrs = map(spectostr, species(rn))
     complexes, B = reactioncomplexes(rn)
 
     for complex in complexes
