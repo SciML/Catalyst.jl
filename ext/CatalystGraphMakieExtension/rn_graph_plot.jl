@@ -170,11 +170,11 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
     ssm = substoichmat(rn)
     psm = prodstoichmat(rn)
     # Get stoichiometry of reaction
-    edgelabels = map(Graphs.edges(srg.g)) do e
-        string(src(e) > ns ? 
+    edgelabels = Vector{Any}(map(Graphs.edges(srg.g)) do e
+        LaTeXString(string(src(e) > ns ? 
             psm[dst(e), src(e)-ns] :
-            ssm[src(e), dst(e)-ns]) 
-    end 
+            ssm[src(e), dst(e)-ns]))
+    end)
     edgecolors = [:black for i in 1:ne(srg)]
 
     num_e = ne(srg.g)
@@ -184,7 +184,7 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
         if srg.edgeorder[i] > num_e 
             edgecolors[i] = :red
             insert!(edgelabels, i, "")
-        elseif edgelabels[i] == "0"
+        elseif edgelabels[i].s == "0"
             edgecolors[i] = :red
             edgelabels[i] = ""
         end
