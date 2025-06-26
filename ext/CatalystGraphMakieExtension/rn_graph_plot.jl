@@ -164,8 +164,8 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
     ns = length(species(rn))
     nodecolors = vcat([:skyblue3 for i in 1:ns], 
                       [:green for i in ns+1:nv(srg)])
-    ilabels = vcat(map(spectostr, species(rn)),
-                   ["R$i" for i in 1:nv(srg)-ns])
+    ilabels = vcat(map(latexify_no_t, species(rn)),
+                   [latexify("R_$i", env = :inline) for i in 1:nv(srg)-ns])
 
     ssm = substoichmat(rn)
     psm = prodstoichmat(rn)
@@ -236,7 +236,7 @@ function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels = false, k
     rxs = reactions(rn)
     specs = species(rn)
     edgecolors = [:black for i in 1:length(rxs)]
-    edgelabels = [repr(rx.rate) for rx in rxs]
+    edgelabels = [latexify(rx.rate, env=:inline) for rx in rxs]
 
     deps = Set()
     for (i, rx) in enumerate(rxs)
@@ -273,17 +273,6 @@ function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels = false, k
     f
 end
 
-function spectostr(spec)
-    spec = Symbolics.value(spec)
-    if iscall(spec) && operation(spec) == getindex
-        (spec, idxs...) = arguments(spec)
-        idxs = join(idxs, ", ")
-        String(tosymbol(spec, escape = false))*"["*idxs*"]"
-    else
-        String(tosymbol(spec, escape = false))
-    end
-end
-
 function complexelem_tostr(e::Catalyst.ReactionComplexElement, specstrs) 
     if e.speciesstoich == 1
         return "$(specstrs[e.speciesid])"  
@@ -292,22 +281,31 @@ function complexelem_tostr(e::Catalyst.ReactionComplexElement, specstrs)
     end
 end
 
+"""
+Helper to remove the (t) from the Latex string.
+"""
+function latexify_no_t(s)
+    str = latexify(s, env = :raw).s
+    sub = split(str, "\\left(")[1]
+    return LaTeXString(sub)
+end
+
 # Get the strings corresponding to the reaction complexes
 function complexlabels(rn::ReactionSystem)
-    labels = String[]
+    labels = LaTeXString[]
 
-    specstrs = map(spectostr, species(rn))
+    specstrs = map(latexify_no_t, species(rn))
     complexes, B = reactioncomplexes(rn)
 
     for complex in complexes
         if isempty(complex) 
-            push!(labels, "∅")
+            push!(labels, L"∅")
         elseif length(complex) == 1
             push!(labels, complexelem_tostr(complex[1], specstrs))
         else
             elems = map(c -> complexelem_tostr(c, specstrs), complex)
             str = reduce((e1, e2) -> *(e1, " + ", e2), @view elems[2:end]; init = elems[1])
-            push!(labels, str)
+            push!(labels, LaTeXString(str))
         end
     end
     labels
