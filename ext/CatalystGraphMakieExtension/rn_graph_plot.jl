@@ -166,6 +166,7 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
                       [:green for i in ns+1:nv(srg)])
     ilabels = vcat(map(latexify_no_t, species(rn)),
                    [latexify("R_$i", env = :inline) for i in 1:nv(srg)-ns])
+    @show ilabels
 
     ssm = substoichmat(rn)
     psm = prodstoichmat(rn)
@@ -282,10 +283,14 @@ function complexelem_tostr(e::Catalyst.ReactionComplexElement, specstrs)
 end
 
 """
-Helper to remove the (t) from the Latex string.
+Helper to remove the (t) and mathtt environment from the Latex string.
 """
 function latexify_no_t(s)
     str = latexify(s, env = :raw).s
+    @show str
+    str = replace(str, r"\\mathrm\{(.*?)\}" => s"\1")
+    str = replace(str, r"\\mathtt\{(.*?)\}" => s"\1")
+    @show str
     sub = split(str, "\\left(")[1]
     return LaTeXString(sub)
 end
