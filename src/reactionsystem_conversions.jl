@@ -466,7 +466,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
                   conservation laws. Catalyst does not check that the conserved equations
                   still hold for the final coupled system of equations. Consider using
                   `remove_conserved = false` and instead calling
-                  ModelingToolkit.structural_simplify to simplify any generated ODESystem or
+                  ModelingToolkit.structural_simplify to simplify any generated System or
                   NonlinearSystem.
                   """
         end
@@ -509,9 +509,9 @@ COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be convert
 
 """
 ```julia
-Base.convert(::Type{<:ODESystem},rs::ReactionSystem)
+Base.convert(::Type{<:System},rs::ReactionSystem)
 ```
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.ODESystem`.
+Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.System`.
 
 Keyword args and default values:
 - `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,
@@ -526,7 +526,7 @@ Keyword args and default values:
   with their rational function representation when converting to another system type. Set to
   `false`` to disable.
 """
-function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs),
+function Base.convert(::Type{<:System}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false, 
         default_u0 = Dict(), default_p = Dict(), 
@@ -534,7 +534,7 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
         kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
-    spatial_convert_err(rs::ReactionSystem, ODESystem)
+    spatial_convert_err(rs::ReactionSystem, System)
 
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
@@ -543,7 +543,7 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
         include_zero_odes, expand_catalyst_funs)
     eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
-    ODESystem(eqs, get_iv(fullrs), us, ps;
+    System(eqs, get_iv(fullrs), us, ps;
         observed = obs,
         name,
         defaults = _merge(defaults, defs),
@@ -828,7 +828,7 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false, 
         expand_catalyst_funs = true, structural_simplify = false, kwargs...)
-    osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
+    osys = convert(System, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
         remove_conserved, expand_catalyst_funs)
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
@@ -1058,7 +1058,7 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, include_zero_odes = true, checks = false, 
         expand_catalyst_funs = true, structural_simplify = false, kwargs...)
-    osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
+    osys = convert(System, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
         remove_conserved, expand_catalyst_funs)
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
