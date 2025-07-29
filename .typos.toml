@@ -1,4 +1,7 @@
 [default.extend-words]
+# Catalyst specific
+systemes = "systemes"
+
 # Julia-specific functions
 indexin = "indexin"
 findfirst = "findfirst"
