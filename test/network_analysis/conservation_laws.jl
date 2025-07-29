@@ -337,9 +337,9 @@ end
 
 # Goes through a chain of updating of conservation law constants/species, checking that
 # the values of relevant quantities are correct after each step.
-# Generally, if `Γ` has not been explicitly updated, it will be updated to acomodate new species
+# Generally, if `Γ` has not been explicitly updated, it will be updated to accommodate new species
 # values. If it has been explicitly updated, the corresponding eliminated quantity will have its
-# value updated to acomodate new Γ/species values (however, we have to manually designate this by setting it to `nothing`).
+# value updated to accommodate new Γ/species values (however, we have to manually designate this by setting it to `nothing`).
 # Also checks that quantities are correctly updated in integrators and solutions derived from problems.
 let
     # Prepares the problem inputs and computes the conservation equation.
@@ -399,7 +399,7 @@ let
         # - The conservation law constant will be kept fixed, and secondary updates are made to the
         # eliminated species.
         # Assumes that X3 is the eliminated species. In most updates, designate its as `nothing` (to
-        # ensure that its value is updated to acommodate the new conservation law).
+        # ensure that its value is updated to accommodate the new conservation law).
         # The random Γ is ensured to be large enough not to generate negative values in the eliminated species.
         for _ in 1:3
             # Updates Γ, checks the values of all species and Γ, then resets `prob_old`.
@@ -509,7 +509,7 @@ let
     u0 = [:X1 => 1.0, :X2 => 2.0, :X3 => 3.0]
     ps = [:k1 => 0.1, :k2 => 0.2, :k3 => 0.3, :k4 => 0.4]
     
-    # Checks that the warning si given and can be supressed for the variosu cases.
+    # Checks that the warning si given and can be suppressed for the variosu cases.
     @test_nowarn convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false)
     @test_logs (:warn, r"Note, when constructing*") convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = true)
     @test_nowarn NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = false)

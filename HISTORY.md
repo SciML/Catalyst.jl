@@ -56,7 +56,7 @@
   pmap = [k => rand(4)]
   ```
   While one can still manually scalarize a parameter array, it is recommended
-  *not* to do this as it has signifcant performance costs with ModelingToolkit
+  *not* to do this as it has significant performance costs with ModelingToolkit
   v9. Note, scalarized parameter arrays passed to the two-argument
   `ReactionSystem` constructor may become unscalarized.
 - **BREAKING:** We have introduced a restriction on bundling of reactions in the

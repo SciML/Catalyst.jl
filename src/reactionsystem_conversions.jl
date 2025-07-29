@@ -1037,7 +1037,7 @@ function JumpProcesses.JumpProblem(rs::ReactionSystem, prob::SciMLBase.AbstractD
         expand_catalyst_funs = true, checks = false, kwargs...)
     Base.depwarn("JumpProblem(rn::ReactionSystem, prob, ...) is \
         deprecated and will be removed in Catalyst 16. Use \
-        JumpProblem(JumpInputs(rn, ...), ...) insead.", :JumpProblem)
+        JumpProblem(JumpInputs(rn, ...), ...) instead.", :JumpProblem)
     jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, 
         expand_catalyst_funs, checks)
     jsys = complete(jsys)
@@ -1160,7 +1160,7 @@ symmap_to_varmap(sys, symmap) = symmap
 ### Other Conversion-related Functions ###
 
 # the following function is adapted from SymbolicUtils.jl v.19
-# later on (Spetember 2023) modified by Torkel and Shashi (now assumes input not on polynomial form, which is handled elsewhere, previous version failed in these cases anyway).
+# later on (September 2023) modified by Torkel and Shashi (now assumes input not on polynomial form, which is handled elsewhere, previous version failed in these cases anyway).
 # Copyright (c) 2020: Shashi Gowda, Yingbo Ma, Mason Protter, Julia Computing.
 # MIT license
 """

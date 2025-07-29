@@ -134,4 +134,4 @@ plot!(sol_n20; idxs = :Xend, label = "n = 20")
 ## References
 [^1]: [N. Korsbo, H. Jönsson *It’s about time: Analysing simplifying assumptions for modelling multi-step pathways in systems biology*, PLoS Computational Biology (2020).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007982)
 [^2]: [J. Metz, O. Diekmann *The Abstract Foundations of Linear Chain Trickery* (1991).](https://ir.cwi.nl/pub/1559/1559D.pdf)
-[^3]: D. Fargue *Reductibilite des systemes hereditaires a des systemes dynamiques (regis par des equations differentielles aux derivees partielles)*, Comptes rendus de l'Académie des Sciences (1973).
+[^3]: D. Fargue *Reductibilite des systems hereditaires a des systems dynamiques (regis par des equations differentielles aux derivees partielles)*, Comptes rendus de l'Académie des Sciences (1973).
