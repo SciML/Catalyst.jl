@@ -81,7 +81,7 @@ end
 """
 assess_identifiability(rs::ReactionSystem, args...; measured_quantities = [], known_p = [], remove_conserved = true, ignore_no_measured_warn=false, kwargs...)
 
-Applies StructuralIdentifiability.jl's `assess_identifiability` function to a Catalyst `ReactionSystem`. Internally it is converted ot a `ODESystem`, for which structural identifiability is computed.
+Applies StructuralIdentifiability.jl's `assess_identifiability` function to a Catalyst `ReactionSystem`. Internally it is converted to a `ODESystem`, for which structural identifiability is computed.
 
 Arguments:
 - `rs::ReactionSystem`; The reaction system we wish to compute structural identifiability for.
@@ -123,7 +123,7 @@ end
 """
 find_identifiable_functions(rs::ReactionSystem, args...; measured_quantities = [], known_p = [], remove_conserved = true, ignore_no_measured_warn=false, kwargs...)
 
-Applies StructuralIdentifiability.jl's `find_identifiable_functions` function to a Catalyst `ReactionSystem`. Internally it is converted ot a `ODESystem`, for which structurally identifiable functions are computed.
+Applies StructuralIdentifiability.jl's `find_identifiable_functions` function to a Catalyst `ReactionSystem`. Internally it is converted to a `ODESystem`, for which structurally identifiable functions are computed.
 
 Arguments:
 - `rs::ReactionSystem`; The reaction system we wish to compute structural identifiability for.

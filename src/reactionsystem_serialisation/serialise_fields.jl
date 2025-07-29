@@ -539,7 +539,7 @@ end
 
 # Creates an annotation for the system's systems.
 function get_systems_annotation(rn::ReactionSystem)
-    return "Subystems:"
+    return "Subsystems:"
 end
 
 # Combines the 3 systems-related functions in a constant tuple.

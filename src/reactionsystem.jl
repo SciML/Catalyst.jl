@@ -383,8 +383,8 @@ struct ReactionSystem{V <: NetworkProperties} <:
     end
 end
 
-# Checks if a symbolic expression constains a differential with respect to a species (either directly
-# or somehwere within the differential expression).
+# Checks if a symbolic expression contains a differential with respect to a species (either directly
+# or somewhere within the differential expression).
 function is_species_diff(expr)
     Symbolics.is_derivative(expr) || return false
     return hasnode(ex -> (ex isa Symbolics.BasicSymbolic) && isspecies(ex) && !isbc(ex), expr)
