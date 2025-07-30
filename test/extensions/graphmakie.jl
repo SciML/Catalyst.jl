@@ -26,8 +26,8 @@ let
         k₃, KKKE1 --> KKK_ + E1
         (k₄, k₅), KKK_ + E2 <--> KKKE2
         k₆, KKKE2 --> KKK + E2
-        (k₇, k₈), KK + KKK_ <--> KK_KKK_
-        k₉, KK_KKK_ --> KKP + KKK_
+        (k₇, k₈), KK + KKK_ <--> KK_KKK
+        k₉, KK_KKK --> KKP + KKK_
         (k₁₀, k₁₁), KKP + KKK_ <--> KKPKKK_
         k₁₂, KKPKKK_ --> KKPP + KKK_
         (k₁₃, k₁₄), KKP + KKPase <--> KKPKKPase

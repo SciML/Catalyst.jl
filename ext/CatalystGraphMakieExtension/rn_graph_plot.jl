@@ -164,17 +164,18 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
     ns = length(species(rn))
     nodecolors = vcat([:skyblue3 for i in 1:ns], 
                       [:green for i in ns+1:nv(srg)])
-    ilabels = vcat(map(s -> String(tosymbol(s, escape=false)), species(rn)),
-                   ["R$i" for i in 1:nv(srg)-ns])
+    ilabels = vcat(map(latexify_no_t, species(rn)),
+                   [latexify("R_$i", env = :inline) for i in 1:nv(srg)-ns])
+    @show ilabels
 
     ssm = substoichmat(rn)
     psm = prodstoichmat(rn)
     # Get stoichiometry of reaction
-    edgelabels = map(Graphs.edges(srg.g)) do e
-        string(src(e) > ns ? 
+    edgelabels = Vector{Any}(map(Graphs.edges(srg.g)) do e
+        LaTeXString(string(src(e) > ns ? 
             psm[dst(e), src(e)-ns] :
-            ssm[src(e), dst(e)-ns]) 
-    end 
+            ssm[src(e), dst(e)-ns]))
+    end)
     edgecolors = [:black for i in 1:ne(srg)]
 
     num_e = ne(srg.g)
@@ -184,7 +185,7 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
         if srg.edgeorder[i] > num_e 
             edgecolors[i] = :red
             insert!(edgelabels, i, "")
-        elseif edgelabels[i] == "0"
+        elseif edgelabels[i].s == "0"
             edgecolors[i] = :red
             edgelabels[i] = ""
         end
@@ -236,7 +237,7 @@ function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels = false, k
     rxs = reactions(rn)
     specs = species(rn)
     edgecolors = [:black for i in 1:length(rxs)]
-    edgelabels = [repr(rx.rate) for rx in rxs]
+    edgelabels = [latexify(rx.rate, env=:inline) for rx in rxs]
 
     deps = Set()
     for (i, rx) in enumerate(rxs)
@@ -281,22 +282,35 @@ function complexelem_tostr(e::Catalyst.ReactionComplexElement, specstrs)
     end
 end
 
+"""
+Helper to remove the (t) and mathtt environment from the Latex string.
+"""
+function latexify_no_t(s)
+    str = latexify(s, env = :raw).s
+    @show str
+    str = replace(str, r"\\mathrm\{(.*?)\}" => s"\1")
+    str = replace(str, r"\\mathtt\{(.*?)\}" => s"\1")
+    @show str
+    sub = split(str, "\\left(")[1]
+    return LaTeXString(sub)
+end
+
 # Get the strings corresponding to the reaction complexes
 function complexlabels(rn::ReactionSystem)
-    labels = String[]
+    labels = LaTeXString[]
 
-    specstrs = map(s -> String(tosymbol(s, escape=false)), species(rn))
+    specstrs = map(latexify_no_t, species(rn))
     complexes, B = reactioncomplexes(rn)
 
     for complex in complexes
         if isempty(complex) 
-            push!(labels, "∅")
+            push!(labels, L"∅")
         elseif length(complex) == 1
             push!(labels, complexelem_tostr(complex[1], specstrs))
         else
             elems = map(c -> complexelem_tostr(c, specstrs), complex)
             str = reduce((e1, e2) -> *(e1, " + ", e2), @view elems[2:end]; init = elems[1])
-            push!(labels, str)
+            push!(labels, LaTeXString(str))
         end
     end
     labels
