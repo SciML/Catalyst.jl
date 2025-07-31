@@ -258,7 +258,7 @@ Continuing from the example in the [`Reaction`](@ref) definition:
 Keyword Arguments:
 - `observed::Vector{Equation}`, equations specifying observed variables.
 - `systems::Vector{AbstractSystems}`, vector of sub-systems. Can be `ReactionSystem`s,
-  `ODESystem`s, or `NonlinearSystem`s.
+  `System`s, or `NonlinearSystem`s.
 - `name::Symbol`, the name of the system (must be provided, or `@named` must be used).
 - `defaults::Dict`, a dictionary mapping parameters to their default values and species to
   their default initial values.
@@ -545,7 +545,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     # Extracts any species, variables, and parameters that occur in (non-reaction) equations.
     # Creates the new reactions + equations vector, `fulleqs` (sorted reactions first, equations next).
     if !isempty(eqs)
-        osys = ODESystem(eqs, iv; name = gensym())
+        osys = System(eqs, iv; name = gensym())
         fulleqs = CatalystEqType[rxs; equations(osys)]
         union!(us, unknowns(osys))
         union!(ps, parameters(osys))
@@ -1399,7 +1399,7 @@ Notes:
 - All `Reaction`s within subsystems are namespaced and merged into the list of `Reactions`
   of `rs`. The merged list is then available as `reactions(rs)`.
 - All algebraic and differential equations are merged in the equations of `rs`.
-- Currently only `ReactionSystem`s, `NonlinearSystem`s and `ODESystem`s are supported as
+- Currently only `ReactionSystem`s, `NonlinearSystem`s and `System`s are supported as
   sub-systems when flattening.
 - `rs.networkproperties` is reset upon flattening.
 - The default value of `combinatoric_ratelaws` will be the logical or of all
@@ -1408,11 +1408,11 @@ Notes:
 function MT.flatten(rs::ReactionSystem; name = nameof(rs))
     isempty(get_systems(rs)) && return rs
 
-    # right now only NonlinearSystems and ODESystems can be handled as subsystems
+    # right now only NonlinearSystems and Systems can be handled as subsystems
     subsys_types = getsubsystypes(rs)
-    allowed_types = (ReactionSystem, NonlinearSystem, ODESystem)
+    allowed_types = (ReactionSystem, NonlinearSystem, System)
     all(T -> any(T .<: allowed_types), subsys_types) ||
-        error("flattening is currently only supported for subsystems mixing ReactionSystems, NonlinearSystems and ODESystems.")
+        error("flattening is currently only supported for subsystems mixing ReactionSystems, NonlinearSystems and Systems.")
 
     ReactionSystem(equations(rs), get_iv(rs), unknowns(rs), parameters(rs);
         observed = MT.observed(rs),
@@ -1440,7 +1440,7 @@ end
 Compose the indicated [`ReactionSystem`](@ref) with one or more `AbstractSystem`s.
 
 Notes:
-- The `AbstractSystem` being added in must be an `ODESystem`, `NonlinearSystem`,
+- The `AbstractSystem` being added in must be an `System`, `NonlinearSystem`,
   or `ReactionSystem` currently.
 - Returns a new `ReactionSystem` and does not modify `rs`.
 - By default, the new `ReactionSystem` will have the same name as `sys`.
@@ -1479,7 +1479,7 @@ end
 Extends the indicated [`ReactionSystem`](@ref) with another `AbstractSystem`.
 
 Notes:
-- The `AbstractSystem` being added in must be an `ODESystem`, `NonlinearSystem`,
+- The `AbstractSystem` being added in must be an `System`, `NonlinearSystem`,
   or `ReactionSystem` currently.
 - Returns a new `ReactionSystem` and does not modify `rs`.
 - By default, the new `ReactionSystem` will have the same name as `sys`.
@@ -1490,8 +1490,8 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
     complete_check(sys, "ModelingToolkit.extend")
     complete_check(rs, "ModelingToolkit.extend")
     
-    any(T -> sys isa T, (ReactionSystem, ODESystem, NonlinearSystem)) ||
-        error("ReactionSystems can only be extended with ReactionSystems, ODESystems and NonlinearSystems currently. Received a $(typeof(sys)) system.")
+    any(T -> sys isa T, (ReactionSystem, System, NonlinearSystem)) ||
+        error("ReactionSystems can only be extended with ReactionSystems, Systems and NonlinearSystems currently. Received a $(typeof(sys)) system.")
 
     t = get_iv(rs)
     if MT.has_iv(sys)

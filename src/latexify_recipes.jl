@@ -19,7 +19,7 @@ const LATEX_DEFS = CatalystLatexParams()
         return rs
     elseif form == :ode      # Returns ODE system code.
         mult_symbol --> ""
-        return convert(ODESystem, rs)
+        return convert(System, rs)
     elseif form == :sde      # Returns SDE system code.
         mult_symbol --> ""
         return convert(SDESystem, rs)
