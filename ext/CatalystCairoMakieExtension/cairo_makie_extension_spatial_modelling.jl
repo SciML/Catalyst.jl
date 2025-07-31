@@ -24,7 +24,8 @@ function lattice_animation(
     vals, plot_min, plot_max = Catalyst.extract_vals(sol, sp, lrs, plot_min, plot_max, t)
 
     # Creates the base figure (which is modified in the animation).
-    fig, ax, plt = scatterlines(vals[1];
+    fig, ax,
+    plt = scatterlines(vals[1];
         axis = (xlabel = "Compartment", ylabel = "$(sp)",
             limits = (nothing, nothing, plot_min, plot_max)),
         markersize = markersize, kwargs...)
@@ -100,8 +101,10 @@ function lattice_animation(
     x_vals, y_vals = Catalyst.extract_grid_axes(lrs)
 
     # Creates the base figure (which is modified in the animation).
-    fig, ax, hm = heatmap(x_vals, y_vals, vals[1];
-        axis = (xgridvisible = false, ygridvisible = false, xlabel = "Compartment", ylabel = "Compartment"),
+    fig, ax,
+    hm = heatmap(x_vals, y_vals, vals[1];
+        axis = (xgridvisible = false, ygridvisible = false,
+            xlabel = "Compartment", ylabel = "Compartment"),
         colormap, colorrange = (plot_min, plot_max),
         kwargs...)
     ttitle && (ax.title = "Time: $(round(t[1]; sigdigits = 3))")

@@ -19,7 +19,8 @@ function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     # vert_ps values are vectors. Here, index (i) is a parameter's value in vertex i.
     # edge_ps values are sparse matrices. Here, index (i,j) is a parameter's value in the edge from vertex i to vertex j.
     # Uniform vertex/edge parameters store only a single value (a length 1 vector, or size 1x1 sparse matrix).
-    vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs),
+    vert_ps,
+    edge_ps = lattice_process_p(p_in, vertex_parameters(lrs),
         edge_parameters(lrs), lrs)
 
     # Returns a DiscreteProblem (which basically just stores the processed input).
@@ -64,6 +65,7 @@ function make_hopping_constants(dprob::DiscreteProblem, lrs::LatticeReactionSyst
     # vector containing all edges leading out from that vertex (sorted by destination index).
     edge_array = [Pair{Int64, Int64}[] for _1 in 1:num_species(lrs), _2 in 1:num_verts(lrs)]
     for e in edge_iterator(lrs), s_idx in 1:num_species(lrs)
+
         push!(edge_array[s_idx, e[1]], e)
     end
     foreach(e_vec -> sort!(e_vec; by = e -> e[2]), edge_array)

@@ -155,7 +155,7 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
 
         # Additional error checks.
         if any(haskey(Symbolics.unwrap(symvar).metadata, Symbolics.ArrayShapeCtx)
-                for symvar in [ps; species(rs)])
+        for symvar in [ps; species(rs)])
             throw(ArgumentError("Some species and/or parameters used to create the `LatticeReactionSystem` are array variables ($(filter(symvar -> haskey(Symbolics.unwrap(symvar).metadata, Symbolics.ArrayShapeCtx), [ps; species(rs)]))). This is currently not supported."))
         end
 
@@ -401,8 +401,10 @@ end
 Returns `true` if `lrs` was created using a cartesian grid lattice (e.g. created via `CartesianGrid(5,5)`).
 Otherwise, returns `false`.
 """
-has_cartesian_lattice(lrs::LatticeReactionSystem) = lattice(lrs) isa
-                                                    CartesianGridRej{N, T} where {N, T}
+function has_cartesian_lattice(lrs::LatticeReactionSystem)
+    lattice(lrs) isa
+    CartesianGridRej{N, T} where {N, T}
+end
 
 """
     has_masked_lattice(lrs::LatticeReactionSystem)

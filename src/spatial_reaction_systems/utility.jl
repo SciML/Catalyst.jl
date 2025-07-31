@@ -182,10 +182,9 @@ function make_sidxs_to_transrate_map(vert_ps::Vector{Pair{R, Vector{T}}},
     # First, compute a map from species in their symbolics form to their values.
     # Next, convert to map from species index to values.
     transport_rates_speciesmap = compute_all_transport_rates(p_val_dict, lrs)
-    return Pair{Int64, SparseMatrixCSC{T, Int64}}[
-                                                  speciesmap(reactionsystem(lrs))[spat_rates[1]] => spat_rates[2]
-                                                  for spat_rates in transport_rates_speciesmap
-                                                  ]
+    return Pair{Int64, SparseMatrixCSC{T, Int64}}[speciesmap(reactionsystem(lrs))[spat_rates[1]] => spat_rates[2]
+                                                  for spat_rates in
+                                                      transport_rates_speciesmap]
 end
 
 # Computes the transport rates for all species with transportation rates. Output is a map
