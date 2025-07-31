@@ -12,29 +12,29 @@ Wrapper intended to allow plotting of multiple edges. This is needed in the foll
 `gen_distances` sets the distances between the edges that allows multiple to be visible on the plot at the same time. 
 """
 struct MultiGraphWrap{T} <: Graphs.AbstractGraph{T}
-   g::SimpleDiGraph{T}
-   multiedges::Vector{Graphs.SimpleEdge{T}}
-   """Sets the drawing order of the edges. Needed because multiedges need to be consecutive to be drawn properly."""
-   edgeorder::Vector{Int64} 
+    g::SimpleDiGraph{T}
+    multiedges::Vector{Graphs.SimpleEdge{T}}
+    """Sets the drawing order of the edges. Needed because multiedges need to be consecutive to be drawn properly."""
+    edgeorder::Vector{Int64}
 end
 
 # Create the SimpleDiGraph corresponding to the species and reactions, the species-reaction graph
-function SRGraphWrap(rn::ReactionSystem) 
+function SRGraphWrap(rn::ReactionSystem)
     srg = species_reaction_graph(rn)
     multiedges = Vector{Graphs.SimpleEdge{Int}}()
     sm = speciesmap(rn)
     specs = species(rn)
 
     deps = Set()
-    for (i, rx) in enumerate(reactions(rn)) 
+    for (i, rx) in enumerate(reactions(rn))
         empty!(deps)
         get_variables!(deps, rx.rate, specs)
         if !isempty(deps)
-            for spec in deps 
+            for spec in deps
                 specidx = sm[spec]
-                has_edge(srg, specidx, i + length(specs)) ? 
-                    push!(multiedges, Graphs.SimpleEdge(specidx, i + length(specs))) : 
-                    add_edge!(srg, Graphs.SimpleEdge(specidx, i + length(specs))) 
+                has_edge(srg, specidx, i + length(specs)) ?
+                push!(multiedges, Graphs.SimpleEdge(specidx, i + length(specs))) :
+                add_edge!(srg, Graphs.SimpleEdge(specidx, i + length(specs)))
             end
         end
     end
@@ -44,16 +44,16 @@ function SRGraphWrap(rn::ReactionSystem)
 end
 
 # Automatically set edge drawing order if not supplied
-function MultiGraphWrap(g::SimpleDiGraph{T}, multiedges::Vector{Graphs.SimpleEdge{T}}) where T
+function MultiGraphWrap(g::SimpleDiGraph{T}, multiedges::Vector{Graphs.SimpleEdge{T}}) where {T}
     edgelist = vcat(collect(Graphs.edges(g)), multiedges)
     edgeorder = sortperm(edgelist)
     MultiGraphWrap(g, multiedges, edgeorder)
 end
 
 # Return the multigraph and reaction order corresponding to the complex graph. The reaction order is the order of reactions(rn) that would match the edge order given by g.edgeorder.
-function ComplexGraphWrap(rn::ReactionSystem) 
+function ComplexGraphWrap(rn::ReactionSystem)
     img = incidencematgraph(rn)
-    D = incidencemat(rn; sparse=true)
+    D = incidencemat(rn; sparse = true)
     specs = species(rn)
     rxs = reactions(rn)
 
@@ -78,7 +78,7 @@ function ComplexGraphWrap(rn::ReactionSystem)
     edgelist = edgelist[rxorder]
     multiedges = Vector{Graphs.SimpleEdge{Int}}()
     for i in 2:length(edgelist)
-        isequal(edgelist[i], edgelist[i-1]) && push!(multiedges, edgelist[i])
+        isequal(edgelist[i], edgelist[i - 1]) && push!(multiedges, edgelist[i])
     end
     MultiGraphWrap(img, multiedges), rxorder
 end
@@ -87,8 +87,8 @@ Base.eltype(g::MultiGraphWrap) = eltype(g.g)
 Graphs.edgetype(g::MultiGraphWrap) = edgetype(g.g)
 Graphs.has_edge(g::MultiGraphWrap, s, d) = has_edge(g.g, s, d)
 Graphs.has_vertex(g::MultiGraphWrap, i) = has_vertex(g.g, i)
-Graphs.inneighbors(g::MultiGraphWrap{T}, i) where T = inneighbors(g.g, i)
-Graphs.outneighbors(g::MultiGraphWrap{T}, i) where T = outneighbors(g.g, i)
+Graphs.inneighbors(g::MultiGraphWrap{T}, i) where {T} = inneighbors(g.g, i)
+Graphs.outneighbors(g::MultiGraphWrap{T}, i) where {T} = outneighbors(g.g, i)
 Graphs.ne(g::MultiGraphWrap) = length(g.multiedges) + length(Graphs.edges(g.g))
 Graphs.nv(g::MultiGraphWrap) = nv(g.g)
 Graphs.vertices(g::MultiGraphWrap) = vertices(g.g)
@@ -96,7 +96,7 @@ Graphs.is_directed(::Type{<:MultiGraphWrap}) = true
 Graphs.is_directed(g::MultiGraphWrap) = is_directed(g.g)
 Graphs.is_connected(g::MultiGraphWrap) = is_connected(g.g)
 
-function Graphs.adjacency_matrix(g::MultiGraphWrap) 
+function Graphs.adjacency_matrix(g::MultiGraphWrap)
     adj = Graphs.adjacency_matrix(g.g)
     for e in g.multiedges
         adj[src(e), dst(e)] = 1
@@ -108,12 +108,12 @@ function Graphs.edges(g::MultiGraphWrap)
     edgelist = vcat(collect(Graphs.edges(g.g)), g.multiedges)[g.edgeorder]
 end
 
-function gen_distances(g::MultiGraphWrap; inc = 0.2) 
+function gen_distances(g::MultiGraphWrap; inc = 0.2)
     edgelist = edges(g)
     distances = zeros(length(edgelist))
     edgedict = Dict(edgelist[1] => [1])
     for (i, e) in enumerate(@view edgelist[2:end])
-        if edgelist[i] != edgelist[i+1]
+        if edgelist[i] != edgelist[i + 1]
             edgedict[e] = [i+1]
         else
             push!(edgedict[e], i+1)
@@ -122,7 +122,7 @@ function gen_distances(g::MultiGraphWrap; inc = 0.2)
 
     for (edge, inds) in edgedict
         if haskey(edgedict, Edge(dst(edge), src(edge)))
-            distances[inds[1]] != 0. && continue
+            distances[inds[1]] != 0.0 && continue
             inds_ = edgedict[Edge(dst(edge), src(edge))]
 
             len = length(inds) + length(inds_)
@@ -130,7 +130,7 @@ function gen_distances(g::MultiGraphWrap; inc = 0.2)
             ep = sp + inc*(len-1)
             dists = collect(sp:inc:ep)
             distances[inds] = dists[1:length(inds)]
-            distances[inds_] = -dists[length(inds)+1:end]
+            distances[inds_] = -dists[(length(inds) + 1):end]
         else
             sp = -inc/2*(length(inds)-1)
             ep = sp + inc*(length(inds)-1)
@@ -158,30 +158,30 @@ Notes:
   red and black arrows from `A` to the reaction node.
 
 For a list of accepted keyword arguments to the graph plot, please see the [GraphMakie documentation](https://graph.makie.org/stable/#The-graphplot-Recipe).
-"""  
+"""
 function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
     srg = SRGraphWrap(rn)
     ns = length(species(rn))
-    nodecolors = vcat([:skyblue3 for i in 1:ns], 
-                      [:green for i in ns+1:nv(srg)])
-    ilabels = vcat(map(s -> String(tosymbol(s, escape=false)), species(rn)),
-                   ["R$i" for i in 1:nv(srg)-ns])
+    nodecolors = vcat([:skyblue3 for i in 1:ns],
+        [:green for i in (ns + 1):nv(srg)])
+    ilabels = vcat(map(s -> String(tosymbol(s, escape = false)), species(rn)),
+        ["R$i" for i in 1:(nv(srg) - ns)])
 
     ssm = substoichmat(rn)
     psm = prodstoichmat(rn)
     # Get stoichiometry of reaction
     edgelabels = map(Graphs.edges(srg.g)) do e
-        string(src(e) > ns ? 
-            psm[dst(e), src(e)-ns] :
-            ssm[src(e), dst(e)-ns]) 
-    end 
+        string(src(e) > ns ?
+               psm[dst(e), src(e) - ns] :
+               ssm[src(e), dst(e) - ns])
+    end
     edgecolors = [:black for i in 1:ne(srg)]
 
     num_e = ne(srg.g)
     # Handle the rate edges
     for i in 1:length(srg.edgeorder)
         # If there are stoichiometry and rate edges from the same species to reaction
-        if srg.edgeorder[i] > num_e 
+        if srg.edgeorder[i] > num_e
             edgecolors[i] = :red
             insert!(edgelabels, i, "")
         elseif edgelabels[i] == "0"
@@ -190,29 +190,29 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
         end
     end
 
-    layout = if !haskey(kwargs, :layout) 
+    layout = if !haskey(kwargs, :layout)
         Stress()
     end
-    f = graphplot(srg; 
-              layout,
-              edge_color = edgecolors,
-              elabels = edgelabels,
-              elabels_rotation = 0,
-              ilabels = ilabels,
-              node_color = nodecolors,
-              arrow_shift = :end,
-              arrow_size = 20,
-              curve_distance_usage = true,
-              curve_distance = gen_distances(srg),
-              kwargs...
-            )
+    f = graphplot(srg;
+        layout,
+        edge_color = edgecolors,
+        elabels = edgelabels,
+        elabels_rotation = 0,
+        ilabels = ilabels,
+        node_color = nodecolors,
+        arrow_shift = :end,
+        arrow_size = 20,
+        curve_distance_usage = true,
+        curve_distance = gen_distances(srg),
+        kwargs...
+    )
 
     f.axis.xautolimitmargin = (0.15, 0.15)
     f.axis.yautolimitmargin = (0.15, 0.15)
     hidedecorations!(f.axis)
     hidespines!(f.axis)
     f.axis.aspect = DataAspect()
-    
+
     f
 end
 
@@ -248,21 +248,21 @@ function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels = false, k
     # Get complex graph and reaction order for edgecolors and edgelabels. rxorder gives the order of reactions(rn) that would match the edge order in edges(cg).
     cg, rxorder = ComplexGraphWrap(rn)
 
-    layout = if !haskey(kwargs, :layout)  
+    layout = if !haskey(kwargs, :layout)
         Stress()
     end
     f = graphplot(cg;
-              layout,
-              edge_color = edgecolors[rxorder],
-              elabels = show_rate_labels ? edgelabels[rxorder] : [], 
-              ilabels = complexlabels(rn), 
-              node_color = :skyblue3,
-              elabels_rotation = 0,
-              arrow_shift = :end, 
-              curve_distance_usage = true,
-              curve_distance = gen_distances(cg),
-              kwargs...
-            )
+        layout,
+        edge_color = edgecolors[rxorder],
+        elabels = show_rate_labels ? edgelabels[rxorder] : [],
+        ilabels = complexlabels(rn),
+        node_color = :skyblue3,
+        elabels_rotation = 0,
+        arrow_shift = :end,
+        curve_distance_usage = true,
+        curve_distance = gen_distances(cg),
+        kwargs...
+    )
 
     f.axis.xautolimitmargin = (0.15, 0.15)
     f.axis.yautolimitmargin = (0.15, 0.15)
@@ -273,9 +273,9 @@ function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels = false, k
     f
 end
 
-function complexelem_tostr(e::Catalyst.ReactionComplexElement, specstrs) 
+function complexelem_tostr(e::Catalyst.ReactionComplexElement, specstrs)
     if e.speciesstoich == 1
-        return "$(specstrs[e.speciesid])"  
+        return "$(specstrs[e.speciesid])"
     else
         return "$(e.speciesstoich)$(specstrs[e.speciesid])"
     end
@@ -285,11 +285,11 @@ end
 function complexlabels(rn::ReactionSystem)
     labels = String[]
 
-    specstrs = map(s -> String(tosymbol(s, escape=false)), species(rn))
+    specstrs = map(s -> String(tosymbol(s, escape = false)), species(rn))
     complexes, B = reactioncomplexes(rn)
 
     for complex in complexes
-        if isempty(complex) 
+        if isempty(complex)
             push!(labels, "∅")
         elseif length(complex) == 1
             push!(labels, complexelem_tostr(complex[1], specstrs))
