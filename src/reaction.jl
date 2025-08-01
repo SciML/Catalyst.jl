@@ -702,8 +702,7 @@ Notes: The following values are possible:
 end
 
 const JUMP_SCALES = (PhysicalScale.Jump, PhysicalScale.VariableRateJump)
-const NON_CONSTANT_JUMP_SCALES = (
-    PhysicalScale.ODE, PhysicalScale.SDE, PhysicalScale.VariableRateJump)
+const NON_CONSTANT_JUMP_SCALES = (PhysicalScale.ODE, PhysicalScale.SDE, PhysicalScale.VariableRateJump)
 
 """
     has_physical_scale(rx::Reaction)
