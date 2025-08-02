@@ -546,4 +546,4 @@ If you use this functionality in your research, [in addition to Catalyst](@ref d
 ---
 ## References
 [^1]: [Schmiester, L et al. *PEtab—Interoperable specification of parameter estimation problems in systems biology*, PLOS Computational Biology (2021).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008646)
-[^2]: [Hass, H et al. *PBenchmark problems for dynamic modeling of intracellular processes*, Bioinformatics (2019).](https://academic.oup.com/bioinformatics/article/35/17/3073/5280731?login=false)
+[^2]: [Haas, H et al. *Benchmark problems for dynamic modeling of intracellular processes*, Bioinformatics (2019).](https://academic.oup.com/bioinformatics/article/35/17/3073/5280731?login=false)

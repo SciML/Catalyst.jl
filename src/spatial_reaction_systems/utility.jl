@@ -278,8 +278,8 @@ function update_mtk_ps!(lt_ofun::LatticeTransportODEFunction, all_ps::Vector{T},
 end
 
 # For an expression, compute its values using the provided state and parameter vectors.
-# The expression is assumed to be valid in vertexes (and can have vertex parameter and state components).
-# If at least one component is non-uniform, output is a vector of length equal to the number of vertexes.
+# The expression is assumed to be valid in vertices (and can have vertex parameter and state components).
+# If at least one component is non-uniform, output is a vector of length equal to the number of vertices.
 # If all components are uniform, the output is a length one vector.
 function compute_vertex_value(exp, lrs::LatticeReactionSystem; u = [], ps = [])
     # Finds the symbols in the expression. Checks that all correspond to unknowns or vertex parameters.

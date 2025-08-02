@@ -454,7 +454,7 @@ nlprob1 = NonlinearProblem(nlsys, u0, ps)
 ```
 We can now try to change just `Γ` and implicitly the observed variable that was
 removed will be assumed to have changed its initial value to compensate for it.
-Let's confirm this. First we find the observed variable that was elminated.
+Let's confirm this. First we find the observed variable that was eliminated.
 ```@example faq_remake
 obs_unknown = only(observed(nlsys)).lhs
 ```

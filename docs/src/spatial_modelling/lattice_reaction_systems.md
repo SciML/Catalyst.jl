@@ -192,7 +192,7 @@ nothing # hide
 If we want, it is also possible to provide the values as a [*sparse array*](https://github.com/JuliaSparse/SparseArrays.jl) with values only in the coordinates that corresponds to compartments.
 
 ### [Non-uniform compartment values for unstructured lattices](@id spatial_lattice_modelling_intro_simulation_inputs_graphs)
-In graphs (which are used to represent unstructured lattices) each vertex (i.e. compartment) has a specific index. To set non-uniform values for unstructured lattices, provide a vector where the $i$'th value corresponds to the value in the compartment with index $i$ in the graph. E.g. for a graph with 5 vertexes, where we want $X$ to be zero in all compartments bar one (where it is $1.0$) we use:
+In graphs (which are used to represent unstructured lattices) each vertex (i.e. compartment) has a specific index. To set non-uniform values for unstructured lattices, provide a vector where the $i$'th value corresponds to the value in the compartment with index $i$ in the graph. E.g. for a graph with 5 vertices, where we want $X$ to be zero in all compartments bar one (where it is $1.0$) we use:
 ```@example spatial_intro_nonuniform_vals
 [:X1 => [0.0, 0.0, 0.0, 0.0, 1.0], :X2 => 10.0]
 nothing # hide

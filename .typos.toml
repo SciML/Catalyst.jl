@@ -23,6 +23,10 @@ parameterized = "parameterized"
 discretized = "discretized"
 vectorized = "vectorized"
 
+# Biochemical terms
+Pase = "Pase"
+Ba = "Ba"
+
 # Common variable patterns in Julia/SciML
 ists = "ists"
 ispcs = "ispcs"
