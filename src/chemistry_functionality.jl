@@ -275,8 +275,7 @@ function balance_reaction(reaction::Reaction)
     end
 
     isempty(balancedrxs) && (@warn "Unable to balance reaction.")
-    (length(balancedrxs) > 1) &&
-        (@warn "The space of possible balanced versions of the reaction ($reaction) is greater than one-dimension. This prevents the selection of a single appropriate balanced reaction. Instead, a basis for balanced reactions is returned. Note that we do not check if they preserve the set of substrates and products from the original reaction.")
+    (length(balancedrxs) > 1) && (@warn "The space of possible balanced versions of the reaction ($reaction) is greater than one-dimension. This prevents the selection of a single appropriate balanced reaction. Instead, a basis for balanced reactions is returned. Note that we do not check if they preserve the set of substrates and products from the original reaction.")
     return balancedrxs
 end
 

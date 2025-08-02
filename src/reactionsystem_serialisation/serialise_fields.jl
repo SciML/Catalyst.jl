@@ -102,12 +102,9 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool,
         while !(isempty(remaining_ps) && isempty(remaining_sps) && isempty(remaining_vars))
             # Checks which parameters/species/variables can be written. The `dependency_split`
             # function updates the `remaining_` input.
-            writable_ps = dependency_split!(remaining_ps,
-                [remaining_ps; remaining_sps; remaining_vars])
-            writable_sps = dependency_split!(remaining_sps,
-                [remaining_ps; remaining_sps; remaining_vars])
-            writable_vars = dependency_split!(remaining_vars,
-                [remaining_ps; remaining_sps; remaining_vars])
+            writable_ps = dependency_split!(remaining_ps, [remaining_ps; remaining_sps; remaining_vars])
+            writable_sps = dependency_split!(remaining_sps, [remaining_ps; remaining_sps; remaining_vars])
+            writable_vars = dependency_split!(remaining_vars, [remaining_ps; remaining_sps; remaining_vars])
 
             # Writes those that can be written.
             isempty(writable_ps) ||
@@ -430,8 +427,7 @@ function get_continuous_events_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 -related functions in a constant tuple.
-CONTINUOUS_EVENTS_FS = (seri_has_continuous_events, get_continuous_events_string,
-    get_continuous_events_annotation)
+CONTINUOUS_EVENTS_FS = (seri_has_continuous_events, get_continuous_events_string, get_continuous_events_annotation)
 
 ### Handles Discrete Events ###
 
@@ -487,8 +483,7 @@ function get_discrete_events_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 -related functions in a constant tuple.
-DISCRETE_EVENTS_FS = (seri_has_discrete_events, get_discrete_events_string,
-    get_discrete_events_annotation)
+DISCRETE_EVENTS_FS = (seri_has_discrete_events, get_discrete_events_string, get_discrete_events_annotation)
 
 ### Handles Systems ###
 
@@ -563,5 +558,4 @@ function get_connection_type_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 connection types-related functions in a constant tuple.
-CONNECTION_TYPE_FS = (
-    seri_has_connection_type, get_connection_type_string, get_connection_type_annotation)
+CONNECTION_TYPE_FS = (seri_has_connection_type, get_connection_type_string, get_connection_type_annotation)
