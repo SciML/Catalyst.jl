@@ -1,6 +1,7 @@
 [default.extend-words]
 # Catalyst specific
 systemes = "systemes"
+Hass = "Hass"
 
 # Julia-specific functions
 indexin = "indexin"
