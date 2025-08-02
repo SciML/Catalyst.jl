@@ -40,7 +40,7 @@ function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator
     # Currently, the resulting JumpProblem does not depend on parameters (no way to incorporate these).
     # Hence the parameters of this one do not actually matter. If at some point JumpProcess can
     # handle parameters this can be updated and improved.
-    # The non-spatial DiscreteProblem have a u0 matrix with entries for all combinations of species and vertexes.
+    # The non-spatial DiscreteProblem have a u0 matrix with entries for all combinations of species and vertices.
     hopping_constants = make_hopping_constants(dprob, lrs)
     sma_jumps = make_spatial_majumps(dprob, lrs)
     non_spat_dprob = DiscreteProblem(reshape(dprob.u0, num_species(lrs), num_verts(lrs)),

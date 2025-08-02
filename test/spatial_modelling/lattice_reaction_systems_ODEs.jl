@@ -232,7 +232,7 @@ let
         J.nzval[3:3:(end - 4)] .= p[3]
 
         # Non-spatial
-        for i in 1:1:Int64(lenth(u) / 2 - 1)
+        for i in 1:1:Int64(length(u) / 2 - 1)
             j = 6(i - 1) + 1
             J.nzval[j] = u[i] * u[i + 1] - 1 - p[2]
             J.nzval[j + 1] = 0.5 * (u[i]^2)

@@ -182,7 +182,7 @@ let
     ]
     pV = sigmaB_p
     pE = [:DσB => 0.1, :Dw => 0.1, :Dv => 0.1]
-    oprob = ODEProblem(lrs, u0, (0.0, 10.0), [pV; pE]) # Time reduced from 50.0 (which casues Julai to crash).
+    oprob = ODEProblem(lrs, u0, (0.0, 10.0), [pV; pE]) # Time reduced from 50.0 (which causes Julia to crash).
     @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver=:GMRES)))
 
     runtime_target = 59.

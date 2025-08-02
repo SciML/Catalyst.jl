@@ -261,5 +261,5 @@ lines!(ax_time, lift(sol -> sol.t, solution), lift(sol -> sol[:X], solution),
 
 You can further extend this visualization by:
 - Adding other interactive elements, such as [buttons](https://docs.makie.org/stable/reference/blocks/button) or [dropdown menus](https://docs.makie.org/stable/reference/blocks/menu) to control different aspects of the simulation or visualization.
-- Adding additonal axes to the plot, such as plotting the derivatives of the species.
+- Adding additional axes to the plot, such as plotting the derivatives of the species.
 - Color coding the slider and slider labels to match the plot colors.
