@@ -18,7 +18,7 @@ t = default_t()
 begin
     t = default_t()
     @parameters p1 p2 p3::Int64 p4 p5::Rational{Int64}
-    @parameters d1 d2=1.2 d3::Int64=2 [description="A parameter"] d4::Rational{Int64} d5
+    @parameters d1 d2 = 1.2 d3::Int64 = 2 [description = "A parameter"] d4::Rational{Int64} d5
     @species X1(t) X2(t) X3(t) X4(t) X5(t)
 
     rxs = [
@@ -39,12 +39,9 @@ begin
     # Declares initial condition and potential parameter sets.
     u0 = [X1 => 0.1, X2 => 0.2, X3 => 0.3, X4 => 0.4, X5 => 0.5]
     p_alts = [
-        [p1 => 1.0, d1 => 1.0, p2 => 1.2, p3 => 2,
-            p4 => 0.5, d4 => 1//2, p5 => 3//2, d5 => 1.5],
-        (p1 => 1.0, d1 => 1.0, p2 => 1.2, p3 => 2,
-            p4 => 0.5, d4 => 1//2, p5 => 3//2, d5 => 1.5),
-        Dict([p1 => 1.0, d1 => 1.0, p2 => 1.2, p3 => 2,
-            p4 => 0.5, d4 => 1//2, p5 => 3//2, d5 => 1.5])
+        [p1 => 1.0, d1 => 1.0, p2 => 1.2, p3 => 2, p4 => 0.5, d4 => 1//2, p5 => 3//2, d5 => 1.5],
+        (p1 => 1.0, d1 => 1.0, p2 => 1.2, p3 => 2, p4 => 0.5, d4 => 1//2, p5 => 3//2, d5 => 1.5),
+        Dict([p1 => 1.0, d1 => 1.0, p2 => 1.2, p3 => 2, p4 => 0.5, d4 => 1//2, p5 => 3//2, d5 => 1.5])
     ]
 end
 
@@ -91,8 +88,7 @@ let
     nsol = solve(nprob, NewtonRaphson())
 
     # Checks all stored parameters.
-    for mtk_struct in [oprob, sprob, dprob, jprob, nprob, oinit,
-        sinit, jinit, ninit, osol, ssol, jsol, nsol]
+    for mtk_struct in [oprob, sprob, dprob, jprob, nprob, oinit, sinit, jinit, ninit, osol, ssol, jsol, nsol]
         # Checks that all parameters have the correct type.
         @test unwrap(mtk_struct.ps[p1]) isa Float64
         @test unwrap(mtk_struct.ps[d1]) isa Float64

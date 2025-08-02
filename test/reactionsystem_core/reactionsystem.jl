@@ -1,8 +1,7 @@
 ### Fetch Packages and Set Global Variables ###
 
 # Fetch packages.
-using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEqTsit5, OrdinaryDiffEqVerner,
-      StochasticDiffEq, Test
+using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEqTsit5, OrdinaryDiffEqVerner, StochasticDiffEq, Test
 const MT = ModelingToolkit
 
 # Sets stable rng number.
@@ -39,7 +38,7 @@ rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
     Reaction(k[17] * A * exp(B), [C], [D], [2], [1]),              # 2C -> D with non constant rate.
     Reaction(k[18] * B, nothing, [B], nothing, [2]),             # 0 -> 2B with non constant rate.
     Reaction(k[19] * t, [A], [B]),                                # A -> B with non constant rate.
-    Reaction(k[20] * t * A, [B, C], [D], [2, 1], [2])                  # 2A +B -> 2C with non constant rate.
+    Reaction(k[20] * t * A, [B, C], [D], [2, 1], [2]),                  # 2A +B -> 2C with non constant rate.
 ]
 @named rs = ReactionSystem(rxs, t, [A, B, C, D], [k])
 rs = complete(rs)
@@ -204,7 +203,7 @@ let
     u0map = unknowns(js) .=> u0
     ttt = rand(rng)
     jumps = Vector{Union{ConstantRateJump, MassActionJump, VariableRateJump}}(undef,
-        length(rxs))
+                                                                              length(rxs))
 
     jumps[1] = MassActionJump(p[1], Vector{Pair{Int, Int}}(), [1 => 1])
     jumps[2] = MassActionJump(p[2], [2 => 1], [2 => -1])
@@ -218,32 +217,31 @@ let
     jumps[10] = MassActionJump(p[10], [1 => 2], [1 => -2, 3 => 1, 4 => 1])
     jumps[11] = MassActionJump(p[11], [1 => 2], [1 => -1, 2 => 1])
     jumps[12] = MassActionJump(p[12], [1 => 1, 2 => 3, 3 => 4],
-        [1 => -1, 2 => -3, 3 => -2, 4 => 3])
+                               [1 => -1, 2 => -3, 3 => -2, 4 => 3])
     jumps[13] = MassActionJump(p[13], [1 => 3, 2 => 1], [1 => -3, 2 => -1])
     jumps[14] = MassActionJump(p[14], Vector{Pair{Int, Int}}(), [1 => 2])
 
     jumps[15] = ConstantRateJump((u, p, t) -> p[15] * u[1] / (2 + u[1]),
-        integrator -> (integrator.u[1] -= 1))
+                                 integrator -> (integrator.u[1] -= 1))
     jumps[16] = ConstantRateJump((u, p, t) -> p[16],
-        integrator -> (integrator.u[1] -= 1; integrator.u[2] += 1))
+                                 integrator -> (integrator.u[1] -= 1; integrator.u[2] += 1))
     jumps[17] = ConstantRateJump((u, p, t) -> p[17] * u[1] * exp(u[2]) * binomial(u[3], 2),
-        integrator -> (integrator.u[3] -= 2; integrator.u[4] += 1))
+                                 integrator -> (integrator.u[3] -= 2; integrator.u[4] += 1))
     jumps[18] = ConstantRateJump((u, p, t) -> p[18] * u[2],
-        integrator -> (integrator.u[2] += 2))
+                                 integrator -> (integrator.u[2] += 2))
 
     jumps[19] = VariableRateJump((u, p, t) -> p[19] * u[4] * t,
-        integrator -> (integrator.u[4] -= 1; integrator.u[5] += 1))
+                                 integrator -> (integrator.u[4] -= 1; integrator.u[5] += 1))
     jumps[20] = VariableRateJump((u, p, t) -> p[20] * t * u[1] * binomial(u[4], 2) * u[5],
-        integrator -> (integrator.u[4] -= 2; integrator.u[5] -= 1; integrator.u[6] += 2))
+                                 integrator -> (integrator.u[4] -= 2; integrator.u[5] -= 1; integrator.u[6] += 2))
 
     unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(js)))
     dprob = DiscreteProblem(js, u0map, (0.0, 10.0), pmap)
     mtkpars = dprob.p
     jspmapper = ModelingToolkit.JumpSysMajParamMapper(js, mtkpars)
     symmaj = ModelingToolkit.assemble_maj(equations(js).x[1], unknownoid, jspmapper)
-    maj = MassActionJump(
-        symmaj.param_mapper(mtkpars), symmaj.reactant_stoch, symmaj.net_stoch,
-        symmaj.param_mapper, scale_rates = false)
+    maj = MassActionJump(symmaj.param_mapper(mtkpars), symmaj.reactant_stoch, symmaj.net_stoch,
+                         symmaj.param_mapper, scale_rates = false)
     for i in midxs
         @test abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100 * eps()
         @test jumps[i].reactant_stoch == maj.reactant_stoch[i]
@@ -293,9 +291,9 @@ let
     rs_dsl = @reaction_network rs begin
         @parameters p[1:2] k d1 d2
         @species (X(t))[1:2] Y1(t) Y2(t)
-        (p[1], p[2]), 0 --> (X[1], X[2])
-        k, (X[1], X[2]) --> (Y1, Y2)
-        (d1, d2), (Y1, Y2) --> 0
+        (p[1],p[2]), 0 --> (X[1],X[2])
+        k, (X[1],X[2]) --> (Y1,Y2)
+        (d1,d2), (Y1,Y2) --> 0
     end
 
     # Checks equivalence.
@@ -320,11 +318,11 @@ let
     # Technically only one model needs to be check. However, "equivalent" models in MTK can still
     # have slight differences, so checking for both here to be certain.
     for rs in [rs_prog, rs_dsl]
-        oprob = ODEProblem(rs, u0_alts[1], (0.0, 10000.0), ps_alts[1])
+        oprob = ODEProblem(rs, u0_alts[1], (0.0, 10000.), ps_alts[1])
         for rs in [rs_prog, rs_dsl], u0 in u0_alts, p in ps_alts
             oprob_remade = remake(oprob; u0, p)
             sol = solve(oprob_remade, Vern7(); abstol = 1e-8, reltol = 1e-8)
-            @test sol[[X[1], X[2], Y1, Y2]][end] ≈ [0.5, 5.0, 0.2, 2.5]
+            @test sol[[X[1], X[2], Y1 ,Y2]][end] ≈ [0.5, 5.0, 0.2, 2.5]
         end
     end
 end
@@ -336,7 +334,7 @@ let
     # Creates a `ReactionSystem`.
     @parameters x
     @parameters p d
-    @species S(t, x)
+    @species S(t,x)
     rxs = [
         Reaction(p, [], [S]),
         Reaction(d, [S], [])
@@ -366,7 +364,7 @@ let
     @named sub_rs = ReactionSystem(sub_rxs, t)
     sub_eqs = [
         D(V1) ~ p1 - V1,
-        D(V2) ~ p2 - V2
+        D(V2) ~ p2 - V2,
     ]
     @named sub_osys = ODESystem(sub_eqs, t)
     rxs = [
@@ -549,14 +547,12 @@ end
 let
     @parameters k1 A [isconstantspecies = true]
     @species C(t) [isbcspecies = true] B1(t) B2(t) B3(t)
-    @named rn = ReactionSystem(
-        [(@reaction k1, $C --> B1 + $C),
-            (@reaction k1, $A --> B2),
-            (@reaction 10 * k1, ∅ --> B3)],
-        t)
+    @named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
+                                   (@reaction k1, $A --> B2),
+                                   (@reaction 10 * k1, ∅ --> B3)], t)
     rn = complete(rn)
     jin = JumpInputs(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
-        [k1 => 1.0])
+                            [k1 => 1.0])
     jprob = JumpProblem(jin; rng, save_positions = (false, false))
     umean = zeros(4)
     Nsims = 40000
@@ -675,8 +671,7 @@ let
     sol = solve(jprob, SSAStepper())
 
     # Test for https://github.com/SciML/ModelingToolkit.jl/issues/1042.
-    jprob = JumpProblem(JumpInputs(rs, dprob), Direct(); rng, save_positions = (
-        false, false))
+    jprob = JumpProblem(JumpInputs(rs, dprob.u0, dprob.tspan, dprob.p), Direct(); rng, save_positions = (false, false))
 
     @parameters k1 k2
     @species R(t)
@@ -685,9 +680,9 @@ let
     @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
     rs = complete(rs)
     @test isequal(oderatelaw(equations(rs)[1]),
-        k1 * S * S^2 * I^3 / (factorial(2) * factorial(3)))
+                  k1 * S * S^2 * I^3 / (factorial(2) * factorial(3)))
     @test_skip isequal(jumpratelaw(equations(eqs)[1]),
-        k1 * S * binomial(S, 2) * binomial(I, 3))
+                       k1 * S * binomial(S, 2) * binomial(I, 3))
     dep = Set()
     ModelingToolkit.get_variables!(dep, rxs[2], Set(unknowns(rs)))
     dep2 = Set([R, I])
@@ -700,7 +695,7 @@ let
 
     @test isequal2(jumpratelaw(rxs[1]), k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
     @test isequal2(jumpratelaw(rxs[1]; combinatoric_ratelaw = false),
-        k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
+                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
     @test isequal2(oderatelaw(rxs[1]), k1 * S * S^2 * I^3 / 12)
     @test isequal2(oderatelaw(rxs[1]; combinatoric_ratelaw = false), k1 * S * S^2 * I^3)
 
@@ -720,14 +715,14 @@ let
     # Test ConstantRateJump rate scaling.
     js = complete(convert(JumpSystem, rs))
     @test isequal2(equations(js)[1].rate,
-        k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
+                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
     js = complete(convert(JumpSystem, rs; combinatoric_ratelaws = false))
     @test isequal2(equations(js)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
     js2 = complete(convert(JumpSystem, rs2))
     @test isequal2(equations(js2)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
     js3 = complete(convert(JumpSystem, rs2; combinatoric_ratelaws = true))
     @test isequal2(equations(js3)[1].rate,
-        k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
+                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
 
     # Test MassActionJump rate scaling.
     rxs = [Reaction(k1, [S, I], [I], [2, 3], [2]),
@@ -916,9 +911,7 @@ end
 
 # Additional unsorted tests.
 let
-    rn = @reaction_network begin
-        k, X --> 0
-    end
+    rn = @reaction_network begin k, X --> 0 end
     isspecies(species(rn)[1])
     @test Catalyst.has_species(rn)
     @test Catalyst.has_rxs(rn)
@@ -972,31 +965,31 @@ let
     @test isempty(nps.incidencemat) == true
 
     img = incidencematgraph(rn)
-    @test size(nps.incidencemat) == (3, 3)
+    @test size(nps.incidencemat) == (3,3)
 
     Catalyst.reset!(nps)
     lcs = linkageclasses(rn)
-    @test size(nps.incidencemat) == (3, 3)
+    @test size(nps.incidencemat) == (3,3)
 
     Catalyst.reset!(nps)
     sns = subnetworks(rn)
-    @test size(nps.incidencemat) == (3, 3)
+    @test size(nps.incidencemat) == (3,3)
 
     Catalyst.reset!(nps)
     δ = deficiency(rn)
-    @test size(nps.incidencemat) == (3, 3)
+    @test size(nps.incidencemat) == (3,3)
 
     Catalyst.reset!(nps)
     δ_l = linkagedeficiencies(rn)
-    @test size(nps.incidencemat) == (3, 3)
+    @test size(nps.incidencemat) == (3,3)
 
     Catalyst.reset!(nps)
     rev = isreversible(rn)
-    @test size(nps.incidencemat) == (3, 3)
+    @test size(nps.incidencemat) == (3,3)
 
     Catalyst.reset!(nps)
     weakrev = isweaklyreversible(rn, sns)
-    @test size(nps.incidencemat) == (3, 3)
+    @test size(nps.incidencemat) == (3,3)
 end
 
 ########## tests related to hybrid systems ##########
@@ -1018,8 +1011,7 @@ let
     cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
     @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
     rs = complete(rs)
-    jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [
-        :k => 1.0, :λ => 0.4])
+    jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
     @test jinput.prob isa ODEProblem
     sys = jinput.sys
     @test sys isa JumpSystem
@@ -1044,8 +1036,7 @@ let
     cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
     @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
     rs = complete(rs)
-    jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [
-        :k => 1.0, :λ => 0.4])
+    jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
     @test jinput.prob isa ODEProblem
     sys = jinput.sys
     @test sys isa JumpSystem
@@ -1073,8 +1064,7 @@ let
     cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
     @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
     rs = complete(rs)
-    jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [
-        :k => 1.0, :λ => 0.4])
+    jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
     @test jinput.prob isa ODEProblem
     sys = jinput.sys
     @test sys isa JumpSystem
