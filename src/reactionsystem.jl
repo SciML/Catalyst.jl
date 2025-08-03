@@ -481,13 +481,13 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     end
 
     # Creates the continuous and discrete callbacks.
-    ccallbacks = MT.SymbolicContinuousCallbacks(continuous_events)
-    dcallbacks = MT.SymbolicDiscreteCallbacks(discrete_events)
+    ccallbacks = continuous_events === nothing ? MT.SymbolicContinuousCallback[] : continuous_events
+    dcallbacks = discrete_events === nothing ? MT.SymbolicDiscreteCallback[] : discrete_events
 
     ReactionSystem(
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
         systems, defaults, connection_type, nps, combinatoric_ratelaws,
-        ccallbacks, dcallbacks, metadata; checks = checks)
+        ccallbacks, dcallbacks, metadata === nothing ? Base.ImmutableDict{Symbol,Any}() : metadata; checks = checks)
 end
 
 # Two-argument constructor (reactions/equations and time variable).
