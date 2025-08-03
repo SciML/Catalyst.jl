@@ -276,7 +276,7 @@ Notes:
   units). Unit checking can be disabled by passing the keyword argument `checks=false`.
 """
 struct ReactionSystem{V <: NetworkProperties} <:
-       MT.AbstractTimeDependentSystem
+       MT.AbstractSystem
     """The equations (reactions and algebraic/differential) defining the system."""
     eqs::Vector{CatalystEqType}
     """The Reactions defining the system. """
@@ -398,7 +398,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
         name = nothing,
         default_u0 = Dict(),
         default_p = Dict(),
-        defaults = _merge(Dict(default_u0), Dict(default_p)),
+        defaults = merge(Dict(default_u0), Dict(default_p)),
         connection_type = nothing,
         checks = true,
         networkproperties = nothing,

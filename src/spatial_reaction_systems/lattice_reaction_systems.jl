@@ -57,7 +57,7 @@ continuous space systems with them is possible, but requires the user to determi
 (the lattice). Better support for continuous space models is a work in progress.
 - Catalyst contains extensive documentation on spatial modelling, which can be found [here](https://docs.sciml.ai/Catalyst/stable/spatial_modelling/lattice_reaction_systems/).
 """
-struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
+struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractSystem
     # Input values.
     """The (non-spatial) reaction system within each vertex."""
     reactionsystem::ReactionSystem{Q}
