@@ -1,6 +1,7 @@
 [default.extend-words]
 # Catalyst specific
 systemes = "systemes"
+Hass = "Hass"
 
 # Julia-specific functions
 indexin = "indexin"
@@ -22,6 +23,10 @@ linearization = "linearization"
 parameterized = "parameterized"
 discretized = "discretized"
 vectorized = "vectorized"
+
+# Biochemical terms
+Pase = "Pase"
+Ba = "Ba"
 
 # Common variable patterns in Julia/SciML
 ists = "ists"

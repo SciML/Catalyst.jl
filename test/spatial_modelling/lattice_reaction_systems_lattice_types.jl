@@ -173,7 +173,7 @@ let
     end
 end
 
-# For a system which is a single ine of vertices: (O-O-O-O-X-O-O-O), ensures that different simulations
+# For a system which is a single line of vertices: (O-O-O-O-X-O-O-O), ensures that different simulations
 # approach yield the same result. Checks for both masked and Cartesian grid. For both, simulates where
 # initial conditions/vertex parameters are either a vector of the same length as the number of vertices (7),
 # Or as the grid. Here, we try grid sizes (n), (1,n), and (1,n,1) (so the same grid, but in 1d, 2d, and 3d).
