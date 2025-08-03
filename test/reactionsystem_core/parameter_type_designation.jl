@@ -73,7 +73,7 @@ let
     # Creates problems, integrators, and solutions.
     oprob = ODEProblem(rs, u0, (0.0, 1.0), p_alts[1])
     sprob = SDEProblem(rs, u0, (0.0, 1.0), p_alts[1])
-    dprob = JumpInputs(rs, u0, (0.0, 1.0), p_alts[1])
+    dprob = DiscreteProblem(rs, u0, (0.0, 1.0), p_alts[1])
     jprob = JumpProblem(JumpInputs(rs, u0, (0.0, 1.0), p_alts[1]); rng)
     nprob = NonlinearProblem(rs, u0, p_alts[1])
 

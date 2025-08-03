@@ -184,7 +184,7 @@ let
         Reaction(k[17] * A * exp(B), [C], [D], [2], [1]),              # 2C -> D with non constant rate.
         Reaction(k[18] * B, nothing, [B], nothing, [2]),             # 0 -> 2B with non constant rate.
         Reaction(k[19] * t, [D], [E]),                                # D -> E with non constant rate.
-        Reaction(k[20] * t * A, [D, E], [F], [2, 1], [2])                  # 2D + E -> 2F with non constant rate.
+        Reaction(k[20] * t * A, [D, E], [F], [2, 1], [2]),                  # 2D + E -> 2F with non constant rate.
     ]
     @named rs = ReactionSystem(rxs, t, [A, B, C, D, E, F], [k])
     rs = complete(rs)
@@ -283,7 +283,7 @@ let
         Reaction(k, [X[1]], [Y1]),
         Reaction(k, [X[2]], [Y2]),
         Reaction(d1, [Y1], []),
-        Reaction(d2, [Y2], [])
+        Reaction(d2, [Y2], []),
     ]
     rs_prog = complete(ReactionSystem(rxs, t; name = :rs))
 
@@ -337,7 +337,7 @@ let
     @species S(t,x)
     rxs = [
         Reaction(p, [], [S]),
-        Reaction(d, [S], [])
+        Reaction(d, [S], []),
     ]
     @named rs = ReactionSystem(rxs, t; spatial_ivs = [x])
 
@@ -618,13 +618,13 @@ end
 let
     # Conversion of non-autonomous `ReactionSystem` to `NonlinearSystem`.
     rs = @reaction_network begin
-        (p/(1+t), d), 0 <--> X
+        (p/(1+t),d), 0 <--> X
     end
     @test_throws Exception convert(NonlinearSystem, rs)
 
     # Conversion of non-complete system to various system types.
     nc = @network_component begin
-        (p, d), 0 <--> X
+        (p,d), 0 <--> X
     end
     @test_throws Exception convert(ODESystem, nc)
     @test_throws Exception convert(SDESystem, nc)
@@ -671,7 +671,7 @@ let
     sol = solve(jprob, SSAStepper())
 
     # Test for https://github.com/SciML/ModelingToolkit.jl/issues/1042.
-    jprob = JumpProblem(JumpInputs(rs, dprob.u0, dprob.tspan, dprob.p), Direct(); rng, save_positions = (false, false))
+    jprob = JumpProblem(rs, dprob, Direct(); rng, save_positions = (false, false))
 
     @parameters k1 k2
     @species R(t)
