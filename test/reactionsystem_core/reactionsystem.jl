@@ -193,9 +193,9 @@ let
     midxs = 1:14
     cidxs = 15:18
     vidxs = 19:20
-    @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.MassActionJump, midxs))
-    @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.ConstantRateJump, cidxs))
-    @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.VariableRateJump, vidxs))
+    @test all(map(i -> typeof(ModelingToolkit.get_jumps(js)[i]) <: JumpProcesses.MassActionJump, midxs))
+    @test all(map(i -> typeof(ModelingToolkit.get_jumps(js)[i]) <: JumpProcesses.ConstantRateJump, cidxs))
+    @test all(map(i -> typeof(ModelingToolkit.get_jumps(js)[i]) <: JumpProcesses.VariableRateJump, vidxs))
 
     p = rand(rng, length(k))
     pmap = [k => p]
@@ -236,10 +236,10 @@ let
                                  integrator -> (integrator.u[4] -= 2; integrator.u[5] -= 1; integrator.u[6] += 2))
 
     unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(js)))
-    dprob = DiscreteProblem(js, u0map, (0.0, 10.0), pmap)
+    dprob = DiscreteProblem(js, u0map, (0.0, 10.0), pmap; check_compatibility = false)
     mtkpars = dprob.p
     jspmapper = ModelingToolkit.JumpSysMajParamMapper(js, mtkpars)
-    symmaj = ModelingToolkit.assemble_maj(equations(js).x[1], unknownoid, jspmapper)
+    symmaj = ModelingToolkit.assemble_maj(ModelingToolkit.get_jumps(js)[1], unknownoid, jspmapper)
     maj = MassActionJump(symmaj.param_mapper(mtkpars), symmaj.reactant_stoch, symmaj.net_stoch,
                          symmaj.param_mapper, scale_rates = false)
     for i in midxs
