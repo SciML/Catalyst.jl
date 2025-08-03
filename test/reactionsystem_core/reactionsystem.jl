@@ -152,7 +152,7 @@ let
     du = oderhs(last.(u), last.(p), 0.0)
     G = sdenoise(last.(u), last.(p), 0.0)
     sdesys = complete(convert(SDESystem, rs))
-    sf = SDEFunction{false}(sdesys, unknowns(rs), parameters(rs))
+    sf = SDEFunction{false}(sdesys; u0=unknowns(rs), p=parameters(rs))
     sprob = SDEProblem(rs, u, (0.0, 0.0), p)
     du2 = sf.f(sprob.u0, sprob.p, 0.0)
 
