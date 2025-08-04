@@ -254,7 +254,7 @@ let
         @parameters X0 Y0
         @species X(τ) = X0 [description = "A jump only species"] Y(τ) = Y0 [description = "An ODE only species"]
         @observables Ztot ~ Z1 + Z2
-        @discrete_events [1.0] => [Z1 ~ Z1 + 1.0]
+        @discrete_events [1.0] => [Z1 ~ Pre(Z1) + 1.0]
         @continuous_events [Y ~ 1.0] => [Y ~ 5.0]
         @equations Δ(V) ~ Z1 + X^2 - V
         (p,d), 0 <--> X

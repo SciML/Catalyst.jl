@@ -305,7 +305,7 @@ let
     rates = getfield.(jsyseqs, :rate)
     affects = getfield.(jsyseqs, :affect!)
     reqs = [ Y*X*hill(X, v, K, n), Y*X*mm(X, v, K), hillr(X, v, K, n)*Y*X, Y*X*mmr(X, v, K)]
-    affeqs = [Z ~ 1 + Z, Y ~ -1 + Y, X ~ -1 + X]
+    affeqs = [Z ~ 1 + Pre(Z), Y ~ -1 + Pre(Y), X ~ -1 + Pre(X)]
     @test all(iszero, simplify(rates .- reqs))
     @test all(aff -> isequal(aff, affeqs), affects)
 
@@ -314,7 +314,7 @@ let
     rates = getfield.(jsyseqs, :rate)
     affects = getfield.(jsyseqs, :affect!)
     reqs = [ Y*X*hill2(X, v, K, n), Y*X*mm2(X, v, K), hillr2(X, v, K, n)*Y*X, Y*X*mmr2(X, v, K)]
-    affeqs = [Z ~ 1 + Z, Y ~ -1 + Y, X ~ -1 + X]
+    affeqs = [Z ~ 1 + Pre(Z), Y ~ -1 + Pre(Y), X ~ -1 + Pre(X)]
     @test all(iszero, simplify(rates .- reqs))
     @test all(aff -> isequal(aff, affeqs), affects)
 end

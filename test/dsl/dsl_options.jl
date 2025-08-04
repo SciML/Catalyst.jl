@@ -1247,7 +1247,7 @@ let
     # The `@discrete_events` option.
     rn61 = @reaction_network rn1 begin
         @species X(t)
-        @discrete_events [X > 3.0] => [X ~ X - 1]
+        @discrete_events [X > 3.0] => [X ~ Pre(X) - 1]
     end
     rn62 = @reaction_network rn1 begin
         @species X(t)
@@ -1258,7 +1258,7 @@ let
     @test isequal(rn61, rn62)
     @test_throws Exception @eval @reaction_network begin
         @species X(t)
-        @discrete_events [X > 3.0] => [X ~ X - 1] [X < 1.0] => [X ~ X + 1]
+        @discrete_events [X > 3.0] => [X ~ Pre(X) - 1] [X < 1.0] => [X ~ X + 1]
     end
 end
 

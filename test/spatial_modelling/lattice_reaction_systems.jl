@@ -247,7 +247,7 @@ end
 
     # Events.
     rs3 = @reaction_network begin
-        @discrete_events [1.0] => [p ~ p + 1]
+        @discrete_events [1.0] => [p ~ Pre(p) + 1]
         (p,d), 0 <--> X
     end
     @test_throws ArgumentError LatticeReactionSystem(rs3, [tr], short_path)

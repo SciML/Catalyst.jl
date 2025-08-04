@@ -309,29 +309,29 @@ let
     ]
 
     # Prepares all events.
-    continuous_events_1 = [(A ~ t_1) => [A ~ A + 2.0, X ~ X/2]]
-    continuous_events_2 = [(A ~ t_2) => [A ~ A + 2.0, X ~ X/2]]
-    continuous_events_3 = [(A ~ t_3) => [A ~ A + 2.0, X ~ X/2]]
-    continuous_events_4 = [(A ~ t_4) => [A ~ A + 2.0, X ~ X/2]]
+    continuous_events_1 = [(A ~ t_1) => [A ~ Pre(A) + 2.0, X ~ Pre(X)/2]]
+    continuous_events_2 = [(A ~ t_2) => [A ~ Pre(A) + 2.0, X ~ Pre(X)/2]]
+    continuous_events_3 = [(A ~ t_3) => [A ~ Pre(A) + 2.0, X ~ Pre(X)/2]]
+    continuous_events_4 = [(A ~ t_4) => [A ~ Pre(A) + 2.0, X ~ Pre(X)/2]]
     discrete_events_1 = [
-        10.0 => [X2_1 ~ X2_1 + 1.0]
+        10.0 => [X2_1 ~ Pre(X2_1) + 1.0]
         [5.0, 10.0] => [b_1 ~ 2 * b_1]
-        (X > 5.0) => [X2_1 ~ X2_1 + 1.0, X ~ X - 1]
+        (X > 5.0) => [X2_1 ~ Pre(X2_1) + 1.0, X ~ Pre(X) - 1]
     ]
     discrete_events_2 = [
-        10.0 => [X2_2 ~ X2_2 + 1.0]
+        10.0 => [X2_2 ~ Pre(X2_2) + 1.0]
         [5.0, 10.0] => [b_2 ~ 2 * b_2]
-        (X > 5.0) => [X2_2 ~ X2_2 + 1.0, X ~ X - 1]
+        (X > 5.0) => [X2_2 ~ Pre(X2_2) + 1.0, X ~ Pre(X) - 1]
     ]
     discrete_events_3 = [
-        10.0 => [X2_3 ~ X2_3 + 1.0]
+        10.0 => [X2_3 ~ Pre(X2_3) + 1.0]
         [5.0, 10.0] => [b_3 ~ 2 * b_3]
-        (X > 5.0) => [X2_3 ~ X2_3 + 1.0, X ~ X - 1]
+        (X > 5.0) => [X2_3 ~ Pre(X2_3) + 1.0, X ~ Pre(X) - 1]
     ]
     discrete_events_4 = [
-        10.0 => [X2_4 ~ X2_4 + 1.0]
+        10.0 => [X2_4 ~ Pre(X2_4) + 1.0]
         [5.0, 10.0] => [b_4 ~ 2 * b_4]
-        (X > 5.0) => [X2_4 ~ X2_4 + 1.0, X ~ X - 1]
+        (X > 5.0) => [X2_4 ~ Pre(X2_4) + 1.0, X ~ Pre(X) - 1]
     ]
 
     # Creates the systems.
@@ -367,8 +367,8 @@ let
     rs = @reaction_network begin
         @equations D(V) ~ 1 - V
         @continuous_events begin
-            [X ~ 5.0] => [X ~ X + 1.0]
-            [X ~ 20.0] => [X ~ X - 1.0]
+            [X ~ 5.0] => [X ~ Pre(X) + 1.0]
+            [X ~ 20.0] => [X ~ Pre(X) - 1.0]
         end
         @discrete_events 5.0 => [d ~ d/2]
         d, X --> 0
