@@ -236,10 +236,11 @@ let
                                  integrator -> (integrator.u[4] -= 2; integrator.u[5] -= 1; integrator.u[6] += 2))
 
     unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(js)))
-    dprob = DiscreteProblem(js, u0map, (0.0, 10.0), pmap; check_compatibility = false)
+    dprob = DiscreteProblem(js, u0map, (0.0, 10.0), pmap; check_compatibility = false, check_length = false)
     mtkpars = dprob.p
     jspmapper = ModelingToolkit.JumpSysMajParamMapper(js, mtkpars)
-    symmaj = ModelingToolkit.assemble_maj(ModelingToolkit.get_jumps(js)[1], unknownoid, jspmapper)
+    maj_jumps = [ModelingToolkit.get_jumps(js)[i] for i in midxs]
+    symmaj = ModelingToolkit.assemble_maj(maj_jumps, unknownoid, jspmapper)
     maj = MassActionJump(symmaj.param_mapper(mtkpars), symmaj.reactant_stoch, symmaj.net_stoch,
                          symmaj.param_mapper, scale_rates = false)
     for i in midxs
@@ -248,7 +249,7 @@ let
         @test jumps[i].net_stoch == maj.net_stoch[i]
     end
     for i in cidxs
-        crj = ModelingToolkit.assemble_crj(js, equations(js)[i], unknownoid)
+        crj = ModelingToolkit.assemble_crj(js, ModelingToolkit.get_jumps(js)[i], unknownoid)
         @test isapprox(crj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
         fake_integrator1 = (u = zeros(6), p = mtkpars, t = 0.0)
         fake_integrator2 = (u = zeros(6), p, t = 0.0)
@@ -257,7 +258,7 @@ let
         @test fake_integrator1.u == fake_integrator2.u
     end
     for i in vidxs
-        crj = ModelingToolkit.assemble_vrj(js, equations(js)[i], unknownoid)
+        crj = ModelingToolkit.assemble_vrj(js, ModelingToolkit.get_jumps(js)[i], unknownoid)
         @test isapprox(crj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
         fake_integrator1 = (u = zeros(6), p = mtkpars, t = 0.0)
         fake_integrator2 = (u = zeros(6), p, t = 0.0)
@@ -501,7 +502,7 @@ let
     @test issetequal(_ps, [A, k1, k2])
     du1 = zeros(4)
     du2 = zeros(4)
-    sprob = SDEProblem(ssys, u0map, tspan, pmap; check_length = false)
+    sprob = SDEProblem(ssys, u0map, tspan, pmap; check_length = false, check_compatibility = false)
     sprob.f(du1, sprob.u0, sprob.p, 1.0)
     fs!(du2, u0, p, 1.0)
     @test isapprox(du1, du2)
