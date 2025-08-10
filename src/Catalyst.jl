@@ -3,50 +3,66 @@ $(DocStringExtensions.README)
 """
 module Catalyst
 
-using DocStringExtensions
-using SparseArrays, DiffEqBase, Reexport, Setfield, EnumX
-using LaTeXStrings, Latexify, Requires
-using LinearAlgebra, Combinatorics
+using DocStringExtensions: DocStringExtensions, FIELDS, TYPEDEF, README
+using SparseArrays: SparseArrays, AbstractSparseArray, SparseMatrixCSC,
+                    SparseVector, findnz, issparse, nnz, nonzeros, nzrange,
+                    rowvals, sparse, spzeros
+using DiffEqBase: DiffEqBase, ODESolution, SciMLBase, deleteat!, remake
+using Reexport: Reexport, @reexport
+using Setfield: Setfield, @set, @set!, get
+using EnumX: EnumX, @enumx
+using LaTeXStrings: LaTeXStrings, LaTeXString
+using Latexify: Latexify, @latexrecipe, latexraw, md
+using Requires: Requires
+using LinearAlgebra: LinearAlgebra, I, rank, tr, eigvals
+using Combinatorics: Combinatorics, factorial
 using JumpProcesses: JumpProcesses, JumpProblem,
                      MassActionJump, ConstantRateJump, VariableRateJump,
                      SpatialMassActionJump, CartesianGrid, CartesianGridRej
 
 # ModelingToolkit imports and convenience functions we use
-using ModelingToolkit
+using ModelingToolkit: ModelingToolkit, @parameters, @unpack, DiscreteProblem,
+                       Initial, JumpSystem, NonlinearProblem, NonlinearSystem,
+                       ODEFunction, ODEProblem, ODESystem, SDEProblem,
+                       SDESystem, SteadyStateProblem, Sym, asgraph, complete,
+                       continuous_events, defaults, discrete_events, entry,
+                       eqeq_dependencies, equations, has_alg_equations,
+                       independent_variables, observed, parameters, unknowns,
+                       variable_dependencies, D_nounits, t_nounits
 const MT = ModelingToolkit
-using DynamicQuantities #, Unitful # Having Unitful here as well currently gives an error.
+using DynamicQuantities: DynamicQuantities
 
 @reexport using ModelingToolkit
-using Symbolics
-using LinearAlgebra
-using RuntimeGeneratedFunctions
+using Symbolics: Symbolics, @register_symbolic, @variables, Differential,
+                 Equation, Num, PolyForm, SymbolicUtils, arguments,
+                 build_function, operation, substitute, iscall, sorted_arguments
+using RuntimeGeneratedFunctions: RuntimeGeneratedFunctions,
+                                 @RuntimeGeneratedFunction, drop_expr
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
-import Symbolics: BasicSymbolic
-using Symbolics: iscall, sorted_arguments
-using ModelingToolkit: Symbolic, value, get_unknowns, get_ps, get_iv, get_systems,
-                       get_eqs, get_defaults, toparam, get_var_to_name, get_observed,
-                       getvar, has_iv
+import SymbolicUtils: BasicSymbolic
+import SymbolicUtils: Symbolic
+import Symbolics: value
+using ModelingToolkit: get_unknowns, get_ps, get_iv, get_systems,
+                       get_eqs, get_defaults, get_observed, has_iv
 
-import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!,
-                        modified_unknowns!, validate, namespace_variables,
-                        namespace_parameters, rename, renamespace, getname, flatten,
-                        is_alg_equation, is_diff_equation, collect_vars!,
-                        eqtype_supports_collect_vars
+import ModelingToolkit: get_variables, namespace_expr, namespace_equation,
+                        validate, namespace_variables, flatten, is_diff_equation
+import Symbolics: get_variables!
+import SymbolicIndexingInterface: getname
 
 # internal but needed ModelingToolkit functions
 import ModelingToolkit: check_variables,
                         check_parameters, _iszero, _merge, check_units,
                         get_unit, check_equations, iscomplete
 
-import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
+import Base: (==), hash, size, getindex, isless, Sort.defalg, length, show, occursin
 import MacroTools, Graphs
 using MacroTools: striplines
-import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne
+import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, edges, nv, ne
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
-import Symbolics: occursin, wrap
-import Symbolics.RewriteHelpers: hasnode, replacenode
+using Symbolics.RewriteHelpers: hasnode, replacenode
 import SymbolicUtils: getmetadata, hasmetadata, setmetadata
 
 # globals for the modulate
@@ -170,7 +186,7 @@ export isedgeparameter
 include("spatial_reaction_systems/lattice_reaction_systems.jl")
 export LatticeReactionSystem
 export spatial_species, vertex_parameters, edge_parameters
-export CartesianGrid, CartesianGridReJ # (Implemented in JumpProcesses)
+export CartesianGrid, CartesianGridRej # (Implemented in JumpProcesses)
 export has_cartesian_lattice, has_masked_lattice, has_grid_lattice, has_graph_lattice,
        grid_dims, grid_size
 export make_edge_p_values, make_directed_edge_values

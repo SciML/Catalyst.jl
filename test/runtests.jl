@@ -92,4 +92,9 @@ end
         @time @safetestset "Lattice Simulation Plotting" begin include("extensions/lattice_simulation_plotting.jl") end
     end
 
+    # Code quality tests (Aqua.jl and ExplicitImports.jl)
+    if GROUP == "All" || GROUP == "QA"
+        @time @safetestset "Code Quality Assurance" begin include("qa.jl") end
+    end
+
 end # @time
