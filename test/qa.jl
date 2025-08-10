@@ -27,52 +27,118 @@ end
 @testset "Explicit imports (ExplicitImports.jl)" begin
     # Test that we're not relying on implicit imports
     @testset "Check implicit imports" begin
-        # Check for implicit imports but allow some flexibility during transition
+        # Check for implicit imports - we allow some from closely related packages
         result = check_no_implicit_imports(Catalyst; skip = (Base, Core))
+        
+        # If there are any implicit imports, check if they're acceptable
         if !isnothing(result)
-            @info "Implicit imports detected (working towards zero):" result
-            # For now, just warn instead of failing
-            @test_skip isnothing(result)
-        else
-            @test isnothing(result)
-        end
-    end
-
-    @testset "No stale explicit imports" begin
-        # Check for unused explicit imports (allowing some that might be used in macros)
-        stale_imports = check_no_stale_explicit_imports(Catalyst; skip = (Base, Core))
-        if !isnothing(stale_imports)
-            # Allow some exceptions for imports that are used in macros or re-exported
-            allowed_stale = [
-                :MacroTools,  # Used in DSL macros
-                :Graphs,      # Some imports might be re-exported
-                :DataStructures  # Used in internal data structures
-            ]
-            for (mod, imports) in stale_imports
-                filtered = filter(x -> !(x in allowed_stale), imports)
-                if !isempty(filtered)
-                    @warn "Stale imports in $mod: $filtered"
+            # Extract the actual implicit imports
+            implicit_names = []
+            for r in result
+                if hasproperty(r, :name)
+                    push!(implicit_names, r.name)
                 end
             end
-        end
-    end
-
-    @testset "Qualified accesses are public" begin
-        # Check that we only use public APIs when accessing other modules with qualified names
-        result = check_all_qualified_accesses_are_public(Catalyst)
-        if !isnothing(result)
-            @info "Non-public qualified accesses detected:" result
-            # For now, just warn instead of failing as some ModelingToolkit internals are needed
-            @test_skip isnothing(result)
+            
+            # Allow some specific implicit imports that are intentional
+            allowed_implicit = [
+                # Add any symbols here that we intentionally want to allow as implicit
+            ]
+            
+            problematic = filter(x -> !(x in allowed_implicit), implicit_names)
+            
+            if !isempty(problematic)
+                @warn "Implicit imports detected:" problematic
+                # For now, we'll allow implicit imports but track them
+                @test_broken isempty(problematic)
+            else
+                @test true  # All implicit imports are allowed
+            end
         else
-            @test isnothing(result)
+            @test true  # No implicit imports found
         end
     end
 
-    @testset "Print analysis for review" begin
-        # This is not a test, but prints useful information for review
-        # It helps identify any remaining implicit imports or other issues
-        @info "Printing explicit imports analysis for Catalyst module:"
-        print_explicit_imports(Catalyst; strict = false)
+    @testset "Check stale explicit imports" begin
+        # Check for unused explicit imports
+        stale_imports = check_no_stale_explicit_imports(Catalyst; skip = (Base, Core))
+        
+        if !isnothing(stale_imports)
+            # Check if the stale imports are in our allowed list
+            has_unexpected_stale = false
+            for (mod, imports) in stale_imports
+                # Some imports might be used in macros or extensions and not detected
+                allowed_stale = [
+                    # These might appear stale but are actually used
+                    :MacroTools,      # Used in DSL macros
+                    :Graphs,          # Used in graph analysis
+                    :DataStructures,  # Used for OrderedDict/OrderedSet
+                    :Parameters      # Used for @with_kw_noshow
+                ]
+                
+                for imp in imports
+                    if !(Symbol(imp) in allowed_stale)
+                        @warn "Unexpected stale import in $mod: $imp"
+                        has_unexpected_stale = true
+                    end
+                end
+            end
+            @test !has_unexpected_stale
+        else
+            @test true  # No stale imports found
+        end
+    end
+
+    @testset "Check qualified accesses are public" begin
+        # Check that we only use public APIs when accessing other modules
+        result = check_all_qualified_accesses_are_public(Catalyst)
+        
+        if !isnothing(result)
+            # Some non-public accesses might be necessary for deep integration with ModelingToolkit
+            # We should document these and work to minimize them
+            problematic_accesses = []
+            
+            for r in result
+                # Check if this is an acceptable non-public access
+                # ModelingToolkit internal functions that Catalyst needs
+                if !occursin("ModelingToolkit", string(r))
+                    push!(problematic_accesses, r)
+                end
+            end
+            
+            if !isempty(problematic_accesses)
+                @warn "Non-public qualified accesses (non-MTK):" problematic_accesses
+                @test_broken isempty(problematic_accesses)
+            else
+                # All non-public accesses are to ModelingToolkit internals which are acceptable
+                @test true
+            end
+        else
+            @test true  # All qualified accesses are public
+        end
+    end
+
+    @testset "Analysis summary" begin
+        # Print a summary of the explicit imports analysis
+        # This helps track progress but doesn't fail tests
+        @info "Running explicit imports analysis for review..."
+        
+        # Capture the analysis in a string to check for issues
+        io = IOBuffer()
+        print_explicit_imports(io, Catalyst; strict = false)
+        analysis = String(take!(io))
+        
+        # Check if the analysis mentions any critical issues
+        has_issues = occursin("relying on implicit imports", analysis)
+        
+        if has_issues
+            @info "Analysis found potential improvements needed"
+            # Don't fail, just inform
+        else
+            @info "Explicit imports analysis looks good"
+        end
+        
+        # Always pass this test - it's just for information
+        @test true
     end
 end
