@@ -93,7 +93,7 @@ end
     end
 
     # Code quality tests (Aqua.jl and ExplicitImports.jl)
-    if GROUP == "QA"
+    if GROUP == "All" || GROUP == "QA"
         @time @safetestset "Code Quality Assurance" begin include("qa.jl") end
     end
 
