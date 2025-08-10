@@ -30,7 +30,7 @@ using ModelingToolkit: ModelingToolkit, @parameters, @unpack, DiscreteProblem,
                        independent_variables, observed, parameters, unknowns,
                        variable_dependencies, D_nounits, t_nounits
 const MT = ModelingToolkit
-using DynamicQuantities: DynamicQuantities
+using DynamicQuantities: DynamicQuantities, @u_str
 
 @reexport using ModelingToolkit
 using Symbolics: Symbolics, @register_symbolic, @variables, Differential,
