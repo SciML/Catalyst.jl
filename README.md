@@ -30,6 +30,7 @@ Generated models can be used with solvers throughout the broader Julia and
 for sensitivity analysis, parameter estimation, machine learning applications,
 etc).
 
+
 ## Installation 
 Catalyst can be installed as follows. 
 ```julia
