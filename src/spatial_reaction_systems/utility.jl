@@ -40,7 +40,7 @@ function lattice_process_p(ps_in, ps_vertex_syms::Vector,
     # For uniform parameters these have size 1/(1,1). Else, they have size num_verts/(num_verts,num_verts).
     ps = lattice_process_input(ps_in, [ps_vertex_syms; ps_edge_syms])
 
-    # Split the parameter vector into one for vertex parameters and one for edge parameters. 
+    # Split the parameter vector into one for vertex parameters and one for edge parameters.
     # Next, convert their values to the correct form (vectors for vert_ps and sparse matrices for edge_ps).
     vert_ps, edge_ps = split_parameters(ps, ps_vertex_syms, ps_edge_syms)
     vert_ps = vertex_value_map(vert_ps, lrs)
@@ -164,13 +164,13 @@ function edge_value_form(values, lrs::LatticeReactionSystem, sym)
         throw(ArgumentError("Values was not provided for some edges for edge parameter $sym."))
     end
 
-    # Unlike initial conditions/vertex parameters, (unless uniform) edge parameters' values  are 
+    # Unlike initial conditions/vertex parameters, (unless uniform) edge parameters' values  are
     # always provided in the same (sparse matrix) form.
     return values
 end
 
 # Creates a map, taking each species (with transportation) to its transportation rate.
-# The species is represented by its index (in species(lrs). 
+# The species is represented by its index (in species(lrs).
 # If the rate is uniform across all edges, the transportation rate will be a size (1,1) sparse matrix.
 # Else, the rate will be a size (num_verts,num_verts) sparse matrix.
 function make_sidxs_to_transrate_map(vert_ps::Vector{Pair{R, Vector{T}}},
@@ -190,7 +190,7 @@ end
 # Computes the transport rates for all species with transportation rates. Output is a map
 # taking each species' symbolics form to its transportation rates across all edges.
 function compute_all_transport_rates(p_val_dict, lrs::LatticeReactionSystem)
-    # For all species with transportation, compute their transportation rate (across all edges). 
+    # For all species with transportation, compute their transportation rate (across all edges).
     # This is a vector, pairing each species to these rates.
     unsorted_rates = [s => compute_transport_rates(s, p_val_dict, lrs)
                       for s in spatial_species(lrs)]
@@ -199,7 +199,7 @@ function compute_all_transport_rates(p_val_dict, lrs::LatticeReactionSystem)
     return sort(unsorted_rates; by = rate -> findfirst(isequal(rate[1]), species(lrs)))
 end
 
-# For the expression describing the rate of transport (likely only a single parameter, e.g. `D`), 
+# For the expression describing the rate of transport (likely only a single parameter, e.g. `D`),
 # and the values of all our parameters, compute the transport rate(s).
 # If all parameters that the rate depends on are uniform across all edges, this becomes a length-1 vector.
 # Else it becomes a vector where each value corresponds to the rate at one specific edge.
@@ -304,10 +304,21 @@ end
 
 ### System Property Checks ###
 
-# For a Symbolic expression, and a parameter set, check if any relevant parameters have a 
+# For a Symbolic expression, and a parameter set, check if any relevant parameters have a
 # spatial component. Filters out any parameters that are edge parameters.
 function has_spatial_vertex_component(exp, ps)
     relevant_syms = Symbolics.get_variables(exp)
     value_dict = Dict(filter(p -> p[2] isa Vector, ps))
     return any(length(value_dict[sym]) > 1 for sym in relevant_syms)
 end
+
+### Utilities previously in ModelingToolkit.jl ###
+
+function todict(d)
+    eltype(d) <: Pair || throw(ArgumentError("The variable-value mapping must be a Dict."))
+    d isa Dict ? d : Dict(d)
+end
+
+_merge(d1, d2) = merge(todict(d1), todict(d2))
+
+MT.refreshed_metadata(::Nothing) = MT.MetadataT() # FIXME: Type piracy

@@ -386,7 +386,7 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
         error("Must have at least one reaction that will be represented as a jump when constructing a JumpSystem.")
 
     # note isvrjvec indicates which reactions are not constant rate jumps
-    # it may be that a given jump has isvrjvec[i] = true but has a physical 
+    # it may be that a given jump has isvrjvec[i] = true but has a physical
     isvrjvec = classify_vrjs(rs, physcales)
 
     rxvars = []
@@ -505,9 +505,16 @@ COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be convert
 
 ### System Conversions ###
 
+abstract type SystemType end
+
+struct ReactionRateSystem <: SystemType end
+struct ChemicalLangevinSystem <: SystemType end
+struct StochasticChemicalKineticSystem <: SystemType end
+struct NonlinearSystem <: SystemType end
+
 """
 ```julia
-Base.convert(::Type{<:ODESystem},rs::ReactionSystem)
+Base.convert(::Type{<:System},rs::ReactionSystem)
 ```
 Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.ODESystem`.
 
@@ -524,7 +531,7 @@ Keyword args and default values:
   with their rational function representation when converting to another system type. Set to
   `false`` to disable.
 """
-function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs),
+function Base.convert(::Type{<:ReactionRateSystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
         default_u0 = Dict(), default_p = Dict(),
@@ -541,7 +548,7 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
         include_zero_odes, expand_catalyst_funs)
     eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
-    ODESystem(eqs, get_iv(fullrs), us, ps;
+    System(eqs, get_iv(fullrs), us, ps;
         observed = obs,
         name,
         defaults = _merge(defaults, defs),
@@ -622,7 +629,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     all_differentials_permitted || nonlinear_convert_differentials_check(rs)
     eqs = [remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
 
-    NonlinearSystem(eqs, us, ps;
+    System(eqs, us, ps;
         name,
         observed = obs, initialization_eqs = initeqs,
         defaults = _merge(defaults, defs),
@@ -679,7 +686,7 @@ Notes:
   with their rational function representation when converting to another system type. Set to
   `false`` to disable.
 """
-function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
+function Base.convert(::Type{<:ChemicalLangevinSystem}, rs::ReactionSystem;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, checks = false, remove_conserved = false,
         default_u0 = Dict(), default_p = Dict(),
@@ -704,7 +711,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
         @info "Boundary condition species detected. As constraint equations are not currently supported when converting to SDESystems, the resulting system will be undetermined. Consider using constant species instead."
     end
 
-    SDESystem(eqs, noiseeqs, get_iv(flatrs), us, ps;
+    System([eqs; noiseeqs], get_iv(flatrs), us, ps;
         observed = obs,
         name,
         defaults = _merge(defaults, defs),
@@ -728,7 +735,7 @@ Merge physical scales for a set of reactions.
 function merge_physical_scales(rxs, physical_scales, default)
     scales = get_physical_scale.(rxs)
 
-    # override metadata attached scales 
+    # override metadata attached scales
     if physical_scales !== nothing
         for (key, scale) in physical_scales
             scales[key] = scale
@@ -769,13 +776,13 @@ Notes:
   `VariableRateJump` to save the solution before and/or after the jump occurs. Defaults to
   true for both.
 """
-function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs),
+function Base.convert(::Type{<:StochasticChemicalKineticSystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = nothing, checks = false, default_u0 = Dict(), default_p = Dict(),
         defaults = _merge(Dict(default_u0), Dict(default_p)), expand_catalyst_funs = true,
         save_positions = (true, true), physical_scales = nothing, kwargs...)
     iscomplete(rs) || error(COMPLETENESS_ERROR)
-    spatial_convert_err(rs::ReactionSystem, JumpSystem)
+    spatial_convert_err(rs::ReactionSystem, StochasticChemicalKineticSystem)
     (remove_conserved !== nothing) &&
         throw(ArgumentError("Catalyst does not support removing conserved species when converting to JumpSystems."))
 
@@ -794,7 +801,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
         physical_scales, save_positions)
     ists, ispcs = get_indep_sts(flatrs)
 
-    # handle coupled ODEs and BC species    
+    # handle coupled ODEs and BC species
     if (PhysicalScale.ODE in unique_scales) || has_nonreactions(flatrs)
         odeeqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws,
             remove_conserved = false, physical_scales, include_zero_odes = true)
@@ -811,7 +818,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
         defs = MT.defaults(flatrs)
     end
 
-    JumpSystem(eqs, get_iv(flatrs), us, ps;
+    System(eqs, get_iv(flatrs), us, ps;
         observed = obs,
         name,
         defaults = _merge(defaults, defs),
@@ -850,8 +857,8 @@ end
 DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         p = DiffEqBase.NullParameters(), args...;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        remove_conserved = false, checks = false, check_length = false, 
-        structural_simplify = remove_conserved, all_differentials_permitted = false, 
+        remove_conserved = false, checks = false, check_length = false,
+        structural_simplify = remove_conserved, all_differentials_permitted = false,
         kwargs...)
 ```
 
@@ -923,7 +930,7 @@ Inputs for a JumpProblem from a given `ReactionSystem`.
 # Fields
 $(FIELDS)
 """
-struct JumpInputs{S <: MT.JumpSystem, T <: SciMLBase.AbstractODEProblem}
+struct JumpInputs{S <: MT.System, T <: SciMLBase.AbstractODEProblem}
     """The `JumpSystem` to define the problem over"""
     sys::S
     """The problem the JumpProblem should be defined over, for example DiscreteProblem"""
@@ -936,8 +943,8 @@ JumpInputs(rs::ReactionSystem, u0, tspan,
             p = DiffEqBase.NullParameters;
             name = nameof(rs),
             combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-            checks = false, physical_scales = nothing, 
-            expand_catalyst_funs = true, 
+            checks = false, physical_scales = nothing,
+            expand_catalyst_funs = true,
             save_positions = (true, true),
             remake_warn = true, kwargs...)
 ```
@@ -988,7 +995,7 @@ function JumpInputs(rs::ReactionSystem, u0, tspan, p = DiffEqBase.NullParameters
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         checks = false, physical_scales = nothing, expand_catalyst_funs = true,
         save_positions = (true, true), remake_warn = true, kwargs...)
-    jsys = complete(convert(JumpSystem, rs; name, combinatoric_ratelaws, checks,
+    jsys = complete(convert(StochasticChemicalKineticSystem, rs; name, combinatoric_ratelaws, checks,
         physical_scales, expand_catalyst_funs, save_positions))
 
     if MT.has_variableratejumps(jsys) || MT.has_equations(jsys) ||
@@ -1025,7 +1032,7 @@ function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
     Base.depwarn("DiscreteProblem(rn::ReactionSystem, ...) is deprecated and will be \
         removed in Catalyst 16. Use JumpInputs(rn, ...) instead.",
         :DiscreteProblem)
-    jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks,
+    jsys = convert(StochasticChemicalKineticSystem, rs; name, combinatoric_ratelaws, checks,
         expand_catalyst_funs)
     jsys = complete(jsys)
     return DiscreteProblem(jsys, u0, tspan, p, args...; kwargs...)
@@ -1040,7 +1047,7 @@ function JumpProcesses.JumpProblem(rs::ReactionSystem, prob::SciMLBase.AbstractD
     Base.depwarn("JumpProblem(rn::ReactionSystem, prob, ...) is \
         deprecated and will be removed in Catalyst 16. Use \
         JumpProblem(JumpInputs(rn, ...), ...) instead.", :JumpProblem)
-    jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws,
+    jsys = convert(StochasticChemicalKineticSystem, rs; name, combinatoric_ratelaws,
         expand_catalyst_funs, checks)
     jsys = complete(jsys)
     return JumpProblem(jsys, prob, aggregator; kwargs...)
