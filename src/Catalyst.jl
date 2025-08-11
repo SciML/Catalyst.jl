@@ -48,6 +48,7 @@ import Parameters: @with_kw_noshow
 import Symbolics: occursin, wrap
 import Symbolics.RewriteHelpers: hasnode, replacenode
 import SymbolicUtils: getmetadata, hasmetadata, setmetadata
+import SymbolicIndexingInterface as SII
 
 # globals for the modulate
 function default_time_deriv()
