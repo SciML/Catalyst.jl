@@ -1,9 +1,11 @@
 module CatalystCairoMakieExtension
 
 # Fetch packages.
-using Catalyst, CairoMakie, SparseArrays
+using Catalyst: Catalyst
 import Catalyst: lattice_plot, lattice_animation, lattice_kymograph,
                  demask_vals, extract_vals, extract_grid_axes
+using CairoMakie: CairoMakie
+using SparseArrays: SparseArrays
 
 # Creates and exports utilities for plotting lattice simulations.
 include("CatalystCairoMakieExtension/cairo_makie_extension_spatial_modelling.jl")
