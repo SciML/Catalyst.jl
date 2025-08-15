@@ -223,7 +223,6 @@ const RECOGNISED_METADATA = Dict([Catalyst.ParameterConstantSpecies => "isconsta
                                   ModelingToolkit.VariableBounds => "bounds"
                                   ModelingToolkit.VariableUnit => "unit"
                                   ModelingToolkit.VariableConnectType => "connect"
-                                  ModelingToolkit.VariableNoiseType => "noise"
                                   ModelingToolkit.VariableInput => "input"
                                   ModelingToolkit.VariableOutput => "output"
                                   ModelingToolkit.VariableIrreducible => "irreducible"

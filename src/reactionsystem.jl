@@ -276,7 +276,7 @@ Notes:
   units). Unit checking can be disabled by passing the keyword argument `checks=false`.
 """
 struct ReactionSystem{V <: NetworkProperties} <:
-       MT.AbstractTimeDependentSystem
+       MT.AbstractSystem
     """The equations (reactions and algebraic/differential) defining the system."""
     eqs::Vector{CatalystEqType}
     """The Reactions defining the system. """
@@ -356,7 +356,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
             check_parameters(ps, iv)
             nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
             !isempty(nonrx_eqs) && check_equations(nonrx_eqs, iv)
-            !isempty(cevs) && check_equations(equations(cevs), iv)
+            !isnothing(cevs) && !isempty(cevs) && check_equations(equations(cevs), iv)
         end
 
         if isempty(sivs) && (checks == true || (checks & MT.CheckUnits) > 0)
@@ -480,14 +480,10 @@ function ReactionSystem(eqs, iv, unknowns, ps;
         networkproperties
     end
 
-    # Creates the continuous and discrete callbacks.
-    ccallbacks = MT.SymbolicContinuousCallbacks(continuous_events)
-    dcallbacks = MT.SymbolicDiscreteCallbacks(discrete_events)
-
     ReactionSystem(
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
         systems, defaults, connection_type, nps, combinatoric_ratelaws,
-        ccallbacks, dcallbacks, metadata; checks = checks)
+        continuous_events, discrete_events, metadata; checks = checks)
 end
 
 # Two-argument constructor (reactions/equations and time variable).
