@@ -130,12 +130,11 @@ let
             zip(catalyst_networks, manual_networks, u0_syms, ps_syms, u0s, ps, sps)
 
         # Simulates the Catalyst-created model.
-        jin_1 = JumpInputs(rn_catalyst, u0_1, (0.0, 10000.0), ps_1)
-        jprob_1 = JumpProblem(jin_1, Direct(); rng)
+        jprob_1 = JumpProblem(rn_catalyst, u0_1, (0.0, 10000.0), ps_1, Direct(); rng)
         sol1 = solve(jprob_1, SSAStepper(); seed, saveat = 1.0)
 
         # simulate using auto-alg
-        jprob_1b = JumpProblem(jin_1; rng)
+        jprob_1b = JumpProblem(rn_catalyst, u0_1, (0.0, 10000.0), ps_1; rng)
         sol1b = solve(jprob_1; seed, saveat = 1.0)
         @test mean(sol1[sp]) ≈ mean(sol1b[sp]) rtol = 1e-1
 

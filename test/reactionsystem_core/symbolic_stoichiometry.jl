@@ -176,7 +176,7 @@ let
 
     # Checks that the Catalyst-generated functions are equal to the manually declared ones.
     for i in 1:2
-        catalyst_jsys = convert(JumpSystem, rs)
+        catalyst_jsys = make_sck_jump(rs)
         unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(catalyst_jsys)))
         catalyst_vrj = ModelingToolkit.assemble_vrj(catalyst_jsys, equations(catalyst_jsys)[i], unknownoid)
         @test isapprox(catalyst_vrj.rate(u0_2, ps_2, τ), jumps[i].rate(u0_2, ps_2, τ))

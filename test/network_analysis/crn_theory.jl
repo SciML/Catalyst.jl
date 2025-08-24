@@ -1,12 +1,12 @@
 # Tests for properties from chemical reaction network theory: deficiency theorems, complex/detailed balance, etc.
-using Catalyst, StableRNGs, LinearAlgebra, Test
+using Catalyst, StructuralIdentifiability, LinearAlgebra, Test
 rng = StableRNG(514)
 # Tests that `iscomplexbalanced` works for different rate inputs.
 # Tests that non-valid rate input yields and error
 let
     # Declares network.
     rn = @reaction_network begin
-        k1, 3A + 2B --> 3C 
+        k1, 3A + 2B --> 3C
         k2, B + 4D --> 2E
         k3, 2E --> 3C
         (k4, k5), B + 4D <--> 3A + 2B
@@ -87,7 +87,7 @@ end
 
 ### CONCENTRATION ROBUSTNESS TESTS
 
-# Check whether concentration-robust species are correctly identified for two well-known reaction networks: the glyoxylate IDHKP-IDH system, and the EnvZ_OmpR signaling pathway. 
+# Check whether concentration-robust species are correctly identified for two well-known reaction networks: the glyoxylate IDHKP-IDH system, and the EnvZ_OmpR signaling pathway.
 
 let
     IDHKP_IDH = @reaction_network begin
@@ -117,7 +117,7 @@ let
     # Define a reaction network with bi-directional reactions
     non_deficient_network = @reaction_network begin
         (k1, k2), A <--> B
-        (k3, k4), B <--> C 
+        (k3, k4), B <--> C
     end
 
     # Test: Check that the error is raised for networks with deficiency != 1
@@ -149,7 +149,7 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == false 
+    @test Catalyst.iscomplexbalanced(rn, rates) == false
 end
 
 let
@@ -179,7 +179,7 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == false 
+    @test Catalyst.iscomplexbalanced(rn, rates) == false
 end
 
 let
@@ -192,7 +192,7 @@ let
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == false 
+    @test Catalyst.iscomplexbalanced(rn, rates) == false
 end
 
 let
@@ -207,7 +207,7 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == false 
+    @test Catalyst.iscomplexbalanced(rn, rates) == false
 end
 
 let
@@ -223,7 +223,7 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == true 
+    @test Catalyst.iscomplexbalanced(rn, rates) == true
 end
 
 let
@@ -237,7 +237,7 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == false 
+    @test Catalyst.iscomplexbalanced(rn, rates) == false
 end
 
 let
@@ -251,7 +251,7 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == true  
+    @test Catalyst.iscomplexbalanced(rn, rates) == true
 end
 
 let
@@ -262,7 +262,7 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == true 
+    @test Catalyst.iscomplexbalanced(rn, rates) == true
 end
 
 let
@@ -278,7 +278,7 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == true 
+    @test Catalyst.iscomplexbalanced(rn, rates) == true
 end
 
 let
@@ -294,12 +294,12 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == false 
+    @test Catalyst.iscomplexbalanced(rn, rates) == false
 end
 
 let
     rn = @reaction_network begin
-        k1, 3A + 2B --> 3C 
+        k1, 3A + 2B --> 3C
         k2, B + 4D --> 2E
         k3, 2E --> 3C
         (k4, k5), B + 4D <--> 3A + 2B
@@ -309,7 +309,7 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == true 
+    @test Catalyst.iscomplexbalanced(rn, rates) == true
     @test Catalyst.isdetailedbalanced(rn, rates) == false
 end
 
@@ -317,7 +317,7 @@ end
 ### DEFICIENCY THEOREMS TESTS
 
 # Fails because there are two terminal linkage classes in the linkage class
-let 
+let
     rn = @reaction_network begin
         k1, A + B --> 2B
         k2, A + B --> 2A
@@ -327,18 +327,18 @@ let
 end
 
 # Fails because linkage deficiencies do not sum to total deficiency
-let 
+let
     rn = @reaction_network begin
         (k1, k2), A <--> 2A
         (k3, k4), A + B <--> C
-        (k5, k6), C <--> B 
+        (k5, k6), C <--> B
     end
 
     @test Catalyst.satisfiesdeficiencyone(rn) == false
 end
 
 # Fails because a linkage class has deficiency two
-let 
+let
     rn = @reaction_network begin
         k1, 3A --> A + 2B
         k2, A + 2B --> 3B
@@ -366,7 +366,7 @@ let
     @test Catalyst.satisfiesdeficiencyone(rn) == true
 end
 
-### Some tests for deficiency zero networks. 
+### Some tests for deficiency zero networks.
 
 let
     rn = @reaction_network begin
@@ -388,7 +388,7 @@ let
     rn3 = @reaction_network begin
         k1, A --> 2B
         (k3, k4), A + C <--> D
-        k5, D --> B + E 
+        k5, D --> B + E
         k6, B + E --> A + C
     end
 
@@ -400,16 +400,16 @@ let
     end
 
     @test Catalyst.satisfiesdeficiencyzero(rn) == true
-    @test Catalyst.satisfiesdeficiencyzero(rn2) == false 
-    @test Catalyst.satisfiesdeficiencyzero(rn3) == false 
+    @test Catalyst.satisfiesdeficiencyzero(rn2) == false
+    @test Catalyst.satisfiesdeficiencyzero(rn3) == false
     @test Catalyst.satisfiesdeficiencyzero(rn4) == false
 end
 
 ### Detailed balance tests
 
-# The following network is conditionally complex balanced - it only 
+# The following network is conditionally complex balanced - it only
 
-# Reversible, forest-like deficiency zero network - should be detailed balance for any choice of rate constants. 
+# Reversible, forest-like deficiency zero network - should be detailed balance for any choice of rate constants.
 let
     rn = @reaction_network begin
         (k1, k2), A <--> B + C
@@ -443,10 +443,10 @@ let
     rates1 = [:k1=>1.0, :k2=>1.0, :k3=>1.0, :k4=>1.0, :k5=>1.0, :k6=>1.0]
     @test Catalyst.isdetailedbalanced(rn, rates1) == true
     rates2 = [:k1=>2.0, :k2=>1.0, :k3=>1.0, :k4=>1.0, :k5=>1.0, :k6=>1.0]
-    @test Catalyst.isdetailedbalanced(rn, rates2) == false 
+    @test Catalyst.isdetailedbalanced(rn, rates2) == false
 end
 
-# Independent cycle tests: the following reaction entwork has 3 out-of-forest reactions. 
+# Independent cycle tests: the following reaction entwork has 3 out-of-forest reactions.
 let
     rn = @reaction_network begin
         (k1, k2), A <--> B + C
@@ -466,14 +466,14 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.isdetailedbalanced(rn, rates) == false
 
-    # Adjust rate constants to obey the independent cycle conditions. 
-    rates[p[6]] = rates[p[1]]*rates[p[4]]*rates[p[5]] / (rates[p[2]]*rates[p[3]]) 
+    # Adjust rate constants to obey the independent cycle conditions.
+    rates[p[6]] = rates[p[1]]*rates[p[4]]*rates[p[5]] / (rates[p[2]]*rates[p[3]])
     rates[p[14]] = rates[p[13]]*rates[p[11]]*rates[p[8]] / (rates[p[12]]*rates[p[7]])
     rates[p[16]] = rates[p[8]]*rates[p[15]]*rates[p[9]]*rates[p[11]] / (rates[p[7]]*rates[p[12]]*rates[p[10]])
     @test Catalyst.isdetailedbalanced(rn, rates) == true
 end
 
-# Deficiency two network: the following reaction network must satisfy both the independent cycle conditions and the spanning forest conditions 
+# Deficiency two network: the following reaction network must satisfy both the independent cycle conditions and the spanning forest conditions
 let
     rn = @reaction_network begin
         (k1, k2), 3A <--> A + 2B
@@ -491,13 +491,13 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.isdetailedbalanced(rn, rates) == false
 
-    # Adjust rate constants to fulfill independent cycle conditions. 
+    # Adjust rate constants to fulfill independent cycle conditions.
     rates[p[8]] = rates[p[7]]*rates[p[5]]*rates[p[9]] / (rates[p[6]]*rates[p[10]])
     rates[p[3]] = rates[p[2]]*rates[p[4]]*rates[p[9]] / (rates[p[1]]*rates[p[10]])
     @test Catalyst.isdetailedbalanced(rn, rates) == false
-    # Should still fail - doesn't satisfy spanning forest conditions. 
+    # Should still fail - doesn't satisfy spanning forest conditions.
 
-    # Adjust rate constants to fulfill spanning forest conditions. 
+    # Adjust rate constants to fulfill spanning forest conditions.
     cons = rates[p[6]] / rates[p[5]]
     rates[p[1]] = rates[p[2]] * cons
     rates[p[9]] = rates[p[10]] * cons^(3/2)

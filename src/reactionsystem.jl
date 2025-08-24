@@ -275,8 +275,7 @@ Notes:
   the same units, and all reactions have rate laws with units of (species units) / (time
   units). Unit checking can be disabled by passing the keyword argument `checks=false`.
 """
-struct ReactionSystem{V <: NetworkProperties} <:
-       MT.AbstractTimeDependentSystem
+struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """The equations (reactions and algebraic/differential) defining the system."""
     eqs::Vector{CatalystEqType}
     """The Reactions defining the system. """
@@ -373,7 +372,6 @@ struct ReactionSystem{V <: NetworkProperties} <:
             (hasnode(is_species_diff, eq.lhs) || hasnode(is_species_diff, eq.rhs)) &&
                 error("An equation ($eq) contains a differential with respect to a species. This is currently not supported. If this is a functionality you require, please raise an issue on the Catalyst GitHub page and we can consider the best way to implement it.")
         end
-
         rs = new{typeof(nps)}(
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, connection_type, nps, cls, cevs,
@@ -398,7 +396,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
         name = nothing,
         default_u0 = Dict(),
         default_p = Dict(),
-        defaults = _merge(Dict(default_u0), Dict(default_p)),
+        defaults = MT.merge(Dict(default_u0), Dict(default_p)),
         connection_type = nothing,
         checks = true,
         networkproperties = nothing,
@@ -472,7 +470,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     MT.process_variables!(var_to_name, defaults, unknowns′)
     MT.process_variables!(var_to_name, defaults, ps′)
     MT.collect_var_to_name!(var_to_name, eq.lhs for eq in observed)
-    #
+
     # Computes network properties.
     nps = if networkproperties === nothing
         NetworkProperties{Int, get_speciestype(iv′, unknowns′, systems)}()
@@ -480,14 +478,16 @@ function ReactionSystem(eqs, iv, unknowns, ps;
         networkproperties
     end
 
-    # Creates the continuous and discrete callbacks.
-    ccallbacks = MT.SymbolicContinuousCallbacks(continuous_events)
-    dcallbacks = MT.SymbolicDiscreteCallbacks(discrete_events)
+    # Creates the continuous and discrete events.
+    continuous_events, discrete_events = MT.create_symbolic_events(continuous_events, discrete_events)
+
+    # handles system metadata.
+    metadata === nothing ? Base.ImmutableDict{Symbol,Any}() : metadata
 
     ReactionSystem(
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
         systems, defaults, connection_type, nps, combinatoric_ratelaws,
-        ccallbacks, dcallbacks, metadata; checks = checks)
+        continuous_events, discrete_events, metadata; checks = checks)
 end
 
 # Two-argument constructor (reactions/equations and time variable).
@@ -1428,7 +1428,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
 end
 
 function complete_check(sys, method)
-    if MT.iscomplete(sys)  
+    if MT.iscomplete(sys)
         error("$method with one or more `ReactionSystem`s requires systems to not be marked complete, but system: $(MT.get_name(sys)) is marked complete.")
     end
     nothing
@@ -1489,7 +1489,7 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
 
     complete_check(sys, "ModelingToolkit.extend")
     complete_check(rs, "ModelingToolkit.extend")
-    
+
     any(T -> sys isa T, (ReactionSystem, ODESystem, NonlinearSystem)) ||
         error("ReactionSystems can only be extended with ReactionSystems, ODESystems and NonlinearSystems currently. Received a $(typeof(sys)) system.")
 
@@ -1601,3 +1601,9 @@ unitless_exp(u) = iscall(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
 function unitless_symvar(sym)
     return (sym isa Symbolics.CallWithMetadata) || (ModelingToolkit.get_unit(sym) == 1)
 end
+
+
+### Unsorted ###
+
+# Function previously used by ModelingToolkit.
+MT.refreshed_metadata(::Nothing) = MT.MetadataT() # FIXME: Type piracy

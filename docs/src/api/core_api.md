@@ -64,7 +64,7 @@ sol = solve(sprob, EM(), dt=.01, saveat = 2.0)
 p2 = plot(sol, title = "SDE")
 
 # solve as jump process
-jumpsys = convert(JumpSystem, rs)
+jumpsys = make_sck_jump(rs)
 jumpsys = complete(jumpsys)
 u₀map    = [S => 999, I => 1, R => 0]
 dprob = DiscreteProblem(jumpsys, u₀map, tspan, parammap)

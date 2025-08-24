@@ -287,9 +287,9 @@ let
     coupled_rs = complete(coupled_rs)
 
     # Checks that systems created from coupled reaction systems contain the correct content
-    osys = convert(ODESystem, coupled_rs)
-    ssys = convert(SDESystem, coupled_rs)
-    nlsys = convert(NonlinearSystem, coupled_rs)
+    osys = make_rre_ode(coupled_rs)
+    ssys = make_cle_sde(coupled_rs)
+    nlsys = make_rre_algeqs(coupled_rs)
     initps = Initial.((X, X2, A, B))
     fullps = union(initps, [k1, k2, k, b1, b2])
     for sys in [coupled_rs, osys, ssys, nlsys]
@@ -500,7 +500,7 @@ let
         rs = @reaction_network begin
             @equations D(V) ~ 1.0 - V
         end
-        @test_nowarn convert(NonlinearSystem, rs)
+        @test_nowarn make_rre_algeqs(rs)
     end
 
     # Higher-order differential on the lhs, should yield an error.
@@ -511,7 +511,7 @@ let
             @equations D(D(V)) ~ 1.0 - V
             (p,d), 0 <--> X
         end
-        @test_throws Exception convert(NonlinearSystem, rs)
+        @test_throws Exception make_rre_algeqs(rs)
     end
 
     # Differential on the rhs, should yield an error.
@@ -521,7 +521,7 @@ let
             @equations D(V) ~ 1.0 - V + D(U)
             (p,d), 0 <--> X
         end
-        @test_throws Exception convert(NonlinearSystem, rs)
+        @test_throws Exception make_rre_algeqs(rs)
     end
 
     # Non-differential term on the lhs, should yield an error.
@@ -532,7 +532,7 @@ let
             @equations D(V) + V ~ 1.0 - V
             (p,d), 0 <--> X
         end
-        @test_throws Exception convert(NonlinearSystem, rs)
+        @test_throws Exception make_rre_algeqs(rs)
     end
 end
 

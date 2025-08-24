@@ -148,7 +148,7 @@ The parameter `b` does not need to be explicitly declared in the
 We next convert our network to a jump process representation
 ```@example s1
 using JumpProcesses
-jsys = convert(JumpSystem, burstyrn; combinatoric_ratelaws = false)
+jsys = make_sck_jump(burstyrn; combinatoric_ratelaws = false)
 jsys = complete(jsys)
 equations(jsys)
 show(stdout, MIME"text/plain"(), equations(jsys)) # hide

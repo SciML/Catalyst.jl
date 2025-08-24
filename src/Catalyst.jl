@@ -36,7 +36,7 @@ import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_v
 
 # internal but needed ModelingToolkit functions
 import ModelingToolkit: check_variables,
-                        check_parameters, _iszero, _merge, check_units,
+                        check_parameters, _iszero, merge, check_units,
                         get_unit, check_equations, iscomplete
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
@@ -94,13 +94,14 @@ export isautonomous
 export reactionrates
 export isequivalent
 export set_default_noise_scaling
+export make_rre_ode, make_cle_sde, make_sck_jump, make_rre_algeqs
 
 # depreciated functions to remove in future releases
 export params, numparams
 
 # Conversions of the `ReactionSystem` structure.
 include("reactionsystem_conversions.jl")
-export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem,
+export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem,
        SteadyStateProblem, JumpInputs
 export ismassaction, oderatelaw, jumpratelaw
 export symmap_to_varmap
