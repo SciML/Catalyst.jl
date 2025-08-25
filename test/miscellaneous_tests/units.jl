@@ -30,10 +30,10 @@ let
     end
 
     # Tests that the system can be converted to MTK systems without warnings.
-    @test_nowarn convert(ODESystem, rs)
-    @test_nowarn convert(SDESystem, rs)
-    @test_nowarn convert(JumpSystem, rs)
-    @test_nowarn convert(NonlinearSystem, rs)
+    @test_nowarn make_rre_ode(rs)
+    @test_nowarn make_cle_sde(rs)
+    @test_nowarn make_sck_jump(rs)
+    @test_nowarn make_rre_algeqs(rs)
 
     # Tests that creating `Reaction`s with non-matching units yields warnings.
     @species B(t) [unit=u"mol"] D(t) [unit=u"kg"]

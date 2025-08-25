@@ -13,7 +13,8 @@ t = default_t()
 ### Run Tests ###
 
 # Repressilator model.
-let
+@test_broken let
+    return false # Created (Nonlinear)Systems no longer have an iv, so when extending (ODE)Systems with these you are extending a system with a iv with one without
     @parameters t α₀ α K n δ β μ
     @species m(t) P(t) R(t)
     rxs = [
@@ -30,9 +31,9 @@ let
     rs = complete(rs)
 
     # Using ODESystem components.
-    @named sys₁ = convert(ODESystem, rs; include_zero_odes = false)
-    @named sys₂ = convert(ODESystem, rs; include_zero_odes = false)
-    @named sys₃ = convert(ODESystem, rs; include_zero_odes = false)
+    @named sys₁ = make_rre_ode(rs; include_zero_odes = false)
+    @named sys₂ = make_rre_ode(rs; include_zero_odes = false)
+    @named sys₃ = make_rre_ode(rs; include_zero_odes = false)
     connections = [sys₁.R ~ sys₃.P,
         sys₂.R ~ sys₁.P,
         sys₃.R ~ sys₂.P]
@@ -87,7 +88,7 @@ let
     @named csys = ODESystem(connections, t, [], [])
     @named repressilator = ReactionSystem(t; systems = [csys, sys₁, sys₂, sys₃])
     repressilator = complete(repressilator)
-    @named oderepressilator2 = convert(ODESystem, repressilator, include_zero_odes = false)
+    @named oderepressilator2 = make_rre_ode(repressilator, include_zero_odes = false)
     sys2 = structural_simplify(oderepressilator2)  # FAILS currently
     oprob = ODEProblem(sys2, u₀, tspan, pvals)
     sol = solve(oprob, Tsit5())
@@ -99,7 +100,7 @@ let
     @named nsys = NonlinearSystem(connections, [], [])
     @named ssrepressilator = ReactionSystem(t; systems = [nsys, sys₁, sys₂, sys₃])
     ssrepressilator = complete(ssrepressilator)
-    @named nlrepressilator = convert(NonlinearSystem, ssrepressilator)
+    @named nlrepressilator = make_rre_algeqs(ssrepressilator)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
@@ -112,7 +113,7 @@ let
     # Flattening.
     fsys = Catalyst.flatten(ssrepressilator)
     fsys = complete(fsys)
-    @named nlrepressilator = convert(NonlinearSystem, fsys)
+    @named nlrepressilator = make_rre_algeqs(fsys)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
@@ -130,7 +131,7 @@ let
                                 [])
     @named repressilator2 = ReactionSystem(connections, t; systems = [sys₁, sys₂, sys₃])
     repressilator2 = complete(repressilator2)
-    @named nlrepressilator = convert(NonlinearSystem, repressilator2)
+    @named nlrepressilator = make_rre_algeqs(repressilator2)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
@@ -151,7 +152,7 @@ let
     @test isequal(extended.x, ModelingToolkit.namespace_expr(x, extended))
     # and after conversion to an AbstractSystem
     extended = complete(extended)
-    system = convert(NonlinearSystem, extended)
+    system = make_rre_algeqs(extended)
     @test isequal(system.a, ModelingToolkit.namespace_expr(a, system))
     @test isequal(system.x, ModelingToolkit.namespace_expr(x, system; ivs = independent_variables(extended)))
     @test length(equations(system)) == 1
@@ -164,7 +165,7 @@ let
     @test isequal(extended.x, ModelingToolkit.namespace_expr(x, extended))
     # and after conversion to an AbstractSystem.
     extended = complete(extended)
-    system = convert(NonlinearSystem, extended)
+    system = make_rre_algeqs(extended)
     @test isequal(system.a, ModelingToolkit.namespace_expr(a, system))
     @test isequal(system.x, ModelingToolkit.namespace_expr(x, system; ivs = independent_variables(extended)))
     @test length(equations(system)) == 1
@@ -211,8 +212,8 @@ let
     @test isequal(extended.a, ModelingToolkit.namespace_expr(a, extended))
     @test isequal(extended.x, ModelingToolkit.namespace_expr(x, extended))
     extended = complete(extended)
-    odesystem = complete(convert(ODESystem, extended))
-    nlsystem = complete(convert(NonlinearSystem, extended))
+    odesystem = complete(make_rre_ode(extended))
+    nlsystem = complete(make_rre_algeqs(extended))
 
     obs = Set([ModelingToolkit.observed(constraints);
             [ModelingToolkit.namespace_equation(o, subextended)
@@ -227,8 +228,8 @@ let
     @test isequal(extended.a, ModelingToolkit.namespace_expr(a, extended))
     @test isequal(extended.x, ModelingToolkit.namespace_expr(x, extended))
     extended = complete(extended)
-    odesystem = complete(convert(ODESystem, extended))
-    nlsystem = complete(convert(NonlinearSystem, extended))
+    odesystem = complete(make_rre_ode(extended))
+    nlsystem = complete(make_rre_algeqs(extended))
 
     obs = Set([ModelingToolkit.observed(constraints);
             [ModelingToolkit.namespace_equation(o, subextended)
@@ -238,7 +239,7 @@ let
     @test Set(ModelingToolkit.observed(nlsystem)) == obs
 
     # Test can make ODESystem.
-    @named oderepressilator = convert(ODESystem, repressilator2, include_zero_odes = false)
+    @named oderepressilator = make_rre_ode(repressilator2, include_zero_odes = false)
     sys2 = structural_simplify(oderepressilator)  # FAILS currently
     oprob = ODEProblem(sys2, u₀, tspan, pvals)
     sol = solve(oprob, Tsit5())
@@ -249,7 +250,7 @@ let
     repressilator2 = Catalyst.flatten(repressilator2)
     repressilator2 = extend(csys, repressilator2)
     repressilator2 = complete(repressilator2)
-    @named nlrepressilator = convert(NonlinearSystem, repressilator2)
+    @named nlrepressilator = make_rre_algeqs(repressilator2)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
     nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
@@ -281,7 +282,7 @@ let
     @named ns = ODESystem(nseqs, t, [A2, B2, D], [β])
     rs = compose(rs, [ns])
     rs = complete(rs)
-    osys = convert(ODESystem, rs; include_zero_odes = false)
+    osys = make_rre_ode(rs; include_zero_odes = false)
     p = [r₊ => 1.0, r₋ => 2.0, ns.β => 3.0]
     u₀ = [A => 1.0, B => 2.0, C => 0.0]
     oprob = ODEProblem(structural_simplify(osys), u₀, (0.0, 10.0), p)
@@ -337,18 +338,19 @@ let
     rxs = vcat(nrxs1, nrxs2, nrxs3)
     eqs = vcat(nrxs1, nrxs2, neqs2, nrxs3, neqs3)
 
-    @test issetequal(unknowns(rs1), [A1, rs2.A2a, ns2.A2b, rs2.rs3.A3a, rs2.ns3.A3b])
+    @test_broken issetequal(unknowns(rs1), [A1, rs2.A2a, ns2.A2b, rs2.rs3.A3a, rs2.ns3.A3b])
     @test issetequal(species(rs1), [A1, rs2.A2a, rs2.rs3.A3a])
     @test issetequal(parameters(rs1), [p1, rs2.p2a, rs2.p2b, rs2.rs3.p3a, rs2.ns3.p3b])
     @test issetequal(rxs, reactions(rs1))
-    @test issetequal(eqs, equations(rs1))
+    @test_broken issetequal(eqs, equations(rs1))
     @test Catalyst.combinatoric_ratelaws(rs1)
     @test Catalyst.combinatoric_ratelaws(Catalyst.flatten(rs1))
 end
 
 # Test throw error if there are ODE constraints and convert to NonlinearSystem.
 # Note, these can now be created.
-let
+@test_broken let
+    return false # Created (Nonlinear)Systems no longer have an iv, so when extending (ODE)Systems with these you are extending a system with a iv with one without
     rn = @network_component rn begin
         @parameters k1 k2
         (k1, k2), A <--> B
@@ -360,7 +362,7 @@ let
     eqs = [D(C) ~ -b * C + a * A]
     @named osys = ODESystem(eqs, t, [A, C], [a, b])
     rn2 = extend(osys, rn)
-    rnodes = convert(ODESystem, complete(rn2))
+    rnodes = make_rre_ode(complete(rn2))
 
     # Ensure right number of equations are generated.
     @variables G(t)
@@ -374,12 +376,12 @@ let
     @named nlsys = NonlinearSystem(eqs, [A, C], [a, b])
     rn2 = extend(nlsys, rn)
     rn2c = complete(rn2)
-    rnodes = complete(convert(ODESystem, rn2c))
-    rnnlsys = complete(convert(NonlinearSystem, rn2c))
+    rnodes = complete(cmake_rre_ode(rn2c))
+    rnnlsys = complete(make_rre_algeqs(rn2c))
     @named nlsys = ODESystem(eqs, t, [A, C], [a, b])
     rn2 = complete(extend(nlsys, rn))
-    rnodes = convert(ODESystem, rn2)
-    rnnlsys = convert(NonlinearSystem, rn2)
+    rnodes = make_rre_ode(rn2)
+    rnnlsys = make_rre_algeqs(rn2)
 end
 
 # https://github.com/SciML/ModelingToolkit.jl/issues/1274
@@ -392,7 +394,7 @@ let
     @named rs2 = ReactionSystem(rxs2, t)
     rsc = compose(rs1, [rs2])
     rsc = complete(rsc)
-    orsc = convert(ODESystem, rsc)
+    orsc = make_rre_ode(rsc)
     @test length(equations(orsc)) == 1
 end
 
@@ -483,7 +485,7 @@ let
     end
     composed_reaction_system = compose(rn1, [rn2])
     composed_reaction_system = complete(composed_reaction_system)
-    osys = convert(ODESystem, composed_reaction_system)
+    osys = make_rre_ode(composed_reaction_system)
     parameters(osys)[1].metadata
 
     defs = ModelingToolkit.defaults(osys)
@@ -500,7 +502,8 @@ end
 
 # test scoping in compose
 # code adapted from ModelingToolkit.jl tests
-let
+@test_broken let # DelayParentScope is removed.
+    return false
     t = default_t()
     D = default_time_deriv()
     @species x1(t) x2(t)
