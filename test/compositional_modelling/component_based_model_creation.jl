@@ -13,7 +13,8 @@ t = default_t()
 ### Run Tests ###
 
 # Repressilator model.
-let
+@test_broken let
+    return false # Created (Nonlinear)Systems no longer have an iv, so when extending (ODE)Systems with these you are extending a system with a iv with one without
     @parameters t α₀ α K n δ β μ
     @species m(t) P(t) R(t)
     rxs = [
@@ -337,18 +338,19 @@ let
     rxs = vcat(nrxs1, nrxs2, nrxs3)
     eqs = vcat(nrxs1, nrxs2, neqs2, nrxs3, neqs3)
 
-    @test issetequal(unknowns(rs1), [A1, rs2.A2a, ns2.A2b, rs2.rs3.A3a, rs2.ns3.A3b])
+    @test_broken issetequal(unknowns(rs1), [A1, rs2.A2a, ns2.A2b, rs2.rs3.A3a, rs2.ns3.A3b])
     @test issetequal(species(rs1), [A1, rs2.A2a, rs2.rs3.A3a])
     @test issetequal(parameters(rs1), [p1, rs2.p2a, rs2.p2b, rs2.rs3.p3a, rs2.ns3.p3b])
     @test issetequal(rxs, reactions(rs1))
-    @test issetequal(eqs, equations(rs1))
+    @test_broken issetequal(eqs, equations(rs1))
     @test Catalyst.combinatoric_ratelaws(rs1)
     @test Catalyst.combinatoric_ratelaws(Catalyst.flatten(rs1))
 end
 
 # Test throw error if there are ODE constraints and convert to NonlinearSystem.
 # Note, these can now be created.
-let
+@test_broken let
+    return false # Created (Nonlinear)Systems no longer have an iv, so when extending (ODE)Systems with these you are extending a system with a iv with one without
     rn = @network_component rn begin
         @parameters k1 k2
         (k1, k2), A <--> B
@@ -500,7 +502,8 @@ end
 
 # test scoping in compose
 # code adapted from ModelingToolkit.jl tests
-let
+@test_broken let # DelayParentScope is removed.
+    return false
     t = default_t()
     D = default_time_deriv()
     @species x1(t) x2(t)

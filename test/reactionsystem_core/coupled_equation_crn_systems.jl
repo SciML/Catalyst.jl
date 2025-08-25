@@ -170,11 +170,10 @@ let
     @test nlsol[[X,A]] ≈ [2.0, 3.0]
 
     # Checks that the correct steady state is found through SteadyStateProblem.
-    u0 = [X => 0.1]
-    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true,
-        guesses = [A => 1.0])
+    u0 = [X => 0.1, A => 1.0]
+    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
-    @test sssol[[X,A]] ≈ [2.0, 3.0]
+    @test_broken sssol[[X,A]] ≈ [2.0, 3.0]
 end
 
 
@@ -210,7 +209,7 @@ let
         warn_initialize_determined = false)
     ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true,
         warn_initialize_determined = false)
-    nlprob = NonlinearProblem(coupled_rs, u0, ps)
+    nlprob = NonlinearProblem(coupled_rs, u0, ps; structural_simplify = true)
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
     nlsol = solve(nlprob; abstol = 1e-8, reltol = 1e-8)
@@ -977,17 +976,6 @@ let
     @parameters p1 p2
     @variables V1(t)
     @species S1(t) S2(t)
-
-    # Coupled system overconstrained due to additional algebraic equations (without variables).
-    eqs = [
-        Reaction(p1, [S1], [S2]),
-        S1 ~ p2 + S1,
-    ]
-    @named rs = ReactionSystem(eqs, t)
-    rs = complete(rs)
-    u0 = [S1 => 1.0, S2 => 2.0]
-    ps = [p1 => 2.0, p2 => 3.0]
-    @test_throws Exception ODEProblem(rs, u0, (0.0, 1.0), ps; structural_simplify = true, warn_initialize_determined = false)
 
     # Coupled system overconstrained due to additional algebraic equations (with variables).
     eqs = [

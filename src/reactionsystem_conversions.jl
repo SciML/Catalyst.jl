@@ -406,7 +406,7 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
             affect = Vector{Equation}()
             for (spec, stoich) in rx.netstoich
                 # don't change species that are constant or BCs
-                (!drop_dynamics(spec)) && push!(affect, spec ~ spec + stoich)
+                (!drop_dynamics(spec)) && push!(affect, spec ~ Pre(spec) + stoich)
             end
             if isvrj
                 push!(veqs, VariableRateJump(rl, affect; save_positions))
@@ -840,7 +840,8 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
         osys = complete(osys)
     end
 
-    return ODEProblem(osys, merge(Dict(u0), Dict(p)), tspan, args...; check_length, kwargs...)
+    prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
+    return ODEProblem(osys, prob_cond, tspan, args...; check_length, kwargs...)
 end
 
 """
@@ -885,7 +886,8 @@ function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         all_differentials_permitted, remove_conserved, conseqs_remake_warn,
         expand_catalyst_funs)
     nlsys = structural_simplify ? MT.structural_simplify(nlsys) : complete(nlsys)
-    return NonlinearProblem(nlsys, merge(Dict(u0), Dict(p)), args...; check_length,
+    prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
+    return NonlinearProblem(nlsys, prob_cond, args...; check_length,
         kwargs...)
 end
 
@@ -909,7 +911,8 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
     end
 
     p_matrix = zeros(length(get_unknowns(sde_sys)), numreactions(rs))
-    return SDEProblem(sde_sys, merge(Dict(u0), Dict(p)), tspan, args...; check_length,
+    prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
+    return SDEProblem(sde_sys, prob_cond, tspan, args...; check_length,
         noise_rate_prototype = p_matrix, kwargs...)
 end
 
@@ -1038,7 +1041,8 @@ function JumpProcesses.JumpProblem(rs::ReactionSystem, u0, tspan,
     jsys = make_sck_jump(rs; name, combinatoric_ratelaws,
         expand_catalyst_funs, checks)
     jsys = complete(jsys)
-    return JumpProblem(jsys, merge(Dict(u0), Dict(p)), tspan)
+    prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
+    return JumpProblem(jsys, prob_cond, tspan)
 end
 
 # JumpProblem for JumpInputs
@@ -1067,7 +1071,8 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
         osys = complete(osys)
     end
 
-    return SteadyStateProblem(osys, merge(Dict(u0), Dict(p)), args...; check_length, kwargs...)
+    prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
+    return SteadyStateProblem(osys, prob_cond, args...; check_length, kwargs...)
 end
 
 ### Symbolic Variable/Symbol Conversions ###

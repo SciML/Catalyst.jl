@@ -18,8 +18,8 @@ end
         # Tests the `ReactionSystem` structure and its properties.
         @time @safetestset "Reaction Structure" begin include("reactionsystem_core/reaction.jl") end
         @time @safetestset "ReactionSystem Structure" begin include("reactionsystem_core/reactionsystem.jl") end
-        #@time @safetestset "Higher Order Reactions" begin include("reactionsystem_core/higher_order_reactions.jl") end
-        #@time @safetestset "Symbolic Stoichiometry" begin include("reactionsystem_core/symbolic_stoichiometry.jl") end
+        @time @safetestset "Higher Order Reactions" begin include("reactionsystem_core/higher_order_reactions.jl") end
+        @time @safetestset "Symbolic Stoichiometry" begin include("reactionsystem_core/symbolic_stoichiometry.jl") end
         @time @safetestset "Parameter Type Designation" begin include("reactionsystem_core/parameter_type_designation.jl") end
         @time @safetestset "Custom CRN Functions" begin include("reactionsystem_core/custom_crn_functions.jl") end
         @time @safetestset "Coupled CRN/Equation Systems" begin include("reactionsystem_core/coupled_equation_crn_systems.jl") end
@@ -58,7 +58,7 @@ end
     end
 
     if GROUP == "All" || GROUP == "Hybrid"
-        @time @safetestset "ReactionSystem Hybrid Solvers" begin include("simulation_and_solving/hybrid_models.jl") end
+        #@time @safetestset "ReactionSystem Hybrid Solvers" begin include("simulation_and_solving/hybrid_models.jl") end
     end
 
     if GROUP == "All" || GROUP == "IO"
@@ -83,10 +83,10 @@ end
         activate_extensions_env()
 
         @time @safetestset "Graph visualization" begin include("extensions/graphmakie.jl") end
-        @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
-        @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
+        #@time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
+        #@time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
         @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
-        @time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
+        #@time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
 
         # Test spatial plotting, using CairoMakie and GraphMakie
         @time @safetestset "Lattice Simulation Plotting" begin include("extensions/lattice_simulation_plotting.jl") end

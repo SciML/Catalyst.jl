@@ -1,6 +1,7 @@
 # Tests for properties from chemical reaction network theory: deficiency theorems, complex/detailed balance, etc.
-using Catalyst, StructuralIdentifiability, LinearAlgebra, Test
+using Catalyst, StableRNGs, LinearAlgebra, Test
 rng = StableRNG(514)
+
 # Tests that `iscomplexbalanced` works for different rate inputs.
 # Tests that non-valid rate input yields and error
 let
