@@ -41,8 +41,8 @@ Here, each simulation is displayed as an individual trajectory.
 
 Various convenience functions are available for analysing and plotting ensemble simulations (a full list can be found [here](https://docs.sciml.ai/DiffEqDocs/dev/features/ensemble/#Analyzing-an-Ensemble-Experiment)). Here, we use these to first create an `EnsembleSummary` (retrieving each simulation's value at time points `0.0, 1.0, 2.0, ... 1000.0`). Next, we use this as an input to the `plot` command, which automatically plots the mean $X$ activity across the ensemble, while also displaying the 5% and 95% quantiles as the shaded area:
 ```@example ensemble
-e_sumary = EnsembleAnalysis.EnsembleSummary(sols, 0.0:1.0:1000.0)
-plot(e_sumary)
+e_summary = EnsembleAnalysis.EnsembleSummary(sols, 0.0:1.0:1000.0)
+plot(e_summary)
 ```
 
 ## [Ensemble simulations using varying simulation conditions](@id ensemble_simulations_varying_conditions)

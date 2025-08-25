@@ -430,7 +430,8 @@ function rebuild_lat_internals!(lt_ofun::LatticeTransportODEFunction, ps_new,
     # Recreates the new parameters on the requisite form.
     ps_new = [(length(p) == 1) ? p[1] : p for p in deepcopy(ps_new)]
     ps_new = [p => p_val for (p, p_val) in zip(parameters(lrs), deepcopy(ps_new))]
-    vert_ps, edge_ps = lattice_process_p(ps_new, vertex_parameters(lrs),
+    vert_ps,
+    edge_ps = lattice_process_p(ps_new, vertex_parameters(lrs),
         edge_parameters(lrs), lrs)
     ps_new = [vert_ps; edge_ps]
 

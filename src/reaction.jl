@@ -348,8 +348,7 @@ MT.is_alg_equation(rx::Reaction) = false
 # MTK functions for extracting variables within equation type object
 MT.eqtype_supports_collect_vars(rx::Reaction) = true
 function MT.collect_vars!(unknowns, parameters, rx::Reaction, iv; depth = 0,
-        op = MT.Differential)    
-
+        op = MT.Differential)
     MT.collect_vars!(unknowns, parameters, rx.rate, iv; depth, op)
 
     for items in (rx.substrates, rx.products, rx.substoich, rx.prodstoich)
@@ -394,6 +393,7 @@ function ModelingToolkit.get_variables!(set, rx::Reaction)
     foreach(sub -> push!(set, sub), rx.substrates)
     foreach(prod -> push!(set, prod), rx.products)
     for stoichs in (rx.substoich, rx.prodstoich), stoich in stoichs
+
         (stoich isa BasicSymbolic) && get_variables!(set, stoich)
     end
     if hasnoisescaling(rx)

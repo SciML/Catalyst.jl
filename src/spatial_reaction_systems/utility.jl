@@ -182,10 +182,9 @@ function make_sidxs_to_transrate_map(vert_ps::Vector{Pair{R, Vector{T}}},
     # First, compute a map from species in their symbolics form to their values.
     # Next, convert to map from species index to values.
     transport_rates_speciesmap = compute_all_transport_rates(p_val_dict, lrs)
-    return Pair{Int64, SparseMatrixCSC{T, Int64}}[
-                                                  speciesmap(reactionsystem(lrs))[spat_rates[1]] => spat_rates[2]
-                                                  for spat_rates in transport_rates_speciesmap
-                                                  ]
+    return Pair{Int64, SparseMatrixCSC{T, Int64}}[speciesmap(reactionsystem(lrs))[spat_rates[1]] => spat_rates[2]
+                                                  for spat_rates in
+                                                      transport_rates_speciesmap]
 end
 
 # Computes the transport rates for all species with transportation rates. Output is a map
@@ -279,8 +278,8 @@ function update_mtk_ps!(lt_ofun::LatticeTransportODEFunction, all_ps::Vector{T},
 end
 
 # For an expression, compute its values using the provided state and parameter vectors.
-# The expression is assumed to be valid in vertexes (and can have vertex parameter and state components).
-# If at least one component is non-uniform, output is a vector of length equal to the number of vertexes.
+# The expression is assumed to be valid in vertices (and can have vertex parameter and state components).
+# If at least one component is non-uniform, output is a vector of length equal to the number of vertices.
 # If all components are uniform, the output is a length one vector.
 function compute_vertex_value(exp, lrs::LatticeReactionSystem; u = [], ps = [])
     # Finds the symbols in the expression. Checks that all correspond to unknowns or vertex parameters.

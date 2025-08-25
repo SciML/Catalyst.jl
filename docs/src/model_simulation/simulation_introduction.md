@@ -193,7 +193,7 @@ plot(sol)
 we can see that while this simulation (unlike the ODE ones) exhibits some fluctuations.
 
 !!! note
-    Unlike for ODE and jump simulations, there are no good heuristics for automatically selecting suitable SDE solvers. Hence, for SDE simulations a solver must be provided. `STrapezoid` will work for a large number of cases. When this is not the case, however, please check the list of [available SDE solvers](https://docs.sciml.ai/DiffEqDocs/stable/solvers/sde_solve/) for a suitable alternative (making sure to select one compatible with non-diagonal noise and the [Ito interpretation]https://en.wikipedia.org/wiki/It%C3%B4_calculus).
+    Unlike for ODE and jump simulations, there are no good heuristics for automatically selecting suitable SDE solvers. Hence, for SDE simulations a solver must be provided. `STrapezoid` will work for a large number of cases. When this is not the case, however, please check the list of [available SDE solvers](https://docs.sciml.ai/DiffEqDocs/stable/solvers/sde_solve/) for a suitable alternative (making sure to select one compatible with non-diagonal noise and the [Ito interpretation](https://en.wikipedia.org/wiki/It%C3%B4_calculus).
 
 ### [Common SDE simulation pitfalls](@id simulation_intro_SDEs_pitfalls)
 Next, let us reduce species amounts (using [`remake`](@ref simulation_structure_interfacing_problems_remake)), thereby also increasing the relative amount of noise, we encounter a problem when the model is simulated:

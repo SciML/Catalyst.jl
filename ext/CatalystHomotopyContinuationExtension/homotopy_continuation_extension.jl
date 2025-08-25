@@ -166,6 +166,7 @@ end
 # Filters away solutions with negative species concentrations (and for neg_thres < val < 0.0, sets val=0.0).
 function filter_negative_f(sols; neg_thres = -1e-15)
     for sol in sols, idx in 1:length(sol)
+
         (neg_thres < sol[idx] < 0) && (sol[idx] = 0)
     end
     return filter(sol -> all(>=(0), sol), sols)

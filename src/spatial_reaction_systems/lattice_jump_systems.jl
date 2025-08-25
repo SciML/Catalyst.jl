@@ -19,7 +19,8 @@ function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     # vert_ps values are vectors. Here, index (i) is a parameter's value in vertex i.
     # edge_ps values are sparse matrices. Here, index (i,j) is a parameter's value in the edge from vertex i to vertex j.
     # Uniform vertex/edge parameters store only a single value (a length 1 vector, or size 1x1 sparse matrix).
-    vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs),
+    vert_ps,
+    edge_ps = lattice_process_p(p_in, vertex_parameters(lrs),
         edge_parameters(lrs), lrs)
 
     # Returns a DiscreteProblem (which basically just stores the processed input).
@@ -39,7 +40,7 @@ function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator
     # Currently, the resulting JumpProblem does not depend on parameters (no way to incorporate these).
     # Hence the parameters of this one do not actually matter. If at some point JumpProcess can
     # handle parameters this can be updated and improved.
-    # The non-spatial DiscreteProblem have a u0 matrix with entries for all combinations of species and vertexes.
+    # The non-spatial DiscreteProblem have a u0 matrix with entries for all combinations of species and vertices.
     hopping_constants = make_hopping_constants(dprob, lrs)
     sma_jumps = make_spatial_majumps(dprob, lrs)
     non_spat_dprob = DiscreteProblem(reshape(dprob.u0, num_species(lrs), num_verts(lrs)),
@@ -64,6 +65,7 @@ function make_hopping_constants(dprob::DiscreteProblem, lrs::LatticeReactionSyst
     # vector containing all edges leading out from that vertex (sorted by destination index).
     edge_array = [Pair{Int64, Int64}[] for _1 in 1:num_species(lrs), _2 in 1:num_verts(lrs)]
     for e in edge_iterator(lrs), s_idx in 1:num_species(lrs)
+
         push!(edge_array[s_idx, e[1]], e)
     end
     foreach(e_vec -> sort!(e_vec; by = e -> e[2]), edge_array)

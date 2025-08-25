@@ -70,18 +70,22 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     # to the function that creates the next sub-system declarations.
     file_text, _ = push_field(file_text, rn, annotate, top_level, IV_FS)
     file_text, has_sivs = push_field(file_text, rn, annotate, top_level, SIVS_FS)
-    file_text, has_parameters, has_species, has_variables = handle_us_n_ps(
+    file_text, has_parameters,
+    has_species, has_variables = handle_us_n_ps(
         file_text, rn, annotate, top_level)
     file_text, has_reactions = push_field(file_text, rn, annotate, top_level, REACTIONS_FS)
     file_text, has_equations = push_field(file_text, rn, annotate, top_level, EQUATIONS_FS)
     file_text, has_observed = push_field(file_text, rn, annotate, top_level, OBSERVED_FS)
     file_text, has_defaults = push_field(file_text, rn, annotate, top_level, DEFAULTS_FS)
-    file_text, has_continuous_events = push_field(file_text, rn, annotate,
+    file_text,
+    has_continuous_events = push_field(file_text, rn, annotate,
         top_level, CONTINUOUS_EVENTS_FS)
-    file_text, has_discrete_events = push_field(file_text, rn, annotate,
+    file_text,
+    has_discrete_events = push_field(file_text, rn, annotate,
         top_level, DISCRETE_EVENTS_FS)
     file_text, has_systems = push_systems_field(file_text, rn, annotate, top_level)
-    file_text, has_connection_type = push_field(file_text, rn, annotate,
+    file_text,
+    has_connection_type = push_field(file_text, rn, annotate,
         top_level, CONNECTION_TYPE_FS)
 
     # Finalise the system. Creates the final `ReactionSystem` call.
@@ -92,7 +96,8 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
         has_equations, has_observed, has_defaults, has_continuous_events,
         has_discrete_events, has_systems, has_connection_type)
     annotate || (@string_prepend! "\n" file_text)
-    annotate && top_level && @string_prepend! "\n# Serialised using Catalyst version v$(Catalyst.VERSION)." file_text
+    annotate && top_level &&
+        @string_prepend! "\n# Serialised using Catalyst version v$(Catalyst.VERSION)." file_text
     @string_prepend! "let" file_text
     @string_append! file_text "\n\n" rs_creation_code "\n\nend"
 

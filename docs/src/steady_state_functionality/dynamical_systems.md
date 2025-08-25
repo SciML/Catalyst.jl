@@ -79,7 +79,7 @@ oprob = ODEProblem(wr_model, u0, tspan, p)
 sol = solve(oprob, Rodas5P())
 plot(sol; idxs=(:X, :Y, :Z))
 ```
-Next, like when we [computed basins of attraction](@ref dynamical_systems_basins_of_attraction), we create a `CoupledODEs` corresponding to the model and state for which we wish to compute our Lyapunov spectrum. Lke previously, `tspan` must provide some small interval (at least `(0.0, 1.0)` is recommended), but else have no impact on the computed Lyapunov spectrum.
+Next, like when we [computed basins of attraction](@ref dynamical_systems_basins_of_attraction), we create a `CoupledODEs` corresponding to the model and state for which we wish to compute our Lyapunov spectrum. Like previously, `tspan` must provide some small interval (at least `(0.0, 1.0)` is recommended), but else have no impact on the computed Lyapunov spectrum.
 ```@example dynamical_systems_lyapunov
 using DynamicalSystems
 ds = CoupledODEs(oprob, (alg = Rodas5P(autodiff = false),))

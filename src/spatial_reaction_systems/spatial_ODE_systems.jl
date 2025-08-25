@@ -71,7 +71,8 @@ struct LatticeTransportODEFunction{P, Q, R, S, T}
         # Computes `LatticeTransportODEFunction` functor fields.
         heterogeneous_vert_p_idxs = make_heterogeneous_vert_p_idxs(ps, lrs)
         mtk_ps, p_setters = make_mtk_ps_structs(ps, lrs, heterogeneous_vert_p_idxs)
-        t_rate_idx_types, leaving_rates = make_t_types_and_leaving_rates(transport_rates,
+        t_rate_idx_types,
+        leaving_rates = make_t_types_and_leaving_rates(transport_rates,
             lrs)
 
         # Creates and returns the `LatticeTransportODEFunction` functor.
@@ -196,7 +197,8 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     # edge_ps values are sparse matrices. Here, index (i,j) is a parameter's value in the edge from vertex i to vertex j.
     # Uniform vertex/edge parameters store only a single value (a length 1 vector, or size 1x1 sparse matrix).
     # In the `ODEProblem` vert_ps and edge_ps are merged (but for building the ODEFunction, they are separate).
-    vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs),
+    vert_ps,
+    edge_ps = lattice_process_p(p_in, vertex_parameters(lrs),
         edge_parameters(lrs), lrs)
 
     # Creates the ODEFunction.
@@ -311,6 +313,7 @@ end
 # transport reaction values.
 function set_jac_transport_values!(jac_prototype, transport_rates, lrs)
     for (s, rates) in transport_rates, e in edge_iterator(lrs)
+
         idx_src = get_index(e[1], s, num_species(lrs))
         idx_dst = get_index(e[2], s, num_species(lrs))
         val = get_transport_rate(rates, e, size(rates) == (1, 1))

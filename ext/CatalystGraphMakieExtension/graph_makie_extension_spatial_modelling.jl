@@ -28,8 +28,7 @@ function lattice_animation(
 
     # Creates the base figure (which is modified in the animation).
     fig, ax, plt = graphplot(plot_graph; node_color = vals[1],
-        node_attr = (colorrange = (plot_min, plot_max), colormap), node_size, kwargs...
-    )
+        node_attr = (colorrange = (plot_min, plot_max), colormap), node_size, kwargs...)
     ttitle && (ax.title = "Time: $(round(t[1]; sigdigits = 3))")
 
     # Creates the animation.
