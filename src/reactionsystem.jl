@@ -396,7 +396,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
         name = nothing,
         default_u0 = Dict(),
         default_p = Dict(),
-        defaults = MT.merge(Dict(default_u0), Dict(default_p)),
+        defaults = merge(Dict(default_u0), Dict(default_p)),
         connection_type = nothing,
         checks = true,
         networkproperties = nothing,
