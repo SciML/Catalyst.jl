@@ -11,3 +11,7 @@ Manifest.toml
 .vscode/*
 
 LocalPreferences.toml
+
+# claude
+.claude
+.claude/*
