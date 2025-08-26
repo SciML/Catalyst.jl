@@ -82,7 +82,7 @@ function make_p_val_dict(pre_varmap, rs, ns)
     foreach(conseq -> defaults[conseq.lhs] = conseq.rhs, conservationlaw_constants(rs))
 
     # Creates and return the full parameter value dictionary.p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, all_ps; defaults = def_dict)
-    p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, ps; defaults)
+    p_vals = varmap_to_vars_mtkv9(pre_varmap, ps; defaults)
     return Dict(ps .=> p_vals)
 end
 
@@ -183,4 +183,96 @@ const CORRECT_POLY_TYPE = Vector{DynamicPolynomials.Polynomial{
 function poly_type_convert(ss_poly)
     (typeof(ss_poly) == WRONG_POLY_TYPE) && return convert(CORRECT_POLY_TYPE, ss_poly)
     return ss_poly
+end
+
+
+
+### SAVED ARCHIVED MTK FUNCTION - REMOVE SOME TIME ###
+# pre-v10 version of function
+function varmap_to_vars_mtkv9(varmap, varlist; defaults = Dict(), check = true,
+        toterm = ModelingToolkit.default_toterm, promotetoconcrete = nothing,
+        tofloat = true, use_union = true)
+    varlist = collect(map(unwrap, varlist))
+
+    # Edge cases where one of the arguments is effectively empty.
+    is_incomplete_initialization = varmap isa DiffEqBase.NullParameters ||
+                                   varmap === nothing
+    if is_incomplete_initialization || isempty(varmap)
+        if isempty(defaults)
+            if !is_incomplete_initialization && check
+                isempty(varlist) || throw(ModelingToolkit.MissingVariablesError(varlist))
+            end
+            return nothing
+        else
+            varmap = Dict()
+        end
+    end
+
+    # We respect the input type if it's a static array
+    # otherwise canonicalize to a normal array
+    # container_type = T <: Union{Dict,Tuple} ? Array : T
+    if varmap isa ModelingToolkit.StaticArray
+        container_type = typeof(varmap)
+    else
+        container_type = Array
+    end
+
+    vals = if eltype(varmap) <: Pair # `varmap` is a dict or an array of pairs
+        varmap = ModelingToolkit.todict(varmap)
+        _varmap_to_vars_mtkv9(varmap, varlist; defaults = defaults, check = check,
+            toterm = toterm)
+    else # plain array-like initialization
+        varmap
+    end
+
+    promotetoconcrete === nothing && (promotetoconcrete = container_type <: AbstractArray)
+    if promotetoconcrete
+        vals = ModelingToolkit.promote_to_concrete(vals; tofloat = tofloat, use_union = use_union)
+    end
+
+    if isempty(vals)
+        return nothing
+    elseif container_type <: Tuple
+        (vals...,)
+    else
+        SymbolicUtils.Code.create_array(container_type, eltype(vals), Val{1}(),
+            Val(length(vals)), vals...)
+    end
+end
+
+function _varmap_to_vars_mtkv9(varmap::Dict, varlist; defaults = Dict(), check = false,
+        toterm = Symbolics.diff2term, initialization_phase = false)
+    varmap = canonicalize_varmap_mtkv9(varmap; toterm)
+    defaults = canonicalize_varmap_mtkv9(defaults; toterm)
+    varmap = merge(defaults, varmap)
+    values = Dict()
+
+    T = Union{}
+    for var in varlist
+        var = ModelingToolkit.unwrap(var)
+        val = ModelingToolkit.unwrap(ModelingToolkit.fixpoint_sub(var, varmap; operator = Symbolics.Operator))
+        if !isequal(val, var)
+            values[var] = val
+        end
+    end
+    missingvars = setdiff(varlist, collect(keys(values)))
+    check && (isempty(missingvars) || throw(ModelingToolkit.MissingVariablesError(missingvars)))
+    return [values[ModelingToolkit.unwrap(var)] for var in varlist]
+end
+
+function canonicalize_varmap_mtkv9(varmap; toterm = Symbolics.diff2term)
+    new_varmap = Dict()
+    for (k, v) in varmap
+        k = ModelingToolkit.unwrap(k)
+        v = ModelingToolkit.unwrap(v)
+        new_varmap[k] = v
+        new_varmap[toterm(k)] = v
+        if Symbolics.isarraysymbolic(k) && Symbolics.shape(k) !== Symbolics.Unknown()
+            for i in eachindex(k)
+                new_varmap[k[i]] = v[i]
+                new_varmap[toterm(k[i])] = v[i]
+            end
+        end
+    end
+    return new_varmap
 end

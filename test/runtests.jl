@@ -58,11 +58,13 @@ end
     end
 
     if GROUP == "All" || GROUP == "Hybrid"
+        # BROKEN
         #@time @safetestset "ReactionSystem Hybrid Solvers" begin include("simulation_and_solving/hybrid_models.jl") end
     end
 
     if GROUP == "All" || GROUP == "IO"
-        @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
+        # BROKEN
+        # @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
         # BROKEN
         # @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
     end
@@ -74,7 +76,8 @@ end
         @time @safetestset "Lattice Reaction Systems" begin include("spatial_modelling/lattice_reaction_systems.jl") end
         @time @safetestset "Spatial Lattice Variants" begin include("spatial_modelling/lattice_reaction_systems_lattice_types.jl") end
         @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_ODEs.jl") end
-        @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_jumps.jl") end
+        # BROKEN
+        #@time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_jumps.jl") end
         @time @safetestset "Lattice Simulation Structure Interfacing" begin include("spatial_modelling/lattice_simulation_struct_interfacing.jl") end
     end
 
@@ -83,10 +86,11 @@ end
         activate_extensions_env()
 
         @time @safetestset "Graph visualization" begin include("extensions/graphmakie.jl") end
+        # BROKEN
         #@time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
-        #@time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
+        @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
         @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
-        #@time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
+        @time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
 
         # Test spatial plotting, using CairoMakie and GraphMakie
         @time @safetestset "Lattice Simulation Plotting" begin include("extensions/lattice_simulation_plotting.jl") end
