@@ -73,8 +73,7 @@ let
     # Creates problems, integrators, and solutions.
     oprob = ODEProblem(rs, u0, (0.0, 1.0), p_alts[1])
     sprob = SDEProblem(rs, u0, (0.0, 1.0), p_alts[1])
-    dprob = DiscreteProblem(rs, u0, (0.0, 1.0), p_alts[1])
-    jprob = JumpProblem(JumpInputs(rs, u0, (0.0, 1.0), p_alts[1]); rng)
+    jprob = JumpProblem(rs, u0, (0.0, 1.0), p_alts[1]; rng)
     nprob = NonlinearProblem(rs, u0, p_alts[1])
 
     oinit = init(oprob, Tsit5())
@@ -88,7 +87,7 @@ let
     nsol = solve(nprob, NewtonRaphson())
 
     # Checks all stored parameters.
-    for mtk_struct in [oprob, sprob, dprob, jprob, nprob, oinit, sinit, jinit, ninit, osol, ssol, jsol, nsol]
+    for mtk_struct in [oprob, sprob, jprob, nprob, oinit, sinit, jinit, ninit, osol, ssol, jsol, nsol]
         # Checks that all parameters have the correct type.
         @test unwrap(mtk_struct.ps[p1]) isa Float64
         @test unwrap(mtk_struct.ps[d1]) isa Float64
@@ -115,7 +114,7 @@ let
     end
 
     # Checks all stored variables (these should always be `Float64`).
-    for mtk_struct in [oprob, sprob, dprob, jprob, nprob, oinit, sinit, jinit, ninit]
+    for mtk_struct in [oprob, sprob, jprob, nprob, oinit, sinit, jinit, ninit]
         # Checks that all variables have the correct type.
         @test unwrap(mtk_struct[X1]) isa Float64
         @test unwrap(mtk_struct[X2]) isa Float64

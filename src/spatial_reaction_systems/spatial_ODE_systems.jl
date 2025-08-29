@@ -13,42 +13,42 @@ struct LatticeTransportODEFunction{P, Q, R, S, T}
     """The system's number of species."""
     num_species::Int64
     """
-    Stores an index for each heterogeneous vertex parameter (i.e. vertex parameter which value is 
+    Stores an index for each heterogeneous vertex parameter (i.e. vertex parameter which value is
     not identical across the lattice). Each index corresponds to its position in the full parameter
     vector (`parameters(lrs)`).
     """
     heterogeneous_vert_p_idxs::Vector{Int64}
     """
-    The MTKParameters structure which corresponds to the non-spatial `ReactionSystem`. During 
-    simulations, as we loop through each vertex, this is updated to correspond to the vertex 
+    The MTKParameters structure which corresponds to the non-spatial `ReactionSystem`. During
+    simulations, as we loop through each vertex, this is updated to correspond to the vertex
     parameters of that specific vertex.
     """
     mtk_ps::Q
     """
-    Stores a SymbolicIndexingInterface `setp` function for each heterogeneous vertex parameter (i.e. 
+    Stores a SymbolicIndexingInterface `setp` function for each heterogeneous vertex parameter (i.e.
     vertex parameter whose value is not identical across the lattice). The `setp` function at index
     i of `p_setters` corresponds to the parameter in index i of `heterogeneous_vert_p_idxs`.
     """
     p_setters::R
     """
-    A vector that stores, for each species with transportation, its transportation rate(s). 
+    A vector that stores, for each species with transportation, its transportation rate(s).
     Each entry is a pair from (the index of) the transported species (in the `species(lrs)` vector)
     to its transportation rate (each species only has a single transportation rate, the sum of all
-    its transportation reactions' rates). If the transportation rate is uniform across all edges, 
+    its transportation reactions' rates). If the transportation rate is uniform across all edges,
     stores a single value (in a size (1,1) sparse matrix). Otherwise, stores these in a sparse
     matrix  where value (i,j) is the species transportation rate from vertex i to vertex j.
     """
     transport_rates::Vector{Pair{Int64, SparseMatrixCSC{S, Int64}}}
     """
-    For each transport rate in transport_rates, its value is a (sparse) matrix with a size of either 
-    (num_verts,num_verts) or (1,1). In the second case, the transportation rate is uniform across 
+    For each transport rate in transport_rates, its value is a (sparse) matrix with a size of either
+    (num_verts,num_verts) or (1,1). In the second case, the transportation rate is uniform across
     all edges. To avoid having to check which case holds for each transportation rate, we store the
     corresponding case in this value. `true` means that a species has a uniform transportation rate.
     """
     t_rate_idx_types::Vector{Bool}
     """
     A matrix, NxM, where N is the number of species with transportation and M is the number of
-    vertices. Each value is the total rate at which that species leaves that vertex (e.g. for a 
+    vertices. Each value is the total rate at which that species leaves that vertex (e.g. for a
     species with constant diffusion rate D, in a vertex with n neighbours, this value is n*D).
     """
     leaving_rates::Matrix{S}
@@ -75,7 +75,7 @@ struct LatticeTransportODEFunction{P, Q, R, S, T}
         leaving_rates = make_t_types_and_leaving_rates(transport_rates,
             lrs)
 
-        # Creates and returns the `LatticeTransportODEFunction` functor. 
+        # Creates and returns the `LatticeTransportODEFunction` functor.
         new{P, typeof(mtk_ps), typeof(p_setters), S, typeof(jac_transport)}(ofunc,
             num_verts(lrs), num_species(lrs), heterogeneous_vert_p_idxs, mtk_ps, p_setters,
             transport_rates, t_rate_idx_types, leaving_rates, Catalyst.edge_iterator(lrs),
@@ -96,7 +96,7 @@ end
 # the vertex parameter values during the simulations).
 function make_mtk_ps_structs(ps, lrs, heterogeneous_vert_p_idxs)
     p_dict = Dict(ps)
-    nonspatial_osys = complete(convert(ODESystem, reactionsystem(lrs)))
+    nonspatial_osys = complete(make_rre_ode(reactionsystem(lrs)))
     p_init = [p => p_dict[p][1] for p in parameters(nonspatial_osys)]
     mtk_ps = MT.MTKParameters(nonspatial_osys, p_init)
     p_setters = [MT.setp(nonspatial_osys, p)
@@ -127,7 +127,7 @@ function (lt_ofun::LatticeTransportODEFunction)(du::AbstractVector, u, p, t)
         # Gets the indices of all the species at vertex i.
         idxs = get_indexes(vert_i, lt_ofun.num_species)
 
-        # Updates the functors vertex parameter tracker (`mtk_ps`) to contain the vertex parameter 
+        # Updates the functors vertex parameter tracker (`mtk_ps`) to contain the vertex parameter
         # values for vertex vert_i. Then evaluates the reaction contributions to du at vert_i.
         update_mtk_ps!(lt_ofun, p, vert_i)
         lt_ofun.ofunc((@view du[idxs]), (@view u[idxs]), lt_ofun.mtk_ps, t)
@@ -136,7 +136,7 @@ function (lt_ofun::LatticeTransportODEFunction)(du::AbstractVector, u, p, t)
     # s_idx is the species index among transport species, s is the index among all species.
     # rates are the species' transport rates.
     for (s_idx, (s, rates)) in enumerate(lt_ofun.transport_rates)
-        # Rate for leaving source vertex vert_i. 
+        # Rate for leaving source vertex vert_i.
         for vert_i in 1:(lt_ofun.num_verts)
             idx_src = get_index(vert_i, s, lt_ofun.num_species)
             du[idx_src] -= lt_ofun.leaving_rates[s_idx, vert_i] * u[idx_src]
@@ -161,7 +161,7 @@ function (lt_ofun::LatticeTransportODEFunction)(J::AbstractMatrix, u, p, t)
         # Gets the indices of all the species at vertex i.
         idxs = get_indexes(vert_i, lt_ofun.num_species)
 
-        # Updates the functors vertex parameter tracker (`mtk_ps`) to contain the vertex parameter 
+        # Updates the functors vertex parameter tracker (`mtk_ps`) to contain the vertex parameter
         # values for vertex vert_i. Then evaluates the reaction contributions to J at vert_i.
         update_mtk_ps!(lt_ofun, p, vert_i)
         lt_ofun.ofunc.jac((@view J[idxs, idxs]), (@view u[idxs]), lt_ofun.mtk_ps, t)
@@ -221,8 +221,8 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{R, V
         throw(ArgumentError("Removal of conserved quantities is currently not supported for `LatticeReactionSystem`s"))
     end
 
-    # Prepares the inputs to the `LatticeTransportODEFunction` functor. 
-    osys = complete(convert(ODESystem, reactionsystem(lrs);
+    # Prepares the inputs to the `LatticeTransportODEFunction` functor.
+    osys = complete(make_rre_ode(reactionsystem(lrs);
         name, combinatoric_ratelaws, include_zero_odes, checks))
     ofunc_dense = ODEFunction(osys; jac = true, sparse = false)
     ofunc_sparse = ODEFunction(osys; jac = true, sparse = true)
@@ -321,7 +321,7 @@ function set_jac_transport_values!(jac_prototype, transport_rates, lrs)
         # Term due to species leaving source vertex.
         jac_prototype[idx_src, idx_src] -= val
 
-        # Term due to species arriving to destination vertex.   
+        # Term due to species arriving to destination vertex.
         jac_prototype[idx_src, idx_dst] += val
     end
 end

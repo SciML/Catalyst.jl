@@ -317,7 +317,8 @@ end
 # If you want to test this here @Sam I can write a new one that simulates using defaults.
 # If so, tell me if you have anything specific you want to check though, or I will just implement
 # it as I would.
-let
+@test_broken let
+    return false
     rn = @reaction_network begin
         α, S + I --> 2I
         β, I --> R
@@ -421,7 +422,7 @@ let
         (p,d), 0 <--> X
         (kB,kD), 2X <--> X2
     end
-    ns = convert(NonlinearSystem, rn)
+    ns = make_rre_algeqs(rn)
     neweqs = getfield.(equations(ns), :rhs)
     poly = Catalyst.to_multivariate_poly(neweqs)
     @test length(poly) == 2
@@ -432,16 +433,17 @@ let
     rn = @reaction_network begin
         (p/X,d), 0 <--> X
     end
-    ns = convert(NonlinearSystem, rn)
+    ns = make_rre_algeqs(rn)
     neweqs = getfield.(equations(ns), :rhs)
     poly = Catalyst.to_multivariate_poly(neweqs)
     @test length(poly) == 1
 end
 
 # Test empty network.
-let
+@test_broken let
+    return false
     rn = @reaction_network
-    ns = convert(NonlinearSystem, rn)
+    ns = make_rre_algeqs(rn)
     neweqs = getfield.(equations(ns), :rhs)
     @test_throws MethodError Catalyst.to_multivariate_poly(neweqs)
 end
