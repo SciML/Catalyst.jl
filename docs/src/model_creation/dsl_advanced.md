@@ -158,6 +158,7 @@ sol = solve(oprob, Tsit5())
 plot(sol)
 ```
 Please note that `X₀` is still a parameter of the system, and as such its value must still be designated to simulate the model (even if it is not actually used).
+
 ### [Accessing species and parameter names](@id species_and_parameter_names)
 Sometimes you may need to access the name for a part of a model as a `Symbol` (which you could then convert to a `String`).
 This can be done with `ModelingToolkit.getname`.
