@@ -108,7 +108,7 @@ rn = @reaction_network begin
 end
 ```
 
-For more information on how to use the Catalyst model creator (also known as *the Catalyst DSL*), please read [the corresponding documentation](https://docs.sciml.ai/Catalyst/stable/catalyst_functionality/dsl_description/).
+For more information on how to use the Catalyst model creator (also known as *the Catalyst DSL*), please read [the corresponding documentation](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_basics/).
 
 Next, we wish to simulate our model. To do this, we need to provide some additional information to the simulator. This is
 
