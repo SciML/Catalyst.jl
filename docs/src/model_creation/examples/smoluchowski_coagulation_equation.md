@@ -81,7 +81,7 @@ We'll set the parameters and the initial condition that only monomers are presen
 t = default_t()
 @species (X(t))[1:N]
 
-# time-span
+# time span
 if i == 1
     tspan = (0.0, 2000.0)
 elseif i == 2

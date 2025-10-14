@@ -284,7 +284,7 @@ begin
         (:p => [4.0, 5.0], :d => [0.2, 0.5]),
     ]
 
-    # Declares a timespan.
+    # Declares a time span.
     tspan = (0.0, 10.0)
 end
 

@@ -122,7 +122,7 @@ The initial condition is given as a *Vector*. This is a type which collects seve
 u0 = [:X => 1.0]
 ```
 
-The timespan sets the time point at which we start the simulation (typically `0.0` is used) and the final time point of the simulation. These are combined into a two-valued *tuple*. Tuples are similar to vectors, but are enclosed by `()` and not `[]`. Again, we will let both time points be decimal valued.
+The time span sets the time point at which we start the simulation (typically `0.0` is used) and the final time point of the simulation. These are combined into a two-valued *tuple*. Tuples are similar to vectors, but are enclosed by `()` and not `[]`. Again, we will let both time points be decimal valued.
 
 ```@example ex2
 tspan = (0.0, 10.0)
@@ -136,7 +136,7 @@ params = [:b => 1.0, :d => 0.2]
 
 Please read here for more information on [vectors](https://docs.julialang.org/en/v1/manual/arrays/) and [tuples](https://docs.julialang.org/en/v1/manual/types/#Tuple-Types).
 
-Next, before we can simulate our model, we bundle all the required information together in a so-called `ODEProblem`. Note that the order in which the input (the model, the initial condition, the timespan, and the parameter values) is provided to the `ODEProblem` matters. E.g. the parameter values cannot be provided as the first argument, but have to be the fourth argument. Here, we save our `ODEProblem` in the `oprob` variable.
+Next, before we can simulate our model, we bundle all the required information together in a so-called `ODEProblem`. Note that the order in which the input (the model, the initial condition, the time span, and the parameter values) is provided to the `ODEProblem` matters. E.g. the parameter values cannot be provided as the first argument, but have to be the fourth argument. Here, we save our `ODEProblem` in the `oprob` variable.
 
 ```@example ex2
 oprob = ODEProblem(rn, u0, tspan, params)
