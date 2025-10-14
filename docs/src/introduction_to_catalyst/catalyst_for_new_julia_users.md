@@ -57,9 +57,9 @@ rand(100, 100)^3.5
 nothing # hide
 ```
 
-(This code creates a random 100x100 matrix, and takes it to the power of 3.5)
+(This code creates a random 100x100 matrix, and takes it to the power of 3.5.)
 
-This is useful to know when you e.g. declare, simulate, or plot, a Catalyst model. The first time you run a command there might be a slight delay. However, subsequent runs will be much quicker. This holds even if you make minor adjustments before the second run (such as changing simulation initial conditions).
+This is useful to know when you e.g. declare, simulate, or plot a Catalyst model. The first time you run a command there might be a slight delay. However, subsequent runs will be much quicker. This holds even if you make minor adjustments before the second run (such as changing simulation initial conditions).
 
 ## [Installing and activating packages](@id catalyst_for_new_julia_users_packages_intro)
 
@@ -72,7 +72,7 @@ using Pkg
 Pkg.add("Catalyst")
 ```
 
-Here, the Julia package manager package (`Pkg`) is by default installed on your computer when Julia is installed, and can be activated directly. Next, we install an ODE solver from a sub-library of the larger `OrdinaryDiffEq` package, and install the `Plots` package for making graphs. We will import the recommended default solver from the `OrdinaryDiffEqDefault` sub-library. A full list of `OrdinaryDiffEq` solver sublibraries can be found on the sidebar of [this page](https://docs.sciml.ai/OrdinaryDiffEq/stable/).
+Here, the Julia package manager package (`Pkg`) is by default installed on your computer when Julia is installed, and can be activated directly. Next, we install an ODE solver from a sub-library of the larger `OrdinaryDiffEq` package, and install the `Plots` package for making graphs. We will import the recommended default solver from the `OrdinaryDiffEqDefault` sub-library. A full list of `OrdinaryDiffEq` solver sub-libraries can be found on the sidebar of [this page](https://docs.sciml.ai/OrdinaryDiffEq/stable/).
 
 ```julia
 Pkg.add("OrdinaryDiffEqDefault")
@@ -110,13 +110,13 @@ end
 
 For more information on how to use the Catalyst model creator (also known as *the Catalyst DSL*), please read [the corresponding documentation](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_basics/).
 
-Next, we wish to simulate our model. To do this, we need to provide some additional information to the simulator. This is
+Next, we wish to simulate our model. To do this, we need to provide some additional information to the simulator. This is:
 
 - The initial condition. That is, the concentration (or copy numbers) of each species at the start of the simulation.
 - The time span. That is, the time frame over which we wish to run the simulation.
 - The parameter values. That is, the values of the model's parameters for this simulation.
 
-The initial condition is given as a *Vector*. This is a type which collects several different values. To declare a vector, the values are specific within brackets, `[]`, and separated by `,`. Since we only have one species, the vector holds a single element. In this element, we set the value of $X$ using the `:X => 1.0` syntax. Here, we first denote the name of the species (with a `:` pre-appended, which creates a `Symbol`), next follows a `=>` and then the value of $X$. Since we wish to simulate the *concentration* of X over time, we will let the initial condition be decimal valued.
+The initial condition is given as a *Vector*. This is a type which collects several different values. To declare a vector, the values are specified within brackets, `[]`, and separated by `,`. Since we only have one species, the vector holds a single element. In this element, we set the value of $X$ using the `:X => 1.0` syntax. Here, we first denote the name of the species (with a `:` pre-appended, which creates a `Symbol`), next follows a `=>` and then the value of $X$. Since we wish to simulate the *concentration* of $X$ over time, we will let the initial condition be decimal valued.
 
 ```@example ex2
 u0 = [:X => 1.0]
@@ -134,7 +134,7 @@ Finally, the parameter values are, like the initial conditions, given in a vecto
 params = [:b => 1.0, :d => 0.2]
 ```
 
-Please read here for more information on [vectors](https://docs.julialang.org/en/v1/manual/arrays/) and [tuples](https://docs.julialang.org/en/v1/manual/types/#Tuple-Types).
+Please read the corresponding manual entries on [vectors](https://docs.julialang.org/en/v1/manual/arrays/) and [tuples](https://docs.julialang.org/en/v1/manual/types/#Tuple-Types) for more information.
 
 Next, before we can simulate our model, we bundle all the required information together in a so-called `ODEProblem`. Note that the order in which the input (the model, the initial condition, the time span, and the parameter values) is provided to the `ODEProblem` matters. E.g. the parameter values cannot be provided as the first argument, but have to be the fourth argument. Here, we save our `ODEProblem` in the `oprob` variable.
 
