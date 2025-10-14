@@ -162,7 +162,7 @@ For more information about the numerical simulation package, please see the [Dif
 
 To make this introduction more comprehensive, we here provide another example, using a more complicated model. Instead of simulating our model as concentrations evolve over time, we will now simulate the individual reaction events through the [Gillespie algorithm](https://en.wikipedia.org/wiki/Gillespie_algorithm) (a common approach for adding *noise* to models).
 
-Remember (unless we have restarted Julia) we do not need to activate our packages (through the `using` command) again. However, we do need to install, and then import, the JumpProcesses package (just to perform Gillespie, and other jump, simulations)
+Remember (unless we have restarted Julia) we do not need to activate our packages (through the `using` command) again. However, we do need to install, and then import, the [`JumpProcesses`](https://docs.sciml.ai/JumpProcesses/stable/) package (just to perform Gillespie, and other jump, simulations).
 
 ```julia
 Pkg.add("JumpProcesses")
