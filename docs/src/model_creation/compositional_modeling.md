@@ -1,4 +1,5 @@
 # [Compositional Modeling of Reaction Systems](@id compositional_modeling)
+
 Catalyst supports the construction of models in a compositional fashion, based
 on ModelingToolkit's subsystem functionality. In this tutorial we'll see how we
 can construct the earlier repressilator model by composing together three
@@ -6,6 +7,7 @@ identically repressed genes, and how to use compositional modeling to create
 compartments.
 
 ## [A note on *completeness*](@id completeness_note)
+
 Catalyst `ReactionSystem` can either be *complete* or *incomplete*. When created using the `@reaction_network` DSL they are *created as complete*. Here, only complete `ReactionSystem`s can be used to create the various problem types (e.g. `ODEProblem`). However, only incomplete `ReactionSystem`s can be composed using the features described below. Hence, for compositional modeling, `ReactionSystem` must be created as incomplete, and later set to complete before simulation.
 
 To create a `ReactionSystem`s for use in compositional modeling via the DSL, simply use the `@network_component` macro instead of `@reaction_network`:
@@ -35,6 +37,7 @@ ModelingToolkit.iscomplete(degradation_component_complete)
 ```
 
 ## Compositional modeling tooling
+
 Catalyst supports two ModelingToolkit interfaces for composing multiple
 [`ReactionSystem`](@ref)s together into a full model. The first mechanism allows
 for extending an existing system by merging in a second system via the `extend`
@@ -123,6 +126,7 @@ More about ModelingToolkit's interface for compositional modeling can be found
 in the [ModelingToolkit docs](http://docs.sciml.ai/ModelingToolkit/stable/).
 
 ## Compositional model of the repressilator
+
 Let's apply the tooling we've just seen to create the repressilator in a more
 modular fashion. We start by defining a function that creates a negatively
 repressed gene, taking the repressor as input
@@ -166,6 +170,7 @@ that have the same parent as the system being constructed (in this case the
 top-level `repressilator` system).
 
 ## Compartment-based models
+
 Finally, let's see how we can make a compartment-based model. Let's create a
 simple eukaryotic gene expression model with negative feedback by protein
 dimers. Transcription and gene inhibition by the protein dimer occurs in the

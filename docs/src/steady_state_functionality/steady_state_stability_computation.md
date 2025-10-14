@@ -1,14 +1,16 @@
 # [Steady state stability computation](@id steady_state_stability)
+
 After system steady states have been found using [HomotopyContinuation.jl](@ref homotopy_continuation), [NonlinearSolve.jl](@ref steady_state_solving), or other means, their stability can be computed using Catalyst's `steady_state_stability` function. Systems with conservation laws will automatically have these removed, permitting stability computation on systems with singular Jacobian.
 
-!!! warning 
+!!! warning
     Catalyst currently computes steady state stabilities using the naive approach of checking whether a system's largest eigenvalue real part is negative. Furthermore, Catalyst uses a tolerance `tol = 10*sqrt(eps())` to determine whether a computed eigenvalue is far away enough from 0 to be reliably considered non-zero. This threshold can be changed through the `tol` keyword argument.
 
 ## [Basic examples](@id steady_state_stability_basics)
+
 Let us consider the following basic example:
 ```@example stability_1
 using Catalyst
-rn = @reaction_network begin 
+rn = @reaction_network begin
     (p,d), 0 <--> X
 end
 ```
@@ -21,7 +23,7 @@ steady_state_stability(steady_state, rn, ps)
 
 Next, let us consider the following [self-activation loop](@ref basic_CRN_library_self_activation):
 ```@example stability_1
-sa_loop = @reaction_network begin 
+sa_loop = @reaction_network begin
     (hill(X,v,K,n),d), 0 <--> X
 end
 ```
@@ -43,7 +45,8 @@ nothing# hide
 ```
 
 ## [Pre-computing the Jacobian to increase performance when computing stability for many steady states](@id steady_state_stability_jacobian)
-Catalyst uses the system Jacobian to compute steady state stability, and the Jacobian is computed once for each call to `steady_state_stability`. If you repeatedly compute stability for steady states of the same system, pre-computing the Jacobian and supplying it to the `steady_state_stability` function can improve performance. 
+
+Catalyst uses the system Jacobian to compute steady state stability, and the Jacobian is computed once for each call to `steady_state_stability`. If you repeatedly compute stability for steady states of the same system, pre-computing the Jacobian and supplying it to the `steady_state_stability` function can improve performance.
 
 In this example we use the self-activation loop from previously, pre-computes its Jacobian, and uses it to multiple `steady_state_stability` calls:
 ```@example stability_1

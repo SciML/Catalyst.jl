@@ -5,6 +5,7 @@ Bifurcation diagrams describe how, for a dynamical system, the quantity and type
 This tutorial briefly introduces how to use Catalyst with BifurcationKit through basic examples, with BifurcationKit.jl providing [a more extensive documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/). Especially for more complicated systems, where careful tuning of algorithm options might be required, reading the BifurcationKit documentation is recommended. Finally, BifurcationKit provides many additional features not described here, including [computation of periodic orbits](@ref bifurcationkit_periodic_orbits), [tracking of bifurcation points along secondary parameters](@ref bifurcationkit_codim2), and [bifurcation computations for PDEs](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/tutorials/tutorials/#PDEs:-bifurcations-of-equilibria).
 
 ## [Basic example](@id bifurcation_diagrams_basic_example)
+
 For this example, we will use a modified version of the [Wilhelm model](@ref basic_CRN_library_wilhelm) (which demonstrates a bistable switch as the parameter $k1$ is varied). We declare the model using Catalyst:
 ```@example ex1
 using Catalyst
@@ -45,7 +46,7 @@ Finally, we compute our bifurcation diagram using:
 bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
 nothing # hide
 ```
-Where `PALC()` designates that we wish to use the pseudo-arclength continuation method to track our solution. The third argument (`2`) designates the maximum number of recursions when branches of branches are computed (branches appear as continuation encounters certain bifurcation points). For diagrams with highly branched structures (rare for many common small chemical reaction networks) this input is important. Finally, `bothside = true` designates that we wish to perform continuation on both sides of the initial point (which is typically the case). 
+Where `PALC()` designates that we wish to use the pseudo-arclength continuation method to track our solution. The third argument (`2`) designates the maximum number of recursions when branches of branches are computed (branches appear as continuation encounters certain bifurcation points). For diagrams with highly branched structures (rare for many common small chemical reaction networks) this input is important. Finally, `bothside = true` designates that we wish to perform continuation on both sides of the initial point (which is typically the case).
 
 We can plot our bifurcation diagram using the Plots.jl package:
 ```@example ex1
@@ -55,6 +56,7 @@ plot(bif_dia; xguide = bif_par, yguide = plot_var, branchlabel = "Steady state c
 Here, the steady state concentration of $X$ is shown as a function of $k1$'s value. Stable steady states are shown with thick lines, unstable ones with thin lines. The two [fold bifurcation points](https://en.wikipedia.org/wiki/Saddle-node_bifurcation) are marked with "bp".
 
 ## [Additional `ContinuationPar` options](@id bifurcation_diagrams_continuationpar)
+
 Most of the options required by the `bifurcationdiagram` function are provided through the `ContinuationPar` structure. For full details, please read the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.ContinuationPar). However, a few common options, and how they affect the continuation computation, are described here:
 - `p_min` and `p_max`: Set the interval over which the bifurcation diagram is computed (with the continuation stopping if it reaches these bounds).
 - `dsmin` and `dsmax`: The minimum and maximum length of the continuation steps (in the bifurcation parameter's value).
@@ -66,7 +68,7 @@ The previous bifurcation diagram can be computed, with these various options spe
 ```@example ex1
 p_span = (2.0, 20.0)
 newton_options = NewtonPar(tol = 1e-9, max_iterations = 20)
-opts_br = ContinuationPar(; p_min = p_span[1], p_max = p_span[2], ds = 0.005, 
+opts_br = ContinuationPar(; p_min = p_span[1], p_max = p_span[2], ds = 0.005,
                           dsmin = 0.001, dsmax = 0.01, max_steps = 1000, newton_options)
 bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
 nothing # hide
@@ -74,6 +76,7 @@ nothing # hide
 (In this case, however, these additional settings have no significant effect on the result)
 
 ## [Bifurcation diagrams with disjoint branches](@id bifurcation_diagrams_disjoint_branches)
+
 Let's consider the previous case, but instead compute the bifurcation diagram over the interval $(8.0,15.0)$:
 ```@example ex1
 p_span = (8.0, 15.0)
@@ -90,7 +93,7 @@ perturb_solution(x, _, _) = (x  .+ 0.1 .* rand(length(x)))
 defalg = DefCont(; deflation_operator, perturb_solution)
 nothing # hide
 ```
-Next we compute our bifurcation diagram using `defalg` (instead of `PALC()` as previous) as our method. We also use a range of additional continuation parameter options to ensure a smooth tracking of the solution. Here we have 
+Next we compute our bifurcation diagram using `defalg` (instead of `PALC()` as previous) as our method. We also use a range of additional continuation parameter options to ensure a smooth tracking of the solution. Here we have
 ```@example ex1
 newton_options = NewtonPar(max_iterations = 10)
 cont_par = ContinuationPar(; p_min = p_span[1], p_max = p_span[2], ds = 0.001, max_steps = 10000, newton_options)
@@ -103,6 +106,7 @@ plot(bif_dia; xguide = bif_par, yguide = plot_var, ylimit = (0.0, 17.0), color =
 ```
 
 ## [Systems with conservation laws](@id bifurcation_diagrams_cons_laws)
+
 Some systems are under-determined at steady state, so that for a given parameter set they have an infinite number of possible steady state solutions, preventing bifurcation diagrams from being computed. Similar to when we [compute steady states for fixed parameter values](@ref homotopy_continuation_conservation_laws), we can utilise Catalyst's ability to [detect and eliminate conservation laws](@ref conservation_laws) to resolve this issue. This requires us to provide information of the species concentrations at which we wish to compute the bifurcation diagram (to determine the values of conserved quantities). These are provided to the `BifurcationProblem` using the `u0` argument.
 
 To illustrate this, we will create a simple model of a kinase that is produced and degraded (at rates $p$ and $d$). The kinase facilitates the phosphorylation of a protein ($X$), which is dephosphorylated at a constant rate. For this system, we will compute a bifurcation diagram, showing how the concentration of the phosphorylated protein ($Xp$) depends on the degradation rate of the kinase ($d$). We will set the total amount of protein ($X + Xp$) to $1.0$.
@@ -123,7 +127,7 @@ opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2])
 bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
 plot(bif_dia; xguide = "d", yguide = "Xp")
 ```
-This bifurcation diagram does not contain any interesting features (such as bifurcation points), and only shows how the steady state concentration of $Xp$ is reduced as $d$ increases. 
+This bifurcation diagram does not contain any interesting features (such as bifurcation points), and only shows how the steady state concentration of $Xp$ is reduced as $d$ increases.
 
 Finally, for additional clarity, we reiterate the purpose of the two `u` arguments used:
 - `u_guess`: A guess of the initial steady states (which BifurcationKit uses to find its starting point). Typically, most trivial guesses work (e.g. setting all species concentrations to `1.0`). `u_guess` *does not* have to fulfil the conserved concentrations provided in `u0`.
@@ -131,9 +135,13 @@ Finally, for additional clarity, we reiterate the purpose of the two `u` argumen
 
 
 ---
+
 ## [Citation](@id bifurcationkit_periodic_orbits_citation)
+
 If you use BifurcationKit.jl for your work, we ask that you **cite** the following paper!! Open source development strongly depends on this. It is referenced on [HAL-Inria](https://hal.archives-ouvertes.fr/hal-02902346) with *bibtex* entry [CITATION.bib](https://github.com/bifurcationkit/BifurcationKit.jl/blob/master/CITATION.bib).
 
 ---
+
 ## References
+
 [^1]: [Yuri A. Kuznetsov, *Elements of Applied Bifurcation Theory*, Springer (2023).](https://link.springer.com/book/10.1007/978-3-031-22007-4)

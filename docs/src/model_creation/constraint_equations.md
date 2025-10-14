@@ -1,4 +1,5 @@
 # [Coupled ODEs, Algebraic Equations, and Events](@id constraint_equations)
+
 In many applications one has additional algebraic or differential equations for
 non-chemical species that can be coupled to a chemical reaction network model.
 Catalyst supports coupled differential and algebraic equations, and currently
@@ -17,6 +18,7 @@ grow indefinitely. We'll also keep track of one protein $P(t)$, which is
 produced at a rate proportional $V$ and can be degraded.
 
 ## [Coupling ODE constraints via the DSL](@id constraint_equations_dsl)
+
 The easiest way to include ODEs and algebraic equations is to just include them
 when using the DSL to specify a model. Here we include an ODE for $V(t)$ along
 with degradation and production reactions for $P(t)$:
@@ -52,6 +54,7 @@ plot(sol)
 ```
 
 ## Coupling ODE constraints via directly building a `ReactionSystem`
+
 As an alternative to the previous approach, we could have also constructed our
 `ReactionSystem` all at once using the symbolic interface:
 ```@example ceq2
@@ -135,6 +138,7 @@ plot(sol)
 
 
 ## [Adding events](@id constraint_equations_events)
+
 Our current model is unrealistic in assuming the cell will grow exponentially
 forever. Let's modify it such that the cell divides in half every time its
 volume reaches a size of `2`. We also assume we lose half of the protein upon
@@ -170,7 +174,7 @@ rn = @reaction_network growing_cell begin
     end
 
     # every 1.0 time unit we half the volume of the cell and the number of proteins
-    @continuous_events begin 
+    @continuous_events begin
         [V ~ 2.0] => [V ~ V/2, P ~ P/2]
     end
 end
@@ -189,7 +193,7 @@ rn = @reaction_network param_off_ex begin
     @parameters switch_time
     k_on, A --> B
     k_off, B --> A
-    
+
     @discrete_events begin
         (t == switch_time) => [k_on ~ 0.0]
     end
@@ -221,6 +225,7 @@ flexible DifferentialEquations.jl event/callback interface, see the
 on event handling using callbacks.
 
 ## [Adding events via the symbolic interface](@id constraint_equations_events_symbolic)
+
 Let's repeat the previous two models using the symbolic interface. We first
 create our equations and unknowns/species again
 ```@example ceq3

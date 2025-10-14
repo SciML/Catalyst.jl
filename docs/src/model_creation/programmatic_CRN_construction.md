@@ -1,4 +1,5 @@
 # [Programmatic Construction of Symbolic Reaction Systems](@id programmatic_CRN_construction)
+
 While the DSL provides a simple interface for creating `ReactionSystem`s, it can
 often be convenient to build or augment a [`ReactionSystem`](@ref)
 programmatically. In this tutorial we show how to build the repressilator model
@@ -7,6 +8,7 @@ then summarize the basic API functionality for accessing information stored
 within `ReactionSystem`s.
 
 ## Directly building the repressilator with `ReactionSystem`s
+
 We first load Catalyst
 ```@example ex
 using Catalyst
@@ -92,6 +94,7 @@ API docs. For a more extensive example of how to programmatically create a
 smoluchowski_coagulation_equation).
 
 ## More general `Reaction`s
+
 In the example above all the specified `Reaction`s were first or zero order. The
 three-argument form of `Reaction` implicitly assumes all species have a
 stoichiometric coefficient of one, i.e. for substrates `[S₁,...,Sₘ]` and
@@ -130,6 +133,7 @@ rx = Reaction(α + β*t*A, [A], [B])
 functions for the rate constant.
 
 ## The `@reaction` macro for constructing `Reaction`s
+
 In some cases one wants to build reactions incrementally, as in the
 repressilator example, but it would be nice to still have a short hand as in the
 [`@reaction_network`](@ref) DSL. In this case one can construct individual

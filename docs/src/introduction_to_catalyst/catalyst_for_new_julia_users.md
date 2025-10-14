@@ -1,4 +1,5 @@
 # [Introduction to Catalyst and Julia for New Julia users](@id catalyst_for_new_julia_users)
+
 The Catalyst tool for the modelling of chemical reaction networks is based in the Julia programming language[^1][^2]. While experience in Julia programming is advantageous for using Catalyst, it is not necessary for accessing most of its basic features. This tutorial serves as an introduction to Catalyst for those unfamiliar with Julia, while also introducing some basic Julia concepts. Anyone who plans on using Catalyst extensively is recommended to familiarise oneself more thoroughly with the Julia programming language. A collection of resources for learning Julia can be found [here](https://julialang.org/learning/), and a full documentation is available [here](https://docs.julialang.org/en/v1/). A more practical (but also extensive) guide to Julia programming can be found [here](https://modernjuliaworkflows.github.io/writing/).
 
 Julia can be downloaded [here](https://julialang.org/downloads/). Generally, it is recommended to use the [*juliaup*](https://github.com/JuliaLang/juliaup) tool to install and update Julia. Furthermore, *Visual Studio Code* is a good IDE with [extensive Julia support](https://code.visualstudio.com/docs/languages/julia), and a good default choice.
@@ -6,6 +7,7 @@ Julia can be downloaded [here](https://julialang.org/downloads/). Generally, it 
 *Users who are already familiar with Julia can skip to the [Introduction to Catalyst](@ref introduction_to_catalyst) tutorial.*
 
 ## Basic Julia usage
+
 On the surface, Julia has many similarities to languages like MATLAB, Python, and R.
 
 *Values* can be assigned to *variables* through `=` sign. Values (possibly stored in variables) can be used for most basic computations.
@@ -48,6 +50,7 @@ nothing # hide
 This is useful to know when you e.g. declare, simulate, or plot, a Catalyst model. The first time you run a command there might be a slight delay. However, subsequent runs will be much quicker. This holds even if you make minor adjustments before the second run (such as changing simulation initial conditions).
 
 ## [Installing and activating packages](@id catalyst_for_new_julia_users_packages_intro)
+
 Due to its native package manager (Pkg), and a registry of almost all packages of relevancy, package management in Julia is unusually easy. Here, we will briefly describe how to install and activate Catalyst (and two additional packages relevant to this tutorial).
 
 To import a Julia package into a session, you can use the `using PackageName` command (where `PackageName` is the name of the package you wish to import). However, before you can do so, it must first be installed on your computer. This is done through the `Pkg.add("PackageName")` command:
@@ -71,6 +74,7 @@ Here, if we restart Julia, these `using` commands *must be rerun*.
 A more comprehensive (but still short) introduction to package management in Julia is provided at [the end of this documentation page](@ref catalyst_for_new_julia_users_packages). It contains some useful information and is hence highly recommended reading. For a more detailed introduction to Julia package management, please read [the Pkg documentation](https://docs.julialang.org/en/v1/stdlib/Pkg/).
 
 ## Simulating a basic Catalyst model
+
 Now that we have some basic familiarity with Julia, and have installed and imported the required packages, we will create and simulate a basic chemical reaction network model using Catalyst.
 
 Catalyst models are created through the `@reaction_network` *macro*. For more information on macros, please read [the Julia documentation on macros](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros). This documentation is, however, rather advanced (and not required to use Catalyst). We instead recommend that you simply familiarise yourself with the Catalyst syntax, without studying in detail how macros work and what they are.
@@ -128,6 +132,7 @@ Here, the plot shows the time evolution of the concentration of the species $X$ 
 For more information about the numerical simulation package, please see the [DifferentialEquations documentation](https://docs.sciml.ai/DiffEqDocs/stable/). For more information about the plotting package, please see the [Plots documentation](https://docs.juliaplots.org/stable/).
 
 ## Additional modelling example
+
 To make this introduction more comprehensive, we here provide another example, using a more complicated model. Instead of simulating our model as concentrations evolve over time, we will now simulate the individual reaction events through the [Gillespie algorithm](https://en.wikipedia.org/wiki/Gillespie_algorithm) (a common approach for adding *noise* to models).
 
 Remember (unless we have restarted Julia) we do not need to activate our packages (through the `using` command) again. However, we do need to install, and then import, the JumpProcesses package (just to perform Gillespie, and other jump, simulations)
@@ -183,9 +188,11 @@ plot(sol)
 **Exercise:** Try simulating the model several times. Note that the epidemic doesn't always take off, but sometimes dies out without spreading through the population. Try changing the infection rate (*b*), determining how this value affects the probability that the epidemic goes through the population.
 
 ## [Package management in Julia](@id catalyst_for_new_julia_users_packages)
+
 We have previously introduced how to install and activate Julia packages. While this is enough to get started with Catalyst, for long-term users, there are some additional considerations for a smooth experience. These are described here.
 
 ### [Setting up a new Julia environment](@id catalyst_for_new_julia_users_packages_environments)
+
 Whenever you run Julia, it will run in a specific *environment*. You can specify any folder on your computer as a Julia environment. Some modes of running Julia will automatically use the environment corresponding to the folder you start Julia in. Others (or if you start Julia in a folder without an environment), will use your *default* environment. In these cases you can, during your session, switch to another environment. While it is possible to not worry about environments (and always use the default one), this can lead to long-term problems as more packages are installed.
 
 To activate your current folder as an environment, run the following commands:
@@ -201,6 +208,7 @@ This will:
     If you check any folder which has been designated as a Julia environment, it contains a Project.toml and a Manifest.toml file. These store all information regarding the corresponding environment. For non-advanced users, it is recommended to never touch these files directly (and instead do so using various functions from the Pkg package, the important ones which are described in the next two subsections).
 
 ### [Installing and importing packages in Julia](@id catalyst_for_new_julia_users_packages_installing)
+
 Package installation and import have been described [previously](@ref catalyst_for_new_julia_users_packages_intro). However, for the sake of this extended tutorial, let us repeat the description by demonstrating how to install the [Latexify.jl](https://github.com/korsbo/Latexify.jl) package (which enables e.g. displaying Catalyst models in Latex format). First, we import the Julia Package manager ([Pkg](https://github.com/JuliaLang/Pkg.jl)) (which is required to install Julia packages):
 ```@example ex3
 using Pkg
@@ -216,6 +224,7 @@ using Latexify
 Here, `using Latexify` must be rerun whenever you restart a Julia session. However, you only need to run `Pkg.add("Latexify")` once to install it on your computer (but possibly additional times to add it to new environments, see the next section).
 
 ### [Why environments are important](@id catalyst_for_new_julia_users_packages_environment_importance)
+
 We have previously described how to set up new Julia environments, how to install Julia packages, and how to import them into a current session. Let us say that you were to restart Julia in a new folder and activate this as a separate environment. If you then try to import Latexify through `using Latexify` you will receive an error claiming that Latexify was not found. The reason is that the `Pkg.add("Latexify")` command actually carries out two separate tasks:
 1. If Latexify is not already installed on your computer, install it.
 2. Add Latexify as an available package to your current environment.
@@ -247,10 +256,14 @@ Some additional useful Pkg commands are:
 
 
 ---
+
 ## Feedback
+
 If you are a new Julia user who has used this tutorial, and there was something you struggled with or would have liked to have explained better, please [raise an issue](https://github.com/SciML/Catalyst.jl/issues). That way, we can continue improving this tutorial. The same goes for any part of the Catalyst documentation: It is written to help new users understand how to use the package, and if it is not doing so successfully we would like to know!
 
 ---
+
 ## References
+
 [^1]: [Torkel E. Loman, Yingbo Ma, Vasily Ilin, Shashi Gowda, Niklas Korsbo, Nikhil Yewale, Chris Rackauckas, Samuel A. Isaacson, *Catalyst: Fast and flexible modeling of reaction networks*, PLOS Computational Biology (2023).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530)
 [^2]: [Jeff Bezanson, Alan Edelman, Stefan Karpinski, Viral B. Shah, *Julia: A Fresh Approach to Numerical Computing*, SIAM Review (2017).](https://epubs.siam.org/doi/abs/10.1137/141000671)

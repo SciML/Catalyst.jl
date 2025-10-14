@@ -8,6 +8,7 @@ While Catalyst has primarily been designed around the modelling of biological sy
 ## [Modelling with compound species](@id chemistry_functionality_compounds)
 
 ### [Creating compound species programmatically](@id chemistry_functionality_compounds_programmatic)
+
 We will first show how to create compound species through [programmatic model construction](@ref programmatic_CRN_construction), and then demonstrate using the DSL. To create a compound species, use the `@compound` macro, first designating the compound, followed by its components (and their stoichiometries). In this example, we will create a CO₂ molecule, consisting of one C atom and two O atoms. First, we create species corresponding to the components:
 ```@example chem1
 using Catalyst
@@ -56,6 +57,7 @@ end
 ```
 
 ### [Creating compound species within the DSL](@id chemistry_functionality_compounds_DSL)
+
 It is also possible to declare species as compound species within the `@reaction_network` DSL, using the `@compounds` options:
 ```@example chem1
 rn = @reaction_network begin
@@ -69,7 +71,7 @@ rn = @reaction_network begin
 end
 ```
 When creating compound species using the DSL, it is important to note that *every component must be known to the system as a species, either by being declared using the `@species` or `@compound` options, or by appearing in a reaction*. E.g. the following is not valid
-```julia 
+```julia
 rn = @reaction_network begin
     @compounds begin
         C2O ~ C + 2O
@@ -82,6 +84,7 @@ end
 as the components `C`, `H`, and `O` are not declared as species anywhere. Please also note that only `@compounds` can be used as an option in the DSL, not `@compound`.
 
 ### [Designating metadata and default values for compounds](@id chemistry_functionality_compounds_metadata)
+
 Just like for normal species, it is possible to designate metadata and default values for compounds. Metadata is provided after the compound name, but separated from it by a `,`:
 ```@example chem1
 @compound (CO2, [unit="mol"]) ~ C + 2O
@@ -100,16 +103,18 @@ nothing # hide
 In all of these cases, the left-hand side must be enclosed within `()`.
 
 ### [Compounds with multiple independent variables](@id chemistry_functionality_compounds_mult_ivs)
+
 While we generally do not need to specify independent variables for compound, if the components (together) have more than one independent variable, this *must be done*:
 ```@example chem1
 t = default_t()
 @parameters s
-@species N(s) O(t) 
+@species N(s) O(t)
 @compound NO2(t,s) ~ N + 2O
 ```
 Here, `NO2` depend both on a spatial independent variable (`s`) and a time one (`t`). This is required since, while multiple independent variables can be inferred, their internal order cannot (and must hence be provided by the user).
 
 ## Balancing chemical reactions
+
 One use of defining a species as a compound is that they can be used to balance reactions so that the number of components are the same on both sides. Catalyst provides the `balance_reaction` function, which takes a reaction, and returns a balanced version. E.g. let us consider a reaction when carbon dioxide is formed from carbon and oxide `C + O --> CO2`. Here, `balance_reaction` enables us to find coefficients creating a balanced reaction (in this case, where the number of carbon and oxygen atoms are the same on both sides). To demonstrate, we first created the unbalanced reactions:
 ```@example chem1
 rx = @reaction k, C + O --> $CO2
@@ -124,7 +129,7 @@ Let us consider a more elaborate example, the reaction between ammonia (NH₃) a
 ```@example chem2
 using Catalyst # hide
 t = default_t()
-@species N(t) H(t) O(t) 
+@species N(t) H(t) O(t)
 @compounds begin
     NH3 ~ N + 3H
     O2 ~ 2O
@@ -144,6 +149,7 @@ Reactions declared as a part of a `ReactionSystem` (e.g. using the DSL) can be r
     Reaction balancing is currently not supported for reactions involving compounds of compounds.
 
 ### Balancing full systems
+
 It is possible to balance all the reactions of a reaction system simultaneously using the `balance_system` function. Here, the output is a new system, where all reactions are balanced. E.g. We can use it to balance this system of methane formation/combustion:
 ```@example chem2
 rs = @reaction_network begin

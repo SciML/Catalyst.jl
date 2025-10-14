@@ -1,4 +1,5 @@
 # [Advice for Performant ODE Simulations](@id ode_simulation_performance)
+
 We have previously described how to perform ODE simulations of *chemical reaction network* (CRN) models. These simulations are typically fast and require little additional consideration. However, when a model is simulated many times (e.g. as a part of solving an inverse problem), or is very large, simulation run
 times may become noticeable. Here we will give some advice on how to improve performance for these cases [^1].
 
@@ -11,6 +12,7 @@ Generally, this short checklist provides a quick guide for dealing with ODE perf
 4. If you plan to simulate your ODE many times, try [parallelise it on CPUs or GPUs](@ref ode_simulation_performance_parallelisation) (with preference for the former, which is easier to use).
 
 ## [Regarding stiff and non-stiff problems and solvers](@id ode_simulation_performance_stiffness)
+
 Generally, ODE problems can be categorised into [*stiff ODEs* and *non-stiff ODEs*](https://en.wikipedia.org/wiki/Stiff_equation). This categorisation is important due to stiff ODEs requiring specialised solvers. A common cause of failure to simulate an ODE is the use of a non-stiff solver for a stiff problem. There is no exact way to determine whether a given ODE is stiff or not, however, systems with several different time scales (e.g. a CRN with both slow and fast reactions) typically generate stiff ODEs.
 
 Here we simulate the (stiff) [Brusselator](@ref basic_CRN_library_brusselator) model using the `Tsit5` solver (which is designed for non-stiff ODEs):
@@ -55,6 +57,7 @@ Finally, we should note that stiffness is not tied to the model equations only. 
 
 
 ## [ODE solver selection](@id ode_simulation_performance_solvers)
+
 OrdinaryDiffEq implements an unusually large number of ODE solvers, with the performance of the simulation heavily depending on which one is chosen. These are provided as the second argument to the `solve` command, e.g. here we use the `Tsit5` solver to simulate a simple [birth-death process](@ref basic_CRN_library_bd):
 ```@example ode_simulation_performance_2
 using Catalyst, OrdinaryDiffEqTsit5
@@ -81,7 +84,7 @@ While the default choice is typically enough for most single simulations, if per
 
 The most important part of solver selection is to select one appropriate for [the problem's stiffness](@ref ode_simulation_performance_stiffness). Generally, the `Tsit5` solver is good for non-stiff problems, and `Rodas5P` for stiff problems. For large stiff problems (with many species), `FBDF` can be a good choice. We can illustrate the impact of these choices by simulating our birth-death process using the `Tsit5`, `Vern7` (an explicit solver yielding [low error in the solution](@ref ode_simulation_performance_error)), `Rodas5P`, and `FBDF` solvers (benchmarking their respective performance using [BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl)):
 ```julia
-using BenchmarkTools 
+using BenchmarkTools
 using OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, OrdinaryDiffEqVerner, OrdinaryDiffEqBDF
 @btime solve(oprob, Tsit5())
 @btime solve(oprob, Vern7())
@@ -91,6 +94,7 @@ using OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, OrdinaryDiffEqVerner, Ordin
 If you perform the above benchmarks on your machine, and check the results, you will note that the fastest solver is several times faster than the slowest one (`FBDF`, which is a poor choice for this ODE).
 
 ### [Simulation error, tolerance, and solver selection](@id ode_simulation_performance_error)
+
 Numerical ODE simulations [approximate an ODEs' continuous solutions as discrete vectors](https://en.wikipedia.org/wiki/Discrete_time_and_continuous_time). This introduces errors in the computed solution. The magnitude of these errors can be controlled by setting solver *tolerances*. By reducing the tolerance, solution errors will be reduced, however, this will also increase simulation run times. The (absolute and relative) tolerance of a solver can be tuned through the `abstol` and `reltol` arguments. Here we see how run time increases with larger tolerances:
 ```julia
 @btime solve(oprob, Tsit5(); abstol=1e-6, reltol=1e-6)
@@ -103,9 +107,11 @@ Generally, whether solution error is a consideration depends on the application.
 
 
 ## [Jacobian computation options for implicit solvers](@id ode_simulation_performance_jacobian)
+
 As [previously mentioned](@ref ode_simulation_performance_stiffness), implicit ODE solvers require the computation of the system's [*Jacobian*](https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant). The reason is (roughly) that, in each time step, these solvers need to solve a non-linear equation to find the simulation's value at the next timestep (unlike explicit solvers, which compute the value at the next time step directly). Typically this is done using [the Newton-Raphson method](https://en.wikipedia.org/wiki/Newton%27s_method), which requires the Jacobian. Especially for large systems, this can be computationally expensive (and a potential strain on available memory), in which case one might consider various Jacobian-computation options (as described below). A throughout tutorial on simulating a large, stiff, ODE can be found [here](https://docs.sciml.ai/DiffEqDocs/stable/tutorials/advanced_ode_example/#stiff).
 
 ### [Building the Jacobian symbolically](@id ode_simulation_performance_symbolic_jacobian)
+
 By default, OrdinaryDiffEq computes the Jacobian using [*automatic differentiation*](https://en.wikipedia.org/wiki/Automatic_differentiation) (however, using [*finite differences*](https://en.wikipedia.org/wiki/Finite_difference) is [also possible](https://docs.sciml.ai/DiffEqDocs/stable/features/performance_overloads/)). Since Catalyst builds its ODEs symbolically, it is able to *compute an analytic Jacobian symbolically*. Typically, this is only advantageous when you are also [using a sparse Jacobian](@ref ode_simulation_performance_sparse_jacobian).
 
 To use this option, simply set `jac = true` when constructing an `ODEProblem`:
@@ -127,6 +133,7 @@ nothing # hide
 ```
 
 ### [Using a sparse Jacobian](@id ode_simulation_performance_sparse_jacobian)
+
 For a system with $n$ variables, the Jacobian will be an $n\times n$ matrix. This means that, as $n$ becomes large, the Jacobian can become *very* large, potentially causing a significant strain on memory. In these cases, most Jacobian entries are typically $0$. This means that a [*sparse*](https://en.wikipedia.org/wiki/Sparse_matrix) Jacobian (rather than a *dense* one, which is the default) can be advantageous. To designate sparse Jacobian usage, simply provide the `sparse = true` option when constructing an `ODEProblem`:
 ```@example ode_simulation_performance_3
 oprob = ODEProblem(brusselator, u0, tspan, ps; sparse = true)
@@ -134,6 +141,7 @@ nothing # hide
 ```
 
 ### [Linear solver selection](@id ode_simulation_performance_symbolic_jacobian_linear_solver)
+
 When implicit solvers use e.g. the Newton-Raphson method to (at each simulation time step) solve a (typically non-linear) equation, they actually solve a linearised version of this equation. For this, they use a linear solver, the choice of which can impact performance. To specify one, we use the `linsolve` option (given to the solver function, *not* the `solve` command). E.g. to use the `KLUFactorization` linear solver (which requires loading the [LinearSolve.jl](https://github.com/SciML/LinearSolve.jl) package) we run
 ```@example ode_simulation_performance_3
 using LinearSolve, OrdinaryDiffEqRosenbrock
@@ -150,6 +158,7 @@ nothing # hide
 Since these methods do not depend on a Jacobian, certain Jacobian options (such as [computing it symbolically](@ref ode_simulation_performance_symbolic_jacobian)) are irrelevant to them.
 
 ### [Designating preconditioners for Jacobian-free linear solvers](@id ode_simulation_performance_preconditioners)
+
 When an implicit method solves a linear equation through an (iterative) matrix-free Newton-Krylov method, the rate of convergence depends on the numerical properties of the matrix defining the linear system. To speed up convergence, a [*preconditioner*](https://en.wikipedia.org/wiki/Preconditioner) can be applied to both sides of the linear equation, attempting to create an equation that converges faster. Preconditioners are only relevant when using matrix-free Newton-Krylov methods.
 
 In practice, preconditioners are implemented as functions with a specific set of arguments. How to implement these is non-trivial, and we recommend reading OrdinaryDiffEq's documentation pages [here](https://docs.sciml.ai/DiffEqDocs/stable/features/linear_nonlinear/#Preconditioners:-precs-Specification) and [here](https://docs.sciml.ai/DiffEqDocs/stable/tutorials/advanced_ode_example/#Adding-a-Preconditioner). In this example, we will define an [Incomplete LU](https://en.wikipedia.org/wiki/Incomplete_LU_factorization) preconditioner (which requires the [IncompleteLU.jl](https://github.com/haampie/IncompleteLU.jl) package):
@@ -176,6 +185,7 @@ Generally, the use of preconditioners is only recommended for advanced users who
 
 
 ## [Elimination of system conservation laws](@id ode_simulation_performance_conservation_laws)
+
 Previously, we have described how Catalyst, when it generates ODEs, is able to [detect and eliminate conserved quantities](@ref conservation_laws). In certain cases, doing this can improve performance. E.g. in the following example we will eliminate the single conserved quantity in a [two-state model](@ref basic_CRN_library_two_states). This results in a differential algebraic equation with a single differential equation and a single algebraic equation (as opposed to two differential equations). However, as the algebraic equation is fully determined by the ODE solution, Catalyst moves it to be an observable and our new system therefore only contains one ODE that must be solved numerically. Conservation laws can be eliminated by providing the `remove_conserved = true` option to `ODEProblem`:
 ```@example ode_simulation_performance_conservation_laws
 using Catalyst, OrdinaryDiffEqTsit5
@@ -196,11 +206,13 @@ Conservation law elimination is not expected to ever impact performance negative
 
 
 ## [Parallelisation on CPUs and GPUs](@id ode_simulation_performance_parallelisation)
+
 Whenever an ODE is simulated a large number of times (e.g. when investigating its behaviour for different parameter values), the best way to improve performance is to [parallelise the simulation over multiple processing units](https://en.wikipedia.org/wiki/Parallel_computing). Indeed, an advantage of the Julia programming language is that it was designed after the advent of parallel computing, making it well-suited for this task. Roughly, parallelisation can be divided into parallelisation on [CPUs](https://en.wikipedia.org/wiki/Central_processing_unit) and on [GPUs](https://en.wikipedia.org/wiki/General-purpose_computing_on_graphics_processing_units). CPU parallelisation is most straightforward, while GPU parallelisation requires specialised ODE solvers (which Catalyst have access to).
 
 Both CPU and GPU parallelisation require first building an `EnsembleProblem` (which defines the simulations you wish to perform) and then supplying this with the correct parallelisation options. `EnsembleProblem`s have [previously been introduced in Catalyst's documentation](@ref ensemble_simulations) (but in the context of convenient bundling of similar simulations, rather than to improve performance), with a more throughout description being found in [OrdinaryDiffEq's documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#ensemble). Finally, a general documentation of parallel computing in Julia is available [here](https://docs.julialang.org/en/v1/manual/parallel-computing/).
 
 ### [CPU parallelisation](@id ode_simulation_performance_parallelisation_CPU)
+
 For this example (and the one for GPUs), we will consider a modified [Michaelis-Menten enzyme kinetics model](@ref basic_CRN_library_mm), which describes an enzyme ($E$) that converts a substrate ($S$) to a product ($P$):
 ```@example ode_simulation_performance_4
 using Catalyst
@@ -281,6 +293,7 @@ While `EnsembleThreads` and `EnsembleDistributed` cover the main cases, addition
 Finally, it should be noted that OrdinaryDiffEq, if additional processes are available, automatically parallelises the [linear solve part of implicit simulations](@ref ode_simulation_performance_symbolic_jacobian_linear_solver). It is thus possible to see performance improvements from adding additional processes when running single simulations, not only multiple parallelised ones (this effect is primarily noticeable for large systems with many species).
 
 ### [GPU parallelisation](@id ode_simulation_performance_parallelisation_GPU)
+
 GPUs are different from CPUs in that they are much more restricted in what computations they can carry out. However, unlike CPUs, they are typically available in far larger numbers. Their original purpose is for rendering graphics (which typically involves solving a large number of very simple computations, something CPUs with their few, but powerful, cores are unsuited for). Recently, they have also started to be applied to other problems, such as ODE simulations. Generally, GPU parallelisation is only worthwhile when you have a very large number of parallel simulations to run (and access to good GPU resources, either locally or on a cluster).
 
 Generally, we can parallelise `EnsembleProblem`s across several GPUs in a very similar manner to how we parallelised them across several CPUs, but by using a different ensemble algorithm (such as `EnsembleGPUArray`). However, there are some additional requirements:
@@ -346,7 +359,9 @@ For more information on differential equation simulations on GPUs in Julia, plea
 
 
 ---
+
 ## Citation
+
 If you use GPU simulations in your research, please cite the following paper to support the authors of the DiffEqGPU package:
 ```
 @article{utkarsh2024automated,
@@ -361,5 +376,7 @@ If you use GPU simulations in your research, please cite the following paper to 
 ```
 
 ---
+
 ## References
+
 [^1]: [E. Hairer, G. Wanner, *Solving Ordinary Differential Equations II*, Springer (1996).](https://link.springer.com/book/10.1007/978-3-642-05221-7)

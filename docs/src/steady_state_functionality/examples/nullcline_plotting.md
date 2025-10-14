@@ -1,4 +1,5 @@
 # [Plotting Nullclines and Steady States in Phase Space](@id nullcline_plotting)
+
 In this tutorial we will show how to extract a system's steady states and [nullclines](https://en.wikipedia.org/wiki/Nullcline), and how to plot these in [phase space](https://en.wikipedia.org/wiki/Phase_space). Generally, while nullclines are not directly needed for most types analysis, plotting these can give some understanding of a system's steady state and stability properties.
 
 For an ordinary differential equation
@@ -13,7 +14,8 @@ For an ordinary differential equation
 the $i$'th nullcline is the surface along which $\frac{dx_i}{dt} = 0$, i.e. the implicit surface given by $f_i(x_1,\dots,x_n) = 0$. Nullclines are frequently used when visualizing the phase-planes of two-dimensional models (as these can be easily plotted).
 
 ## [Computing nullclines and steady states for a bistable switch](@id nullcline_plotting_computation)
-For our example we will use a simple bistable switch model, consisting of two species ($X$ and $Y$) which mutually inhibit each other through repressive Hill functions. 
+
+For our example we will use a simple bistable switch model, consisting of two species ($X$ and $Y$) which mutually inhibit each other through repressive Hill functions.
 ```@example nullcline_plotting
 using Catalyst
 bs_switch = @reaction_network begin
@@ -70,6 +72,7 @@ Here we can see how the steady states occur at the nullclines intersections.
     Here we use an inherent Plots function to plot the nullclines. However, there are also specialised packages for these kinds of plots, such as [ImplicitPlots.jl](https://github.com/saschatimme/ImplicitPlots.jl).
 
 ## [Plotting system directions in phase space](@id nullcline_plotting_directions)
+
 One useful property of nullclines is that the sign of $dX/dt$ will only switch whenever the solution crosses the $dX/dt=0$ nullcline. This means that, within each region defined by the nullclines, the direction of the solution remains constant. Below we use this to, for each such region, plot arrows showing the solution's direction.
 ```@example nullcline_plotting
 # Creates a function for plotting the ODE's direction at a point in phase space.

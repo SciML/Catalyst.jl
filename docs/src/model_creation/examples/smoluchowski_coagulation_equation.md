@@ -1,4 +1,5 @@
 # [Smoluchowski Coagulation Equation](@id smoluchowski_coagulation_equation)
+
 This tutorial shows how to programmatically construct a [`ReactionSystem`](@ref) corresponding to the chemistry underlying the [Smoluchowski coagulation model](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation) using [ModelingToolkit](http://docs.sciml.ai/ModelingToolkit/stable/)/[Catalyst](http://docs.sciml.ai/Catalyst/stable/). A jump process version of the model is then constructed from the [`ReactionSystem`](@ref), and compared to the model's analytical solution obtained by the [method of Scott](https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml) (see also [3](https://doi.org/10.1006/jcph.2002.7017)).
 
 The Smoluchowski coagulation equation describes a system of reactions in which monomers may collide to form dimers, monomers and dimers may collide to form trimers, and so on. This models a variety of chemical/physical processes, including polymerization and flocculation.
@@ -145,7 +146,9 @@ plot!(ϕ, sol[3,:] / Nₒ, line = (:dot, 4, :purple), label = "Analytical sol--X
 ```
 
 ---
+
 ## References
+
 1. [https://en.wikipedia.org/wiki/Smoluchowski\_coagulation\_equation](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation)
 2. Scott, W. T. (1968). Analytic Studies of Cloud Droplet Coalescence I, Journal of Atmospheric Sciences, 25(1), 54-65. Retrieved Feb 18, 2021, from https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469\_1968\_025\_0054\_asocdc\_2\_0\_co\_2.xml
 3. Ian J. Laurenzi, John D. Bartels, Scott L. Diamond, A General Algorithm for Exact Simulation of Multicomponent Aggregation Processes, Journal of Computational Physics, Volume 177, Issue 2, 2002, Pages 418-449, ISSN 0021-9991, https://doi.org/10.1006/jcph.2002.7017.

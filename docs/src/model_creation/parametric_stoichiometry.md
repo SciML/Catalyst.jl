@@ -1,9 +1,11 @@
 # [Symbolic Stoichiometries](@id parametric_stoichiometry)
+
 Catalyst supports stoichiometric coefficients that involve parameters, species,
 or even general expressions. In this tutorial we show several examples of how to
 use symbolic stoichiometries, and discuss several caveats to be aware of.
 
 ## Using symbolic stoichiometry
+
 Let's first consider a simple reversible reaction where the number of reactants
 is a parameter, and the number of products is the product of two parameters.
 ```@example s1
@@ -109,6 +111,7 @@ plot(sol)
 ```
 
 ## Gene expression with randomly produced amounts of protein
+
 As a second example, let's build the negative feedback model from
 [MomentClosure.jl](https://augustinas1.github.io/MomentClosure.jl/dev/tutorials/geometric_reactions+conditional_closures/)
 that involves a bursty reaction that produces a random amount of protein.

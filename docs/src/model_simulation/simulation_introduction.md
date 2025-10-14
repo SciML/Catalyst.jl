@@ -1,9 +1,11 @@
 # [Model Simulation Introduction](@id simulation_intro)
+
 Catalyst's core functionality is the creation of *chemical reaction network* (CRN) models that can be simulated using ODE, SDE, and jump simulations. How such simulations are carried out has already been described in [Catalyst's introduction](@ref introduction_to_catalyst). This page provides a deeper introduction, giving some additional background and introducing various simulation-related options.
 
 Here we will focus on the basics, with other sections of the simulation documentation describing various specialised features, or giving advice on performance. Anyone who plans on using Catalyst's simulation functionality extensively is recommended to also read the documentation on [solution plotting](@ref simulation_plotting), and on how to [interact with simulation problems, integrators, and solutions](@ref simulation_structure_interfacing). Anyone with an application for which performance is critical should consider reading the corresponding page on performance advice for [ODEs](@ref ode_simulation_performance) or [SDEs](@ref sde_simulation_performance).
 
 ### [Background to CRN simulations](@id simulation_intro_theory)
+
 This section provides some brief theory on CRN simulations. For details on how to carry out these simulations in actual code, please skip to the following sections.
 
 CRNs are defined by a set of *species* (with the amounts of these determining the system's state during simulations) and a set of *reaction events* (rules for how the state of the system changes). In real systems, the species amounts are *discrete copy-numbers*, describing the exact numbers of each species type present in the system (in systems biology this can e.g. be the number of a specific molecule present in a cell). Given rates for these reaction events, *stochastic chemical kinetics* provides a formula for simulating the system that recreates its real reaction process. During stochastic chemical kinetics simulations, the system's state is defined by discrete copy-numbers (denoting the number of each species present in the system). Next, at the occurrence of individual *reaction events*, the system's state is updated according to the occurred reaction. The result is a stochastic process. The most well-known approach for simulating stochastic chemical kinetics is [Gillespie's algorithm](https://en.wikipedia.org/wiki/Gillespie_algorithm).
@@ -79,6 +81,7 @@ These three different approaches are summed up in the following table:
 ```
 
 ## [Performing (ODE) simulations](@id simulation_intro_ODEs)
+
 The following section gives a (more complete introduction of how to simulate Catalyst models than our [previous introduction](@ref introduction_to_catalyst_massaction_ode)). This is illustrated using ODE simulations (some ODE-specific options will also be discussed). Later on, we will describe things specific to [SDE](@ref simulation_intro_SDEs) and [jump](@ref simulation_intro_jumps) simulations. All ODE simulations are performed using the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package, which full documentation can be found [here](https://docs.sciml.ai/OrdinaryDiffEq/stable/). A dedicated section giving advice on how to optimise ODE simulation performance can be found [here](@ref ode_simulation_performance)
 
 To perform any simulation, we must first define our model, as well as the simulation's initial conditions, time span, and parameter values. Here we will use a simple [two-state model](@ref basic_CRN_library_two_states):
@@ -116,6 +119,7 @@ Some additional considerations:
 
 
 ### [Designating solvers and solver options](@id simulation_intro_solver_options)
+
 While good defaults are generally selected, OrdinaryDiffEq enables the user to customise simulations through a long range of options that can be provided to the `solve` function. This includes specifying a [solver algorithm](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations), which can be provided as a second argument to `solve` (if none is provided, a suitable choice is automatically made). E.g. here we specify that the `Rodas5P` method should be used:
 ```@example simulation_intro_ode
 using OrdinaryDiffEqRosenbrock
@@ -144,6 +148,7 @@ Here follows a list of solver options which might be of interest to the user.
 A full list of solver options can be found [here](https://docs.sciml.ai/DiffEqDocs/stable/basics/common_solver_opts/).
 
 ### [Alternative problem input forms](@id simulation_intro_ODEs_input_forms)
+
 Throughout Catalyst's documentation, we typically provide initial condition and parameter values as vectors. However, these can also be provided as tuples:
 ```@example simulation_intro_ode
 u0 = (:X1 => 100.0, :X2 => 200.0)
@@ -173,6 +178,7 @@ nothing # hide
 ```
 
 ## [Performing SDE simulations](@id simulation_intro_SDEs)
+
 Catalyst uses the [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) package to perform SDE simulations. This section provides a brief introduction, with [StochasticDiffEq's documentation](https://docs.sciml.ai/StochasticDiffEq/stable/) providing a more extensive description. By default, Catalyst generates SDEs from CRN models using the chemical Langevin equation. A dedicated section giving advice on how to optimise SDE simulation performance can be found [here](@ref sde_simulation_performance).
 
 SDE simulations are performed in a similar manner to ODE simulations. The only exception is that an `SDEProblem` is created (rather than an `ODEProblem`). Furthermore, the [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) package (rather than the OrdinaryDiffEq package) is required for performing simulations. Here we simulate the two-state model for the same parameter set as previously used:
@@ -196,6 +202,7 @@ we can see that while this simulation (unlike the ODE ones) exhibits some fluctu
     Unlike for ODE and jump simulations, there are no good heuristics for automatically selecting suitable SDE solvers. Hence, for SDE simulations a solver must be provided. `STrapezoid` will work for a large number of cases. When this is not the case, however, please check the list of [available SDE solvers](https://docs.sciml.ai/DiffEqDocs/stable/solvers/sde_solve/) for a suitable alternative (making sure to select one compatible with non-diagonal noise and the [Ito interpretation](https://en.wikipedia.org/wiki/It%C3%B4_calculus).
 
 ### [Common SDE simulation pitfalls](@id simulation_intro_SDEs_pitfalls)
+
 Next, let us reduce species amounts (using [`remake`](@ref simulation_structure_interfacing_problems_remake)), thereby also increasing the relative amount of noise, we encounter a problem when the model is simulated:
 ```@example simulation_intro_sde
 sprob = remake(sprob; u0 = [:X1 => 0.33, :X2 => 0.66])
@@ -227,6 +234,7 @@ plot(sol)
 ```
 
 ### [SDE simulations with fixed time stepping](@id simulation_intro_SDEs_fixed_dt)
+
 StochasticDiffEq implements SDE solvers with adaptive time stepping. However, when using a non-adaptive solver (or using the `adaptive = false` argument to turn adaptive time stepping off for an adaptive solver) a fixed time step `dt` must be designated. Here we simulate the same `SDEProblem` which we struggled with previously, but using the non-adaptive [`EM`](https://en.wikipedia.org/wiki/Euler%E2%80%93Maruyama_method) solver and a fixed `dt`:
 ```@example simulation_intro_sde
 sol = solve(sprob, EM(); dt = 0.001)
@@ -238,6 +246,7 @@ We note that this approach also enables us to successfully simulate the SDE we p
 Generally, using a smaller fixed `dt` provides a more exact simulation, but also increases simulation runtime.
 
 ### [Scaling the noise in the chemical Langevin equation](@id simulation_intro_SDEs_noise_saling)
+
 When using the CLE to generate SDEs from a CRN, it can sometimes be desirable to scale the magnitude of the noise. This can be done by introducing a *noise scaling term*, with each noise term generated by the CLE being multiplied with this term. A noise scaling term can be set using the `@default_noise_scaling` option:
 ```@example simulation_intro_sde
 two_state_model = @reaction_network begin
@@ -332,6 +341,7 @@ plot(sol)
 ```
 
 ### [Designating aggregators and simulation methods for jump simulations](@id simulation_intro_jumps_solver_designation)
+
 Jump simulations (just like ODEs and SDEs) are performed using stochastic simulation algorithms (SSAs) to generate exact samples of the underlying jump process. In JumpProcesses.jl and Catalyst, we call SSAs *aggregators*. These methods determine the time until, and type of, the next reaction in a system. A separate time-stepping method is then used to actually step from one reaction instance to the next.
 
 Several different aggregators are available (a full list is provided [here](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-for-Exact-Simulation)). To designate a specific one, provide it as the second argument to the `JumpProblem`. E.g. to designate that the sorting direct method (`SortingDirect`) should be used, use:
@@ -343,6 +353,7 @@ Especially for large systems, the choice of aggregator can dramatically impact
 simulation performance.
 
 ### [Jump simulations where some rate depends on time](@id simulation_intro_jumps_variableratejumps)
+
 For some models, the rate terms of reactions may explicitly depend on time. E.g. consider the following [circadian clock (inspired) model](https://en.wikipedia.org/wiki/Circadian_rhythm), where the production rate of some protein ($P$) depends on a sinusoid function:
 ```@example simulation_intro_jumps
 circadian_model = @reaction_network begin
@@ -363,7 +374,9 @@ plot(sol; idxs = :P, lw = 2)
 ```
 
 ---
+
 ## [Citation](@id simulation_intro_citation)
+
 When you simulate Catalyst models in your research, please cite the corresponding paper(s) to support the simulation package authors. For ODE simulations:
 ```
 @article{DifferentialEquations.jl-2017,

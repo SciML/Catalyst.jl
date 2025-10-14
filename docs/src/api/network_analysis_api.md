@@ -1,4 +1,5 @@
 # [Network analysis and representations](@id api_network_analysis)
+
 ```@meta
 CurrentModule = Catalyst
 ```

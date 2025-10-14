@@ -1,4 +1,5 @@
 # [Interfacing Problems, Integrators, and Solutions](@id simulation_structure_interfacing)
+
 When simulating a model, one begins with creating a [problem](https://docs.sciml.ai/DiffEqDocs/stable/basics/problem/). Next, a simulation is performed on the problem, during which the simulation's state is recorded through an [integrator](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/). Finally, the simulation output is returned as a [solution](https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/). This tutorial describes how to access (or modify) the state (or parameter) values of problem, integrator, and solution structures.
 
 Generally, when we have a structure `simulation_struct` and want to interface with the unknown (or parameter) `x`, we use `simulation_struct[:x]` to access the value. For situations where a value is accessed (or changed) a large number of times, it can *improve performance* to first create a [specialised getter/setter function](@ref simulation_structure_interfacing_functions).
@@ -16,7 +17,7 @@ end
 
 u0 = [:S₁ => 1.0, :C => 0.05, :S₂ => 1.2, :S₁C => 0.0, :CP => 0.0, :P => 0.0]
 tspan = (0., 10.0)
-ps = [:k₁ => 5.0, :k₂ => 5.0, :k₃ => 100.0] 
+ps = [:k₁ => 5.0, :k₂ => 5.0, :k₃ => 100.0]
 oprob = ODEProblem(cc_system, u0, tspan, ps)
 nothing    # hide
 ```
@@ -44,6 +45,7 @@ oprob.tspan
     Here we have used an `ODEProblem`to demonstrate all interfacing functionality. However, identical workflows work for the other problem types.
 
 ### [Remaking problems using the `remake` function](@id simulation_structure_interfacing_problems_remake)
+
 To modify a problem, the `remake` function should be used. It takes an already created problem, and returns a new, updated, one (the input problem is unchanged). The `remake` function takes the following inputs:
 - The problem that it remakes.
 - (optionally) `u0`: A vector with initial conditions that should be updated. The vector takes the same form as normal initial condition vectors, but does not need to be complete (in which case only a subset of the initial conditions are updated).
@@ -104,7 +106,7 @@ Parameter values can also be accessed (however, here we only get a single value)
 ```@example structure_indexing
 sol.ps[:k₃]
 ```
-Unlike for problems and integrators, species or parameter values of solutions cannot be changed. 
+Unlike for problems and integrators, species or parameter values of solutions cannot be changed.
 
 A vector with the time values for all simulation time steps can be retrieved using
 ```@example structure_indexing
@@ -118,9 +120,10 @@ sol(1.0)
 This works whenever the simulations actually stopped at time $t = 1.0$ (if not, an interpolated value is returned). To get the simulation's values for a specific subset of species, we can use the `idxs` optional argument. I.e. here we get the value of $C$ at time $t = 1.0$
 ```@example structure_indexing
 sol(1.0; idxs = [:C])
-``` 
+```
 
 ## [Interfacing using specialised getter/setter functions](@id simulation_structure_interfacing_functions)
+
 Internally, species and parameter values are stored in vectors. Whenever e.g. `oprob[:C]` is called, Julia must first find which index in the storage vector $C$ is stored in. Next, its value can be retrieved. If `oprob[:C]` is called a large number of times, this index must be found in each call. If a large number of such accesses are carried out, and performance is essential, it can be worthwhile to pre-compute a function to carry this out.
 
 There exist four different functions, each returning a function for performing a specific type of interfacing:
@@ -148,6 +151,7 @@ get_S(oprob)
 ```
 
 ## [Interfacing using symbolic representations](@id simulation_structure_interfacing_symbolic_representation)
+
 When e.g. [programmatic modelling is used](@ref programmatic_CRN_construction), species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like symbol-based representations can. Here we create a simple [two-state model](@ref basic_CRN_library_two_states) programmatically, and use its symbolic variables to check, and update, an initial condition:
 ```@example structure_indexing_symbolic_variables
 using Catalyst, OrdinaryDiffEqDefault

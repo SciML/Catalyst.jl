@@ -1,4 +1,5 @@
 # [Introduction to Catalyst](@id introduction_to_catalyst)
+
 In this tutorial we provide an introduction to using Catalyst to specify
 chemical reaction networks, and then to solve ODE, jump, and SDE models
 generated from them [1]. At the end we show what mathematical rate laws and
@@ -83,8 +84,8 @@ rn #hide
 ```
 Catalyst also has functionality for visualizing networks using the [Makie](https://docs.makie.org/stable/)
 plotting ecosystem. The relevant packages to load are Catalyst, GraphMakie, NetworkLayout, and a Makie backend
-such as CairoMakie. Doing so and then using the `plot_network` function allows us to 
-visualize the network: 
+such as CairoMakie. Doing so and then using the `plot_network` function allows us to
+visualize the network:
 ```@example tut1
 using Catalyst
 import CairoMakie, GraphMakie, NetworkLayout
@@ -113,6 +114,7 @@ save("repressilator_graph.png", g)
 ```
 
 ## [Mass action ODE models](@id introduction_to_catalyst_massaction_ode)
+
 Let's now use our `ReactionSystem` to generate and solve a corresponding mass
 action ODE model. We first convert the system to a `ModelingToolkit.ODESystem`
 by
@@ -169,7 +171,7 @@ At this point we are all set to solve the ODEs. We can now use any ODE solver
 from within the
 [OrdinaryDiffEq.jl](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/)
 package. We'll use the recommended default explicit solver, `Tsit5()`, and then
-plot the solutions: 
+plot the solutions:
 
 ```@example tut1
 sol = solve(oprob, Tsit5(), saveat=10.0)
@@ -185,6 +187,7 @@ documentation](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/).
 ---
 
 ## Stochastic simulation algorithms (SSAs) for stochastic chemical kinetics
+
 Let's now look at a stochastic chemical kinetics model of the repressilator,
 modeling it with jump processes. Here, we will construct a
 [JumpProcesses](https://docs.sciml.ai/JumpProcesses/stable/) `JumpProblem` that uses
@@ -228,7 +231,9 @@ Common questions that arise in using the JumpProcesses SSAs (i.e. Gillespie meth
 are collated in the [JumpProcesses FAQ](https://docs.sciml.ai/JumpProcesses/stable/faq/).
 
 ---
+
 ## Chemical Langevin equation (CLE) stochastic differential equation (SDE) models
+
 At an intermediate physical scale between macroscopic ODE models and microscopic
 stochastic chemical kinetics models lies the CLE, given by a system of SDEs that
 add to each ODE above a noise term. As the repressilator has species that get
@@ -276,7 +281,9 @@ StochasticDiffEq.jl SDE solvers, see the
 [documentation](https://docs.sciml.ai/stable/modules/DiffEqDocs/solvers/sde_solve/).
 
 ---
+
 ## Specifying a complete model via the DSL
+
 In the previous examples we specified initial conditions and parameter values
 via mappings that were constructed after building our [`ReactionSystem`](@ref).
 Catalyst also supports specifying default values for these during
@@ -310,7 +317,9 @@ For details on what information can be specified via the DSL see the [The
 Reaction DSL](@ref dsl_description) tutorial.
 
 ---
+
 ## [Reaction rate laws used in simulations](@id introduction_to_catalyst_ratelaws)
+
 In generating mathematical models from a [`ReactionSystem`](@ref), reaction
 rates are treated as *microscopic* rates. That is, for a general mass action
 reaction of the form $n_1 S_1 + n_2 S_2 + \dots n_M S_M \to \dots$ with
@@ -361,7 +370,9 @@ and the ODE model
 A more detailed summary of the precise mathematical equations Catalyst can generate is available in the [Mathematical Models Catalyst can Generate](@ref math_models_in_catalyst) documentation.
 
 ---
+
 ## Notes
+
 1. For each of the preceding models we converted the `ReactionSystem` to, i.e.,
    ODEs, jumps, or SDEs, we had two paths for conversion:
 
@@ -381,5 +392,7 @@ A more detailed summary of the precise mathematical equations Catalyst can gener
    [`SDEProblem`s](https://mtk.sciml.ai/dev/systems/SDESystem/#DiffEqBase.SDEProblem).
 
 ---
+
 ## References
+
 1. [Torkel E. Loman, Yingbo Ma, Vasily Ilin, Shashi Gowda, Niklas Korsbo, Nikhil Yewale, Chris Rackauckas, Samuel A. Isaacson, *Catalyst: Fast and flexible modeling of reaction networks*, PLOS Computational Biology (2023).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530)

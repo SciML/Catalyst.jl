@@ -1,4 +1,5 @@
 # [Interfacing with Lattice Problems, Integrators, and Solutions](@id lattice_simulation_structure_interaction)
+
 We have [previously described](@ref simulation_structure_interfacing) how to retrieve species and parameter values stored in non-spatial problems, integrators, and solutions. This section describes similar workflows for simulations based on [`LatticeReactionSystem`](@ref)s.
 
 Generally, while for non-spatial systems these operations can typically be done by indexing a structure directly, e.g. through
@@ -15,6 +16,7 @@ Furthermore, there are some cases of interfacing which are currently not support
     Below we will describe various features using ODE simulations as examples. However, all interfaces (unless where else is stated) work identically for jump simulations.
 
 ## [Retrieving values from lattice simulations](@id lattice_simulation_structure_interaction_simulation_species)
+
 Let us consider a simulation of a [`LatticeReactionSystem`](@ref):
 ```@example lattice_struct_interaction_sims
 using Catalyst, OrdinaryDiffEqDefault
@@ -48,6 +50,7 @@ Here, the output is a vector with $X1$'s value at each simulation time step. How
 Unlike for non-spatial simulations, `lat_getu` does not take vector (e.g. `lat_getu(sol, [:X1, :X2], lrs)`) or symbolic expression (e.g. `lat_getu(sol, [X1 + X2], lrs)`) inputs. However, it is possible to use symbolic variables as input (e.g. `lat_getu(sol, two_state_model.X1, lrs)`).
 
 ### [Retrieving lattice simulations values at specific time points](@id lattice_simulation_structure_interaction_simulation_species_ts)
+
 Just like for non-spatial solutions, it is possible to access the simulation's values at designated time points. This is possible even if the simulation did not stop at those specific time points (in which case an interpolated value is returned). To do this, the desired time points to sample are provided as a vector to `lat_getu` using the optional argument `t`. E.g. here we retrieve the simulation's (interpolated) values at time points `0.5` and `0.75`:
 
 ```@example lattice_struct_interaction_sims
@@ -55,6 +58,7 @@ lat_getu(sol, :X1, lrs; t = [0.5, 0.75])
 ```
 
 ## [Retrieving and updating species values in problems and integrators](@id lattice_simulation_structure_interaction_prob_int_species)
+
 Let us consider a spatial `ODEProblem`
 ```@example lattice_struct_interaction_prob_ints
 using Catalyst, OrdinaryDiffEqDefault
@@ -95,11 +99,12 @@ lat_setu!(oprob, :X1, lrs, 1.0)
 Species values in [integrators](@ref simulation_structure_interfacing_integrators) can be interfaced with using identical syntax as for problems.
 
 ## [Retrieving and updating parameter values in problems and integrators](@id lattice_simulation_structure_interaction_prob_int_parameters)
+
 Retrieval and updating of parameter values for problems and integrators works similarly as for species, but with the following differences:
 - The `lat_getp` and `lat_setp!` functions are used.
 - It is currently not possible to interface with parameter values of `JumpProblem`s and their integrators.
 - After parameter values are modified, the `rebuild_lat_internals!` function must be applied before the problem/integrator can be used for further analysis.
-- Updating of [edge parameters](@ref spatial_lattice_modelling_intro_simulation_edge_parameters) is limited and uses a different interface. 
+- Updating of [edge parameters](@ref spatial_lattice_modelling_intro_simulation_edge_parameters) is limited and uses a different interface.
 
 Let us consider the spatial `ODEProblem` we previously declared. We can check the value of $k1$ by using `lat_getp`
 ```@example lattice_struct_interaction_prob_ints
@@ -123,7 +128,8 @@ Parameter values of integrators can be interfaced with just like for problems (t
 
 
 ### [Retrieving and updatingedge  parameter values in problems and integrators](@id lattice_simulation_structure_interaction_prob_int_parameters_edge_ps)
-The `lat_getp` and `lat_setp!` functions cannot currently be applied to [edge parameters](@ref spatial_lattice_modelling_intro_simulation_edge_parameters). Instead, to access the value of an edge parameter, use 
+
+The `lat_getp` and `lat_setp!` functions cannot currently be applied to [edge parameters](@ref spatial_lattice_modelling_intro_simulation_edge_parameters). Instead, to access the value of an edge parameter, use
 ```@example lattice_struct_interaction_prob_ints
 oprob.ps[:D]
 ```
@@ -136,4 +142,3 @@ This interface is somewhat limited, and the following aspects should be noted:
 - Edge parameter values can only be interfaced with if the edge parameter's value is spatially uniform.
 - When accessing an (spatially uniform) edge parameter's value, its single value will be encapsulated in a vector.
 - When setting an (spatially uniform) edge parameter's value, you must encapsulate the new value in a vector.
-

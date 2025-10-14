@@ -1,7 +1,9 @@
 # [Computing Periodic Orbits (Oscillations) Using BifurcationKit.jl](@id bifurcationkit_periodic_orbits)
+
 Previously, we have shown how to [compute bifurcation diagrams](@ref bifurcation_diagrams) using [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl). In this example we will consider a system which exhibits an oscillation and show how to use BifurcationKit to track not just the system's (potentially unstable) steady state, but also the periodic orbit itself. More information on how to track periodic orbits can be found in the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/tutorials/tutorials/#Periodic-orbits).
 
 ## [Computing the bifurcation diagram for the Repressilator](@id bifurcationkit_periodic_orbits_bifdia)
+
 We will first compute the bifurcation diagram, using the same approach as in the [corresponding tutorial](@ref bifurcation_diagrams). For this example, we will use the oscillating [Repressilator](@ref basic_CRN_library_repressilator) model.
 ```@example bifurcationkit_periodic_orbits
 using Catalyst
@@ -48,6 +50,7 @@ plot(plot(sol_nosc; title = "v = 5"), plot(sol_osc; title = "v = 15"), size = (1
 ```
 
 ## [Tracking the periodic orbits](@id bifurcationkit_periodic_orbits_pos)
+
 Next, we will use BifurcationKit.jl's [`continuation` function](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.continuation) (the [`bifurcationdiagram` function](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.bifurcationdiagram), which we previously have used, works by calling `continuation` recursively) to track the periodic orbit which appears with the Hopf bifurcation point.
 
 First, we set the options for the continuation. Just like for bifurcation diagrams we must set our [continuation parameters](@ref bifurcation_diagrams_continuationpar). Here we will use the same one as for the initial diagram (however, additional ones can be supplied).
@@ -95,5 +98,7 @@ In the plot we see that the period starts at around $18$ time units, and slowly 
 
 
 ---
+
 ## [Citation](@id bifurcationkit_periodic_orbits_citation)
+
 If you use BifurcationKit.jl for your work, we ask that you **cite** the following paper!! Open source development strongly depends on this. It is referenced on [HAL-Inria](https://hal.archives-ouvertes.fr/hal-02902346) with *bibtex* entry [CITATION.bib](https://github.com/bifurcationkit/BifurcationKit.jl/blob/master/CITATION.bib).

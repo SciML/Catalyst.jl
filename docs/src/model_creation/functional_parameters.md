@@ -1,9 +1,11 @@
 # [Inputs and time-dependent (or functional) parameters](@id time_dependent_parameters)
+
 Catalyst supports the usage of "functional parameters". In practice, these are parameters that are given by (typically) time-dependent functions (they can also depend on e.g. species values, as discussed [here](@ref functional_parameters_sir)). They are a way to inject custom functions into models. Functional parameters can be used when rates depend on real data, or to represent complicated functions (which use e.g. `for` loops or random number generation). Here, the function's values are declared as a data interpolation (which interpolates discrete samples to a continuous function). This is then used as the functional parameter's value in the simulation. This tutorial first shows how to create time-dependent functional parameters, and then gives an example where the functional parameter depends on a species value.
 
 An alternative approach for representing complicated functions is by [using `@register_symbolic`](@ref dsl_description_nonconstant_rates_function_registration).
 
 ## [Basic example](@id functional_parameters_basic_example)
+
 Let us first consider an easy, quick-start example (the next section will discuss what is going on in more detail). We will consider a simple [birth-death model](@ref basic_CRN_library_bd), but where the birth rate is determined by an input parameter (for which the value depends on time). First, we [define the input parameter programmatically](@ref programmatic_CRN_construction), and its values across all time points using the [DataInterpolations.jl](https://github.com/SciML/DataInterpolations.jl) package. In this example we will use the input function $pIn(t) = (2 + t)/(1 + t)$. Finally, we plot the input function, demonstrating how while it is defined at discrete points, DataInterpolations.jl generalises this to a continuous function.
 ```@example functional_parameters_basic_example
 using Catalyst, DataInterpolations, Plots
@@ -35,6 +37,7 @@ plot(sol)
 
 
 ## [Inserting a customised, time-dependent, input](@id functional_parameters_circ_rhythm)
+
 Let us now go through everything again, but providing some more details. Let us first consider the input parameter. We have previously described how a [time-dependent rate can model a circadian rhythm](@ref dsl_description_nonconstant_rates_time). For real applications, due to e.g. clouds, sunlight is not a perfect sine wave. Here, a common solution is to take real sunlight data from some location and use in the model. Here, we will create synthetic (noisy) data as our light input:
 ```@example functional_parameters_circ_rhythm
 using Plots
@@ -75,6 +78,7 @@ plot(sol)
 ```
 
 ### [Interpolating the input into the DSL](@id functional_parameters_circ_rhythm_dsl)
+
 It is possible to use time-dependent inputs when creating models [through the DSL](@ref dsl_description) as well. However, it can still be convenient to declare the input parameter programmatically as above. Next, we can [interpolate](@ref dsl_advanced_options_symbolics_and_DSL_interpolation) it into our DSL-declaration (ensuring to also make it a function of `t`):
 ```@example functional_parameters_circ_rhythm
 rs_dsl = @reaction_network rs begin
@@ -87,6 +91,7 @@ rs == rs_dsl
 ```
 
 ## [Non-time functional parameters](@id functional_parameters_sir)
+
 Previously we have demonstrated functional parameters that are functions of time. However, functional parameters can be functions of any variable (however, currently, more than one argument is not supported). Here we will demonstrate this using a [SIR model](@ref basic_CRN_library_sir), but instead of having the infection rate scale linearly with the number of infected individuals, we instead assume we have measured data of the infection rate (as dependent on the number of infected individuals) and wish to use this instead. Normally we use the following infection reaction in the SIR model:
 ```julia
 @reaction k1, S + I --> 2I
@@ -130,9 +135,10 @@ sol = solve(oprob)
 plot(sol)
 ```
 !!! note
-    When declaring a functional parameter of time, it is easy to set its grid values (i.e. ensure they range from the first to the final time point). For Functional parameters that depend on species concentrations it is trickier, and one must make sure that any potential input-species values that can occur during the simulation are represented in the interpolation. 
+    When declaring a functional parameter of time, it is easy to set its grid values (i.e. ensure they range from the first to the final time point). For Functional parameters that depend on species concentrations it is trickier, and one must make sure that any potential input-species values that can occur during the simulation are represented in the interpolation.
 
 ### [Using different data interpolation approaches](@id functional_parameters_interpolation_algs)
+
 Up until now we have used [linear interpolation](https://en.wikipedia.org/wiki/Linear_interpolation) of our data. However, DataInterpolations.jl [supports other interpolation methods](https://docs.sciml.ai/DataInterpolations/stable/methods/). To demonstrate these we here generate a data set, and then show the linear, cubic, and constant interpolations:
 ```@example functional_parameters_interpolation_algs
 using DataInterpolations, Plots

@@ -1,4 +1,5 @@
 # [Measuring the Distribution of System Activation Times](@id activation_time_distribution_measurement)
+
 In this example we will consider a model which, while initially inactive, activates in response to an input. The model is *stochastic*, causing the activation times to be *random*. By combining events, callbacks, and stochastic ensemble simulations, we will measure the probability distribution of the activation times (so-called [*first passage times*](https://en.wikipedia.org/wiki/First-hitting-time_model)).
 
 Our model will be a version of the [simple self-activation loop](@ref basic_CRN_library_self_activation) (the ensemble simulations of which we have [considered previously](@ref ensemble_simulations_monte_carlo)). Here, we will consider the activation threshold parameter ($K$) to be activated by an input (at an input time $t = 0$). Before the input, $K$ is very large (essentially keeping the system inactive). After the input, it is reduced to a lower value (which permits the system to activate). We will model this using two additional parameters ($Kᵢ$ and $Kₐ$, describing the pre and post-activation values of $K$, respectively). Initially, $K$ will [default to](@ref dsl_advanced_options_default_vals) $Kᵢ$. Next, at the input time ($t = 0$), an event will change $K$'s value to $Kᵢ$.
@@ -17,7 +18,7 @@ u0 = [:X => 10.0]
 tspan = (-200.0, 2000.0)
 ps = [:v0 => 0.1, :v => 2.5, :Kᵢ => 1000.0, :Kₐ => 40.0, :n => 3.0, :deg => 0.01]
 sprob = SDEProblem(sa_model, u0, tspan, ps)
-nothing # hide 
+nothing # hide
 ```
 We can now create a simple `EnsembleProblem` and perform an ensemble simulation (as described [here](@ref ensemble_simulations)). Please note that the system has an event which modifies its parameters, hence we must add the `safetycopy = true` argument to `EnsembleProblem` (else, subsequent simulations would start with $K = Kₐ$).
 ```@example activation_time_distribution_measurement
@@ -52,6 +53,8 @@ histogram(esol.u; normalize = true, label = "Activation time distribution", xlab
 Here we that the activation times take some form of long tail distribution (for non-trivial models like this one, it is generally not possible to identify the activation times as any known statistical distribution).
 
 ---
+
 ## References
+
 [^1]: [David Frigola, Laura Casanellas, José M. Sancho, Marta Ibañes, *Asymmetric Stochastic Switching Driven by Intrinsic Molecular Noise*, PLoS One (2012).](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0031407)
 [^2]: [Christian P Schwall et al., *Tunable phenotypic variability through an autoregulatory alternative sigma factor circuit*, Molecular Systems Biology (2021).](https://www.embopress.org/doi/full/10.15252/msb.20209832)

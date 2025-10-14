@@ -8,15 +8,16 @@ To aid the investigation of spatial simulations we have implemented several help
 The first two functions can be applied to [graph](@ref spatial_lattice_modelling_intro_lattices_graph) and 1d and 2d [Cartesian](@ref spatial_lattice_modelling_intro_lattices_cartesian) and [masked](@ref spatial_lattice_modelling_intro_lattices_masked) lattice based simulations, while `lattice_kymograph` can only be applied to 1d Cartesian and masked lattice based simulations. Currently, there is no functionality for plotting simulations based on 3d Cartesian and masked lattice. Here we will demonstrate all plotting functions using ODE simulations, but they work equally well for jump simulations.
 
 !!! note
-    The plotting interfaces used for non-spatial Catalyst simulations have seen lots of work to ensure high quality plots. However, the corresponding functions for spatial simulations are primarily intended to aid the user to investigate their simulation results. Thus, they might not be fully suitable for e.g. creating publication-quality graphics. If you are using these functions, please let us now. This helps inform us whether continued development of spatial modelling features is worthwhile. 
+    The plotting interfaces used for non-spatial Catalyst simulations have seen lots of work to ensure high quality plots. However, the corresponding functions for spatial simulations are primarily intended to aid the user to investigate their simulation results. Thus, they might not be fully suitable for e.g. creating publication-quality graphics. If you are using these functions, please let us now. This helps inform us whether continued development of spatial modelling features is worthwhile.
 
 !!! note
-    To create animations we use [Makie.jl](https://docs.makie.org/stable/), which is an alternative plotting package to [Plots.jl](https://github.com/JuliaPlots/Plots.jl) (which is typically the preferred plotting package within the context of Catalyst). Generally, Makie is good at creating animations, hence we use it here (however, it is also a [popular competitor to Plots.jl for general-purpose plotting](https://juliapackagecomparisons.github.io/pages/plotting/)). 
+    To create animations we use [Makie.jl](https://docs.makie.org/stable/), which is an alternative plotting package to [Plots.jl](https://github.com/JuliaPlots/Plots.jl) (which is typically the preferred plotting package within the context of Catalyst). Generally, Makie is good at creating animations, hence we use it here (however, it is also a [popular competitor to Plots.jl for general-purpose plotting](https://juliapackagecomparisons.github.io/pages/plotting/)).
 
 !!! warning
     These plotting interfaces are a work in progress. Hence, they and their interfaces may see more change that Catalyst features typically do. This include *the possibility of breaking changes without breaking releases to Catalyst*.
 
 ## [Animation and plotting of 1d Cartesian or masked lattice simulations](@id lattice_simulation_plotting_1d_grids)
+
 Let us consider a spatial simulation on a 1d Cartesian grid lattice:
 ```@example lattice_plotting_1d
 using Catalyst, OrdinaryDiffEqDefault
@@ -60,6 +61,7 @@ Here, we require neither a filename nor a `t` to be provided. However, the `nfra
 For more information of either function, and additional optional arguments, please read their corresponding api sections ([`lattice_plot`](@ref), [`lattice_animation`](@ref), and [`lattice_kymograph`](@ref)).
 
 ## [Animation and plotting of 2d Cartesian or masked lattice simulations](@id lattice_simulation_plotting_2d_grids)
+
 Two-dimensional lattice simulations can be plotted in the same manner as one-dimensional ones. However, instead of displaying a species's value as a line plot, it is displayed as a heatmap. E.g. here we simulate a spatial [Brusselator](@ref basic_CRN_library_brusselator) model and display the value of $X$ at a designated time point.
 ```@example lattice_plotting_2d
 using Catalyst, OrdinaryDiffEqBDF
@@ -93,6 +95,7 @@ lattice_animation(sol, :X, lrs, "lattice_simulation_2d.mp4")
 Again, please check the API pages for the [`lattice_plot`](@ref) and [`lattice_animation`](@ref) functions to see more details of their various options.
 
 ## [Animation and plotting of graph lattice simulations](@id lattice_simulation_plotting_graphs)
+
 Finally, we consider lattice simulations on graph lattices. We first simulate a simple [birth-death process](@ref basic_CRN_library_bd) on a (6-node cyclic) graph lattice.
 ```@example lattice_plotting_graphs
 using Catalyst, Graphs, OrdinaryDiffEqDefault
@@ -129,7 +132,7 @@ lattice_plot(osol, :X, lrs; layout)
 Finally, animations of graph lattice simulation work similarly to 2d ones, but accept the additional arguments relevant to plotting graphs.
 
 ## [Final notes](@id lattice_simulation_plotting_notes)
+
 If you are using these interfaces, but there is some feature that is missing, you might wish to consider modifying the original code. This can be found [here](https://github.com/SciML/Catalyst.jl/blob/master/ext/CatalystCairoMakieExtension/cairo_makie_extension_spatial_modelling.jl), from which you can copy any code you need to make your own plotting interfaces. If you do so, please provide any feedback by raising [an issue](https://github.com/SciML/Catalyst.jl/issues) on the Catalyst GitHub page. As mentioned, these plotting interfaces are a work in progress, and input from users is valuable to improve them further. Many of Makie's plotting arguments, even those not described here, are handled by these functions, and someone familiar with the package should be able to use these to customise the plots further.
 
 It should also be noted that these interfaces has note been optimised for performance, and the generation of an animation can often surpass 1 second for larger models. Again, this can likely be improved, and if performance is an problem do raise an issue, in which case an additional effort can be made to improve performance.
-

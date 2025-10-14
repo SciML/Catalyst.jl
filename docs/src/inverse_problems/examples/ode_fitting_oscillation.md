@@ -1,4 +1,5 @@
 # [Fitting Parameters for an Oscillatory System](@id parameter_estimation)
+
 In this example we will use [Optimization.jl](https://github.com/SciML/Optimization.jl) to fit the parameters of an oscillatory system (the [Brusselator](@ref basic_CRN_library_brusselator)) to data. Here, special consideration is taken to avoid reaching a local minimum. Instead of fitting the entire time series directly, we will start with fitting parameter values for the first period, and then use those as an initial guess for fitting the next (and then these to find the next one, and so on). Using this procedure is advantageous for oscillatory systems, and enables us to reach the global optimum. For more information on fitting ODE parameters to data, please see [the main documentation page](@ref optimization_parameter_fitting) on this topic.
 
 First, we fetch the required packages.
@@ -49,7 +50,7 @@ Next, we create a function to fit the parameters using the `ADAM` optimizer. For
 a given initial estimate of the parameter values, `pinit`, this function will
 fit parameter values, `p`, to our data samples. We use `tend` to indicate the
 time interval over which we fit the model. We use an out of place [`set_p` function](@ref simulation_structure_interfacing_functions)
-to update the parameter set in each iteration. We also provide the `set_p`, `prob`, 
+to update the parameter set in each iteration. We also provide the `set_p`, `prob`,
 `sample_times`, and `sample_vals` variables as parameters to our optimization problem.
 ```@example pe_osc_example
 set_p = ModelingToolkit.setp_oop(prob, [:A, :B])
@@ -116,6 +117,7 @@ p_estimate
 which is close to the actual parameter set of `[1.0, 2.0]`.
 
 ## Why we fit the parameters in iterations
+
 As previously mentioned, the reason we chose to fit the model on a smaller interval to begin with, and
 then extend the interval, is to avoid getting stuck in a local minimum. Here
 specifically, we chose our initial interval to be smaller than a full cycle of

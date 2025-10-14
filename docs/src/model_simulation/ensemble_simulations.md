@@ -1,4 +1,5 @@
 # [Ensemble/Monte Carlo Simulations](@id ensemble_simulations)
+
 In many contexts, a single model is re-simulated under similar conditions. Examples include:
 - Performing Monte Carlo simulations of a stochastic model to gain insight in its behaviour.
 - Scanning a model's behaviour for different parameter values and/or initial conditions.
@@ -6,6 +7,7 @@ In many contexts, a single model is re-simulated under similar conditions. Examp
 While this can be handled using `for` loops, it is typically better to first create an `EnsembleProblem`, and then perform an ensemble simulation. Advantages include a more concise interface and the option for [automatic simulation parallelisation](@ref ode_simulation_performance_parallelisation). Here we provide a short tutorial on how to perform parallel ensemble simulations, with a more extensive documentation being available [here](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/).
 
 ## [Monte Carlo simulations using unmodified conditions](@id ensemble_simulations_monte_carlo)
+
 We will first consider Monte Carlo simulations where the simulation conditions are identical in-between simulations. First, we declare a [simple self-activation loop](@ref basic_CRN_library_self_activation) model
 ```@example ensemble
 using Catalyst
@@ -46,6 +48,7 @@ plot(e_summary)
 ```
 
 ## [Ensemble simulations using varying simulation conditions](@id ensemble_simulations_varying_conditions)
+
 Previously, we assumed that each simulation used the same initial conditions and parameter values. If this is not the case (when e.g. performing a parameter scan), a `prob_func` optional argument must be supplied to the `EnsembleProblem`, this describes how the problem should be modified for each individual simulation of the ensemble.
 
 Here, we first create an `ODEProblem` of our previous self-activation loop:

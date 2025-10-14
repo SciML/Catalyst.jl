@@ -1,9 +1,11 @@
 # [Catalyst.jl API](@id api)
+
 ```@meta
 CurrentModule = Catalyst
 ```
 
 ## Reaction network generation and representation
+
 Catalyst provides the [`@reaction_network`](@ref) macro for generating a
 complete network, stored as a [`ReactionSystem`](@ref), which in turn is
 composed of [`Reaction`](@ref)s. `ReactionSystem`s can be converted to other
@@ -86,6 +88,7 @@ ReactionSystem
 ```
 
 ## [Options for the `@reaction_network` DSL](@id api_dsl_options)
+
 We have [previously described](@ref dsl_advanced_options) how options permit the user to supply non-reaction information to [`ReactionSystem`](@ref) created through the DSL. Here follows a list
 of all options currently available.
 - [`parameters`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system parameters.
@@ -102,6 +105,7 @@ of all options currently available.
 - [`combinatoric_ratelaws`](@ref faq_combinatoric_ratelaws): Takes a single option (`true` or `false`), which sets whether to use combinatorial rate laws.
 
 ## [ModelingToolkit and Catalyst accessor functions](@id api_accessor_functions)
+
 A [`ReactionSystem`](@ref) is an instance of a
 `ModelingToolkit.AbstractTimeDependentSystem`, and has a number of fields that
 can be accessed using the Catalyst API and the [ModelingToolkit.jl Abstract
@@ -166,6 +170,7 @@ Below we list the remainder of the Catalyst API accessor functions mentioned
 above.
 
 ## Basic system properties
+
 See [Programmatic Construction of Symbolic Reaction Systems](@ref
 programmatic_CRN_construction) for examples and [ModelingToolkit and Catalyst
 Accessor Functions](@ref api_accessor_functions) for more details on the basic
@@ -187,6 +192,7 @@ isautonomous
 ```
 
 ## Coupled reaction/equation system properties
+
 The following system property accessor functions are primarily relevant to reaction system [coupled
 to differential and/or algebraic equations](@ref constraint_equations).
 ```@docs
@@ -197,6 +203,7 @@ ModelingToolkit.diff_equations
 ```
 
 ## Basic species properties
+
 The following functions permits the querying of species properties.
 ```@docs
 isspecies
@@ -206,6 +213,7 @@ Catalyst.isvalidreactant
 ```
 
 ## Basic reaction properties
+
 ```@docs
 ismassaction
 dependents
@@ -217,6 +225,7 @@ reactionrates
 ```
 
 ## [Reaction metadata](@id api_rx_metadata)
+
 The following functions permits the retrieval of [reaction metadata](@ref dsl_advanced_options_reaction_metadata).
 ```@docs
 Catalyst.hasnoisescaling
@@ -228,6 +237,7 @@ Catalyst.getmisc
 ```
 
 ## [Functions to extend or modify a network](@id api_network_extension_and_modification)
+
 `ReactionSystem`s can be programmatically extended using [`ModelingToolkit.extend`](@ref) and
 [`ModelingToolkit.compose`](@ref).
 
@@ -239,6 +249,7 @@ Catalyst.flatten
 ```
 
 ## Network comparison
+
 ```@docs
 ==(rn1::Reaction, rn2::Reaction)
 isequivalent
@@ -246,6 +257,7 @@ isequivalent
 ```
 
 ## [Network visualization](@id network_visualization)
+
 [Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to convert
 networks to LaTeX equations by
 ```julia
@@ -266,13 +278,14 @@ displayed as the ODE form)
 
 Finally, another optional argument (`expand_functions=true`) automatically expands functions defined by Catalyst (such as `mm`). To disable this, set `expand_functions=false`.
 
-Reaction networks can be plotted using the `GraphMakie` extension, which is loaded whenever all of `Catalyst`, `GraphMakie`, and `NetworkLayout` are loaded (note that a Makie backend, like `CairoMakie`, must be loaded as well). The two functions for plotting networks are `plot_network` and `plot_complexes`, which are two distinct representations. 
+Reaction networks can be plotted using the `GraphMakie` extension, which is loaded whenever all of `Catalyst`, `GraphMakie`, and `NetworkLayout` are loaded (note that a Makie backend, like `CairoMakie`, must be loaded as well). The two functions for plotting networks are `plot_network` and `plot_complexes`, which are two distinct representations.
 ```@docs
 plot_network(::ReactionSystem)
 plot_complexes(::ReactionSystem)
 ```
 
 ## [Rate laws](@id api_rate_laws)
+
 As the underlying [`ReactionSystem`](@ref) is comprised of `ModelingToolkit`
 expressions, one can directly access the generated rate laws, and using
 `ModelingToolkit` tooling generate functions or Julia `Expr`s from them.
@@ -287,6 +300,7 @@ hillar
 ```
 
 ## Transformations
+
 ```@docs
 Base.convert
 JumpInputs
@@ -295,6 +309,7 @@ set_default_noise_scaling
 ```
 
 ## Chemistry-related functionalities
+
 Various functionalities primarily relevant to modelling of chemical systems (but potentially also in biology).
 ```@docs
 @compound
@@ -306,17 +321,20 @@ component_coefficients
 ```
 
 ## Unit validation
+
 ```@docs
 validate(rx::Reaction; info::String = "")
 validate(rs::ReactionSystem, info::String="")
 ```
 
 ## Utility functions
+
 ```@docs
 symmap_to_varmap
 ```
 
 ## [Spatial modelling](@id api_lattice_simulations)
+
 The first step of spatial modelling is to create a so-called `LatticeReactionSystem`:
 ```@docs
 LatticeReactionSystem

@@ -1,4 +1,5 @@
 # [Caching of Network Properties in `ReactionSystems`](@id network_analysis_caching_properties)
+
 When calling many of the network API functions, Catalyst calculates and caches
 in `rn` a variety of information. For example the first call to
 ```julia

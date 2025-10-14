@@ -39,6 +39,7 @@ The order of the species in the output vectors are the same as in `species(wilhe
 It should be noted that the steady state multivariate polynomials produced by reaction systems may have both imaginary and negative roots, which are filtered away by `hc_steady_states`. If you want the negative roots, you can use the `hc_steady_states(wilhelm_2009_model, ps; filter_negative=false)` argument.
 
 ## [Systems with conservation laws](@id homotopy_continuation_conservation_laws)
+
 Some systems are under-determined, and have an infinite number of possible steady states. These are typically systems containing a conservation
 law, e.g.
 ```@example hc_claws
@@ -56,13 +57,16 @@ hc_steady_states(two_state_model, ps; u0)
 ```
 
 ## Final notes
+
 - `hc_steady_states` support any systems where all rates are systems of rational polynomials (such as Hill functions with integer Hill coefficients).
-- When providing initial conditions to compute conservation laws, values are only required for those species that are part of conserved quantities. If this set of species is unknown, it is recommended to provide initial conditions for all species. 
+- When providing initial conditions to compute conservation laws, values are only required for those species that are part of conserved quantities. If this set of species is unknown, it is recommended to provide initial conditions for all species.
 - Additional arguments provided to `hc_steady_states` are automatically passed to HomotopyContinuation's `solve` command. Use e.g. `show_progress = false` to disable the progress bar.
 
 
 ---
+
 ## [Citation](@id homotopy_continuation_citation)
+
 If you use this functionality in your research, please cite the following paper to support the authors of the HomotopyContinuation package:
 ```
 @inproceedings{HomotopyContinuation.jl,
@@ -77,7 +81,9 @@ If you use this functionality in your research, please cite the following paper 
 
 
 ---
+
 ## References
+
 [^1]: [Andrew J Sommese, Charles W Wampler *The Numerical Solution of Systems of Polynomials Arising in Engineering and Science*, World Scientific (2005).](https://www.worldscientific.com/worldscibooks/10.1142/5763#t=aboutBook)
 [^2]: [Daniel J. Bates, Paul Breiding, Tianran Chen, Jonathan D. Hauenstein, Anton Leykin, Frank Sottile, *Numerical Nonlinear Algebra*, arXiv (2023).](https://arxiv.org/abs/2302.08585)
 [^3]: [Paul Breiding, Sascha Timme, *HomotopyContinuation.jl: A Package for Homotopy Continuation in Julia*, International Congress on Mathematical Software (2018).](https://link.springer.com/chapter/10.1007/978-3-319-96418-8_54)

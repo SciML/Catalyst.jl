@@ -1,8 +1,10 @@
 # The Reaction DSL - Advanced
+
 This section covers some of the more advanced syntax and features for building
 chemical reaction network models (still not very complicated!).
 
 #### User defined functions in reaction rates
+
 The reaction network DSL can "see" user defined functions that work with
 ModelingToolkit. E.g., this is should work
 ```julia
@@ -16,6 +18,7 @@ Symbolics.jl before their use in Catalyst, see the discussion
 [here](https://symbolics.juliasymbolics.org/dev/manual/functions/).
 
 #### Ignoring mass action kinetics
+
 While generally one wants the reaction rate to use the law of mass action, so
 the reaction
 ```julia

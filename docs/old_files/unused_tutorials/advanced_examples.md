@@ -1,4 +1,5 @@
 # Advanced Chemical Reaction Network Examples
+
 For additional flexibility, we can convert the generated `ReactionSystem` first
 to another `ModelingToolkit.AbstractSystem`, e.g., an `ODESystem`, `SDESystem`,
 `JumpSystem`, etc. These systems can then be used in problem generation. Please
@@ -20,10 +21,9 @@ end
 p     = (:c1 => 1.0, :c2 => 2.0, :c3 => 50.)
 pmap  = symmap_to_varmap(rs,p)   # convert Symbol map to symbolic variable map
 tspan = (0.,4.)
-u0    = [:X => 5.]   
+u0    = [:X => 5.]
 u0map = symmap_to_varmap(rs,u0)  # convert Symbol map to symbolic variable map
 osys  = convert(ODESystem, rs)
 oprob = ODEProblem(osys, u0map, tspan, pmap)
 sol   = solve(oprob, Tsit5())
 ```
-

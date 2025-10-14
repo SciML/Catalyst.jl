@@ -1,5 +1,6 @@
 # [Approaches for modelling system noise](@id noise_modelling_approaches)
-Catalyst's primary tools for modelling stochasticity include the creation of `SDEProblem`s or `JumpProblem`s from reaction network models. However, other approaches for incorporating model noise exist, some of which will be discussed here. We will first consider *intrinsic* and *extrinsic* noise. These are well-established terms, both of which we will describe below (however, to our knowledge, no generally agreed-upon definition of these terms exists)[^1]. Finally, we will demonstrate a third approach, the utilisation of a noisy input process to an otherwise deterministic system. This approach is infrequently used, however, as it is encountered in the literature, we will demonstrate it here as well. 
+
+Catalyst's primary tools for modelling stochasticity include the creation of `SDEProblem`s or `JumpProblem`s from reaction network models. However, other approaches for incorporating model noise exist, some of which will be discussed here. We will first consider *intrinsic* and *extrinsic* noise. These are well-established terms, both of which we will describe below (however, to our knowledge, no generally agreed-upon definition of these terms exists)[^1]. Finally, we will demonstrate a third approach, the utilisation of a noisy input process to an otherwise deterministic system. This approach is infrequently used, however, as it is encountered in the literature, we will demonstrate it here as well.
 
 We note that these approaches can all be combined. E.g. an intrinsic noise model (using an SDE) can be combined with extrinsic noise (using randomised parameter values), while also feeding a noisy input process into the system.
 
@@ -7,6 +8,7 @@ We note that these approaches can all be combined. E.g. an intrinsic noise model
     Here we use intrinsic and extrinsic noise as descriptions of two of our modelling approaches. It should be noted that while these are established terminologies for noisy biological systems[^1], our use of these terms to describe different approaches for modelling noise is only inspired by this terminology, and nothing that is established in the field.  Please consider the [references](@ref noise_modelling_approaches_references) for more information on intrinsic and extrinsic noise.
 
 ## [The repressilator model](@id noise_modelling_approaches_model_intro)
+
 For this tutorial we will use the oscillating [repressilator](@ref basic_CRN_library_repressilator) model.
 ```@example noise_modelling_approaches
 using Catalyst
@@ -19,7 +21,8 @@ end
 ```
 
 ## [Using intrinsic noise](@id noise_modelling_approaches_model_intrinsic)
-Generally, intrinsic noise is randomness inherent to a system itself. This means that it cannot be controlled for, or filtered out by, experimental settings. Low-copy number cellular systems, were reaction occurs due to the encounters of molecules due to random diffusion, is an example of intrinsic noise. In practise, this can be modelled exactly through [SDE](@ref simulation_intro_SDEs) (chemical Langevin equations) or [jump](@ref simulation_intro_jumps) (stochastic chemical kinetics) simulations. 
+
+Generally, intrinsic noise is randomness inherent to a system itself. This means that it cannot be controlled for, or filtered out by, experimental settings. Low-copy number cellular systems, were reaction occurs due to the encounters of molecules due to random diffusion, is an example of intrinsic noise. In practise, this can be modelled exactly through [SDE](@ref simulation_intro_SDEs) (chemical Langevin equations) or [jump](@ref simulation_intro_jumps) (stochastic chemical kinetics) simulations.
 
 In Catalyst, intrinsic noise is accounted for whenever an `SDEProblem` or `JumpProblem` is created and simulated. Here we will model intrinsic noise through SDEs, which means creating an `SDEProblem` using the standard approach.
 ```@example noise_modelling_approaches
@@ -39,6 +42,7 @@ plot(sol_intrinsic; idxs = :X)
 Here, each simulation is performed from the same system using the same settings. Despite this, due to the noise, the individual trajectories are different.
 
 ## [Using extrinsic noise](@id noise_modelling_approaches_model_extrinsic)
+
 Next, we consider extrinsic noise. This is randomness caused by stochasticity external to, yet affecting, a system. Examples could be different bacteria experiencing different microenvironments or cells being in different parts of the cell cycle. This is noise which (in theory) can be controlled for experimentally (e.g. by ensuring a uniform environment). Whenever a specific source of noise is intrinsic and extrinsic to a system may depend on how one defines the system itself (this is a reason why giving an exact definition of these terms is difficult).
 
 In Catalyst we can model extrinsic noise by letting the model parameters be probability distributions. Here, at the beginning of each simulation, random parameter values are drawn from their distributions. Let us imagine that our repressilator circuit was inserted into a bacterial population. Here, while each bacteria would have the same circuit, their individual number of e.g. ribosomes (which will be random) might affect the production rates (which while constant within each bacteria, might differ between the individuals).
@@ -64,9 +68,10 @@ plot(sol_extrinsic; idxs = :X)
 We note that a similar approach can be used to also randomise the initial conditions. In a very detailed model, the parameter values could fluctuate during a single simulation, something which could be implemented using the approach from the next section.
 
 ## [Using a noisy input process](@id noise_modelling_approaches_model_input_noise)
+
 Finally, we will consider the case where we have a deterministic system, but which is exposed to a noisy input process. One example could be a [light sensitive system, where the amount of experienced sunlight is stochastic due to e.g. variable cloud cover](@ref functional_parameters_circ_rhythm). Practically, this can be considered as extrinsic noise, however, we will generate the noise using a different approach from in the previous section. Here, we pre-simulate a random process in time, which we then feed into the system as a functional, time-dependent, parameter. A more detailed description of functional parameters can be found [here](@ref time_dependent_parameters).
 
-We assume that our repressilator has an input, which corresponds to the $K$ value that controls $X$'s production. First we create a function, `make_K_series`, which creates a randomised time series representing $K$'s value over time. 
+We assume that our repressilator has an input, which corresponds to the $K$ value that controls $X$'s production. First we create a function, `make_K_series`, which creates a randomised time series representing $K$'s value over time.
 ```@example noise_modelling_approaches
 using DataInterpolations
 function make_K_series(; K_mean = 20.0, n = 500, θ = 0.01)
@@ -106,6 +111,7 @@ Like in the previous two cases, this generates heterogeneous trajectories across
 
 
 ## [Investigating the mean of noisy oscillations](@id noise_modelling_approaches_model_noisy_oscillation_mean)
+
 Finally, we will observe an interesting phenomenon for ensembles of stochastic oscillators. First, we create ensemble simulations with a larger number of trajectories.
 ```@example noise_modelling_approaches
 sol_intrinsic = solve(eprob_intrinsic, ImplicitEM(); trajectories = 200)
@@ -127,6 +133,8 @@ This is a well-known phenomenon (especially in circadian biology[^2]). Here, as 
 However, if we only observe the mean behaviour (and not the single trajectories), we cannot know which of these cases we are encountering. Here, by checking the single-trajectory plots from the previous sections, we note that this is due to trajectory de-synchronisation. Stochastic oscillators have often been cited as a reason for the importance to study cellular systems at the *single-cell* level, and not just in bulk.
 
 ---
+
 ## [References](@id noise_modelling_approaches_references)
+
 [^1]: [Michael B. Elowitz, Arnold J. Levine, Eric D. Siggia, Peter S. Swain, *Stochastic Gene Expression in a Single Cell*, Science (2002).](https://www.science.org/doi/10.1126/science.1070919)
 [^2]: [Qiong Yang, Bernardo F. Pando, Guogang Dong, Susan S. Golden, Alexander van Oudenaarden, *Circadian Gating of the Cell Cycle Revealed in Single Cyanobacterial Cells*, Science (2010).](https://www.science.org/doi/10.1126/science.1181759)

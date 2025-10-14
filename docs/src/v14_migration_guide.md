@@ -6,6 +6,7 @@ Catalyst is built on the [ModelingToolkit.jl](https://github.com/SciML/ModelingT
     Catalyst version 14 also introduces several new features. These will not be discussed here, however, they are described in Catalyst's [history file](https://github.com/SciML/Catalyst.jl/blob/master/HISTORY.md).
 
 ## System completeness
+
 In ModelingToolkit v9 (and thus also Catalyst v14) all systems (e.g. `ReactionSystem`s and `ODESystem`s) are either *complete* or *incomplete*. Complete and incomplete systems differ in that
 - Only complete systems can be used as inputs to simulations or most tools for model analysis.
 - Only incomplete systems can be [composed with other systems to form hierarchical models](@ref compositional_modeling).
@@ -87,6 +88,7 @@ Catalyst.iscomplete(rs3)
 ```
 
 ## Unknowns instead of states
+
 Previously, "states" was used as a term for system variables (both species and non-species variables). MTKv9 has switched to using the term "unknowns" instead. This means that there have been a number of changes to function names (e.g. `states` => `unknowns` and `get_states` => `get_unknowns`).
 
 E.g. here we declare a `ReactionSystem` model containing both species and non-species unknowns:
@@ -118,6 +120,7 @@ nonspecies(rs)
 ```
 
 ## Lost support for most units
+
 As part of its v9 update, ModelingToolkit changed how units were handled. This includes using the package [DynamicQuantities.jl](https://github.com/SymbolicML/DynamicQuantities.jl) to manage units (instead of [Unitful.jl](https://github.com/PainterQubits/Unitful.jl), like previously).
 
 While this should lead to long-term improvements, unfortunately, as part of the process support for most units was removed. Currently, only the main SI units are supported (`s`, `m`, `kg`, `A`, `K`, `mol`, and `cd`). Composite units (e.g. `N = kg/(m^2)`) are no longer supported. Furthermore, prefix units (e.g. `mm = m/1000`) are not supported either. This means that most units relevant to Catalyst (such as `µM`) cannot be used directly. While composite units can still be written out in full and used (e.g. `kg/(m^2)`) this is hardly user-friendly.
@@ -125,11 +128,13 @@ While this should lead to long-term improvements, unfortunately, as part of the 
 The maintainers of ModelingToolkit have been notified of this issue. We are unsure when this will be fixed, however, we do not think it will be a permanent change.
 
 ## Removed support for system-mutating functions
+
 According to the ModelingToolkit system API, systems should not be mutable. In accordance with this, the following functions have been deprecated and removed: `addparam!`, `addreaction!`, `addspecies!`, `@add_reactions`, and `merge!`. Please use `ModelingToolkit.extend` and `ModelingToolkit.compose` to generate new merged and/or composed `ReactionSystems` from multiple component systems.
 
 It is still possible to add default values to a created `ReactionSystem`, i.e. the `setdefaults!` function is still supported.
 
 ## New interface for creating time variable (`t`) and its differential (`D`)
+
 Previously, the time-independent variable (typically called `t`) was declared using
 ```@example v14_migration_3
 using Catalyst
@@ -158,6 +163,7 @@ nothing # hide
     If you look at ModelingToolkit documentation, these defaults are instead retrieved using `using ModelingToolkit: t_nounits as t, D_nounits as D`. This will also work, however, in Catalyst we have opted to instead use the functions `default_t()` and `default_time_deriv()` as our main approach.
 
 ## New interface for accessing problem/integrator/solution parameter (and species) values
+
 Previously, it was possible to directly index problems to query them for their parameter values. e.g.
 ```@example v14_migration_4
 using Catalyst
@@ -184,6 +190,7 @@ For more details on how to query various structures for parameter and species va
 ## Other changes
 
 #### Modification of problems with conservation laws broken
+
 While it is possible to update e.g. `ODEProblem`s using the [`remake`](@ref simulation_structure_interfacing_problems_remake) function, this is currently not possible if the `remove_conserved = true` option was used. E.g. while
 ```@example v14_migration_5
 using Catalyst, OrdinaryDiffEqDefault
@@ -207,9 +214,11 @@ This might generate a silent error, where the remade problem is different from t
 This bug was likely present on earlier versions as well, but was only recently discovered. While we hope it will be fixed soon, the issue is in ModelingToolkit, and will not be fixed until its maintainers find the time to do so.
 
 #### Depending on parameter order is even more dangerous than before
+
 In early versions of Catalyst, parameters and species were provided as vectors (e.g. `[1.0, 2.0]`) rather than maps (e.g. `[p => 1.0, d => 2.0]`). While we previously *strongly* recommended users to use the map form (or they might produce unintended results), the vector form was still supported (technically). Due to recent internal ModelingToolkit updates, the purely numeric form is no longer supported and should never be used -- it will potentially lead to incorrect values for parameters and/or initial conditions. Note that if `rn` is a complete `ReactionSystem` you can now specify such mappings via `[rn.p => 1.0, rn.d => 2.0]`.
 
 *Users should never use vector-forms to represent parameter and species values*
 
 #### Additional deprecated functions
+
 The `reactionparams`, `numreactionparams`, and `reactionparamsmap` functions have been deprecated.

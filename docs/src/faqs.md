@@ -1,6 +1,7 @@
 # FAQs
 
 ## How to index solution objects using symbolic variables and observables?
+
 One can directly use symbolic variables to index into SciML solution objects.
 Moreover, observables can also be evaluated in this way. For example,
 consider the system
@@ -59,6 +60,7 @@ plot(sol; idxs = [A, B])
 ```
 
 ## [How to disable rescaling of reaction rates in rate laws?](@id faq_combinatoric_ratelaws)
+
 As explained in the [Reaction rate laws used in simulations](@ref introduction_to_catalyst_ratelaws) section, for
 a reaction such as `k, 2X --> 0`, the generated rate law will rescale the rate
 constant, giving `k*X^2/2` instead of `k*X^2` for ODEs and `k*X*(X-1)/2` instead
@@ -71,7 +73,7 @@ osys = convert(ODESystem, rn; combinatoric_ratelaws=false)
 Disabling these rescalings should work for all conversions of `ReactionSystem`s
 to other `ModelingToolkit.AbstractSystem`s.
 
-When creating a [`ReactionSystem`](@ref) using the DSL, combinatoric rate laws can be disabled (for 
+When creating a [`ReactionSystem`](@ref) using the DSL, combinatoric rate laws can be disabled (for
 the created system, and all systems derived from it) using the `@combinatoric_ratelaws` option (providing `false` as its only input):
 ```@example faq1
 rn = @reaction_network begin
@@ -82,6 +84,7 @@ nothing # hide
 ```
 
 ## How to use non-integer stoichiometric coefficients?
+
 ```@example faq2
 using Catalyst
 rn = @reaction_network begin
@@ -114,6 +117,7 @@ coefficients, please see the [Symbolic Stochiometries](@ref
 parametric_stoichiometry) section.
 
 ## How to set default values for initial conditions and parameters?
+
 How to set defaults when using the `@reaction_network` macro is described in
 more detail [here](@ref dsl_advanced_options_default_vals). There are several ways to do
 this. Using the DSL, one can use the `@species` and `@parameters` options:
@@ -170,6 +174,7 @@ nothing # hide
 ```
 
 ## How to specify initial conditions and parameters values for `ODEProblem` and other problem types?
+
 To explicitly pass initial conditions and parameters we can use mappings from
 Julia `Symbol`s corresponding to each variable/parameter to their values, or
 from ModelingToolkit symbolic variables/parameters to their values. Using
@@ -195,6 +200,7 @@ nothing  # hide
 ```
 
 ## How to include non-reaction terms in equations for a chemical species?
+
 One method to add non-reaction terms into an ODE or algebraic equation for a
 chemical species is to add a new (non-species) unknown variable that represents
 those terms, let it be the rate of zero order reaction, and add a constraint
@@ -219,6 +225,7 @@ full_equations(osyss)
 ```
 
 ## How to modify generated ODEs?
+
 Conversion to other `ModelingToolkit.AbstractSystem`s allows the possibility to
 modify the system with further terms that are difficult to encode as a chemical
 reaction or a constraint equation. For example, an alternative method to the
@@ -239,6 +246,7 @@ dAdteq = Equation(dAdteq.lhs, dAdteq.rhs + 1 + sin(t))
 ```
 
 ## How to override mass action kinetics rate laws?
+
 While generally one wants the reaction rate law to use the law of mass action,
 so the reaction
 ```@example faq7
@@ -270,6 +278,7 @@ convert(ODESystem, rn)
 has rate ``d[X]/dt = -2 k``.
 
 ## [How to specify user-defined functions as reaction rates?](@id user_functions)
+
 The reaction network DSL can "see" user-defined functions that work with
 ModelingToolkit. e.g., this is should work
 ```@example faq8
@@ -284,6 +293,7 @@ Symbolics.jl before their use in Catalyst, see the discussion
 [here](https://symbolics.juliasymbolics.org/stable/manual/functions/).
 
 ## [How does the Catalyst DSL (`@reaction_network`) infer what different symbols represent?](@id faq_dsl_sym_inference)
+
 When declaring a model using the Catalyst DSL, e.g.
 ```@example faq_dsl_inference
 using Catalyst
@@ -305,7 +315,7 @@ Inference of species, variables, and parameters follows the following steps:
 3. Every symbol not declared in (1) or (2) that occurs in an expression provided after `@equations` is inferred as a variable.
 4. Every symbol not declared in (1), (2), or (3) that occurs either as a reaction rate or stoichiometric coefficient is inferred to be a parameter.
 
-Here, in 
+Here, in
 ```@example faq_dsl_inference
 using Catalyst
 rn = @reaction_network begin
@@ -326,7 +336,7 @@ Symbols occurring within other expressions will not be inferred as anything. The
 ```julia
 using Catalyst
 rn_error = @reaction_network begin
-    @discrete_events 1.0 => [X ~ X + Xadd] 
+    @discrete_events 1.0 => [X ~ X + Xadd]
  d, X --> 0
 end
 ```
@@ -335,7 +345,7 @@ is not permitted. E.g. here `Xadd` must be explicitly declared as a parameter us
 using Catalyst
 rn = @reaction_network begin
     @parameters Xadd
-    @discrete_events 1.0 => [X ~ X + Xadd] 
+    @discrete_events 1.0 => [X ~ X + Xadd]
  d, X --> 0
 end
 ```
@@ -343,6 +353,7 @@ end
 It is possible to turn off all inference (requiring all symbols to be declared using `@parameters`, `@species`, and `@variables`) through the [`@require_declaration` option](@ref faq_require_declaration).
 
 ## [How can I turn off automatic inferring of species and parameters when using the DSL?](@id faq_require_declaration)
+
 This option can be set using the `@require_declaration` option inside `@reaction_network`. In this case all the species, parameters, and variables in the system must be pre-declared using one of the `@species`, `@parameters`, or `@variables` macros. For more information about what is inferred automatically and not, please see the section on [`@require_declaration`](@ref dsl_advanced_options_require_dec).
 
 ```@example faq9
@@ -362,7 +373,7 @@ When constructing `NonlinearSystem`s or `NonlinearProblem`s with `remove_conserv
 # for rn a ReactionSystem
 nsys = convert(NonlinearSystem, rn; remove_conserved = true)
 
-# or 
+# or
 nprob = NonlinearProblem(rn, u0, p; remove_conserved = true)
 ```
 `remake` is currently unable to correctly update all `u0` values when the
@@ -398,9 +409,9 @@ conserved constant will be recalculated. i.e. if
 ```@example faq_remake
 nlprob2 = remake(nlprob1; u0 = [:X₂ => 3.0])
 ```
-compare  
+compare
 ```@example faq_remake
-println("Correct u0 is: ", (1.0, 3.0, 3.0), "\n", "remade value is: ", nlprob2[(:X₁, :X₂, :X₃)]) 
+println("Correct u0 is: ", (1.0, 3.0, 3.0), "\n", "remade value is: ", nlprob2[(:X₁, :X₂, :X₃)])
 ```
 and
 ```@example faq_remake
@@ -416,7 +427,7 @@ Setting `[:X₂ => nothing]` for other problem types communicates that the
 `u0` value for `X₂` should be solved for. However, if we examine the values we
 find
 ```@example faq_remake
-println("Correct u0 is: ", (1.0, 0.0, 3.0), "\n", "remade value is: ", nlprob3[(:X₁, :X₂, :X₃)]) 
+println("Correct u0 is: ", (1.0, 0.0, 3.0), "\n", "remade value is: ", nlprob3[(:X₁, :X₂, :X₃)])
 ```
 and
 ```@example faq_remake
@@ -425,7 +436,7 @@ println("Correct Γ is: ", 4.0, "\n", "remade value is: ", nlprob3.ps[:Γ][1])
 As such, the `u0` value for `X₂` has not updated, and the conservation law is
 now violated by the `u0` values, i.e,
 ```@example faq_remake
-(nlprob3[:X₁] + nlprob3[:X₂] + nlprob3[:X₃]) == nlprob3.ps[:Γ][1] 
+(nlprob3[:X₁] + nlprob3[:X₂] + nlprob3[:X₃]) == nlprob3.ps[:Γ][1]
 ```
 Currently, the only way to avoid this issue is to manually specify updated
 values for the `u0` components, which will ensure that `Γ` updates appropriately
@@ -436,7 +447,7 @@ nlprob4 = remake(nlprob1; u0 = [:X₂ => 0.0])
 ```
 so that
 ```@example faq_remake
-println("Correct u0 is: ", (1.0, 0.0, 3.0), "\n", "remade value is: ", nlprob4[(:X₁, :X₂, :X₃)]) 
+println("Correct u0 is: ", (1.0, 0.0, 3.0), "\n", "remade value is: ", nlprob4[(:X₁, :X₂, :X₃)])
 ```
 and
 ```@example faq_remake
@@ -463,7 +474,7 @@ We can figure out its index in `u0` via
 obs_symbol = ModelingToolkit.getname(obs_unknown)
 obsidx = findfirst(p -> p[1] == obs_symbol, u0)
 ```
-Let's now remake 
+Let's now remake
 ```@example faq_remake
 nlprob2 = remake(nlprob1; u0 = [obs_unknown => nothing], p = [:Γ => [8.0]])
 ```
@@ -474,7 +485,7 @@ adjusted to allow `Γ = 8`:
 ```@example faq_remake
 correct_u0 = last.(u0)
 correct_u0[obsidx] = 8 - sum(correct_u0) + correct_u0[obsidx]
-println("Correct u0 is: ", (1.0, 2.0, 5.0), "\n", "remade value is: ", nlprob2[(:X₁, :X₂, :X₃)]) 
+println("Correct u0 is: ", (1.0, 2.0, 5.0), "\n", "remade value is: ", nlprob2[(:X₁, :X₂, :X₃)])
 ```
 and `Γ` becomes
 ```@example faq_remake
@@ -487,4 +498,4 @@ observed species will not work.
 *Summary:* it is not recommended to directly update `Γ` via `remake`, but to
 instead update values of the initial guesses in `u0` to obtain a desired `Γ`. At
 this time the behavior when updating `Γ` can result in `u0` values that do not
-satisfy the conservation law defined by `Γ` as illustrated above. 
+satisfy the conservation law defined by `Γ` as illustrated above.

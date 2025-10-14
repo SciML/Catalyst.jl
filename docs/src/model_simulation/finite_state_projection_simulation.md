@@ -1,4 +1,5 @@
 # [Solving the chemical master equation using FiniteStateProjection.jl](@id finite-state_projection)
+
 ```@raw html
 <details><summary><strong>Environment setup and package installation</strong></summary>
 ```
@@ -52,7 +53,7 @@ heatmap(0:19, 0:19, osol(50.0); xguide = "Y", yguide = "X")
 </details>
 ```
   \
-  
+
 As previously discussed, [*stochastic chemical kinetics*](@ref math_models_in_catalyst_sck_jumps) models are mathematically given by jump processes that capture the exact times at which individual reactions occur, and the exact (integer) amounts of each chemical species at a given time. They represent a more microscopic model than [chemical Langevin equation SDE](@ref math_models_in_catalyst_cle_sdes) and [reaction rate equation ODE](@ref math_models_in_catalyst_rre_odes) models, which can be interpreted as approximations to stochastic chemical kinetics models in the large population limit.
 
 One can study the dynamics of stochastic chemical kinetics models by simulating the stochastic processes using Monte Carlo methods. For example, they can be [exactly sampled](@ref simulation_intro_jumps) using [Stochastic Simulation Algorithms](https://en.wikipedia.org/wiki/Gillespie_algorithm) (SSAs), which are also often referred to as Gillespie's method. To gain a good understanding of a system's dynamics, one typically has to carry out a large number of jump process simulations to minimize sampling error. To avoid such sampling error, an alternative approach is to solve ODEs for the *full probability distribution* that these processes have a given value at each time. Knowing this distribution, one can then calculate any statistic of interest that can be sampled via running many SSA simulations.
@@ -70,6 +71,7 @@ One can study the dynamics of stochastic chemical kinetics models by simulating 
 A general form of the CME is provided [here](@ref math_models_in_catalyst_sck_jumps). For chemical reaction networks in which the total population is bounded, the CME corresponds to a finite set of ODEs. In contrast, for networks in which the system can (in theory) become unbounded, such as networks that include zero order reactions like $\varnothing \to X$, the CME will correspond to an infinite set of ODEs. Even in the finite case, the number of ODEs corresponds to the number of possible state vectors (i.e. vectors with components representing the integer populations of each species in the network), and can become exceptionally large. Therefore, for even simple reaction networks there can be many more ODEs than can be represented in typical levels of computer memory, and it becomes infeasible to numerically solve the full system of ODEs that correspond to the CME. However, in many cases the probability of the system attaining species values outside some small range can become negligibly small. Here, a truncated, approximating, version of the CME can be solved practically. An approach for this is the *finite state projection method*[^2]. Below we describe how to use the [FiniteStateProjection.jl](https://github.com/SciML/FiniteStateProjection.jl) package to solve the truncated CME (with the package's [documentation](https://docs.sciml.ai/FiniteStateProjection/dev/) providing a more extensive description). While the CME approach can be very powerful, we note that even for systems with a few species, the truncated CME typically has too many states for it to be feasible to solve the full set of ODEs.
 
 ## [Finite state projection simulation of single-species model](@id state_projection_one_species)
+
 For this example, we will use a simple [birth-death model](@ref basic_CRN_library_bd), where a single species ($X$) is created and degraded at constant rates ($p$ and $d$, respectively).
 ```@example state_projection_one_species
 using Catalyst
@@ -89,7 +91,7 @@ esol = solve(eprob, SSAStepper(); trajectories = 10)
 plot(esol; ylimit = (0.0, Inf))
 Catalyst.PNG(plot(esol; ylimit = (0.0, Inf), fmt = :png, dpi = 200)) # hide
 ```
-Using chemical master equation simulations, we want to simulate how the *full probability distribution* of these jump simulations develops across the simulation time frame. 
+Using chemical master equation simulations, we want to simulate how the *full probability distribution* of these jump simulations develops across the simulation time frame.
 
 As a first step, we import the FiniteStateProjection package. Next, we convert our [`ReactionSystem`](@ref) to a `FSPSystem` (from which we later will generate the ODEs that correspond to the truncated CME).
 ```@example state_projection_one_species
@@ -103,7 +105,7 @@ u0 = zeros(75)
 u0[6] = 1.0
 bar(u0, label = "t = 0.0")
 ```
-We also plot the full distribution using the `bar` function. Finally, the initial condition vector defines the finite space onto which we project the CME. I.e. we will assume that, throughout the entire simulation, the probability of $X$ reaching values outside this initial vector is negligible. 
+We also plot the full distribution using the `bar` function. Finally, the initial condition vector defines the finite space onto which we project the CME. I.e. we will assume that, throughout the entire simulation, the probability of $X$ reaching values outside this initial vector is negligible.
 
 !!! warning
     This last bit is important. Even if the probability seems to be very small on the boundary provided by the initial condition, there is still a risk that probability will "leak". Here, it can be good to make simulations using different projections, ensuring that the results are consistent (especially for longer simulations). It is also possible to (at any time point) sum up the total probability density to gain a measure of how much has "leaked" (ideally, this sum should be as close to 1 as possible). While solving the CME over a very large space will ensure correctness, a too large a space comes with an unnecessary performance penalty.
@@ -125,6 +127,7 @@ bar!(0:74, osol(10.0); bar_width = 1.0, linewidth = 0, alpha = 0.7, label = "t =
 ```
 
 ## [Finite state projection simulation of multi-species model](@id state_projection_multi_species)
+
 Next, we will consider a system with more than one species. The workflow will be identical, however, we will have to make an additional consideration regarding the initial condition, simulation performance, and plotting approach.
 
 For this example, we will consider a simple dimerisation model. In it, $X$ gets produced and degraded at constant rates, and can also dimerise to form $X₂$.
@@ -161,6 +164,7 @@ heatmap(0:24, 0:24, osol[end]; xguide = "X₂", yguide = "X")
     The `heatmap` function "flips" the plot contrary to what many would consider intuitive. I.e. here the x-axis corresponds to the second species ($X₂$) and the y-axis to the first species ($X$).
 
 ## [Finite state projection steady state simulations](@id state_projection_steady_state_sim)
+
 Previously, we have shown how the [SteadyStateDiffEq.jl](https://github.com/SciML/SteadyStateDiffEq.jl) package can be used to [find an ODE's steady state through forward simulation](@ref steady_state_stability). The same interface can be used for ODEs generated through FiniteStateProjection. Below, we use this to find the steady state of the dimerisation example studied in the last example.
 ```@example state_projection_multi_species
 using SteadyStateDiffEq, OrdinaryDiffEqRosenbrock
@@ -185,6 +189,8 @@ Here we used an ensemble [output function](@ref activation_time_distribution_mea
 
 
 ---
+
 ## References
+
 [^1]: [Daniel T. Gillespie, *A rigorous derivation of the chemical master equation*, Physica A: Statistical Mechanics and its Applications (1992).](https://www.sciencedirect.com/science/article/abs/pii/037843719290283V)
 [^2]: [Brian Munsky, Mustafa Khammash, *The finite state projection algorithm for the solution of the chemical master equation*, Journal of Chemical Physics (2006).](https://pubs.aip.org/aip/jcp/article-abstract/124/4/044104/561868/The-finite-state-projection-algorithm-for-the?redirectedFrom=fulltext)

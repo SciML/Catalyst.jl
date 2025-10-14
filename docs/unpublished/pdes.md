@@ -1,4 +1,5 @@
 # Partial Differential Equation Models
+
 **Note** this functionality is work in progress in both Catalyst,
 ModelingToolkit, and MethodOfLines (generally across SciML). As such, the
 recommended workflows, API features, and observed simulation performance may

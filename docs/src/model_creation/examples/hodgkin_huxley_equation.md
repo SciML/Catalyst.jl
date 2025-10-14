@@ -22,6 +22,7 @@ using ModelingToolkit, Catalyst, NonlinearSolve, Plots, OrdinaryDiffEqRosenbrock
 ```
 
 ## Building the model via the Catalyst DSL
+
 Let's build a simple Hodgkin-Huxley model for a single neuron, with the voltage,
 $V(t)$, included as a coupled ODE. We first specify the transition rates for
 three gating variables, $m(t)$, $n(t)$ and $h(t)$.
@@ -53,7 +54,7 @@ nothing # hide
 ```
 
 We also declare a function to represent an applied current in our model, which we
-will use to perturb the system and create action potentials. 
+will use to perturb the system and create action potentials.
 ```@example hh1
 Iapp(t,I₀) = I₀ * sin(2*pi*t/30)^2
 ```
@@ -66,13 +67,13 @@ maps.
 ```@example hh1
 hhmodel = @reaction_network hhmodel begin
     @parameters begin
-        C = 1.0 
-        ḡNa = 120.0 
-        ḡK = 36.0 
-        ḡL = .3 
-        ENa = 45.0 
-        EK = -82.0 
-        EL = -59.0 
+        C = 1.0
+        ḡNa = 120.0
+        ḡK = 36.0
+        ḡL = .3
+        ENa = 45.0
+        EK = -82.0
+        EL = -59.0
         I₀ = 0.0
     end
 
@@ -81,7 +82,7 @@ hhmodel = @reaction_network hhmodel begin
     (αₙ(V), βₙ(V)), n′ <--> n
     (αₘ(V), βₘ(V)), m′ <--> m
     (αₕ(V), βₕ(V)), h′ <--> h
-    
+
     @equations begin
         D(V) ~ -1/C * (ḡK*n^4*(V-EK) + ḡNa*m^3*h*(V-ENa) + ḡL*(V-EL)) + Iapp(t,I₀)
     end
@@ -133,7 +134,7 @@ plot(sol, idxs = V, legend = :outerright)
 
 We observe three action potentials due to the steady applied current.
 
-## Building the model via composition of separate systems for the ion channel and transmembrane voltage dynamics 
+## Building the model via composition of separate systems for the ion channel and transmembrane voltage dynamics
 
 As an illustration of how one can construct models from individual components,
 we now separately construct and compose the model components.
@@ -143,22 +144,22 @@ We start by defining systems to model each ionic current. Note we now use
 composable and not marked as finalized.
 ```@example hh1
 IKmodel = @network_component IKmodel begin
-    @parameters ḡK = 36.0 EK = -82.0 
+    @parameters ḡK = 36.0 EK = -82.0
     @variables V(t) Iₖ(t)
     (αₙ(V), βₙ(V)), n′ <--> n
     @equations Iₖ ~ ḡK*n^4*(V-EK)
 end
 
 INamodel = @network_component INamodel begin
-    @parameters ḡNa = 120.0 ENa = 45.0 
+    @parameters ḡNa = 120.0 ENa = 45.0
     @variables V(t) Iₙₐ(t)
     (αₘ(V), βₘ(V)), m′ <--> m
     (αₕ(V), βₕ(V)), h′ <--> h
-    @equations Iₙₐ ~ ḡNa*m^3*h*(V-ENa) 
+    @equations Iₙₐ ~ ḡNa*m^3*h*(V-ENa)
 end
 
 ILmodel = @network_component ILmodel begin
-    @parameters ḡL = .3 EL = -59.0 
+    @parameters ḡL = .3 EL = -59.0
     @variables V(t) Iₗ(t)
     @equations Iₗ ~ ḡL*(V-EL)
 end

@@ -1,10 +1,12 @@
 # Model Simulation
+
 Once created, a reaction network can be used as input to various problem types,
 which can be solved by
 [DifferentialEquations.jl](http://docs.sciml.ai/DiffEqDocs/stable/),
 and more broadly used within [SciML](https://sciml.ai) packages.
 
 #### Deterministic simulations using ODEs
+
 A reaction network can be used as input to an `ODEProblem` instead of a
 function, using
 ```julia
@@ -53,6 +55,7 @@ sol = solve(prob, DynamicSS(Tsit5()))
 ```
 
 #### Stochastic simulations using SDEs
+
 In a similar way an SDE can be created using
 ```julia
 using StochasticDiffEq
@@ -62,6 +65,7 @@ In this case the chemical Langevin equations (as derived in Gillespie, J. Chem.
 Phys. 2000) will be used to generate stochastic differential equations.
 
 #### Stochastic simulations using discrete stochastic simulation algorithms
+
 Instead of solving SDEs, one can create a stochastic jump process model using
 integer copy numbers and a discrete stochastic simulation algorithm (i.e.,
 Gillespie Method or Kinetic Monte Carlo). This can be done using:
