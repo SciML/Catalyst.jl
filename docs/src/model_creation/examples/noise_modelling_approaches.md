@@ -10,6 +10,7 @@ We note that these approaches can all be combined. E.g. an intrinsic noise model
 ## [The repressilator model](@id noise_modelling_approaches_model_intro)
 
 For this tutorial we will use the oscillating [repressilator](@ref basic_CRN_library_repressilator) model.
+
 ```@example noise_modelling_approaches
 using Catalyst
 repressilator = @reaction_network begin
@@ -25,6 +26,7 @@ end
 Generally, intrinsic noise is randomness inherent to a system itself. This means that it cannot be controlled for, or filtered out by, experimental settings. Low-copy number cellular systems, were reaction occurs due to the encounters of molecules due to random diffusion, is an example of intrinsic noise. In practise, this can be modelled exactly through [SDE](@ref simulation_intro_SDEs) (chemical Langevin equations) or [jump](@ref simulation_intro_jumps) (stochastic chemical kinetics) simulations.
 
 In Catalyst, intrinsic noise is accounted for whenever an `SDEProblem` or `JumpProblem` is created and simulated. Here we will model intrinsic noise through SDEs, which means creating an `SDEProblem` using the standard approach.
+
 ```@example noise_modelling_approaches
 u0 = [:X => 45.0, :Y => 20.0, :Z => 20.0]
 tend = 200.0
@@ -32,13 +34,16 @@ ps = [:v => 10.0, :K => 20.0, :n => 3, :d => 0.1]
 sprob = SDEProblem(repressilator, u0, tend, ps)
 nothing # hide
 ```
+
 Next, to illustrate the system's noisiness, we will perform multiple simulations. We do this by [creating an `EnsembleProblem`](@ref ensemble_simulations_monte_carlo). From it, we perform, and plot, 4 simulations.
+
 ```@example noise_modelling_approaches
 using StochasticDiffEq, Plots
 eprob_intrinsic = EnsembleProblem(sprob)
 sol_intrinsic = solve(eprob_intrinsic, ImplicitEM(); trajectories = 4)
 plot(sol_intrinsic; idxs = :X)
 ```
+
 Here, each simulation is performed from the same system using the same settings. Despite this, due to the noise, the individual trajectories are different.
 
 ## [Using extrinsic noise](@id noise_modelling_approaches_model_extrinsic)
@@ -48,6 +53,7 @@ Next, we consider extrinsic noise. This is randomness caused by stochasticity ex
 In Catalyst we can model extrinsic noise by letting the model parameters be probability distributions. Here, at the beginning of each simulation, random parameter values are drawn from their distributions. Let us imagine that our repressilator circuit was inserted into a bacterial population. Here, while each bacteria would have the same circuit, their individual number of e.g. ribosomes (which will be random) might affect the production rates (which while constant within each bacteria, might differ between the individuals).
 
 Again we will perform ensemble simulation. Instead of creating an `SDEProblem`, we will create an `ODEProblem`, as well as a [problem function](@ref ensemble_simulations_varying_conditions) which draws random parameter values for each simulation. Here we have implemented the parameter's probability distributions as [normal distributions](https://en.wikipedia.org/wiki/Normal_distribution) using the [Distributions.jl](https://github.com/JuliaStats/Distributions.jl) package.
+
 ```@example noise_modelling_approaches
 using Distributions
 p_dists = Dict([:v => Normal(10.0, 2.0), :K => Normal(20.0, 5.0), :n => Normal(3, 0.2), :d => Normal(0.1, 0.02)])
@@ -57,7 +63,9 @@ function prob_func(prob, i, repeat)
 end
 nothing # hide
 ```
+
 Next, we again perform 4 simulations. While the individual trajectories are performed using deterministic simulations, the randomised parameter values create heterogeneity across the ensemble.
+
 ```@example noise_modelling_approaches
 using OrdinaryDiffEqDefault
 oprob = ODEProblem(repressilator, u0, tend, ps)
@@ -65,6 +73,7 @@ eprob_extrinsic = EnsembleProblem(oprob; prob_func)
 sol_extrinsic = solve(eprob_extrinsic; trajectories = 4)
 plot(sol_extrinsic; idxs = :X)
 ```
+
 We note that a similar approach can be used to also randomise the initial conditions. In a very detailed model, the parameter values could fluctuate during a single simulation, something which could be implemented using the approach from the next section.
 
 ## [Using a noisy input process](@id noise_modelling_approaches_model_input_noise)
@@ -72,6 +81,7 @@ We note that a similar approach can be used to also randomise the initial condit
 Finally, we will consider the case where we have a deterministic system, but which is exposed to a noisy input process. One example could be a [light sensitive system, where the amount of experienced sunlight is stochastic due to e.g. variable cloud cover](@ref functional_parameters_circ_rhythm). Practically, this can be considered as extrinsic noise, however, we will generate the noise using a different approach from in the previous section. Here, we pre-simulate a random process in time, which we then feed into the system as a functional, time-dependent, parameter. A more detailed description of functional parameters can be found [here](@ref time_dependent_parameters).
 
 We assume that our repressilator has an input, which corresponds to the $K$ value that controls $X$'s production. First we create a function, `make_K_series`, which creates a randomised time series representing $K$'s value over time.
+
 ```@example noise_modelling_approaches
 using DataInterpolations
 function make_K_series(; K_mean = 20.0, n = 500, θ = 0.01)
@@ -84,7 +94,9 @@ function make_K_series(; K_mean = 20.0, n = 500, θ = 0.01)
 end
 plot(make_K_series())
 ```
+
 Next, we create an updated repressilator model, where the input $K$ value is modelled as a time-dependent parameter.
+
 ```@example noise_modelling_approaches
 @parameters (K_in::typeof(make_K_series()))(..)
 K_in = K_in(default_t())
@@ -96,7 +108,9 @@ repressilator_Kin = @reaction_network begin
 end
 nothing # hide
 ```
+
 Finally, we will again perform ensemble simulations of our model. This time, at the beginning of each simulation, we will use `make_K_series` to generate a new $K$, and set this as the `K_in` parameter's value.
+
 ```@example noise_modelling_approaches
 function prob_func_Kin(prob, i, repeat)
     p = [ps; :K_in => make_K_series()]    
@@ -107,24 +121,29 @@ eprob_inputnoise = EnsembleProblem(oprob; prob_func = prob_func_Kin)
 sol_inputnoise = solve(eprob_inputnoise; trajectories = 4)
 plot(sol_inputnoise; idxs = :X)
 ```
+
 Like in the previous two cases, this generates heterogeneous trajectories across our ensemble.
 
 
 ## [Investigating the mean of noisy oscillations](@id noise_modelling_approaches_model_noisy_oscillation_mean)
 
 Finally, we will observe an interesting phenomenon for ensembles of stochastic oscillators. First, we create ensemble simulations with a larger number of trajectories.
+
 ```@example noise_modelling_approaches
 sol_intrinsic = solve(eprob_intrinsic, ImplicitEM(); trajectories = 200)
 sol_extrinsic = solve(eprob_extrinsic; trajectories = 200)
 nothing # hide
 ```
+
 Next, we can use the `EnsembleSummary` interface to plot each ensemble's mean activity (as well as 5% and 95% quantiles) over time:
+
 ```@example noise_modelling_approaches
 e_summary_intrinsic = EnsembleAnalysis.EnsembleSummary(sol_intrinsic, 0.0:1.0:tend)
 e_summary_extrinsic = EnsembleAnalysis.EnsembleSummary(sol_extrinsic, 0.0:1.0:tend)
 plot(e_summary_intrinsic; label = "Intrinsic noise", idxs = 1)
 plot!(e_summary_extrinsic; label = "Extrinsic noise", idxs = 1)
 ```
+
 Here we can see that, over time, the systems' mean $X$ activity reaches a constant level around $30$.
 
 This is a well-known phenomenon (especially in circadian biology[^2]). Here, as stochastic oscillators evolve from a common initial condition the mean behaves as a damped oscillator. This can be caused by two different phenomena:

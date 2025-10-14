@@ -5,9 +5,11 @@ While there exist relatively straightforward approaches to manage performance fo
 ## [SDE solver selection](@id sde_simulation_performance_solvers)
 
 We have previously described how [ODE solver selection](@ref ode_simulation_performance_solvers) can impact simulation performance. Again, it can be worthwhile to investigate solver selection's impact on performance for SDE simulations. Throughout this documentation, we generally use the `STrapezoid` solver as the default choice. However, if the `DifferentialEquations` package is loaded
+
 ```julia
 using DifferentialEquations
 ```
+
 automatic SDE solver selection enabled (just like is the case for ODEs by default). Generally, the automatic SDE solver choice enabled by `DifferentialEquations` is better than just using `STrapezoid`. Next, if performance is critical, it can be worthwhile to check the [list of available SDE solvers](https://docs.sciml.ai/DiffEqDocs/stable/solvers/sde_solve/) to find one with advantageous performance for a given problem. When doing so, it is important to pick a solver compatible with *non-diagonal noise* and with [*Ito problems*](https://en.wikipedia.org/wiki/It%C3%B4_calculus).
 
 ## [Options for Jacobian computation](@id sde_simulation_performance_jacobian)
@@ -23,12 +25,15 @@ We have previously described how simulation parallelisation can be used to [impr
 GPU parallelisation of SDE simulations uses a similar approach as that for [ODE simulations](@ref ode_simulation_performance_parallelisation_GPU). The main differences are that SDE parallelisation requires a GPU SDE solver (like `GPUEM`) and fixed time stepping.
 
 We will assume that we are using the CUDA GPU hardware, so we will first load the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) backend package, as well as DiffEqGPU:
+
 ```julia
 using CUDA, DiffEqGPU
 ```
+
 Which backend package you should use depends on your available hardware, with the alternatives being listed [here](https://docs.sciml.ai/DiffEqGPU/stable/manual/backends/).
 
 Next, we create the `SDEProblem` which we wish to simulate. Like for ODEs, we ensure that all vectors are [static vectors](https://github.com/JuliaArrays/StaticArrays.jl) and that all values are `Float32`s. Here we prepare the parallel simulations of a simple [birth-death process](@ref basic_CRN_library_bd).
+
 ```@example sde_simulation_performance_gpu
 using Catalyst, StochasticDiffEq, StaticArrays
 bd_model = @reaction_network begin
@@ -42,11 +47,14 @@ ps = @SVector [p => 10.0f0, d => 1.0f0]
 sprob = SDEProblem(bd_model, u0, tspan, ps)
 nothing # hide
 ```
+
 The `SDEProblem` is then used to [create an `EnsembleProblem`](@ref ensemble_simulations_monte_carlo).
+
 ```@example sde_simulation_performance_gpu
 eprob = EnsembleProblem(sprob)
 nothing # hide
 ```
+
 Finally, we can solve our `EnsembleProblem` while:
 - Using a valid GPU SDE solver (either [`GPUEM`](https://docs.sciml.ai/DiffEqGPU/stable/manual/ensemblegpukernel/#DiffEqGPU.GPUEM) or [`GPUSIEA`](https://docs.sciml.ai/DiffEqGPU/stable/manual/ensemblegpukernel/#DiffEqGPU.GPUSIEA)).
 - Designating the GPU ensemble method, `EnsembleGPUKernel` (with the correct GPU backend as input).

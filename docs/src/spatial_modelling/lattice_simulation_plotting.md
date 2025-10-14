@@ -19,6 +19,7 @@ The first two functions can be applied to [graph](@ref spatial_lattice_modelling
 ## [Animation and plotting of 1d Cartesian or masked lattice simulations](@id lattice_simulation_plotting_1d_grids)
 
 Let us consider a spatial simulation on a 1d Cartesian grid lattice:
+
 ```@example lattice_plotting_1d
 using Catalyst, OrdinaryDiffEqDefault
 two_state_model = @reaction_network begin
@@ -37,25 +38,31 @@ oprob = ODEProblem(lrs, u0, tspan, ps)
 sol = solve(oprob)
 nothing # hide
 ```
+
 To plot the simulation at a specific time point we use the `lattice_plot` function. In addition to the simulation we wish to plot, it takes the species we wish to plot and the [`LatticeReactionSystem`](@ref) which generated the simulation as arguments. It also takes the time point at which we wish to plot the simulation as an additional argument (if not provided, the simulation will be plotted at the final time point). To use the [`lattice_plot`](@ref) function (or any other of Catalyst's spatial plotting functions) we also need to load the [CairoMakie](https://github.com/MakieOrg/Makie.jl) package (here, `import CairoMakie` is enough, and `using CairoMakie` is not required).
+
 ```@example lattice_plotting_1d
 import CairoMakie
 lattice_plot(sol, :X1, lrs; t = 2.0)
 ```
 
 If we instead wish to create an animation of our solution across the entire simulation, we can use the [`lattice_animation`](@ref) function. This takes a fourth required argument, a file to which the animation is saved.
+
 ```@example lattice_plotting_1d
 lattice_animation(sol, :X1, lrs, "lattice_simulation_1d.mp4")
 ```
+
 ![](./lattice_simulation_1d.mp4)
 Since we animate the solution across the entire simulation, we do not need to provide a `t` value. However, there are some additional (optional) arguments we might wish to provide:
 - `nframes = 200`: The number of frames in the animation (these are evenly samples across the simulation).
 - `framerate = 20`: The frame rate of the animation.
 
 Finally, we can display a kymograph of our simulation across the full time span using [`lattice_kymograph`](@ref).
+
 ```@example lattice_plotting_1d
 lattice_kymograph(sol, :X1, lrs)
 ```
+
 Here, we require neither a filename nor a `t` to be provided. However, the `nframes` argument can still be used to determine how frequently (in time) we wish to sample our simulation.
 
 For more information of either function, and additional optional arguments, please read their corresponding api sections ([`lattice_plot`](@ref), [`lattice_animation`](@ref), and [`lattice_kymograph`](@ref)).
@@ -63,6 +70,7 @@ For more information of either function, and additional optional arguments, plea
 ## [Animation and plotting of 2d Cartesian or masked lattice simulations](@id lattice_simulation_plotting_2d_grids)
 
 Two-dimensional lattice simulations can be plotted in the same manner as one-dimensional ones. However, instead of displaying a species's value as a line plot, it is displayed as a heatmap. E.g. here we simulate a spatial [Brusselator](@ref basic_CRN_library_brusselator) model and display the value of $X$ at a designated time point.
+
 ```@example lattice_plotting_2d
 using Catalyst, OrdinaryDiffEqBDF
 brusselator = @reaction_network begin
@@ -84,12 +92,15 @@ sol = solve(oprob, FBDF())
 import CairoMakie
 lattice_plot(sol, :X, lrs; t = 18.0)
 ```
+
 Here, the intensity of the colour scale describes $X$'s value in each compartment. The color scale is normalised across the entire simulation (not the plotted time step).
 
 An animation of the solution can be created in a similar manner as for [the one-dimensional case](@ref lattice_simulation_plotting_1d_grids):
+
 ```@example lattice_plotting_2d
 lattice_animation(sol, :X, lrs, "lattice_simulation_2d.mp4")
 ```
+
 ![](./lattice_simulation_2d.mp4)
 
 Again, please check the API pages for the [`lattice_plot`](@ref) and [`lattice_animation`](@ref) functions to see more details of their various options.
@@ -97,6 +108,7 @@ Again, please check the API pages for the [`lattice_plot`](@ref) and [`lattice_a
 ## [Animation and plotting of graph lattice simulations](@id lattice_simulation_plotting_graphs)
 
 Finally, we consider lattice simulations on graph lattices. We first simulate a simple [birth-death process](@ref basic_CRN_library_bd) on a (6-node cyclic) graph lattice.
+
 ```@example lattice_plotting_graphs
 using Catalyst, Graphs, OrdinaryDiffEqDefault
 rs = @reaction_network begin
@@ -113,16 +125,20 @@ oprob = ODEProblem(lrs, u0, tspan, ps)
 osol = solve(oprob)
 nothing # hide
 ```
+
 As for Cartesian and masked lattice-based simulations we can plot this simulation using the `lattice_plot` function. In this case, however, we need to first load *both* [CairoMakie](https://github.com/MakieOrg/Makie.jl) and the [GraphMakie](https://github.com/MakieOrg/GraphMakie.jl) packages.
+
 ```@example lattice_plotting_graphs
 import CairoMakie, GraphMakie
 lattice_plot(osol, :X, lrs)
 ```
+
 Here we provide no `t` argument, and hence plot the solution at the final time point. As for 2d simulations, a colour scale described $X$'s concentration in each compartment. Some arguments, are not relevant when plotting simulations on Cartesian and masked lattices, but which are relevant to graph lattices are:
 - `node_size`: Sets the size of each compartment in the plot.
 - `layout`: A vector of x and y values which can be used to determine the position of each compartment in the plot.
 
 E.g. here we manually set where each compartment should be plotted:
+
 ```@example lattice_plotting_graphs
 isq2 = 1/sqrt(2)
 layout = [(0, 0), (isq2, isq2), (isq2, 1 + isq2), (0, 1 + 2isq2), (-isq2, 1 + isq2), (-isq2, isq2)]

@@ -17,6 +17,7 @@ chemistry and the dynamics of the transmembrane potential can be combined into a
 complete model.
 
 We begin by importing some necessary packages:
+
 ```@example hh1
 using ModelingToolkit, Catalyst, NonlinearSolve, Plots, OrdinaryDiffEqRosenbrock
 ```
@@ -55,6 +56,7 @@ nothing # hide
 
 We also declare a function to represent an applied current in our model, which we
 will use to perturb the system and create action potentials.
+
 ```@example hh1
 Iapp(t,I₀) = I₀ * sin(2*pi*t/30)^2
 ```
@@ -88,6 +90,7 @@ hhmodel = @reaction_network hhmodel begin
     end
 end
 ```
+
 For now we turn off the applied current by setting its amplitude, `I₀`, to zero.
 
 `hhmodel` is now a `ReactionSystem` that is coupled to an internal constraint
@@ -142,6 +145,7 @@ we now separately construct and compose the model components.
 We start by defining systems to model each ionic current. Note we now use
 `@network_component` instead of `@reaction_network` as we want the models to be
 composable and not marked as finalized.
+
 ```@example hh1
 IKmodel = @network_component IKmodel begin
     @parameters ḡK = 36.0 EK = -82.0
@@ -167,6 +171,7 @@ nothing # hide
 ```
 
 We next define the voltage dynamics with unspecified values for the currents
+
 ```@example hh1
 hhmodel2 = @network_component hhmodel2 begin
     @parameters C = 1.0 I₀ = 0.0
@@ -175,13 +180,16 @@ hhmodel2 = @network_component hhmodel2 begin
 end
 nothing # hide
 ```
+
 Finally, we extend the `hhmodel` with the systems defining the ion channel currents
+
 ```@example hh1
 @named hhmodel2 = extend(IKmodel, hhmodel2)
 @named hhmodel2 = extend(INamodel, hhmodel2)
 @named hhmodel2 = extend(ILmodel, hhmodel2)
 hhmodel2 = complete(hhmodel2)
 ```
+
 Let's again solve the system starting from the previously calculated resting
 state, using the same applied current as above (to verify we get the same
 figure). Note, we now run `structural_simplify` from ModelingToolkit to

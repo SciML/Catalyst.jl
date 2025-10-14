@@ -22,6 +22,7 @@ produced at a rate proportional $V$ and can be degraded.
 The easiest way to include ODEs and algebraic equations is to just include them
 when using the DSL to specify a model. Here we include an ODE for $V(t)$ along
 with degradation and production reactions for $P(t)$:
+
 ```@example ceq1
 using Catalyst, OrdinaryDiffEqTsit5, Plots
 
@@ -45,8 +46,10 @@ rn = @reaction_network growing_cell begin
     end
 end
 ```
+
 We can now create an `ODEProblem` from our model and solve it to see how $V(t)$
 and $P(t)$ evolve in time:
+
 ```@example ceq1
 oprob = ODEProblem(rn, [], (0.0, 1.0))
 sol = solve(oprob, Tsit5())
@@ -57,6 +60,7 @@ plot(sol)
 
 As an alternative to the previous approach, we could have also constructed our
 `ReactionSystem` all at once using the symbolic interface:
+
 ```@example ceq2
 using Catalyst, OrdinaryDiffEqTsit5, Plots
 
@@ -113,6 +117,7 @@ rn = @network_component begin
     1.0, P --> 0
 end
 ```
+
 Notice, here we interpolated the variable `V` with `$V` to ensure we use the
 same symbolic unknown variable in the `rn` as we used in building `osys`. See
 the doc section on [interpolation of variables](@ref
@@ -123,6 +128,7 @@ systems together Catalyst requires that the systems have not been marked as
 
 We can now merge the two systems into one complete `ReactionSystem` model using
 [`ModelingToolkit.extend`](@ref):
+
 ```@example ceq2b
 @named growing_cell = extend(osys, rn)
 growing_cell = complete(growing_cell)
@@ -130,6 +136,7 @@ growing_cell = complete(growing_cell)
 
 We see that the combined model now has both the reactions and ODEs as its
 equations. To solve and plot the model we proceed like normal
+
 ```@example ceq2b
 oprob = ODEProblem(growing_cell, [], (0.0, 1.0))
 sol = solve(oprob, Tsit5())
@@ -179,15 +186,19 @@ rn = @reaction_network growing_cell begin
     end
 end
 ```
+
 We can now create and simulate our model
+
 ```@example ceq3a
 oprob = ODEProblem(rn, [], (0.0, 10.0))
 sol = solve(oprob, Tsit5())
 plot(sol)
 Catalyst.PNG(plot(sol; fmt = :png, dpi = 200)) # hide
 ```
+
 We can also model discrete events. Here at a time `switch_time` we will set the parameter `k_on` to be
 zero:
+
 ```@example ceq3a
 rn = @reaction_network param_off_ex begin
     @parameters switch_time
@@ -206,6 +217,7 @@ oprob = ODEProblem(rn, u0, tspan, p)
 sol = solve(oprob, Tsit5(); tstops = 2.0)
 plot(sol)
 ```
+
 Note that for discrete events we need to set a stop time via `tstops` so that
 the ODE solver can step exactly to the specific time of our event. In the
 previous example we just manually set the numeric value of the parameter in the
@@ -213,12 +225,14 @@ previous example we just manually set the numeric value of the parameter in the
 the value of the parameter from `oprob` and pass this numeric value. This helps
 ensure consistency between the value passed via `p` and/or symbolic defaults and
 what we pass as a `tstop` to `solve`. We can do this as
+
 ```@example ceq3a
 oprob = ODEProblem(rn, u0, tspan, p)
 switch_time_val = oprob.ps[:switch_time]
 sol = solve(oprob, Tsit5(); tstops = switch_time_val)
 plot(sol)
 ```
+
 For a detailed discussion on how to directly use the lower-level but more
 flexible DifferentialEquations.jl event/callback interface, see the
 [tutorial](https://docs.sciml.ai/Catalyst/stable/catalyst_applications/advanced_simulations/#Event-handling-using-callbacks)
@@ -228,6 +242,7 @@ on event handling using callbacks.
 
 Let's repeat the previous two models using the symbolic interface. We first
 create our equations and unknowns/species again
+
 ```@example ceq3
 using Catalyst, OrdinaryDiffEqTsit5, Plots
 t = default_t()
@@ -240,12 +255,16 @@ eq = D(V) ~ λ * V
 rx1 = @reaction $V, 0 --> $P
 rx2 = @reaction 1.0, $P --> 0
 ```
+
 Before creating our `ReactionSystem` we make the event.
+
 ```@example ceq3
 # every 1.0 time unit we half the volume of the cell and the number of proteins
 continuous_events = [V ~ 2.0] => [V ~ V/2, P ~ P/2]
 ```
+
 We can now create and simulate our model
+
 ```@example ceq3
 @named rs = ReactionSystem([rx1, rx2, eq], t; continuous_events)
 rs = complete(rs)
@@ -255,9 +274,11 @@ sol = solve(oprob, Tsit5())
 plot(sol)
 Catalyst.PNG(plot(sol; fmt = :png, dpi = 200)) # hide
 ```
+
 We can again also model discrete events. Similar to our example with continuous
 events, we start by creating reaction equations, parameters, variables, and
 unknowns.
+
 ```@example ceq3
 t = default_t()
 @parameters k_on switch_time k_off
@@ -265,7 +286,9 @@ t = default_t()
 
 rxs = [(@reaction k_on, A --> B), (@reaction k_off, B --> A)]
 ```
+
 Now we add an event such that at time `t` (`switch_time`), `k_on` is set to zero.
+
 ```@example ceq3
 discrete_events = (t == switch_time) => [k_on ~ 0.0]
 
@@ -273,7 +296,9 @@ u0 = [:A => 10.0, :B => 0.0]
 tspan = (0.0, 4.0)
 p = [k_on => 100.0, switch_time => 2.0, k_off => 10.0]
 ```
+
 Simulating our model,
+
 ```@example ceq3
 @named rs2 = ReactionSystem(rxs, t, [A, B], [k_on, k_off, switch_time]; discrete_events)
 rs2 = complete(rs2)

@@ -8,13 +8,16 @@ After system steady states have been found using [HomotopyContinuation.jl](@ref 
 ## [Basic examples](@id steady_state_stability_basics)
 
 Let us consider the following basic example:
+
 ```@example stability_1
 using Catalyst
 rn = @reaction_network begin
     (p,d), 0 <--> X
 end
 ```
+
 It has a single (stable) steady state at $X = p/d$. We can confirm stability using the `steady_state_stability` function, to which we provide the steady state, the reaction system, and the parameter values:
+
 ```@example stability_1
 ps = [:p => 2.0, :d => 0.5]
 steady_state = [:X => 4.0]
@@ -22,23 +25,29 @@ steady_state_stability(steady_state, rn, ps)
 ```
 
 Next, let us consider the following [self-activation loop](@ref basic_CRN_library_self_activation):
+
 ```@example stability_1
 sa_loop = @reaction_network begin
     (hill(X,v,K,n),d), 0 <--> X
 end
 ```
+
 For certain parameter choices, this system exhibits multi-stability. Here, we can find the steady states [using homotopy continuation](@ref homotopy_continuation):
+
 ```@example stability_1
 import HomotopyContinuation
 ps = [:v => 2.0, :K => 0.5, :n => 3, :d => 1.0]
 steady_states = hc_steady_states(sa_loop, ps)
 ```
+
 Next, we can apply `steady_state_stability` to each steady state yielding a vector of their stabilities:
+
 ```@example stability_1
 [steady_state_stability(sstate, sa_loop, ps) for sstate in steady_states]
 ```
 
 Finally, as described above, Catalyst uses an optional argument, `tol`, to determine how strict to make the stability check.  I.e. below we set the tolerance to `1e-6` (a larger value, that is stricter, than the default of `10*sqrt(eps())`)
+
 ```@example stability_1
 [steady_state_stability(sstate, sa_loop, ps; tol = 1e-6) for sstate in steady_states]
 nothing# hide
@@ -49,6 +58,7 @@ nothing# hide
 Catalyst uses the system Jacobian to compute steady state stability, and the Jacobian is computed once for each call to `steady_state_stability`. If you repeatedly compute stability for steady states of the same system, pre-computing the Jacobian and supplying it to the `steady_state_stability` function can improve performance.
 
 In this example we use the self-activation loop from previously, pre-computes its Jacobian, and uses it to multiple `steady_state_stability` calls:
+
 ```@example stability_1
 ss_jac = steady_state_jac(sa_loop)
 

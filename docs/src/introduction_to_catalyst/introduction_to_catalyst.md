@@ -13,6 +13,7 @@ prerequisite.
 We begin by installing Catalyst and any needed packages into a new environment.
 This step can be skipped if you have already installed them in your current,
 active environment:
+
 ```julia
 using Pkg
 
@@ -29,6 +30,7 @@ Pkg.add("StochasticDiffEq")
 ```
 
 We next load the basic packages we'll need for our first example:
+
 ```@example tut1
 using Catalyst, OrdinaryDiffEqTsit5, Plots, Latexify
 ```
@@ -40,6 +42,7 @@ use are discussed in detail within the tutorial, [The Reaction DSL](@ref
 dsl_description). Here, we use a mix of first order, zero order, and repressive
 Hill function rate laws. Note, $\varnothing$ corresponds to the empty state, and
 is used for zeroth order production and first order degradation reactions:
+
 ```@example tut1
 rn = @reaction_network Repressilator begin
     hillr(P₃,α,K,n), ∅ --> m₁
@@ -57,6 +60,7 @@ rn = @reaction_network Repressilator begin
 end
 show(stdout, MIME"text/plain"(), rn) # hide
 ```
+
 showing that we've created a new network model named `Repressilator` with the
 listed chemical species and unknowns. [`@reaction_network`](@ref) returns a
 [`ReactionSystem`](@ref), which we saved in the `rn` variable. It can
@@ -64,28 +68,37 @@ be converted to a variety of other mathematical models represented as
 `ModelingToolkit.AbstractSystem`s, or analyzed in various ways using the
 [Catalyst.jl API](@ref api). For example, to see the chemical species, parameters,
 and reactions we can use
+
 ```@example tut1
 species(rn)
 ```
+
 ```@example tut1
 parameters(rn)
 ```
+
 and
+
 ```@example tut1
 reactions(rn)
 ```
+
 We can also use Latexify to see the corresponding reactions in Latex, which shows what
 the `hillr` terms mathematically correspond to
+
 ```julia
 latexify(rn)
 ```
+
 ```@example tut1
 rn #hide
 ```
+
 Catalyst also has functionality for visualizing networks using the [Makie](https://docs.makie.org/stable/)
 plotting ecosystem. The relevant packages to load are Catalyst, GraphMakie, NetworkLayout, and a Makie backend
 such as CairoMakie. Doing so and then using the `plot_network` function allows us to
 visualize the network:
+
 ```@example tut1
 using Catalyst
 import CairoMakie, GraphMakie, NetworkLayout
@@ -99,16 +112,19 @@ Similarly, black arrows from reactions to species indicate products, and are
 labelled with their output stoichiometry. In contrast, red arrows from a species
 to reactions indicate the species is used within the reactions' rate
 expressions. For the repressilator, the reactions
+
 ```julia
 hillr(P₃,α,K,n), ∅ --> m₁
 hillr(P₁,α,K,n), ∅ --> m₂
 hillr(P₂,α,K,n), ∅ --> m₃
 ```
+
 have rates that depend on the proteins, and hence lead to red arrows from each
 `Pᵢ`.
 
 Note, from the REPL or scripts one can always use Makie's `save` function to save
 the graph.
+
 ```julia
 save("repressilator_graph.png", g)
 ```
@@ -118,9 +134,11 @@ save("repressilator_graph.png", g)
 Let's now use our `ReactionSystem` to generate and solve a corresponding mass
 action ODE model. We first convert the system to a `ModelingToolkit.ODESystem`
 by
+
 ```@example tut1
 odesys = convert(ODESystem, rn)
 ```
+
 (Here Latexify is used automatically to display `odesys` in Latex within Markdown
 documents or notebook environments like Pluto.jl.)
 
@@ -130,14 +148,17 @@ To do this we need to build mappings from the symbolic parameters and the
 species to the corresponding numerical values for parameters and initial
 conditions. We can build such mappings in several ways. One is to use Julia
 `Symbols` to specify the values like
+
 ```@example tut1
 pmap  = (:α => .5, :K => 40, :n => 2, :δ => log(2)/120,
          :γ => 5e-3, :β => log(2)/6, :μ => log(2)/60)
 u₀map = [:m₁ => 0., :m₂ => 0., :m₃ => 0., :P₁ => 20., :P₂ => 0., :P₃ => 0.]
 nothing   # hide
 ```
+
 Alternatively, we can use ModelingToolkit-based symbolic species variables to
 specify these mappings like
+
 ```@example tut1
 psymmap  = (rn.α => .5, rn.K => 40, rn.n => 2, rn.δ => log(2)/120,
     rn.γ => 5e-3, rn.β => 20*log(2)/120, rn.μ => log(2)/60)
@@ -145,6 +166,7 @@ u₀symmap = [rn.m₁ => 0., rn.m₂ => 0., rn.m₃ => 0., rn.P₁ => 20.,
     rn.P₂ => 0., rn.P₃ => 0.]
 nothing   # hide
 ```
+
 Knowing one of the preceding mappings we can set up the `ODEProblem` we want to
 solve:
 
@@ -156,14 +178,17 @@ tspan = (0., 10000.)
 oprob = ODEProblem(rn, u₀map, tspan, pmap)
 nothing   # hide
 ```
+
 By passing `rn` directly to the `ODEProblem`, Catalyst has to
 (internally) call `convert(ODESystem, rn)` again to generate the
 symbolic ODEs. We could instead pass `odesys` directly like
+
 ```@example tut1
 odesys = complete(odesys)
 oprob2 = ODEProblem(odesys, u₀map, tspan, pmap)
 nothing   # hide
 ```
+
 `oprob` and `oprob2` are functionally equivalent, each representing the same
 underlying problem.
 
@@ -177,6 +202,7 @@ plot the solutions:
 sol = solve(oprob, Tsit5(), saveat=10.0)
 plot(sol)
 ```
+
 We see the well-known oscillatory behavior of the repressilator! For more on the
 choices of ODE solvers, see the [OrdinaryDiffEq.jl
 documentation](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/).
@@ -220,6 +246,7 @@ JumpProcesses instead of letting JumpProcesses auto-select a solver, see the
 list of SSAs (i.e., constant rate jump aggregators) in the
 [documentation](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-for-Exact-Simulation).
 For example, to choose the `SortingDirect` method we would instead say
+
 ```@example tut1
 jprob = JumpProblem(jinputs, SortingDirect())
 sol = solve(jprob)
@@ -289,6 +316,7 @@ via mappings that were constructed after building our [`ReactionSystem`](@ref).
 Catalyst also supports specifying default values for these during
 `ReactionSystem` construction. For example, for the last SDE example we
 could have also built and simulated the complete model using the DSL like
+
 ```@example tut1
 bdp2 = @reaction_network begin
     @parameters c₁ = 1.0 c₂ = 2.0 c₃ = 50.0
@@ -300,8 +328,10 @@ end
 tspan = (0., 4.)
 sprob2 = SDEProblem(bdp2, [], tspan)
 ```
+
 Let's now simulate both models, starting from the same random number generator
 seed, and check we get the same solutions
+
 ```@example tut1
 using Random
 Random.seed!(1)
@@ -325,19 +355,26 @@ rates are treated as *microscopic* rates. That is, for a general mass action
 reaction of the form $n_1 S_1 + n_2 S_2 + \dots n_M S_M \to \dots$ with
 stoichiometric substrate coefficients $\{n_i\}_{i=1}^M$ and rate constant $k$,
 the corresponding ODE and SDE rate laws are taken to be
+
 ```math
 k \prod_{i=1}^M \frac{(S_i)^{n_i}}{n_i!},
 ```
+
 while the jump process transition rate (i.e., the propensity or intensity
 function) is
+
 ```math
 k \prod_{i=1}^M \frac{S_i (S_i-1) \dots (S_i-n_i+1)}{n_i!}.
 ```
+
 For example, the rate law of the reaction $2X + 3Y \to Z$ with rate constant $k$ would be
+
 ```math
 k \frac{X^2}{2!} \frac{Y^3}{3!} \\
 ```
+
 giving the ODE model
+
 ```math
 \begin{align*}
 \frac{dX}{dt} &=  -2 k \frac{X^2}{2!} \frac{Y^3}{3!}, &
@@ -345,20 +382,25 @@ giving the ODE model
 \frac{dZ}{dt} &= k \frac{X^2}{2!} \frac{Y^3}{3!}.
 \end{align*}
 ```
+
 This implicit rescaling of rate constants can be disabled through explicit
 conversion of a [`ReactionSystem`](@ref) to another system via
 [`Base.convert`](@ref) using the `combinatoric_ratelaws=false` keyword
 argument, i.e.
+
 ```julia
 rn = @reaction_network ...
 convert(ODESystem, rn; combinatoric_ratelaws=false)
 ```
 
 For the previous example using this keyword argument would give the rate law
+
 ```math
 k X^2 Y^3
 ```
+
 and the ODE model
+
 ```math
 \begin{align*}
 \frac{dX}{dt} &=  -2 k X^2 Y^3, &

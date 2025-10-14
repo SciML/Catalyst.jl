@@ -15,6 +15,7 @@ While local sensitivities are primarily used as a subroutine of other methodolog
 ## [Basic example](@id global_sensitivity_analysis_basic_example)
 
 We will consider a simple [SEIR model of an infectious disease](https://en.wikipedia.org/wiki/Compartmental_models_in_epidemiology). This is an expansion of the classic [SIR model](@ref basic_CRN_library_sir) with an additional *exposed* state, $E$, denoting individuals who are latently infected but currently unable to transmit their infection to others.
+
 ```@example gsa_1
 using Catalyst
 seir_model = @reaction_network begin
@@ -23,7 +24,9 @@ seir_model = @reaction_network begin
     10^γ, I --> R
 end
 ```
+
 We will study the peak number of infected cases's ($max(I(t))$) sensitivity to the system's three parameters. We create a function which simulates the system from a given initial condition and measures this property:
+
 ```@example gsa_1
 using OrdinaryDiffEqDefault
 
@@ -40,17 +43,20 @@ function peak_cases(p)
 end
 nothing # hide
 ```
+
 Now, GSA can be applied to our `peak_cases` function using GlobalSensitivity's `gsa` function. It takes 3 mandatory inputs:
 - The function for which we wish to carry out GSA.
 - A method with which we wish to carry out GSA.
 - A domain on which we carry out GSA. This is defined by a vector, which contains one two-valued Tuple for each parameter. These Tuples contain a lower and an upper bound for their respective parameter's value.
 
 E.g., here we carry out GSA using [Morris's method](https://en.wikipedia.org/wiki/Morris_method):
+
 ```@example gsa_1
 using GlobalSensitivity
 global_sens = gsa(peak_cases, Morris(), [(-3.0,-1.0), (-2.0,0.0), (-2.0,0.0)])
 nothing # hide
 ```
+
 on the domain $10^β ∈ (-3.0,-1.0)$, $10^a ∈ (-2.0,0.0)$, $10^γ ∈ (-2.0,0.0)$ (which corresponds to $β ∈ (0.001,0.1)$, $a ∈ (0.01,1.0)$, $γ ∈ (0.01,1.0)$). The output of `gsa` varies depending on which GSA approach is used. GlobalSensitivity implements a range of methods for GSA. Below, we will describe the most common ones, as well as how to apply them and interpret their outputs.
 
 !!! note
@@ -64,10 +70,12 @@ on the domain $10^β ∈ (-3.0,-1.0)$, $10^a ∈ (-2.0,0.0)$, $10^γ ∈ (-2.0,0
 ## [Sobol's method-based global sensitivity analysis](@id global_sensitivity_analysis_sobol)
 
 The most common method for GSA is [Sobol's method](https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis). This can be carried out using:
+
 ```@example gsa_1
 global_sens = gsa(peak_cases, Sobol(), [(-3.0,-1.0), (-2.0,0.0), (-2.0,0.0)]; samples = 500)
 nothing # hide
 ```
+
 Note: when `Sobol()` is used as the method, the `samples` argument must also be used.
 
 Sobol's method computes so-called *Sobol indices*, each measuring some combination of input's effect on the output. Here, when `Sobol()` is used, the *first order*, *second order*, and *total order* Sobol indices are computed. These can be accessed through the following fields:
@@ -76,25 +84,31 @@ Sobol's method computes so-called *Sobol indices*, each measuring some combinati
 - `global_sens.ST`: A vector where the i'th element is the output's sensitivity to any simultaneous variation of any combination of inputs that contain the i'th input. While only the first and second-order (and the total) Sobol indices are computed, the total order index compounds the information contained in Sobol indices across all orders.
 
 We can plot the first-order Sobol indices to analyse their content:
+
 ```@example gsa_1
 using Plots
 bar(["β", "a", "γ"], global_sens.S1; group = ["β", "a", "γ"], fillrange = 1e-3)
 ```
+
 Here, we see that $β$ has a relatively low effect on the peak in infected cases, as compared to $a$ and $γ$. Plotting the total order indices suggests the same:
+
 ```@example gsa_1
 bar(["β", "a", "γ"], global_sens.ST; group = ["β", "a", "γ"], fillrange = 1e-3)
 ```
 
 GlobalSensitivity implements several versions of Sobol's method, and also provides several options. These are described [here](https://docs.sciml.ai/GlobalSensitivity/stable/methods/sobol/). Specifically, it is often recommended to, due to its quick computation time, use the related extended Fourier amplitude sensitivity test (EFAST) version. We can run this using:
+
 ```@example gsa_1
 global_sens = gsa(peak_cases, eFAST(), [(-3.0,-1.0), (-2.0,0.0), (-2.0,0.0)]; samples = 500)
 nothing # hide
 ```
+
 It should be noted that when EFAST is used, only the first and total-order Sobol indices are computed (and not the second-order ones).
 
 ## [Morris's method-based global sensitivity analysis](@id global_sensitivity_analysis_morris)
 
 An alternative to using Sobol's method is to use [Morris's method](https://en.wikipedia.org/wiki/Morris_method). The syntax is similar to previously (however, the `samples` argument is no longer required):
+
 ```@example gsa_1
 global_sens = gsa(peak_cases, Morris(), [(-3.0,-1.0), (-2.0,0.0), (-2.0,0.0)])
 nothing # hide
@@ -105,11 +119,13 @@ Morris's method computes, for parameter samples across parameter space, their *e
 - `global_sens.variances`: Measures the variance of each parameter's influence on the output. A large variance suggests that a parameter's influence on the output is highly dependent on other parameter values.
 
 We can check these values for our example:
+
 ```@example gsa_1
 mean_star_plot = bar(["β" "a" "γ"], global_sens.means_star; labels=["β" "a" "γ"], title="μ*")
 variances_plot = bar(["β" "a" "γ"], global_sens.variances; labels=["β" "a" "γ"], title="σ²")
 plot(mean_star_plot, variances_plot)
 ```
+
 As previously, we note that the peak number of infected cases is more sensitive to $a$ and $γ$ than to $β$.
 
 !!! note
@@ -125,6 +141,7 @@ GlobalSensitivity also implements additional methods for GSA, more details on th
 ## [Global sensitivity analysis for non-scalar outputs](@id global_sensitivity_analysis_nonscalars)
 
 Previously, we have demonstrated GSA on functions with scalar outputs. However, it is also possible to apply it to functions with vector outputs. Let us consider our previous function, but where it provides both the peak number of exposed *and* infected individuals:
+
 ```@example gsa_1
 function peak_cases_2(p)
     ps = [:β => p[1], :a => p[2], :γ => p[3]]
@@ -137,14 +154,18 @@ nothing # hide
 ```
 
 We can apply `gsa` to this function as previously:
+
 ```@example gsa_1
 global_sens = gsa(peak_cases_2, Morris(), [(-3.0,-1.0), (-2.0,0.0), (-2.0,0.0)])
 nothing # hide
 ```
+
 however, each output field is now a multi-row matrix, containing one row for each of the outputs. E.g., we have
+
 ```@example gsa_1
 global_sens.means_star
 ```
+
 Here, the function's sensitivity is evaluated with respect to each output independently. Hence, GSA on `peak_cases_2` is equivalent to first carrying out GSA on a function returning the peak number of exposed individuals, and then on one returning the peak number of infected individuals.
 
 ---
@@ -152,6 +173,7 @@ Here, the function's sensitivity is evaluated with respect to each output indepe
 ## [Citations](@id global_sensitivity_analysis_citations)
 
 If you use this functionality in your research, [in addition to Catalyst](@ref doc_index_citation), please cite the following paper to support the authors of the GlobalSensitivity.jl package:
+
 ```
 @article{dixit2022globalsensitivity,
   title={GlobalSensitivity. jl: Performant and Parallel Global Sensitivity Analysis with Julia},

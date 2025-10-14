@@ -12,6 +12,7 @@ Note, when generating problems from other system types, `u0` and `p` must
 provide vectors, tuples or dictionaries of `Pair`s that map each the symbolic
 variables for each species or parameter to their numerical value. E.g., for the
 Michaelis-Menten example above we'd use
+
 ```julia
 rs = @reaction_network begin
   c1, X --> 2X

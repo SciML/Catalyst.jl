@@ -19,6 +19,7 @@ Let us illustrate some of the types of network properties that
 Catalyst can determine.
 
 To begin, consider the following reaction network:
+
 ```@example s1b
 using Catalyst
 rn = @reaction_network begin
@@ -30,7 +31,9 @@ rn = @reaction_network begin
     k9, H --> 2A
 end
 ```
+
 with graph
+
 ```@example s1b
 using CairoMakie, GraphMakie, NetworkLayout
 plot_complexes(rn)
@@ -47,6 +50,7 @@ these for a given network, returning a vector of the integer indices of reaction
 complexes participating in each set of linkage-classes. Note, indices of
 reaction complexes can be determined from the ordering returned by
 [`reactioncomplexes`](@ref).
+
 ```@example s1b
 # we must first calculate the reaction complexes -- they are cached in rn
 reactioncomplexes(rn)
@@ -54,20 +58,25 @@ reactioncomplexes(rn)
 # now we can calculate the linkage classes
 lcs = linkageclasses(rn)
 ```
+
 It can often be convenient to obtain the disconnected sub-networks as distinct
 `ReactionSystem`s, which are returned by the [`subnetworks`](@ref) function:
+
 ```@example s1b
 subnets = subnetworks(rn)
 
 # check the reactions in each subnetwork
 reactions.(subnets)
 ```
+
 The graphs of the reaction complexes in the two sub-networks are then
+
 ```@example s1b
   plot_complexes(subnets[1])
 ```
 
 and,
+
 ```@example s1b
  plot_complexes(subnets[2])
 ```
@@ -87,6 +96,7 @@ to the number of independent species in a chemical reaction network. That is, if
 we calculate the linear conservation laws of a network, and use them to
 eliminate the dependent species of the network, we will have ``r`` independent
 species remaining. For our current example the conservation laws are given by
+
 ```@example s1b
 # first we calculate the conservation laws -- they are cached in rn
 conservationlaws(rn)
@@ -95,26 +105,34 @@ conservationlaws(rn)
 conservedequations(rn)
 show(stdout, MIME"text/plain"(), ans) # hide
 ```
+
 Here the parameters `Γ[i]` represent the constants of the three
 conservation laws, and we see that there are three dependent species that could
 be eliminated. As
+
 ```@example s1b
 numspecies(rn)
 ```
+
 we find that there are five independent species. Let's check this is correct:
+
 ```@example s1b
 using LinearAlgebra
 rank(netstoichmat(rn)) == 5
 ```
+
 So we know that the rank of our reaction network is five. An extended section discussing how to
 utilise conservation law elimination during chemical reaction network modelling can be found
 [here](@ref conservation_laws).
 
 The deficiency, ``\delta``, of a reaction network is defined as
+
 ```math
 \delta = \textrm{(number of complexes)} - \textrm{(number of linkage classes)} - \textrm{(rank)}.
 ```
+
 For our network this is ``7 - 2 - 5 = 0``, which we can calculate in Catalyst as
+
 ```@example s1b
 # first we calculate the reaction complexes of rn and cache them in rn
 reactioncomplexes(rn)
@@ -122,6 +140,7 @@ reactioncomplexes(rn)
 # then we can calculate the deficiency
 δ = deficiency(rn)
 ```
+
 Quoting Feinberg [^1]
 > Deficiency zero networks are ones for which the reaction vectors [i.e. net
 > stoichiometry vectors] are as independent as the partition of complexes into
@@ -134,6 +153,7 @@ A reaction network is *reversible* if the "arrows" of the reactions are
 symmetric so that every reaction is accompanied by its reverse reaction.
 Catalyst's API provides the [`isreversible`](@ref) function to determine whether
 a reaction network is reversible. As an example, consider
+
 ```@example s1b
 rn = @reaction_network begin
   (k1,k2),A <--> B
@@ -148,7 +168,9 @@ reactioncomplexes(rn)
 # test if the system is reversible
 isreversible(rn)
 ```
+
 Consider another example,
+
 ```@example s1b
 rn = @reaction_network begin
   (k1,k2),A <--> B
@@ -159,6 +181,7 @@ end
 reactioncomplexes(rn)
 isreversible(rn)
 ```
+
 ```@example s1b
 plot_complexes(rn)
 ```
@@ -168,11 +191,13 @@ However, it satisfies a weaker property in that there is a path from each
 reaction complex back to itself within its associated subgraph. This is known as
 *weak reversibility*. One can test a network for weak reversibility by using
 the [`isweaklyreversible`](@ref) function:
+
 ```@example s1b
 # need subnetworks from the reaction network first
 subnets = subnetworks(rn)
 isweaklyreversible(rn, subnets)
 ```
+
 Every reversible network is also weakly reversible, but not every weakly
 reversible network is reversible.
 
@@ -190,27 +215,35 @@ column of this matrix, this vector corresponds to the change in the species
 state vector, ``\mathbf{x}(t)``, due to reaction ``k``, i.e. when reaction ``k``
 occurs ``\mathbf{x}(t) \to \mathbf{x}(t) + \mathbf{N}_k``. Moreover, by
 integrating the ODE
+
 ```math
 \frac{d\mathbf{x}}{dt} = N \mathbf{v}(\mathbf{x}(t)) = \sum_{k=1}^{K} v_k(\mathbf{x}(t)) \, \mathbf{N}_k
 ```
+
 we find
+
 ```math
 \mathbf{x}(t) = \mathbf{x}(0) + \sum_{k=1}^K \left(\int_0^t v_k(\mathbf{x})(s) \, ds\right) \mathbf{N}_k,
 ```
+
 which demonstrates that ``\mathbf{x}(t) - \mathbf{x}(0)`` is always given by a
 linear combination of the stoichiometry vectors, i.e.
+
 ```math
 \mathbf{x}(t) - \mathbf{x}(0) \in \operatorname{span}\{\mathbf{N}_k \}.
 ```
+
 In particular, this says that ``\mathbf{x}(t)`` lives in the translation of the
 ``\operatorname{span}\{\mathbf{N}_k \}`` by ``\mathbf{x}(0)`` which we write as
 ``(\mathbf{x}(0) + \operatorname{span}\{\mathbf{N}_k\})``. In fact, since the
 solution should stay non-negative, if we let $\bar{\mathbb{R}}_+^{M}$ denote the
 subset of vectors in $\mathbb{R}^{M}$ with non-negative components, the possible
 physical values for the solution, ``\mathbf{x}(t)``, must be in the set
+
 ```math
 (\mathbf{x}(0) + \operatorname{span}\{\mathbf{N}_k\}) \cap \bar{\mathbb{R}}_+^{M}.
 ```
+
 This set is called the stoichiometric compatibility class of ``\mathbf{x}(t)``.
 The key property of stoichiometric compatibility classes is that they are
 invariant under the RRE ODE's dynamics, i.e. a solution will always remain
@@ -224,14 +257,18 @@ With these definitions we can now see how knowing the deficiency and weak
 reversibility of the network can tell us about its steady state behavior.
 Consider the previous example, which we know is weakly reversible. Its
 deficiency is
+
 ```@example s1b
 deficiency(rn)
 ```
+
 We also verify that the system is purely mass action (though it is apparent
 from the network's definition):
+
 ```@example s1b
 all(rx -> ismassaction(rx, rn), reactions(rn))
 ```
+
 We can therefore apply the Deficiency Zero Theorem to draw conclusions about the
 system's steady state behavior. The Deficiency Zero Theorem (roughly) says that
 a mass action network with deficiency zero satisfies
@@ -250,6 +287,7 @@ exactly one equilibrium solution which will be positive and locally
 asymptotically stable.
 
 As a final example, consider the following network from [^1]
+
 ```@example s1b
 def0_rn = @reaction_network begin
   (k1,k2),A <--> 2B
@@ -263,6 +301,7 @@ def = deficiency(def0_rn)
 iswr = isweaklyreversible(def0_rn, subnets)
 isma,def,iswr
 ```
+
 which we see is mass action and has deficiency zero, but is not weakly
 reversible. As such, we can conclude that for any choice of rate constants the
 RRE ODEs cannot have a positive equilibrium solution.
@@ -337,12 +376,14 @@ please consult Martin Feinberg's *Foundations of Chemical Reaction Network Theor
 knowing that a network is complex balanced is really quite powerful.
 
 Let's check whether the deficiency 0 reaction network that we defined above is complex balanced by providing a set of rates:
+
 ```@example s1b
 rates = Dict([:k1 => 2.4, :k2 => 4., :k3 => 10., :k4 => 5.5, :k5 => 0.4])
 iscomplexbalanced(rn, rates)
 ```
 
 We can do a similar check for detailed balance.
+
 ```@example s1b
 isdetailedbalanced(rn, rates)
 ```

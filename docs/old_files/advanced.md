@@ -7,12 +7,14 @@ chemical reaction network models (still not very complicated!).
 
 The reaction network DSL can "see" user defined functions that work with
 ModelingToolkit. E.g., this is should work
+
 ```julia
 myHill(x) = 2.0*x^3/(x^3+1.5^3)
 rn = @reaction_network begin
   myHill(X), ∅ → X
 end
 ```
+
 In some cases, it may be necessary or desirable to register functions with
 Symbolics.jl before their use in Catalyst, see the discussion
 [here](https://symbolics.juliasymbolics.org/dev/manual/functions/).
@@ -21,11 +23,13 @@ Symbolics.jl before their use in Catalyst, see the discussion
 
 While generally one wants the reaction rate to use the law of mass action, so
 the reaction
+
 ```julia
 rn = @reaction_network begin
   k, X → ∅
 end
 ```
+
 occurs at the rate ``d[X]/dt = -k[X]``, it is possible to ignore this by using
 any of the following non-filled arrows when declaring the reaction: `<=`, `⇐`, `⟽`,
 `⇒`, `⟾`, `=>`, `⇔`, `⟺` (`<=>` currently not possible due to Julia language technical reasons). This means that the reaction

@@ -9,10 +9,13 @@ and more broadly used within [SciML](https://sciml.ai) packages.
 
 A reaction network can be used as input to an `ODEProblem` instead of a
 function, using
+
 ```julia
 odeprob = ODEProblem(rn, args...; kwargs...)
 ```
+
 E.g., a model can be created and solved using:
+
 ```julia
 using DiffEqBase, OrdinaryDiffEq
 rn = @reaction_network begin
@@ -25,6 +28,7 @@ tspan = (0.,1.)
 prob = ODEProblem(rn,u0,tspan,p)
 sol = solve(prob, Tsit5())
 ```
+
 Here, the order of unknowns in `u0` and `p` matches the order that species and
 parameters first appear within the DSL. They can also be determined by examining
 the ordering within the `species(rn)` and `parameters` vectors, or accessed more
@@ -36,19 +40,24 @@ DSL](@ref)). Note, if no parameters are given in the
 [`@reaction_network`](@ref), then `p` does not need to be provided.
 
 We can then plot the solution using the solution plotting recipe:
+
 ```julia
 using Plots
 plot(sol, lw=2)
 ```
+
 ![models1](../assets/models1.svg)
 
 To solve for a steady state starting from the guess `u0`, one can use
+
 ```julia
 using SteadyStateDiffEq
 prob = SteadyStateProblem(rn,u0,p)
 sol = solve(prob, SSRootfind())
 ```
+
 or
+
 ```julia
 prob = SteadyStateProblem(rn,u0,p)
 sol = solve(prob, DynamicSS(Tsit5()))
@@ -57,10 +66,12 @@ sol = solve(prob, DynamicSS(Tsit5()))
 #### Stochastic simulations using SDEs
 
 In a similar way an SDE can be created using
+
 ```julia
 using StochasticDiffEq
 sdeprob = SDEProblem(rn, args...; kwargs...)
 ```
+
 In this case the chemical Langevin equations (as derived in Gillespie, J. Chem.
 Phys. 2000) will be used to generate stochastic differential equations.
 
@@ -69,6 +80,7 @@ Phys. 2000) will be used to generate stochastic differential equations.
 Instead of solving SDEs, one can create a stochastic jump process model using
 integer copy numbers and a discrete stochastic simulation algorithm (i.e.,
 Gillespie Method or Kinetic Monte Carlo). This can be done using:
+
 ```julia
 using JumpProcesses
 rn = @reaction_network begin
@@ -82,11 +94,14 @@ discrete_prob = DiscreteProblem(rn, u0, tspan, p)
 jump_prob = JumpProblem(rn, discrete_prob, Direct())
 sol = solve(jump_prob, SSAStepper())
 ```
+
 Here, we used Gillespie's `Direct` method as the underlying stochastic simulation
 algorithm. We get:
+
 ```julia
 plot(sol, lw=2)
 ```
+
 ![models2](../assets/models2.svg)
 
 ### [`Reaction`](@ref) fields

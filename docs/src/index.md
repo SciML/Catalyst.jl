@@ -64,22 +64,29 @@ New users are recommended to start with either the [Introduction to Catalyst and
 This documentation contains code which is dynamically run whenever it is built. If you copy the code and run it in your Julia environment it should work. The exact Julia environment that is used in this documentation can be found [here](@ref doc_index_reproducibility).
 
 For most code blocks in this documentation, the output of the last line of code is printed at the of the block, e.g.
+
 ```@example home_display
 1 + 2
 ```
+
 and
+
 ```@example home_display
 using Catalyst # hide
 @reaction_network begin
     (p,d), 0 <--> X
 end
 ```
+
 However, in some situations (e.g. when output is extensive, or irrelevant to what is currently being described) we have disabled this, e.g. like here:
+
 ```@example home_display
 1 + 2
 nothing # hide
 ```
+
 and here:
+
 ```@example home_display
 @reaction_network begin
     (p,d), 0 <--> X
@@ -90,29 +97,35 @@ nothing # hide
 ## [Installation](@id doc_index_installation)
 
 Catalyst is an officially registered Julia package, which can be installed through the Julia package manager:
+
 ```julia
 using Pkg
 Pkg.add("Catalyst")
 ```
 
 Many Catalyst features require the installation of additional packages. E.g. for ODE-solving and simulation plotting
+
 ```julia
 Pkg.add("OrdinaryDiffEqDefault")
 Pkg.add("Plots")
 ```
+
 is also needed.
 
 It is **strongly** recommended to install and use Catalyst in its own environment with the
 minimal set of needed packages. For example, to install Catalyst and Plots in a
 new environment named `catalyst_project` (saved in the current directory) one
 can say
+
 ```julia
 Pkg.activate("catalyst_project")
 Pkg.add("Catalyst")
 Pkg.add("Plots")
 ```
+
 If one would rather just create a temporary environment that is not saved when
 exiting Julia you can say
+
 ```julia
 Pkg.activate(; temp = true)
 Pkg.add("Catalyst")
@@ -120,9 +133,11 @@ Pkg.add("Plots")
 ```
 
 After installation, we suggest running
+
 ```julia
 Pkg.status("Catalyst")
 ```
+
 to confirm that the latest version of Catalyst was installed (and not an older version).
 If you have installed into a new environment this should always be the case. However, if you
 installed into an existing environment, such as the default Julia global environment, the presence
@@ -164,6 +179,7 @@ plot(sol; lw = 5)
 #### [Stochastic jump simulations](@id doc_index_example_jump)
 
 The same model can be used as input to other types of simulations. E.g. here we instead generate and simulate a stochastic chemical kinetics jump process model.
+
 ```@example home_simple_example
 # Create and simulate a jump process (here using Gillespie's direct algorithm).
 # The initial conditions are now integers as we track exact populations for each species.
@@ -186,6 +202,7 @@ while in its phosphorylated form ($G^P$). The phosphorylation of $G$ ($G \to G^P
 is promoted by sunlight, which is modeled as the cyclic sinusoid $k_a (\sin(t) + 1)$.
 When the cell reaches a critical volume ($V_m$) it undergoes cell division. First, we
 declare our model:
+
 ```@example home_elaborate_example
 using Catalyst
 cell_model = @reaction_network begin
@@ -200,14 +217,18 @@ cell_model = @reaction_network begin
     kᵢ/V, Gᴾ --> G
 end
 ```
+
 We now study the system as a Chemical Langevin Dynamics SDE model, which can be generated as follows
+
 ```@example home_elaborate_example
 u0 = [:V => 25.0, :G => 50.0, :Gᴾ => 0.0]
 tspan = (0.0, 20.0)
 ps = [:Vₘ => 50.0, :g => 0.3, :kₚ => 100.0, :kᵢ => 60.0]
 sprob = SDEProblem(cell_model, u0, tspan, ps)
 ```
+
 This problem encodes the following stochastic differential equation model:
+
 ```math
 \begin{align*}
 dG(t) &=  - \left( \frac{k_p(\sin(t)+1)}{V(t)} G(t) + \frac{k_i}{V(t)} G^P(t) \right) dt - \sqrt{\frac{k_p (\sin(t)+1)}{V(t)} G(t)} \, dW_1(t) + \sqrt{\frac{k_i}{V(t)} G^P(t)} \, dW_2(t) \\
@@ -215,7 +236,9 @@ dG^P(t) &= \left( \frac{k_p(\sin(t)+1)}{V(t)} G(t) - \frac{k_i}{V(t)} G^P(t) \ri
 dV(t) &= \left(g \, G^P(t)\right) dt
 \end{align*}
 ```
+
 where the $dW_1(t)$ and $dW_2(t)$ terms represent independent Brownian Motions, encoding the noise added by the Chemical Langevin Equation. Finally, we can simulate and plot the results.
+
 ```@example home_elaborate_example
 using StochasticDiffEq, Plots
 sol = solve(sprob, EM(); dt = 0.05)
@@ -235,6 +258,7 @@ The software in this ecosystem was developed as part of academic research. If yo
 support it, please star the repository as such metrics may help us secure funding in the future. If
 you use Catalyst as part of your research, teaching, or other activities, we would be grateful if you
 could cite our work:
+
 ```
 @article{CatalystPLOSCompBio2023,
  doi = {10.1371/journal.pcbi.1011530},
@@ -256,20 +280,25 @@ could cite our work:
 ```@raw html
 <details><summary>The documentation of this SciML package was built using these direct dependencies,</summary>
 ```
+
 ```@example
 using Pkg # hide
 Pkg.status() # hide
 ```
+
 ```@raw html
 </details>
 ```
+
 ```@raw html
 <details><summary>and using this machine and Julia version.</summary>
 ```
+
 ```@example
 using InteractiveUtils # hide
 versioninfo() # hide
 ```
+
 ```@raw html
 </details>
 ```

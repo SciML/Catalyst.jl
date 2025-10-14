@@ -9,6 +9,7 @@ Previously we have described [how to select ODE solvers, and how this can impact
 ## [Jacobian options for spatial ODE simulations](@id spatial_lattice_ode_simulations_jacobians)
 
 We have previously described how, when [implicit solvers are used to solve stiff ODEs](@ref ode_simulation_performance_stiffness), the [strategy for computing the system Jacobian](@ref ode_simulation_performance_jacobian) is important. This is especially the case for spatial simulations, where the Jacobian often is large and highly sparse. Catalyst implements special methods for spatial Jacobians. To utilise these, provide the `jac = true` argument to your `ODEProblem` when it is created (if `jac = false`, which is the default, [*automatic differentiation*](https://en.wikipedia.org/wiki/Automatic_differentiation) will be used for Jacobian computation). Here we simulate a [Brusselator](@ref basic_CRN_library_brusselator) while designating to use Catalyst's computed Jacobian:
+
 ```@example spatial_ode
 using Catalyst, OrdinaryDiffEqBDF
 brusselator = @reaction_network begin
@@ -28,7 +29,9 @@ oprob = ODEProblem(lrs, u0, tspan, ps; jac = true)
 sol = solve(oprob, FBDF())
 nothing # hide
 ```
+
 For large systems, building a dense Jacobian can be problematic, in which case a [*sparse*](@ref ode_simulation_performance_sparse_jacobian) Jacobian can be designated using `sparse = true`:
+
 ```@example spatial_ode
 oprob = ODEProblem(lrs, u0, tspan, ps; jac = true, sparse = true)
 sol = solve(oprob, FBDF())

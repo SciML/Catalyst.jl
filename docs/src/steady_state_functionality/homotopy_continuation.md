@@ -15,6 +15,7 @@ Catalyst contains a special homotopy continuation extension that is loaded whene
 For this tutorial, we will use the [Wilhelm model](@ref basic_CRN_library_wilhelm) (which
 demonstrates bistability in a small chemical reaction network). We declare the
 model and the parameter set for which we want to find the steady states:
+
 ```@example hc_basics
 using Catalyst
 import HomotopyContinuation
@@ -28,12 +29,15 @@ end
 ps = [:k1 => 8.0, :k2 => 2.0, :k3 => 1.0, :k4 => 1.5]
 nothing # hide
 ```
+
 Here, we only run `import HomotopyContinuation` as we do not require any of its functions, and just need it to be present in the current scope for the extension to be activated.
 
 Now we can find the steady states using:
+
 ```@example hc_basics
 hc_steady_states(wilhelm_2009_model, ps)
 ```
+
 The order of the species in the output vectors are the same as in `species(wilhelm_2009_model)`.
 
 It should be noted that the steady state multivariate polynomials produced by reaction systems may have both imaginary and negative roots, which are filtered away by `hc_steady_states`. If you want the negative roots, you can use the `hc_steady_states(wilhelm_2009_model, ps; filter_negative=false)` argument.
@@ -42,13 +46,16 @@ It should be noted that the steady state multivariate polynomials produced by re
 
 Some systems are under-determined, and have an infinite number of possible steady states. These are typically systems containing a conservation
 law, e.g.
+
 ```@example hc_claws
 using Catalyst # hide
 two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 ```
+
 Catalyst allows the conservation laws of such systems to be [computed using the `conservationlaws` function](@ref conservation_laws). By using these to reduce the dimensionality of the system, as well as specifying the initial amount of each species, homotopy continuation can again be used to find steady states. Here we do this by designating such an initial condition (which is used to compute the system's conserved quantities, in this case $X1 + X2$):
+
 ```@example hc_claws
 import HomotopyContinuation # hide
 ps = [:k1 => 2.0, :k2 => 1.0]
@@ -68,6 +75,7 @@ hc_steady_states(two_state_model, ps; u0)
 ## [Citation](@id homotopy_continuation_citation)
 
 If you use this functionality in your research, please cite the following paper to support the authors of the HomotopyContinuation package:
+
 ```
 @inproceedings{HomotopyContinuation.jl,
   title={{H}omotopy{C}ontinuation.jl: {A} {P}ackage for {H}omotopy {C}ontinuation in {J}ulia},
