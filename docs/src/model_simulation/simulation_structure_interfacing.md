@@ -54,6 +54,7 @@ oprob.tspan
 ### [Remaking problems using the `remake` function](@id simulation_structure_interfacing_problems_remake)
 
 To modify a problem, the `remake` function should be used. It takes an already created problem, and returns a new, updated, one (the input problem is unchanged). The `remake` function takes the following inputs:
+
 - The problem that it remakes.
 - (optionally) `u0`: A vector with initial conditions that should be updated. The vector takes the same form as normal initial condition vectors, but does not need to be complete (in which case only a subset of the initial conditions are updated).
 - (optionally) `tspan`: An updated time span (using the same format as time spans normally are given in).
@@ -154,6 +155,7 @@ sol(1.0; idxs = [:C])
 Internally, species and parameter values are stored in vectors. Whenever e.g. `oprob[:C]` is called, Julia must first find which index in the storage vector $C$ is stored in. Next, its value can be retrieved. If `oprob[:C]` is called a large number of times, this index must be found in each call. If a large number of such accesses are carried out, and performance is essential, it can be worthwhile to pre-compute a function to carry this out.
 
 There exist four different functions, each returning a function for performing a specific type of interfacing:
+
 - `ModelingToolkit.getu`: For accessing species values.
 - `ModelingToolkit.getp`: For accessing parameter values.
 - `ModelingToolkit.setu`: For changing species values.

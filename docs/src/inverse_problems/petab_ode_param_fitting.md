@@ -41,6 +41,7 @@ plot!(data_ts, data_vals; label = "Measurements", seriestype = :scatter, ms = 6,
 ```
 
 Generally, PEtab takes five different inputs to define an optimisation problem (the minimiser of which generates a fitted parameter set):
+
 1. **Model**: The model which we want to fit to the data (a `ReactionSystem`).
 2. **Observables**: The possible observables that can be measured (a `Dict{String,PEtabObservable}`).
 3. **Estimation parameters**: The parameters which we want to fit to the data (a `Vector{PEtabParameter}`).
@@ -63,6 +64,7 @@ nothing # hide
 ### Parameters
 
 Each parameter of the system can either be
+
 1. Known (described [here](@ref petab_parameters_known)).
 2. Depend on experimental/simulation conditions (described [here](@ref petab_simulation_conditions)).
 3. Be an unknown that we wish to fit to data.
@@ -86,6 +88,7 @@ Sometimes, several different experiments are performed on a system (each potenti
 ### Measurements
 
 Finally, we need to define the system measurements to which the parameters will be fitted. Each measurement combines:
+
 1. The observable which is observed (here we use the id tag defined in the `observables` dictionary).
 2. The time point of the measurement.
 3. The measured value.
@@ -494,6 +497,7 @@ petab_problem = PEtabODEProblem(petab_model)
 ```
 
 We can find the:
+
 1. Objective function (negative log-likelihood) as the `petab_problem.nllh`. It takes a single argument (`p`) and returns the objective value.
 2. Gradient as the `petab_problem.grad!` field. It takes two arguments (`g` and `p`) with the updated gradient values being written to `g`.
 3. Hessian as the `petab_problem.hess!` field. It takes two arguments (`H` and `p`) with the updated hessian values being written to `H`.
@@ -545,6 +549,7 @@ By default, `which_run` loads the first run saved to that directory.
 ## [Events](@id petab_events)
 
 So far, we have assumed that all experiments, after initiation, run without interference. Experiments where conditions change, or where species are added/removed during the time course, can be represented through events. In PEtab, an event is represented through the `PEtabEvent` structure. It takes three arguments:
+
 1. The condition for triggering the event. This can either indicate a point in time, or a boolean condition.
 2. A rule for updating the event's target
 3. The event's target (either a species or parameter).

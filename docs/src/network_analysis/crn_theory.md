@@ -272,6 +272,7 @@ all(rx -> ismassaction(rx, rn), reactions(rn))
 We can therefore apply the Deficiency Zero Theorem to draw conclusions about the
 system's steady state behavior. The Deficiency Zero Theorem (roughly) says that
 a mass action network with deficiency zero satisfies
+
 1. If the network is weakly reversible, then independent of the reaction rate
    constants the RRE ODEs have exactly one equilibrium solution within each
    positive stoichiometric compatibility class. That equilibrium is locally
@@ -316,6 +317,7 @@ satisfiesdeficiencyzero(def0_rn)
 ## Deficiency One Theorem
 
 Very analogous to the deficiency zero theorem is the deficiency one theorem. The deficiency one theorem applies to a network with the following properties:
+
 1. The deficiency of each *linkage class* of the network is at most 1,
 2. The sum of the linkage class deficiencies is the total deficiency of the network, and
 3. Each linkage class has at most one terminal linkage class, which is a linkage class that is 1) strongly connected, and 2) has no outgoing reactions.

@@ -36,6 +36,7 @@ end
 ```
 
 Here, you start with `@reaction_network begin`, next list all of the model's reactions, and finish with `end`. Each reaction consists of
+
 - A *rate*.
 - A (potentially empty) set of *substrates*.
 - A (potentially empty) set of *products*.
@@ -328,6 +329,7 @@ end
 ```
 
 Catalyst comes with the following predefined functions:
+
 - The Michaelis-Menten function: $mm(X,v,K) = v * X/(X + K)$.
 - The repressive Michaelis-Menten function: $mmr(X,v,K) = v * K/(X + K)$.
 - The Hill function: $hill(X,v,K,n) = v * (X^n)/(X^n + K^n)$.
@@ -426,6 +428,7 @@ end
 ### [Using special arrow symbols](@id dsl_description_symbols_arrows)
 
 Catalyst uses `-->`, `<-->`, and `<--` to denote forward, bi-directional, and backwards reactions, respectively. Several unicode representations of these arrows are available. Here,
+
 - `>`, `→`, `↣`, `↦`, `⇾`, `⟶`, `⟼`, `⥟`, `⥟`, `⇀`, and `⇁` can be used to represent forward reactions.
 - `↔`, `⟷`, `⇄`, `⇆`, `⇌`, `⇋`, , and `⇔` can be used to represent bi-directional reactions.
 - `<`, `←`, `↢`, `↤`, `⇽`, `⟵`, `⟻`, `⥚`, `⥞`, `↼`, , and `↽` can be used to represent backwards reactions.
@@ -442,6 +445,7 @@ end
 ### [Using special symbols to denote species or parameters](@id dsl_description_symbols_special)
 
 A range of possible characters are available which can be incorporated into species and parameter names. This includes, but is not limited to:
+
 - Greek letters (e.g `α`, `σ`, `τ`, and `Ω`).
 - Superscript and subscript characters (to create e.g. `k₁`, `k₂`, `Xₐ`, and `Xᴾ`).
 - Non-latin, non-greek, letters (e.g. `ä`, `Д`, `س`, and `א`).
@@ -468,6 +472,7 @@ end
 ```
 
 It should be noted that the following symbols are *not permitted* to be used as species or parameter names:
+
 - `pi` and `π` (used in Julia to denote [`3.1415926535897...`](https://en.wikipedia.org/wiki/Pi)).
 - `ℯ` (used in Julia to denote [Euler's constant](https://en.wikipedia.org/wiki/Euler%27s_constant)).
 - `t` (used to denote the [time variable](@ref dsl_description_nonconstant_rates_time)).

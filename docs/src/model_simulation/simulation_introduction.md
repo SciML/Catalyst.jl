@@ -123,6 +123,7 @@ plot(sol)
 More information on how to interact with solution structures is provided [here](@ref simulation_structure_interfacing) and on how to plot them [here](@ref simulation_plotting).
 
 Some additional considerations:
+
 - If a model without parameters has been declared, only the first three arguments must be provided to `ODEProblem`.
 - While the first value of `tspan` will almost always be `0.0`, other starting times (both negative and positive) are possible.
 
@@ -150,6 +151,7 @@ nothing # hide
 ```
 
 Here follows a list of solver options which might be of interest to the user.
+
 - `adaptive`: Toggles adaptive time stepping for valid methods. Default to `true`.
 - `dt`: For non-adaptive simulations, sets the step size (also sets the initial step size for adaptive methods).
 - `saveat`: Determines the time points at which the simulation is saved. E.g. for `saveat = 2.0` the simulation is saved every second time unit. If not given, the solution is saved after each time step.

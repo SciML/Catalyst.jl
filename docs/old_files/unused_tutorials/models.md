@@ -108,6 +108,7 @@ plot(sol, lw=2)
 
 Each `Reaction` within `reactions(rn)` has a number of subfields. For `rx` a
 `Reaction` we have:
+
 * `rx.substrates`, a vector of ModelingToolkit expressions storing each
   substrate variable.
 * `rx.products`, a vector of ModelingToolkit expressions storing each product

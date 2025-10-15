@@ -165,6 +165,7 @@ oprob[:X₂]
 ```
 
 Generally, for a conservation law where we have:
+
 - One (or more) non-eliminated species.
 - One eliminated species.
 - A conservation law parameter.

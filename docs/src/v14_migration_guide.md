@@ -8,10 +8,12 @@ Catalyst is built on the [ModelingToolkit.jl](https://github.com/SciML/ModelingT
 ## System completeness
 
 In ModelingToolkit v9 (and thus also Catalyst v14) all systems (e.g. `ReactionSystem`s and `ODESystem`s) are either *complete* or *incomplete*. Complete and incomplete systems differ in that
+
 - Only complete systems can be used as inputs to simulations or most tools for model analysis.
 - Only incomplete systems can be [composed with other systems to form hierarchical models](@ref compositional_modeling).
 
 A model's completeness depends on how it was created:
+
 - Models created programmatically (using the `ReactionSystem` constructor) are *not marked as complete* by default.
 - Models created using the `@reaction_network` DSL are *automatically marked as complete*.
 - To *use the DSL to create models that are not marked as complete*, use the `@network_component` macro (which in all other aspects is identical to `@reaction_network`).

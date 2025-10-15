@@ -403,6 +403,7 @@ Recall that we may write the net stoichiometry matrix ``N = ZB``, where `Z` is t
 ## API Section for matrices and vectors
 
 We have that:
+
 - ``N`` is the `netstoichmat`
 - ``Z`` is the `complexstoichmat`
 - ``B`` is the `incidencemat`

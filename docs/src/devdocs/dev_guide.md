@@ -45,12 +45,14 @@ To check what errors were produced, click on the "Details" link of the job. Next
 When updating documentation it is typically useful to view the updated documentation in HTML format (which is the format users will see). Here, some errors are much easier to spot in .html format as compared with the raw text files from which these are generated. There are two primary ways to view updated documentation, either by downloading them from the PR or by building the docs locally.
 
 Whenever a PR to Catalyst is created, CI will create a corresponding documenter build job. If the build job passes, you can access the built documentation (which will be the new Catalyst documentation if the PR is merged) through the following steps:
+
 1. Click on "Details" in the documentation build job (at the bottom of the PR conversation tab).
 2. Expand the "Upload site as artifact" section.
 3. Click on the link at the end (which follows the "Artifact download URL: " text).
 4. This will download a zip folder containing the documentation. Extract it to a location on your computer and then open the "index.html" file.
 
 To build the Catalyst documentation locally:
+
 1. Navigate to the ".julia/dev/Catalyst/docs/" folder, and run the "make.jl" file using ">julia --project=. make.jl". Alternatively, open a Julia session, activate the "docs" environment, and run the file using `include("make.jl").
 2. Open the ".julia/dev/Catalyst/docs/build/index.html" file.
 

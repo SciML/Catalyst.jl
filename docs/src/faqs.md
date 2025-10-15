@@ -346,6 +346,7 @@ end
 ```
 
 Catalyst can automatically infer that `X` is a species and `p` and `d` are parameters. In total, Catalyst can infer the following quantities:
+
 - Species (from reaction reactants).
 - Parameters (from reaction rates and stoichiometries).
 - (non-species) Variables (from the `@equations` option).
@@ -354,6 +355,7 @@ Catalyst can automatically infer that `X` is a species and `p` and `d` are param
 - Compound species (from the [`@compounds` option](@ref chemistry_functionality_compounds_DSL)).
 
 Inference of species, variables, and parameters follows the following steps:
+
 1. Every symbol [explicitly declared](@ref dsl_advanced_options_declaring_species_and_parameters) using the `@species`, `@variables`, and `@parameters` options are assigned to the corresponding category.
 2. Every symbol not declared in (1) that occurs as a reaction reactant is inferred as a species.
 3. Every symbol not declared in (1) or (2) that occurs in an expression provided after `@equations` is inferred as a variable.

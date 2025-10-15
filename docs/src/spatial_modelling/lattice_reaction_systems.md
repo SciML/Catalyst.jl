@@ -1,11 +1,13 @@
 # [Introduction to Spatial Modelling with Catalyst](@id spatial_lattice_modelling_intro)
 
 Catalyst supports the expansion of non-spatial [`ReactionSystem`](@ref)s (created using e.g. the `@reaction_network` DSL) to spatial domains. Spatial simulation of Catalyst models is a work in progress. Currently, the following is supported:
+
 - Spatial ODE and Jump simulations.
 - Discrete spatial domains.
 - Constant-rate transportation reactions (species moving spatially at constant rates).
 
 Features for which support is planned in future updates include:
+
 - Models on continuous domains with automatic discretisation (these models can already be simulated if the user provides a discretisation).
 - SDE simulations.
 - Transport reactions with non-constant rates as well as more general spatial reactions.
@@ -16,6 +18,7 @@ This tutorial introduces spatial modelling on discrete domains, here called latt
 ## [Basic example of a spatial simulation on a discrete domain](@id spatial_lattice_modelling_intro_example)
 
 To perform discrete-space spatial simulations, the user must first define a [`LatticeReactionSystem`](@ref). These combine:
+
 - A (non-spatial) `ReactionSystem`(@ref) model (created using standard Catalyst syntax).
 - A vector of spatial reactions, describing how species can move spatially across the domain.
 - A lattice defining the spatial domain's compartments and how they are connected.
@@ -34,6 +37,7 @@ nothing # hide
 ```
 
 This model contains:
+
 - A single spatial reaction, a transport reaction where $X1$ moves at constant rate $D$ between adjacent compartments.
 - A 2d Cartesian grid of 5x5 compartments to simulate our model on.
 
@@ -80,6 +84,7 @@ More information on how to retrieve values from spatial simulations can be found
 ## [Spatial reactions](@id spatial_lattice_modelling_intro_spatial_reactions)
 
 Spatial reactions describe reaction events which involve species across two connected compartments. Currently, only so-called *transportation reactions* are supported. These consist of:
+
 - A rate at which the reaction occurs. As for non-spatial reactions, this can be any expression. However, currently, it may only consist of parameters and other constants.
 - A single species which is transported from one compartment to an adjacent one.
 
@@ -119,10 +124,12 @@ Note that in this example, we specifically designate $D$ as an [edge parameter](
 ## [Defining discrete spatial domains (lattices)](@id spatial_lattice_modelling_intro_lattices)
 
 Discrete spatial domains can represent:
+
 1. Systems which are composed of a (finite number of) compartments, where each compartment can be considered well-mixed (e.g. can be modelled non-spatially) and where (potentially) species can move between adjacent compartments. Tissues, where each compartment corresponds to a biological cell, are examples of such systems.
 2. Systems that are continuous in nature, but have been approximated as a discrete domain. Future Catalyst updates will include the ability for the definition, and automatic discretisation, of continuous domains. Currently, however, the user has to perform this discretisation themselves.
 
 Catalyst supports three distinct types of lattices:
+
 - [Cartesian lattices](@ref spatial_lattice_modelling_intro_lattices_cartesian). These are grids where each grid point corresponds to a compartment. Spatial transportation is permitted between adjacent compartments.
 - [Masked lattices](@ref spatial_lattice_modelling_intro_lattices_masked). In these grids, only a subset of the grid point actually corresponds to compartments. Spatial transportation is permitted between adjacent compartments.
 - [Unstructured (or graph) lattices](@ref spatial_lattice_modelling_intro_lattices_graph). These are defined by graphs, where vertices correspond to compartments and edges connect adjacent compartments.

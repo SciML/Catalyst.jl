@@ -28,6 +28,7 @@ plot(sol)
 ```
 
 Various plotting options can be provided as optional arguments to the `plot` command. Common options include:
+
 - `lw`: Determine plot line widths.
 - `la`: Determine plot line's transparency (at `la = 0.0` lines are fully transparent, i.e. not visible).
 - `linestyle`: Determines plot line style.

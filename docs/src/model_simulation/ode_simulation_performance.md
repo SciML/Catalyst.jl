@@ -6,6 +6,7 @@ times may become noticeable. Here we will give some advice on how to improve per
 Generally, there are few good ways to, before a simulation, determine the best options. Hence, while we below provide several options, if you face an application for which reducing run time is critical (e.g. if you need to simulate the same ODE many times), it might be required to manually trial these various options to see which yields the best performance ([BenchmarkTools.jl's](https://github.com/JuliaCI/BenchmarkTools.jl) `@btime` macro is useful for this purpose). It should be noted that the default options typically perform well, and it is primarily for large models where investigating alternative options is worthwhile. All ODE simulations of Catalyst models are performed using the OrdinaryDiffEq.jl package, [which documentation](https://docs.sciml.ai/DiffEqDocs/stable/) provides additional advice on performance.
 
 Generally, this short checklist provides a quick guide for dealing with ODE performance:
+
 1. If performance is not critical, use [the default solver choice](@ref ode_simulation_performance_solvers) and do not worry further about the issue.
 2. If improved performance would be useful, read about solver selection (both in [this tutorial](@ref ode_simulation_performance_solvers) and [OrdinaryDiffEq's documentation](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/)) and then try a few different solvers to find one with good performance.
 3. If you have a large ODE (approximately 100 variables or more), try the [various options for efficient Jacobian computation](@ref ode_simulation_performance_jacobian) (noting that some are non-trivial to use, and should only be investigated if truly required).
@@ -265,10 +266,12 @@ plot(sol)
 Due to the degradation of $S$, if the production rate is not high enough, the total amount of $P$ produced is reduced. For this tutorial, we will investigate this effect for a range of values of $kP$. This will require a large number of simulations (for various $kP$ values), which we will parallelise on CPUs (this section) and GPUs ([next section](@ref ode_simulation_performance_parallelisation_GPU)).
 
 To parallelise our simulations, we first need to create an `EnsembleProblem`. These describe which simulations we wish to perform. The input to this is:
+
 - The `ODEProblem` corresponds to the model simulation (`SDEProblem` and `JumpProblem`s can also be supplied, enabling the parallelisation of these problem types).
 - A function, `prob_func`, describing how to modify the problem for each simulation. If we wish to simulate the same, unmodified problem, in each simulation (primarily relevant for stochastic simulations), this argument is not required.
 
 Here, `prob_func` takes 3 arguments:
+
 - `prob`: The problem that it modifies at the start of each individual run (which will be the same as `EnsembleProblem`'s first argument).
 - `i`: The index of the specific simulation (in the array of all simulations that are performed).
 - `repeat`: The repeat of a specific simulation in the array. We will not use this option in this example, however, it is discussed in more detail [here](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#Building-a-Problem).
@@ -341,11 +344,13 @@ Finally, it should be noted that OrdinaryDiffEq, if additional processes are ava
 GPUs are different from CPUs in that they are much more restricted in what computations they can carry out. However, unlike CPUs, they are typically available in far larger numbers. Their original purpose is for rendering graphics (which typically involves solving a large number of very simple computations, something CPUs with their few, but powerful, cores are unsuited for). Recently, they have also started to be applied to other problems, such as ODE simulations. Generally, GPU parallelisation is only worthwhile when you have a very large number of parallel simulations to run (and access to good GPU resources, either locally or on a cluster).
 
 Generally, we can parallelise `EnsembleProblem`s across several GPUs in a very similar manner to how we parallelised them across several CPUs, but by using a different ensemble algorithm (such as `EnsembleGPUArray`). However, there are some additional requirements:
+
 - GPU parallelisation requires the [DiffEqGPU.jl](https://github.com/SciML/DiffEqGPU.jl) package.
 - Depending on which GPU hardware is used, a specific back-end package has to be installed and imported (e.g. CUDA for NVIDIA's GPUs or Metal for Apple's).
 - For some cases, we must use a special ODE solver supporting simulations on GPUs.
 
 Furthermore (while not required) to receive good performance, we should also make the following adaptations:
+
 - By default, Julia's decimal numbers are implemented as `Float64`s, however, using `Float32`s is advantageous on GPUs. Ideally, all initial conditions and parameter values should be specified using these.
 - We should designate all our vectors (i.e. initial conditions and parameter values) as [static vectors](https://github.com/JuliaArrays/StaticArrays.jl).
 
@@ -393,6 +398,7 @@ Here have we increased the number of simulations to 10,000, since this is a more
     Currently, declaration of static vectors requires symbolic, rather than symbol, form for species and parameters. Hence, we here first `@unpack` these before constructing `u0` and `ps` using `@SVector`.
 
 We can now simulate our model using a GPU-based ensemble algorithm. Currently, two such algorithms are available, `EnsembleGPUArray` and `EnsembleGPUKernel`. Their differences are that
+
 - Only `EnsembleGPUKernel` requires arrays to be static arrays (although it is still advantageous for `EnsembleGPUArray`).
 - While `EnsembleGPUArray` can use standard ODE solvers, `EnsembleGPUKernel` requires specialised versions (such as `GPUTsit5`). A list of available such solvers can be found [here](https://docs.sciml.ai/DiffEqGPU/dev/manual/ensemblegpukernel/#specialsolvers).
 

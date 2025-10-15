@@ -147,6 +147,7 @@ plot!(e_summary_extrinsic; label = "Extrinsic noise", idxs = 1)
 Here we can see that, over time, the systems' mean $X$ activity reaches a constant level around $30$.
 
 This is a well-known phenomenon (especially in circadian biology[^2]). Here, as stochastic oscillators evolve from a common initial condition the mean behaves as a damped oscillator. This can be caused by two different phenomena:
+
 - The individual trajectories are themselves damped.
 - The individual trajectories's phases get de-synchronised.
 However, if we only observe the mean behaviour (and not the single trajectories), we cannot know which of these cases we are encountering. Here, by checking the single-trajectory plots from the previous sections, we note that this is due to trajectory de-synchronisation. Stochastic oscillators have often been cited as a reason for the importance to study cellular systems at the *single-cell* level, and not just in bulk.

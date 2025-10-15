@@ -1,6 +1,7 @@
 # [Ensemble/Monte Carlo Simulations](@id ensemble_simulations)
 
 In many contexts, a single model is re-simulated under similar conditions. Examples include:
+
 - Performing Monte Carlo simulations of a stochastic model to gain insight in its behaviour.
 - Scanning a model's behaviour for different parameter values and/or initial conditions.
 
@@ -69,6 +70,7 @@ nothing # hide
 ```
 
 Next, we wish to simulate the model for a range of initial conditions of $X$`. To do this we create a problem function, which takes the following arguments:
+
 - `prob`: The problem given to our `EnsembleProblem` (which is the problem that `prob_func` modifies in each iteration).
 - `i`: The number of this specific Monte Carlo iteration in the interval `1:trajectories`.
 - `repeat`: The iteration of the repeat of the simulation. Typically `1`, but potentially higher if [the simulation re-running option](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#Building-a-Problem) is used.

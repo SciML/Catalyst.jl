@@ -226,6 +226,7 @@ end
 ```
 
 Below, we perform a simple deterministic ODE simulation of the system. Next, we plot both:
+
 - The concentration of the substrates and the product.
 - The concentration of the catalyst and the intermediaries.
 

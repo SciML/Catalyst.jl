@@ -250,6 +250,7 @@ This will create a visualization with both time series and phase plots:
 ## [Common plotting options](@id common_makie_plotting_options)
 
 Various plotting options can be provided as optional arguments to the `lines!` command. Common options include:
+
 - `linewidth` or `lw`: Determine plot line widths.
 - `linestyle`: Determines plot line style.
 - `color`: Determines the line colors.
@@ -265,6 +266,7 @@ lines!(ax_time, lift(sol -> sol.t, solution), lift(sol -> sol[:X], solution),
 ## [Extending the interactive visualization](@id extending_interactive_visualization)
 
 You can further extend this visualization by:
+
 - Adding other interactive elements, such as [buttons](https://docs.makie.org/stable/reference/blocks/button) or [dropdown menus](https://docs.makie.org/stable/reference/blocks/menu) to control different aspects of the simulation or visualization.
 - Adding additional axes to the plot, such as plotting the derivatives of the species.
 - Color coding the slider and slider labels to match the plot colors.

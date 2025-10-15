@@ -151,9 +151,11 @@ Above, we described how to use SBMLImporter to import SBML files. Alternatively,
 ## [Loading models from matrix representation using ReactionNetworkImporters.jl](@id model_file_import_export_matrix_representations)
 
 While CRN models can be represented through various file formats, they can also be represented in various matrix forms. E.g. a CRN with $m$ species and $n$ reactions (and with constant rates) can be represented with either
+
 - An $mxn$ substrate matrix (with each species's substrate stoichiometry in each reaction) and an $nxm$ product matrix (with each species's product stoichiometry in each reaction).
 
 Or
+
 - An $mxn$ complex stoichiometric matrix (...) and a $2mxn$ incidence matrix (...).
 
 The advantage of these forms is that they offer a compact and very general way to represent a large class of CRNs. ReactionNetworkImporters have the functionality for converting matrices of these forms directly into Catalyst `ReactionSystem` models. Instructions on how to do this are available in [ReactionNetworkImporter's documentation](https://docs.sciml.ai/ReactionNetworkImporters/stable/#Loading-a-matrix-representation).

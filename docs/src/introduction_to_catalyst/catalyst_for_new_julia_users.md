@@ -111,6 +111,7 @@ end
 For more information on how to use the Catalyst model creator (also known as *the Catalyst DSL*), please read [the corresponding documentation](https://docs.sciml.ai/Catalyst/stable/catalyst_functionality/dsl_description/).
 
 Next, we wish to simulate our model. To do this, we need to provide some additional information to the simulator. This is
+
 * The initial condition. That is, the concentration (or copy numbers) of each species at the start of the simulation.
 * The time span. That is, the time frame over which we wish to run the simulation.
 * The parameter values. That is, the values of the model's parameters for this simulation.
@@ -169,15 +170,18 @@ using JumpProcesses
 ```
 
 This time, we will declare a so-called [SIR model for an infectious disease](@ref basic_CRN_library_sir). Note that even if this model does not describe a set of chemical reactions, it can be modelled using the same framework. The model consists of 3 species:
+
 * *S*, the amount of *susceptible* individuals.
 * *I*, the amount of *infected* individuals.
 * *R*, the amount of *recovered* (or *removed*) individuals.
 
 It also has 2 reaction events:
+
 * Infection, where a susceptible individual meets an infected individual and also becomes infected.
 * Recovery, where an infected individual recovers from the infection.
 
 Each reaction is also associated with a specific rate (corresponding to a parameter).
+
 * *b*, the infection rate.
 * *k*, the recovery rate.
 
@@ -236,6 +240,7 @@ Pkg.activate(".")
 ```
 
 This will:
+
 1. If your current folder (which can be displayed using the `pwd()` command) is not designated as a possible Julia environment, designate it as such.
 2. Switch your current Julia session to use the current folder's environment.
 
@@ -267,6 +272,7 @@ Here, `using Latexify` must be rerun whenever you restart a Julia session. Howev
 ### [Why environments are important](@id catalyst_for_new_julia_users_packages_environment_importance)
 
 We have previously described how to set up new Julia environments, how to install Julia packages, and how to import them into a current session. Let us say that you were to restart Julia in a new folder and activate this as a separate environment. If you then try to import Latexify through `using Latexify` you will receive an error claiming that Latexify was not found. The reason is that the `Pkg.add("Latexify")` command actually carries out two separate tasks:
+
 1. If Latexify is not already installed on your computer, install it.
 2. Add Latexify as an available package to your current environment.
 
@@ -291,6 +297,7 @@ The reason why all this is important is that it is *highly recommended* to, for 
     A not-infrequent cause for reported errors with Catalyst (typically the inability to replicate code in tutorials) is package incompatibilities in large environments preventing the latest version of Catalyst from being installed. Hence, whenever an issue is encountered, it is useful to run `Pkg.status()` to check whenever the latest version of Catalyst is being used.
 
 Some additional useful Pkg commands are:
+
 - `Pk.rm("PackageName")` removes a package from the current environment.
 - `Pkg.update("PackageName")`: updates the designated package.
 - `Pkg.update()`: updates all packages.

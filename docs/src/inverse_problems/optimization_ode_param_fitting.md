@@ -3,6 +3,7 @@
 Fitting parameters to data involves solving an optimisation problem (that is, finding the parameter set that optimally fits your model to your data, typically by minimising an objective function)[^1]. The SciML ecosystem's primary package for solving optimisation problems is [Optimization.jl](https://github.com/SciML/Optimization.jl). It provides access to a variety of solvers via a single common interface by wrapping a large number of optimisation libraries that have been implemented in Julia.
 
 This tutorial demonstrates how to
+
 1. Create a custom objective function which minimiser corresponds to the parameter set optimally fitting the data.
 2. Use Optimization.jl to minimize this objective function and find the parameter set providing the optimal fit.
 
@@ -60,6 +61,7 @@ end
 ```
 
 When our optimisation algorithm searches parameter space it will likely consider many highly non-plausible parameter sets. To better handle this we:
+
 1. Add `maxiters = 10000` to our `solve` command. As most well-behaved ODEs can be solved in relatively few timesteps, this speeds up the optimisation procedure by preventing us from spending too much time trying to simulate (for the model) unsuitable parameter sets.
 2. Add `verbose = false` to our `solve` command. This prevents (potentially a very large number of) warnings from being printed to our output as unsuitable parameter sets are simulated.
 3. Add the line `SciMLBase.successful_retcode(sol) || return Inf`, which returns an infinite value for parameter sets which does not lead to successful simulations.

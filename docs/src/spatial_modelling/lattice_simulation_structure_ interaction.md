@@ -41,6 +41,7 @@ nothing # hide
 ```
 
 To retrieve the values of $X1$ across the simulation we use the `lat_getu` function. It takes three arguments:
+
 - The solution objects from which we wish to retrieve values.
 - The species which values we wish to retrieve.
 - The [`LatticeReactionSystem`](@ref) which was simulated.
@@ -50,6 +51,7 @@ lat_getu(sol, :X1, lrs)
 ```
 
 Here, the output is a vector with $X1$'s value at each simulation time step. How the species's value is represented at each time step depends on the lattice which was originally used to create the [`LatticeReactionSystem`](@ref):
+
 - For Cartesian lattices, an array of the same size as the Cartesian lattice is used. Each array element corresponds to the species's value in the corresponding compartment.
 - For masked lattices, a [sparse array](https://docs.julialang.org/en/v1/stdlib/SparseArrays/) of the same size as the masked lattice is used. Each filled array element corresponds to the species's value in the corresponding compartment. Unfilled array elements correspond to positions without compartments.
 - For unstructured (graph) lattices, vectors are used. The i'th element in the vectors corresponds to the species's value in the i'th compartment.
@@ -116,6 +118,7 @@ Species values in [integrators](@ref simulation_structure_interfacing_integrator
 ## [Retrieving and updating parameter values in problems and integrators](@id lattice_simulation_structure_interaction_prob_int_parameters)
 
 Retrieval and updating of parameter values for problems and integrators works similarly as for species, but with the following differences:
+
 - The `lat_getp` and `lat_setp!` functions are used.
 - It is currently not possible to interface with parameter values of `JumpProblem`s and their integrators.
 - After parameter values are modified, the `rebuild_lat_internals!` function must be applied before the problem/integrator can be used for further analysis.
@@ -141,6 +144,7 @@ rebuild_lat_internals!(oprob)
 ```
 
 There are two different circumstances when `rebuild_lat_internals!` must be called:
+
 - When modifying the value of an [edge parameter](@ref spatial_lattice_modelling_intro_simulation_edge_parameters).
 - When changing a parameter from having spatially uniform values to spatially non-uniform values, or the other way around.
 
@@ -163,6 +167,7 @@ nothing # hide
 ```
 
 This interface is somewhat limited, and the following aspects should be noted:
+
 - Edge parameter values can only be interfaced with if the edge parameter's value is spatially uniform.
 - When accessing an (spatially uniform) edge parameter's value, its single value will be encapsulated in a vector.
 - When setting an (spatially uniform) edge parameter's value, you must encapsulate the new value in a vector.

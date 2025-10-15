@@ -1,6 +1,7 @@
 # [Global Sensitivity Analysis](@id global_sensitivity_analysis)
 
 *Global sensitivity analysis* (GSA) is used to study the sensitivity of a function's outputs with respect to its input[^1]. Within the context of chemical reaction network modelling it is primarily used for two purposes:
+
 - When fitting a model's parameters to data, it can be applied to the cost function of the optimisation problem. Here, GSA helps determine which parameters do, and do not, affect the model's fit to the data. This can be used to identify parameters that are less relevant to the observed data.
 - [When measuring some system behaviour or property](@ref behaviour_optimisation), it can help determine which parameters influence that property. E.g. for a model of a biofuel-producing circuit in a synthetic organism, GSA could determine which system parameters have the largest impact on the total rate of biofuel production.
 
@@ -45,6 +46,7 @@ nothing # hide
 ```
 
 Now, GSA can be applied to our `peak_cases` function using GlobalSensitivity's `gsa` function. It takes 3 mandatory inputs:
+
 - The function for which we wish to carry out GSA.
 - A method with which we wish to carry out GSA.
 - A domain on which we carry out GSA. This is defined by a vector, which contains one two-valued Tuple for each parameter. These Tuples contain a lower and an upper bound for their respective parameter's value.
@@ -79,6 +81,7 @@ nothing # hide
 Note: when `Sobol()` is used as the method, the `samples` argument must also be used.
 
 Sobol's method computes so-called *Sobol indices*, each measuring some combination of input's effect on the output. Here, when `Sobol()` is used, the *first order*, *second order*, and *total order* Sobol indices are computed. These can be accessed through the following fields:
+
 - `global_sens.S1`: A vector where the i'th element is the output's sensitivity to variations in the i'th input.
 - `global_sens.S2`: A matrix where element i-j contains the output's sensitivity to simultaneous variations in the i'th and j'th inputs.
 - `global_sens.ST`: A vector where the i'th element is the output's sensitivity to any simultaneous variation of any combination of inputs that contain the i'th input. While only the first and second-order (and the total) Sobol indices are computed, the total order index compounds the information contained in Sobol indices across all orders.
@@ -115,6 +118,7 @@ nothing # hide
 ```
 
 Morris's method computes, for parameter samples across parameter space, their *elementary effect* on the output. Next, the output's sensitivity with respect to each parameter is assessed through various statistics on these elementary effects. In practice, the following two fields are considered:
+
 - `global_sens.means_star` (called $μ*$): Measures each parameter's influence on the output. A large $μ*$ indicates a parameter to which the output is sensitive.
 - `global_sens.variances`: Measures the variance of each parameter's influence on the output. A large variance suggests that a parameter's influence on the output is highly dependent on other parameter values.
 

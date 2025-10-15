@@ -96,6 +96,7 @@ parameters(dimerisation)
     The syntax of the `@species` and `@parameters` options is identical to that used by the `@species` and `@parameters` macros [used in programmatic modelling in Catalyst](@ref programmatic_CRN_construction) (for e.g. designating metadata or initial conditions). Hence, if one has learnt how to specify species/parameters using either approach, that knowledge can be transferred to the other one.
 
 Generally, there are four main reasons for specifying species/parameters using the `@species` and `@parameters` options:
+
 1. To designate a quantity, that would otherwise have defaulted to a parameter, as a species.
 2. To designate default values for parameters/species initial conditions (described [here](@ref dsl_advanced_options_default_vals)).
 3. To designate metadata for species/parameters (described [here](@ref dsl_advanced_options_species_and_parameters_metadata)).
@@ -357,6 +358,7 @@ end
 ```
 
 The following cases in which the DSL would normally infer variables will all throw errors if `@require_declaration` is set and the variables are not explicitly declared.
+
 - Occurrence of an undeclared species in a reaction, as in the example above.
 - Occurrence of an undeclared parameter in a reaction rate expression, as in the reaction line `k*n, A --> B`.
 - Occurrence of an undeclared parameter in the stoichiometry of a species, as in the reaction line `k, n*A --> B`.
@@ -500,6 +502,7 @@ nothing # hide
 ```
 
 Some final notes regarding observables:
+
 - The left-hand side of the observable declaration must contain a single symbol only (with the exception of metadata, which can also be supplied).
 - All quantities appearing on the right-hand side must be declared elsewhere within the `@reaction_network` call (either by being part of a reaction, or through the `@species`, `@parameters`, or `@variables` options).
 - Observables may not depend on other observables.
@@ -691,6 +694,7 @@ rx_dimerisation = @reaction kD, 2X --> X2
 ```
 
 Here, `@reaction` is followed by a single line consisting of three parts:
+
 - A rate (at which the reaction occurs).
 - Any number of substrates (which are consumed by the reaction).
 - Any number of products (which are produced by the reaction).

@@ -20,6 +20,7 @@ end
 ```
 
 Next we will create a `BifurcationProblem`. In addition to the `ReactionSystem`, we need to provide:
+
 - The bifurcation parameter (the parameter which is varied in the bifurcation diagram).
 - A full model parameter set. This includes the values of all non-bifurcation parameters, but also a value for the bifurcation parameter (which corresponds to the point in parameter space from which the computation of the bifurcation diagram starts).
 - An initial guess of the steady state values of the system at the provided parameter set. Using this point as a starting guess for root finding, BifurcationKit calculates an initial steady state from which to compute the bifurcation diagram. Hence, this guess does not need to be very exact (but may be important if the system exhibits multistability for the initial parameter set).
@@ -66,6 +67,7 @@ Here, the steady state concentration of $X$ is shown as a function of $k1$'s val
 ## [Additional `ContinuationPar` options](@id bifurcation_diagrams_continuationpar)
 
 Most of the options required by the `bifurcationdiagram` function are provided through the `ContinuationPar` structure. For full details, please read the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.ContinuationPar). However, a few common options, and how they affect the continuation computation, are described here:
+
 - `p_min` and `p_max`: Set the interval over which the bifurcation diagram is computed (with the continuation stopping if it reaches these bounds).
 - `dsmin` and `dsmax`: The minimum and maximum length of the continuation steps (in the bifurcation parameter's value).
 - `ds`: The initial length of the continuation steps. This is especially important when `bothside = true` *is not* used, as the sign of `ds` determines the direction from the initial point in which the continuation will proceed.
@@ -149,6 +151,7 @@ plot(bif_dia; xguide = "d", yguide = "Xp")
 This bifurcation diagram does not contain any interesting features (such as bifurcation points), and only shows how the steady state concentration of $Xp$ is reduced as $d$ increases.
 
 Finally, for additional clarity, we reiterate the purpose of the two `u` arguments used:
+
 - `u_guess`: A guess of the initial steady states (which BifurcationKit uses to find its starting point). Typically, most trivial guesses work (e.g. setting all species concentrations to `1.0`). `u_guess` *does not* have to fulfil the conserved concentrations provided in `u0`.
 - `u0`: Used to compute the concentrations of any conserved quantities (e.g. in our example $X + Xp = 1.0$). Technically, values are only required for species that are involved in conservation laws (in our case we do not need to provide a value for $K$). However, sometimes determining which species are actually involved in conservation laws can be difficult, and it might be easier to simply provide concentrations for all species.
 

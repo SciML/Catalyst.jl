@@ -56,6 +56,7 @@ nothing # hide
 ```
 
 Finally, we can solve our `EnsembleProblem` while:
+
 - Using a valid GPU SDE solver (either [`GPUEM`](https://docs.sciml.ai/DiffEqGPU/stable/manual/ensemblegpukernel/#DiffEqGPU.GPUEM) or [`GPUSIEA`](https://docs.sciml.ai/DiffEqGPU/stable/manual/ensemblegpukernel/#DiffEqGPU.GPUSIEA)).
 - Designating the GPU ensemble method, `EnsembleGPUKernel` (with the correct GPU backend as input).
 - Designating the number of trajectories we wish to simulate.

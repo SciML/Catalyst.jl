@@ -1,6 +1,7 @@
 # [Plotting Spatial Simulations](@id lattice_simulation_plotting)
 
 To aid the investigation of spatial simulations we have implemented several helper functions for creating plots and animation of these simulations. The development of these functions are currently under development. Currently, Catalyst exports three different such functions:
+
 - [`lattice_plot`](@ref): Which plots a lattice simulation at a specified time point.
 - [`lattice_animation`](@ref): Which creates an animation of a lattice simulation across the entire time series.
 - [`lattice_kymograph`](@ref): Which, for a 1d Cartesian or masked lattice based simulation, creates a kymograph of the simulation across time and space.
@@ -54,6 +55,7 @@ lattice_animation(sol, :X1, lrs, "lattice_simulation_1d.mp4")
 
 ![](./lattice_simulation_1d.mp4)
 Since we animate the solution across the entire simulation, we do not need to provide a `t` value. However, there are some additional (optional) arguments we might wish to provide:
+
 - `nframes = 200`: The number of frames in the animation (these are evenly samples across the simulation).
 - `framerate = 20`: The frame rate of the animation.
 
@@ -134,6 +136,7 @@ lattice_plot(osol, :X, lrs)
 ```
 
 Here we provide no `t` argument, and hence plot the solution at the final time point. As for 2d simulations, a colour scale described $X$'s concentration in each compartment. Some arguments, are not relevant when plotting simulations on Cartesian and masked lattices, but which are relevant to graph lattices are:
+
 - `node_size`: Sets the size of each compartment in the plot.
 - `layout`: A vector of x and y values which can be used to determine the position of each compartment in the plot.
 
