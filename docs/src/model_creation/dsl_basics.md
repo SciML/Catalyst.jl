@@ -43,7 +43,7 @@ Here, you start with `@reaction_network begin`, next list all of the model's rea
 
 Each reaction line declares, in order, the rate, the substrate(s), and the product(s). The rate is separated from the substrate(s) by a `,`, and the substrate(s) from the production by a `-->` (other arrows, however, are [also possible](@ref dsl_description_symbols_arrows)). In the above example, our model consists of two reactions. In the first one, `X` (the single substrate) becomes `Y` (the single product) at rate `2.0`. In the second reaction, `Y` becomes `X` at rate `1.0`.
 
-Finally, `rn = ` is used to store the model in the variable `rn` (a normal Julia variable, which does not need to be called `rn`).
+Finally, `rn =` is used to store the model in the variable `rn` (a normal Julia variable, which does not need to be called `rn`).
 
 ## [Defining parameters and species in the DSL](@id dsl_description_parameters_basics)
 
