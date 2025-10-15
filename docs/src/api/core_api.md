@@ -100,7 +100,7 @@ of all options currently available.
 - [`ivs`](@ref dsl_advanced_options_ivs): Allows the designation of a set of symbols as system independent variables.
 - [`compounds`](@ref chemistry_functionality_compounds): Allows the designation of compound species.
 - [`observables`](@ref dsl_advanced_options_observables): Allows the designation of compound observables.
-- [`default_noise_scaling`](@ref simulation_intro_SDEs_noise_saling): Enables the setting of a default noise scaling expression.
+- [`default_noise_scaling`](@ref simulation_intro_SDEs_noise_scaling): Enables the setting of a default noise scaling expression.
 - [`differentials`](@ref constraint_equations_coupling_constraints): Allows the designation of differentials.
 - [`equations`](@ref constraint_equations_coupling_constraints): Allows the creation of algebraic and/or differential equations.
 - [`continuous_events`](@ref constraint_equations_events): Allows the creation of continuous events.
