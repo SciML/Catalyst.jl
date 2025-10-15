@@ -78,7 +78,7 @@ The graphs of the reaction complexes in the two sub-networks are then
 and,
 
 ```@example s1b
- plot_complexes(subnets[2])
+  plot_complexes(subnets[2])
 ```
 
 ## [Deficiency of the network](@id network_analysis_structural_aspects_deficiency)
