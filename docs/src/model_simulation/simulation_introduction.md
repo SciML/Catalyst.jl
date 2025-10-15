@@ -431,25 +431,25 @@ plot(sol; idxs = :P, lw = 2)
 
 When you simulate Catalyst models in your research, please cite the corresponding paper(s) to support the simulation package authors. For ODE simulations:
 
-```
+```bibtex
 @article{DifferentialEquations.jl-2017,
- author = {Rackauckas, Christopher and Nie, Qing},
- doi = {10.5334/jors.151},
- journal = {The Journal of Open Research Software},
- keywords = {Applied Mathematics},
- note = {Exported from https://app.dimensions.ai on 2019/05/05},
- number = {1},
- pages = {},
- title = {DifferentialEquations.jl – A Performant and Feature-Rich Ecosystem for Solving Differential Equations in Julia},
- url = {https://app.dimensions.ai/details/publication/pub.1085583166 and http://openresearchsoftware.metajnl.com/articles/10.5334/jors.151/galley/245/download/},
- volume = {5},
- year = {2017}
+  author = {Rackauckas, Christopher and Nie, Qing},
+  doi = {10.5334/jors.151},
+  journal = {The Journal of Open Research Software},
+  keywords = {Applied Mathematics},
+  note = {Exported from https://app.dimensions.ai on 2019/05/05},
+  number = {1},
+  pages = {},
+  title = {DifferentialEquations.jl – A Performant and Feature-Rich Ecosystem for Solving Differential Equations in Julia},
+  url = {https://app.dimensions.ai/details/publication/pub.1085583166 and http://openresearchsoftware.metajnl.com/articles/10.5334/jors.151/galley/245/download/},
+  volume = {5},
+  year = {2017}
 }
 ```
 
 For SDE simulations:
 
-```
+```bibtex
 @article{rackauckas2017adaptive,
   title={Adaptive methods for stochastic differential equations via natural embeddings and rejection sampling with memory},
   author={Rackauckas, Christopher and Nie, Qing},
@@ -464,13 +464,14 @@ For SDE simulations:
 
 For jump simulations:
 
-```
+```bibtex
 @misc{2022JumpProcesses,
   author       = {Isaacson, S. A. and Ilin, V. and Rackauckas, C. V.},
   title        = {{JumpProcesses.jl}},
   howpublished = {\url{https://github.com/SciML/JumpProcesses.jl/}},
   year         = {2022}
 }
+
 @misc{zagatti_extending_2023,
 	title = {Extending {JumpProcess}.jl for fast point process simulation with time-varying intensities},
 	url = {http://arxiv.org/abs/2306.06992},

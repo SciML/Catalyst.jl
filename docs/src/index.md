@@ -259,19 +259,19 @@ support it, please star the repository as such metrics may help us secure fundin
 you use Catalyst as part of your research, teaching, or other activities, we would be grateful if you
 could cite our work:
 
-```
+```bibtex
 @article{CatalystPLOSCompBio2023,
- doi = {10.1371/journal.pcbi.1011530},
- author = {Loman, Torkel E. AND Ma, Yingbo AND Ilin, Vasily AND Gowda, Shashi AND Korsbo, Niklas AND Yewale, Nikhil AND Rackauckas, Chris AND Isaacson, Samuel A.},
- journal = {PLOS Computational Biology},
- publisher = {Public Library of Science},
- title = {Catalyst: Fast and flexible modeling of reaction networks},
- year = {2023},
- month = {10},
- volume = {19},
- url = {https://doi.org/10.1371/journal.pcbi.1011530},
- pages = {1-19},
- number = {10},
+  doi = {10.1371/journal.pcbi.1011530},
+  author = {Loman, Torkel E. AND Ma, Yingbo AND Ilin, Vasily AND Gowda, Shashi AND Korsbo, Niklas AND Yewale, Nikhil AND Rackauckas, Chris AND Isaacson, Samuel A.},
+  journal = {PLOS Computational Biology},
+  publisher = {Public Library of Science},
+  title = {Catalyst: Fast and flexible modeling of reaction networks},
+  year = {2023},
+  month = {10},
+  volume = {19},
+  url = {https://doi.org/10.1371/journal.pcbi.1011530},
+  pages = {1-19},
+  number = {10},
 }
 ```
 

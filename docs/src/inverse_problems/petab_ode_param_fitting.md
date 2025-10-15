@@ -618,7 +618,7 @@ There exist several types of plots for both types of calibration results. More d
 
 If you use this functionality in your research, [in addition to Catalyst](@ref doc_index_citation), please cite the following papers to support the authors of the PEtab.jl package (currently there is no article associated with this package) and the PEtab standard:
 
-```
+```bibtex
 @misc{2023Petabljl,
   author       = {Ognissanti, Damiano AND Arutjunjan, Rafael AND Persson, Sebastian AND Hasselgren, Viktor},
   title        = {{2023Petabljl.jl}},
@@ -627,7 +627,7 @@ If you use this functionality in your research, [in addition to Catalyst](@ref d
 }
 ```
 
-```
+```bibtex
 @article{SchmiesterSch2021,
   author    = {Schmiester, Leonard AND Schälte, Yannik AND Bergmann, Frank T. AND Camba, Tacio AND Dudkin, Erika AND Egert, Janine AND Fröhlich, Fabian AND Fuhrmann, Lara AND Hauber, Adrian L. AND Kemmer, Svenja AND Lakrisenko, Polina AND Loos, Carolin AND Merkt, Simon AND Müller, Wolfgang AND Pathirana, Dilan AND Raimúndez, Elba AND Refisch, Lukas AND Rosenblatt, Marcus AND Stapor, Paul L. AND Städter, Philipp AND Wang, Dantong AND Wieland, Franz-Georg AND Banga, Julio R. AND Timmer, Jens AND Villaverde, Alejandro F. AND Sahle, Sven AND Kreutz, Clemens AND Hasenauer, Jan AND Weindl, Daniel},
   journal   = {PLOS Computational Biology},

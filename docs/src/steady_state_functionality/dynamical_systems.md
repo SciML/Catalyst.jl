@@ -151,7 +151,7 @@ More details on how to compute Lyapunov exponents using DynamicalSystems.jl can 
 
 If you use this functionality in your research, [in addition to Catalyst](@ref doc_index_citation), please cite the following paper to support the author of the DynamicalSystems.jl package:
 
-```
+```bibtex
 @article{DynamicalSystems.jl-2018,
   doi = {10.21105/joss.00598},
   url = {https://doi.org/10.21105/joss.00598},

@@ -34,7 +34,7 @@ cc_loaded # hide
 
 Here, `include` is used to execute the Julia code from any file. This means that `save_reactionsystem` actually saves the model as executable code which re-generates the exact model which was saved (this is the reason why we use the ".jl" extension for the saved file). Indeed, we can confirm this if we check what is printed in the file:
 
-```
+```julia
 let
 
 # Independent variable:
@@ -165,7 +165,7 @@ The advantage of these forms is that they offer a compact and very general way t
 
 If you use any of this functionality in your research, [in addition to Catalyst](@ref doc_index_citation), please cite the paper(s) corresponding to whichever package(s) you used:
 
-```
+```bibtex
 @software{2022ReactionNetworkImporters,
   author       = {Isaacson, Samuel},
   title        = {{ReactionNetworkImporters.jl}},
@@ -174,7 +174,7 @@ If you use any of this functionality in your research, [in addition to Catalyst]
 }
 ```
 
-```
+```bibtex
 @software{2024SBMLImporter,
   author       = {Persson, Sebastian},
   title        = {{SBMLImporter.jl}},
@@ -183,16 +183,16 @@ If you use any of this functionality in your research, [in addition to Catalyst]
 }
 ```
 
-```
+```bibtex
 @article{LangJainRackauckas+2024,
-    url = {https://doi.org/10.1515/jib-2024-0003},
-    title = {SBMLToolkit.jl: a Julia package for importing SBML into the SciML ecosystem},
-    title = {},
-    author = {Paul F. Lang and Anand Jain and Christopher Rackauckas},
-    pages = {20240003},
-    journal = {Journal of Integrative Bioinformatics},
-    doi = {doi:10.1515/jib-2024-0003},
-    year = {2024},
-    lastchecked = {2024-06-02}
+  url          = {https://doi.org/10.1515/jib-2024-0003},
+  title        = {SBMLToolkit.jl: a Julia package for importing SBML into the SciML ecosystem},
+  title        = {},
+  author       = {Paul F. Lang and Anand Jain and Christopher Rackauckas},
+  pages        = {20240003},
+  journal      = {Journal of Integrative Bioinformatics},
+  doi          = {doi:10.1515/jib-2024-0003},
+  year         = {2024},
+  lastchecked  = {2024-06-02}
 }
 ```

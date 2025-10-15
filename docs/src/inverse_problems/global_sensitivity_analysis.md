@@ -176,7 +176,7 @@ Here, the function's sensitivity is evaluated with respect to each output indepe
 
 If you use this functionality in your research, [in addition to Catalyst](@ref doc_index_citation), please cite the following paper to support the authors of the GlobalSensitivity.jl package:
 
-```
+```bibtex
 @article{dixit2022globalsensitivity,
   title={GlobalSensitivity. jl: Performant and Parallel Global Sensitivity Analysis with Julia},
   author={Dixit, Vaibhav Kumar and Rackauckas, Christopher},

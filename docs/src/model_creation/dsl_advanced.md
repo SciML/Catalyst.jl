@@ -339,7 +339,7 @@ end
 
 Running the code above will yield the following error:
 
-```
+```julia
 LoadError: UndeclaredSymbolicError: Unrecognized variables A detected in reaction expression: "((k1, k2), A <--> B)". Since the flag @require_declaration is declared, all species must be explicitly declared with the @species macro.
 ```
 

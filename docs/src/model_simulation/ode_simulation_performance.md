@@ -417,7 +417,7 @@ For more information on differential equation simulations on GPUs in Julia, plea
 
 If you use GPU simulations in your research, please cite the following paper to support the authors of the DiffEqGPU package:
 
-```
+```bibtex
 @article{utkarsh2024automated,
   title={Automated translation and accelerated solving of differential equations on multiple GPU platforms},
   author={Utkarsh, Utkarsh and Churavy, Valentin and Ma, Yingbo and Besard, Tim and Srisuma, Prakitr and Gymnich, Tim and Gerlach, Adam R and Edelman, Alan and Barbastathis, George and Braatz, Richard D and others},

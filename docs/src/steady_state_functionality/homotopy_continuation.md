@@ -74,7 +74,7 @@ hc_steady_states(two_state_model, ps; u0)
 
 If you use this functionality in your research, please cite the following paper to support the authors of the HomotopyContinuation package:
 
-```
+```bibtex
 @inproceedings{HomotopyContinuation.jl,
   title={{H}omotopy{C}ontinuation.jl: {A} {P}ackage for {H}omotopy {C}ontinuation in {J}ulia},
   author={Breiding, Paul and Timme, Sascha},

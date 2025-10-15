@@ -94,7 +94,7 @@ How to use Optimization.jl is discussed in more detail in [this tutorial](@ref o
 
 If you use this functionality in your research, please cite the following paper to support the authors of the Optimization.jl package:
 
-```
+```bibtex
 @software{vaibhav_kumar_dixit_2023_7738525,
 	author = {Vaibhav Kumar Dixit and Christopher Rackauckas},
 	month = mar,

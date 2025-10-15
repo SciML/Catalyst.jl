@@ -177,7 +177,7 @@ is currently not possible. Hopefully this will be a supported feature in the fut
 
 If you use this functionality in your research, please cite the following paper to support the authors of the StructuralIdentifiability package:
 
-```
+```bibtex
 @article{structidjl,
   author  = {Dong, R. and Goodbrake, C. and Harrington, H. and Pogudin G.},
   title   = {Differential Elimination for Dynamical Models via Projections with Applications to Structural Identifiability},
