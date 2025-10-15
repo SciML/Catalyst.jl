@@ -108,7 +108,6 @@ plot(sol; idxs = [:mTetR, :mLacI, :mCI])
 
 Note that, as all initial conditions and parameters have default values, we can provide empty vectors for these into our `ODEProblem`.
 
-
 !!! note
     It should be noted that .net files support a wide range of potential model features, not all of which are currently supported by ReactionNetworkImporters. Hence, there might be some .net files which `loadrxnetwork` will not be able to load.
 
@@ -159,7 +158,6 @@ Or
 - An $mxn$ complex stoichiometric matrix (...) and a $2mxn$ incidence matrix (...).
 
 The advantage of these forms is that they offer a compact and very general way to represent a large class of CRNs. ReactionNetworkImporters have the functionality for converting matrices of these forms directly into Catalyst `ReactionSystem` models. Instructions on how to do this are available in [ReactionNetworkImporter's documentation](https://docs.sciml.ai/ReactionNetworkImporters/stable/#Loading-a-matrix-representation).
-
 
 ---
 

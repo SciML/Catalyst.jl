@@ -127,7 +127,6 @@ Some additional considerations:
 - If a model without parameters has been declared, only the first three arguments must be provided to `ODEProblem`.
 - While the first value of `tspan` will almost always be `0.0`, other starting times (both negative and positive) are possible.
 
-
 ### [Designating solvers and solver options](@id simulation_intro_solver_options)
 
 While good defaults are generally selected, OrdinaryDiffEq enables the user to customise simulations through a long range of options that can be provided to the `solve` function. This includes specifying a [solver algorithm](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations), which can be provided as a second argument to `solve` (if none is provided, a suitable choice is automatically made). E.g. here we specify that the `Rodas5P` method should be used:

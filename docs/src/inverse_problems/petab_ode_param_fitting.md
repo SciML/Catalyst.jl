@@ -108,7 +108,6 @@ measurements = DataFrame(obs_id = "obs_P", time = data_ts, measurement = data_va
 
 Since, in our example, all measurements are of the same observable, we can set `obs_id="obs_P"`. However, it is also possible to [include measurements from several different observables](@ref petab_simulation_measurements_several_observables).
 
-
 ### Creating a PEtabModel
 
 Finally, we combine all inputs in a single `PEtabModel`. To it, we also pass the initial conditions of our simulations (using the `speciemap` argument). It is also possible to have [initial conditions with uncertainty](@ref petab_simulation_initial_conditions_uncertainty), [that vary between different simulations](@ref petab_simulation_conditions), or [that we attempt to fit to the data](@ref petab_simulation_initial_conditions_fitted).

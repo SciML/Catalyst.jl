@@ -155,7 +155,6 @@ sol_n20 = solve(generate_oprob(20))
 plot!(sol_n20; idxs = :Xend, label = "n = 20")
 ```
 
-
 ---
 
 ## References

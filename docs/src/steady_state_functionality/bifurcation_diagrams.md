@@ -155,7 +155,6 @@ Finally, for additional clarity, we reiterate the purpose of the two `u` argumen
 - `u_guess`: A guess of the initial steady states (which BifurcationKit uses to find its starting point). Typically, most trivial guesses work (e.g. setting all species concentrations to `1.0`). `u_guess` *does not* have to fulfil the conserved concentrations provided in `u0`.
 - `u0`: Used to compute the concentrations of any conserved quantities (e.g. in our example $X + Xp = 1.0$). Technically, values are only required for species that are involved in conservation laws (in our case we do not need to provide a value for $K$). However, sometimes determining which species are actually involved in conservation laws can be difficult, and it might be easier to simply provide concentrations for all species.
 
-
 ---
 
 ## [Citation](@id bifurcationkit_periodic_orbits_citation)

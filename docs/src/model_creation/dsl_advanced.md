@@ -553,7 +553,6 @@ species(rn)
 !!! note
     Setting spatial independent variables is primarily intended for the modelling of spatial systems on continuous domains. Catalyst's support for this is currently under development. Hence, the utility of specifying spatial independent variables is limited.
 
-
 ## [Setting reaction metadata](@id dsl_advanced_options_reaction_metadata)
 
 It is possible to supply reactions with *metadata*, containing some additional information of the reaction. A reaction's metadata follows after its declaration (first using the metadata's name, then a `=`, then its value) and is encapsulated by `[]` (where individual entries are separated by `,`). Here, we add a `description` metadata to the reactions of a birth-death process:

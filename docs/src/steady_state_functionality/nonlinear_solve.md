@@ -161,7 +161,6 @@ nothing # hide
 
 However, especially when the forward ODE simulation approach is used, it is recommended to use the problem type which corresponds to the intended solver.
 
-
 ---
 
 ## [Citations](@id nonlinear_solve_citation)
@@ -176,7 +175,6 @@ If you use this functionality in your research, [in addition to Catalyst](@ref d
   year={2024}
 }
 ```
-
 
 ---
 

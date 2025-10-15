@@ -5,7 +5,6 @@ While Catalyst has primarily been designed around the modelling of biological sy
 - The `@compound` option, which enables the user to designate that a specific species is composed of certain subspecies.
 - The `balance_reaction` function, which enables the user to balance a reaction so the same number of components occur on both sides.
 
-
 ## [Modelling with compound species](@id chemistry_functionality_compounds)
 
 ### [Creating compound species programmatically](@id chemistry_functionality_compounds_programmatic)

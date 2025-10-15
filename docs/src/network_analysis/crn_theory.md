@@ -146,7 +146,6 @@ Quoting Feinberg [^1]
 > stoichiometry vectors] are as independent as the partition of complexes into
 > linkage classes will allow.
 
-
 ## [Reversibility of the network](@id network_analysis_structural_aspects_reversibility)
 
 A reaction network is *reversible* if the "arrows" of the reactions are

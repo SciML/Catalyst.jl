@@ -243,7 +243,6 @@ end
 
 is not permitted (due to this notation's similarity to a bidirectional reaction). However, if multiples are provided for substrates and/or products, like `(k1,k2), (X1,X2) --> Y`, then bundling works.
 
-
 ## [Non-constant reaction rates](@id dsl_description_nonconstant_rates)
 
 So far we have assumed that all reaction rates are constant (being either a number of a parameter). Non-constant rates that depend on one (or several) species are also possible. More generally, the rate can be any valid expression of parameters and species.

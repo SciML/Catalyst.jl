@@ -81,7 +81,6 @@ sol = solve(oprob, Tsit5())
 plot(sol)
 ```
 
-
 ## [Coupling ODE constraints via extending a system](@id constraint_equations_coupling_constraints)
 
 Finally, we could also construct our model by using compositional modeling. Here
@@ -142,7 +141,6 @@ oprob = ODEProblem(growing_cell, [], (0.0, 1.0))
 sol = solve(oprob, Tsit5())
 plot(sol)
 ```
-
 
 ## [Adding events](@id constraint_equations_events)
 

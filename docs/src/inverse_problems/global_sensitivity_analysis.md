@@ -68,7 +68,6 @@ on the domain $10^β ∈ (-3.0,-1.0)$, $10^a ∈ (-2.0,0.0)$, $10^γ ∈ (-2.0,0
     - Again, as [previously described in other inverse problem tutorials](@ref optimization_parameter_fitting_basics), when exploring a function over large parameter spaces, we will likely simulate our model for unsuitable parameter sets. To reduce time spent on these, and to avoid excessive warning messages, we provide the `maxiters = 100000` and `verbose = false` arguments to `solve`.
     - As we have encountered in [a few other cases](@ref optimization_parameter_fitting_basics), the `gsa` function is not able to take parameter inputs of the map form usually used for Catalyst. Hence, as a first step in `peak_cases` we convert the parameter vector to this form. Next, we remember that the order of the parameters when we e.g. evaluate the GSA output, or set the parameter bounds, corresponds to the order used in `ps = [:β => p[1], :a => p[2], :γ => p[3]]`.
 
-
 ## [Sobol's method-based global sensitivity analysis](@id global_sensitivity_analysis_sobol)
 
 The most common method for GSA is [Sobol's method](https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis). This can be carried out using:
@@ -136,7 +135,6 @@ As previously, we note that the peak number of infected cases is more sensitive 
     The syntax for plotting the output using Sobol's and Morris's methods is slightly different. The reason is that `global_sens.means_star` and `global_sens.variances` (for Morris's method) are 1x3 Matrices, while for Sobol's method, `global_sens.S1` and `global_sens.ST` are length-3 vectors.
 
 Generally, Morris's method is computationally less intensive, and has easier to interpret output, as compared to Sobol's method. However, if computational resources are available, Sobol's method is more comprehensive.
-
 
 ## [Other global sensitivity analysis methods](@id global_sensitivity_analysis_other_methods)
 

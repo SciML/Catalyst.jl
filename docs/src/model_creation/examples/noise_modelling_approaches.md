@@ -124,7 +124,6 @@ plot(sol_inputnoise; idxs = :X)
 
 Like in the previous two cases, this generates heterogeneous trajectories across our ensemble.
 
-
 ## [Investigating the mean of noisy oscillations](@id noise_modelling_approaches_model_noisy_oscillation_mean)
 
 Finally, we will observe an interesting phenomenon for ensembles of stochastic oscillators. First, we create ensemble simulations with a larger number of trajectories.

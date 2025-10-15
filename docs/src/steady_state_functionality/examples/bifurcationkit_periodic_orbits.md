@@ -117,7 +117,6 @@ plot(br_po, vars = (:param, :period); xguide = bif_par, yguide = "Period length"
 
 In the plot we see that the period starts at around $18$ time units, and slowly increase with $v$.
 
-
 ---
 
 ## [Citation](@id bifurcationkit_periodic_orbits_citation)

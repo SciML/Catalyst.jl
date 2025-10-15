@@ -14,7 +14,6 @@ Features for which support is planned in future updates include:
 
 This tutorial introduces spatial modelling on discrete domains, here called lattices. It describes the basics of creating and simulating such models. To do so, it uses ODE simulations as examples. Additional tutorials provide further details on how to interact with [spatial simulation structures](@ref lattice_simulation_plotting) and [plot spatial simulations](@ref lattice_simulation_plotting), and also provide further details on [ODE](@ref spatial_lattice_ode_simulations) and [jump](@ref spatial_lattice_jump_simulations) simulations, respectively.
 
-
 ## [Basic example of a spatial simulation on a discrete domain](@id spatial_lattice_modelling_intro_example)
 
 To perform discrete-space spatial simulations, the user must first define a [`LatticeReactionSystem`](@ref). These combine:

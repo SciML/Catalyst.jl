@@ -219,7 +219,6 @@ heatmap(0:24, 0:24, ss_jump ./length(esol); xguide = "X₂", yguide = "X")
 
 Here we used an ensemble [output function](@ref activation_time_distribution_measurement) to only save each simulation's final state (and plot these using `heatmap`).
 
-
 ---
 
 ## References

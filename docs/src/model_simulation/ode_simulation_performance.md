@@ -62,7 +62,6 @@ Generally, ODE solvers can be divided into [*explicit* and *implicit* solvers](h
 
 Finally, we should note that stiffness is not tied to the model equations only. If we change the parameter values of our previous Brusselator model to `[:A => 1.0, :B => 4.0]`, the non-stiff `Tsit5` solver can successfully simulate it.
 
-
 ## [ODE solver selection](@id ode_simulation_performance_solvers)
 
 OrdinaryDiffEq implements an unusually large number of ODE solvers, with the performance of the simulation heavily depending on which one is chosen. These are provided as the second argument to the `solve` command, e.g. here we use the `Tsit5` solver to simulate a simple [birth-death process](@ref basic_CRN_library_bd):
@@ -118,7 +117,6 @@ It should be noted, however, that the result of the second simulation is a lot m
 time and error. Benchmarks comparing solver performance (by plotting the run time as a function of the error) for various CRN models can be found in the [SciMLBenchmarks repository](https://docs.sciml.ai/SciMLBenchmarksOutput/stable/Bio/BCR/).
 
 Generally, whether solution error is a consideration depends on the application. If you want to compute the trajectory of an expensive space probe as it is sent from Earth, to slingshot Jupiter, and then reach Pluto a few years later, ensuring a minimal error will be essential. However, if you want to simulate a simple CRN to determine whether it oscillates for a given parameter set, a small error will not constitute a problem. An important aspect with regard to error is that it affects the selection of the optimal solver. E.g. if tolerance is low (generating larger errors) the `Rosenbrock23` method performs well for small, stiff, problems (again, more details can be found in [OrdinaryDiffEq's documentation](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/)).
-
 
 ## [Jacobian computation options for implicit solvers](@id ode_simulation_performance_jacobian)
 
@@ -207,7 +205,6 @@ Finally, we note that when using preconditioners with a matrix-free method (like
 
 Generally, the use of preconditioners is only recommended for advanced users who are familiar with the concepts. However, for large systems, if performance is essential, they can be worth looking into.
 
-
 ## [Elimination of system conservation laws](@id ode_simulation_performance_conservation_laws)
 
 Previously, we have described how Catalyst, when it generates ODEs, is able to [detect and eliminate conserved quantities](@ref conservation_laws). In certain cases, doing this can improve performance. E.g. in the following example we will eliminate the single conserved quantity in a [two-state model](@ref basic_CRN_library_two_states). This results in a differential algebraic equation with a single differential equation and a single algebraic equation (as opposed to two differential equations). However, as the algebraic equation is fully determined by the ODE solution, Catalyst moves it to be an observable and our new system therefore only contains one ODE that must be solved numerically. Conservation laws can be eliminated by providing the `remove_conserved = true` option to `ODEProblem`:
@@ -229,7 +226,6 @@ nothing # hide
 ```
 
 Conservation law elimination is not expected to ever impact performance negatively; it simply results in a (possibly) lower-dimensional system of ODEs to solve. However, eliminating conserved species may have minimal performance benefits; it is model-dependent whether elimination results in faster ODE solving times and/or increased solution accuracy.
-
 
 ## [Parallelisation on CPUs and GPUs](@id ode_simulation_performance_parallelisation)
 
@@ -414,7 +410,6 @@ Note that we have to provide the `CUDA.CUDABackend()` argument to our ensemble a
 Just like OrdinaryDiffEq is able to utilise parallel CPU processes to speed up the linear solve part of ODE simulations, GPUs can also be used. More details on this can be found [here](https://docs.sciml.ai/DiffEqGPU/stable/tutorials/within_method_gpu/). This is only recommended when ODEs are very large (at least 1,000 species), which is typically not the case for CRNs.
 
 For more information on differential equation simulations on GPUs in Julia, please read [DiffEqGPU's documentation](https://docs.sciml.ai/DiffEqGPU/stable/). Furthermore, if performance is critical, [this tutorial](https://docs.sciml.ai/DiffEqGPU/stable/tutorials/lower_level_api/) provides information on how to redesign your simulation code to make it more suitable for GPU simulations.
-
 
 ---
 

@@ -141,7 +141,6 @@ sol_osc = OrdinaryDiffEqDefault.solve(oprob_osc)
 plot(plot(sol_nosc; title = "No oscillation"), plot(sol_osc; title = "Oscillation"); size = (1000, 400), lw = 4)
 ```
 
-
 ---
 
 ## [Citation](@id bifurcationkit_periodic_orbits_citation)
