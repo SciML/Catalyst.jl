@@ -67,7 +67,7 @@ raw"\begin{align*}
 \mathrm{X3} &\xrightarrow{d3} \varnothing \\
 \mathrm{X4} &\xrightarrow{d4} \varnothing \\
 \mathrm{X5} &\xrightarrow{d5} \varnothing \\
-\mathrm{X6} &\xrightarrow{d6} \varnothing  
+\mathrm{X6} &\xrightarrow{d6} \varnothing
  \end{align*}
 ", "\r\n"=>"\n")
 
@@ -88,10 +88,10 @@ raw"\begin{align*}
 \mathrm{X3} &\xrightarrow{d3} \varnothing \\
 \mathrm{X4} &\xrightarrow{d4} \varnothing \\
 \mathrm{X5} &\xrightarrow{d5} \varnothing \\
-\mathrm{X6} &\xrightarrow{d6} \varnothing  
+\mathrm{X6} &\xrightarrow{d6} \varnothing
  \end{align*}
 ", "\r\n"=>"\n")
-        
+
     # Latexify.@generate_test latexify(rn, mathjax = false)
     @test latexify(rn, mathjax = false) == replace(
 raw"\begin{align*}
@@ -109,7 +109,7 @@ raw"\begin{align*}
 \mathrm{X3} &\xrightarrow{d3} \varnothing \\
 \mathrm{X4} &\xrightarrow{d4} \varnothing \\
 \mathrm{X5} &\xrightarrow{d5} \varnothing \\
-\mathrm{X6} &\xrightarrow{d6} \varnothing  
+\mathrm{X6} &\xrightarrow{d6} \varnothing
  \end{align*}
 ", "\r\n"=>"\n")
 end
@@ -127,7 +127,7 @@ let
 raw"\begin{align*}
 \varnothing &\xrightleftharpoons[d_{a}]{\frac{p_{a} B^{n}}{k^{n} + B^{n}}} \mathrm{A} \\
 \varnothing &\xrightleftharpoons[d_{b}]{p_{b}} \mathrm{B} \\
-3 \mathrm{B} &\xrightleftharpoons[r_{b}]{r_{a}} \mathrm{A}  
+3 \mathrm{B} &\xrightleftharpoons[r_{b}]{r_{a}} \mathrm{A}
  \end{align*}
 ", "\r\n"=>"\n")
 
@@ -136,7 +136,7 @@ raw"\begin{align*}
 raw"\begin{align*}
 \varnothing &\xrightleftharpoons[d_{a}]{\frac{p_{a} B^{n}}{k^{n} + B^{n}}} \mathrm{A} \\
 \varnothing &\xrightleftharpoons[d_{b}]{p_{b}} \mathrm{B} \\
-3 \mathrm{B} &\xrightleftharpoons[r_{b}]{r_{a}} \mathrm{A}  
+3 \mathrm{B} &\xrightleftharpoons[r_{b}]{r_{a}} \mathrm{A}
  \end{align*}
 ", "\r\n"=>"\n")
 end
@@ -150,7 +150,7 @@ let
     # Latexify.@generate_test latexify(rn)
     @test latexify(rn) == replace(
 raw"\begin{align*}
-\varnothing &\xrightarrow{p} (m + n)\mathrm{X}  
+\varnothing &\xrightarrow{p} (m + n)\mathrm{X}
  \end{align*}
 ", "\r\n"=>"\n")
 end
@@ -241,7 +241,7 @@ let
     # Latexify.@generate_test latexify(rn)
     @test latexify(rn) == replace(
 raw"\begin{align*}
-\mathrm{Y} &\xrightarrow{Y k} \varnothing  
+\mathrm{Y} &\xrightarrow{Y k} \varnothing
  \end{align*}
 ", "\r\n"=>"\n")
 end
@@ -258,7 +258,7 @@ let
     @test latexify(rn) == replace(
 raw"\begin{align*}
 \varnothing &\xrightleftharpoons[\frac{d}{V\left( t \right)}]{\frac{p}{V\left( t \right)}} \mathrm{X} \\
-\frac{\mathrm{d} V\left( t \right)}{\mathrm{d}t} &= X\left( t \right) - V\left( t \right)  
+\frac{\mathrm{d} V\left( t \right)}{\mathrm{d}t} &= X\left( t \right) - V\left( t \right)
  \end{align*}
 ", "\r\n"=>"\n")
 end
@@ -279,4 +279,53 @@ let
 
     # Latexify.@generate_test latexify(extended, mathjax=false)
     @test_broken false
+end
+
+# Checks that the `SymLatexWrapper` metadata option is correctly added to all symbolics created
+# by the DSL. Checks that this is also the case for species created through the `@species` macro.
+# Currently only implemented for species.
+let
+    # Via the DSL (@reaction_network).
+    rn1 = @reaction_network begin
+        @species Y(t)
+        @variables W(t)
+        @parameters p
+        @equations D(V) ~ - V
+        k1, 0 --> X
+    end
+    @test_broken all(hasmetadata(u, Symbolics.SymLatexWrapper) && (getmetadata(u, Symbolics.SymLatexWrapper) == string) for u in unknowns(rn1))
+    @test_broken all(hasmetadata(p, Symbolics.SymLatexWrapper) && (getmetadata(p, Symbolics.SymLatexWrapper) == string) for p in parameters(rn1))
+
+    # Via the DSL but using `begin .. end` in declarations and additional options.
+    rn2 = @reaction_network begin
+        @species begin
+            X(t)
+            Y(t), [description = "A species"]
+            Z(t) = 1.0
+        end
+        @variables begin
+            V(t)
+            W(t), [description = "A variable"]
+            U(t) = 2.0
+        end
+        @parameters begin
+            k1
+            q, [description = "A parameter"]
+            r = 3.0
+        end
+        @equations D(V) ~ - V
+        k1, 0 --> X
+    end
+    @test_broken all(hasmetadata(u, Symbolics.SymLatexWrapper) && (getmetadata(u, Symbolics.SymLatexWrapper) == string) for u in unknowns(rn2))
+    @test_broken all(hasmetadata(p, Symbolics.SymLatexWrapper) && (getmetadata(p, Symbolics.SymLatexWrapper) == string) for p in parameters(rn2))
+
+    # Via the DSL (@reaction).
+    rx = @reaction p, 0 --> x
+    @test_broken hasmetadata(rx.rate, Symbolics.SymLatexWrapper) && (getmetadata(rx.rate, Symbolics.SymLatexWrapper) == string)
+    @test hasmetadata(rx.products[1], Symbolics.SymLatexWrapper) && (getmetadata(rx.products[1], Symbolics.SymLatexWrapper) == string)
+
+    # Via the @species.
+    t = default_t()
+    @species XYZ(t)
+    @test hasmetadata(XYZ, Symbolics.SymLatexWrapper) && (getmetadata(XYZ, Symbolics.SymLatexWrapper) == string)
 end
