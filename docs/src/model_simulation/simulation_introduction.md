@@ -473,11 +473,11 @@ For jump simulations:
 }
 
 @misc{zagatti_extending_2023,
-	title = {Extending {JumpProcess}.jl for fast point process simulation with time-varying intensities},
-	url = {http://arxiv.org/abs/2306.06992},
-	doi = {10.48550/arXiv.2306.06992},
-	publisher = {arXiv},
-	author = {Zagatti, Guilherme Augusto and Isaacson, Samuel A. and Rackauckas, Christopher and Ilin, Vasily and Ng, See-Kiong and Bressan, Stéphane},
-	year = {2023},
+  title = {Extending {JumpProcess}.jl for fast point process simulation with time-varying intensities},
+  url = {http://arxiv.org/abs/2306.06992},
+  doi = {10.48550/arXiv.2306.06992},
+  publisher = {arXiv},
+  author = {Zagatti, Guilherme Augusto and Isaacson, Samuel A. and Rackauckas, Christopher and Ilin, Vasily and Ng, See-Kiong and Bressan, Stéphane},
+  year = {2023},
 }
 ```

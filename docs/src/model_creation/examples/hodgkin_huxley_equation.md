@@ -101,7 +101,7 @@ action potential.
 ```@example hh1
 tspan = (0.0, 50.0)
 u₀ = [:V => -70, :m => 0.0, :h => 0.0, :n => 0.0,
-	  :m′ => 1.0, :n′ => 1.0, :h′ => 1.0]
+      :m′ => 1.0, :n′ => 1.0, :h′ => 1.0]
 oprob = ODEProblem(hhmodel, u₀, tspan)
 hhsssol = solve(oprob, Rosenbrock23())
 nothing # hide

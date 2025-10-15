@@ -263,14 +263,14 @@ If you use this functionality in your research, please cite the following paper 
 
 ```bibtex
 @software{vaibhav_kumar_dixit_2023_7738525,
-	author = {Vaibhav Kumar Dixit and Christopher Rackauckas},
-	month = mar,
-	publisher = {Zenodo},
-	title = {Optimization.jl: A Unified Optimization Package},
-	version = {v3.12.1},
-	doi = {10.5281/zenodo.7738525},
-  	url = {https://doi.org/10.5281/zenodo.7738525},
-	year = 2023
+  author = {Vaibhav Kumar Dixit and Christopher Rackauckas},
+  month = mar,
+  publisher = {Zenodo},
+  title = {Optimization.jl: A Unified Optimization Package},
+  version = {v3.12.1},
+  doi = {10.5281/zenodo.7738525},
+  url = {https://doi.org/10.5281/zenodo.7738525},
+  year = 2023
 }
 ```
 
