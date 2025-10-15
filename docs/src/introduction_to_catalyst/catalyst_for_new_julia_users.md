@@ -112,9 +112,9 @@ For more information on how to use the Catalyst model creator (also known as *th
 
 Next, we wish to simulate our model. To do this, we need to provide some additional information to the simulator. This is
 
-* The initial condition. That is, the concentration (or copy numbers) of each species at the start of the simulation.
-* The time span. That is, the time frame over which we wish to run the simulation.
-* The parameter values. That is, the values of the model's parameters for this simulation.
+- The initial condition. That is, the concentration (or copy numbers) of each species at the start of the simulation.
+- The time span. That is, the time frame over which we wish to run the simulation.
+- The parameter values. That is, the values of the model's parameters for this simulation.
 
 The initial condition is given as a *Vector*. This is a type which collects several different values. To declare a vector, the values are specific within brackets, `[]`, and separated by `,`. Since we only have one species, the vector holds a single element. In this element, we set the value of $X$ using the `:X => 1.0` syntax. Here, we first denote the name of the species (with a `:` pre-appended, which creates a `Symbol`), next follows a `=>` and then the value of $X$. Since we wish to simulate the *concentration* of X over time, we will let the initial condition be decimal valued.
 
@@ -171,19 +171,19 @@ using JumpProcesses
 
 This time, we will declare a so-called [SIR model for an infectious disease](@ref basic_CRN_library_sir). Note that even if this model does not describe a set of chemical reactions, it can be modelled using the same framework. The model consists of 3 species:
 
-* *S*, the amount of *susceptible* individuals.
-* *I*, the amount of *infected* individuals.
-* *R*, the amount of *recovered* (or *removed*) individuals.
+- *S*, the amount of *susceptible* individuals.
+- *I*, the amount of *infected* individuals.
+- *R*, the amount of *recovered* (or *removed*) individuals.
 
 It also has 2 reaction events:
 
-* Infection, where a susceptible individual meets an infected individual and also becomes infected.
-* Recovery, where an infected individual recovers from the infection.
+- Infection, where a susceptible individual meets an infected individual and also becomes infected.
+- Recovery, where an infected individual recovers from the infection.
 
 Each reaction is also associated with a specific rate (corresponding to a parameter).
 
-* *b*, the infection rate.
-* *k*, the recovery rate.
+- *b*, the infection rate.
+- *k*, the recovery rate.
 
 We declare the model using the `@reaction_network` macro, and store it in the `sir_model` variable.
 
