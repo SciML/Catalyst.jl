@@ -1,7 +1,7 @@
 # [Advice for Performant ODE Simulations](@id ode_simulation_performance)
 
 We have previously described how to perform ODE simulations of *chemical reaction network* (CRN) models. These simulations are typically fast and require little additional consideration. However, when a model is simulated many times (e.g. as a part of solving an inverse problem), or is very large, simulation run
-times may become noticeable. Here we will give some advice on how to improve performance for these cases [^1].
+times may become noticeable. Here we will give some advice on how to improve performance for these cases[^1].
 
 Generally, there are few good ways to, before a simulation, determine the best options. Hence, while we below provide several options, if you face an application for which reducing run time is critical (e.g. if you need to simulate the same ODE many times), it might be required to manually trial these various options to see which yields the best performance ([BenchmarkTools.jl's](https://github.com/JuliaCI/BenchmarkTools.jl) `@btime` macro is useful for this purpose). It should be noted that the default options typically perform well, and it is primarily for large models where investigating alternative options is worthwhile. All ODE simulations of Catalyst models are performed using the OrdinaryDiffEq.jl package, [which documentation](https://docs.sciml.ai/DiffEqDocs/stable/) provides additional advice on performance.
 

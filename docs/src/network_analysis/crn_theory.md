@@ -141,7 +141,7 @@ reactioncomplexes(rn)
 δ = deficiency(rn)
 ```
 
-Quoting Feinberg [^1]
+Quoting Feinberg[^1]
 > Deficiency zero networks are ones for which the reaction vectors [i.e. net
 > stoichiometry vectors] are as independent as the partition of complexes into
 > linkage classes will allow.
