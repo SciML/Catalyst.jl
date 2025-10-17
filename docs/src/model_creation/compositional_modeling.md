@@ -213,7 +213,7 @@ parameters for the nucleus and cytosol, and assume we are working with species
 having units of number of molecules. Rate constants will have their common
 concentration units, i.e. if ``V`` denotes the volume of a compartment then
 
-| Reaction Type | Example | Rate Constant Units | Effective rate constant (units of per time)
+| Reaction Type | Example | Rate Constant Units | Effective rate constant (units of per time) |
 |:----------:   | :----------: | :----------:  |:------------:|
 | Zero order | ``\varnothing \overset{\alpha}{\to} A`` | concentration / time | ``\alpha V`` |
 | First order | ``A \overset{\beta}{\to} B`` | (time)⁻¹ | ``\beta`` |
