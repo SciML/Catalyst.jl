@@ -46,7 +46,7 @@ a_k(\mathbf{X}(t)) = k \prod_{m=1}^M \frac{X_m(t) (X_m(t)-1) \dots (X_m(t)-\alph
 
 for stochastic chemical kinetics jump process models.
 
-### Rate Law vs. Propensity Example:
+### Rate Law vs. Propensity Example
 
 For the reaction $2A + B \overset{k}{\to} 3 C$ we would have
 
