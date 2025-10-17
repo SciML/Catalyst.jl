@@ -15,7 +15,7 @@ continuing stability of releases. Before making a release one should
 3. [Check docs build](@ref devdocs_advice_doc_inspection) with the capped dependencies.
    Visually verify via checking the artifact in the doc build that the docs actually
    look ok (since sometimes issues can arise that do not lead to actual errors in the doc CI).
-5. Release via the [registration
+4. Release via the [registration
    issue](https://github.com/SciML/Catalyst.jl/issues/127) with the
    command: `@JuliaRegistrator register branch=release-15.0.0`, modifying as appropriate
    for the version you are releasing.
