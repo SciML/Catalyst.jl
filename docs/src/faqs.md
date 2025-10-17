@@ -136,7 +136,7 @@ simulations](@ref introduction_to_catalyst_ratelaws) section. Leaving this keywo
 point stoichiometry will give an error message.
 
 For a more extensive documentation of using non-integer stoichiometric
-coefficients, please see the [Symbolic Stochiometries](@ref
+coefficients, please see the [Symbolic Stoichiometries](@ref
 parametric_stoichiometry) section.
 
 ## How to set default values for initial conditions and parameters?

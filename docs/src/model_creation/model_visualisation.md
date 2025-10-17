@@ -90,7 +90,7 @@ Finally, a [network's reaction complexes](@ref network_analysis_reaction_complex
 plot_complexes(brusselator)
 ```
 
-Here, reaction complexes are displayed as blue nodes, and reactions between complexes are displayed as black arrows. Red arrows indicate that the rate constantof a reaction has a species-dependence. Edges can be optionally labeled with their rate expressions by calling with the option `show_rate_labels`.
+Here, reaction complexes are displayed as blue nodes, and reactions between complexes are displayed as black arrows. Red arrows indicate that the rate constant of a reaction has a species-dependence. Edges can be optionally labeled with their rate expressions by calling with the option `show_rate_labels`.
 
 ```@example visualisation_graphs
 plot_complexes(brusselator, show_rate_labels = true)

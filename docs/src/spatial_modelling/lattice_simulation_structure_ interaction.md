@@ -150,7 +150,7 @@ There are two different circumstances when `rebuild_lat_internals!` must be call
 
 Parameter values of integrators can be interfaced with just like for problems (this is primarily relevant when using [*callbacks*](https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/)). Again, after doing so, the `rebuild_lat_internals!` function might need to be applied to the integrator.
 
-### [Retrieving and updatingedge  parameter values in problems and integrators](@id lattice_simulation_structure_interaction_prob_int_parameters_edge_ps)
+### [Retrieving and updating edge parameter values in problems and integrators](@id lattice_simulation_structure_interaction_prob_int_parameters_edge_ps)
 
 The `lat_getp` and `lat_setp!` functions cannot currently be applied to [edge parameters](@ref spatial_lattice_modelling_intro_simulation_edge_parameters). Instead, to access the value of an edge parameter, use
 

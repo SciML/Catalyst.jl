@@ -208,7 +208,7 @@ This ensured they were properly treated as species and not parameters. See the
 
 The [Catalyst.jl API](@ref api) provides a large variety of functionality for
 querying properties of a reaction network. Here we go over a few of the most
-useful basic functions. Given the `repressillator` defined above we have that
+useful basic functions. Given the `repressilator` defined above we have that
 
 ```@example ex
 species(repressilator)
