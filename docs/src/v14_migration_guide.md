@@ -255,7 +255,7 @@ This bug was likely present on earlier versions as well, but was only recently d
 
 In early versions of Catalyst, parameters and species were provided as vectors (e.g. `[1.0, 2.0]`) rather than maps (e.g. `[p => 1.0, d => 2.0]`). While we previously *strongly* recommended users to use the map form (or they might produce unintended results), the vector form was still supported (technically). Due to recent internal ModelingToolkit updates, the purely numeric form is no longer supported and should never be used -- it will potentially lead to incorrect values for parameters and/or initial conditions. Note that if `rn` is a complete `ReactionSystem` you can now specify such mappings via `[rn.p => 1.0, rn.d => 2.0]`.
 
-*Users should never use vector-forms to represent parameter and species values*
+*Users should never use vector-forms to represent parameter and species values.*  <!-- markdownlint-disable-line MD036 -->
 
 #### Additional deprecated functions
 
