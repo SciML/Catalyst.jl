@@ -1,9 +1,11 @@
 # [Catalyst.jl API](@id api)
+
 ```@meta
 CurrentModule = Catalyst
 ```
 
 ## Reaction network generation and representation
+
 Catalyst provides the [`@reaction_network`](@ref) macro for generating a
 complete network, stored as a [`ReactionSystem`](@ref), which in turn is
 composed of [`Reaction`](@ref)s. `ReactionSystem`s can be converted to other
@@ -16,11 +18,13 @@ appear as a substrate or product in some reaction will be treated as a species,
 while all remaining symbols will be considered parameters (corresponding to
 those symbols that only appear within rate expressions and/or as stoichiometric
 coefficients). I.e. in
+
 ```julia
 rn = @reaction_network begin
     k*X, Y --> W
 end
 ```
+
 `Y` and `W` will all be classified as chemical species, while `k` and `X` will
 be classified as parameters.
 
@@ -86,15 +90,17 @@ ReactionSystem
 ```
 
 ## [Options for the `@reaction_network` DSL](@id api_dsl_options)
+
 We have [previously described](@ref dsl_advanced_options) how options permit the user to supply non-reaction information to [`ReactionSystem`](@ref) created through the DSL. Here follows a list
 of all options currently available.
+
 - [`parameters`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system parameters.
 - [`species`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system species.
 - [`variables`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system non-species variables.
 - [`ivs`](@ref dsl_advanced_options_ivs): Allows the designation of a set of symbols as system independent variables.
 - [`compounds`](@ref chemistry_functionality_compounds): Allows the designation of compound species.
 - [`observables`](@ref dsl_advanced_options_observables): Allows the designation of compound observables.
-- [`default_noise_scaling`](@ref simulation_intro_SDEs_noise_saling): Enables the setting of a default noise scaling expression.
+- [`default_noise_scaling`](@ref simulation_intro_SDEs_noise_scaling): Enables the setting of a default noise scaling expression.
 - [`differentials`](@ref constraint_equations_coupling_constraints): Allows the designation of differentials.
 - [`equations`](@ref constraint_equations_coupling_constraints): Allows the creation of algebraic and/or differential equations.
 - [`continuous_events`](@ref constraint_equations_events): Allows the creation of continuous events.
@@ -102,6 +108,7 @@ of all options currently available.
 - [`combinatoric_ratelaws`](@ref faq_combinatoric_ratelaws): Takes a single option (`true` or `false`), which sets whether to use combinatorial rate laws.
 
 ## [ModelingToolkit and Catalyst accessor functions](@id api_accessor_functions)
+
 A [`ReactionSystem`](@ref) is an instance of a
 `ModelingToolkit.AbstractTimeDependentSystem`, and has a number of fields that
 can be accessed using the Catalyst API and the [ModelingToolkit.jl Abstract
@@ -117,22 +124,22 @@ retrieve info from just a base [`ReactionSystem`](@ref) `rn`, ignoring
 sub-systems of `rn`, one can use the ModelingToolkit accessors (these provide
 direct access to the corresponding internal fields of the `ReactionSystem`)
 
-* `ModelingToolkit.get_unknowns(rn)` is a vector that collects all the species
+- `ModelingToolkit.get_unknowns(rn)` is a vector that collects all the species
   defined within `rn`, ordered by species and then non-species variables.
-* `Catalyst.get_species(rn)` is a vector of all the species variables in the system. The
+- `Catalyst.get_species(rn)` is a vector of all the species variables in the system. The
   entries in `get_species(rn)` correspond to the first `length(get_species(rn))`
   components in `get_unknowns(rn)`.
-* `ModelingToolkit.get_ps(rn)` is a vector that collects all the parameters
+- `ModelingToolkit.get_ps(rn)` is a vector that collects all the parameters
   defined *within* reactions in `rn`.
-* `ModelingToolkit.get_eqs(rn)` is a vector that collects all the
+- `ModelingToolkit.get_eqs(rn)` is a vector that collects all the
   [`Reaction`](@ref)s and `Symbolics.Equation` defined within `rn`, ordering all
   `Reaction`s before `Equation`s.
-* `Catalyst.get_rxs(rn)` is a vector of all the [`Reaction`](@ref)s in `rn`, and
+- `Catalyst.get_rxs(rn)` is a vector of all the [`Reaction`](@ref)s in `rn`, and
   corresponds to the first `length(get_rxs(rn))` entries in `get_eqs(rn)`.
-* `ModelingToolkit.get_iv(rn)` is the independent variable used in the system
+- `ModelingToolkit.get_iv(rn)` is the independent variable used in the system
   (usually `t` to represent time).
-* `ModelingToolkit.get_systems(rn)` is a vector of all sub-systems of `rn`.
-* `ModelingToolkit.get_defaults(rn)` is a dictionary of all the default values
+- `ModelingToolkit.get_systems(rn)` is a vector of all sub-systems of `rn`.
+- `ModelingToolkit.get_defaults(rn)` is a dictionary of all the default values
   for parameters and species in `rn`.
 
 The preceding accessors do not allocate, directly accessing internal fields of
@@ -142,20 +149,20 @@ To retrieve information from the full reaction network represented by a system
 `rn`, which corresponds to information within both `rn` and all sub-systems, one
 can call:
 
-* `ModelingToolkit.unknowns(rn)` returns all species *and variables* across the
+- `ModelingToolkit.unknowns(rn)` returns all species *and variables* across the
   system, *all sub-systems*, and all constraint systems. Species are ordered
   before non-species variables in `unknowns(rn)`, with the first `numspecies(rn)`
   entries in `unknowns(rn)` being the same as `species(rn)`.
-* [`species(rn)`](@ref) is a vector collecting all the chemical species within
+- [`species(rn)`](@ref) is a vector collecting all the chemical species within
   the system and any sub-systems that are also `ReactionSystems`.
-* `ModelingToolkit.parameters(rn)` returns all parameters across the
+- `ModelingToolkit.parameters(rn)` returns all parameters across the
   system, *all sub-systems*, and all constraint systems.
-* `ModelingToolkit.equations(rn)` returns all [`Reaction`](@ref)s and all
+- `ModelingToolkit.equations(rn)` returns all [`Reaction`](@ref)s and all
   `Symbolics.Equations` defined across the system, *all sub-systems*, and all
   constraint systems. `Reaction`s are ordered ahead of `Equation`s with the
   first `numreactions(rn)` entries in `equations(rn)` being the same as
   `reactions(rn)`.
-* [`reactions(rn)`](@ref) is a vector of all the `Reaction`s within the system
+- [`reactions(rn)`](@ref) is a vector of all the `Reaction`s within the system
   and any sub-systems that are also `ReactionSystem`s.
 
 These accessors will generally allocate new arrays to store their output unless
@@ -166,6 +173,7 @@ Below we list the remainder of the Catalyst API accessor functions mentioned
 above.
 
 ## Basic system properties
+
 See [Programmatic Construction of Symbolic Reaction Systems](@ref
 programmatic_CRN_construction) for examples and [ModelingToolkit and Catalyst
 Accessor Functions](@ref api_accessor_functions) for more details on the basic
@@ -187,8 +195,10 @@ isautonomous
 ```
 
 ## Coupled reaction/equation system properties
+
 The following system property accessor functions are primarily relevant to reaction system [coupled
 to differential and/or algebraic equations](@ref constraint_equations).
+
 ```@docs
 ModelingToolkit.has_alg_equations
 ModelingToolkit.alg_equations
@@ -197,7 +207,9 @@ ModelingToolkit.diff_equations
 ```
 
 ## Basic species properties
+
 The following functions permits the querying of species properties.
+
 ```@docs
 isspecies
 Catalyst.isconstant
@@ -206,6 +218,7 @@ Catalyst.isvalidreactant
 ```
 
 ## Basic reaction properties
+
 ```@docs
 ismassaction
 dependents
@@ -217,7 +230,9 @@ reactionrates
 ```
 
 ## [Reaction metadata](@id api_rx_metadata)
+
 The following functions permits the retrieval of [reaction metadata](@ref dsl_advanced_options_reaction_metadata).
+
 ```@docs
 Catalyst.hasnoisescaling
 Catalyst.getnoisescaling
@@ -228,6 +243,7 @@ Catalyst.getmisc
 ```
 
 ## [Functions to extend or modify a network](@id api_network_extension_and_modification)
+
 `ReactionSystem`s can be programmatically extended using [`ModelingToolkit.extend`](@ref) and
 [`ModelingToolkit.compose`](@ref).
 
@@ -239,6 +255,7 @@ Catalyst.flatten
 ```
 
 ## Network comparison
+
 ```@docs
 ==(rn1::Reaction, rn2::Reaction)
 isequivalent
@@ -246,36 +263,45 @@ isequivalent
 ```
 
 ## [Network visualization](@id network_visualization)
+
 [Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to convert
 networks to LaTeX equations by
+
 ```julia
 using Latexify
 latexify(rn)
 ```
+
 An optional argument, `form` allows using `latexify` to display a reaction
 network's ODE (as generated by the reaction rate equation) or SDE (as generated
 by the chemical Langevin equation) form:
+
 ```julia
 latexify(rn; form=:ode)
 ```
+
 ```julia
 latexify(rn; form=:sde)
 ```
+
 (As of writing this, an upstream bug causes the SDE form to be erroneously
 displayed as the ODE form)
 
 Finally, another optional argument (`expand_functions=true`) automatically expands functions defined by Catalyst (such as `mm`). To disable this, set `expand_functions=false`.
 
-Reaction networks can be plotted using the `GraphMakie` extension, which is loaded whenever all of `Catalyst`, `GraphMakie`, and `NetworkLayout` are loaded (note that a Makie backend, like `CairoMakie`, must be loaded as well). The two functions for plotting networks are `plot_network` and `plot_complexes`, which are two distinct representations. 
+Reaction networks can be plotted using the `GraphMakie` extension, which is loaded whenever all of `Catalyst`, `GraphMakie`, and `NetworkLayout` are loaded (note that a Makie backend, like `CairoMakie`, must be loaded as well). The two functions for plotting networks are `plot_network` and `plot_complexes`, which are two distinct representations.
+
 ```@docs
 plot_network(::ReactionSystem)
 plot_complexes(::ReactionSystem)
 ```
 
 ## [Rate laws](@id api_rate_laws)
+
 As the underlying [`ReactionSystem`](@ref) is comprised of `ModelingToolkit`
 expressions, one can directly access the generated rate laws, and using
 `ModelingToolkit` tooling generate functions or Julia `Expr`s from them.
+
 ```@docs
 oderatelaw
 jumpratelaw
@@ -287,6 +313,7 @@ hillar
 ```
 
 ## Transformations
+
 ```@docs
 Base.convert
 JumpInputs
@@ -295,7 +322,9 @@ set_default_noise_scaling
 ```
 
 ## Chemistry-related functionalities
+
 Various functionalities primarily relevant to modelling of chemical systems (but potentially also in biology).
+
 ```@docs
 @compound
 @compounds
@@ -306,23 +335,28 @@ component_coefficients
 ```
 
 ## Unit validation
+
 ```@docs
 validate(rx::Reaction; info::String = "")
 validate(rs::ReactionSystem, info::String="")
 ```
 
 ## Utility functions
+
 ```@docs
 symmap_to_varmap
 ```
 
 ## [Spatial modelling](@id api_lattice_simulations)
+
 The first step of spatial modelling is to create a so-called `LatticeReactionSystem`:
+
 ```@docs
 LatticeReactionSystem
 ```
 
 The following functions can be used to querying the properties of `LatticeReactionSystem`s:
+
 ```@docs
 reactionsystem
 Catalyst.spatial_reactions
@@ -342,15 +376,18 @@ has_graph_lattice
 grid_size
 grid_dims
 ```
+
 In addition, most accessor functions for normal `ReactionSystem`s (such as `species` and `parameters`) works when applied to `LatticeReactionSystem`s as well.
 
 The following two helper functions can be used to create non-uniform parameter values.
+
 ```@docs
 make_edge_p_values
 make_directed_edge_values
 ```
 
 The following functions can be used to access, or change, species or parameter values stored in problems, integrators, and solutions that are based on `LatticeReactionSystem`s.
+
 ```@docs
 lat_getu
 lat_setu!
@@ -360,6 +397,7 @@ rebuild_lat_internals!
 ```
 
 Finally, we provide the following helper functions to plot and animate spatial lattice simulations.
+
 ```@docs
 lattice_plot
 lattice_animation

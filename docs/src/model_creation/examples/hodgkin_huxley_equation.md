@@ -17,11 +17,13 @@ chemistry and the dynamics of the transmembrane potential can be combined into a
 complete model.
 
 We begin by importing some necessary packages:
+
 ```@example hh1
 using ModelingToolkit, Catalyst, NonlinearSolve, Plots, OrdinaryDiffEqRosenbrock
 ```
 
 ## Building the model via the Catalyst DSL
+
 Let's build a simple Hodgkin-Huxley model for a single neuron, with the voltage,
 $V(t)$, included as a coupled ODE. We first specify the transition rates for
 three gating variables, $m(t)$, $n(t)$ and $h(t)$.
@@ -53,7 +55,8 @@ nothing # hide
 ```
 
 We also declare a function to represent an applied current in our model, which we
-will use to perturb the system and create action potentials. 
+will use to perturb the system and create action potentials.
+
 ```@example hh1
 Iapp(t,I₀) = I₀ * sin(2*pi*t/30)^2
 ```
@@ -66,13 +69,13 @@ maps.
 ```@example hh1
 hhmodel = @reaction_network hhmodel begin
     @parameters begin
-        C = 1.0 
-        ḡNa = 120.0 
-        ḡK = 36.0 
-        ḡL = .3 
-        ENa = 45.0 
-        EK = -82.0 
-        EL = -59.0 
+        C = 1.0
+        ḡNa = 120.0
+        ḡK = 36.0
+        ḡL = .3
+        ENa = 45.0
+        EK = -82.0
+        EL = -59.0
         I₀ = 0.0
     end
 
@@ -81,12 +84,13 @@ hhmodel = @reaction_network hhmodel begin
     (αₙ(V), βₙ(V)), n′ <--> n
     (αₘ(V), βₘ(V)), m′ <--> m
     (αₕ(V), βₕ(V)), h′ <--> h
-    
+
     @equations begin
         D(V) ~ -1/C * (ḡK*n^4*(V-EK) + ḡNa*m^3*h*(V-ENa) + ḡL*(V-EL)) + Iapp(t,I₀)
     end
 end
 ```
+
 For now we turn off the applied current by setting its amplitude, `I₀`, to zero.
 
 `hhmodel` is now a `ReactionSystem` that is coupled to an internal constraint
@@ -97,7 +101,7 @@ action potential.
 ```@example hh1
 tspan = (0.0, 50.0)
 u₀ = [:V => -70, :m => 0.0, :h => 0.0, :n => 0.0,
-	  :m′ => 1.0, :n′ => 1.0, :h′ => 1.0]
+      :m′ => 1.0, :n′ => 1.0, :h′ => 1.0]
 oprob = ODEProblem(hhmodel, u₀, tspan)
 hhsssol = solve(oprob, Rosenbrock23())
 nothing # hide
@@ -133,7 +137,7 @@ plot(sol, idxs = V, legend = :outerright)
 
 We observe three action potentials due to the steady applied current.
 
-## Building the model via composition of separate systems for the ion channel and transmembrane voltage dynamics 
+## Building the model via composition of separate systems for the ion channel and transmembrane voltage dynamics
 
 As an illustration of how one can construct models from individual components,
 we now separately construct and compose the model components.
@@ -141,24 +145,25 @@ we now separately construct and compose the model components.
 We start by defining systems to model each ionic current. Note we now use
 `@network_component` instead of `@reaction_network` as we want the models to be
 composable and not marked as finalized.
+
 ```@example hh1
 IKmodel = @network_component IKmodel begin
-    @parameters ḡK = 36.0 EK = -82.0 
+    @parameters ḡK = 36.0 EK = -82.0
     @variables V(t) Iₖ(t)
     (αₙ(V), βₙ(V)), n′ <--> n
     @equations Iₖ ~ ḡK*n^4*(V-EK)
 end
 
 INamodel = @network_component INamodel begin
-    @parameters ḡNa = 120.0 ENa = 45.0 
+    @parameters ḡNa = 120.0 ENa = 45.0
     @variables V(t) Iₙₐ(t)
     (αₘ(V), βₘ(V)), m′ <--> m
     (αₕ(V), βₕ(V)), h′ <--> h
-    @equations Iₙₐ ~ ḡNa*m^3*h*(V-ENa) 
+    @equations Iₙₐ ~ ḡNa*m^3*h*(V-ENa)
 end
 
 ILmodel = @network_component ILmodel begin
-    @parameters ḡL = .3 EL = -59.0 
+    @parameters ḡL = .3 EL = -59.0
     @variables V(t) Iₗ(t)
     @equations Iₗ ~ ḡL*(V-EL)
 end
@@ -166,6 +171,7 @@ nothing # hide
 ```
 
 We next define the voltage dynamics with unspecified values for the currents
+
 ```@example hh1
 hhmodel2 = @network_component hhmodel2 begin
     @parameters C = 1.0 I₀ = 0.0
@@ -174,13 +180,16 @@ hhmodel2 = @network_component hhmodel2 begin
 end
 nothing # hide
 ```
+
 Finally, we extend the `hhmodel` with the systems defining the ion channel currents
+
 ```@example hh1
 @named hhmodel2 = extend(IKmodel, hhmodel2)
 @named hhmodel2 = extend(INamodel, hhmodel2)
 @named hhmodel2 = extend(ILmodel, hhmodel2)
 hhmodel2 = complete(hhmodel2)
 ```
+
 Let's again solve the system starting from the previously calculated resting
 state, using the same applied current as above (to verify we get the same
 figure). Note, we now run `structural_simplify` from ModelingToolkit to

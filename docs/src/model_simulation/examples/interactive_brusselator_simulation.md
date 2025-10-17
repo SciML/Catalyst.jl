@@ -2,17 +2,19 @@
 
 Catalyst can utilize the [GLMakie.jl](https://github.com/JuliaPlots/GLMakie.jl) package for creating interactive visualizations of your reaction network dynamics. This tutorial provides a step-by-step guide to creating an interactive visualization of the Brusselator model, building upon the basic [Brusselator](@ref basic_CRN_library_brusselator) example.
 
-
 ## [Setting up the Brusselator model](@id setup_brusselator)
 
-Let's again use the oscillating Brusselator model, extending the basic simulation [plotting](@ref simulation_plotting) workflow we saw earlier. 
+Let's again use the oscillating Brusselator model, extending the basic simulation [plotting](@ref simulation_plotting) workflow we saw earlier.
+
 ```@example interactive_brusselator
 using Catalyst
 using OrdinaryDiffEqTsit5
 ```
+
 ```julia
 using GLMakie
 ```
+
 ```@example interactive_brusselator
 using CairoMakie # hide
 
@@ -36,9 +38,10 @@ function solve_brusselator(A, B, X0, Y0, prob = oprob)
     p = [:A => A, :B => B]
     u0 = [:X => X0, :Y => Y0]
     newprob = remake(prob, p=p, u0=u0)
-    solve(newprob, Tsit5(), saveat = 0.1) 
+    solve(newprob, Tsit5(), saveat = 0.1)
 end
 ```
+
 This code sets up our Brusselator model using Catalyst.jl's `@reaction_network` macro. We also define initial parameters, initial conditions, create an `ODEProblem`, and define a function to solve the ODE with given parameters.  Setting `saveat = 0.1` in the call to `solve` ensures the solution is saved with the desired temporal frequency we want for our later plots.
 
 !!! note
@@ -53,9 +56,9 @@ Let's start by creating a basic plot of our Brusselator model:
 fig = Figure(size = (800, 600), fontsize = 18);
 
 # Create an axis for the plot
-ax = Axis(fig[1, 1], 
-    title = "Brusselator Model", 
-    xlabel = "Time", 
+ax = Axis(fig[1, 1],
+    title = "Brusselator Model",
+    xlabel = "Time",
     ylabel = "Concentration")
 
 # Solve the ODE
@@ -131,9 +134,9 @@ Now, let's create a plot that reacts to changes in our sliders:
 
 ```julia
 # Create an axis for the plot
-ax = Axis(plot_layout[1, 1], 
-    title = "Brusselator Model", 
-    xlabel = "Time", 
+ax = Axis(plot_layout[1, 1],
+    title = "Brusselator Model",
+    xlabel = "Time",
     ylabel = "Concentration")
 
 # Create an observable for the solution
@@ -151,6 +154,7 @@ axislegend(ax, position = :rt)
 # Display the figure
 fig
 ```
+
 ![Interactive Brusselator Plot](../../assets/interactive_brusselator.png)
 
 This plot will now update in real-time as you move the sliders, allowing for interactive exploration of the Brusselator's behavior under different conditions. (Note the figure above is not interactive, but for illustrative purposes to show what you should see locally.)
@@ -172,14 +176,14 @@ time_plot = plot_grid[1, 1] = GridLayout()
 phase_plot = plot_grid[1, 2] = GridLayout()
 
 # Create axes for the time series plot and phase plot
-ax_time = Axis(time_plot[1, 1], 
-    title = "Brusselator Model - Time Series", 
-    xlabel = "Time", 
+ax_time = Axis(time_plot[1, 1],
+    title = "Brusselator Model - Time Series",
+    xlabel = "Time",
     ylabel = "Concentration")
 
-ax_phase = Axis(phase_plot[1, 1], 
-    title = "Brusselator Model - Phase Plot", 
-    xlabel = "X", 
+ax_phase = Axis(phase_plot[1, 1],
+    title = "Brusselator Model - Phase Plot",
+    xlabel = "X",
     ylabel = "Y")
 
 # Create sub-grids for sliders
@@ -211,15 +215,15 @@ connect!(B, slider_B.value)
 connect!(X0, slider_X0.value)
 connect!(Y0, slider_Y0.value)
 
-# Create an observable for the solution. 
+# Create an observable for the solution.
 solution = @lift(solve_brusselator($A, $B, $X0, $Y0))
 
 # Plot the time series
-lines!(ax_time, lift(sol -> sol.t, solution), lift(sol -> sol[:X], solution), label = "X", color = :blue, linewidth = 3) 
+lines!(ax_time, lift(sol -> sol.t, solution), lift(sol -> sol[:X], solution), label = "X", color = :blue, linewidth = 3)
 lines!(ax_time, lift(sol -> sol.t, solution), lift(sol -> sol[:Y], solution), label = "Y", color = :red, linewidth = 3)
 
 # Plot the phase plot
-phase_plot_obj = lines!(ax_phase, lift(sol -> sol[:X], solution), lift(sol -> sol[:Y], solution), 
+phase_plot_obj = lines!(ax_phase, lift(sol -> sol[:X], solution), lift(sol -> sol[:Y], solution),
                         color = lift(sol -> sol.t, solution), colormap = :viridis)
 
 # Add a colorbar for the phase plot
@@ -245,6 +249,7 @@ This will create a visualization with both time series and phase plots:
 ## [Common plotting options](@id common_makie_plotting_options)
 
 Various plotting options can be provided as optional arguments to the `lines!` command. Common options include:
+
 - `linewidth` or `lw`: Determine plot line widths.
 - `linestyle`: Determines plot line style.
 - `color`: Determines the line colors.
@@ -253,13 +258,14 @@ Various plotting options can be provided as optional arguments to the `lines!` c
 For example:
 
 ```julia
-lines!(ax_time, lift(sol -> sol.t, solution), lift(sol -> sol[:X], solution), 
+lines!(ax_time, lift(sol -> sol.t, solution), lift(sol -> sol[:X], solution),
        label = "X", color = :green, linewidth = 2, linestyle = :dash)
 ```
 
 ## [Extending the interactive visualization](@id extending_interactive_visualization)
 
 You can further extend this visualization by:
+
 - Adding other interactive elements, such as [buttons](https://docs.makie.org/stable/reference/blocks/button) or [dropdown menus](https://docs.makie.org/stable/reference/blocks/menu) to control different aspects of the simulation or visualization.
 - Adding additional axes to the plot, such as plotting the derivatives of the species.
 - Color coding the slider and slider labels to match the plot colors.
