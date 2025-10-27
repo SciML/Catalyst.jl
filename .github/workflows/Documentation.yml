@@ -66,7 +66,7 @@ jobs:
         run: xvfb-run julia --project=docs --color=yes --code-coverage=user docs/make.jl
 
       - name: Upload site as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: docs-artifact
           path: ./docs/build
