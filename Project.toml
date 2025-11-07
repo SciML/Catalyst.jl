@@ -72,7 +72,7 @@ SciMLBase = "2.84"
 Setfield = "1"
 StructuralIdentifiability = "0.5.11"
 SymbolicUtils = "3.20"
-Symbolics = "6.31.1"
+Symbolics = "6.31.1, 7"
 Unitful = "1.12.4"
 julia = "1.10"
 
