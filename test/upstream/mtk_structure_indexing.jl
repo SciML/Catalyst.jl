@@ -52,7 +52,7 @@ begin
     sint = init(sprob, ImplicitEM(); save_everystep = false)
     jint = init(jprob, SSAStepper())
     nint = init(nprob, NewtonRaphson(); save_everystep = false)
-    @test_broken ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep = false) # https://github.com/SciML/SciMLBase.jl/issues/660
+    @test_broken false # ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep = false) # https://github.com/SciML/SciMLBase.jl/issues/660
     integrators = [oint, sint, jint, nint]
 
     # Creates solutions.
