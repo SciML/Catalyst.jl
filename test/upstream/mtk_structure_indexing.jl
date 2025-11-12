@@ -52,7 +52,7 @@ begin
     sint = init(sprob, ImplicitEM(); save_everystep = false)
     jint = init(jprob, SSAStepper())
     nint = init(nprob, NewtonRaphson(); save_everystep = false)
-    @test_broken false # ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep = false) # https://github.com/SciML/SciMLBase.jl/issues/660
+    ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep = false)
     integrators = [oint, sint, jint, nint]
 
     # Creates solutions.
@@ -154,8 +154,7 @@ end
 
 # Test integrator indexing.
 let
-    @test_broken false # NOTE: Cannot even create a `ssint` (https://github.com/SciML/SciMLBase.jl/issues/660).
-    for int in deepcopy([oint, sint, jint, nint])
+    for int in deepcopy([oint, sint, jint, nint, ssint])
         # Get u values.
         @test int[X] == int[model.X] == int[:X] == 4
         @test int[XY] == int[model.XY] == int[:XY] == 9
