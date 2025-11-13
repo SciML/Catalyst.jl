@@ -1,4 +1,5 @@
 # Partial Differential Equation Models
+
 **Note** this functionality is work in progress in both Catalyst,
 ModelingToolkit, and MethodOfLines (generally across SciML). As such, the
 recommended workflows, API features, and observed simulation performance may
@@ -10,12 +11,14 @@ We'll simulate the Baras–Pearson–Mansour (BPM) pattern formation model using
 parameters in (Kim et al., J. Chem. Phys., 146, 2017).
 
 First we load the packages we'll use
+
 ```julia
 using Catalyst, MethodOfLines, DomainSets, OrdinaryDiffEqSDIRK, Plots, Random, Distributions
 using ModelingToolkit: scalarize, unwrap, operation, defaults
 ```
 
 Next let's specify our default parameter values
+
 ```julia
 # physical domain size is LxL
 L = 32.0
@@ -41,6 +44,7 @@ end
 ```
 
 We now define the reaction model
+
 ```julia
 t = default_t()
 @parameters x y
@@ -57,6 +61,7 @@ pars = vcat(scalarize(k), scalarize(D), scalarize(n0), [A])
 ```
 
 We now put together the symbolic PDE model
+
 ```julia
 # get the reaction terms
 rxeqs = Catalyst.assemble_oderhs(bpm, unknowns(bpm), combinatoric_ratelaws=false)
@@ -93,6 +98,7 @@ pmap = collect(defaults(bpm))
 ```
 
 We now discretize and solve the model
+
 ```julia
 h = L / N  # mesh width
 order = 2  # order of the discretization
@@ -105,6 +111,7 @@ sol = solve(prob, TRBDF2(), saveat = (tstop/10))
 ```
 
 Plotting ``U`` at the final time we get
+
 ```julia
 solU = sol[U]
 heatmap(solU[2:end, 2:end, end])
