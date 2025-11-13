@@ -22,11 +22,13 @@ macro species(ex...)
     lastarg = vars.args[end]
 
     # start adding metadata statements where the vector of symbols was previously declared
+    # adds `[latexwrapper = string]` metadata which improves latexify printing.
     idx = length(vars.args)
     resize!(vars.args, idx + length(lastarg.args) + 1)
     for sym in lastarg.args
-        vars.args[idx] = :($sym = ModelingToolkit.wrap(setmetadata(
-            ModelingToolkit.value($sym), Catalyst.VariableSpecies, true)))
+        vars.args[idx] = :($sym = ModelingToolkit.wrap(setmetadata(setmetadata(
+            ModelingToolkit.value($sym), Catalyst.VariableSpecies, true),
+            Symbolics.SymLatexWrapper, string)))
         idx += 1
     end
 
