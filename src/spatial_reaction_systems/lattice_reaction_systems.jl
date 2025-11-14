@@ -154,9 +154,10 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
             spatial_reactions)
 
         # Additional error checks.
-        if any(haskey(Symbolics.unwrap(symvar).metadata, Symbolics.ArrayShapeCtx)
+        if any(SII.symbolic_type(symvar) === SII.ArraySymbolic()
         for symvar in [ps; species(rs)])
-            throw(ArgumentError("Some species and/or parameters used to create the `LatticeReactionSystem` are array variables ($(filter(symvar -> haskey(Symbolics.unwrap(symvar).metadata, Symbolics.ArrayShapeCtx), [ps; species(rs)]))). This is currently not supported."))
+            arrvars = filter(x -> SII.symbolic_type(x) === SII.ArraySymbolic(), [ps; species(rs)])
+            throw(ArgumentError("Some species and/or parameters used to create the `LatticeReactionSystem` are array variables ($(arrvars). This is currently not supported."))
         end
 
         return new{Q, R, S, T}(
