@@ -111,7 +111,7 @@ let
         seed += 1
     end
     Xsamp /= Nsims
-    @test_broken abs(Xsamp - Xf(0.2, p)) < 0.05 * Xf(0.2, p)
+    @test abs(Xsamp - Xf(0.2, p)) < 0.05 * Xf(0.2, p)
 end
 
 # Checks that a disjoint hybrid model (i.e. where the Jump and ODE parts do not interact) gives the
