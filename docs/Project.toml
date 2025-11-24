@@ -94,3 +94,6 @@ SteadyStateDiffEq = "2.2"
 StochasticDiffEq = "6.65"
 StructuralIdentifiability = "0.5.11"
 Symbolics = "6.22"
+
+[sources]
+BifurcationKit = { url = "https://github.com/devmotion/BifurcationKit.jl.git", rev = "dmw/backport_krylovkit_010" }

@@ -39,9 +39,9 @@ jobs:
       #     echo "DISPLAY=:99" >> $GITHUB_ENV
 
       - name: Install Julia
-        uses: julia-actions/setup-julia@v2
+        uses: julia-actions/setup-julia@latest
         with:
-          version: '1.11'
+          version: '1'
 
       # Cache to speed up subsequent runs
       - uses: julia-actions/cache@v2
