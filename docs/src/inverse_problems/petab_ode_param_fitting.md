@@ -435,14 +435,14 @@ And two additional optional argument:
 
 Because `calibrate_multistart` handles initial guess sampling, unlike for `calibrate`, no initial guess has to be provided.
 
-Here, we fit parameters through 10 independent optimisation runs, using QuasiMonteCarlo's `LatinHypercubeSample` method, and save the result to the OptimisationRuns folder:
+Here, we fit parameters through 10 independent optimisation runs, using QuasiMonteCarlo's `SobolSample` method, and save the result to the OptimisationRuns folder:
 ```@example petab1
 using Optim
 using QuasiMonteCarlo
 mkdir("OptimisationRuns") # hide
 res_ms = calibrate_multistart(petab_problem, IPNewton(), 10; dirsave = "OptimisationRuns",
-    sampling_method = QuasiMonteCarlo.LatinHypercubeSample())
-res_ms = calibrate_multistart(petab_problem, IPNewton(), 10; dirsave = "OptimisationRuns", sampling_method = QuasiMonteCarlo.LatinHypercubeSample()) # hide
+    sampling_method = QuasiMonteCarlo.SobolSample())
+res_ms = calibrate_multistart(petab_problem, IPNewton(), 10; dirsave = "OptimisationRuns", sampling_method = QuasiMonteCarlo.SobolSample()) # hide
 nothing # hide
 ```
 The best result across all runs can still be retrieved using `get_ps(res_ms, petab_problem)`, with the results of the individual runs being stored in the `res_ms.runs` field.
