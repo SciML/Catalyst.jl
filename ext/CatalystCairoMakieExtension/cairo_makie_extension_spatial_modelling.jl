@@ -25,13 +25,19 @@ function lattice_animation(
 
     # Creates the base figure (which is modified in the animation).
     frame = Makie.Observable(i)
-    fig, ax, plt = scatterlines(Makie.@lift(vals[$frame]);
-        axis = (xlabel = "Compartment", ylabel = "$(sp)",
-            limits = (nothing, nothing, plot_min, plot_max)),
-        markersize = markersize, kwargs...)
-    if ttile
-        ax.title = Makie.@lift(string("Time: ", round(t[$frame]; sigdigits = 3)))
+    axis_kwargs = (;
+        xlabel = "Compartment", ylabel = string(sp),
+        limits = (nothing, nothing, plot_min, plot_max),
+    )
+    if ttitle
+        axis_kwargs = merge(
+            axis_kwargs,
+            (; title = Makie.@lift(string("Time: ", round(t[$frame]; sigdigits = 3)))),
+        )
     end
+    fig, ax, plt = scatterlines(Makie.@lift(vals[$frame]);
+        axis = axis_kwargs,
+        markersize = markersize, kwargs...)
 
     # Creates the animation.
     record(fig, filename, 1:1:nframes; framerate) do i
@@ -92,7 +98,7 @@ function lattice_animation(
         sol, sp, lrs::LatticeReactionSystem{Q, R, <:Catalyst.GridLattice{2, S}, T},
         filename::String;
         colormap = :BuGn_7, nframes = 200, framerate = 20, plot_min = nothing,
-        plot_max = nothing, ttitle = true, kwargs...) where {Q, R, S, T}
+        plot_max = nothing, ttitle::Bool = true, kwargs...) where {Q, R, S, T}
 
     # Prepares the inputs to the figure.
     t = LinRange(sol.prob.tspan[1], sol.prob.tspan[2], nframes)
@@ -101,14 +107,20 @@ function lattice_animation(
 
     # Creates the base figure (which is modified in the animation).
     frame = Makie.Observable(1)
+    axis_kwargs = (;
+        xgridvisible = false, ygridvisible = false,
+        xlabel = "Compartment", ylabel = "Compartment",
+    )
+    if ttitle
+        axis_kwargs = merge(
+            axis_kwargs,
+            (; title = Makie.@lift(string("Time: ", round(t[$frame]; sigdigits = 3)))),
+        )
+    end
     fig, ax, hm = heatmap(x_vals, y_vals, Makie.@lift(vals[$frame]);
-        axis = (xgridvisible = false, ygridvisible = false,
-            xlabel = "Compartment", ylabel = "Compartment"),
+        axis = axis_kwargs,
         colormap, colorrange = (plot_min, plot_max),
         kwargs...)
-    if ttitle
-        ax.title = Makie.@lift(string("Time: ", round(t[$frame]; sigdigits = 3)))
-    end
 
     # Creates the animation.
     record(fig, filename, 1:1:nframes; framerate) do i
