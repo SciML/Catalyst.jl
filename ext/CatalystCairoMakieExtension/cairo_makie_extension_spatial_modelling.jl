@@ -24,7 +24,7 @@ function lattice_animation(
     vals, plot_min, plot_max = Catalyst.extract_vals(sol, sp, lrs, plot_min, plot_max, t)
 
     # Creates the base figure (which is modified in the animation).
-    frame = Makie.Observable(i)
+    frame = Makie.Observable(1)
     axis_kwargs = (;
         xlabel = "Compartment", ylabel = string(sp),
         limits = (nothing, nothing, plot_min, plot_max),
