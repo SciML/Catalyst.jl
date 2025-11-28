@@ -73,6 +73,7 @@ let
         for sol in [osol, jsol]
             # Plots the simulation and checks that a stored value is correct.
             fig, ax, hm = lattice_plot(sol, :X, lrs; t = 1.0)
+            @test_broken hm[3].val[1] ≈ sol.u[end][1]
 
             # Attempts to animate the simulation (using various arguments). Deletes the saved file.
             lattice_animation(sol, :X, lrs, "animation_tmp.mp4"; nframes = 10, framerate = 10, colormap = :BuGn_6)
