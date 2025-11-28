@@ -24,18 +24,18 @@ function lattice_animation(
     vals, plot_min, plot_max = Catalyst.extract_vals(sol, sp, lrs, plot_min, plot_max, t)
 
     # Creates the base figure (which is modified in the animation).
-    fig, ax, plt = scatterlines(vals[1];
+    frame = Makie.Observable(i)
+    fig, ax, plt = scatterlines(Makie.@lift(vals[$frame]);
         axis = (xlabel = "Compartment", ylabel = "$(sp)",
             limits = (nothing, nothing, plot_min, plot_max)),
         markersize = markersize, kwargs...)
-    ttitle && (ax.title = "Time: $(round(t[1]; sigdigits = 3))")
+    if ttile
+        ax.title = Makie.@lift(string("Time: ", round(t[$frame]; sigdigits = 3)))
+    end
 
     # Creates the animation.
     record(fig, filename, 1:1:nframes; framerate) do i
-        for vertex in 1:grid_size(lrs)[1]
-            plt[1].val[vertex] = [vertex, vals[i][vertex]]
-        end
-        ttitle && (ax.title = "Time: $(round(t[i]; sigdigits = 3))")
+        frame[] = i
     end
     return nothing
 end
@@ -100,17 +100,19 @@ function lattice_animation(
     x_vals, y_vals = Catalyst.extract_grid_axes(lrs)
 
     # Creates the base figure (which is modified in the animation).
-    fig, ax, hm = heatmap(x_vals, y_vals, vals[1];
+    frame = Makie.Observable(1)
+    fig, ax, hm = heatmap(x_vals, y_vals, Makie.@lift(vals[$frame]);
         axis = (xgridvisible = false, ygridvisible = false,
             xlabel = "Compartment", ylabel = "Compartment"),
         colormap, colorrange = (plot_min, plot_max),
         kwargs...)
-    ttitle && (ax.title = "Time: $(round(t[1]; sigdigits = 3))")
+    if ttitle
+        ax.title = Makie.@lift(string("Time: ", round(t[$frame]; sigdigits = 3)))
+    end
 
     # Creates the animation.
     record(fig, filename, 1:1:nframes; framerate) do i
-        ttitle && (ax.title = "Time: $(round(t[i]; sigdigits = 3))")
-        hm[3] = vals[i]
+        frame[] = i
     end
     return nothing
 end

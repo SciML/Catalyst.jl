@@ -27,14 +27,16 @@ function lattice_animation(
     vals, plot_min, plot_max = Catalyst.extract_vals(sol, sp, lrs, plot_min, plot_max, t)
 
     # Creates the base figure (which is modified in the animation).
-    fig, ax, plt = graphplot(plot_graph; node_color = vals[1],
+    frame = Makie.Observable(1)
+    fig, ax, plt = graphplot(plot_graph; node_color = Makie.@lift(vals[$frame]),
         node_attr = (colorrange = (plot_min, plot_max), colormap), node_size, kwargs...)
-    ttitle && (ax.title = "Time: $(round(t[1]; sigdigits = 3))")
+    if ttitle
+        ax.title = Makie.@lift(string("Time: ", round(t[$frame]; sigdigits = 3)))
+    end
 
     # Creates the animation.
     GraphMakie.record(fig, filename, 1:1:nframes; framerate) do i
-        plt.node_color = vals[i]
-        ttitle && (ax.title = "Time: $(round(t[i]; sigdigits = 3))")
+        frame[] = i
     end
     return nothing
 end
