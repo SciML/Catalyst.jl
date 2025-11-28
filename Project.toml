@@ -101,6 +101,3 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["DataInterpolations", "DiffEqCallbacks", "DomainSets", "Logging", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqDefault", "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner", "Pkg", "Plots", "Random", "SafeTestsets", "StableRNGs", "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test"]
-
-[sources]
-BifurcationKit = { url = "https://github.com/devmotion/BifurcationKit.jl.git", rev = "dmw/backport_makie" }
