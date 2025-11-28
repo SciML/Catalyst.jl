@@ -106,12 +106,12 @@ let
     Nsims = 4000
     for n in 1:Nsims
         sol = solve(jprob, Tsit5(); saveat = tspan[2], seed)
-        @test sol.retcode == ReturnCode.Terminated
+        @test SciMLBase.successful_retcode(sol)
         Xsamp += sol[1, end]
         seed += 1
     end
     Xsamp /= Nsims
-    @test abs(Xsamp - Xf(0.2, p) < 0.05 * Xf(0.2, p))
+    @test abs(Xsamp - Xf(0.2, p)) < 0.05 * Xf(0.2, p)
 end
 
 # Checks that a disjoint hybrid model (i.e. where the Jump and ODE parts do not interact) gives the
