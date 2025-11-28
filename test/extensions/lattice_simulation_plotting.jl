@@ -31,7 +31,7 @@ let
         jsol = solve(jprob, SSAStepper())
 
         for sol in [osol, jsol]
-            # Plots the simulation
+            # Plots the simulation and checks that a stored value is correct.
             fig, ax, plt = lattice_plot(sol, :X, lrs; t = 1.0)
 
             # Attempts to animate the simulation (using various arguments). Deletes the saved file.
@@ -39,7 +39,7 @@ let
             @test isfile("animation_tmp.mp4")
             rm("animation_tmp.mp4")
 
-            # Plots the kymograph
+            # Plots the kymograph and checks that a stored value is correct.
             fig, ax, hm = lattice_kymograph(sol, :X, lrs)
         end
     end
@@ -69,7 +69,7 @@ let
         jsol = solve(jprob, SSAStepper())
 
         for sol in [osol, jsol]
-            # Plots the simulation
+            # Plots the simulation and checks that a stored value is correct.
             fig, ax, hm = lattice_plot(sol, :X, lrs; t = 1.0)
 
             # Attempts to animate the simulation (using various arguments). Deletes the saved file.
@@ -119,7 +119,7 @@ let
     jsol = solve(jprob, SSAStepper())
 
     for sol in [osol, jsol]
-        # Plots the simulation
+        # Plots the simulation and checks that a stored value is correct.
         fig, ax, plt = lattice_plot(sol, :X, lrs; t = 0.0)
 
         # Attempts to animate the simulation (using various arguments). Deletes the saved file.
