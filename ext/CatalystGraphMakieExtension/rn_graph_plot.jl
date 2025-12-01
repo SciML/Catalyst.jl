@@ -232,18 +232,9 @@ with the rate constant for the reaction.
 
 For a list of accepted keyword arguments to the graph plot, please see the [GraphMakie documentation](https://graph.makie.org/stable/#The-graphplot-Recipe).
 """
-function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels = false, kwargs...)
+function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels::Bool = false, kwargs...)
     rxs = reactions(rn)
     specs = species(rn)
-    edgecolors = [:black for i in 1:length(rxs)]
-    edgelabels = [repr(rx.rate) for rx in rxs]
-
-    deps = Set()
-    for (i, rx) in enumerate(rxs)
-        empty!(deps)
-        get_variables!(deps, rx.rate, specs)
-        (!isempty(deps)) && (edgecolors[i] = :red)
-    end
 
     # Get complex graph and reaction order for edgecolors and edgelabels. rxorder gives the order of reactions(rn) that would match the edge order in edges(cg).
     cg, rxorder = ComplexGraphWrap(rn)
@@ -251,18 +242,39 @@ function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels = false, k
     layout = if !haskey(kwargs, :layout)
         Stress()
     end
-    f = graphplot(cg;
-        layout,
-        edge_color = edgecolors[rxorder],
-        elabels = show_rate_labels ? edgelabels[rxorder] : [],
-        ilabels = complexlabels(rn),
-        node_color = :skyblue3,
-        elabels_rotation = 0,
-        arrow_shift = :end,
-        curve_distance_usage = true,
-        curve_distance = gen_distances(cg),
-        kwargs...
-    )
+
+    if show_rate_labels
+        edgelabels = [repr(rxs[i].rate) for i in rxorder]
+        deps = Set()
+        edgecolors = map(rxorder) do i
+            empty!(deps)
+            get_variables!(deps, rxs[i].rate, specs)
+            return isempty(deps) ? :black : :red
+        end
+
+        f = graphplot(cg;
+            layout,
+            edge_color = edgecolors,
+            elabels = edgelabels,
+            ilabels = complexlabels(rn),
+            node_color = :skyblue3,
+            elabels_rotation = 0,
+            arrow_shift = :end,
+            curve_distance_usage = true,
+            curve_distance = gen_distances(cg),
+            kwargs...
+        )
+    else
+        f = graphplot(cg;
+            layout,
+            ilabels = complexlabels(rn),
+            node_color = :skyblue3,
+            arrow_shift = :end,
+            curve_distance_usage = true,
+            curve_distance = gen_distances(cg),
+            kwargs...
+        )
+    end
 
     f.axis.xautolimitmargin = (0.15, 0.15)
     f.axis.yautolimitmargin = (0.15, 0.15)
