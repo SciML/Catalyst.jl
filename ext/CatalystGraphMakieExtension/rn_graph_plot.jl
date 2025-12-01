@@ -238,44 +238,30 @@ function Catalyst.plot_complexes(rn::ReactionSystem; show_rate_labels::Bool = fa
 
     # Get complex graph and reaction order for edgecolors and edgelabels. rxorder gives the order of reactions(rn) that would match the edge order in edges(cg).
     cg, rxorder = ComplexGraphWrap(rn)
+    edgelabels = show_rate_labels ? [repr(rxs[i].rate) for i in rxorder] : nothing
+    deps = Set()
+    edgecolors = map(rxorder) do i
+        empty!(deps)
+        get_variables!(deps, rxs[i].rate, specs)
+        return isempty(deps) ? :black : :red
+    end
 
     layout = if !haskey(kwargs, :layout)
         Stress()
     end
 
-    if show_rate_labels
-        edgelabels = [repr(rxs[i].rate) for i in rxorder]
-        deps = Set()
-        edgecolors = map(rxorder) do i
-            empty!(deps)
-            get_variables!(deps, rxs[i].rate, specs)
-            return isempty(deps) ? :black : :red
-        end
-
-        f = graphplot(cg;
-            layout,
-            edge_color = edgecolors,
-            elabels = edgelabels,
-            ilabels = complexlabels(rn),
-            node_color = :skyblue3,
-            elabels_rotation = 0,
-            arrow_shift = :end,
-            curve_distance_usage = true,
-            curve_distance = gen_distances(cg),
-            kwargs...
-        )
-    else
-        f = graphplot(cg;
-            layout,
-            ilabels = complexlabels(rn),
-            node_color = :skyblue3,
-            arrow_shift = :end,
-            curve_distance_usage = true,
-            curve_distance = gen_distances(cg),
-            kwargs...
-        )
-    end
-
+    f = graphplot(cg;
+        layout,
+        edge_color = edgecolors,
+        elabels = edgelabels,
+        elabels_rotation = 0,
+        ilabels = complexlabels(rn),
+        node_color = :skyblue3,
+        arrow_shift = :end,
+        curve_distance_usage = true,
+        curve_distance = gen_distances(cg),
+        kwargs...
+    )
     f.axis.xautolimitmargin = (0.15, 0.15)
     f.axis.yautolimitmargin = (0.15, 0.15)
     hidedecorations!(f.axis)
