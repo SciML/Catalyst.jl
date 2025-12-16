@@ -214,9 +214,14 @@ function find_event_vars!(ps, us, events::Vector, ivs, vars)
 end
 # For a single event, adds quantities from its condition and affect expression(s) to `ps` and `us`.
 # Applies `findvars!` to the event's condition (`event[1])` and affec (`event[2]`).
-function find_event_vars!(ps, us, event, ivs, vars)
+# Two dispatches required, and the event can be given as a MTK structure of a Pair of symbolic expressions/equations.
+function find_event_vars!(ps, us, event::Pair, ivs, vars)
     findvars!(ps, us, event[1], ivs, vars)
     findvars!(ps, us, event[2], ivs, vars)
+end
+function find_event_vars!(ps, us, event::MT.AbstractCallback, ivs, vars)
+    findvars!(ps, us, event.conditions, ivs, vars)
+    findvars!(ps, us, event.affect, ivs, vars)
 end
 
 ### ReactionSystem Structure ###
@@ -479,7 +484,8 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     end
 
     # Creates the continuous and discrete events.
-    continuous_events, discrete_events = MT.create_symbolic_events(continuous_events, discrete_events)
+    continuous_events = create_symbolic_events(MT.SymbolicContinuousCallback, continuous_events)
+    discrete_events = create_symbolic_events(MT.SymbolicDiscreteCallback, discrete_events)
 
     # handles system metadata.
     metadata === nothing ? Base.ImmutableDict{Symbol,Any}() : metadata
@@ -500,6 +506,43 @@ end
 function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
+
+# handles that events can be a single event or a vector.
+create_symbolic_events(type, events::Vector) = [create_symbolic_event(type, event) for event in events]
+create_symbolic_events(type, event) = [create_symbolic_event(type, event)]
+
+# Converts an input event into a form which ModelingToolkit can handle.
+create_symbolic_event(type, event::ModelingToolkit.AbstractCallback) = event
+function create_symbolic_event(type, event)
+    discrete_parameters = find_disc_pars(event[2]) 
+    return type(event; discrete_parameters)
+end
+
+# Currently, ModelingToolkit requires all parameters which are updated in an event to be specified
+# in the event using the `discrete_parameters` keyword argument. Currently, this can only be
+# done by manually creating the event using `SymbolicContinuousCallback`/`SymbolicDiscreteCallback`.
+# This routines preserves the old behaviour until a new interface have been implemented in MTK.
+function find_disc_pars(affects)
+    discrete_parameters = Set()
+    for affect in affects
+        num_disc_pars = length(discrete_parameters)
+        infer_discrete_parameters!(discrete_parameters, affect.lhs)
+        infer_discrete_parameters!(discrete_parameters, affect.rhs)
+        (length(discrete_parameters) > num_disc_pars + 1) && error("Currently, Catalyst only supports having a single parameter outside of a `Pre` statement in event affects.")
+    end
+    return collect(discrete_parameters)
+end
+
+# Find all `expr`'s parameters that occur *outside* of a Pre(...) statement. Add these to `discrete_parameters`.
+function infer_discrete_parameters!(discrete_parameters, expr)
+    expr_pre_removed = Symbolics.replacenode(expr, precall_to_1)
+    dynamic_symvars = Symbolics.get_variables(expr_pre_removed)
+    # Change this coming line to a Symbolic append type of thing.
+    union!(discrete_parameters, filter(ModelingToolkit.isparameter, dynamic_symvars))
+end
+# Functions for replacing a Pre-call with a `1.0` (removing its content from an expression).
+is_precall(expr) = iscall(expr) ? operation(expr) isa Pre : false
+precall_to_1(expr) = (is_precall(expr) ? 1.0 : expr)
 
 # Called internally (whether DSL-based or programmatic model creation is used).
 # Creates a sorted reactions + equations vector, also ensuring reaction is first in this vector.

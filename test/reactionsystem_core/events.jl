@@ -142,7 +142,7 @@ let
     rs2 = ReactionSystem(rxs, t; continuous_events = [ce], discrete_events = de, name = :rs)
     rs3 = ReactionSystem(rxs, t; continuous_events = ce, discrete_events = [de], name = :rs)
     rs4 = ReactionSystem(rxs, t; continuous_events = [ce], discrete_events = [de], name = :rs)
-    @test_broken rs1 == rs2 == rs3 == rs4
+    @test_broken rs1 == rs2 == rs3 == rs4 # https://github.com/SciML/ModelingToolkit.jl/issues/3907
 end
 
 # Checks that various various erroneous forms yield errors.
@@ -236,7 +236,7 @@ end
     rn_prog = complete(rn_prog)
 
     # Tests that approaches yield identical results.
-    @test isequal(rn_dsl, rn_prog)
+    @test isequal(rn_dsl, rn_prog)  # https://github.com/SciML/ModelingToolkit.jl/issues/3907
 
     u0 = [X => 6.0, Y => 4.5, Z => 5.5]
     tspan = (0.0, 20.0)
