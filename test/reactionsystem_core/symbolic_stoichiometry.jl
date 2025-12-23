@@ -46,8 +46,8 @@ let
     @test rs1 == rs2 == rs3
     @test issetequal(unknowns(rs1), [X, Y])
     @test issetequal(parameters(rs1), [p, k, d, n1, n2, n3])
-    @test unwrap(d) isa BasicSymbolic{Float64}
-    @test unwrap(n1) isa BasicSymbolic{Int64}
+    @test SymbolicUtils.symtype(d) == Float64
+    @test SymbolicUtils.symtype(n1) == Int64
 end
 
 # Declares a network, parameter values, and initial conditions, to be used for the next couple of tests.
@@ -179,7 +179,7 @@ end
     for i in 1:2
         catalyst_jsys = make_sck_jump(rs)
         unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(catalyst_jsys)))
-        catalyst_vrj = ModelingToolkit.assemble_vrj(catalyst_jsys, equations(catalyst_jsys)[i], unknownoid)
+        catalyst_vrj = ModelingToolkitBase.assemble_vrj(catalyst_jsys, equations(catalyst_jsys)[i], unknownoid)
         @test isapprox(catalyst_vrj.rate(u0_2, ps_2, τ), jumps[i].rate(u0_2, ps_2, τ))
 
         fake_integrator1 = (u = copy(u0_2), p = ps_2, t = τ)

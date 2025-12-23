@@ -57,7 +57,7 @@ function chemical_arrows(rn::ReactionSystem;
     rxs = reactions(rn)
     nonrxs = filter(eq -> eq isa Equation, equations(rn))
     if isempty(rxs) && isempty(nonrxs)
-        latexstr = Latexify.LaTeXString("ReactionSystem $(ModelingToolkit.nameof(rn)) has no reactions or equations.")
+        latexstr = Latexify.LaTeXString("ReactionSystem $(MT.nameof(rn)) has no reactions or equations.")
         Latexify.COPY_TO_CLIPBOARD && clipboard(latexstr)
         return latexstr
     end
@@ -75,7 +75,7 @@ function chemical_arrows(rn::ReactionSystem;
         str *= "\\require{mhchem} \n"
     end
 
-    subber = ModelingToolkit.substituter([s => processsym(s) for s in species(rn)])
+    subber = SymbolicUtils.Substituter{true}([s => processsym(s) for s in species(rn)])
 
     lastidx = length(rxs)
     for (i, r) in enumerate(rxs)

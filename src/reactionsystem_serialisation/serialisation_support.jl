@@ -107,7 +107,7 @@ function sym_2_declaration_string(sym; multiline_format = false)
     # If the symbol has a non-default type, appends the declaration of this.
     # Assumes that the type is on the form `BasicSymbolic{X}`. Contain error checks
     # to ensure that this is the case.
-    if !(sym isa BasicSymbolic{Real})
+    if !(sym isa BasicSymbolic{SymReal})
         sym_type = String(Symbol(typeof(Symbolics.unwrap(sym))))
         if (get_substring(sym_type, 1, 28) != "SymbolicUtils.BasicSymbolic{") ||
            (get_char_end(sym_type, 0) != '}')
@@ -117,8 +117,8 @@ function sym_2_declaration_string(sym; multiline_format = false)
     end
 
     # If there is a default value, adds this to the declaration.
-    if ModelingToolkit.hasdefault(sym)
-        def_val = x_2_string(ModelingToolkit.getdefault(sym))
+    if MT.hasdefault(sym)
+        def_val = x_2_string(MT.getdefault(sym))
         separator = (multiline_format ? " = " : "=")
         @string_append! dec_string separator "$(def_val)"
     end
@@ -219,23 +219,23 @@ const RECOGNISED_METADATA = Dict([Catalyst.ParameterConstantSpecies => "isconsta
                                   Catalyst.CompoundSpecies => "iscompound"
                                   Catalyst.CompoundComponents => "components"
                                   Catalyst.CompoundCoefficients => "coefficients"
-                                  ModelingToolkit.VariableDescription => "description"
-                                  ModelingToolkit.VariableBounds => "bounds"
-                                  ModelingToolkit.VariableUnit => "unit"
-                                  ModelingToolkit.VariableConnectType => "connect"
-                                  #ModelingToolkit.VariableNoiseType => "noise"
-                                  ModelingToolkit.VariableInput => "input"
-                                  ModelingToolkit.VariableOutput => "output"
-                                  ModelingToolkit.VariableIrreducible => "irreducible"
-                                  ModelingToolkit.VariableStatePriority => "state_priority"
-                                  ModelingToolkit.VariableMisc => "misc"
-                                  ModelingToolkit.TimeDomain => "timedomain"])
+                                  MT.VariableDescription => "description"
+                                  MT.VariableBounds => "bounds"
+                                  MT.VariableUnit => "unit"
+                                  MT.VariableConnectType => "connect"
+                                  #MT.VariableNoiseType => "noise"
+                                  MT.VariableInput => "input"
+                                  MT.VariableOutput => "output"
+                                  MT.VariableIrreducible => "irreducible"
+                                  MT.VariableStatePriority => "state_priority"
+                                  MT.VariableMisc => "misc"
+                                  MT.TimeDomain => "timedomain"])
 
 # List of metadata that does not need to be explicitly declared to be added (or which is handled separately).
 const SKIPPED_METADATA = [
     Catalyst.VariableSpecies,
-    ModelingToolkit.MTKVariableTypeCtx,
-    ModelingToolkit.SymScope,
+    MT.MTKVariableTypeCtx,
+    MT.SymScope,
     Symbolics.VariableDefaultValue,
     Symbolics.VariableSource]
 
@@ -261,8 +261,8 @@ end
 
 # Gets a vector with the symbolics a symbolic depends on (currently only considers defaults).
 function get_dep_syms(sym)
-    ModelingToolkit.hasdefault(sym) || return []
-    return Symbolics.get_variables(ModelingToolkit.getdefault(sym))
+    MT.hasdefault(sym) || return []
+    return Symbolics.get_variables(MT.getdefault(sym))
 end
 
 # Checks if a symbolic depends on a symbolics in a vector being declared.
@@ -294,7 +294,7 @@ end
 # if it has metadata, default value, or type designation that must be declared.
 function complicated_declaration(sym)
     isempty(get_metadata_to_declare(sym)) || (return true)
-    ModelingToolkit.hasdefault(sym) && (return true)
-    (sym isa BasicSymbolic{Real}) || (return true)
+    MT.hasdefault(sym) && (return true)
+    (sym isa BasicSymbolic{SymReal}) || (return true)
     return false
 end

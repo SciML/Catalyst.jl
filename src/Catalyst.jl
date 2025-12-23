@@ -12,30 +12,31 @@ using JumpProcesses: JumpProcesses, JumpProblem,
                      SpatialMassActionJump, CartesianGrid, CartesianGridRej
 
 # ModelingToolkit imports and convenience functions we use
-using ModelingToolkit
-const MT = ModelingToolkit
+using ModelingToolkitBase
+const MT = ModelingToolkitBase
 using DynamicQuantities #, Unitful # Having Unitful here as well currently gives an error.
 
-@reexport using ModelingToolkit
+@reexport using ModelingToolkitBase
 using Symbolics
 using LinearAlgebra
 using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
-import Symbolics: BasicSymbolic
+import Symbolics: BasicSymbolic, SymbolicT
 using Symbolics: iscall, sorted_arguments
-using ModelingToolkit: Symbolic, value, get_unknowns, get_ps, get_iv, get_systems,
+using ModelingToolkitBase: Symbolic, value, get_unknowns, get_ps, get_iv, get_systems,
                        get_eqs, get_defaults, toparam, get_var_to_name, get_observed,
                        getvar, has_iv
 
-import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!,
+import ModelingToolkitBase: get_variables, namespace_expr, namespace_equation, get_variables!,
                         modified_unknowns!, validate, namespace_variables,
                         namespace_parameters, rename, renamespace, getname, flatten,
                         is_alg_equation, is_diff_equation, collect_vars!,
                         eqtype_supports_collect_vars
+import ModelingToolkitBase: SymmapT
 
 # internal but needed ModelingToolkit functions
-import ModelingToolkit: check_variables,
+import ModelingToolkitBase: check_variables,
                         check_parameters, _iszero, merge, check_units,
                         get_unit, check_equations, iscomplete
 
@@ -51,10 +52,10 @@ import SymbolicUtils: getmetadata, hasmetadata, setmetadata
 
 # globals for the modulate
 function default_time_deriv()
-    return ModelingToolkit.D_nounits
+    return ModelingToolkitBase.D_nounits
 end
 function default_t()
-    return ModelingToolkit.t_nounits
+    return ModelingToolkitBase.t_nounits
 end
 const DEFAULT_IV = default_t()
 const DEFAULT_IV_SYM = Symbol(DEFAULT_IV)
@@ -122,6 +123,9 @@ export linkagedeficiencies, isreversible, isweaklyreversible
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
 export satisfiesdeficiencyone, satisfiesdeficiencyzero
 export iscomplexbalanced, isdetailedbalanced, robustspecies
+
+# Containes the `nullspace` function required for conservation law elimination.
+include("mtk_nullspace_function.jl")
 
 # registers CRN specific functions using Symbolics.jl
 include("registered_functions.jl")

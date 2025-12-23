@@ -30,7 +30,7 @@ struct TransportReaction <: AbstractSpatialReaction
     """The rate function (excluding mass action terms). Currently, only constants supported"""
     rate::Any
     """The species that is subject to diffusion."""
-    species::BasicSymbolic{Real}
+    species::BasicSymbolic{SymReal}
 
     # Creates a diffusion reaction.
     function TransportReaction(rate, species)
@@ -77,7 +77,7 @@ function make_transport_reaction(rateex, species)
 end
 
 # Gets the parameters in a `TransportReaction`.
-ModelingToolkit.parameters(tr::TransportReaction) = Symbolics.get_variables(tr.rate)
+MT.parameters(tr::TransportReaction) = Symbolics.get_variables(tr.rate)
 
 # Gets the species in a `TransportReaction`.
 spatial_species(tr::TransportReaction) = [tr.species]
@@ -93,9 +93,9 @@ function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReacti
     end
 
     # Checks that the rate does not depend on species.
-    rate_vars = ModelingToolkit.getname.(Symbolics.get_variables(tr.rate))
-    if !isempty(intersect(ModelingToolkit.getname.(species(rs)), rate_vars))
-        error("The following species were used in rates of a transport reactions: $(setdiff(ModelingToolkit.getname.(species(rs)), rate_vars)).")
+    rate_vars = MT.getname.(Symbolics.get_variables(tr.rate))
+    if !isempty(intersect(MT.getname.(species(rs)), rate_vars))
+        error("The following species were used in rates of a transport reactions: $(setdiff(MT.getname.(species(rs)), rate_vars)).")
     end
 
     # Checks that the species does not exist in the system with different metadata.

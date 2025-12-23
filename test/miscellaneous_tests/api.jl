@@ -5,7 +5,7 @@
 # Fetch packages.
 using Catalyst, NonlinearSolve, OrdinaryDiffEqTsit5, SparseArrays, StochasticDiffEq, Test
 using LinearAlgebra: norm
-using ModelingToolkit: value
+using ModelingToolkitBase: value
 
 # Sets the default `t` to use.
 t = default_t()
@@ -332,7 +332,7 @@ end
     op = ODEProblem(rn, [], tspan, [])
     sol2 = solve(op, Tsit5())
     @test norm(sol.u - sol2.u) ≈ 0
-    @test all(p -> p[1] isa Symbolics.Symbolic, collect(ModelingToolkit.defaults(rn)))
+    @test all(p -> p[1] isa Symbolics.Symbolic, collect(ModelingToolkitBase.defaults(rn)))
 
     rn = @reaction_network begin
         α, S + I --> 2I

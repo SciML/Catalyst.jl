@@ -104,7 +104,7 @@ function make_compound(expr)
     # If no ivs were given, inserts  an expression which evaluates to the union of the ivs
     # for the species the compound depends on.
     ivs_get_expr = :(unique(reduce(
-        vcat, (sorted_arguments(ModelingToolkit.unwrap(comp))
+        vcat, (sorted_arguments(ModelingToolkitBase.unwrap(comp))
         for comp in $components))))
     if isempty(ivs)
         species_expr = Catalyst.insert_independent_variable(species_expr, :($ivs_get_expr...))
@@ -117,28 +117,28 @@ function make_compound(expr)
     #   `@species CO2(iv)`
     #   `isempty([])` && (length(component_ivs) > 1) && error("When ...)
     #   `issetequal(compound_ivs, component_ivs) || error("The ...)`
-    #   `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, true)`
-    #   `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [C, O])`
-    #   `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [1, 2])`
-    #   `CO2 = ModelingToolkit.wrap(CO2)`
+    #   `CO2 = ModelingToolkitBase.setmetadata(CO2, Catalyst.CompoundSpecies, true)`
+    #   `CO2 = ModelingToolkitBase.setmetadata(CO2, Catalyst.CompoundSpecies, [C, O])`
+    #   `CO2 = ModelingToolkitBase.setmetadata(CO2, Catalyst.CompoundSpecies, [1, 2])`
+    #   `CO2 = ModelingToolkitBase.wrap(CO2)`
     species_declaration_expr = Expr(:escape, :(@species $species_expr))
     multiple_ivs_error_check_expr = Expr(:escape,
         :($(isempty(ivs)) && (length($ivs_get_expr) > 1) &&
           error($COMPOUND_CREATION_ERROR_DEPENDENT_VAR_REQUIRED)))
     iv_check_expr = Expr(:escape,
-        :(issetequal(arguments(ModelingToolkit.unwrap($species_name)), $ivs_get_expr) ||
-          error("The independent variable(S) provided to the compound ($(arguments(ModelingToolkit.unwrap($species_name)))), and those of its components ($($ivs_get_expr)))), are not identical.")))
+        :(issetequal(arguments(ModelingToolkitBase.unwrap($species_name)), $ivs_get_expr) ||
+          error("The independent variable(S) provided to the compound ($(arguments(ModelingToolkitBase.unwrap($species_name)))), and those of its components ($($ivs_get_expr)))), are not identical.")))
     compound_designation_expr = Expr(:escape,
-        :($species_name = ModelingToolkit.setmetadata(
+        :($species_name = ModelingToolkitBase.setmetadata(
             $species_name, Catalyst.CompoundSpecies, true)))
     components_designation_expr = Expr(:escape,
-        :($species_name = ModelingToolkit.setmetadata(
+        :($species_name = ModelingToolkitBase.setmetadata(
             $species_name, Catalyst.CompoundComponents, $components)))
     coefficients_designation_expr = Expr(:escape,
-        :($species_name = ModelingToolkit.setmetadata(
+        :($species_name = ModelingToolkitBase.setmetadata(
             $species_name, Catalyst.CompoundCoefficients, $coefficients)))
     compound_wrap_expr = Expr(:escape,
-        :($species_name = ModelingToolkit.wrap($species_name)))
+        :($species_name = ModelingToolkitBase.wrap($species_name)))
 
     # Returns the rephrased expression.
     return quote
@@ -198,8 +198,8 @@ function make_compounds(expr)
     end
     push!(compound_declarations.args, :($(Expr(:escape, :($(compound_syms))))))
 
-    # The output needs to be converted to Vector{Num} (from  Vector{SymbolicUtils.BasicSymbolic{Real}}) to be consistent with e.g. @variables.
-    compound_declarations.args[end] = :([ModelingToolkit.wrap(cmp)
+    # The output needs to be converted to Vector{Num} (from  Vector{SymbolicUtils.BasicSymbolic{SymReal}}) to be consistent with e.g. @variables.
+    compound_declarations.args[end] = :([ModelingToolkitBase.wrap(cmp)
                                          for cmp in $(compound_declarations.args[end])])
 
     # Returns output that.
@@ -285,7 +285,7 @@ function get_balanced_stoich(reaction::Reaction)
     A = create_matrix(reaction)
 
     # get an integer nullspace basis
-    X = ModelingToolkit.nullspace(A)
+    X = MT.nullspace(A)
     nullity = size(X, 2)
 
     stoichvecs = Vector{Vector{Int64}}()

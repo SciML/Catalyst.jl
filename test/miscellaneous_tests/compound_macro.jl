@@ -112,8 +112,8 @@ let
     @test O₂ isa Symbolics.Num
     @test CH₄ isa Symbolics.Num
     vars = []
-    ModelingToolkit.get_variables!(vars, O₂)
-    ModelingToolkit.get_variables!(vars, CH₄)
+    ModelingToolkitBase.get_variables!(vars, O₂)
+    ModelingToolkitBase.get_variables!(vars, CH₄)
     @test issetequal(vars, [O₂, CH₄])
 end
 
@@ -139,11 +139,11 @@ let
     @compound SO2(t,x,y) ~ S + 2O
 
     # Checks they have the correct independent variables.
-    @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(CO2)), [t])
-    @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(NH4)), [x])
-    @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(H2O)), [t, x])
-    @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(PH4)), [t, x])
-    @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(SO2)), [t, x, y])
+    @test issetequal(Symbolics.sorted_arguments(ModelingToolkitBase.unwrap(CO2)), [t])
+    @test issetequal(Symbolics.sorted_arguments(ModelingToolkitBase.unwrap(NH4)), [x])
+    @test issetequal(Symbolics.sorted_arguments(ModelingToolkitBase.unwrap(H2O)), [t, x])
+    @test issetequal(Symbolics.sorted_arguments(ModelingToolkitBase.unwrap(PH4)), [t, x])
+    @test issetequal(Symbolics.sorted_arguments(ModelingToolkitBase.unwrap(SO2)), [t, x, y])
 end
 
 ### Interpolation Tests ###

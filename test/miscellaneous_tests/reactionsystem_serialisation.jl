@@ -3,12 +3,12 @@
 # Fetch packages.
 using Catalyst, Test
 using Catalyst: get_rxs
-using ModelingToolkit: getdefault, getdescription, get_metadata
+using ModelingToolkitBase: getdefault, getdescription, get_metadata
 using Symbolics: getmetadata
 
 # Creates missing getters for MTK metadata (can be removed once added to MTK).
-getmisc(x) = getmetadata(Symbolics.unwrap(x), ModelingToolkit.VariableMisc, nothing)
-getinput(x) = getmetadata(Symbolics.unwrap(x), ModelingToolkit.VariableInput, nothing)
+getmisc(x) = getmetadata(Symbolics.unwrap(x), ModelingToolkitBase.VariableMisc, nothing)
+getinput(x) = getmetadata(Symbolics.unwrap(x), ModelingToolkitBase.VariableInput, nothing)
 
 # Sets the default `t` and `D` to use.
 t = default_t()
@@ -394,7 +394,7 @@ let
         (kB,kD), X + Y <--> XY
     end
     save_reactionsystem("serialised_rs.jl", rs)
-    @test ModelingToolkit.isequal(rs, include("../serialised_rs.jl"))
+    @test ModelingToolkitBase.isequal(rs, include("../serialised_rs.jl"))
     rm("serialised_rs.jl")
 end
 
@@ -421,7 +421,7 @@ let
     @test_logs (:warn, ) match_mode=:any save_reactionsystem("serialised_rs.jl", rs)
     rs_loaded = include("../serialised_rs.jl")
     @test rs == rs_loaded
-    @test ModelingToolkit.get_defaults(rs) == ModelingToolkit.get_defaults(rs_loaded)
+    @test ModelingToolkitBase.get_defaults(rs) == ModelingToolkitBase.get_defaults(rs_loaded)
     rm("serialised_rs.jl")
 end
 
@@ -452,7 +452,7 @@ let
     end
     save_reactionsystem("serialised_rs_complete.jl", rs_complete)
     rs_complete_loaded = include("../serialised_rs_complete.jl")
-    @test ModelingToolkit.iscomplete(rs_complete_loaded)
+    @test ModelingToolkitBase.iscomplete(rs_complete_loaded)
     rm("serialised_rs_complete.jl")
 
     # Checks for non-complete system.
@@ -461,7 +461,7 @@ let
     end
     save_reactionsystem("serialised_rs_incomplete.jl", rs_incomplete)
     rs_incomplete_loaded = include("../serialised_rs_incomplete.jl")
-    @test !ModelingToolkit.iscomplete(rs_incomplete_loaded)
+    @test !ModelingToolkitBase.iscomplete(rs_incomplete_loaded)
     rm("serialised_rs_incomplete.jl")
 end
 

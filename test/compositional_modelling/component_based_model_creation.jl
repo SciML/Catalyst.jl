@@ -4,7 +4,8 @@
 
 # Fetch packages.
 using Catalyst, LinearAlgebra, OrdinaryDiffEqTsit5, NonlinearSolve, Test
-using ModelingToolkit: nameof, getname
+using ModelingToolkitBase: nameof, getname
+const MT = ModelingToolkitBase
 
 # Sets the default `t` to use.
 t = default_t()
@@ -148,26 +149,26 @@ t = default_t()
     @variables x(t)
     @named constraints = NonlinearSystem([x ~ a], [x], [a])
     extended = extend(constraints, network)
-    @test isequal(extended.a, ModelingToolkit.namespace_expr(a, extended))
-    @test isequal(extended.x, ModelingToolkit.namespace_expr(x, extended))
+    @test isequal(extended.a, MT.namespace_expr(a, extended))
+    @test isequal(extended.x, MT.namespace_expr(x, extended))
     # and after conversion to an AbstractSystem
     extended = complete(extended)
     system = make_rre_algeqs(extended)
-    @test isequal(system.a, ModelingToolkit.namespace_expr(a, system))
-    @test isequal(system.x, ModelingToolkit.namespace_expr(x, system; ivs = independent_variables(extended)))
+    @test isequal(system.a, MT.namespace_expr(a, system))
+    @test isequal(system.x, MT.namespace_expr(x, system; ivs = independent_variables(extended)))
     @test length(equations(system)) == 1
     @test equations(system) == equations(constraints)
 
     # Test that the namespacing still works if the extended system takes the name
     # of the ReactionSystem.
     extended = extend(constraints, network; name = nameof(network))
-    @test isequal(extended.a, ModelingToolkit.namespace_expr(a, extended))
-    @test isequal(extended.x, ModelingToolkit.namespace_expr(x, extended))
+    @test isequal(extended.a, MT.namespace_expr(a, extended))
+    @test isequal(extended.x, MT.namespace_expr(x, extended))
     # and after conversion to an AbstractSystem.
     extended = complete(extended)
     system = make_rre_algeqs(extended)
-    @test isequal(system.a, ModelingToolkit.namespace_expr(a, system))
-    @test isequal(system.x, ModelingToolkit.namespace_expr(x, system; ivs = independent_variables(extended)))
+    @test isequal(system.a, MT.namespace_expr(a, system))
+    @test isequal(system.x, MT.namespace_expr(x, system; ivs = independent_variables(extended)))
     @test length(equations(system)) == 1
     @test Set(equations(system)) == Set(equations(constraints))
 
@@ -181,7 +182,7 @@ t = default_t()
     extended = extend(constraints, network)
     subextended = extend(subsystemconstraints, subnetwork)
     extended = compose(extended, subextended)
-    defs = ModelingToolkit.defaults(extended)
+    defs = MT.defaults(extended)
     @test get(defs, a, nothing) == 1
     @test isequal(get(defs, x, nothing), a)
     @test get(defs, subextended.b, nothing) == 2
@@ -190,8 +191,8 @@ t = default_t()
     extended = extend(constraints, network; name = nameof(network))
     subextended = extend(subsystemconstraints, subnetwork, name = nameof(subnetwork))
     extended = compose(extended, subextended)
-    defs = ModelingToolkit.defaults(extended)
-    defs = ModelingToolkit.defaults(extended)
+    defs = MT.defaults(extended)
+    defs = MT.defaults(extended)
     @test get(defs, a, nothing) == 1
     @test isequal(get(defs, x, nothing), a)
     @test get(defs, subextended.b, nothing) == 2
@@ -209,34 +210,34 @@ t = default_t()
     extended = extend(constraints, network; name = nameof(network))
     subextended = extend(subconstraints, subnetwork, name = nameof(subnetwork))
     extended = compose(extended, subextended)
-    @test isequal(extended.a, ModelingToolkit.namespace_expr(a, extended))
-    @test isequal(extended.x, ModelingToolkit.namespace_expr(x, extended))
+    @test isequal(extended.a, MT.namespace_expr(a, extended))
+    @test isequal(extended.x, MT.namespace_expr(x, extended))
     extended = complete(extended)
     odesystem = complete(make_rre_ode(extended))
     nlsystem = complete(make_rre_algeqs(extended))
 
-    obs = Set([ModelingToolkit.observed(constraints);
-            [ModelingToolkit.namespace_equation(o, subextended)
-                for o in ModelingToolkit.observed(subconstraints)]])
-    @test Set(ModelingToolkit.observed(extended)) == obs
-    @test Set(ModelingToolkit.observed(odesystem)) == obs
-    @test Set(ModelingToolkit.observed(nlsystem)) == obs
+    obs = Set([MT.observed(constraints);
+            [MT.namespace_equation(o, subextended)
+                for o in MT.observed(subconstraints)]])
+    @test Set(MT.observed(extended)) == obs
+    @test Set(MT.observed(odesystem)) == obs
+    @test Set(MT.observed(nlsystem)) == obs
 
     extended = extend(constraints, network)
     subextended = extend(subconstraints, subnetwork)
     extended = compose(extended, subextended)
-    @test isequal(extended.a, ModelingToolkit.namespace_expr(a, extended))
-    @test isequal(extended.x, ModelingToolkit.namespace_expr(x, extended))
+    @test isequal(extended.a, MT.namespace_expr(a, extended))
+    @test isequal(extended.x, MT.namespace_expr(x, extended))
     extended = complete(extended)
     odesystem = complete(make_rre_ode(extended))
     nlsystem = complete(make_rre_algeqs(extended))
 
-    obs = Set([ModelingToolkit.observed(constraints);
-            [ModelingToolkit.namespace_equation(o, subextended)
-                for o in ModelingToolkit.observed(subconstraints)]])
-    @test Set(ModelingToolkit.observed(extended)) == obs
-    @test Set(ModelingToolkit.observed(odesystem)) == obs
-    @test Set(ModelingToolkit.observed(nlsystem)) == obs
+    obs = Set([MT.observed(constraints);
+            [MT.namespace_equation(o, subextended)
+                for o in MT.observed(subconstraints)]])
+    @test Set(MT.observed(extended)) == obs
+    @test Set(MT.observed(odesystem)) == obs
+    @test Set(MT.observed(nlsystem)) == obs
 
     # Test can make ODESystem.
     @named oderepressilator = make_rre_ode(repressilator2, include_zero_odes = false)
@@ -276,8 +277,8 @@ let
     @test issetequal(unknowns(rs), [A, B, C])
     @test issetequal(parameters(rs), [r₊, r₋])
     @test issetequal(equations(rs), union(rxs1, rxs2))
-    A2 = ModelingToolkit.ParentScope(A)
-    B2 = ModelingToolkit.ParentScope(B)
+    A2 = MT.ParentScope(A)
+    B2 = MT.ParentScope(B)
     nseqs = [D ~ 2 * A2 + β * B2]
     @named ns = ODESystem(nseqs, t, [A2, B2, D], [β])
     rs = compose(rs, [ns])
@@ -303,7 +304,7 @@ let
     @test issetequal(reactions(rs), union(rxs1, rxs2))
     @test issetequal(filter(eq -> eq isa Reaction, equations(rs)), union(rxs1, rxs2))
     @test issetequal(filter(eq -> eq isa Equation, equations(rs)),
-                    [ModelingToolkit.namespace_equation(nseqs[1], ns)])
+                    [MT.namespace_equation(nseqs[1], ns)])
 
     # Check several levels of nesting namespace and filter ok for the API functions.
     @parameters p1, p2a, p2b, p3a, p3b
@@ -411,8 +412,8 @@ let
     @named fullrn = extend(csys, rn)
     setdefaults!(fullrn, [:b => 2.0])
     @unpack b = fullrn
-    @test haskey(ModelingToolkit.defaults(fullrn), b)
-    @test ModelingToolkit.defaults(fullrn)[b] == 2.0
+    @test haskey(MT.defaults(fullrn), b)
+    @test MT.defaults(fullrn)[b] == 2.0
 end
 
 # https://github.com/SciML/Catalyst.jl/issues/545
@@ -488,7 +489,7 @@ let
     osys = make_rre_ode(composed_reaction_system)
     parameters(osys)[1].metadata
 
-    defs = ModelingToolkit.defaults(osys)
+    defs = MT.defaults(osys)
     @unpack p, r, X, Y = rn1
     defs[p] == 1.0
     defs[r] == 2.0

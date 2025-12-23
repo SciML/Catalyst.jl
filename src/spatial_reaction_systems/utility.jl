@@ -3,11 +3,11 @@
 # Defines _symbol_to_var, but where the system is a LRS. Required to make symmapt_to_varmap to work.
 function _symbol_to_var(lrs::LatticeReactionSystem, sym)
     # Checks if sym is a parameter.
-    p_idx = findfirst(sym == p_sym for p_sym in ModelingToolkit.getname.(parameters(lrs)))
+    p_idx = findfirst(sym == p_sym for p_sym in MT.getname.(parameters(lrs)))
     isnothing(p_idx) || return parameters(lrs)[p_idx]
 
     # Checks if sym is a species.
-    s_idx = findfirst(sym == s_sym for s_sym in ModelingToolkit.getname.(species(lrs)))
+    s_idx = findfirst(sym == s_sym for s_sym in MT.getname.(species(lrs)))
     isnothing(s_idx) || return species(lrs)[s_idx]
 
     error("Could not find property parameter/species $sym in lattice reaction system.")
@@ -80,7 +80,7 @@ end
 # Converts the values for the initial conditions/vertex parameters to the correct form:
 # A map vector from symbolics to vectors of either length 1 (for uniform values) or num_verts.
 function vertex_value_map(values, lrs::LatticeReactionSystem)
-    isempty(values) && (return Pair{BasicSymbolic{Real}, Vector{Float64}}[])
+    isempty(values) && (return Pair{BasicSymbolic{SymReal}, Vector{Float64}}[])
     return [entry[1] => vertex_value_form(entry[2], lrs, entry[1]) for entry in values]
 end
 
@@ -147,7 +147,7 @@ end
 # Converts the values for the edge parameters to the correct form:
 # A map vector from symbolics to sparse matrices of size either (1,1) or (num_verts,num_verts).
 function edge_value_map(values, lrs::LatticeReactionSystem)
-    isempty(values) && (return Pair{BasicSymbolic{Real}, SparseMatrixCSC{Float64, Int64}}[])
+    isempty(values) && (return Pair{BasicSymbolic{SymReal}, SparseMatrixCSC{Float64, Int64}}[])
     return [entry[1] => edge_value_form(entry[2], lrs, entry[1]) for entry in values]
 end
 

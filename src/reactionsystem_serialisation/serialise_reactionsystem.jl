@@ -175,7 +175,7 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
 
     # Finalises the call. Appends potential annotation. If the system is complete, add a call for this.
     @string_append! reaction_system_string ")"
-    if ModelingToolkit.iscomplete(rs)
+    if MT.iscomplete(rs)
         @string_prepend! "rs = " reaction_system_string
         top_level || (@string_prepend! "local " reaction_system_string)
         @string_append! reaction_system_string "\ncomplete(rs)"

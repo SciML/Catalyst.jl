@@ -47,16 +47,16 @@ end
 
 # Tests that parameters stored in the system have the correct type.
 let
-    @test Symbolics.unwrap(rs.p1) isa BasicSymbolic{Real}
-    @test Symbolics.unwrap(rs.d1) isa BasicSymbolic{Real}
-    @test Symbolics.unwrap(rs.p2) isa BasicSymbolic{Real}
-    @test Symbolics.unwrap(rs.d2) isa BasicSymbolic{Real}
-    @test Symbolics.unwrap(rs.p3) isa BasicSymbolic{Int64}
-    @test Symbolics.unwrap(rs.d3) isa BasicSymbolic{Int64}
-    @test Symbolics.unwrap(rs.p4) isa BasicSymbolic{Real}
-    @test Symbolics.unwrap(rs.d4) isa BasicSymbolic{Rational{Int64}}
-    @test Symbolics.unwrap(rs.p5) isa BasicSymbolic{Rational{Int64}}
-    @test Symbolics.unwrap(rs.d5) isa BasicSymbolic{Real}
+    @test SymbolicUtils.symtype(rs.p1) == Real
+    @test SymbolicUtils.symtype(rs.d1) == Real
+    @test SymbolicUtils.symtype(rs.p2) == Real
+    @test SymbolicUtils.symtype(rs.d2) == Real
+    @test SymbolicUtils.symtype(rs.p3) == Int64
+    @test SymbolicUtils.symtype(rs.d3) == Int64
+    @test SymbolicUtils.symtype(rs.p4) == Real
+    @test SymbolicUtils.symtype(rs.d4) == Rational{Int64}
+    @test SymbolicUtils.symtype(rs.p5) == Rational{Int64}
+    @test SymbolicUtils.symtype(rs.d5) == Real
 end
 
 # Tests that simulations with differentially typed variables yields correct results.

@@ -4,7 +4,7 @@ module CatalystHomotopyContinuationExtension
 using Catalyst
 import DiffEqBase
 import DynamicPolynomials
-import ModelingToolkit as MT
+import ModelingToolkitBase as MT
 import HomotopyContinuation as HC
 import Setfield: @set
 import Symbolics: unwrap, wrap, Rewriters, symtype, issym, maketerm, BasicSymbolic, metadata

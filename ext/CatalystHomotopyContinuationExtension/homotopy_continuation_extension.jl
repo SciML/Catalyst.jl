@@ -77,11 +77,11 @@ function make_p_val_dict(pre_varmap, rs, ns)
     ps = [ps_no_cons; ps_cons_expanded]
 
     # Creates a dictionary with the correct default values/equations (again expanding `Γ` to Γ[1], Γ[2]).
-    defaults = ModelingToolkit.defaults(ns)
+    defaults = MT.defaults(ns)
     filter!(p -> !Catalyst.isconserved(p[1]), defaults)
     foreach(conseq -> defaults[conseq.lhs] = conseq.rhs, conservationlaw_constants(rs))
 
-    # Creates and return the full parameter value dictionary.p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, all_ps; defaults = def_dict)
+    # Creates and return the full parameter value dictionary.p_vals = MT.varmap_to_vars(pre_varmap, all_ps; defaults = def_dict)
     p_vals = varmap_to_vars_mtkv9(pre_varmap, ps; defaults)
     return Dict(ps .=> p_vals)
 end
@@ -190,7 +190,7 @@ end
 ### SAVED ARCHIVED MTK FUNCTION - REMOVE SOME TIME ###
 # pre-v10 version of function
 function varmap_to_vars_mtkv9(varmap, varlist; defaults = Dict(), check = true,
-        toterm = ModelingToolkit.default_toterm, promotetoconcrete = nothing,
+        toterm = MT.default_toterm, promotetoconcrete = nothing,
         tofloat = true, use_union = true)
     varlist = collect(map(unwrap, varlist))
 
@@ -200,7 +200,7 @@ function varmap_to_vars_mtkv9(varmap, varlist; defaults = Dict(), check = true,
     if is_incomplete_initialization || isempty(varmap)
         if isempty(defaults)
             if !is_incomplete_initialization && check
-                isempty(varlist) || throw(ModelingToolkit.MissingVariablesError(varlist))
+                isempty(varlist) || throw(MT.MissingVariablesError(varlist))
             end
             return nothing
         else
@@ -211,14 +211,14 @@ function varmap_to_vars_mtkv9(varmap, varlist; defaults = Dict(), check = true,
     # We respect the input type if it's a static array
     # otherwise canonicalize to a normal array
     # container_type = T <: Union{Dict,Tuple} ? Array : T
-    if varmap isa ModelingToolkit.StaticArray
+    if varmap isa MT.StaticArray
         container_type = typeof(varmap)
     else
         container_type = Array
     end
 
     vals = if eltype(varmap) <: Pair # `varmap` is a dict or an array of pairs
-        varmap = ModelingToolkit.todict(varmap)
+        varmap = MT.todict(varmap)
         _varmap_to_vars_mtkv9(varmap, varlist; defaults = defaults, check = check,
             toterm = toterm)
     else # plain array-like initialization
@@ -227,7 +227,7 @@ function varmap_to_vars_mtkv9(varmap, varlist; defaults = Dict(), check = true,
 
     promotetoconcrete === nothing && (promotetoconcrete = container_type <: AbstractArray)
     if promotetoconcrete
-        vals = ModelingToolkit.promote_to_concrete(vals; tofloat = tofloat, use_union = use_union)
+        vals = MT.promote_to_concrete(vals; tofloat = tofloat, use_union = use_union)
     end
 
     if isempty(vals)
@@ -249,22 +249,22 @@ function _varmap_to_vars_mtkv9(varmap::Dict, varlist; defaults = Dict(), check =
 
     T = Union{}
     for var in varlist
-        var = ModelingToolkit.unwrap(var)
-        val = ModelingToolkit.unwrap(ModelingToolkit.fixpoint_sub(var, varmap; operator = Symbolics.Operator))
+        var = MT.unwrap(var)
+        val = MT.unwrap(MT.fixpoint_sub(var, varmap; operator = Symbolics.Operator))
         if !isequal(val, var)
             values[var] = val
         end
     end
     missingvars = setdiff(varlist, collect(keys(values)))
-    check && (isempty(missingvars) || throw(ModelingToolkit.MissingVariablesError(missingvars)))
-    return [values[ModelingToolkit.unwrap(var)] for var in varlist]
+    check && (isempty(missingvars) || throw(MT.MissingVariablesError(missingvars)))
+    return [values[MT.unwrap(var)] for var in varlist]
 end
 
 function canonicalize_varmap_mtkv9(varmap; toterm = Symbolics.diff2term)
     new_varmap = Dict()
     for (k, v) in varmap
-        k = ModelingToolkit.unwrap(k)
-        v = ModelingToolkit.unwrap(v)
+        k = MT.unwrap(k)
+        v = MT.unwrap(v)
         new_varmap[k] = v
         new_varmap[toterm(k)] = v
         if Symbolics.isarraysymbolic(k) && Symbolics.shape(k) !== Symbolics.Unknown()

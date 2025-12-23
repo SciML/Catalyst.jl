@@ -5,16 +5,10 @@
 A Michaelis-Menten rate function.
 """
 mm(X, v, K) = v * X / (X + K)
-@register_symbolic mm(X, v, K);
-function Symbolics.derivative(::typeof(mm), args::NTuple{3, Any}, ::Val{1})
-    (args[2] * args[3]) / (args[1] + args[3])^2
-end
-function Symbolics.derivative(::typeof(mm), args::NTuple{3, Any}, ::Val{2})
-    args[1] / (args[1] + args[3])
-end
-function Symbolics.derivative(::typeof(mm), args::NTuple{3, Any}, ::Val{3})
-    -args[2] * args[1] / (args[1] + args[3])^2
-end
+@register_symbolic mm(X, v, K)
+@register_derivative mm(X, v, K) 1 (v * K) / (X + K)^2
+@register_derivative mm(X, v, K) 2 X / (X + K)
+@register_derivative mm(X, v, K) 3 -v * X / (X + K)^2
 
 # Registers the repressing Michaelis-Menten function.
 """
@@ -23,16 +17,10 @@ end
 A repressive Michaelis-Menten rate function.
 """
 mmr(X, v, K) = v * K / (X + K)
-@register_symbolic mmr(X, v, K);
-function Symbolics.derivative(::typeof(mmr), args::NTuple{3, Any}, ::Val{1})
-    -(args[2] * args[3]) / (args[1] + args[3])^2
-end
-function Symbolics.derivative(::typeof(mmr), args::NTuple{3, Any}, ::Val{2})
-    args[3] / (args[1] + args[3])
-end
-function Symbolics.derivative(::typeof(mmr), args::NTuple{3, Any}, ::Val{3})
-    args[2] * args[1] / (args[1] + args[3])^2
-end
+@register_symbolic mmr(X, v, K)
+@register_derivative mmr(X, v, K) 1 -(v * K) / (X + K)^2
+@register_derivative mmr(X, v, K) 2 K / (X + K)
+@register_derivative mmr(X, v, K) 3 v * X / (X + K)^2
 
 """
     hill(X,v,K,n) = v*(X^n) / (X^n + K^n)
@@ -40,22 +28,11 @@ end
 A Hill rate function.
 """
 hill(X, v, K, n) = v * (X^n) / (X^n + K^n)
-@register_symbolic hill(X, v, K, n);
-function Symbolics.derivative(::typeof(hill), args::NTuple{4, Any}, ::Val{1})
-    args[2] * args[4] * (args[3]^args[4]) * (args[1]^(args[4] - 1)) /
-    (args[1]^args[4] + args[3]^args[4])^2
-end
-function Symbolics.derivative(::typeof(hill), args::NTuple{4, Any}, ::Val{2})
-    (args[1]^args[4]) / (args[1]^args[4] + args[3]^args[4])
-end
-function Symbolics.derivative(::typeof(hill), args::NTuple{4, Any}, ::Val{3})
-    -args[2] * args[4] * (args[1]^args[4]) * (args[3]^(args[4] - 1)) /
-    (args[1]^args[4] + args[3]^args[4])^2
-end
-function Symbolics.derivative(::typeof(hill), args::NTuple{4, Any}, ::Val{4})
-    args[2] * (args[1]^args[4]) * (args[3]^args[4]) * (log(args[1]) - log(args[3])) /
-    (args[1]^args[4] + args[3]^args[4])^2
-end
+@register_symbolic hill(X, v, K, n)
+@register_derivative hill(X, v, K, n) 1  v * n * (K^n) * (X^(n - 1)) / (X^n + K^n)^2
+@register_derivative hill(X, v, K, n) 2 (X^n) / (X^n + K^n)
+@register_derivative hill(X, v, K, n) 3 -v * n * (X^n) * (K^(n - 1)) / (X^n + K^n)^2
+@register_derivative hill(X, v, K, n) 4 v * (X^n) * (K^n) * (log(X) - log(K)) / (X^n + K^n)^2
 
 """
     hillr(X,v,K,n) = v*(K^n) / (X^n + K^n)
@@ -63,22 +40,11 @@ end
 A repressive Hill rate function.
 """
 hillr(X, v, K, n) = v * (K^n) / (X^n + K^n)
-@register_symbolic hillr(X, v, K, n);
-function Symbolics.derivative(::typeof(hillr), args::NTuple{4, Any}, ::Val{1})
-    -args[2] * args[4] * (args[3]^args[4]) * (args[1]^(args[4] - 1)) /
-    (args[1]^args[4] + args[3]^args[4])^2
-end
-function Symbolics.derivative(::typeof(hillr), args::NTuple{4, Any}, ::Val{2})
-    (args[3]^args[4]) / (args[1]^args[4] + args[3]^args[4])
-end
-function Symbolics.derivative(::typeof(hillr), args::NTuple{4, Any}, ::Val{3})
-    args[2] * args[4] * (args[1]^args[4]) * (args[3]^(args[4] - 1)) /
-    (args[1]^args[4] + args[3]^args[4])^2
-end
-function Symbolics.derivative(::typeof(hillr), args::NTuple{4, Any}, ::Val{4})
-    args[2] * (args[1]^args[4]) * (args[3]^args[4]) * (log(args[3]) - log(args[1])) /
-    (args[1]^args[4] + args[3]^args[4])^2
-end
+@register_symbolic hillr(X, v, K, n)
+@register_derivative hillr(X, v, K, n) 1  -v * n * (K^n) * (X^(n - 1)) / (X^n + K^n)^2
+@register_derivative hillr(X, v, K, n) 2 (K^n) / (X^n + K^n)
+@register_derivative hillr(X, v, K, n) 3 v * n * (X^n) * (K^(n - 1)) / (X^n + K^n)^2
+@register_derivative hillr(X, v, K, n) 4 v * (X^n) * (K^n) * (log(K) - log(X)) / (X^n + K^n)^2
 
 """
     hillar(X,Y,v,K,n) = v*(X^n) / (X^n + Y^n + K^n)
@@ -86,28 +52,14 @@ end
 An activation/repressing Hill rate function.
 """
 hillar(X, Y, v, K, n) = v * (X^n) / (X^n + Y^n + K^n)
-@register_symbolic hillar(X, Y, v, K, n);
-function Symbolics.derivative(::typeof(hillar), args::NTuple{5, Any}, ::Val{1})
-    args[3] * args[5] * (args[1]^(args[5] - 1)) * (args[2]^args[5] + args[4]^args[5]) /
-    (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
-end
-function Symbolics.derivative(::typeof(hillar), args::NTuple{5, Any}, ::Val{2})
-    -args[3] * args[5] * (args[2]^(args[5] - 1)) * (args[1]^args[5]) /
-    (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
-end
-function Symbolics.derivative(::typeof(hillar), args::NTuple{5, Any}, ::Val{3})
-    (args[1]^args[5]) / (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])
-end
-function Symbolics.derivative(::typeof(hillar), args::NTuple{5, Any}, ::Val{4})
-    -args[3] * args[5] * (args[3]^(args[5] - 1)) * (args[1]^args[5]) /
-    (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
-end
-function Symbolics.derivative(::typeof(hillar), args::NTuple{5, Any}, ::Val{5})
-    args[3] * (args[1]^args[5]) *
-    (log(args[1]) * (args[2]^args[5] + args[4]^args[5]) - (args[2]^args[5]) * log(args[2]) -
-     (args[4]^args[5]) * log(args[4])) /
-    (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
-end
+@register_symbolic hillar(X, Y, v, K, n)
+@register_derivative hillar(X, Y, v, K, n) 1 v * n * (X^(n - 1)) * (Y^n + K^n) / (X^n + Y^n + K^n)^2
+@register_derivative hillar(X, Y, v, K, n) 2 -v * n * (Y^(n - 1)) * (X^n) / (X^n + Y^n + K^n)^2
+@register_derivative hillar(X, Y, v, K, n) 3 (X^n) / (X^n + Y^n + K^n)
+@register_derivative hillar(X, Y, v, K, n) 4 -v * n * (K^(n - 1)) * (X^n) / (X^n + Y^n + K^n)^2
+@register_derivative hillar(X, Y, v, K, n) 5 v * (X^n) * (log(X) * (Y^n + K^n) - (Y^n) * log(Y) - 
+    (K^n) * log(K)) / (X^n + Y^n + K^n)^2
+
 
 # Tuple storing all registered function (for use in various functionalities).
 const registered_funcs = (mm, mmr, hill, hillr, hillar)
@@ -167,17 +119,17 @@ function expand_registered_functions(eq::Equation)
 end
 
 # If applied to a continuous event, returns it applied to eqs and affect.
-function expand_registered_functions(ce::ModelingToolkit.SymbolicContinuousCallback)
+function expand_registered_functions(ce::MT.SymbolicContinuousCallback)
     eqs = expand_registered_functions(ce.eqs)
     affect = expand_registered_functions(ce.affect)
-    return ModelingToolkit.SymbolicContinuousCallback(eqs, affect)
+    return MT.SymbolicContinuousCallback(eqs, affect)
 end
 
 # If applied to a discrete event, returns it applied to condition and affects.
-function expand_registered_functions(de::ModelingToolkit.SymbolicDiscreteCallback)
+function expand_registered_functions(de::MT.SymbolicDiscreteCallback)
     condition = expand_registered_functions(de.condition)
     affects = expand_registered_functions(de.affects)
-    return ModelingToolkit.SymbolicDiscreteCallback(condition, affects)
+    return MT.SymbolicDiscreteCallback(condition, affects)
 end
 
 # If applied to a vector, applies it to every element in the vector.
@@ -186,16 +138,16 @@ function expand_registered_functions(vec::Vector)
 end
 
 # If applied to a ReactionSystem, applied function to all Reactions and other Equations, and return updated system.
-# Currently, `ModelingToolkit.has_X_events` returns `true` even if event vector is empty (hence
+# Currently, `ModelingToolkitBase.has_X_events` returns `true` even if event vector is empty (hence
 # this function cannot be used).
 function expand_registered_functions(rs::ReactionSystem)
     @set! rs.eqs = Catalyst.expand_registered_functions(get_eqs(rs))
     @set! rs.rxs = Catalyst.expand_registered_functions(get_rxs(rs))
-    if !isempty(ModelingToolkit.get_continuous_events(rs))
-        @set! rs.continuous_events = Catalyst.expand_registered_functions(ModelingToolkit.get_continuous_events(rs))
+    if !isempty(MT.get_continuous_events(rs))
+        @set! rs.continuous_events = Catalyst.expand_registered_functions(MT.get_continuous_events(rs))
     end
-    if !isempty(ModelingToolkit.get_discrete_events(rs))
-        @set! rs.discrete_events = Catalyst.expand_registered_functions(ModelingToolkit.get_discrete_events(rs))
+    if !isempty(MT.get_discrete_events(rs))
+        @set! rs.discrete_events = Catalyst.expand_registered_functions(MT.get_discrete_events(rs))
     end
     reset_networkproperties!(rs)
     return rs

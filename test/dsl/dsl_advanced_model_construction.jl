@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, ModelingToolkit
+using Catalyst, ModelingToolkitBase
 
 # Set creates the `t` independent variable.
 t = default_t()
@@ -25,14 +25,14 @@ let
     @species A(t)
     rx = Reaction(k, [A], nothing)
     function rntest(rn, name)
-        @test ModelingToolkit.nameof(rn) == name
-        @test isequal(species(rn)[1], ModelingToolkit.unwrap(A))
-        @test isequal(parameters(rn)[1], ModelingToolkit.unwrap(k))
+        @test ModelingToolkitBase.nameof(rn) == name
+        @test isequal(species(rn)[1], ModelingToolkitBase.unwrap(A))
+        @test isequal(parameters(rn)[1], ModelingToolkitBase.unwrap(k))
         @test reactions(rn)[1] == rx
     end
 
     function emptyrntest(rn, name)
-        @test ModelingToolkit.nameof(rn) == name
+        @test ModelingToolkitBase.nameof(rn) == name
         @test numreactions(rn) == 0
         @test numspecies(rn) == 0
     end
@@ -54,7 +54,7 @@ let
         @parameters k
         k, A --> 0
     end
-    rntest(rn, ModelingToolkit.nameof(rn))
+    rntest(rn, ModelingToolkitBase.nameof(rn))
 
     function makern(; name)
         @reaction_network $name begin
@@ -343,8 +343,8 @@ let
     @test issetequal(unknowns(rn2), species(rn2))
     rn = complete(rn)
     @test all(isspecies, species(rn))
-    @test Catalyst.isbc(ModelingToolkit.value(B))
-    @test Catalyst.isbc(ModelingToolkit.value(A)) == false
+    @test Catalyst.isbc(ModelingToolkitBase.value(B))
+    @test Catalyst.isbc(ModelingToolkitBase.value(A)) == false
     osys2 = complete(make_rre_ode(rn2))
     @test issetequal(unknowns(osys2), unknowns(rn2))
     @test length(equations(osys2)) == 2

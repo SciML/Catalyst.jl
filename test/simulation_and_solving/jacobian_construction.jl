@@ -99,7 +99,7 @@ let
         # Approx is due to https://github.com/SciML/ModelingToolkit.jl/issues/3554.
         function eval_jac(prob, sparse)
             J = sparse ? deepcopy(prob.f.jac_prototype) : zeros(length(prob.u0), length(prob.u0))
-            ModelingToolkit.is_time_dependent(prob) ? prob.f.jac(J, prob.u0, prob.p, 0.0) : prob.f.jac(J, prob.u0, prob.p)
+            ModelingToolkitBase.is_time_dependent(prob) ? prob.f.jac(J, prob.u0, prob.p, 0.0) : prob.f.jac(J, prob.u0, prob.p)
             return J
         end
         @test eval_jac(oprob_jac, false) == eval_jac(sprob_jac, false) == eval_jac(nlprob_jac, false)

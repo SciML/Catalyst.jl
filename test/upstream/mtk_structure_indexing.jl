@@ -2,7 +2,7 @@
 
 # Fetch packages
 using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEqTsit5, Plots, SteadyStateDiffEq, StochasticDiffEq, Test
-import ModelingToolkit: getp, getu, setp, setu
+import ModelingToolkitBase: getp, getu, setp, setu
 
 # Sets rnd number.
 using StableRNGs

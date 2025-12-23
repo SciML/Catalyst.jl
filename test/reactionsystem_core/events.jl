@@ -26,13 +26,13 @@ let
         @reaction 1.0, A --> 0
     ]
     @named rs = ReactionSystem([rxs; eqs], t; discrete_events)
-    @test length(ModelingToolkit.continuous_events(rs)) == 0
-    @test length(ModelingToolkit.discrete_events(rs)) == 1
+    @test length(ModelingToolkitBase.continuous_events(rs)) == 0
+    @test length(ModelingToolkitBase.discrete_events(rs)) == 1
 
     # Tests in simulation.
     osys = complete(make_rre_ode(complete(rs)))
-    @test length(ModelingToolkit.continuous_events(osys)) == 0
-    @test length(ModelingToolkit.discrete_events(osys)) == 1
+    @test length(ModelingToolkitBase.continuous_events(osys)) == 0
+    @test length(ModelingToolkitBase.discrete_events(osys)) == 1
     oprob = ODEProblem(osys, [osys.A => 0.0], (0.0, 20.0))
     sol = solve(oprob, Tsit5())
     @test sol(10 + 10*eps(), idxs = V) ≈ 1.0
@@ -49,13 +49,13 @@ let
     ]
     continuous_events = [V ~ 2.5] => [α ~ 0, β ~ 0]
     @named rs = ReactionSystem(rxs, t; continuous_events)
-    @test length(ModelingToolkit.continuous_events(rs)) == 1
-    @test length(ModelingToolkit.discrete_events(rs)) == 0
+    @test length(ModelingToolkitBase.continuous_events(rs)) == 1
+    @test length(ModelingToolkitBase.discrete_events(rs)) == 0
 
     # Tests in simulation.
     osys = complete(make_rre_ode(complete(rs)))
-    @test length(ModelingToolkit.continuous_events(osys)) == 1
-    @test length(ModelingToolkit.discrete_events(osys)) == 0
+    @test length(ModelingToolkitBase.continuous_events(osys)) == 1
+    @test length(ModelingToolkitBase.discrete_events(osys)) == 0
     oprob = ODEProblem(osys, [], (0.0, 20.0))
     sol = solve(oprob, Tsit5())
     @test_broken sol(20.0, idxs = V) ≈ 2.5
@@ -98,9 +98,9 @@ end
     @test Symbolics.unwrap(rs_ce_de.α) isa Symbolics.BasicSymbolic{Int64}
     @test Symbolics.unwrap(rs_de.α) isa Symbolics.BasicSymbolic{Int64}
     @test Symbolics.unwrap(rs_ce_de.α) isa Symbolics.BasicSymbolic{Int64}
-    @test ModelingToolkit.getdescription(rs_ce_de.A) == "A species"
-    @test ModelingToolkit.getdescription(rs_de.A) == "A species"
-    @test ModelingToolkit.getdescription(rs_ce_de.A) == "A species"
+    @test ModelingToolkitBase.getdescription(rs_ce_de.A) == "A species"
+    @test ModelingToolkitBase.getdescription(rs_de.A) == "A species"
+    @test ModelingToolkitBase.getdescription(rs_ce_de.A) == "A species"
 
     # Tests that species/variables/parameters can be accessed correctly one a MTK problem have been created.
     u0 = [X => 1]

@@ -161,8 +161,8 @@ end
     sprob3 = SDEProblem(rn, u0_sde, tspan, p; remove_conserved = true)
 
     # Checks that the SDEs f and g function evaluates to the same thing.
-    ind_us = ModelingToolkit.get_unknowns(ssys)
-    us = ModelingToolkit.get_unknowns(rn)
+    ind_us = ModelingToolkitBase.get_unknowns(ssys)
+    us = ModelingToolkitBase.get_unknowns(rn)
     ind_uidxs = findall(in(ind_us), us)
     u1 = copy(sprob1.u0)
     u2 = sprob2.u0
@@ -315,7 +315,7 @@ let
     # Singularity means infinite condition number (here it is about 1e17).
     function is_singular(prob; infthres = 1e12)
         J = zeros(length(prob.u0), length(prob.u0))
-        ModelingToolkit.is_time_dependent(prob) ? prob.f.jac(J, prob.u0, prob.p, 0.0) : prob.f.jac(J, prob.u0, prob.p)
+        ModelingToolkitBase.is_time_dependent(prob) ? prob.f.jac(J, prob.u0, prob.p, 0.0) : prob.f.jac(J, prob.u0, prob.p)
         return cond(J) > infthres
     end
 
@@ -385,7 +385,7 @@ let
             integrator = init(prob_new, solver)
             sol = solve(prob_new, solver; maxiters = 1, verbose = false)
             @test prob_new.ps[:Γ][1] == integrator.ps[:Γ][1] == sol.ps[:Γ][1]
-            if ModelingToolkit.is_time_dependent(prob_new)
+            if ModelingToolkitBase.is_time_dependent(prob_new)
                 @test prob_new[:X1] == integrator[:X1] == sol[:X1][1]
                 @test prob_new[:X2] == integrator[:X2] == sol[:X2][1]
                 @test prob_new[:X3] == integrator[:X3] == sol[:X3][1]
@@ -436,7 +436,7 @@ let
             integrator = init(prob_new, solver)
             sol = solve(prob_new, solver; maxiters = 1, verbose = false)
             @test prob_new.ps[:Γ][1] == integrator.ps[:Γ][1] == sol.ps[:Γ][1]
-            if ModelingToolkit.is_time_dependent(prob_new)
+            if ModelingToolkitBase.is_time_dependent(prob_new)
                 @test prob_new[:X1] == integrator[:X1] == sol[:X1][1]
                 @test prob_new[:X2] == integrator[:X2] == sol[:X2][1]
                 @test prob_new[:X3] == integrator[:X3] == sol[:X3][1]

@@ -2,8 +2,9 @@
 
 # Fetch packages.
 using Catalyst, Test, LinearAlgebra
-using ModelingToolkit: get_continuous_events, get_discrete_events
+using ModelingToolkitBase: get_continuous_events, get_discrete_events
 using Symbolics: derivative
+using SymbolicUtils: _iszero
 
 # Sets stable rng number.
 using StableRNGs
@@ -90,7 +91,7 @@ let
     @test isequal(derivative(Catalyst.hillar(X, Y, v, K, n), v),
                   X^n / (K^n + X^n + Y^n))
     @test isequal(derivative(Catalyst.hillar(X, Y, v, K, n), K),
-                  -n * v * (v^(n - 1)) * (X^n) / (K^n + X^n + Y^n)^2)
+                  -n * v * (K^(n - 1)) * (X^n) / (K^n + X^n + Y^n)^2)
     @test isequal(derivative(Catalyst.hillar(X, Y, v, K, n), n),
                   v * (X^n) * ((K^n + Y^n) * log(X) - (K^n) * log(K) - (Y^n) * log(Y)) /
                   (K^n + X^n + Y^n)^2)
@@ -211,8 +212,8 @@ end
         1.0 => [X ~ X]
         (v * (X^n) / (X^n + K^n) > 1000.0) => [X ~ v * (K^n) / (X^n + K^n) + 2]
     ]
-    continuous_events = ModelingToolkit.SymbolicContinuousCallback.(continuous_events)
-    discrete_events = ModelingToolkit.SymbolicDiscreteCallback.(discrete_events)
+    continuous_events = ModelingToolkitBase.SymbolicContinuousCallback.(continuous_events)
+    discrete_events = ModelingToolkitBase.SymbolicDiscreteCallback.(discrete_events)
     @test isequal(only(Catalyst.get_rxs(rs_expanded)).rate, v0 + v * (X^n) / (X^n + Y^n + K^n))
     @test isequal(get_continuous_events(rs_expanded), continuous_events)
     @test isequal(get_discrete_events(rs_expanded), discrete_events)
@@ -236,7 +237,7 @@ let
            D(Z) ~ hill(X, v, K, n)*X*Y + mm(X,v,K)*X*Y + hillr(X,v,K,n)*X*Y + mmr(X,v,K)*X*Y]
     reorder = [findfirst(eq -> isequal(eq.lhs, osyseq.lhs), eqs) for osyseq in osyseqs]
     for (osysidx,eqidx) in enumerate(reorder)
-        @test iszero(simplify(eqs[eqidx].rhs - osyseqs[osysidx].rhs))
+        @test _iszero(simplify(eqs[eqidx].rhs - osyseqs[osysidx].rhs))
     end
 
     osys2 = complete(make_rre_ode(rn))
@@ -250,7 +251,7 @@ let
     osyseqs2 = equations(osys2)
     reorder = [findfirst(eq -> isequal(eq.lhs, osyseq.lhs), eqs2) for osyseq in osyseqs2]
     for (osysidx,eqidx) in enumerate(reorder)
-        @test iszero(simplify(eqs2[eqidx].rhs - osyseqs2[osysidx].rhs))
+        @test _iszero(simplify(eqs2[eqidx].rhs - osyseqs2[osysidx].rhs))
     end
 
     nlsys = complete(make_rre_algeqs(rn; expand_catalyst_funs = false))
@@ -259,7 +260,7 @@ let
            0 ~ -hill(X, v, K, n)*X*Y - mm(X,v,K)*X*Y - hillr(X,v,K,n)*X*Y - mmr(X,v,K)*X*Y,
            0 ~ hill(X, v, K, n)*X*Y + mm(X,v,K)*X*Y + hillr(X,v,K,n)*X*Y + mmr(X,v,K)*X*Y]
     for (i, eq) in enumerate(eqs)
-        @test iszero(simplify(eq.rhs - nlsyseqs[i].rhs))
+        @test _iszero(simplify(eq.rhs - nlsyseqs[i].rhs))
     end
 
     nlsys2 = complete(make_rre_algeqs(rn))
@@ -268,7 +269,7 @@ let
             0 ~ -hill2(X, v, K, n)*X*Y - mm2(X,v,K)*X*Y - hillr2(X,v,K,n)*X*Y - mmr2(X,v,K)*X*Y,
             0 ~ hill2(X, v, K, n)*X*Y + mm2(X,v,K)*X*Y + hillr2(X,v,K,n)*X*Y + mmr2(X,v,K)*X*Y]
     for (i, eq) in enumerate(eqs2)
-        @test iszero(simplify(eq.rhs - nlsyseqs2[i].rhs))
+        @test _iszero(simplify(eq.rhs - nlsyseqs2[i].rhs))
     end
 
     sdesys = complete(make_cle_sde(rn; expand_catalyst_funs = false))
@@ -278,13 +279,13 @@ let
            D(Z) ~ hill(X, v, K, n)*X*Y + mm(X,v,K)*X*Y + hillr(X,v,K,n)*X*Y + mmr(X,v,K)*X*Y]
     reorder = [findfirst(eq -> isequal(eq.lhs, sdesyseq.lhs), eqs) for sdesyseq in sdesyseqs]
     for (sdesysidx,eqidx) in enumerate(reorder)
-        @test iszero(simplify(eqs[eqidx].rhs - sdesyseqs[sdesysidx].rhs))
+        @test _iszero(simplify(eqs[eqidx].rhs - sdesyseqs[sdesysidx].rhs))
     end
-    sdesysnoiseeqs = ModelingToolkit.get_noise_eqs(sdesys)
+    sdesysnoiseeqs = ModelingToolkitBase.get_noise_eqs(sdesys)
     neqvec = diagm(sqrt.(abs.([hill(X, v, K, n)*X*Y, mm(X,v,K)*X*Y, hillr(X,v,K,n)*X*Y, mmr(X,v,K)*X*Y])))
     neqmat = [-1 -1 -1 -1; -1 -1 -1 -1; 1 1 1 1]
     neqmat *= neqvec
-    @test all(iszero, simplify.(sdesysnoiseeqs .- neqmat))
+    @test all(_iszero, simplify.(sdesysnoiseeqs .- neqmat))
 
     sdesys = complete(make_cle_sde(rn))
     sdesyseqs = equations(sdesys)
@@ -293,13 +294,13 @@ let
            D(Z) ~ hill2(X, v, K, n)*X*Y + mm2(X,v,K)*X*Y + hillr2(X,v,K,n)*X*Y + mmr2(X,v,K)*X*Y]
     reorder = [findfirst(eq -> isequal(eq.lhs, sdesyseq.lhs), eqs) for sdesyseq in sdesyseqs]
     for (sdesysidx,eqidx) in enumerate(reorder)
-        @test iszero(simplify(eqs[eqidx].rhs - sdesyseqs[sdesysidx].rhs))
+        @test _iszero(simplify(eqs[eqidx].rhs - sdesyseqs[sdesysidx].rhs))
     end
-    sdesysnoiseeqs = ModelingToolkit.get_noise_eqs(sdesys)
+    sdesysnoiseeqs = ModelingToolkitBase.get_noise_eqs(sdesys)
     neqvec = diagm(sqrt.(abs.([hill2(X, v, K, n)*X*Y, mm2(X,v,K)*X*Y, hillr2(X,v,K,n)*X*Y, mmr2(X,v,K)*X*Y])))
     neqmat = [-1 -1 -1 -1; -1 -1 -1 -1; 1 1 1 1]
     neqmat *= neqvec
-    @test all(iszero, simplify.(sdesysnoiseeqs .- neqmat))
+    @test all(_iszero, simplify.(sdesysnoiseeqs .- neqmat))
 
     @test_broken begin
         return false
@@ -309,7 +310,7 @@ let
         affects = getfield.(jsyseqs, :affect!)
         reqs = [ Y*X*hill(X, v, K, n), Y*X*mm(X, v, K), hillr(X, v, K, n)*Y*X, Y*X*mmr(X, v, K)]
         affeqs = [Z ~ 1 + Z, Y ~ -1 + Y, X ~ -1 + X]
-        @test all(iszero, simplify(rates .- reqs))
+        @test all(_iszero, simplify(rates .- reqs))
         @test all(aff -> isequal(aff, affeqs), affects)
 
         jsys = make_sck_jump(rn)
@@ -318,7 +319,7 @@ let
         affects = getfield.(jsyseqs, :affect!)
         reqs = [ Y*X*hill2(X, v, K, n), Y*X*mm2(X, v, K), hillr2(X, v, K, n)*Y*X, Y*X*mmr2(X, v, K)]
         affeqs = [Z ~ 1 + Z, Y ~ -1 + Y, X ~ -1 + X]
-        @test all(iszero, simplify(rates .- reqs))
+        @test all(_iszero, simplify(rates .- reqs))
         @test all(aff -> isequal(aff, affeqs), affects)
     end
 end

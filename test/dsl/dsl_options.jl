@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, ModelingToolkit, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, StochasticDiffEq, Plots, Test
+using Catalyst, ModelingToolkitBase, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, StochasticDiffEq, Plots, Test
 using Symbolics: unwrap
 
 # Sets stable rng number.
@@ -350,8 +350,8 @@ let
     p_29 = symmap_to_varmap(rn29, [:X=>4.0, :Y=>3.0, :X2Y=>2.0, :Z=>1.0])
     defs29 = Dict(Iterators.flatten((u0_29, p_29)))
 
-    @test ModelingToolkit.defaults(rn27) == defs29
-    @test merge(ModelingToolkit.defaults(rn28), defs28) == ModelingToolkit.defaults(rn27)
+    @test ModelingToolkitBase.defaults(rn27) == defs29
+    @test merge(ModelingToolkitBase.defaults(rn28), defs28) == ModelingToolkitBase.defaults(rn27)
 end
 
 # Tests that parameter type designation works.
@@ -378,8 +378,8 @@ let
     end
 
     # Checks parameter types.
-    @test unwrap(rn.k1) isa SymbolicUtils.BasicSymbolic{Real}
-    @test unwrap(rn.l1) isa SymbolicUtils.BasicSymbolic{Real}
+    @test unwrap(rn.k1) isa SymbolicUtils.BasicSymbolic{SymReal}
+    @test unwrap(rn.l1) isa SymbolicUtils.BasicSymbolic{SymReal}
     @test unwrap(rn.k2) isa SymbolicUtils.BasicSymbolic{Float64}
     @test unwrap(rn.l2) isa SymbolicUtils.BasicSymbolic{Float64}
     @test unwrap(rn.k3) isa SymbolicUtils.BasicSymbolic{Int64}
@@ -390,12 +390,12 @@ let
     @test unwrap(rn.l5) isa SymbolicUtils.BasicSymbolic{Rational{Int64}}
 
     # Checks that other parameter properties are assigned properly.
-    @test !ModelingToolkit.hasdefault(unwrap(rn.k1))
-    @test ModelingToolkit.getdefault(unwrap(rn.k2)) == 2.0
-    @test ModelingToolkit.getdefault(unwrap(rn.k3)) == 2
-    @test ModelingToolkit.getdescription(unwrap(rn.k3)) == "A parameter"
-    @test ModelingToolkit.getdescription(unwrap(rn.k4)) == "Another parameter"
-    @test !ModelingToolkit.hasdescription(unwrap(rn.k5))
+    @test !ModelingToolkitBase.hasdefault(unwrap(rn.k1))
+    @test ModelingToolkitBase.getdefault(unwrap(rn.k2)) == 2.0
+    @test ModelingToolkitBase.getdefault(unwrap(rn.k3)) == 2
+    @test ModelingToolkitBase.getdescription(unwrap(rn.k3)) == "A parameter"
+    @test ModelingToolkitBase.getdescription(unwrap(rn.k4)) == "Another parameter"
+    @test !ModelingToolkitBase.hasdescription(unwrap(rn.k5))
 end
 
 # Test @variables in DSL.
@@ -526,7 +526,7 @@ let
     @test complete(ivstest) == rn
     @test issetequal(unknowns(rn), [D, E, F, A, B, C, C2])
     @test issetequal(species(rn), [A, B, C, C2])
-    @test isequal(ModelingToolkit.get_iv(rn), s)
+    @test isequal(ModelingToolkitBase.get_iv(rn), s)
     @test issetequal(Catalyst.get_sivs(rn), [x])
 end
 
@@ -807,8 +807,8 @@ let
         end
     end
     V,W = getfield.(observed(rn), :lhs)
-    @test isequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(V)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[1], Catalyst.get_sivs(rn)[2]])
-    @test isequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(W)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[2]])
+    @test isequal(Symbolics.sorted_arguments(ModelingToolkitBase.unwrap(V)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[1], Catalyst.get_sivs(rn)[2]])
+    @test isequal(Symbolics.sorted_arguments(ModelingToolkitBase.unwrap(W)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[2]])
 end
 
 # Checks that metadata is written properly.
@@ -817,7 +817,7 @@ let
         @observables (X, [description="my_description"]) ~ X1 + X2
         k, 0 --> X1 + X2
     end
-    @test ModelingToolkit.getdescription(observed(rn)[1].lhs) == "my_description"
+    @test ModelingToolkitBase.getdescription(observed(rn)[1].lhs) == "my_description"
 end
 
 # Declares observables implicitly/explicitly.
@@ -862,7 +862,7 @@ let
         (k1, k2), X1 <--> X2
     end
     @test isequal(observed(rn1)[1].lhs, X)
-    @test ModelingToolkit.getdescription(rn1.X) == "An observable"
+    @test ModelingToolkitBase.getdescription(rn1.X) == "An observable"
     @test isspecies(rn1.X)
     @test length(unknowns(rn1)) == 2
 

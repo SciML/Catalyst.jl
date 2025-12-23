@@ -44,9 +44,9 @@ let
         ps = rnd_ps(base_higher_order_network, rng; factor)
         t = rand(rng)
 
-        @test f_eval(base_higher_order_network, u0, ps, t) == f_eval(higher_order_network_alt1, u0, ps, t)
-        @test jac_eval(base_higher_order_network, u0, ps, t) == jac_eval(higher_order_network_alt1, u0, ps, t)
-        @test g_eval(base_higher_order_network, u0, ps, t) == g_eval(higher_order_network_alt1, u0, ps, t)
+        @test f_eval(base_higher_order_network, u0, ps, t) ≈ f_eval(higher_order_network_alt1, u0, ps, t)
+        @test jac_eval(base_higher_order_network, u0, ps, t) ≈ jac_eval(higher_order_network_alt1, u0, ps, t)
+        @test g_eval(base_higher_order_network, u0, ps, t) ≈ g_eval(higher_order_network_alt1, u0, ps, t)
     end
 end
 

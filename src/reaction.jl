@@ -36,7 +36,11 @@ Tests if the given symbolic variable corresponds to a chemical species.
 """
 isspecies(s::Num) = isspecies(MT.value(s))
 function isspecies(s)
-    MT.getmetadata(s, VariableSpecies, false)
+    return if iscall(s) && operation(s) === getindex
+        MT.getmetadata(arguments(MT.unwrap(s))[1], Catalyst.VariableSpecies, false)
+    else
+        MT.getmetadata(s, Catalyst.VariableSpecies, false)
+    end
 end
 
 """
@@ -233,7 +237,6 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
 
     # Ensures metadata have the correct type.
     metadata = convert(Vector{Pair{Symbol, Any}}, metadata)
-
     Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate, metadata)
 end
 
@@ -315,7 +318,7 @@ end
 
 ### ModelingToolkit Function Dispatches ###
 
-# Used by ModelingToolkit.namespace_equation.
+# Used by ModelingToolkitBase.namespace_equation.
 function apply_if_nonempty(f, v)
     isempty(v) && return v
     s = similar(v)
@@ -347,19 +350,20 @@ MT.is_alg_equation(rx::Reaction) = false
 
 # MTK functions for extracting variables within equation type object
 MT.eqtype_supports_collect_vars(rx::Reaction) = true
-function MT.collect_vars!(unknowns, parameters, rx::Reaction, iv; depth = 0,
-        op = MT.Differential)
-    MT.collect_vars!(unknowns, parameters, rx.rate, iv; depth, op)
+function MT.collect_vars!(unknowns::OrderedSet{SymbolicT}, parameters::OrderedSet{SymbolicT}, 
+        rx::Reaction, iv::Union{SymbolicT, Nothing},  ::Type{op} = Symbolics.Operator; 
+        depth = 0) where {op}
+    MT.collect_vars!(unknowns, parameters, rx.rate, iv, op; depth)
 
     for items in (rx.substrates, rx.products, rx.substoich, rx.prodstoich)
         for item in items
-            MT.collect_vars!(unknowns, parameters, item, iv; depth, op)
+            MT.collect_vars!(unknowns, parameters, item, iv, op; depth)
         end
     end
 
     if hasnoisescaling(rx)
         ns = getnoisescaling(rx)
-        MT.collect_vars!(unknowns, parameters, ns, iv; depth, op)
+        MT.collect_vars!(unknowns, parameters, ns, iv, op; depth)
     end
     return nothing
 end
@@ -375,7 +379,7 @@ encountered in:
     - Among potential noise scaling metadata.
 """
 function get_symbolics(rx::Reaction)
-    return ModelingToolkit.get_variables!([], rx)
+    return MT.get_variables!([], rx)
 end
 
 """
@@ -388,7 +392,7 @@ encountered in:
     - Among stoichiometries.
     - Among potential noise scaling metadata.
 """
-function ModelingToolkit.get_variables!(set, rx::Reaction)
+function ModelingToolkitBase.get_variables!(set, rx::Reaction)
     get_variables!(set, rx.rate)
     foreach(sub -> push!(set, sub), rx.substrates)
     foreach(prod -> push!(set, prod), rx.products)
@@ -406,7 +410,7 @@ end
 
 # determine which unknowns a reaction depends on
 function MT.get_variables!(deps::Set, rx::Reaction, variables)
-    (rx.rate isa Symbolic) && get_variables!(deps, rx.rate, variables)
+    (rx.rate isa SymbolicT) && get_variables!(deps, rx.rate, variables)
     for s in rx.substrates
         # parametric stoichiometry means may have a parameter as a substrate
         any(isequal(s), variables) && push!(deps, s)

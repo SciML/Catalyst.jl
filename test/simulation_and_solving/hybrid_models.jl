@@ -269,8 +269,8 @@ let
     sol = solve(prob, Tsit5(); tstops = [1.0 - eps(), 1.0 + eps()])
 
     # Tests that the model contain the correct stuff.
-    @test ModelingToolkit.getdescription(rn.X) == "A jump only species"
-    @test ModelingToolkit.getdescription(rn.Y) == "An ODE only species"
+    @test ModelingToolkitBase.getdescription(rn.X) == "A jump only species"
+    @test ModelingToolkitBase.getdescription(rn.Y) == "An ODE only species"
     @test sol[:X][1] == sol.ps[:X0] == 0.1
     @test sol[:Y][1] == sol.ps[:Y0] == 4.0
     @test sol[:V][1] == 1.5

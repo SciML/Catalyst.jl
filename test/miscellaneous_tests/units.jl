@@ -4,7 +4,7 @@
 
 # Fetch packages.
 using Catalyst, DynamicQuantities, Test
-using ModelingToolkit: get_iv, get_unit, validate, ValidationError
+using ModelingToolkitBase: get_iv, get_unit, validate, ValidationError
 
 
 ### Basic Tests ###

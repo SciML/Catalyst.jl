@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using Catalyst, Test
-using ModelingToolkit, DomainSets
+using ModelingToolkitBase, DomainSets
 const MT = ModelingToolkit
 
 # Sets rnd number.
@@ -59,7 +59,7 @@ let
     eqs = Vector{Equation}(undef, 3)
     bcs = Vector{Equation}()
     smap = speciesmap(bpm)
-    evalat(u, a, b, t) = (operation(ModelingToolkit.unwrap(u)))(a, b, t)
+    evalat(u, a, b, t) = (operation(ModelingToolkitBase.unwrap(u)))(a, b, t)
     @register_symbolic icfun(n, x, y, A)
     L = 32.0
     tstop = 5e4

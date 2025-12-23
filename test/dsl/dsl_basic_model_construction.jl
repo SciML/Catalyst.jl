@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using DiffEqBase, Catalyst, Random, Test
-using ModelingToolkit: operation, get_unknowns, get_ps, get_eqs, get_systems,
+using ModelingToolkitBase: operation, get_unknowns, get_ps, get_eqs, get_systems,
                        get_iv, nameof
 using Symbolics: iscall
 
@@ -355,8 +355,8 @@ let
         @test isequal(get_iv(networks[1]), get_iv(networks[2]))
         @test alleq(get_unknowns(networks[1]), get_unknowns(networks[2]))
         @test alleq(get_ps(networks[1]), get_ps(networks[2]))
-        @test ModelingToolkit.get_systems(networks[1]) ==
-              ModelingToolkit.get_systems(networks[2])
+        @test ModelingToolkitBase.get_systems(networks[1]) ==
+              ModelingToolkitBase.get_systems(networks[2])
         @test length(get_eqs(networks[1])) == length(get_eqs(networks[2]))
         for (e1, e2) in zip(get_eqs(networks[1]), get_eqs(networks[2]))
             @test isequal(e1.rate, e2.rate)

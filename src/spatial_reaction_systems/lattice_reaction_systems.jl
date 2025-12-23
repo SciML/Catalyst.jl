@@ -75,7 +75,7 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractSystem
     num_species::Int64
 
     """List of species that may move spatially."""
-    spatial_species::Vector{BasicSymbolic{Real}}
+    spatial_species::Vector{BasicSymbolic{SymReal}}
     """
     All parameters related to the lattice reaction system
     (both those whose values are tied to vertices and edges).
@@ -127,7 +127,7 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractSystem
         # Computes the species which are parts of spatial reactions. Also counts the total number of
         # species types.
         if isempty(spatial_reactions)
-            spat_species = Vector{BasicSymbolic{Real}}[]
+            spat_species = Vector{BasicSymbolic{SymReal}}[]
         else
             spat_species = unique(reduce(vcat,
                 [spatial_species(sr) for sr in spatial_reactions]))
@@ -137,7 +137,7 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractSystem
         # Computes the sets of vertex, edge, and all, parameters.
         rs_edge_parameters = filter(isedgeparameter, parameters(rs))
         if isempty(spatial_reactions)
-            srs_edge_parameters = Vector{BasicSymbolic{Real}}[]
+            srs_edge_parameters = Vector{BasicSymbolic{SymReal}}[]
         else
             srs_edge_parameters = setdiff(
                 reduce(vcat, [parameters(sr) for sr in spatial_reactions]), parameters(rs))

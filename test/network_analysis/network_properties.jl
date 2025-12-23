@@ -3,6 +3,7 @@
 
 # Fetch packages.
 using Catalyst, LinearAlgebra, Test, SparseArrays
+using SymbolicUtils: _iszero
 
 # Sets stable rng number.
 using StableRNGs
@@ -405,8 +406,8 @@ let
     @test isequal(S*K, Y*A_k)
 
     eqs = Catalyst.assemble_oderhs(MAPK, specs)
-    @test all(iszero, simplify(eqs - S*K*Φ))
-    @test all(iszero, simplify(eqs - Y*A_k*Φ))
+    @test all(_iszero, simplify(eqs - S*K*Φ))
+    @test all(_iszero, simplify(eqs - Y*A_k*Φ))
 
     # Test using numbers
     k = rand(rng, numparams(MAPK))
@@ -424,8 +425,8 @@ let
     for i in 1:length(eqs)
         numeqs[i] = substitute(eqs[i], ratemap)
     end
-    @test all(iszero, simplify(numeqs - S*K*Φ))
-    @test all(iszero, simplify(numeqs - Y*A_k*Φ))
+    @test all(_iszero, simplify(numeqs - S*K*Φ))
+    @test all(_iszero, simplify(numeqs - Y*A_k*Φ))
 end
 
 # Test handling for weird complexes and combinatoric rate laws.
@@ -455,12 +456,12 @@ let
     Y = complexstoichmat(rn)
     K = fluxmat(rn)
     A_k = laplacianmat(rn)
-    @test all(iszero, simplify(eqs - S*K*Φ))
-    @test all(iszero, simplify(eqs - Y*A_k*Φ))
+    @test all(_iszero, simplify(eqs - S*K*Φ))
+    @test all(_iszero, simplify(eqs - Y*A_k*Φ))
 
     eq_ncr = Catalyst.assemble_oderhs(rn, specs; combinatoric_ratelaws = false)
-    @test all(iszero, simplify(eq_ncr - S*K*Φ_2))
-    @test all(iszero, simplify(eq_ncr - Y*A_k*Φ_2))
+    @test all(_iszero, simplify(eq_ncr - S*K*Φ_2))
+    @test all(_iszero, simplify(eq_ncr - Y*A_k*Φ_2))
 
     # Test that the ODEs with rate constants are the same.
     k = rand(rng, numparams(rn))
@@ -474,15 +475,15 @@ let
         numeqs[i] = substitute(eqs[i], ratemap)
     end
     # Broken but the difference is just numerical, something on the order of 1e-17 times a term
-    @test all(iszero, simplify(numeqs - S*K*Φ))
-    @test all(iszero, simplify(numeqs - Y*A_k*Φ))
+    @test all(_iszero, simplify(numeqs - S*K*Φ))
+    @test all(_iszero, simplify(numeqs - Y*A_k*Φ))
 
     numeqs_ncr = similar(eq_ncr)
     for i in 1:length(eq_ncr)
         numeqs_ncr[i] = substitute(eq_ncr[i], ratemap)
     end
-    @test all(iszero, simplify(numeqs_ncr - S*K*Φ_2))
-    @test all(iszero, simplify(numeqs_ncr - Y*A_k*Φ_2))
+    @test all(_iszero, simplify(numeqs_ncr - S*K*Φ_2))
+    @test all(_iszero, simplify(numeqs_ncr - Y*A_k*Φ_2))
 
     # Test that handling of species concentrations is correct.
     u0vec = [:X => 3., :Y => .5, :Z => 2.]

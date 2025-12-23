@@ -16,32 +16,14 @@ const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :obser
 
 # The @species macro, basically a copy of the @variables macro.
 macro species(ex...)
-    vars = Symbolics._parse_vars(:variables, Real, ex)
+    return Symbolics.parse_vars(:variables, Real, ex, tospecies)
+end
 
-    # vector of symbols that get defined
-    lastarg = vars.args[end]
-
-    # start adding metadata statements where the vector of symbols was previously declared
-    idx = length(vars.args)
-    resize!(vars.args, idx + length(lastarg.args) + 1)
-    for sym in lastarg.args
-        vars.args[idx] = :($sym = ModelingToolkit.wrap(setmetadata(
-            ModelingToolkit.value($sym), Catalyst.VariableSpecies, true)))
-        idx += 1
-    end
-
-    # check nothing was declared isconstantspecies
-    ex = quote
-        all(!Catalyst.isconstant ∘ ModelingToolkit.value, $lastarg) ||
-            throw(ArgumentError("isconstantspecies metadata can only be used with parameters."))
-    end
-    vars.args[idx] = ex
-    idx += 1
-
-    # put back the vector of the new species symbols
-    vars.args[idx] = lastarg
-
-    esc(vars)
+# Converts a normal variable to a species variable. For internal use by `parse_vars` within `@species`.
+function tospecies(s)
+    s = setmetadata(s, Catalyst.VariableSpecies, true)
+    MT.getmetadata(MT.unwrap(s), ParameterConstantSpecies, false) && throw(ArgumentError("isconstantspecies metadata can only be used with parameters."))
+    return s
 end
 
 ### `@reaction_network` and `@network_component` Macros ###
@@ -296,8 +278,9 @@ function make_reaction_system(ex::Expr, name)
     requiredec = haskey(options, :require_declaration)
     reactions = get_reactions(reaction_lines)
     sps_inferred, ps_pre_inferred = extract_sps_and_ps(reactions, syms_declared; requiredec)
-    vs_inferred, diffs_inferred, equations = read_equations_option!(diffsexpr, options,
-        union(syms_declared, sps_inferred), tiv; requiredec)
+    # vs_inferred, diffs_inferred, equations = read_equations_option!(diffsexpr, options,
+    #    union(syms_declared, sps_inferred), tiv; requiredec)
+    vs_inferred, diffs_inferred, equations = [], [], []
     ps_inferred = setdiff(ps_pre_inferred, vs_inferred, diffs_inferred)
     syms_inferred = union(sps_inferred, ps_inferred, vs_inferred, diffs_inferred)
     all_syms = union(syms_declared, syms_inferred)
@@ -523,7 +506,9 @@ function get_psexpr(parameters_extracted, options)
     else
         :(@parameters)
     end
-    foreach(p -> push!(pexprs.args, p), parameters_extracted)
+    arg_vec = ((length(pexprs.args) > 2) && Meta.isexpr(pexprs.args[3], :block)) ? 
+        (pexprs.args[3].args) : (pexprs.args)
+    foreach(p -> push!(arg_vec, p), parameters_extracted)
     pexprs
 end
 
@@ -538,8 +523,10 @@ function get_usexpr(us_extracted, options, key = :species; ivs = (DEFAULT_IV_SYM
     else
         Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
     end
+    arg_vec = ((length(usexpr.args) > 2) && Meta.isexpr(usexpr.args[3], :block)) ? 
+        (usexpr.args[3].args) : (usexpr.args)
     for u in us_extracted
-        u isa Symbol && push!(usexpr.args, Expr(:call, u, ivs...))
+        u isa Symbol && push!(arg_vec, Expr(:call, u, ivs...))
     end
     usexpr
 end
@@ -689,13 +676,11 @@ end
 function read_equations_option!(
         diffsexpr, options, syms_unavailable, tiv; requiredec = false)
     # Prepares the equations. First, extract equations from the provided option (converting to block form if required).
-    # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
+    # Next, uses `parse_equations!` function to split input into a vector with the equations.
     eqs_input = haskey(options, :equations) ? get_block_option(options[:equations]) :
                 :(begin end)
     eqs_input = option_block_form(eqs_input)
-    equations = Expr[]
-    ModelingToolkit.parse_equations!(Expr(:block), equations,
-        Dict{Symbol, Any}(), eqs_input)
+    equations = eqs_input.args
 
     # Loops through all equations, checks for lhs of the form `D(X) ~ ...`.
     # When this is the case, the variable X and differential D are extracted (for automatic declaration).

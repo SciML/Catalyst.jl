@@ -283,7 +283,7 @@ function substitutevals(rn::ReactionSystem, map::Dict, syms, symexprs)
     length(map) != length(syms) &&
         error("Incorrect number of parameter-value pairs were specified.")
     map = symmap_to_varmap(rn, map)
-    map = Dict(ModelingToolkit.value(k) => v for (k, v) in map)
+    map = Dict(MT.value(k) => v for (k, v) in map)
     vals = [substitute(expr, map) for expr in symexprs]
 end
 
@@ -948,7 +948,7 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 0, 
     isforestlike(rs) && deficiency(rs) == 0 && return true
 
     pmap = symmap_to_varmap(rs, parametermap)
-    pmap = Dict(ModelingToolkit.value(k) => v for (k, v) in pmap)
+    pmap = Dict(MT.value(k) => v for (k, v) in pmap)
 
     # Construct reaction-complex graph
     complexes, D = reactioncomplexes(rs)
@@ -1206,7 +1206,7 @@ end
 
 function positive_nullspace(M::T; col_order = nothing) where {T <: AbstractMatrix}
     # compute the left nullspace over the integers
-    N = MT.nullspace(M; col_order)
+    N = nullspace(M; col_order)
 
     # if all coefficients for a cycle are negative, make positive
     for Ncol in eachcol(N)
@@ -1219,6 +1219,72 @@ function positive_nullspace(M::T; col_order = nothing) where {T <: AbstractMatri
           * "type like Int128 or BigInt for the net stoichiometry matrix.")
 
     T(N)
+end
+
+# `nullspace` function copied from a previous version of MTK. Never versions exists in AGPL licensed
+# structural transofrmation parts.
+macro swap(a, b)
+    esc(:(($a, $b) = ($b, $a)))
+end
+function nullspace(A; col_order = nothing)
+    n = size(A, 2)
+    workspace = zeros(Int, 2 * n)
+    column_pivots = @view workspace[1:n]
+    pivots_cache = @view workspace[(n + 1):(2n)]
+    @inbounds for i in 1:n
+        column_pivots[i] = i
+    end
+    B = copy(A)
+    (rank, d, column_permuted) = bareiss!(B; column_pivots)
+    reduce_echelon!(B, rank, d, pivots_cache)
+
+    # The first rank entries in col_order are columns that give a basis
+    # for the column space. The remainder give the free variables.
+    if col_order !== nothing
+        resize!(col_order, size(A, 2))
+        col_order .= 1:size(A, 2)
+        for (i, cp) in enumerate(column_pivots)
+            @swap(col_order[i], col_order[cp])
+        end
+    end
+
+    fill!(pivots_cache, 0)
+    N = ModelingToolkit.reduced_echelon_nullspace(rank, B, pivots_cache)
+    apply_inv_pivot_rows!(N, column_pivots)
+end
+"""
+    bareiss!(M, [swap_strategy])
+
+Perform Bareiss's fraction-free row-reduction algorithm on the matrix `M`.
+Optionally, a specific pivoting method may be specified.
+
+swap_strategy is an optional argument that determines how the swapping of rows and columns is performed.
+bareiss_colswap (the default) swaps the columns and rows normally.
+bareiss_virtcolswap pretends to swap the columns which can be faster for sparse matrices.
+"""
+function bareiss!(M::AbstractMatrix{T}, swap_strategy = bareiss_colswap;
+        find_pivot = find_pivot_any, column_pivots = nothing) where {T}
+    swapcols!, swaprows!, update!, zero! = swap_strategy
+    prev = one(eltype(M))
+    n = size(M, 1)
+    pivot = one(T)
+    column_permuted = false
+    for k in 1:n
+        r = find_pivot(M, k)
+        r === nothing && return (k - 1, pivot, column_permuted)
+        (swapto, pivot) = r
+        if column_pivots !== nothing && k != swapto[2]
+            column_pivots[k] = swapto[2]
+            column_permuted |= true
+        end
+        if CartesianIndex(k, k) != swapto
+            swapcols!(M, k, swapto[2])
+            swaprows!(M, k, swapto[1])
+        end
+        update!(zero!, M, k, swapto, pivot, prev)
+        prev = pivot
+    end
+    return (n, pivot, column_permuted)
 end
 
 """

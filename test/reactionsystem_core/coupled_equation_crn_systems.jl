@@ -1,6 +1,6 @@
 # Fetch packages.
 using Catalyst, NonlinearSolve, OrdinaryDiffEqVerner, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, Statistics, SteadyStateDiffEq, StochasticDiffEq, Test
-using ModelingToolkit: getdefault, getdescription, getdefault
+using ModelingToolkitBase: getdefault, getdescription, getdefault
 using Symbolics: BasicSymbolic, unwrap
 
 # Sets stable rng number.
@@ -241,7 +241,7 @@ let
     @test Catalyst.has_species(coupled_rs)
     @test issetequal(Catalyst.get_species(coupled_rs), [X])
     @test issetequal(species(coupled_rs), [X])
-    @test issetequal(ModelingToolkit.get_unknowns(coupled_rs), [X, V, W])
+    @test issetequal(ModelingToolkitBase.get_unknowns(coupled_rs), [X, V, W])
     @test issetequal(unknowns(coupled_rs), [X, V, W])
     @test issetequal(nonspecies(coupled_rs), [V, W])
     @test numspecies(coupled_rs) == 1
@@ -336,17 +336,17 @@ end
     @test issetequal(equations(coupled_rs)[5:12], eqs[5:12])
 
     # Checks that parameters, species, and variables carried the correct information.
-    @test unwrap(coupled_rs.a1) isa BasicSymbolic{Real}
+    @test unwrap(coupled_rs.a1) isa BasicSymbolic{SymReal}
     @test unwrap(coupled_rs.a2) isa BasicSymbolic{Rational{Int64}}
-    @test unwrap(coupled_rs.a3) isa BasicSymbolic{Real}
+    @test unwrap(coupled_rs.a3) isa BasicSymbolic{SymReal}
     @test unwrap(coupled_rs.a4) isa BasicSymbolic{Rational{Int64}}
-    @test unwrap(coupled_rs.b1) isa BasicSymbolic{Real}
+    @test unwrap(coupled_rs.b1) isa BasicSymbolic{SymReal}
     @test unwrap(coupled_rs.b2) isa BasicSymbolic{Int64}
-    @test unwrap(coupled_rs.b3) isa BasicSymbolic{Real}
+    @test unwrap(coupled_rs.b3) isa BasicSymbolic{SymReal}
     @test unwrap(coupled_rs.b4) isa BasicSymbolic{Int64}
-    @test unwrap(coupled_rs.c1) isa BasicSymbolic{Real}
+    @test unwrap(coupled_rs.c1) isa BasicSymbolic{SymReal}
     @test unwrap(coupled_rs.c2) isa BasicSymbolic{Float32}
-    @test unwrap(coupled_rs.c3) isa BasicSymbolic{Real}
+    @test unwrap(coupled_rs.c3) isa BasicSymbolic{SymReal}
     @test unwrap(coupled_rs.c4) isa BasicSymbolic{Float32}
     @test getdescription(coupled_rs.a1) == "Parameter a1"
     @test getdescription(coupled_rs.a4) == "Parameter a4"
@@ -856,11 +856,11 @@ let
     end
 
     # Checks that the default differential uses τ iv.
-    Ds = Differential(ModelingToolkit.get_iv(rs))
+    Ds = Differential(ModelingToolkitBase.get_iv(rs))
     @test isequal(operation(equations(rs)[1].lhs), Ds)
 
     # Checks that the inferred variable depends on τ iv.
-    @variables V($(ModelingToolkit.get_iv(rs)))
+    @variables V($(ModelingToolkitBase.get_iv(rs)))
     @test isequal(V, rs.V)
 end
 
