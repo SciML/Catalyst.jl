@@ -560,7 +560,7 @@ precall_to_1(expr) = (is_precall(expr) ? 1.0 : expr)
 function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
         spatial_ivs = nothing, continuous_events = [], discrete_events = [],
         observed = [], kwargs...)
-
+    
     # Error if any observables have been declared a species or variable
     obs_vars = Set(obs_eq.lhs for obs_eq in observed)
     any(in(obs_vars), us_in) &&
@@ -630,7 +630,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
         end
     end
     psv = collect(new_ps)
-
+    
     # Passes the processed input into the next `ReactionSystem` call.
     ReactionSystem(fulleqs, t, usv, psv; spatial_ivs, continuous_events,
         discrete_events, observed, kwargs...)

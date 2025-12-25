@@ -278,9 +278,8 @@ function make_reaction_system(ex::Expr, name)
     requiredec = haskey(options, :require_declaration)
     reactions = get_reactions(reaction_lines)
     sps_inferred, ps_pre_inferred = extract_sps_and_ps(reactions, syms_declared; requiredec)
-    # vs_inferred, diffs_inferred, equations = read_equations_option!(diffsexpr, options,
-    #    union(syms_declared, sps_inferred), tiv; requiredec)
-    vs_inferred, diffs_inferred, equations = [], [], []
+    vs_inferred, diffs_inferred, equations = read_equations_option!(diffsexpr, options,
+        union(syms_declared, sps_inferred), tiv; requiredec)
     ps_inferred = setdiff(ps_pre_inferred, vs_inferred, diffs_inferred)
     syms_inferred = union(sps_inferred, ps_inferred, vs_inferred, diffs_inferred)
     all_syms = union(syms_declared, syms_inferred)
@@ -678,7 +677,7 @@ function read_equations_option!(
     # Prepares the equations. First, extract equations from the provided option (converting to block form if required).
     # Next, uses `parse_equations!` function to split input into a vector with the equations.
     eqs_input = haskey(options, :equations) ? get_block_option(options[:equations]) :
-                :(begin end)
+                MacroTools.striplines(:(begin end))
     eqs_input = option_block_form(eqs_input)
     equations = eqs_input.args
 

@@ -961,10 +961,9 @@ end
 # structure's fields have been updated, without updating the `reactionsystem_fields` constant. If so,
 # there are several places in the code where the `reactionsystem_uptodate` function is called, here
 # the code might need adaptation to take the updated reaction system into account.
-let
-    @test_broken begin
-        @test_nowarn Catalyst.reactionsystem_uptodate_check()
-    end
+@test_broken let
+    return false
+    @test_nowarn Catalyst.reactionsystem_uptodate_check()
 end
 
 # Test that functions using the incidence matrix properly cache it

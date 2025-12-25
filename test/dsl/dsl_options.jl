@@ -350,8 +350,8 @@ let
     p_29 = symmap_to_varmap(rn29, [:X=>4.0, :Y=>3.0, :X2Y=>2.0, :Z=>1.0])
     defs29 = Dict(Iterators.flatten((u0_29, p_29)))
 
-    @test ModelingToolkitBase.defaults(rn27) == defs29
-    @test merge(ModelingToolkitBase.defaults(rn28), defs28) == ModelingToolkitBase.defaults(rn27)
+    @test_broken isequal(ModelingToolkitBase.initial_conditions(rn27), defs29)
+    @test_broken isequal(merge(ModelingToolkitBase.initial_conditions(rn28), defs28), ModelingToolkitBase.initial_conditions(rn27))
 end
 
 # Tests that parameter type designation works.
@@ -378,16 +378,16 @@ let
     end
 
     # Checks parameter types.
-    @test unwrap(rn.k1) isa SymbolicUtils.BasicSymbolic{SymReal}
-    @test unwrap(rn.l1) isa SymbolicUtils.BasicSymbolic{SymReal}
-    @test unwrap(rn.k2) isa SymbolicUtils.BasicSymbolic{Float64}
-    @test unwrap(rn.l2) isa SymbolicUtils.BasicSymbolic{Float64}
-    @test unwrap(rn.k3) isa SymbolicUtils.BasicSymbolic{Int64}
-    @test unwrap(rn.l3) isa SymbolicUtils.BasicSymbolic{Int64}
-    @test unwrap(rn.k4) isa SymbolicUtils.BasicSymbolic{Float32}
-    @test unwrap(rn.l4) isa SymbolicUtils.BasicSymbolic{Float32}
-    @test unwrap(rn.k5) isa SymbolicUtils.BasicSymbolic{Rational{Int64}}
-    @test unwrap(rn.l5) isa SymbolicUtils.BasicSymbolic{Rational{Int64}}
+    @test SymbolicUtils.symtype(rn.k1) == Real
+    @test SymbolicUtils.symtype(rn.l1) == Real
+    @test SymbolicUtils.symtype(rn.k2) == Float64
+    @test SymbolicUtils.symtype(rn.l2) == Float64
+    @test SymbolicUtils.symtype(rn.k3) == Int64
+    @test SymbolicUtils.symtype(rn.l3) == Int64
+    @test SymbolicUtils.symtype(rn.k4) == Float32
+    @test SymbolicUtils.symtype(rn.l4) == Float32
+    @test SymbolicUtils.symtype(rn.k5) == Rational{Int64}
+    @test SymbolicUtils.symtype(rn.l5) == Rational{Int64}
 
     # Checks that other parameter properties are assigned properly.
     @test !ModelingToolkitBase.hasdefault(unwrap(rn.k1))

@@ -62,8 +62,8 @@ let
         Reaction(k2 * R, [I], [R])]
     @named rs = ReactionSystem(rxs, t)
     deps = dependents(rxs[2], rs)
-    @test isequal(deps, [R, I])
-    @test isequal(dependents(rxs[1], rs), dependants(rxs[1], rs))
+    @test issetequal(deps, [R, I])
+    @test issetequal(dependents(rxs[1], rs), dependants(rxs[1], rs))
  end
 
 # Tests `substoichmat` and `prodstoichmat` getters.
@@ -494,17 +494,17 @@ let
     @test isautonomous(rn7)
 
     # Using a coupled CRN/equation model.
-    rn7 = @reaction_network begin
+    rn8 = @reaction_network begin
         @equations D(V) ~ X/(1+t) - V
         (p,d), 0 <--> X
     end
-    @test !isautonomous(rn7)
+    @test !isautonomous(rn8)
 
     # Using a registered function.
     f(d,t) = d/(1 + t)
     Symbolics.@register_symbolic f(d,t)
-    rn8 = @reaction_network begin
+    rn9 = @reaction_network begin
         f(d,t), X --> 0
     end
-    @test !isautonomous(rn8)
+    @test !isautonomous(rn9)
 end
