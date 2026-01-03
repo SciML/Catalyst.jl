@@ -70,14 +70,14 @@ let
     cons_laws = conservationlaws(rn)
     cons_eqs = conservedequations(rn)
     cons_laws_constants = conservationlaw_constants(rn)
-    conserved_quantity = conservedquantities(cons_laws[1, :], unknowns(rn)[1])
+    conserved_quantity = conservedquantities(unknowns(rn)[1], cons_laws[1, :])
 
     @test sum(cons_laws) == 4
     @test size(cons_laws) == (2, 4)
     @test length(cons_eqs) == 2
     @test length(conserved_quantity) == 4
     @test length(cons_laws_constants) == 2
-    @test count(isequal.(conserved_quantity, Num(0))) == 2
+    @test count(SymbolicUtils._iszero(cq) for cq in conserved_quantity) == 2
 end
 
 # Tests that `conservationlaws`'s caches something.
@@ -237,8 +237,8 @@ let
     # Checks that the solutions generates the correct conserved quantities.
     sol1 = solve(oprob1; saveat = 1.0)
     sol2 = solve(oprob2; saveat = 1.0)
-    @test all(sol1[osys.X1 + osys.X2] .== 2.0)
-    @test all(sol2[osys.X1 + osys.X2] .== 4.0)
+    @test all(sol1[osys.X1 + osys.X2] .≈ 2.0)
+    @test all(sol2[osys.X1 + osys.X2] .≈ 4.0)
 end
 
 ### Problem `remake`ing and Updating Tests ###

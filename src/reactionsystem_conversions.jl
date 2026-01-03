@@ -1161,10 +1161,6 @@ symmap_to_varmap(sys, symmap) = symmap
 
 ### Other Conversion-related Functions ###
 
-# the following function is adapted from SymbolicUtils.jl v.19
-# later on (September 2023) modified by Torkel and Shashi (now assumes input not on polynomial form, which is handled elsewhere, previous version failed in these cases anyway).
-# Copyright (c) 2020: Shashi Gowda, Yingbo Ma, Mason Protter, Julia Computing.
-# MIT license
 """
     to_multivariate_poly(polyeqs::AbstractVector{BasicSymbolic{SymReal}})
 
@@ -1174,12 +1170,13 @@ For example, this can be used in HomotopyContinuation.jl functions.
 function to_multivariate_poly(polyeqs::AbstractVector{Symbolics.BasicSymbolic{SymReal}})
     @assert length(polyeqs)>=1 "At least one expression must be passed to `multivariate_poly`."
 
-    pvar2sym, sym2term = SymbolicUtils.get_pvar2sym(), SymbolicUtils.get_sym2term()
+    poly_to_bs = Dict{SymbolicUtils.PolyVarT, Symbolics.SymbolicT}()
+    bs_to_poly = Dict{Symbolics.SymbolicT, SymbolicUtils.PolyVarT}()
     ps = map(polyeqs) do x
         if iscall(x) && operation(x) == (/)
             error("We should not be able to get here, please contact the package authors.")
         else
-            PolyForm(x, pvar2sym, sym2term).p
+            SymbolicUtils.to_poly!(poly_to_bs, bs_to_poly, x, false)
         end
     end
 

@@ -643,6 +643,15 @@ let
     end
 end
 
+# Checks that parameters that occur as stoichiometries are correctly inferred as integers.
+let 
+    rn = @reaction_network begin
+        k, n*X --> xN
+    end
+    @test SymbolicUtils.symtype(rn.k) == Real
+    @test_broken SymbolicUtils.symtype(rn.n) == Int64    
+end 
+
 ### Observables ###
 
 # Test basic functionality.
@@ -754,7 +763,7 @@ let
     oprob = ODEProblem(rn, u0, (0.0, 1000.0), ps)
     sol = solve(oprob, Tsit5())
 
-    @test sol[:X][1] == u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]
+    @test sol[:X][1] ≈ u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]
 end
 
 # Checks that models created w/o specifying `@variables` for observables are identical.
@@ -867,7 +876,7 @@ let
     @test length(unknowns(rn1)) == 2
 
     # Interpolation into rhs.
-    @parameters n [description="A parameter"]
+    @parameters n::Int64 [description="A parameter"]
     @species S(t)
     rn2 = @reaction_network begin
         @observables Stot ~ $S + $n*Sn
@@ -1026,7 +1035,7 @@ let
     u0 = Dict([S => 1 + rand(rng)])
     ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
     oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify=true)
-    sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
+    sol = solve(oprob, Rosenbrock23(); abstol=1e-9, reltol=1e-9)
     @test sol[S][end] ≈ sol.ps[p]/sol.ps[d]
     @test sol[X] .+ 5 ≈ sol.ps[k] .*sol[S]
     @test 3*sol[Y] .+ sol[X] ≈ sol[S] .+ sol[X].*sol.ps[d]
@@ -1062,7 +1071,7 @@ let
         @equations 2X ~ $c - X
     end)
     oprob = ODEProblem(rn, [], (0.0, 100.0), []; structural_simplify = true)
-    sol = solve(oprob, Tsit5(); abstol = 1e-9, reltol = 1e-9)
+    sol = solve(oprob, Rosenbrock23(); abstol = 1e-9, reltol = 1e-9)
     @test sol[rn.X][end] ≈ 2.0
 end
 
@@ -1135,7 +1144,7 @@ let
     u0 = Dict([S => 1 + rand(rng), Y => 1 + rand(rng)])
     ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
     oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify=true)
-    sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
+    sol = solve(oprob, Rosenbrock23(); abstol=1e-9, reltol=1e-9)
     @test sol[:S][end] ≈ sol.ps[:p]/sol.ps[:d]
     @test sol[:X] .+ 5 ≈ sol.ps[:k] .*sol[:S]
     @test 5*sol[:Y][end] ≈ sol[:S][end] + sol[:X][end]

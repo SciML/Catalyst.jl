@@ -17,8 +17,9 @@ Returns `true` if the parameter `p` is an edge parameter (else `false`).
 """
 isedgeparameter(x::Num, args...) = isedgeparameter(Symbolics.unwrap(x), args...)
 function isedgeparameter(x, default = false)
-    p = Symbolics.getparent(x, nothing)
-    p === nothing || (x = p)
+    if iscall(x) && operation(x) === getindex
+        x = first(arguments(x))
+    end
     Symbolics.getmetadata(x, EdgeParameter, default)
 end
 
@@ -77,7 +78,7 @@ function make_transport_reaction(rateex, species)
 end
 
 # Gets the parameters in a `TransportReaction`.
-MT.parameters(tr::TransportReaction) = Symbolics.get_variables(tr.rate)
+MT.parameters(tr::TransportReaction) = collect(Symbolics.get_variables(tr.rate))
 
 # Gets the species in a `TransportReaction`.
 spatial_species(tr::TransportReaction) = [tr.species]

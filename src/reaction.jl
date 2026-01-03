@@ -16,6 +16,9 @@ Tests if the given symbolic variable corresponds to a constant species.
 """
 isconstant(s::Num) = isconstant(MT.value(s))
 function isconstant(s)
+    if iscall(s) && operation(s) === getindex
+        s = first(arguments(s))
+    end
     MT.getmetadata(s, ParameterConstantSpecies, false)
 end
 

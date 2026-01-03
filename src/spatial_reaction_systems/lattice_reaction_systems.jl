@@ -154,9 +154,8 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractSystem
             spatial_reactions)
 
         # Additional error checks.
-        if any(haskey(Symbolics.unwrap(symvar).metadata, Symbolics.ArrayShapeCtx)
-        for symvar in [ps; species(rs)])
-            throw(ArgumentError("Some species and/or parameters used to create the `LatticeReactionSystem` are array variables ($(filter(symvar -> haskey(Symbolics.unwrap(symvar).metadata, Symbolics.ArrayShapeCtx), [ps; species(rs)]))). This is currently not supported."))
+        if any(is_array_symvar(symvar) for symvar in [ps; species(rs)])
+            throw(ArgumentError("Some species and/or parameters used to create the `LatticeReactionSystem` are array variables ($(filter(is_array_symvar, [ps; species(rs)]))). This is currently not supported."))
         end
 
         return new{Q, R, S, T}(
@@ -164,6 +163,9 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractSystem
             spat_species, ps, vertex_parameters, edge_parameters, edge_iterator)
     end
 end
+
+# Checks if a variable is a (non-/)scalarised array symbolic variable.
+is_array_symvar(sym) = SymbolicUtils.is_array_shape(SymbolicUtils.shape(sym)) || (iscall(sym) && operation(sym) === getindex)
 
 # Creates a LatticeReactionSystem from a (directed) Graph lattice (graph grid).
 function LatticeReactionSystem(rs, srs, lattice::DiGraph)

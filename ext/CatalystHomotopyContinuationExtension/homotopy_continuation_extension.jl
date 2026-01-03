@@ -77,7 +77,7 @@ function make_p_val_dict(pre_varmap, rs, ns)
     ps = [ps_no_cons; ps_cons_expanded]
 
     # Creates a dictionary with the correct default values/equations (again expanding `Γ` to Γ[1], Γ[2]).
-    defaults = MT.defaults(ns)
+    defaults = MT.initial_conditions(ns)
     filter!(p -> !Catalyst.isconserved(p[1]), defaults)
     foreach(conseq -> defaults[conseq.lhs] = conseq.rhs, conservationlaw_constants(rs))
 

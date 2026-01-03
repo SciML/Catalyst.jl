@@ -186,7 +186,7 @@ end
 # search the symbolic expression for parameters or unknowns
 # and save in ps and us respectively. vars is used to cache results
 function findvars!(ps, us, exprtosearch, ivs, vars)
-    MT.get_variables!(vars, exprtosearch)
+    MT.get_variables!(vars, exprtosearch; is_atomic = pre_is_not_atomic)
     for var in vars
         (var ∈ ivs) && continue
         if MT.isparameter(var)
@@ -206,6 +206,9 @@ end
 function findvars!(ps, us, exprs_to_search::Vector, ivs, vars)
     foreach(exprtosearch -> findvars!(ps, us, exprtosearch, ivs, vars), exprs_to_search)
 end
+
+# Used to ensure that `X`, not `Pre(X)` is sxtracted from expressions like `Pre(x)`.
+pre_is_not_atomic(x) = SymbolicUtils.default_is_atomic(x) && !(iscall(x) && operation(x) isa Pre)
 
 # Loops through all events in an supplied event vector, adding all unknowns and parameters found in
 # its condition and affect functions to their respective vectors (`ps` and `us`).
@@ -502,6 +505,15 @@ function ReactionSystem(eqs, iv, unknowns, ps;
         continuous_events, discrete_events, metadata; checks = checks)
 end
 
+# Handles that events can be a single event or a vector.
+create_symbolic_events(type, events::Vector) = [create_symbolic_event(type, event) for event in events]
+create_symbolic_events(type, event) = [create_symbolic_event(type, event)]
+create_symbolic_events(type, event::Nothing) = []
+
+# Converts an input event into a form which ModelingToolkit can handle.
+create_symbolic_event(type, event::MT.AbstractCallback) = event
+create_symbolic_event(type, event) = type(event)
+
 # Two-argument constructor (reactions/equations and time variable).
 # Calls the `make_ReactionSystem_internal`, which in turn calls the four-argument constructor.
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
@@ -512,44 +524,6 @@ end
 function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
-
-# handles that events can be a single event or a vector.
-create_symbolic_events(type, events::Vector) = [create_symbolic_event(type, event) for event in events]
-create_symbolic_events(type, event) = [create_symbolic_event(type, event)]
-create_symbolic_events(type, event::Nothing) = []
-
-# Converts an input event into a form which ModelingToolkit can handle.
-create_symbolic_event(type, event::MT.AbstractCallback) = event
-function create_symbolic_event(type, event)
-    discrete_parameters = find_disc_pars(event[2]) 
-    return type(event; discrete_parameters)
-end
-
-# Currently, ModelingToolkit requires all parameters which are updated in an event to be specified
-# in the event using the `discrete_parameters` keyword argument. Currently, this can only be
-# done by manually creating the event using `SymbolicContinuousCallback`/`SymbolicDiscreteCallback`.
-# This routines preserves the old behaviour until a new interface have been implemented in MTK.
-function find_disc_pars(affects)
-    discrete_parameters = Set()
-    for affect in affects
-        num_disc_pars = length(discrete_parameters)
-        infer_discrete_parameters!(discrete_parameters, affect.lhs)
-        infer_discrete_parameters!(discrete_parameters, affect.rhs)
-        (length(discrete_parameters) > num_disc_pars + 1) && error("Currently, Catalyst only supports having a single parameter outside of a `Pre` statement in event affects.")
-    end
-    return collect(discrete_parameters)
-end
-
-# Find all `expr`'s parameters that occur *outside* of a Pre(...) statement. Add these to `discrete_parameters`.
-function infer_discrete_parameters!(discrete_parameters, expr)
-    expr_pre_removed = Symbolics.replacenode(expr, precall_to_1)
-    dynamic_symvars = Symbolics.get_variables(expr_pre_removed)
-    # Change this coming line to a Symbolic append type of thing.
-    union!(discrete_parameters, filter(MT.isparameter, dynamic_symvars))
-end
-# Functions for replacing a Pre-call with a `1.0` (removing its content from an expression).
-is_precall(expr) = iscall(expr) ? operation(expr) isa Pre : false
-precall_to_1(expr) = (is_precall(expr) ? 1.0 : expr)
 
 # Called internally (whether DSL-based or programmatic model creation is used).
 # Creates a sorted reactions + equations vector, also ensuring reaction is first in this vector.
@@ -1463,7 +1437,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
     ReactionSystem(equations(rs), get_iv(rs), unknowns(rs), parameters(rs);
         observed = MT.observed(rs),
         name,
-        defaults = MT.defaults(rs),
+        defaults = MT.initial_conditions(rs),
         checks = false,
         combinatoric_ratelaws = combinatoric_ratelaws(rs),
         balanced_bc_check = false,

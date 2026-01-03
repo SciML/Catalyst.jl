@@ -3,7 +3,7 @@
 # Fetch packages.
 using Catalyst, Test
 using ModelingToolkitBase, DomainSets
-const MT = ModelingToolkit
+const MT = ModelingToolkitBase
 
 # Sets rnd number.
 using StableRNGs
@@ -74,7 +74,7 @@ let
     domains = [x ∈ Interval(0.0, L),
         y ∈ Interval(0.0, L),
         t ∈ Interval(0.0, tstop)]
-    pmap = collect(MT.defaults(bpm))
+    pmap = collect(MT.initial_conditions(bpm))
     @named bpmpdes = PDESystem(eqs, bcs, domains, [x, y, t], [U, V, W], pmap)
 
     rxs = [Reaction(k[1] * x, [U, W], [V, W]),

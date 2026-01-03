@@ -775,8 +775,9 @@ metadata.
 """
 isconserved(x::Num, args...) = isconserved(Symbolics.unwrap(x), args...)
 function isconserved(x, default = false)
-    p = Symbolics.getparent(x, nothing)
-    p === nothing || (x = p)
+    if iscall(x) && operation(x) === getindex
+        x = first(arguments(x))
+    end
     Symbolics.getmetadata(x, ConservedParameter, default)
 end
 
@@ -917,7 +918,7 @@ end
 
 Compute conserved quantities for a system with the given conservation laws.
 """
-conservedquantities(state, cons_laws) = cons_laws * state
+conservedquantities(state, cons_laws) = cons_laws * MT.wrap(state)
 
 # If u0s are not given while conservation laws are present, throws an error.
 # Used in HomotopyContinuation and BifurcationKit extensions.
@@ -936,7 +937,7 @@ end
 Constructively compute whether a kinetic system (a reaction network with a set of rate constants) will admit detailed-balanced equilibrium
 solutions, using the Wegscheider conditions, [Feinberg, 1989](https://www.sciencedirect.com/science/article/pii/0009250989851243). A detailed-balanced solution is one for which the rate of every forward reaction exactly equals its reverse reaction. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...].
 """
-function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 0, reltol = 1e-9)
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 1e-12, reltol = 1e-9)
     if length(parametermap) != numparams(rs)
         error("Incorrect number of parameters specified.")
     elseif !isreversible(rs)
@@ -1169,7 +1170,7 @@ function matrixtree(g::SimpleDiGraph, distmx::Matrix)
     # constructed rooted trees for every vertex, compute sum
     for v in 1:n
         rootedTrees = [reverse(Graphs.bfs_tree(t, v, dir = :in)) for t in trees]
-        π[v] = sum([treeweight(t, g, distmx) for t in rootedTrees])
+        π[v] = convert(Float64, Symbolics.value(sum([treeweight(t, g, distmx) for t in rootedTrees])))
     end
 
     # sum the contributions

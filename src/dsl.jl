@@ -8,7 +8,7 @@ const double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :�
 const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables,
+const option_keys = (:species, :parameters, :variables, :discretes, :ivs, :compounds, :observables,
     :default_noise_scaling, :differentials, :equations, :continuous_events, :discrete_events,
     :combinatoric_ratelaws, :require_declaration)
 
@@ -264,11 +264,12 @@ function make_reaction_system(ex::Expr, name)
     sps_declared = extract_syms(options, :species)
     ps_declared = extract_syms(options, :parameters)
     vs_declared = extract_syms(options, :variables)
+    discs_declared = extract_syms(options, :discretes)
     tiv, sivs, ivs, ivsexpr = read_ivs_option(options)
     cmpexpr_init, cmps_declared = read_compounds_option(options)
     diffsexpr, diffs_declared = read_differentials_option(options)
     syms_declared = collect(Iterators.flatten((cmps_declared, sps_declared, ps_declared,
-        vs_declared, ivs, diffs_declared)))
+        vs_declared, discs_declared, ivs, diffs_declared)))
     if !allunique(syms_declared)
         nonunique_syms = [s for s in syms_declared if count(x -> x == s, syms_declared) > 1]
         error("The following symbols $(unique(nonunique_syms)) have explicitly been declared as multiple types of components (e.g. occur in at least two of the `@species`, `@parameters`, `@variables`, `@ivs`, `@compounds`, `@differentials`). This is not allowed.")
@@ -287,8 +288,9 @@ function make_reaction_system(ex::Expr, name)
         union(sps_declared, vs_declared), all_syms; requiredec)
 
     # Read options not related to the declaration or inference of symbols.
-    continuous_events_expr = read_events_option(options, :continuous_events)
-    discrete_events_expr = read_events_option(options, :discrete_events)
+    discs_inferred = Vector{Symbol}()
+    continuous_events_expr = read_events_option!(options, discs_inferred, ps_inferred, discs_declared, :continuous_events)
+    discrete_events_expr = read_events_option!(options, discs_inferred, ps_inferred, discs_declared, :discrete_events)
     default_reaction_metadata = read_default_noise_scaling_option(options)
     combinatoric_ratelaws = read_combinatoric_ratelaws_option(options)
 
@@ -296,9 +298,11 @@ function make_reaction_system(ex::Expr, name)
     psexpr_init = get_psexpr(ps_inferred, options)
     spsexpr_init = get_usexpr(sps_inferred, options; ivs)
     vsexpr_init = get_usexpr(vs_inferred, options, :variables; ivs)
+    discsexpr_init = get_usexpr(discs_inferred, options, :discretes; ivs)
     psexpr, psvar = assign_var_to_symvar_declaration(psexpr_init, "ps", scalarize = false)
     spsexpr, spsvar = assign_var_to_symvar_declaration(spsexpr_init, "specs")
     vsexpr, vsvar = assign_var_to_symvar_declaration(vsexpr_init, "vars")
+    discsexpr, discsvar = assign_var_to_symvar_declaration(discsexpr_init, "discs")
     cmpsexpr, cmpsvar = assign_var_to_symvar_declaration(cmpexpr_init, "comps")
     rxsexprs = get_rxexprs(reactions, equations, all_syms)
 
@@ -310,6 +314,7 @@ function make_reaction_system(ex::Expr, name)
         $psexpr
         $vsexpr
         $spsexpr
+        $discsexpr
         $obsexpr
         $cmpsexpr
         $diffsexpr
@@ -319,6 +324,7 @@ function make_reaction_system(ex::Expr, name)
         spatial_ivs = $sivs
         rx_eq_vec = $rxsexprs
         us = setdiff(union($spsvar, $vsvar, $cmpsvar), $obs_syms)
+        ps = union($psvar, $discsvar)
         _observed = $obs_eqs
         _continuous_events = $continuous_events_expr
         _discrete_events = $discrete_events_expr
@@ -326,7 +332,7 @@ function make_reaction_system(ex::Expr, name)
         _default_reaction_metadata = $default_reaction_metadata
 
         remake_ReactionSystem_internal(
-            make_ReactionSystem_internal(rx_eq_vec, $tiv, us, $psvar; name, spatial_ivs,
+            make_ReactionSystem_internal(rx_eq_vec, $tiv, us, ps; name, spatial_ivs,
                 observed = _observed, continuous_events = _continuous_events,
                 discrete_events = _discrete_events, combinatoric_ratelaws = _combinatoric_ratelaws);
             default_reaction_metadata = _default_reaction_metadata)
@@ -814,7 +820,9 @@ function make_obs_eqs(observables_expr)
 end
 
 # Read the events (continuous or discrete) provided as options to the DSL. Returns an expression which evaluates to these.
-function read_events_option(options, event_type::Symbol)
+# Infered parameters that are updated byu the event should be declared using e.g. `@discretes p(t)`.
+# `read_events_option!` moves these from `ps_inferred` to `discs_inferred`
+function read_events_option!(options, discs_inferred::Vector, ps_inferred::Vector, discs_declared::Vector, event_type::Symbol)
     # Prepares the events, if required to, converts them to block form.
     if event_type ∉ [:continuous_events, :discrete_events]
         error("Trying to read an unsupported event type.")
@@ -840,12 +848,42 @@ function read_events_option(options, event_type::Symbol)
             error("The affect part of all events (the right-hand side) must be a vector. This is not the case for: $(arg).")
         end
 
+        # Goes through all affects, checking formatting, recording discrete parameters, and
+        # adding `Pre(...)` statements where necessary.
+        disc_ps = :([])
+        affects = :([])
+        for affect in arg.args[3].args
+            Meta.isexpr(affect, :call) ||
+                error("Event affects must be assignments (e.g. `X ~ X + 1`). This is not the case for: $(affect).")
+            (affect.args[2] isa Symbol) ||
+                error("The Catalyst DSL currently only supports assignment events where the LHS is a single symbol. This is not the case for: $(affect).")
+
+            # If the event updates an infered parameter, this should be moved to an inferred discretes.
+            if affect.args[2] in ps_inferred
+                push!(discs_inferred, affect.args[2])
+                deleteat!(ps_inferred, findfirst(==(affect.args[2]), ps_inferred))
+            end
+
+            # If the event updates an ifnered parameter or decalred discrete, it should be in `discrete_parameters`.
+            (affect.args[2] in [discs_inferred; discs_declared]) && push!(disc_ps.args, affect.args[2])
+
+            # Creates the affect RHS (adds `Pre` if it contain symbolics).
+            rhs = affect.args[3]
+            (rhs isa Number) || (rhs = :(Pre($(rhs))))
+            push!(affects.args, :($(affect.args[2]) ~ $rhs))
+        end
+
         # Adds the correctly formatted event to the event creation expression.
-        push!(events_expr.args, arg)
+        event_func = (event_type == :continuous_events ? :(ModelingToolkitBase.SymbolicContinuousCallback) :
+                      :(ModelingToolkitBase.SymbolicDiscreteCallback))
+        event = :($event_func($(arg.args[2]) => $affects; discrete_parameters = $disc_ps))
+        push!(events_expr.args, event)
     end
 
     return events_expr
 end
+
+# Creates an event expression
 
 # Returns the `default_reaction_metadata` output. Technically Catalyst's code could have been made
 # more generic to account for other default reaction metadata. Practically, this will likely

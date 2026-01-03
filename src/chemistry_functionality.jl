@@ -285,7 +285,7 @@ function get_balanced_stoich(reaction::Reaction)
     A = create_matrix(reaction)
 
     # get an integer nullspace basis
-    X = MT.nullspace(A)
+    X = nullspace(A)
     nullity = size(X, 2)
 
     stoichvecs = Vector{Vector{Int64}}()

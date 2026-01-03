@@ -355,7 +355,7 @@ OBSERVED_FS = (seri_has_observed, get_observed_string, get_observed_annotation)
 
 # Checks if the reaction system has any defaults.
 function seri_has_defaults(rn::ReactionSystem)
-    return !isempty(get_defaults(rn))
+    return !isempty(initial_conditions(rn))
 end
 
 # Extract a string which declares the system's defaults.

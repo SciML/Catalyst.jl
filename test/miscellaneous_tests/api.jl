@@ -440,12 +440,11 @@ let
 end
 
 # Test empty network.
-@test_broken let
-    return false
+let
     rn = @reaction_network
     ns = make_rre_algeqs(rn)
     neweqs = getfield.(equations(ns), :rhs)
-    @test_throws MethodError Catalyst.to_multivariate_poly(neweqs)
+    @test_throws AssertionError Catalyst.to_multivariate_poly(neweqs)
 end
 
 # Tests `isautonomous` function.

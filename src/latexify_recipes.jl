@@ -75,7 +75,7 @@ function chemical_arrows(rn::ReactionSystem;
         str *= "\\require{mhchem} \n"
     end
 
-    subber = SymbolicUtils.Substituter{true}([s => processsym(s) for s in species(rn)])
+    subber = SymbolicUtils.Substituter{true}([s => processsym(s) for s in species(rn)], SymbolicUtils.default_substitute_filter)
 
     lastidx = length(rxs)
     for (i, r) in enumerate(rxs)
@@ -85,7 +85,7 @@ function chemical_arrows(rn::ReactionSystem;
         end
 
         ### Expand functions to maths expressions
-        rate = r.rate isa Symbolic ? subber(r.rate) : r.rate
+        rate = r.rate isa SymbolicUtils.BasicSymbolic ? subber(r.rate) : r.rate
 
         ### Generate formatted string of substrates
         substrates = [make_stoich_str(substrate[1], substrate[2], subber; mathrm,
@@ -99,7 +99,7 @@ function chemical_arrows(rn::ReactionSystem;
         if i + 1 <= length(rxs) && issetequal(r.products, rxs[i + 1].substrates) &&
            issetequal(r.substrates, rxs[i + 1].products)
             ### Bi-directional arrows
-            rate_backwards = rxs[i + 1].rate isa Symbolic ? subber(rxs[i + 1].rate) :
+            rate_backwards = rxs[i + 1].rate isa SymbolicUtils.BasicSymbolic ? subber(rxs[i + 1].rate) :
                              rxs[i + 1].rate
             str *= " &" * rev_arrow
             str *= "[" * latexraw(rate_backwards; kwargs...) * "]"
@@ -162,7 +162,7 @@ function make_stoich_str(spec, stoich, subber; mathrm = true, kwargs...)
     if isequal(stoich, one(stoich))
         prestr * latexraw(subber(spec); kwargs...) * poststr
     else
-        if (stoich isa Symbolic) && iscall(stoich)
+        if (stoich isa SymbolicUtils.BasicSymbolic) && iscall(stoich)
             LaTeXString("(") *
             latexraw(subber(stoich); kwargs...) *
             LaTeXString(")") *

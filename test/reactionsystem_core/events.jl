@@ -2,6 +2,7 @@
 
 # Fetch packages.
 using Catalyst, DiffEqCallbacks, JumpProcesses, OrdinaryDiffEqTsit5, StochasticDiffEq, Test
+using ModelingToolkitBase: SymbolicContinuousCallback, SymbolicDiscreteCallback
 
 # Sets stable rng number.
 using StableRNGs
@@ -41,13 +42,13 @@ end
 # Test continuous event is propagated to the ODE solver.
 let
     # Creates model (a production/degradation system, but both reactions stop at `t=2.5`).
-    @parameters α=5.0 β=1.0
+    @discretes α(t)=5.0 β(t)=1.0
     @species V(t)=0.0
     rxs = [
         Reaction(α, nothing, [V]),
         Reaction(β, [V], nothing)
     ]
-    continuous_events = [V ~ 2.5] => [α ~ 0, β ~ 0]
+    continuous_events = SymbolicContinuousCallback([V ~ 2.5] => [α ~ 0, β ~ 0]; discrete_parameters = [α, β])
     @named rs = ReactionSystem(rxs, t; continuous_events)
     @test length(ModelingToolkitBase.continuous_events(rs)) == 1
     @test length(ModelingToolkitBase.discrete_events(rs)) == 0
@@ -58,14 +59,14 @@ let
     @test length(ModelingToolkitBase.discrete_events(osys)) == 0
     oprob = ODEProblem(osys, [], (0.0, 20.0))
     sol = solve(oprob, Tsit5())
-    @test_broken sol(20.0, idxs = V) ≈ 2.5
+    @test sol(20.0, idxs = V) ≈ 2.5
 end
 
 # Tests that species/variables/parameters only encountered in events are added to `ReactionSystem`s properly.
 # Tests for both discrete and continuous events. Tests that these quantities can be accessed in Problems.
 # Tests that metadata for these quantities are saved properly
 @test_broken let
-    return false
+    return false # Now `a` is a variable of teh created system but have no equation, this causes errors. https://github.com/SciML/ModelingToolkit.jl/issues/4102
     # Creates model.
     @parameters p d α::Int64 = 1
     @species X(t) A(t) = 2 [description="A species"]
@@ -95,9 +96,9 @@ end
     issetequal(parameters(rs_ce), [p, d, α])
     issetequal(parameters(rs_de), [p, d, α])
     issetequal(parameters(rs_ce_de), [p, d, α])
-    @test Symbolics.unwrap(rs_ce_de.α) isa Symbolics.BasicSymbolic{Int64}
-    @test Symbolics.unwrap(rs_de.α) isa Symbolics.BasicSymbolic{Int64}
-    @test Symbolics.unwrap(rs_ce_de.α) isa Symbolics.BasicSymbolic{Int64}
+    @test SymbolicUtils.symtype(rs_ce_de.α) == Int64
+    @test SymbolicUtils.symtype(rs_de.α) == Int64
+    @test SymbolicUtils.symtype(rs_ce_de.α) == Int64
     @test ModelingToolkitBase.getdescription(rs_ce_de.A) == "A species"
     @test ModelingToolkitBase.getdescription(rs_de.A) == "A species"
     @test ModelingToolkitBase.getdescription(rs_ce_de.A) == "A species"
@@ -147,8 +148,7 @@ end
 
 # Checks that various various erroneous forms yield errors.
 # I.e. ensures affects/conditions requires vector forms in the right cases.
-@test_broken let
-    return false
+let
     # Prepares the model reaction.
     @parameters p d
     @species X(t)
@@ -163,14 +163,14 @@ end
         X ~ 1.0 => [X ~ 0.5],       # Scalar condition.
         [X ~ 1.0] => X ~ 0.5,       # Scalar affect.
         (X ~ 1.0,) => [X ~ 0.5],    # Tuple condition.
-        [X ~ 1.0] => (X ~ 0.5,),    # Tuple affect.
+        #[X ~ 1.0] => (X ~ 0.5,),    # Tuple affect. # Should not work, potentially bad for performance as compared to vectors.
         [X - 1.0] => [X ~ 0.5],     # Non-equation condition (1).
         [X == 1.0] => [X ~ 0.5],    # Non-equation condition (2).
         # [X ~ 1.0] => [X ~ 0.5, p ~ 0.5], # No error on system creation, but permitted. Should probably throw an early error.
     ]
     discrete_events_bad = [
         [2.0] => p ~ 1.0,       # Scalar affect.
-        [2.0] => (p ~ 1.0, ),   # Tuple affect.
+        #[2.0] => (p ~ 1.0, ),    # Tuple affect. # Should not work, potentially bad for performance as compared to vectors.
         #[X > 2.0] => [p ~ 1.0], # Vector conditions. Should probably throw an error here already, currently does not.
         #(1.0, 2.0) => [p ~ 1.0] # Tuple condition. Should probably throw an error here already, currently does not.
     ]
@@ -193,19 +193,19 @@ end
 # Checks continuous, discrete, preset time, and periodic events.
 # Tests event affecting non-species components.
 @test_broken let
-    return false
+    return false # Now `Z` is a variable of teh created system but have no equation, this causes errors. https://github.com/SciML/ModelingToolkit.jl/issues/4102
     # Creates model via DSL.
     rn_dsl = @reaction_network rn begin
         @parameters thres=7.0 dY_up
         @variables Z(t)
         @continuous_events begin
-            [t ~ 2.5] => [p ~ Pre(p + 0.2)]
-            [X ~ thres, Y ~ X] => [X ~ Pre(X - 0.5), Z ~ Pre(Z + 0.1)]
+            [t ~ 2.5] => [p ~ p + 0.2]
+            [X ~ thres, Y ~ X] => [X ~ X - 0.5, Z ~ Z + 0.1]
         end
         @discrete_events begin
-            2.0 => [dX ~ Pre(dX + 0.01), dY ~ Pre(dY + dY_up)]
-            [1.0, 5.0] => [p ~ Pre(p - 0.1)]
-            (Z > Y) => [Z ~ Pre(Z - 0.1)]
+            2.0 => [dX ~ dX + 0.01, dY ~ dY + dY_up]
+            [1.0, 5.0] => [p ~ p - 0.1]
+            (Z > Y) => [Z ~ Z - 0.1]
         end
 
         (p, dX), 0 <--> X
@@ -236,7 +236,7 @@ end
     rn_prog = complete(rn_prog)
 
     # Tests that approaches yield identical results.
-    @test isequal(rn_dsl, rn_prog)  # https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @test_broken isequal(rn_dsl, rn_prog)  # https://github.com/SciML/ModelingToolkit.jl/issues/3907
 
     u0 = [X => 6.0, Y => 4.5, Z => 5.5]
     tspan = (0.0, 20.0)
@@ -313,11 +313,10 @@ end
 
 # Tests that events are properly triggered for SDEs.
 # Tests for continuous events, and all three types of discrete events.
-@test_broken let
-    return false
+let
     # Creates model with all types of events. The `e` parameters track whether events are triggered.
     rn = @reaction_network begin
-        @parameters e1=0 e2=0 e3=0 e4=0
+        @discretes e1(t)=0 e2(t)=0 e3(t)=0 e4(t)=0
         @continuous_events begin
             [X ~ 1000.0] => [e1 ~ 1]
         end
@@ -337,19 +336,18 @@ end
     sol = solve(sprob, ImplicitEM(); seed)
 
     # Checks that all `e` parameters have been updated properly.
-    @test sol.ps[:e1] == 1
-    @test sol.ps[:e2] == 1
-    @test sol.ps[:e3] == 1
-    @test sol.ps[:e4] == 1
+    @test_broken sol.ps[:e1][2] == 1 # https://github.com/SciML/ModelingToolkit.jl/issues/4030
+    @test_broken sol.ps[:e2][2] == 1 # https://github.com/SciML/ModelingToolkit.jl/issues/4030
+    @test_broken sol.ps[:e3][2] == 1 # https://github.com/SciML/ModelingToolkit.jl/issues/4030
+    @test_broken sol.ps[:e4][2] == 1 # https://github.com/SciML/ModelingToolkit.jl/issues/4030
 end
 
 # Tests that events are properly triggered for Jump simulations.
 # Tests for all three types of discrete events.
-@test_broken let
-    return false
+let
     # Creates model with all types of events. The `e` parameters track whether events are triggered.
     rn = @reaction_network begin
-        @parameters e1=0 e2=0 e3=0
+        @discretes e1(t)=0 e2(t)=0 e3(t)=0
         @discrete_events begin
             [1.0] => [e1 ~ 1]
             1.0 => [e2 ~ 1]
@@ -365,17 +363,16 @@ end
     sol = solve(jprob, SSAStepper(); seed)
 
     # Checks that all `e` parameters have been updated properly.
-    @test sol.ps[:e1] == 1
-    @test sol.ps[:e2] == 1
-    @test sol.ps[:e3] == 1
+    @test_broken sol.ps[:e1][2] == 1 # https://github.com/SciML/ModelingToolkit.jl/issues/4030
+    @test_broken sol.ps[:e2][2] == 1 # https://github.com/SciML/ModelingToolkit.jl/issues/4030
+    @test_broken sol.ps[:e3][2] == 1 # https://github.com/SciML/ModelingToolkit.jl/issues/4030
 end
 
 # Compares simulations using MTK type events with those generated through callbacks.
 # Jump simulations must be handles differently (since these only accepts discrete callbacks).
 # Checks for all types of discrete callbacks, and for continuous callbacks.
 # Turns of noise for SDE simulations (not sure seeding works when callbacks/events declared differently).
-@test_broken let
-    return false
+let
     # Creates models. Jump simulations requires one with discrete events only.
     rn = @reaction_network begin
         @default_noise_scaling 0.0

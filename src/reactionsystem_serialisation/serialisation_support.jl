@@ -142,7 +142,7 @@ end
 # and metadata values (which hopefully almost exclusively) have simple, supported, types. Ideally,
 # more supported types can be added here.
 x_2_string(x::Num) = expression_2_string(x)
-x_2_string(x::BasicSymbolic{<:Real}) = expression_2_string(x)
+x_2_string(x::SymbolicT) = expression_2_string(x)
 x_2_string(x::Bool) = string(x)
 x_2_string(x::String) = "\"$x\""
 x_2_string(x::Char) = "\'$x\'"
@@ -244,7 +244,7 @@ const SKIPPED_METADATA = [
 # Potentially strips the call for a symbolics. E.g. X(t) becomes X (but p remains p). This is used
 # when variables are written to files, as in code they are used without the call part.
 function strip_call(sym)
-    return iscall(sym) ? Sym{Real}(Symbolics.getname(sym)) : sym
+    return iscall(sym) ? SymbolicUtils.Sym{Symbolics.VartypeT}(Symbolics.getname(sym); type = Real) : sym
 end
 
 # For an vector of symbolics, creates a dictionary taking each symbolics to each call-stripped form.

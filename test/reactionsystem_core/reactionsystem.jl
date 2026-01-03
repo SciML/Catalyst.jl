@@ -146,14 +146,13 @@ end
 
 # Test by evaluating drift and diffusion terms.
 
-@test_broken let
-    return false
+let
     u = rnd_u0(rs, rng)
     p = rnd_ps(rs, rng)
     du = oderhs(last.(u), last.(p), 0.0)
     G = sdenoise(last.(u), last.(p), 0.0)
     sdesys = complete(make_cle_sde(rs))
-    sf = SDEFunction{false}(sdesys, unknowns(rs), parameters(rs))
+    sf = SDEFunction{false}(sdesys)
     sprob = SDEProblem(rs, u, (0.0, 0.0), p)
     du2 = sf.f(sprob.u0, sprob.p, 0.0)
 
@@ -492,6 +491,8 @@ end
     end
 
     # Test sde systems.
+    # ERROR HERE: Something with C being a boundary condition species means that it has a noise
+    # equation now, but no normal equations.
     rxs = [(@reaction k1, $A --> B),
         (@reaction k2, B --> $A),
         (@reaction k1, $C + D --> E + $C),
@@ -646,14 +647,14 @@ end
 # Checks that the same name cannot be used for two different of parameters/species/variables.
 let
     # Stores a parameter, a species, and a variable (with identical names) in different variables.
-    x_p = let
-        only(@parameters x)
+    X_p = let
+        only(@parameters X)
     end
-    x_sp = let
-        only(@species x(t))
+    X_sp = let
+        only(@species X(t))
     end
-    x_v = let
-        only(@variables x(t))
+    X_v = let
+        only(@variables X(t))
     end
 
     # Checks that creating systems with different in combination produces errors.
@@ -662,16 +663,15 @@ let
     @species X(t)
     rx = Reaction(d, [X], [])
     @test_broken false # (not sure how to mark a `@test_throws` as broken)
-    # @test_throws ReactionSystem([rx], t, [X, x_sp,], [d, x_p]; name = :rs)
-    # @test_throws ReactionSystem([rx], t, [X, X, x_v], [d, x_p]; name = :rs)
-    # @test_throws ReactionSystem([rx], t, [X, x_sp, x_v], [d]; name = :rs)
+    # @test_throws ReactionSystem([rx], t, [X, X_sp,], [d, X_p]; name = :rs)
+    # @test_throws ReactionSystem([rx], t, [X, X, X_v], [d, X_p]; name = :rs)
+    # @test_throws ReactionSystem([rx], t, [X, X_sp, X_v], [d]; name = :rs)
 end
 
 ### Other Tests ###
 
 # Test for https://github.com/SciML/ModelingToolkit.jl/issues/436.
-@test_broken let
-    return false
+let
     @parameters t
     @species S(t) I(t)
     rxs = [Reaction(1, [S], [I]), Reaction(1.1, [S], [I])]
