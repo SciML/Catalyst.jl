@@ -43,8 +43,10 @@ SIVS_FS = (seri_has_sivs, get_sivs_string, get_sivs_annotation)
 
 # Function which handles the addition of species, variable, and parameter declarations to the file
 # text. These must be handled as a unity in case there are default value dependencies between these.
-function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool,
-        top_level::Bool)
+function handle_us_n_ps(
+        file_text::String, rn::ReactionSystem, annotate::Bool,
+        top_level::Bool
+    )
     # Fetches the system's parameters, species, and variables. Computes the `has_` `Bool`s.
     ps_all = get_ps(rn)
     sps_all = get_species(rn)
@@ -222,7 +224,7 @@ function get_reactions_string(rn::ReactionSystem)
     # Creates the string corresponding to the code which generates the system's reactions.
     rxs_string = "rxs = ["
     for rx in get_rxs(rn)
-        @string_append! rxs_string "\n\t"*reaction_string(rx, strip_call_dict) ","
+        @string_append! rxs_string "\n\t" * reaction_string(rx, strip_call_dict) ","
     end
 
     # Updates the string (including removing the last `,`) and returns it.
@@ -393,7 +395,8 @@ function get_continuous_events_string(rn::ReactionSystem)
     continuous_events_string = "continuous_events = ["
     for continuous_event in MT.get_continuous_events(rn)
         @string_append! continuous_events_string "\n\t" continuous_event_string(
-            continuous_event, strip_call_dict) ","
+            continuous_event, strip_call_dict
+        ) ","
     end
 
     # Updates the string (including removing the last `,`) and returns it.
@@ -450,7 +453,8 @@ function get_discrete_events_string(rn::ReactionSystem)
     discrete_events_string = "discrete_events = ["
     for discrete_event in MT.get_discrete_events(rn)
         @string_append! discrete_events_string "\n\t" discrete_event_string(
-            discrete_event, strip_call_dict) ","
+            discrete_event, strip_call_dict
+        ) ","
     end
 
     # Updates the string (including removing the last `,`) and returns it.
@@ -490,8 +494,10 @@ DISCRETE_EVENTS_FS = (seri_has_discrete_events, get_discrete_events_string, get_
 # Specific `push_field` function, which is used for the system field (where the annotation option
 # must be passed to the `get_component_string` function). Since non-ReactionSystem systems cannot be
 # written to file, this function throws an error if any such systems are encountered.
-function push_systems_field(file_text::String, rn::ReactionSystem, annotate::Bool,
-        top_level::Bool)
+function push_systems_field(
+        file_text::String, rn::ReactionSystem, annotate::Bool,
+        top_level::Bool
+    )
     # Checks whether there are any subsystems, and if these are ReactionSystems.
     seri_has_systems(rn) || (return (file_text, false))
     if any(!(system isa ReactionSystem) for system in MT.get_systems(rn))
@@ -549,12 +555,12 @@ end
 
 # Extract a string which declares the system's connection types.
 function get_connection_type_string(rn::ReactionSystem)
-    get_unsupported_comp_string("connection types")
+    return get_unsupported_comp_string("connection types")
 end
 
 # Creates an annotation for the system's connection types.
 function get_connection_type_annotation(rn::ReactionSystem)
-    get_unsupported_comp_annotation("Connection types:")
+    return get_unsupported_comp_annotation("Connection types:")
 end
 
 # Combines the 3 connection types-related functions in a constant tuple.

@@ -16,7 +16,7 @@ Tests if the given symbolic variable corresponds to a constant species.
 """
 isconstant(s::Num) = isconstant(MT.value(s))
 function isconstant(s)
-    MT.getmetadata(s, ParameterConstantSpecies, false)
+    return MT.getmetadata(s, ParameterConstantSpecies, false)
 end
 
 """
@@ -26,7 +26,7 @@ Tests if the given symbolic variable corresponds to a boundary condition species
 """
 isbc(s::Num) = isbc(MT.value(s))
 function isbc(s)
-    MT.getmetadata(s, VariableBCSpecies, false)
+    return MT.getmetadata(s, VariableBCSpecies, false)
 end
 
 """
@@ -36,7 +36,7 @@ Tests if the given symbolic variable corresponds to a chemical species.
 """
 isspecies(s::Num) = isspecies(MT.value(s))
 function isspecies(s)
-    MT.getmetadata(s, VariableSpecies, false)
+    return MT.getmetadata(s, VariableSpecies, false)
 end
 
 """
@@ -50,7 +50,7 @@ Notes:
 function tospecies(s)
     MT.isparameter(s) &&
         error("Parameters can not be converted to species. Please pass a variable.")
-    MT.setmetadata(s, VariableSpecies, true)
+    return MT.setmetadata(s, VariableSpecies, true)
 end
 
 # Other species functions.
@@ -81,7 +81,7 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     end
 
     # stoichiometry as a vector
-    [el for el in nsdict if !_iszero(el[2])]
+    return [el for el in nsdict if !_iszero(el[2])]
 end
 
 # Get the net stoichiometries' type.
@@ -159,9 +159,11 @@ struct Reaction{S, T}
 end
 
 # Five-argument constructor accepting rate, substrates, and products, and their stoichiometries.
-function Reaction(rate, subs, prods, substoich, prodstoich;
+function Reaction(
+        rate, subs, prods, substoich, prodstoich;
         netstoich = nothing, metadata = Pair{Symbol, Any}[],
-        only_use_rate = metadata_only_use_rate_check(metadata), kwargs...)
+        only_use_rate = metadata_only_use_rate_check(metadata), kwargs...
+    )
     # Handles empty/nothing vectors.
     isnothing(subs) || isempty(subs) && (subs = nothing)
     isnothing(prods) || isempty(prods) && (prods = nothing)
@@ -218,7 +220,7 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
         get_netstoich(subs, prods, substoich′, prodstoich′)
     else
         (netstoich_stoichtype(netstoich) != stoich_type) ?
-        convert.(stoich_type, netstoich) : netstoich
+            convert.(stoich_type, netstoich) : netstoich
     end
 
     # Check that all metadata entries are unique. (cannot use `in` since some entries may be symbolics).
@@ -234,14 +236,14 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     # Ensures metadata have the correct type.
     metadata = convert(Vector{Pair{Symbol, Any}}, metadata)
 
-    Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate, metadata)
+    return Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate, metadata)
 end
 
 # Three argument constructor assumes stoichiometric coefs are one and integers.
 function Reaction(rate, subs, prods; kwargs...)
     sstoich = isnothing(subs) ? nothing : ones(Int, length(subs))
     pstoich = isnothing(prods) ? nothing : ones(Int, length(prods))
-    Reaction(rate, subs, prods, sstoich, pstoich; kwargs...)
+    return Reaction(rate, subs, prods, sstoich, pstoich; kwargs...)
 end
 
 ### Base Function Dispatches ###
@@ -254,7 +256,7 @@ function print_rxside(io::IO, specs, stoich)
     else
         for (i, spec) in enumerate(specs)
             prspec = (MT.isparameter(spec) || (MT.operation(spec) == getindex)) ?
-                     spec : MT.operation(spec)
+                spec : MT.operation(spec)
             if isequal(stoich[i], one(stoich[i]))
                 print(io, prspec)
             elseif iscall(stoich[i])
@@ -266,7 +268,7 @@ function print_rxside(io::IO, specs, stoich)
             (i < length(specs)) && print(io, " + ")
         end
     end
-    nothing
+    return nothing
 end
 
 # Show function for `Reaction`s.
@@ -275,7 +277,7 @@ function Base.show(io::IO, rx::Reaction)
     print_rxside(io, rx.substrates, rx.substoich)
     arrow = rx.only_use_rate ? "⇒" : "-->"
     print(io, " ", arrow, " ")
-    print_rxside(io, rx.products, rx.prodstoich)
+    return print_rxside(io, rx.products, rx.prodstoich)
 end
 
 """
@@ -295,7 +297,7 @@ function (==)(rx1::Reaction, rx2::Reaction)
     issetequal(zip(rx1.products, rx1.prodstoich), zip(rx2.products, rx2.prodstoich)) ||
         return false
     issetequal(rx1.netstoich, rx2.netstoich) || return false
-    rx1.only_use_rate == rx2.only_use_rate
+    return rx1.only_use_rate == rx2.only_use_rate
 end
 
 # Hash function.
@@ -310,7 +312,7 @@ function hash(rx::Reaction, h::UInt)
     for s in rx.netstoich
         h ⊻= hash(s)
     end
-    Base.hash(rx.only_use_rate, h)
+    return Base.hash(rx.only_use_rate, h)
 end
 
 ### ModelingToolkit Function Dispatches ###
@@ -320,7 +322,7 @@ function apply_if_nonempty(f, v)
     isempty(v) && return v
     s = similar(v)
     map!(f, s, v)
-    s
+    return s
 end
 
 # Returns a name-spaced version of a reaction.
@@ -337,8 +339,10 @@ function MT.namespace_equation(rx::Reaction, name; kw...)
         ns = similar(rx.netstoich)
         map!(n -> f(n[1]) => f(n[2]), ns, rx.netstoich)
     end
-    Reaction(rate, subs, prods, substoich, prodstoich, netstoich,
-        rx.only_use_rate, rx.metadata)
+    return Reaction(
+        rate, subs, prods, substoich, prodstoich, netstoich,
+        rx.only_use_rate, rx.metadata
+    )
 end
 
 # Overwrites equation-type functions to give the correct input for `Reaction`s.
@@ -347,8 +351,10 @@ MT.is_alg_equation(rx::Reaction) = false
 
 # MTK functions for extracting variables within equation type object
 MT.eqtype_supports_collect_vars(rx::Reaction) = true
-function MT.collect_vars!(unknowns, parameters, rx::Reaction, iv; depth = 0,
-        op = MT.Differential)
+function MT.collect_vars!(
+        unknowns, parameters, rx::Reaction, iv; depth = 0,
+        op = MT.Differential
+    )
     MT.collect_vars!(unknowns, parameters, rx.rate, iv; depth, op)
 
     for items in (rx.substrates, rx.products, rx.substoich, rx.prodstoich)
@@ -411,7 +417,7 @@ function MT.get_variables!(deps::Set, rx::Reaction, variables)
         # parametric stoichiometry means may have a parameter as a substrate
         any(isequal(s), variables) && push!(deps, s)
     end
-    deps
+    return deps
 end
 
 # determine which species a reaction modifies
@@ -419,14 +425,14 @@ function MT.modified_unknowns!(munknowns, rx::Reaction, sts::Set)
     for (species, stoich) in rx.netstoich
         (species in sts) && push!(munknowns, species)
     end
-    munknowns
+    return munknowns
 end
 
 function MT.modified_unknowns!(munknowns, rx::Reaction, sts::AbstractVector)
     for (species, stoich) in rx.netstoich
         any(isequal(species), sts) && push!(munknowns, species)
     end
-    munknowns
+    return munknowns
 end
 
 ### `Reaction`-specific Functions ###
@@ -453,7 +459,7 @@ function isbcbalanced(rx::Reaction)
         end
     end
 
-    true
+    return true
 end
 
 ### Reaction Metadata Implementation ###
@@ -540,7 +546,7 @@ function SymbolicUtils.setmetadata(rx::Reaction, key::Symbol, val)
     else
         mdvec[idx] = key => val
     end
-    nothing
+    return nothing
 end
 
 ### Catalyst Defined Reaction Metadata ###
@@ -694,7 +700,7 @@ Notes: The following values are possible:
   kinetics) term, specifically assigning it to a VariableRateJump.
 """
 @enumx PhysicalScale begin
-    Auto             # the default that lets Catalyst decide 
+    Auto             # the default that lets Catalyst decide
     ODE
     SDE
     Jump             # lets Catalyst decide the jump type
@@ -750,9 +756,13 @@ function validate(rx::Reaction; info::String = "")
 
     if (subunits !== nothing) && (produnits !== nothing) && (subunits != produnits)
         validated = false
-        @warn(string("in ", rx,
-            " the substrate units are not consistent with the product units."))
+        @warn(
+            string(
+                "in ", rx,
+                " the substrate units are not consistent with the product units."
+            )
+        )
     end
 
-    validated
+    return validated
 end

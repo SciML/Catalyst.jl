@@ -16,7 +16,7 @@ Returns `true` if the input is a compound species (else false).
 """
 iscompound(s::Num) = iscompound(MT.value(s))
 function iscompound(s)
-    MT.getmetadata(s, CompoundSpecies, false)
+    return MT.getmetadata(s, CompoundSpecies, false)
 end
 
 """
@@ -26,7 +26,7 @@ Returns a vector with a list of all the components of a compound species (create
 """
 components(s::Num) = components(MT.value(s))
 function components(s)
-    MT.getmetadata(s, CompoundComponents)
+    return MT.getmetadata(s, CompoundComponents)
 end
 
 """
@@ -36,7 +36,7 @@ Returns a vector with a list of all the stoichiometric coefficients of the compo
 """
 coefficients(s::Num) = coefficients(MT.value(s))
 function coefficients(s)
-    MT.getmetadata(s, CompoundCoefficients)
+    return MT.getmetadata(s, CompoundCoefficients)
 end
 
 """
@@ -67,7 +67,7 @@ Notes:
 - The component species must be defined before using the `@compound` macro.
 """
 macro compound(expr)
-    make_compound(striplines(expr))
+    return make_compound(striplines(expr))
 end
 
 # Declares compound error messages:
@@ -85,8 +85,10 @@ function make_compound(expr)
     # Loops through all components, add the component and the coefficients to the corresponding vectors
     # Cannot extract directly using e.g. "getfield.(composition, :reactant)" because then
     # we get something like :([:C, :O]), rather than :([C, O]).
-    composition = Catalyst.recursive_find_reactants!(expr.args[3], 1,
-        Vector{DSLReactant}(undef, 0))
+    composition = Catalyst.recursive_find_reactants!(
+        expr.args[3], 1,
+        Vector{DSLReactant}(undef, 0)
+    )
     components = :([])                                      # Becomes something like :([C, O]).
     coefficients = :([])                                    # Becomes something like :([1, 2]).
     for comp in composition
@@ -103,9 +105,16 @@ function make_compound(expr)
 
     # If no ivs were given, inserts  an expression which evaluates to the union of the ivs
     # for the species the compound depends on.
-    ivs_get_expr = :(unique(reduce(
-        vcat, (sorted_arguments(ModelingToolkit.unwrap(comp))
-        for comp in $components))))
+    ivs_get_expr = :(
+        unique(
+            reduce(
+                vcat, (
+                    sorted_arguments(ModelingToolkit.unwrap(comp))
+                        for comp in $components
+                )
+            )
+        )
+    )
     if isempty(ivs)
         species_expr = Catalyst.insert_independent_variable(species_expr, :($ivs_get_expr...))
     end
@@ -122,23 +131,48 @@ function make_compound(expr)
     #   `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [1, 2])`
     #   `CO2 = ModelingToolkit.wrap(CO2)`
     species_declaration_expr = Expr(:escape, :(@species $species_expr))
-    multiple_ivs_error_check_expr = Expr(:escape,
-        :($(isempty(ivs)) && (length($ivs_get_expr) > 1) &&
-          error($COMPOUND_CREATION_ERROR_DEPENDENT_VAR_REQUIRED)))
-    iv_check_expr = Expr(:escape,
-        :(issetequal(arguments(ModelingToolkit.unwrap($species_name)), $ivs_get_expr) ||
-          error("The independent variable(S) provided to the compound ($(arguments(ModelingToolkit.unwrap($species_name)))), and those of its components ($($ivs_get_expr)))), are not identical.")))
-    compound_designation_expr = Expr(:escape,
-        :($species_name = ModelingToolkit.setmetadata(
-            $species_name, Catalyst.CompoundSpecies, true)))
-    components_designation_expr = Expr(:escape,
-        :($species_name = ModelingToolkit.setmetadata(
-            $species_name, Catalyst.CompoundComponents, $components)))
-    coefficients_designation_expr = Expr(:escape,
-        :($species_name = ModelingToolkit.setmetadata(
-            $species_name, Catalyst.CompoundCoefficients, $coefficients)))
-    compound_wrap_expr = Expr(:escape,
-        :($species_name = ModelingToolkit.wrap($species_name)))
+    multiple_ivs_error_check_expr = Expr(
+        :escape,
+        :(
+            $(isempty(ivs)) && (length($ivs_get_expr) > 1) &&
+                error($COMPOUND_CREATION_ERROR_DEPENDENT_VAR_REQUIRED)
+        )
+    )
+    iv_check_expr = Expr(
+        :escape,
+        :(
+            issetequal(arguments(ModelingToolkit.unwrap($species_name)), $ivs_get_expr) ||
+                error("The independent variable(S) provided to the compound ($(arguments(ModelingToolkit.unwrap($species_name)))), and those of its components ($($ivs_get_expr)))), are not identical.")
+        )
+    )
+    compound_designation_expr = Expr(
+        :escape,
+        :(
+            $species_name = ModelingToolkit.setmetadata(
+                $species_name, Catalyst.CompoundSpecies, true
+            )
+        )
+    )
+    components_designation_expr = Expr(
+        :escape,
+        :(
+            $species_name = ModelingToolkit.setmetadata(
+                $species_name, Catalyst.CompoundComponents, $components
+            )
+        )
+    )
+    coefficients_designation_expr = Expr(
+        :escape,
+        :(
+            $species_name = ModelingToolkit.setmetadata(
+                $species_name, Catalyst.CompoundCoefficients, $coefficients
+            )
+        )
+    )
+    compound_wrap_expr = Expr(
+        :escape,
+        :($species_name = ModelingToolkit.wrap($species_name))
+    )
 
     # Returns the rephrased expression.
     return quote
@@ -173,7 +207,7 @@ Notes:
 - The component species must be defined before using the `@compound` macro.
 """
 macro compounds(expr)
-    make_compounds(striplines(expr))
+    return make_compounds(striplines(expr))
 end
 
 # Function managing the @compound macro.
@@ -199,8 +233,12 @@ function make_compounds(expr)
     push!(compound_declarations.args, :($(Expr(:escape, :($(compound_syms))))))
 
     # The output needs to be converted to Vector{Num} (from  Vector{SymbolicUtils.BasicSymbolic{Real}}) to be consistent with e.g. @variables.
-    compound_declarations.args[end] = :([ModelingToolkit.wrap(cmp)
-                                         for cmp in $(compound_declarations.args[end])])
+    compound_declarations.args[end] = :(
+        [
+            ModelingToolkit.wrap(cmp)
+                for cmp in $(compound_declarations.args[end])
+        ]
+    )
 
     # Returns output that.
     return compound_declarations
@@ -267,8 +305,10 @@ function balance_reaction(reaction::Reaction)
         prodstoich = stoich[(length(reaction.substrates) + 1):end]
 
         # Create a new reaction with the balanced stoichiometries
-        balancedrx = Reaction(reaction.rate, reaction.substrates, reaction.products,
-            substoich, prodstoich)
+        balancedrx = Reaction(
+            reaction.rate, reaction.substrates, reaction.products,
+            substoich, prodstoich
+        )
 
         # Add the reaction to the vector of all reactions
         balancedrxs[i] = balancedrx

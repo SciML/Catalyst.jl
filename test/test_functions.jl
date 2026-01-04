@@ -17,7 +17,7 @@ end
 
 # Generates a random parameter set (in the form of a map). Each value is a Float64.
 function rnd_ps(sys, rng; factor = 1.0, min = 0.0)
-    return [p => ( min .+ factor .* rand(rng, size(p)...)) for p in parameters(sys)]
+    return [p => (min .+ factor .* rand(rng, size(p)...)) for p in parameters(sys)]
 end
 
 # Generates a random parameter set (in the form of a map). Each value is a Float64.
@@ -51,7 +51,7 @@ function jac_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, spa
     prob = ODEProblem(rs, u, 0.0, p; jac = true, combinatoric_ratelaws, sparse)
     J = sparse ? deepcopy(prob.f.jac_prototype) : zeros(length(u), length(u))
     prob.f.jac(J, prob.u0, prob.p, t)
-    @test J ≈ prob.f.jac(prob.u0, prob.p, t) atol = 1e-14 rtol = 1e-14
+    @test J ≈ prob.f.jac(prob.u0, prob.p, t) atol = 1.0e-14 rtol = 1.0e-14
     return J
 end
 

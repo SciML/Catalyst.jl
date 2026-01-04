@@ -9,9 +9,9 @@ seed = rand(rng, 1:100)
 # test JumpInputs function auto problem selection
 let
     rn = @reaction_network begin
-        k*(1 + sin(t)), 0 --> A
+        k * (1 + sin(t)), 0 --> A
     end
-    jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5], remake_warn = false)
+    jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => 0.5], remake_warn = false)
     @test jinput.prob isa ODEProblem
     jprob = JumpProblem(jinput; rng)
     sol = solve(jprob, Tsit5())
@@ -20,7 +20,7 @@ let
     rn = @reaction_network begin
         k, 0 --> A
     end
-    jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+    jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => 0.5])
     @test jinput.prob isa DiscreteProblem
     jprob = JumpProblem(jinput; rng)
     sol = solve(jprob)
@@ -28,14 +28,16 @@ let
 
     rn = @reaction_network begin
         @parameters λ
-        k*V, 0 --> A
-        @equations D(V) ~ λ*V
+        k * V, 0 --> A
+        @equations D(V) ~ λ * V
         @continuous_events begin
-            [V ~ 2.0] => [V ~ V/2, A ~ A/2]
+            [V ~ 2.0] => [V ~ V / 2, A ~ A / 2]
         end
     end
-    jinput = JumpInputs(rn, [:A => 0, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4],
-        remake_warn = false)
+    jinput = JumpInputs(
+        rn, [:A => 0, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => 0.4],
+        remake_warn = false
+    )
     @test jinput.prob isa ODEProblem
     jprob = JumpProblem(jinput; rng)
     sol = solve(jprob, Tsit5())
@@ -77,7 +79,7 @@ let
     function Xf(t, p)
         local α, β, X₀, Y₀ = p
         return (α / β) + (α^2 / β^2) + α * (Y₀ - α / β) * t * exp(-β * t) +
-               (X₀ - α / β - α^2 / β^2) * exp(-β * t)
+            (X₀ - α / β - α^2 / β^2) * exp(-β * t)
     end
     Xact = [Xf(t, p) for t in times]
     Yact = [Yf(t, p) for t in times]
@@ -87,7 +89,7 @@ let
     function affect!(integ, u, p, ctx)
         savevalues!(integ, true)
         terminate!(integ)
-        nothing
+        return nothing
     end
     rn = @network_component begin
         β, X --> 0
@@ -125,16 +127,16 @@ let
         1, X → ∅
     end
     rn_jump = @reaction_network begin
-        (p,d), 0 <--> V
-        (k1,k2), V + W <--> VW
+        (p, d), 0 <--> V
+        (k1, k2), V + W <--> VW
     end
     rn_hybrid = @reaction_network begin
         A, ∅ → X, [physical_scale = PhysicalScale.ODE]
         1, 2X + Y → 3X, [physical_scale = PhysicalScale.ODE]
         B, X → Y, [physical_scale = PhysicalScale.ODE]
         1, X → ∅, [physical_scale = PhysicalScale.ODE]
-        (p,d), 0 <--> V
-        (k1,k2), V + W <--> VW
+        (p, d), 0 <--> V
+        (k1, k2), V + W <--> VW
     end
 
     # Sets simulation conditions and creates problems corresponding to the different models.
@@ -146,17 +148,17 @@ let
     ps_hybrid = [ps_ode; ps_jump]
     tspan = (0.0, 10000.0)
     ode_prob = ODEProblem(rn_ode, u0_ode, tspan, ps_ode)
-    jump_prob = JumpProblem(JumpInputs(rn_jump, u0_jump, tspan, ps_jump; remake_warn = false); save_positions = (false,false), rng)
-    hybrid_prob = JumpProblem(JumpInputs(rn_hybrid, u0_hybrid, tspan, ps_hybrid; remake_warn = false); save_positions = (false,false), rng)
+    jump_prob = JumpProblem(JumpInputs(rn_jump, u0_jump, tspan, ps_jump; remake_warn = false); save_positions = (false, false), rng)
+    hybrid_prob = JumpProblem(JumpInputs(rn_hybrid, u0_hybrid, tspan, ps_hybrid; remake_warn = false); save_positions = (false, false), rng)
 
     # Performs simulations. Checks that ODE parts are identical. Check that jump parts have similar statistics.
-    ode_sol = solve(ode_prob, Tsit5(); saveat = 1.0, abstol = 1e-10, reltol = 1e-10)
+    ode_sol = solve(ode_prob, Tsit5(); saveat = 1.0, abstol = 1.0e-10, reltol = 1.0e-10)
     jump_sol = solve(jump_prob, SSAStepper(); saveat = 1.0)
-    hybrid_sol = solve(hybrid_prob, Tsit5(); saveat = 1.0, abstol = 1e-10, reltol = 1e-10)
-    @test ode_sol[:Y] ≈ hybrid_sol[:Y] atol = 1e-4 rtol = 1e-4
-    @test mean(jump_sol[:V]) ≈ mean(hybrid_sol[:V]) atol = 1e-1 rtol = 1e-1
-    @test mean(jump_sol[:W]) ≈ mean(hybrid_sol[:W]) atol = 1e-1 rtol = 1e-1
-    @test mean(jump_sol[:VW]) ≈ mean(hybrid_sol[:VW]) atol = 1e-1 rtol = 1e-1
+    hybrid_sol = solve(hybrid_prob, Tsit5(); saveat = 1.0, abstol = 1.0e-10, reltol = 1.0e-10)
+    @test ode_sol[:Y] ≈ hybrid_sol[:Y] atol = 1.0e-4 rtol = 1.0e-4
+    @test mean(jump_sol[:V]) ≈ mean(hybrid_sol[:V]) atol = 1.0e-1 rtol = 1.0e-1
+    @test mean(jump_sol[:W]) ≈ mean(hybrid_sol[:W]) atol = 1.0e-1 rtol = 1.0e-1
+    @test mean(jump_sol[:VW]) ≈ mean(hybrid_sol[:VW]) atol = 1.0e-1 rtol = 1.0e-1
 end
 
 ### Other Tests ###
@@ -170,9 +172,9 @@ let
         @species X(t) = 1.0
         @parameters p = 1.0
         p, 0 --> X, [physical_scale = PhysicalScale.ODE]
-        (kB,kD), 2X <--> X2
+        (kB, kD), 2X <--> X2
         k, X2 --> Y2, [physical_scale = PhysicalScale.ODE]
-        (kB,kD), 2Y <--> Y2
+        (kB, kD), 2Y <--> Y2
         d, Y --> 0, [physical_scale = PhysicalScale.ODE]
     end
     u0 = [:X2 => 0.0, :Y => 0.0, :Y2 => 0.0]
@@ -257,9 +259,9 @@ let
         @discrete_events [1.0] => [Z1 ~ Z1 + 1.0]
         @continuous_events [Y ~ 1.0] => [Y ~ 5.0]
         @equations Δ(V) ~ Z1 + X^2 - V
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
         d, Y --> 0, [physical_scale = PhysicalScale.ODE]
-        (k*X, k*Y), Z1 <--> Z2, ([physical_scale = PhysicalScale.ODE], [physical_scale = PhysicalScale.Jump])
+        (k * X, k * Y), Z1 <--> Z2, ([physical_scale = PhysicalScale.ODE], [physical_scale = PhysicalScale.Jump])
     end
 
     # Simulates the model.
@@ -276,7 +278,7 @@ let
     @test sol[:V][1] == 1.5
     @test sol[:Ztot] ≈ sol[rn.Z1 + rn.Z2]
     @test minimum(sol[:Y]) ≈ 1.0
-    @test maximum(sol[:Y]) ≈ 5.0 atol = 1e-1 rtol = 1e-1
+    @test maximum(sol[:Y]) ≈ 5.0 atol = 1.0e-1 rtol = 1.0e-1
     @test all(isequal([rn.τ], Symbolics.arguments(Symbolics.value(u))) for u in unknowns(rn))
     @test sol(1.0 - eps(); idxs = :Z1) + 1 ≈ sol(1.0 + eps(); idxs = :Z1)
 end

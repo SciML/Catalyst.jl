@@ -14,7 +14,7 @@ include("../spatial_test_networks.jl")
 # Checks for symbol and symbolic variables input.
 let
     # Declares various types of lattices and corresponding initial values of `X`.
-    lattice_cartesian = CartesianGrid((2,2,2))
+    lattice_cartesian = CartesianGrid((2, 2, 2))
     lattice_masked = [true true; false true]
     lattice_graph = cycle_graph(5)
     val0_cartesian = fill(1.0, 2, 2, 2)
@@ -36,13 +36,13 @@ let
         jprob = JumpProblem(lrs, dprob, NSM())
         oint = init(deepcopy(oprob), Tsit5())
         jint = init(deepcopy(jprob), SSAStepper())
-        
+
         # Check that `lat_getu` retrieves the correct values.
         @test lat_getu(oprob, :X, lrs) == lat_getu(oprob, X, lrs) == lat_getu(oprob, brusselator_system.X, lrs) == val0
         @test lat_getu(oint, :X, lrs) == lat_getu(oint, X, lrs) == lat_getu(oint, brusselator_system.X, lrs) == val0
         @test lat_getu(jprob, :X, lrs) == lat_getu(jprob, X, lrs) == lat_getu(jprob, brusselator_system.X, lrs) == val0
         @test lat_getu(jint, :X, lrs) == lat_getu(jint, X, lrs) == lat_getu(jint, brusselator_system.X, lrs) == val0
-        
+
         # Updates Y and checks its content.
         lat_setu!(oprob, :Y, lrs, val0)
         @test lat_getu(oprob, :Y, lrs) == lat_getu(oprob, Y, lrs) == lat_getu(oprob, brusselator_system.Y, lrs) == val0
@@ -71,7 +71,7 @@ end
 # Checks for symbol and symbolic variables input.
 let
     # Declares various types of lattices and corresponding initial values of `A`.
-    lattice_cartesian = CartesianGrid((2,2,2))
+    lattice_cartesian = CartesianGrid((2, 2, 2))
     lattice_masked = [true true; false true]
     lattice_graph = cycle_graph(5)
     val0_cartesian = fill(1.0, 2, 2, 2)
@@ -90,11 +90,11 @@ let
         ps = [:A => val0, :B => 2.0, :dX => 0.1]
         oprob = ODEProblem(lrs, u0, (0.0, 1.0), deepcopy(ps))
         oint = init(deepcopy(oprob), Tsit5())
-        
+
         # Check that `lat_getp` retrieves the correct values.
         @test lat_getp(oprob, :A, lrs) == lat_getp(oprob, A, lrs) == lat_getp(oprob, brusselator_system.A, lrs) == val0
         @test lat_getp(oint, :A, lrs) == lat_getp(oint, A, lrs) == lat_getp(oint, brusselator_system.A, lrs) == val0
-        
+
         # Updates Y and checks its content.
         lat_setp!(oprob, :B, lrs, val0)
         @test lat_getp(oprob, :B, lrs) == lat_getp(oprob, B, lrs) == lat_getp(oprob, brusselator_system.B, lrs) == val0
@@ -139,19 +139,19 @@ end
 ### Simulation `lat_getu` Tests ###
 
 # Basic test. For simulations without change in system, check that the solution corresponds to known
-# initial condition throughout the solution. 
+# initial condition throughout the solution.
 # Checks using both `t` sampling` and normal time step sampling.
 # Checks for both ODE and jump simulations.
 # Checks for all lattice types.
-let 
+let
     # Prepare `LatticeReactionSystem`s.
     rs = @reaction_network begin
-        (k1,k2), X1 <--> X2
+        (k1, k2), X1 <--> X2
     end
     tr = @transport_reaction D X1
     lrs1 = LatticeReactionSystem(rs, [tr], CartesianGrid((2,)))
-    lrs2 = LatticeReactionSystem(rs, [tr], CartesianGrid((2,3)))
-    lrs3 = LatticeReactionSystem(rs, [tr], CartesianGrid((2,3,2)))
+    lrs2 = LatticeReactionSystem(rs, [tr], CartesianGrid((2, 3)))
+    lrs3 = LatticeReactionSystem(rs, [tr], CartesianGrid((2, 3, 2)))
     lrs4 = LatticeReactionSystem(rs, [tr], [true, true, false, true])
     lrs5 = LatticeReactionSystem(rs, [tr], [true false; true true])
     lrs6 = LatticeReactionSystem(rs, [tr], cycle_graph(4))
@@ -167,7 +167,7 @@ let
     ps = [:k1 => 0.0, :k2 => 0.0, :D => 0.0]
 
     # Loops through all lattice cases and check that they are correct.
-    for (u0,lrs) in zip([u0_1, u0_2, u0_3, u0_4, u0_5, u0_6], [lrs1, lrs2, lrs3, lrs4, lrs5, lrs6])
+    for (u0, lrs) in zip([u0_1, u0_2, u0_3, u0_4, u0_5, u0_6], [lrs1, lrs2, lrs3, lrs4, lrs5, lrs6])
         # Simulates ODE version and checks `lat_getu` on its solution.
         oprob = ODEProblem(lrs, u0, tspan, ps)
         osol = solve(oprob, Tsit5(), saveat = 0.5)
@@ -191,7 +191,7 @@ end
 let
     # Prepare `LatticeReactionSystem`s.
     rs = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     tr = @transport_reaction D X
     lrs = LatticeReactionSystem(rs, [tr], CartesianGrid((2,)))
@@ -203,26 +203,26 @@ let
     oprob = ODEProblem(lrs, u0, tspan, ps)
 
     # Simulates the ODE. Checks that the start/end points are correct.
-    # Check that the first vertex is monotonously increasing in values, and that the second one is 
+    # Check that the first vertex is monotonously increasing in values, and that the second one is
     # monotonously decreasing. The non evenly spaced `saveat` is so that non-monotonicity is
     # not produced due to numeric errors.
     saveat = [0.0, 1.0, 5.0, 10.0, 50.0]
-    sol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
+    sol = solve(oprob, Vern7(); abstol = 1.0e-8, reltol = 1.0e-8)
     vals = lat_getu(sol, :X, lrs)
     @test vals[1] == [1.0, 3.0]
     @test vals[end] ≈ [2.0, 2.0]
-    for i = 1:(length(saveat) - 1)
+    for i in 1:(length(saveat) - 1)
         @test vals[i][1] < vals[i + 1][1]
         @test vals[i][2] > vals[i + 1][2]
     end
 end
 
-# Checks interpolation when sampling at time point. Check that values at `t` is in between the 
+# Checks interpolation when sampling at time point. Check that values at `t` is in between the
 # sample points. Does so by checking that in simulation which is monotonously decreasing/increasing.
 let
     # Prepare `LatticeReactionSystem`s.
     rs = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     tr = @transport_reaction D X
     lrs = LatticeReactionSystem(rs, [tr], CartesianGrid((2,)))
@@ -244,7 +244,7 @@ end
 let
     # Prepare `LatticeReactionSystem`s.
     rs = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     tr = @transport_reaction D X
     lrs = LatticeReactionSystem(rs, [tr], CartesianGrid((2,)))
@@ -265,7 +265,7 @@ end
 let
     # Prepare `LatticeReactionSystem`s.
     rs = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     tr = @transport_reaction D X
     lrs = LatticeReactionSystem(rs, [tr], CartesianGrid((2,)))
@@ -286,7 +286,7 @@ end
 let
     # Prepare `LatticeReactionSystem`s.
     rs = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     tr = @transport_reaction D X
     lrs = LatticeReactionSystem(rs, [tr], rand([false, true], 2, 3, 4))
@@ -310,7 +310,7 @@ let
     @named rs = ReactionSystem([Reaction(d, [X], [])], t)
     rs = complete(rs)
     tr = @transport_reaction D X
-    lrs = LatticeReactionSystem(rs, [tr], CartesianGrid(2,))
+    lrs = LatticeReactionSystem(rs, [tr], CartesianGrid(2))
 
     # Solved a corresponding ODEProblem.
     u0 = [:X => 1.0]
@@ -335,20 +335,20 @@ let
     for jac in [false, true], sparse in [false, true]
         # Creates an initial ODEProblem.
         u0 = [:X => 1.0, :Y => [1.0 2.0; 3.0 4.0]]
-        dY_vals = spzeros(4,4)
-        dY_vals[1,2] = 0.1; dY_vals[2,1] = 0.1; 
-        dY_vals[1,3] = 0.2; dY_vals[3,1] = 0.2; 
-        dY_vals[2,4] = 0.3; dY_vals[4,2] = 0.3; 
-        dY_vals[3,4] = 0.4; dY_vals[4,3] = 0.4; 
+        dY_vals = spzeros(4, 4)
+        dY_vals[1, 2] = 0.1; dY_vals[2, 1] = 0.1
+        dY_vals[1, 3] = 0.2; dY_vals[3, 1] = 0.2
+        dY_vals[2, 4] = 0.3; dY_vals[4, 2] = 0.3
+        dY_vals[3, 4] = 0.4; dY_vals[4, 3] = 0.4
         ps = [:A => 1.0, :B => [4.0 5.0; 6.0 7.0], :dX => 0.1, :dY => dY_vals]
         oprob_1 = ODEProblem(lrs, u0, (0.0, 10.0), ps; jac, sparse)
 
         # Creates an alternative version of the ODEProblem.
-        dX_vals = spzeros(4,4)
-        dX_vals[1,2] = 0.01; dX_vals[2,1] = 0.01; 
-        dX_vals[1,3] = 0.02; dX_vals[3,1] = 0.02; 
-        dX_vals[2,4] = 0.03; dX_vals[4,2] = 0.03; 
-        dX_vals[3,4] = 0.04; dX_vals[4,3] = 0.04; 
+        dX_vals = spzeros(4, 4)
+        dX_vals[1, 2] = 0.01; dX_vals[2, 1] = 0.01
+        dX_vals[1, 3] = 0.02; dX_vals[3, 1] = 0.02
+        dX_vals[2, 4] = 0.03; dX_vals[4, 2] = 0.03
+        dX_vals[3, 4] = 0.04; dX_vals[4, 3] = 0.04
         ps = [:A => [1.1 1.2; 1.3 1.4], :B => 5.0, :dX => dX_vals, :dY => 0.01]
         oprob_2 = ODEProblem(lrs, u0, (0.0, 10.0), ps; jac, sparse)
 
@@ -375,16 +375,16 @@ let
     B1 = [4.0 5.0; 6.0 7.0]
     A2 = [1.1 1.2; 1.3 1.4]
     B2 = 5.0
-    dY_vals = spzeros(4,4)
-    dY_vals[1,2] = 0.1; dY_vals[2,1] = 0.1; 
-    dY_vals[1,3] = 0.2; dY_vals[3,1] = 0.2; 
-    dY_vals[2,4] = 0.3; dY_vals[4,2] = 0.3; 
-    dY_vals[3,4] = 0.4; dY_vals[4,3] = 0.4; 
-    dX_vals = spzeros(4,4)
-    dX_vals[1,2] = 0.01; dX_vals[2,1] = 0.01; 
-    dX_vals[1,3] = 0.02; dX_vals[3,1] = 0.02; 
-    dX_vals[2,4] = 0.03; dX_vals[4,2] = 0.03; 
-    dX_vals[3,4] = 0.04; dX_vals[4,3] = 0.04; 
+    dY_vals = spzeros(4, 4)
+    dY_vals[1, 2] = 0.1; dY_vals[2, 1] = 0.1
+    dY_vals[1, 3] = 0.2; dY_vals[3, 1] = 0.2
+    dY_vals[2, 4] = 0.3; dY_vals[4, 2] = 0.3
+    dY_vals[3, 4] = 0.4; dY_vals[4, 3] = 0.4
+    dX_vals = spzeros(4, 4)
+    dX_vals[1, 2] = 0.01; dX_vals[2, 1] = 0.01
+    dX_vals[1, 3] = 0.02; dX_vals[3, 1] = 0.02
+    dX_vals[2, 4] = 0.03; dX_vals[4, 2] = 0.03
+    dX_vals[3, 4] = 0.04; dX_vals[4, 3] = 0.04
     dX1 = 0.1
     dY1 = dY_vals
     dX2 = dX_vals
@@ -394,10 +394,10 @@ let
 
     # Creates simulation through two different separate simulations.
     oprob_1_1 = ODEProblem(lrs, u0, (0.0, 5.0), ps_1; jac = true, sparse = true)
-    sol_1_1 = solve(oprob_1_1, Rosenbrock23(); saveat = 1.0, abstol = 1e-8, reltol = 1e-8)
+    sol_1_1 = solve(oprob_1_1, Rosenbrock23(); saveat = 1.0, abstol = 1.0e-8, reltol = 1.0e-8)
     u0_1_2 = [:X => sol_1_1.u[end][1:2:end], :Y => sol_1_1.u[end][2:2:end]]
     oprob_1_2 = ODEProblem(lrs, u0_1_2, (0.0, 5.0), ps_2; jac = true, sparse = true)
-    sol_1_2 = solve(oprob_1_2, Rosenbrock23(); saveat = 1.0, abstol = 1e-8, reltol = 1e-8)
+    sol_1_2 = solve(oprob_1_2, Rosenbrock23(); saveat = 1.0, abstol = 1.0e-8, reltol = 1.0e-8)
 
     # Creates simulation through a single simulation with a callback
     oprob_2 = ODEProblem(lrs, u0, (0.0, 10.0), ps_1; jac = true, sparse = true)
@@ -407,10 +407,10 @@ let
         lat_setp!(integrator, :B, lrs, B2)
         integrator.ps[:dX] = dX2
         integrator.ps[:dY] = [dY2]
-        rebuild_lat_internals!(integrator)
+        return rebuild_lat_internals!(integrator)
     end
     callback = DiscreteCallback(condition, affect!)
-    sol_2 = solve(oprob_2, Rosenbrock23(); saveat = 1.0, tstops = [5.0], callback, abstol = 1e-8, reltol = 1e-8)
+    sol_2 = solve(oprob_2, Rosenbrock23(); saveat = 1.0, tstops = [5.0], callback, abstol = 1.0e-8, reltol = 1.0e-8)
 
     # Check that trajectories are equivalent.
     @test [sol_1_1.u; sol_1_2.u] ≈ sol_2.u
@@ -420,10 +420,10 @@ end
 let
     # Prepare `LatticeReactionSystem`.
     rs = @reaction_network begin
-        (k1,k2), X1 <--> X2
+        (k1, k2), X1 <--> X2
     end
-    tr = @transport_reaction D X1 
-    grid = CartesianGrid((2,2))
+    tr = @transport_reaction D X1
+    grid = CartesianGrid((2, 2))
     lrs = LatticeReactionSystem(rs, [tr], grid)
 
     # Create problems.

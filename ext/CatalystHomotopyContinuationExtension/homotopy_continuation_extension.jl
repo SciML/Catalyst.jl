@@ -35,8 +35,10 @@ Notes:
 - Homotopy-based steady state finding only works when all rates are rational polynomials (e.g. constant, linear, mm, or hill functions).
 ```
   """
-function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative = true,
-        neg_thres = -1e-15, u0 = [], kwargs...)
+function Catalyst.hc_steady_states(
+        rs::ReactionSystem, ps; filter_negative = true,
+        neg_thres = -1.0e-15, u0 = [], kwargs...
+    )
     if !isautonomous(rs)
         error("Attempting to compute steady state for a non-autonomous system (e.g. where some rate depend on $(get_iv(rs))). This is not possible.")
     end
@@ -88,11 +90,11 @@ end
 
 # Parses and expression and return a version where any exponents that are Float64 (but an int, like 2.0) are turned into Int64s.
 function make_int_exps(expr)
-    wrap(Rewriters.Postwalk(Rewriters.PassThrough(___make_int_exps))(unwrap(expr))).val
+    return wrap(Rewriters.Postwalk(Rewriters.PassThrough(___make_int_exps))(unwrap(expr))).val
 end
 function ___make_int_exps(expr)
     !iscall(expr) && return expr
-    if (operation(expr) == ^)
+    return if (operation(expr) == ^)
         if isinteger(sorted_arguments(expr)[2])
             return sorted_arguments(expr)[1]^Int64(sorted_arguments(expr)[2])
         else
@@ -160,11 +162,11 @@ function reorder_sols!(sols, ss_poly, rs::ReactionSystem)
     var_names_extended = String.(Symbol.(HC.variables(ss_poly)))
     var_names = [Symbol(s[1:prevind(s, findlast('_', s))]) for s in var_names_extended]
     sort_pattern = indexin(MT.getname.(unknowns(rs)), var_names)
-    foreach(sol -> permute!(sol, sort_pattern), sols)
+    return foreach(sol -> permute!(sol, sort_pattern), sols)
 end
 
 # Filters away solutions with negative species concentrations (and for neg_thres < val < 0.0, sets val=0.0).
-function filter_negative_f(sols; neg_thres = -1e-15)
+function filter_negative_f(sols; neg_thres = -1.0e-15)
     for sol in sols, idx in 1:length(sol)
 
         (neg_thres < sol[idx] < 0) && (sol[idx] = 0)
@@ -174,12 +176,18 @@ end
 
 # Sometimes (when polynomials are created from coupled CRN/DAEs), the steady state polynomial have the wrong type.
 # This converts it to the correct type, which homotopy continuation can handle.
-const WRONG_POLY_TYPE = Vector{DynamicPolynomials.Polynomial{
-    DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder},
-    DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}}}
-const CORRECT_POLY_TYPE = Vector{DynamicPolynomials.Polynomial{
-    DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder},
-    DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}, Float64}}
+const WRONG_POLY_TYPE = Vector{
+    DynamicPolynomials.Polynomial{
+        DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder},
+        DynamicPolynomials.Graded{DynamicPolynomials.LexOrder},
+    },
+}
+const CORRECT_POLY_TYPE = Vector{
+    DynamicPolynomials.Polynomial{
+        DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder},
+        DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}, Float64,
+    },
+}
 function poly_type_convert(ss_poly)
     (typeof(ss_poly) == WRONG_POLY_TYPE) && return convert(CORRECT_POLY_TYPE, ss_poly)
     return ss_poly

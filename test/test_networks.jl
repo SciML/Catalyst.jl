@@ -79,10 +79,10 @@ end
 
 reaction_networks_standard[10] = @reaction_network rns10 begin
     p, ∅ ⟶ X1
-    (k1, k2), (X1,X1) → X2
-    (k3, k4), (X2,X2) → X3
-    (k5, k6), (X3,X3) → X4
-    (k7, k8), (X4,X4) → X5
+    (k1, k2), (X1, X1) → X2
+    (k3, k4), (X2, X2) → X3
+    (k5, k6), (X3, X3) → X4
+    (k7, k8), (X4, X4) → X5
     d, X5 ⟶ ∅
 end
 
@@ -220,8 +220,10 @@ reaction_networks_conserved[9] = @reaction_network rnc9 begin
     (k3, k4), X3 + X4 ↔ X5
     (k5, k6), X5 + X6 ↔ X7
 end
-reaction_network_conslaws[9] = [1 0 1 0 1 0 1; -1 1 0 0 0 0 0; 0 0 0 1 1 0 1;
-                                   0 0 0 0 0 1 1]
+reaction_network_conslaws[9] = [
+    1 0 1 0 1 0 1; -1 1 0 0 0 0 0; 0 0 0 1 1 0 1;
+    0 0 0 0 0 1 1
+]
 
 reaction_networks_conserved[10] = @reaction_network rnc10 begin
     kDeg, (w, w2, w2v, v, w2v2, vP, σB, w2σB) ⟶ ∅
@@ -349,8 +351,10 @@ reaction_networks_weird[10] = @reaction_network rnw10 begin
 end
 
 ### Gathers all networks in a single array ###
-reaction_networks_all = [reaction_networks_standard...,
+reaction_networks_all = [
+    reaction_networks_standard...,
     reaction_networks_hill...,
     reaction_networks_conserved...,
     reaction_networks_real...,
-    reaction_networks_weird...]
+    reaction_networks_weird...,
+]

@@ -31,7 +31,7 @@ begin
         Reaction(d2, [X2], nothing),
         Reaction(d3, [X3], nothing),
         Reaction(d4, [X4], nothing),
-        Reaction(d5, [X5], nothing)
+        Reaction(d5, [X5], nothing),
     ]
     @named rs = ReactionSystem(rxs)
     rs = complete(rs)
@@ -39,9 +39,9 @@ begin
     # Declares initial condition and potential parameter sets.
     u0 = [X1 => 0.1, X2 => 0.2, X3 => 0.3, X4 => 0.4, X5 => 0.5]
     p_alts = [
-        [p1 => 1.0, d1 => 1.0, p2 => 1.2, p3 => 2, p4 => 0.5, d4 => 1//2, p5 => 3//2, d5 => 1.5],
-        (p1 => 1.0, d1 => 1.0, p2 => 1.2, p3 => 2, p4 => 0.5, d4 => 1//2, p5 => 3//2, d5 => 1.5),
-        Dict([p1 => 1.0, d1 => 1.0, p2 => 1.2, p3 => 2, p4 => 0.5, d4 => 1//2, p5 => 3//2, d5 => 1.5])
+        [p1 => 1.0, d1 => 1.0, p2 => 1.2, p3 => 2, p4 => 0.5, d4 => 1 // 2, p5 => 3 // 2, d5 => 1.5],
+        (p1 => 1.0, d1 => 1.0, p2 => 1.2, p3 => 2, p4 => 0.5, d4 => 1 // 2, p5 => 3 // 2, d5 => 1.5),
+        Dict([p1 => 1.0, d1 => 1.0, p2 => 1.2, p3 => 2, p4 => 0.5, d4 => 1 // 2, p5 => 3 // 2, d5 => 1.5]),
     ]
 end
 
@@ -62,7 +62,7 @@ end
 # Tests that simulations with differentially typed variables yields correct results.
 let
     for p in p_alts
-        oprob = ODEProblem(rs, u0, (0.0, 1000.0), p; abstol = 1e-10, reltol = 1e-10)
+        oprob = ODEProblem(rs, u0, (0.0, 1000.0), p; abstol = 1.0e-10, reltol = 1.0e-10)
         sol = solve(oprob, Tsit5())
         @test all(sol.u[end] .≈ 1.0)
     end
@@ -109,8 +109,8 @@ let
         @test unwrap(mtk_struct.ps[p3]) == 2
         @test unwrap(mtk_struct.ps[d3]) == 2
         @test unwrap(mtk_struct.ps[p4]) == Float32(0.5)
-        @test unwrap(mtk_struct.ps[d4]) == 1//2
-        @test unwrap(mtk_struct.ps[p5]) == 3//2
+        @test unwrap(mtk_struct.ps[d4]) == 1 // 2
+        @test unwrap(mtk_struct.ps[p5]) == 3 // 2
         @test unwrap(mtk_struct.ps[d5]) == Float32(1.5)
     end
 

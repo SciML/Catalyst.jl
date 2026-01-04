@@ -1,7 +1,7 @@
 ### Fetch packages ###
 using Catalyst, Graphs
-using Catalyst: reactionsystem, spatial_reactions, lattice, num_verts, num_edges, num_species, 
-                spatial_species, vertex_parameters, edge_parameters, edge_iterator
+using Catalyst: reactionsystem, spatial_reactions, lattice, num_verts, num_edges, num_species,
+    spatial_species, vertex_parameters, edge_parameters, edge_iterator
 
 # Sets rnd number.
 using StableRNGs
@@ -12,10 +12,10 @@ rng = StableRNG(12345)
 # Generates randomised initial condition or parameter values.
 rand_v_vals(grid, x::Number) = rand_v_vals(grid) * x
 rand_v_vals(lrs::LatticeReactionSystem) = rand_v_vals(lattice(lrs))
-function rand_v_vals(grid::DiGraph) 
+function rand_v_vals(grid::DiGraph)
     return rand(rng, nv(grid))
 end
-function rand_v_vals(grid::Catalyst.CartesianGridRej{N,T}) where {N,T}
+function rand_v_vals(grid::Catalyst.CartesianGridRej{N, T}) where {N, T}
     return rand(rng, grid.dims)
 end
 function rand_v_vals(grid::Array{Bool, N}) where {N}
@@ -42,12 +42,12 @@ end
 
 # Gets a symbol list of spatial parameters.
 function spatial_param_syms(lrs::LatticeReactionSystem)
-    ModelingToolkit.getname.(edge_parameters(lrs))
+    return ModelingToolkit.getname.(edge_parameters(lrs))
 end
 
 # Converts to integer value (for JumpProcess simulations).
 function make_values_int(values::Vector{<:Pair})
-    [val[1] => round.(Int64, val[2]) for val in values]
+    return [val[1] => round.(Int64, val[2]) for val in values]
 end
 make_values_int(values::Matrix{<:Number}) = round.(Int64, values)
 make_values_int(values::Vector{<:Number}) = round.(Int64, values)
@@ -70,7 +70,9 @@ SIR_srs_1 = [SIR_tr_S]
 SIR_srs_2 = [SIR_tr_S, SIR_tr_I, SIR_tr_R]
 
 # Small non-stiff system.
-binding_system = @reaction_network begin (k1, k2), X + Y <--> XY end
+binding_system = @reaction_network begin
+    (k1, k2), X + Y <--> XY
+end
 binding_tr_X = @transport_reaction dX X
 binding_tr_Y = @transport_reaction dY Y
 binding_tr_XY = @transport_reaction dXY XY
@@ -164,11 +166,13 @@ sigmaB_system = @reaction_network begin
     λW * v0 * ((1 + F * σB) / (K + σB)), ∅ ⟶ w
     λV * v0 * ((1 + F * σB) / (K + σB)), ∅ ⟶ v
 end
-sigmaB_p = [:kBw => 3600, :kDw => 18, :kB1 => 3600, :kB2 => 3600, :kB3 => 3600,
+sigmaB_p = [
+    :kBw => 3600, :kDw => 18, :kB1 => 3600, :kB2 => 3600, :kB3 => 3600,
     :kB4 => 1800, :kB5 => 3600,
     :kD1 => 18, :kD2 => 18, :kD3 => 18, :kD4 => 1800, :kD5 => 18, :kK1 => 36, :kK2 => 6,
     :kP => 180, :kDeg => 0.7,
-    :v0 => 0.4, :F => 30, :K => 0.2, :λW => 4, :λV => 4.5]
+    :v0 => 0.4, :F => 30, :K => 0.2, :λW => 4, :λV => 4.5,
+]
 sigmaB_u0 = [
     :w => 1.0,
     :w2 => 1.0,
@@ -192,16 +196,16 @@ sigmaB_srs_2 = [sigmaB_tr_σB, sigmaB_tr_w, sigmaB_tr_v]
 
 # Cartesian grids.
 very_small_1d_cartesian_grid = CartesianGrid(2)
-very_small_2d_cartesian_grid = CartesianGrid((2,2))
-very_small_3d_cartesian_grid = CartesianGrid((2,2,2))
+very_small_2d_cartesian_grid = CartesianGrid((2, 2))
+very_small_3d_cartesian_grid = CartesianGrid((2, 2, 2))
 
 small_1d_cartesian_grid = CartesianGrid(5)
-small_2d_cartesian_grid = CartesianGrid((5,5))
-small_3d_cartesian_grid = CartesianGrid((5,5,5))
+small_2d_cartesian_grid = CartesianGrid((5, 5))
+small_3d_cartesian_grid = CartesianGrid((5, 5, 5))
 
 large_1d_cartesian_grid = CartesianGrid(100)
-large_2d_cartesian_grid = CartesianGrid((100,100))
-large_3d_cartesian_grid = CartesianGrid((100,100,100))
+large_2d_cartesian_grid = CartesianGrid((100, 100))
+large_3d_cartesian_grid = CartesianGrid((100, 100, 100))
 
 # Masked grids.
 very_small_1d_masked_grid = fill(true, 2)
@@ -226,16 +230,16 @@ very_small_2d_graph_grid = Graphs.grid([2, 2])
 very_small_3d_graph_grid = Graphs.grid([2, 2, 2])
 
 small_1d_graph_grid = path_graph(5)
-small_2d_graph_grid = Graphs.grid([5,5])
-small_3d_graph_grid = Graphs.grid([5,5,5])
+small_2d_graph_grid = Graphs.grid([5, 5])
+small_3d_graph_grid = Graphs.grid([5, 5, 5])
 
 medium_1d_graph_grid = path_graph(20)
-medium_2d_graph_grid = Graphs.grid([20,20])
-medium_3d_graph_grid = Graphs.grid([20,20,20])
+medium_2d_graph_grid = Graphs.grid([20, 20])
+medium_3d_graph_grid = Graphs.grid([20, 20, 20])
 
 large_1d_graph_grid = path_graph(100)
-large_2d_graph_grid = Graphs.grid([100,100])
-large_3d_graph_grid = Graphs.grid([100,100,100])
+large_2d_graph_grid = Graphs.grid([100, 100])
+large_3d_graph_grid = Graphs.grid([100, 100, 100])
 
 # Graph - paths.
 short_path = path_graph(100)

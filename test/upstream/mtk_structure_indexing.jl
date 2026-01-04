@@ -19,8 +19,8 @@ begin
     # Creates the model and unpacks its context.
     model = @reaction_network begin
         @observables XY ~ X + Y
-        (kp,kd), 0 <--> X
-        (k1,k2), X <--> Y
+        (kp, kd), 0 <--> X
+        (k1, k2), X <--> Y
     end
     @unpack XY, X, Y, kp, kd, k1, k2 = model
 
@@ -31,7 +31,7 @@ begin
 
     # Creates problems.
     oprob = ODEProblem(model, u0_vals, tspan, p_vals)
-    sprob = SDEProblem(model,u0_vals, tspan, p_vals)
+    sprob = SDEProblem(model, u0_vals, tspan, p_vals)
     dprob = DiscreteProblem(model, u0_vals, tspan, p_vals)
     jprob = JumpProblem(JumpInputs(model, u0_vals, tspan, p_vals); rng)
     nprob = NonlinearProblem(model, u0_vals, p_vals)
@@ -70,12 +70,12 @@ let
         # Get u values (including observables).
         @test prob[X] == prob[model.X] == prob[:X] == 4
         @test prob[XY] == prob[model.XY] == prob[:XY] == 9
-        @test prob[[XY,Y]] == prob[[model.XY,model.Y]] == prob[[:XY,:Y]] == [9, 5]
-        @test prob[(XY,Y)] == prob[(model.XY,model.Y)] == prob[(:XY,:Y)] == (9, 5)
+        @test prob[[XY, Y]] == prob[[model.XY, model.Y]] == prob[[:XY, :Y]] == [9, 5]
+        @test prob[(XY, Y)] == prob[(model.XY, model.Y)] == prob[(:XY, :Y)] == (9, 5)
         @test getu(prob, X)(prob) == getu(prob, model.X)(prob) == getu(prob, :X)(prob) == 4
         @test getu(prob, XY)(prob) == getu(prob, model.XY)(prob) == getu(prob, :XY)(prob) == 9
-        @test getu(prob, [XY,Y])(prob) == getu(prob, [model.XY,model.Y])(prob) == getu(prob, [:XY,:Y])(prob) == [9, 5]
-        @test getu(prob, (XY,Y))(prob) == getu(prob, (model.XY,model.Y))(prob) == getu(prob, (:XY,:Y))(prob) == (9, 5)
+        @test getu(prob, [XY, Y])(prob) == getu(prob, [model.XY, model.Y])(prob) == getu(prob, [:XY, :Y])(prob) == [9, 5]
+        @test getu(prob, (XY, Y))(prob) == getu(prob, (model.XY, model.Y))(prob) == getu(prob, (:XY, :Y))(prob) == (9, 5)
 
         # Set u values.
         prob[X] = 20
@@ -93,11 +93,11 @@ let
 
         # Get p values.
         @test prob.ps[kp] == prob.ps[model.kp] == prob.ps[:kp] == 1.0
-        @test prob.ps[[k1,k2]] == prob.ps[[model.k1,model.k2]] == prob.ps[[:k1,:k2]] == [0.25, 0.5]
-        @test prob.ps[(k1,k2)] == prob.ps[(model.k1,model.k2)] == prob.ps[(:k1,:k2)] == (0.25, 0.5)
+        @test prob.ps[[k1, k2]] == prob.ps[[model.k1, model.k2]] == prob.ps[[:k1, :k2]] == [0.25, 0.5]
+        @test prob.ps[(k1, k2)] == prob.ps[(model.k1, model.k2)] == prob.ps[(:k1, :k2)] == (0.25, 0.5)
         @test getp(prob, kp)(prob) == getp(prob, model.kp)(prob) == getp(prob, :kp)(prob) == 1.0
-        @test getp(prob, [k1,k2])(prob) == getp(prob, [model.k1,model.k2])(prob) == getp(prob, [:k1,:k2])(prob) == [0.25, 0.5]
-        @test getp(prob, (k1,k2))(prob) == getp(prob, (model.k1,model.k2))(prob) == getp(prob, (:k1,:k2))(prob) == (0.25, 0.5)
+        @test getp(prob, [k1, k2])(prob) == getp(prob, [model.k1, model.k2])(prob) == getp(prob, [:k1, :k2])(prob) == [0.25, 0.5]
+        @test getp(prob, (k1, k2))(prob) == getp(prob, (model.k1, model.k2))(prob) == getp(prob, (:k1, :k2))(prob) == (0.25, 0.5)
 
         # Set p values.
         prob.ps[kp] = 2.0
@@ -158,12 +158,12 @@ let
         # Get u values.
         @test int[X] == int[model.X] == int[:X] == 4
         @test int[XY] == int[model.XY] == int[:XY] == 9
-        @test int[[XY,Y]] == int[[model.XY,model.Y]] == int[[:XY,:Y]] == [9, 5]
-        @test int[(XY,Y)] == int[(model.XY,model.Y)] == int[(:XY,:Y)] == (9, 5)
+        @test int[[XY, Y]] == int[[model.XY, model.Y]] == int[[:XY, :Y]] == [9, 5]
+        @test int[(XY, Y)] == int[(model.XY, model.Y)] == int[(:XY, :Y)] == (9, 5)
         @test getu(int, X)(int) == getu(int, model.X)(int) == getu(int, :X)(int) == 4
         @test getu(int, XY)(int) == getu(int, model.XY)(int) == getu(int, :XY)(int) == 9
-        @test getu(int, [XY,Y])(int) == getu(int, [model.XY,model.Y])(int) == getu(int, [:XY,:Y])(int) == [9, 5]
-        @test getu(int, (XY,Y))(int) == getu(int, (model.XY,model.Y))(int) == getu(int, (:XY,:Y))(int) == (9, 5)
+        @test getu(int, [XY, Y])(int) == getu(int, [model.XY, model.Y])(int) == getu(int, [:XY, :Y])(int) == [9, 5]
+        @test getu(int, (XY, Y))(int) == getu(int, (model.XY, model.Y))(int) == getu(int, (:XY, :Y))(int) == (9, 5)
 
         # Set u values.
         int[X] = 20
@@ -181,11 +181,11 @@ let
 
         # Get p values.
         @test int.ps[kp] == int.ps[model.kp] == int.ps[:kp] == 1.0
-        @test int.ps[[k1,k2]] == int.ps[[model.k1,model.k2]] == int.ps[[:k1,:k2]] == [0.25, 0.5]
-        @test int.ps[(k1,k2)] == int.ps[(model.k1,model.k2)] == int.ps[(:k1,:k2)] == (0.25, 0.5)
+        @test int.ps[[k1, k2]] == int.ps[[model.k1, model.k2]] == int.ps[[:k1, :k2]] == [0.25, 0.5]
+        @test int.ps[(k1, k2)] == int.ps[(model.k1, model.k2)] == int.ps[(:k1, :k2)] == (0.25, 0.5)
         @test getp(int, kp)(int) == getp(int, model.kp)(int) == getp(int, :kp)(int) == 1.0
-        @test getp(int, [k1,k2])(int) == getp(int, [model.k1,model.k2])(int) == getp(int, [:k1,:k2])(int) == [0.25, 0.5]
-        @test getp(int, (k1,k2))(int) == getp(int, (model.k1,model.k2))(int) == getp(int, (:k1,:k2))(int) == (0.25, 0.5)
+        @test getp(int, [k1, k2])(int) == getp(int, [model.k1, model.k2])(int) == getp(int, [:k1, :k2])(int) == [0.25, 0.5]
+        @test getp(int, (k1, k2))(int) == getp(int, (model.k1, model.k2))(int) == getp(int, (:k1, :k2))(int) == (0.25, 0.5)
 
         # Set p values.
         int.ps[kp] = 2.0
@@ -210,24 +210,24 @@ let
 
         # Save single variable
         if !(solver isa SSAStepper)
-            @test solve(prob, solver; seed, save_idxs=X)[X][1] == 4
-            @test solve(prob, solver; seed, save_idxs=model.X)[X][1] == 4
-            @test solve(prob, solver; seed, save_idxs=:X)[X][1] == 4
+            @test solve(prob, solver; seed, save_idxs = X)[X][1] == 4
+            @test solve(prob, solver; seed, save_idxs = model.X)[X][1] == 4
+            @test solve(prob, solver; seed, save_idxs = :X)[X][1] == 4
         else
-            @test_broken solve(prob, solver; seed, save_idxs=X)[X][1] == 4
-            @test_broken solve(prob, solver; seed, save_idxs=model.X)[X][1] == 4
-            @test_broken solve(prob, solver; seed, save_idxs=:X)[X][1] == 4
+            @test_broken solve(prob, solver; seed, save_idxs = X)[X][1] == 4
+            @test_broken solve(prob, solver; seed, save_idxs = model.X)[X][1] == 4
+            @test_broken solve(prob, solver; seed, save_idxs = :X)[X][1] == 4
         end
 
         # Save observable.
-        @test_broken solve(prob, solver; seed, save_idxs=XY)[XY][1] == 9
-        @test_broken solve(prob, solver; seed, save_idxs=model.XY)[XY][1] == 9
-        @test_broken solve(prob, solver; seed, save_idxs=:XY)[XY][1] == 9
+        @test_broken solve(prob, solver; seed, save_idxs = XY)[XY][1] == 9
+        @test_broken solve(prob, solver; seed, save_idxs = model.XY)[XY][1] == 9
+        @test_broken solve(prob, solver; seed, save_idxs = :XY)[XY][1] == 9
 
         # Save vector of stuff.
-        @test_broken solve(prob, solver; seed, save_idxs=[XY,Y])[[XY,Y]][1] == [9, 5]
-        @test_broken solve(prob, solver; seed, save_idxs=[model.XY,model.Y])[[model.XY,model.Y]][1] == [9, 5]
-        @test_broken solve(prob, solver; seed, save_idxs=[:XY,:Y])[[:XY,:Y]][1] == [9, 5]
+        @test_broken solve(prob, solver; seed, save_idxs = [XY, Y])[[XY, Y]][1] == [9, 5]
+        @test_broken solve(prob, solver; seed, save_idxs = [model.XY, model.Y])[[model.XY, model.Y]][1] == [9, 5]
+        @test_broken solve(prob, solver; seed, save_idxs = [:XY, :Y])[[:XY, :Y]][1] == [9, 5]
     end
 end
 
@@ -237,26 +237,26 @@ let
         # Get u values.
         @test sol[X][1] == sol[model.X][1] == sol[:X][1] == 4
         @test sol[XY][1] == sol[model.XY][1] == sol[:XY][1] == 9
-        @test sol[[XY,Y]][1] == sol[[model.XY,model.Y]][1] == sol[[:XY,:Y]][1] == [9, 5]
-        @test sol[(XY,Y)][1] == sol[(model.XY,model.Y)][1] == sol[(:XY,:Y)][1] == (9, 5)
+        @test sol[[XY, Y]][1] == sol[[model.XY, model.Y]][1] == sol[[:XY, :Y]][1] == [9, 5]
+        @test sol[(XY, Y)][1] == sol[(model.XY, model.Y)][1] == sol[(:XY, :Y)][1] == (9, 5)
         @test getu(sol, X)(sol)[1] == getu(sol, model.X)(sol)[1] == getu(sol, :X)(sol)[1] == 4
         @test getu(sol, XY)(sol)[1] == getu(sol, model.XY)(sol)[1] == getu(sol, :XY)(sol)[1] == 9
-        @test getu(sol, [XY,Y])(sol)[1] == getu(sol, [model.XY,model.Y])(sol)[1] == getu(sol, [:XY,:Y])(sol)[1] == [9, 5]
-        @test getu(sol, (XY,Y))(sol)[1] == getu(sol, (model.XY,model.Y))(sol)[1] == getu(sol, (:XY,:Y))(sol)[1] == (9, 5)
+        @test getu(sol, [XY, Y])(sol)[1] == getu(sol, [model.XY, model.Y])(sol)[1] == getu(sol, [:XY, :Y])(sol)[1] == [9, 5]
+        @test getu(sol, (XY, Y))(sol)[1] == getu(sol, (model.XY, model.Y))(sol)[1] == getu(sol, (:XY, :Y))(sol)[1] == (9, 5)
 
         # Get u values via idxs and functional call.
-        @test sol(0.0; idxs=X) == sol(0.0; idxs=model.X) == sol(0.0; idxs=:X) == 4
-        @test sol(0.0; idxs=XY) == sol(0.0; idxs=model.XY) == sol(0.0; idxs=:XY) == 9
-        @test sol(0.0; idxs = [XY,Y]) == sol(0.0; idxs = [model.XY,model.Y]) == sol(0.0; idxs = [:XY,:Y]) == [9, 5]
-        @test_broken sol(0.0; idxs = (XY,Y)) == sol(0.0; idxs = (model.XY,model.Y)) == sol(0.0; idxs = (:XY,:Y)) == (9, 5) # https://github.com/SciML/SciMLBase.jl/issues/711
+        @test sol(0.0; idxs = X) == sol(0.0; idxs = model.X) == sol(0.0; idxs = :X) == 4
+        @test sol(0.0; idxs = XY) == sol(0.0; idxs = model.XY) == sol(0.0; idxs = :XY) == 9
+        @test sol(0.0; idxs = [XY, Y]) == sol(0.0; idxs = [model.XY, model.Y]) == sol(0.0; idxs = [:XY, :Y]) == [9, 5]
+        @test_broken sol(0.0; idxs = (XY, Y)) == sol(0.0; idxs = (model.XY, model.Y)) == sol(0.0; idxs = (:XY, :Y)) == (9, 5) # https://github.com/SciML/SciMLBase.jl/issues/711
 
         # Get p values.
         @test sol.ps[kp] == sol.ps[model.kp] == sol.ps[:kp] == 1.0
-        @test sol.ps[[k1,k2]] == sol.ps[[model.k1,model.k2]] == sol.ps[[:k1,:k2]] == [0.25, 0.5]
-        @test sol.ps[(k1,k2)] == sol.ps[(model.k1,model.k2)] == sol.ps[(:k1,:k2)] == (0.25, 0.5)
+        @test sol.ps[[k1, k2]] == sol.ps[[model.k1, model.k2]] == sol.ps[[:k1, :k2]] == [0.25, 0.5]
+        @test sol.ps[(k1, k2)] == sol.ps[(model.k1, model.k2)] == sol.ps[(:k1, :k2)] == (0.25, 0.5)
         @test getp(sol, kp)(sol) == getp(sol, model.kp)(sol) == getp(sol, :kp)(sol) == 1.0
-        @test getp(sol, [k1,k2])(sol) == getp(sol, [model.k1,model.k2])(sol) == getp(sol, [:k1,:k2])(sol) == [0.25, 0.5]
-        @test getp(sol, (k1,k2))(sol) == getp(sol, (model.k1,model.k2))(sol) == getp(sol, (:k1,:k2))(sol) == (0.25, 0.5)
+        @test getp(sol, [k1, k2])(sol) == getp(sol, [model.k1, model.k2])(sol) == getp(sol, [:k1, :k2])(sol) == [0.25, 0.5]
+        @test getp(sol, (k1, k2))(sol) == getp(sol, (model.k1, model.k2))(sol) == getp(sol, (:k1, :k2))(sol) == (0.25, 0.5)
     end
 
     # Handles nonlinear and steady state solutions differently.
@@ -265,20 +265,20 @@ let
             # Get u values.
             @test sol[X] == sol[model.X] == sol[:X]
             @test sol[XY] == sol[model.XY][1] == sol[:XY]
-            @test sol[[XY,Y]] == sol[[model.XY,model.Y]] == sol[[:XY,:Y]]
-            @test sol[(XY,Y)] == sol[(model.XY,model.Y)] == sol[(:XY,:Y)]
+            @test sol[[XY, Y]] == sol[[model.XY, model.Y]] == sol[[:XY, :Y]]
+            @test sol[(XY, Y)] == sol[(model.XY, model.Y)] == sol[(:XY, :Y)]
             @test getu(sol, X)(sol) == getu(sol, model.X)(sol)[1] == getu(sol, :X)(sol)
             @test getu(sol, XY)(sol) == getu(sol, model.XY)(sol)[1] == getu(sol, :XY)(sol)
-            @test getu(sol, [XY,Y])(sol) == getu(sol, [model.XY,model.Y])(sol) == getu(sol, [:XY,:Y])(sol)
-            @test getu(sol, (XY,Y))(sol) == getu(sol, (model.XY,model.Y))(sol) == getu(sol, (:XY,:Y))(sol)
+            @test getu(sol, [XY, Y])(sol) == getu(sol, [model.XY, model.Y])(sol) == getu(sol, [:XY, :Y])(sol)
+            @test getu(sol, (XY, Y))(sol) == getu(sol, (model.XY, model.Y))(sol) == getu(sol, (:XY, :Y))(sol)
 
             # Get p values.
             @test sol.ps[kp] == sol.ps[model.kp] == sol.ps[:kp]
-            @test sol.ps[[k1,k2]] == sol.ps[[model.k1,model.k2]] == sol.ps[[:k1,:k2]]
-            @test sol.ps[(k1,k2)] == sol.ps[(model.k1,model.k2)] == sol.ps[(:k1,:k2)]
+            @test sol.ps[[k1, k2]] == sol.ps[[model.k1, model.k2]] == sol.ps[[:k1, :k2]]
+            @test sol.ps[(k1, k2)] == sol.ps[(model.k1, model.k2)] == sol.ps[(:k1, :k2)]
             @test getp(sol, kp)(sol) == getp(sol, model.kp)(sol) == getp(sol, :kp)(sol)
-            @test getp(sol, [k1,k2])(sol) == getp(sol, [model.k1,model.k2])(sol) == getp(sol, [:k1,:k2])(sol)
-            @test getp(sol, (k1,k2))(sol) == getp(sol, (model.k1,model.k2))(sol) == getp(sol, (:k1,:k2))(sol)
+            @test getp(sol, [k1, k2])(sol) == getp(sol, [model.k1, model.k2])(sol) == getp(sol, [:k1, :k2])(sol)
+            @test getp(sol, (k1, k2))(sol) == getp(sol, (model.k1, model.k2))(sol) == getp(sol, (:k1, :k2))(sol)
         end
     end
 end
@@ -295,12 +295,12 @@ let
         @test length(plot(sol; idxs = :XY).series_list) == 1
 
         # As vector.
-        @test length(plot(sol; idxs = [X,Y]).series_list) == 2
-        @test length(plot(sol; idxs = [XY,Y]).series_list) == 2
-        @test length(plot(sol; idxs = [model.X,model.Y]).series_list) == 2
-        @test length(plot(sol; idxs = [model.XY,model.Y]).series_list) == 2
-        @test length(plot(sol; idxs = [:X,:Y]).series_list) == 2
-        @test length(plot(sol; idxs = [:XY,:Y]).series_list) == 2
+        @test length(plot(sol; idxs = [X, Y]).series_list) == 2
+        @test length(plot(sol; idxs = [XY, Y]).series_list) == 2
+        @test length(plot(sol; idxs = [model.X, model.Y]).series_list) == 2
+        @test length(plot(sol; idxs = [model.XY, model.Y]).series_list) == 2
+        @test length(plot(sol; idxs = [:X, :Y]).series_list) == 2
+        @test length(plot(sol; idxs = [:XY, :Y]).series_list) == 2
 
         # As tuple.
         @test length(plot(sol; idxs = (X, Y)).series_list) == 1
@@ -352,10 +352,14 @@ let
         prob6 = remake(prob1, u0 = [Y2 => 40.0], p = [k1 => 0.4])
         prob7 = remake(prob1, u0 = [X1 => 10.0, X2 => 20.0], p = [V0 => 50.0])
         prob8 = remake(prob1, u0 = [W => 60.0])
-        prob9 = remake(prob2; u0 = [X2 => nothing, Y2 => nothing],
-                       p = [Γ => [10.0, 20.0]])
-        prob10 = remake(prob1; u0 = [Y1 => 20.0, Y2 => nothing, X2 => nothing],
-                        p = [Γ => [20.0, 30.0], k1 => 0.4])
+        prob9 = remake(
+            prob2; u0 = [X2 => nothing, Y2 => nothing],
+            p = [Γ => [10.0, 20.0]]
+        )
+        prob10 = remake(
+            prob1; u0 = [Y1 => 20.0, Y2 => nothing, X2 => nothing],
+            p = [Γ => [20.0, 30.0], k1 => 0.4]
+        )
         prob11 = remake(prob10, u0 = [X1 => 10.0], p = [k2 => 0.5])
 
         # Creates a testing function.
@@ -373,43 +377,66 @@ let
                 @test integ.ps[p] == ps_correct[p]
                 @test sol.ps[p] == ps_correct[p]
             end
+            return
         end
 
         # Checks that all problem values are correct.
         Γ = prob1.f.sys.Γ
-        test_vals(prob1,
+        test_vals(
+            prob1,
             Dict(X1 => 1.0, X2 => 2.0, Y1 => 3.0, Y2 => 4.0, V => 3.0, W => 6.0),
-            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 3.0, Γ[2] => 7.0))
-        test_vals(prob2,
+            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 3.0, Γ[2] => 7.0)
+        )
+        test_vals(
+            prob2,
             Dict(X1 => 10.0, X2 => 2.0, Y1 => 3.0, Y2 => 4.0, V => 3.0, W => 6.0),
-            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 12.0, Γ[2] => 7.0))
-        test_vals(prob3,
+            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 12.0, Γ[2] => 7.0)
+        )
+        test_vals(
+            prob3,
             Dict(X1 => 10.0, X2 => 20.0, Y1 => 3.0, Y2 => 4.0, V => 3.0, W => 6.0),
-            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 30.0, Γ[2] => 7.0))
-        test_vals(prob4,
+            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 30.0, Γ[2] => 7.0)
+        )
+        test_vals(
+            prob4,
             Dict(X1 => 1.0, X2 => 20.0, Y1 => 30.0, Y2 => 4.0, V => 3.0, W => 6.0),
-            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 21.0, Γ[2] => 34.0))
-        test_vals(prob5,
+            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 21.0, Γ[2] => 34.0)
+        )
+        test_vals(
+            prob5,
             Dict(X1 => 10.0, X2 => 20.0, Y1 => 3.0, Y2 => 4.0, V => 3.0, W => 6.0),
-            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 30.0, Γ[2] => 7.0))
-        test_vals(prob6,
+            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 30.0, Γ[2] => 7.0)
+        )
+        test_vals(
+            prob6,
             Dict(X1 => 1.0, X2 => 2.0, Y1 => 3.0, Y2 => 40.0, V => 3.0, W => 6.0),
-            Dict(k1 => 0.4, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 3.0, Γ[2] => 43.0))
-        test_vals(prob7,
+            Dict(k1 => 0.4, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 3.0, Γ[2] => 43.0)
+        )
+        test_vals(
+            prob7,
             Dict(X1 => 10.0, X2 => 20.0, Y1 => 3.0, Y2 => 4.0, V => 50.0, W => 6.0),
-            Dict(k1 => 0.1, k2 => 0.2, V0 => 50.0, v => 50.0, w => 6.0, Γ[1] => 30.0, Γ[2] => 7.0))
-        test_vals(prob8,
+            Dict(k1 => 0.1, k2 => 0.2, V0 => 50.0, v => 50.0, w => 6.0, Γ[1] => 30.0, Γ[2] => 7.0)
+        )
+        test_vals(
+            prob8,
             Dict(X1 => 1.0, X2 => 2.0, Y1 => 3.0, Y2 => 4.0, V => 3.0, W => 60.0),
-            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 60.0, Γ[1] => 3.0, Γ[2] => 7.0))
-        test_vals(prob9,
+            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 60.0, Γ[1] => 3.0, Γ[2] => 7.0)
+        )
+        test_vals(
+            prob9,
             Dict(X1 => 10.0, X2 => 0.0, Y1 => 3.0, Y2 => 17.0, V => 3.0, W => 6.0),
-            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 10.0, Γ[2] => 20.0))
-        test_vals(prob10,
+            Dict(k1 => 0.1, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 10.0, Γ[2] => 20.0)
+        )
+        test_vals(
+            prob10,
             Dict(X1 => 1.0, X2 => 19.0, Y1 => 20.0, Y2 => 10.0, V => 3.0, W => 6.0),
-            Dict(k1 => 0.4, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 20.0, Γ[2] => 30.0))
-        test_vals(prob11,
+            Dict(k1 => 0.4, k2 => 0.2, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 20.0, Γ[2] => 30.0)
+        )
+        test_vals(
+            prob11,
             Dict(X1 => 10.0, X2 => 10.0, Y1 => 20.0, Y2 => 10.0, V => 3.0, W => 6.0),
-            Dict(k1 => 0.4, k2 => 0.5, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 20.0, Γ[2] => 30.0))
+            Dict(k1 => 0.4, k2 => 0.5, V0 => 3.0, v => 3.0, w => 6.0, Γ[1] => 20.0, Γ[2] => 30.0)
+        )
     end
 end
 
@@ -423,7 +450,7 @@ end
 let
     # Creates the model.
     rn = @reaction_network begin
-        p1*p2, A + B --> C
+        p1 * p2, A + B --> C
     end
     @unpack p1, p2 = rn
 

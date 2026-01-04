@@ -9,13 +9,13 @@ using Catalyst, Test
 # Tests TransportReaction with non-trivial rate.
 let
     rs = @reaction_network begin
-        @parameters dV dE [edgeparameter=true]
-        (p,1), 0 <--> X
+        @parameters dV dE [edgeparameter = true]
+        (p, 1), 0 <--> X
     end
     @unpack dV, dE, X = rs
 
-    tr = TransportReaction(dV*dE, X)
-    @test isequal(tr.rate, dV*dE)
+    tr = TransportReaction(dV * dE, X)
+    @test isequal(tr.rate, dV * dE)
 end
 # Test reactions with constants in rate.
 let
@@ -38,7 +38,7 @@ end
 # Test case 1.
 let
     tr_1 = @transport_reaction dX X
-    tr_2 = @transport_reaction dY1*dY2 Y
+    tr_2 = @transport_reaction dY1 * dY2 Y
 
     # @test ModelingToolkit.getname.(species(tr_1)) == ModelingToolkit.getname.(spatial_species(tr_1)) == [:X] # species(::TransportReaction) currently not supported.
     # @test ModelingToolkit.getname.(species(tr_2)) == ModelingToolkit.getname.(spatial_species(tr_2)) == [:Y]
@@ -61,7 +61,7 @@ let
     end
     @unpack X, Y, dX, dY1, dY2 = rs
     tr_1 = TransportReaction(dX, X)
-    tr_2 = TransportReaction(dY1*dY2, Y)
+    tr_2 = TransportReaction(dY1 * dY2, Y)
     # @test isequal(species(tr_1), [X])
     # @test isequal(species(tr_1), [X])
     @test issetequal(spatial_species(tr_2), [Y])
@@ -79,7 +79,7 @@ let
     t = default_t()
     @species X(t) Y(t)
     @parameters D1 D2 D3
-    @test_throws ErrorException TransportReaction(D1 + D2*(D3 + Y), X)
+    @test_throws ErrorException TransportReaction(D1 + D2 * (D3 + Y), X)
     @test_throws ErrorException TransportReaction(Y, X)
     @test_throws Exception @eval @transport_reaction ∅ X
 end
@@ -95,10 +95,10 @@ let
     end
     @unpack X, Y, Z, dX, dY1, dY2, dZ = rs
     rate1 = dX
-    rate2 = dY1*dY2
+    rate2 = dY1 * dY2
     species3 = Z
     tr_1 = TransportReaction(dX, X)
-    tr_2 = TransportReaction(dY1*dY2, Y)
+    tr_2 = TransportReaction(dY1 * dY2, Y)
     tr_3 = TransportReaction(dZ, Z)
     tr_macro_1 = @transport_reaction $dX X
     tr_macro_2 = @transport_reaction $(rate2) Y

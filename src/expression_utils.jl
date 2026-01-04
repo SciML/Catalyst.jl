@@ -13,7 +13,7 @@ function esc_dollars!(ex)
             ex.args[i] = esc_dollars!(ex.args[i])
         end
     end
-    ex
+    return ex
 end
 
 # Checks if an expression is an escaped expression (e.g. on the form `$(Expr(:escape, :Y))`)
@@ -26,7 +26,7 @@ end
 # Throws an error when a forbidden symbol is used.
 function forbidden_symbol_check(syms)
     used_forbidden_syms = intersect(forbidden_symbols_error, syms)
-    isempty(used_forbidden_syms) ||
+    return isempty(used_forbidden_syms) ||
         error("The following symbol(s) are used as species or parameters: $used_forbidden_syms, this is not permitted.")
 end
 

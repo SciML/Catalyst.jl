@@ -96,7 +96,7 @@ let
     bool_md = false
     int_md = 3
     float_md = 1.2
-    rat_md = 4//5
+    rat_md = 4 // 5
     sym_md = :sym
     c_md = 'c'
     str_md = "A string"
@@ -112,30 +112,30 @@ let
 
     # Creates parameters, variables, and species (with various metadata and default values).
     @parameters begin
-        a, [input=bool_md]
-        b, [misc=int_md]
-        c = float_md, [misc=rat_md]
-        d1, [misc=c_md]
-        d2, [description=str_md]
-        e1, [misc=nothing_md]
-        e2, [misc=symb_md]
+        a, [input = bool_md]
+        b, [misc = int_md]
+        c = float_md, [misc = rat_md]
+        d1, [misc = c_md]
+        d2, [description = str_md]
+        e1, [misc = nothing_md]
+        e2, [misc = symb_md]
     end
     @variables begin
         A(t) = float_md
-        B(t), [misc=expr_md]
-        C(t), [misc=pair_md]
-        D1(t), [misc=tup_md]
-        D2(t), [misc=vec_md]
-        E1(t), [misc=dict_md]
-        E2(t), [misc=mat_md]
+        B(t), [misc = expr_md]
+        C(t), [misc = pair_md]
+        D1(t), [misc = tup_md]
+        D2(t), [misc = vec_md]
+        E1(t), [misc = dict_md]
+        E2(t), [misc = mat_md]
     end
     @species begin
-        X(t), [input=bool_md]
-        Y(t), [misc=int_md]
-        Z(t), [misc=float_md]
-        V1(t), [description=str_md]
-        V2(t), [misc=dict_md]
-        W1(t), [misc=mat_md]
+        X(t), [input = bool_md]
+        Y(t), [misc = int_md]
+        Z(t), [misc = float_md]
+        V1(t), [description = str_md]
+        V2(t), [misc = dict_md]
+        W1(t), [misc = mat_md]
         W2(t) = float_md
     end
 
@@ -261,18 +261,18 @@ end
 # Tests for complete and incomplete system.
 let
     # Prepares spatial independent variables (technically not used and only supplied to systems).
-    sivs = @variables x y z [description="A spatial independent variable."]
+    sivs = @variables x y z [description = "A spatial independent variable."]
 
     # Prepares parameters, species, and variables.
     @parameters p d k1_1 k2_1 k1_2 k2_2 k1_3 k2_3 k1_4 k2_4 a b_1 b_2 b_3 b_4 η
     @parameters begin
         t_1 = 2.0
         t_2::Float64
-        t_3, [description="A parameter."]
-        t_4::Float32 = p, [description="A parameter."]
+        t_3, [description = "A parameter."]
+        t_4::Float32 = p, [description = "A parameter."]
     end
-    @species X(t) X2_1(t) X2_2(t) X2_3(t) X2_4(t)=p [description="A species."]
-    @variables A(t)=p [description="A variable."] B_1(t) B_2(t) B_3(t) B_4(t)
+    @species X(t) X2_1(t) X2_2(t) X2_3(t) X2_4(t) = p [description = "A species."]
+    @variables A(t) = p [description = "A variable."] B_1(t) B_2(t) B_3(t) B_4(t)
 
     # Prepares all equations.
     eqs_1 = [
@@ -281,7 +281,7 @@ let
         Reaction(k1_1, [X], [X2_1], [2], [1]),
         Reaction(k2_1, [X2_1], [X], [1], [2]),
         D(A) ~ a - A,
-        A + 2B_1^3 ~ b_1 * X
+        A + 2B_1^3 ~ b_1 * X,
     ]
     eqs_2 = [
         Reaction(p, [], [X]; metadata = [:description => "A reaction"]),
@@ -289,7 +289,7 @@ let
         Reaction(k1_2, [X], [X2_2], [2], [1]),
         Reaction(k2_2, [X2_2], [X], [1], [2]),
         D(A) ~ a - A,
-        A + 2B_2^3 ~ b_2 * X
+        A + 2B_2^3 ~ b_2 * X,
     ]
     eqs_3 = [
         Reaction(p, [], [X]; metadata = [:description => "A reaction"]),
@@ -297,7 +297,7 @@ let
         Reaction(k1_3, [X], [X2_3], [2], [1]),
         Reaction(k2_3, [X2_3], [X], [1], [2]),
         D(A) ~ a - A,
-        A + 2B_3^3 ~ b_3 * X
+        A + 2B_3^3 ~ b_3 * X,
     ]
     eqs_4 = [
         Reaction(p, [], [X]; metadata = [:description => "A reaction"]),
@@ -305,14 +305,14 @@ let
         Reaction(k1_4, [X], [X2_4], [2], [1]),
         Reaction(k2_4, [X2_4], [X], [1], [2]),
         D(A) ~ a - A,
-        A + 2B_4^3 ~ b_4 * X
+        A + 2B_4^3 ~ b_4 * X,
     ]
 
     # Prepares all events.
-    continuous_events_1 = [(A ~ t_1) => [A ~ A + 2.0, X ~ X/2]]
-    continuous_events_2 = [(A ~ t_2) => [A ~ A + 2.0, X ~ X/2]]
-    continuous_events_3 = [(A ~ t_3) => [A ~ A + 2.0, X ~ X/2]]
-    continuous_events_4 = [(A ~ t_4) => [A ~ A + 2.0, X ~ X/2]]
+    continuous_events_1 = [(A ~ t_1) => [A ~ A + 2.0, X ~ X / 2]]
+    continuous_events_2 = [(A ~ t_2) => [A ~ A + 2.0, X ~ X / 2]]
+    continuous_events_3 = [(A ~ t_3) => [A ~ A + 2.0, X ~ X / 2]]
+    continuous_events_4 = [(A ~ t_4) => [A ~ A + 2.0, X ~ X / 2]]
     discrete_events_1 = [
         10.0 => [X2_1 ~ X2_1 + 1.0]
         [5.0, 10.0] => [b_1 ~ 2 * b_1]
@@ -335,18 +335,26 @@ let
     ]
 
     # Creates the systems.
-    @named rs_4 = ReactionSystem(eqs_4, t; continuous_events = continuous_events_4,
-                                discrete_events = discrete_events_4, spatial_ivs = sivs,
-                                metadata = "System 4", systems = [])
-    @named rs_2 = ReactionSystem(eqs_2, t; continuous_events = continuous_events_2,
-                                discrete_events = discrete_events_2, spatial_ivs = sivs,
-                                metadata = "System 2", systems = [])
-    @named rs_3 = ReactionSystem(eqs_3, t; continuous_events = continuous_events_3,
-                                discrete_events = discrete_events_3, spatial_ivs = sivs,
-                                metadata = "System 3", systems = [rs_4])
-    @named rs_1 = ReactionSystem(eqs_1, t; continuous_events = continuous_events_1,
-                                discrete_events = discrete_events_1, spatial_ivs = sivs,
-                                metadata = "System 1", systems = [rs_2, rs_3])
+    @named rs_4 = ReactionSystem(
+        eqs_4, t; continuous_events = continuous_events_4,
+        discrete_events = discrete_events_4, spatial_ivs = sivs,
+        metadata = "System 4", systems = []
+    )
+    @named rs_2 = ReactionSystem(
+        eqs_2, t; continuous_events = continuous_events_2,
+        discrete_events = discrete_events_2, spatial_ivs = sivs,
+        metadata = "System 2", systems = []
+    )
+    @named rs_3 = ReactionSystem(
+        eqs_3, t; continuous_events = continuous_events_3,
+        discrete_events = discrete_events_3, spatial_ivs = sivs,
+        metadata = "System 3", systems = [rs_4]
+    )
+    @named rs_1 = ReactionSystem(
+        eqs_1, t; continuous_events = continuous_events_1,
+        discrete_events = discrete_events_1, spatial_ivs = sivs,
+        metadata = "System 1", systems = [rs_2, rs_3]
+    )
     rs = complete(rs_1)
 
     # Checks that the correct system is saved (both complete and incomplete ones).
@@ -370,7 +378,7 @@ let
             [X ~ 5.0] => [X ~ X + 1.0]
             [X ~ 20.0] => [X ~ X - 1.0]
         end
-        @discrete_events 5.0 => [d ~ d/2]
+        @discrete_events 5.0 => [d ~ d / 2]
         d, X --> 0
     end
 
@@ -389,9 +397,9 @@ let
     rs = @reaction_network begin
         @ivs t x y z
         @parameters p
-        @species X(t,x,y) Y(t,x,y) XY(t,x,y) Z(t,x,y)
-        @variables V(t,x,z)
-        (kB,kD), X + Y <--> XY
+        @species X(t, x, y) Y(t, x, y) XY(t, x, y) Z(t, x, y)
+        @variables V(t, x, z)
+        (kB, kD), X + Y <--> XY
     end
     save_reactionsystem("serialised_rs.jl", rs)
     @test ModelingToolkit.isequal(rs, include("../serialised_rs.jl"))
@@ -409,7 +417,7 @@ let
     @parameters k1 k2::Int64
     rxs = [
         Reaction(k1, [X1], [X2]),
-        Reaction(k2, [X2], [X1])
+        Reaction(k2, [X2], [X1]),
     ]
     defaults = Dict((X1 => 1.0, k2 => 2))
 
@@ -418,7 +426,7 @@ let
     conservationlaws(rs)
 
     # Serialises model and then loads and checks it.
-    @test_logs (:warn, ) match_mode=:any save_reactionsystem("serialised_rs.jl", rs)
+    @test_logs (:warn,) match_mode = :any save_reactionsystem("serialised_rs.jl", rs)
     rs_loaded = include("../serialised_rs.jl")
     @test rs == rs_loaded
     @test ModelingToolkit.get_defaults(rs) == ModelingToolkit.get_defaults(rs_loaded)
@@ -433,7 +441,7 @@ let
 
     rxs = [
         Reaction(p, [], [X]),
-        Reaction(d, [X], [])
+        Reaction(d, [X], []),
     ]
     eq = D(V) ~ V_max - V
 
@@ -448,7 +456,7 @@ end
 let
     # Checks for complete system.
     rs_complete = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     save_reactionsystem("serialised_rs_complete.jl", rs_complete)
     rs_complete_loaded = include("../serialised_rs_complete.jl")
@@ -457,7 +465,7 @@ let
 
     # Checks for non-complete system.
     rs_incomplete = @network_component begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     save_reactionsystem("serialised_rs_incomplete.jl", rs_incomplete)
     rs_incomplete_loaded = include("../serialised_rs_incomplete.jl")
@@ -490,8 +498,8 @@ let
             Xcount ~ X + X2
         end
         p, 0 --> X
-        d*X2, X => 0
-        (k1,k2), 2X <--> X2
+        d * X2, X => 0
+        (k1, k2), 2X <--> X2
     end
 
     # Checks its serialisation.
@@ -523,6 +531,6 @@ let
     rs = @reaction_network begin
         d, X --> 0
     end
-    @test (@test_logs (:warn, ) match_mode=:any Catalyst.get_connection_type_string(rs)) == ""
+    @test (@test_logs (:warn,) match_mode = :any Catalyst.get_connection_type_string(rs)) == ""
     @test Catalyst.get_connection_type_annotation(rs) == "Connection types:: (OBS: Currently not supported, and hence empty)"
 end

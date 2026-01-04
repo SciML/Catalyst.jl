@@ -98,9 +98,11 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
     """
     edge_iterator::T
 
-    function LatticeReactionSystem(rs::ReactionSystem{Q}, spatial_reactions::Vector{R},
+    function LatticeReactionSystem(
+            rs::ReactionSystem{Q}, spatial_reactions::Vector{R},
             lattice::S, num_verts::Int64, num_edges::Int64,
-            edge_iterator::T) where {Q, R, S, T}
+            edge_iterator::T
+        ) where {Q, R, S, T}
         # Error checks.
         if !(R <: AbstractSpatialReaction)
             throw(ArgumentError("The second argument must be a vector of AbstractSpatialReaction subtypes."))
@@ -129,8 +131,12 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
         if isempty(spatial_reactions)
             spat_species = Vector{BasicSymbolic{Real}}[]
         else
-            spat_species = unique(reduce(vcat,
-                [spatial_species(sr) for sr in spatial_reactions]))
+            spat_species = unique(
+                reduce(
+                    vcat,
+                    [spatial_species(sr) for sr in spatial_reactions]
+                )
+            )
         end
         num_species = length(unique([species(rs); spat_species]))
 
@@ -140,7 +146,8 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
             srs_edge_parameters = Vector{BasicSymbolic{Real}}[]
         else
             srs_edge_parameters = setdiff(
-                reduce(vcat, [parameters(sr) for sr in spatial_reactions]), parameters(rs))
+                reduce(vcat, [parameters(sr) for sr in spatial_reactions]), parameters(rs)
+            )
         end
         edge_parameters = unique([rs_edge_parameters; srs_edge_parameters])
         vertex_parameters = filter(!isedgeparameter, parameters(rs))
@@ -151,17 +158,21 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
         # Checks that all spatial reactions are valid for this reaction system.
         foreach(
             sr -> check_spatial_reaction_validity(rs, sr; edge_parameters = edge_parameters),
-            spatial_reactions)
+            spatial_reactions
+        )
 
         # Additional error checks.
-        if any(haskey(Symbolics.unwrap(symvar).metadata, Symbolics.ArrayShapeCtx)
-        for symvar in [ps; species(rs)])
+        if any(
+                haskey(Symbolics.unwrap(symvar).metadata, Symbolics.ArrayShapeCtx)
+                    for symvar in [ps; species(rs)]
+            )
             throw(ArgumentError("Some species and/or parameters used to create the `LatticeReactionSystem` are array variables ($(filter(symvar -> haskey(Symbolics.unwrap(symvar).metadata, Symbolics.ArrayShapeCtx), [ps; species(rs)]))). This is currently not supported."))
         end
 
         return new{Q, R, S, T}(
             rs, spatial_reactions, lattice, num_verts, num_edges, num_species,
-            spat_species, ps, vertex_parameters, edge_parameters, edge_iterator)
+            spat_species, ps, vertex_parameters, edge_parameters, edge_iterator
+        )
     end
 end
 
@@ -174,13 +185,15 @@ function LatticeReactionSystem(rs, srs, lattice::DiGraph)
 end
 # Creates a LatticeReactionSystem from a (undirected) Graph lattice (graph grid).
 function LatticeReactionSystem(rs, srs, lattice::SimpleGraph)
-    LatticeReactionSystem(rs, srs, DiGraph(lattice))
+    return LatticeReactionSystem(rs, srs, DiGraph(lattice))
 end
 
 # Creates a LatticeReactionSystem from a CartesianGrid lattice (cartesian grid) or a Boolean Array
 # lattice (masked grid). These two are quite similar, so much code can be reused in a single interface.
-function LatticeReactionSystem(rs, srs, lattice::GridLattice{N, T};
-        diagonal_connections = false) where {N, T}
+function LatticeReactionSystem(
+        rs, srs, lattice::GridLattice{N, T};
+        diagonal_connections = false
+    ) where {N, T}
     # Error checks.
     (N > 3) && error("Grids of higher dimension than 3 is currently not supported.")
 
@@ -201,8 +214,10 @@ function LatticeReactionSystem(rs, srs, lattice::GridLattice{N, T};
     g_size = grid_size(lattice)
     edge_iterator = Vector{Pair{Int64, Int64}}(undef, num_edges)
     for (flat_idx, grid_idx) in enumerate(flat_to_grid_idx)
-        for neighbour_grid_idx in get_neighbours(lattice, grid_idx, g_size;
-            diagonal_connections)
+        for neighbour_grid_idx in get_neighbours(
+                lattice, grid_idx, g_size;
+                diagonal_connections
+            )
             cur_vert += 1
             edge_iterator[cur_vert] = flat_idx => grid_to_flat_idx[neighbour_grid_idx...]
         end
@@ -221,14 +236,16 @@ count_verts(grid::Array{Bool, N}) where {N} = count(grid)
 # Counts and edges on a Cartesian grid. The formula counts the number of internal, side, edge, and
 # corner vertices (on the grid). `l,m,n = grid_dims(grid),1,1` ensures that "extra" dimensions get
 # length 1. The formula holds even if one or more of l, m, and n are 1.
-function count_edges(grid::CartesianGridRej{N, T};
-        diagonal_connections = false) where {N, T}
+function count_edges(
+        grid::CartesianGridRej{N, T};
+        diagonal_connections = false
+    ) where {N, T}
     l, m, n = grid_size(grid)..., 1, 1
     (ni, ns, ne, nc) = diagonal_connections ? (26, 17, 11, 7) : (6, 5, 4, 3)
     num_edges = ni * (l - 2) * (m - 2) * (n - 2) +                            # Edges from internal vertices.
-                ns * (2(l - 2) * (m - 2) + 2(l - 2) * (n - 2) + 2(m - 2) * (n - 2)) + # Edges from side vertices.
-                ne * (4(l - 2) + 4(m - 2) + 4(n - 2)) +                   # Edges from edge vertices.
-                nc * 8                                              # Edges from corner vertices.
+        ns * (2(l - 2) * (m - 2) + 2(l - 2) * (n - 2) + 2(m - 2) * (n - 2)) + # Edges from side vertices.
+        ne * (4(l - 2) + 4(m - 2) + 4(n - 2)) +                   # Edges from edge vertices.
+        nc * 8                                              # Edges from corner vertices.
     return num_edges
 end
 
@@ -239,8 +256,12 @@ function count_edges(grid::Array{Bool, N}; diagonal_connections = false) where {
     num_edges = 0
     for grid_idx in get_grid_indices(grid)
         grid[grid_idx] || continue
-        num_edges += length(get_neighbours(grid, Tuple(grid_idx), g_size;
-            diagonal_connections))
+        num_edges += length(
+            get_neighbours(
+                grid, Tuple(grid_idx), g_size;
+                diagonal_connections
+            )
+        )
     end
     return num_edges
 end
@@ -266,24 +287,30 @@ function get_index_converters(grid::GridLattice{N, T}, num_verts) where {N, T}
 end
 
 # For a vertex's grid index, and a lattice, returns the grid indices of all its (valid) neighbours.
-function get_neighbours(grid::GridLattice{N, T}, grid_idx, g_size;
-        diagonal_connections = false) where {N, T}
+function get_neighbours(
+        grid::GridLattice{N, T}, grid_idx, g_size;
+        diagonal_connections = false
+    ) where {N, T}
     # Depending on the grid's dimension, find all potential neighbours.
     if grid_dims(grid) == 1
         potential_neighbours = [grid_idx .+ (i) for i in -1:1]
     elseif grid_dims(grid) == 2
         potential_neighbours = [grid_idx .+ (i, j) for i in -1:1 for j in -1:1]
     else
-        potential_neighbours = [grid_idx .+ (i, j, k) for i in -1:1 for j in -1:1
-                                for k in -1:1]
+        potential_neighbours = [
+            grid_idx .+ (i, j, k) for i in -1:1 for j in -1:1
+                for k in -1:1
+        ]
     end
 
     # Depending on whether diagonal connections are used or not, find valid neighbours.
     if diagonal_connections
         filter!(n_idx -> n_idx !== grid_idx, potential_neighbours)
     else
-        filter!(n_idx -> count(n_idx .== grid_idx) == (length(g_size) - 1),
-            potential_neighbours)
+        filter!(
+            n_idx -> count(n_idx .== grid_idx) == (length(g_size) - 1),
+            potential_neighbours
+        )
     end
 
     # Removes neighbours outside of the grid, and returns the full list.
@@ -302,7 +329,7 @@ end
 # Gets an iterator over a grid's grid indices. Separate function so we can handle the two grid types
 # separately (i.e. not calling `CartesianIndices(ones(grid_size(grid)))` unnecessarily for masked grids).
 function get_grid_indices(grid::CartesianGridRej{N, T}) where {N, T}
-    CartesianIndices(ones(grid_size(grid)))
+    return CartesianIndices(ones(grid_size(grid)))
 end
 get_grid_indices(grid::Array{Bool, N}) where {N} = CartesianIndices(grid)
 
@@ -402,8 +429,8 @@ Returns `true` if `lrs` was created using a cartesian grid lattice (e.g. created
 Otherwise, returns `false`.
 """
 function has_cartesian_lattice(lrs::LatticeReactionSystem)
-    lattice(lrs) isa
-    CartesianGridRej{N, T} where {N, T}
+    return lattice(lrs) isa
+        CartesianGridRej{N, T} where {N, T}
 end
 
 """
@@ -463,15 +490,17 @@ Returns lrs's lattice, but in as a graph. Currently does not work for Cartesian 
 """
 function get_lattice_graph(lrs::LatticeReactionSystem)
     has_graph_lattice(lrs) && return lattice(lrs)
-    return Graphs.SimpleGraphFromIterator(Graphs.SimpleEdge(e[1], e[2])
-    for e in edge_iterator(lrs))
+    return Graphs.SimpleGraphFromIterator(
+        Graphs.SimpleEdge(e[1], e[2])
+            for e in edge_iterator(lrs)
+    )
 end
 
 ### Catalyst-based Getters ###
 
 # Get all species.
 function species(lrs::LatticeReactionSystem)
-    unique([species(reactionsystem(lrs)); spatial_species(lrs)])
+    return unique([species(reactionsystem(lrs)); spatial_species(lrs)])
 end
 
 # Generic ones (simply forwards call to the non-spatial system).
@@ -490,13 +519,13 @@ MT.get_metadata(lrs::LatticeReactionSystem) = MT.get_metadata(reactionsystem(lrs
 # Lattice reaction systems should not be combined with compositional modelling.
 # Maybe these should be allowed anyway? Still feel a bit weird
 function MT.get_eqs(lrs::LatticeReactionSystem)
-    MT.get_eqs(reactionsystem(lrs))
+    return MT.get_eqs(reactionsystem(lrs))
 end
 function MT.get_unknowns(lrs::LatticeReactionSystem)
-    MT.get_unknowns(reactionsystem(lrs))
+    return MT.get_unknowns(reactionsystem(lrs))
 end
 function MT.get_ps(lrs::LatticeReactionSystem)
-    MT.get_ps(reactionsystem(lrs))
+    return MT.get_ps(reactionsystem(lrs))
 end
 
 # Technically should not be used, but has to be declared for the `show` function to work.
@@ -506,7 +535,7 @@ end
 
 # Other non-relevant getters.
 function MT.independent_variables(lrs::LatticeReactionSystem)
-    MT.independent_variables(reactionsystem(lrs))
+    return MT.independent_variables(reactionsystem(lrs))
 end
 
 ### Edge Parameter Value Generators ###
@@ -568,8 +597,10 @@ function make_edge_p_values(lrs::LatticeReactionSystem, make_edge_p_value::Funct
         # If not, then the sparse matrix simply becomes empty in that position.
         values[e[1], e[2]] = eps()
 
-        values[e[1], e[2]] = make_edge_p_value(flat_to_grid_idx[e[1]],
-            flat_to_grid_idx[e[2]])
+        values[e[1], e[2]] = make_edge_p_value(
+            flat_to_grid_idx[e[1]],
+            flat_to_grid_idx[e[2]]
+        )
     end
 
     return values
@@ -618,9 +649,11 @@ D_vals = make_directed_edge_values(lrs, (0.1, 0.1), (0.1, 0.0))
 ```
 Here, since we have a 2d grid, we only provide the first two Tuples to `make_directed_edge_values`.
 """
-function make_directed_edge_values(lrs::LatticeReactionSystem, x_vals::Tuple{T, T},
+function make_directed_edge_values(
+        lrs::LatticeReactionSystem, x_vals::Tuple{T, T},
         y_vals::Union{Nothing, Tuple{T, T}} = nothing,
-        z_vals::Union{Nothing, Tuple{T, T}} = nothing) where {T}
+        z_vals::Union{Nothing, Tuple{T, T}} = nothing
+    ) where {T}
     # Error checks.
     if has_graph_lattice(lrs)
         error("The `make_directed_edge_values` function is only meant for lattices with (Cartesian or masked) grid structures. It cannot be applied to graph lattices.")

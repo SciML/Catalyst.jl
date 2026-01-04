@@ -24,7 +24,7 @@ end
 # Tests network analysis functions on MAPK network (by comparing to manually computed outputs).
 let
     MAPK = @reaction_network MAPK begin
-        (k₁, k₂),KKK + E1 <--> KKKE1
+        (k₁, k₂), KKK + E1 <--> KKKE1
         k₃, KKKE1 --> KKK_ + E1
         (k₄, k₅), KKK_ + E2 <--> KKKE2
         k₆, KKKE2 --> KKK + E2
@@ -34,7 +34,7 @@ let
         k₁₂, KKPKKK_ --> KKPP + KKK_
         (k₁₃, k₁₄), KKP + KKPase <--> KKPKKPase
         k₁₅, KKPPKKPase --> KKP + KKPase
-        k₁₆,KKPKKPase --> KK + KKPase
+        k₁₆, KKPKKPase --> KK + KKPase
         (k₁₇, k₁₈), KKPP + KKPase <--> KKPPKKPase
         (k₁₉, k₂₀), KKPP + K <--> KKPPK
         k₂₁, KKPPK --> KKPP + KP
@@ -62,10 +62,10 @@ let
     @test Catalyst.iscomplexbalanced(MAPK, rates) == false
     cyclemat = Catalyst.cycles(MAPK)
     S = netstoichmat(MAPK)
-    for i in 1:size(S, 2)-1
-        if S[:,i] == -S[:,i+1]
-           cycle = [(j == i) || (j == i+1) ? 1 : 0 for j in 1:size(S,2)]
-           @test rank(cyclemat) == rank(hcat(cyclemat, cycle))
+    for i in 1:(size(S, 2) - 1)
+        if S[:, i] == -S[:, i + 1]
+            cycle = [(j == i) || (j == i + 1) ? 1 : 0 for j in 1:size(S, 2)]
+            @test rank(cyclemat) == rank(hcat(cyclemat, cycle))
         end
     end
 end
@@ -75,9 +75,9 @@ let
     rn2 = @reaction_network begin
         (k₁, k₂), E + S1 <--> ES1
         (k₃, k₄), E + S2 <--> ES2
-        (k₅, k₆),  S2 + ES1 <--> ES1S2
+        (k₅, k₆), S2 + ES1 <--> ES1S2
         (k₆, k₇), ES1S2 <--> S1 + ES2
-        k₈, ES1S2 --> E+P
+        k₈, ES1S2 --> E + P
         (k₉, k₁₀), S1 <--> 0
         (k₁₀, k₁₁), 0 <--> S2
         k₁₂, P --> 0
@@ -103,16 +103,16 @@ let
     rn3 = @reaction_network begin
         (k₁, k₂), A11 <--> 0
         (k₃, k₄), A11 <--> A13
-        (k₅, k₆),  0 <--> A12
+        (k₅, k₆), 0 <--> A12
         (k₆, k₇), 0 <--> A2
         k₈, A10 --> 0
         (k₉, k₁₀), A12 <--> A6
-        (k₁₁, k₁₂), A6<--> A4
+        (k₁₁, k₁₂), A6 <--> A4
         (k₁₃, k₁₄), A4 <--> A3
         k₁₅, A8 --> A9
-        (k₁₆,k₁₇), A8 <--> A3 + A11
+        (k₁₆, k₁₇), A8 <--> A3 + A11
         k₁₈, A9 --> A3 + A10
-        k₁₉, A2+A4 --> A2 + A6
+        k₁₉, A2 + A4 --> A2 + A6
     end
     rcs, B = reactioncomplexes(rn3)
     @test length(rcs) == 15
@@ -147,8 +147,8 @@ let
     tslcs = terminallinkageclasses(rn)
     @test length(slcs) == 3
     @test length(tslcs) == 2
-    @test issubset([[1,2], [3,4,5], [6,7]], slcs)
-    @test issubset([[3,4,5], [6,7]], tslcs)
+    @test issubset([[1, 2], [3, 4, 5], [6, 7]], slcs)
+    @test issubset([[3, 4, 5], [6, 7]], tslcs)
 end
 
 # b) Makes the D + E --> G reaction irreversible. Thus, (D+E) becomes a non-terminal linkage class. Checks whether correctly identifies both (A, B+C) and (D+E) as non-terminal
@@ -167,8 +167,8 @@ let
     tslcs = terminallinkageclasses(rn)
     @test length(slcs) == 4
     @test length(tslcs) == 2
-    @test issubset([[1,2], [3,4,5], [6], [7]], slcs)
-    @test issubset([[3,4,5], [7]], tslcs)
+    @test issubset([[1, 2], [3, 4, 5], [6], [7]], slcs)
+    @test issubset([[3, 4, 5], [7]], tslcs)
 end
 
 # From a), makes the B + C <--> D reaction reversible. Thus, the non-terminal (A, B+C) linkage class gets absorbed into the terminal (A, B+C, D, E, 2F) linkage class, and the terminal linkage classes and strong linkage classes coincide.
@@ -187,8 +187,8 @@ let
     tslcs = terminallinkageclasses(rn)
     @test length(slcs) == 2
     @test length(tslcs) == 2
-    @test issubset([[1,2,3,4,5], [6,7]], slcs)
-    @test issubset([[1,2,3,4,5], [6,7]], tslcs)
+    @test issubset([[1, 2, 3, 4, 5], [6, 7]], slcs)
+    @test issubset([[1, 2, 3, 4, 5], [6, 7]], tslcs)
 end
 
 # Simple test for strong and terminal linkage classes
@@ -208,8 +208,8 @@ let
     tslcs = terminallinkageclasses(rn)
     @test length(slcs) == 3
     @test length(tslcs) == 2
-    @test issubset([[1,2], [3,4], [5,6,7]], slcs)
-    @test issubset([[3,4], [5,6,7]], tslcs)
+    @test issubset([[1, 2], [3, 4], [5, 6, 7]], slcs)
+    @test issubset([[3, 4], [5, 6, 7]], tslcs)
 end
 
 # Cycle Test: Open Reaction Network
@@ -230,27 +230,31 @@ end
 
 # From stoichiometric matrix. Reference: Trinh, 2008, https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2909134/
 let
-   S = [1 -1 0 0 -1 0 0 0 0;
+    S = [
+        1 -1 0 0 -1 0 0 0 0;
         0 0 0 0 1 -1 -1 -1 0;
         0 1 -1 0 0 1 0 0 0;
         0 0 1 0 0 0 0 0 -1;
-        0 0 1 -1 0 0 2 0 0]
+        0 0 1 -1 0 0 2 0 0
+    ]
 
-   EFMs = [1 0 1 1 0 1 1 1;
-           1 0 0 1 0 0 1 0;
-           0 1 0 1 0 0 0 1;
-           0 1 0 1 2 2 2 1;
-           0 0 1 0 0 1 0 1;
-           -1 1 0 0 0 0 -1 1;
-           0 0 0 0 1 1 1 0;
-           1 -1 1 0 -1 0 0 0;
-           0 1 0 1 0 0 0 1]
+    EFMs = [
+        1 0 1 1 0 1 1 1;
+        1 0 0 1 0 0 1 0;
+        0 1 0 1 0 0 0 1;
+        0 1 0 1 2 2 2 1;
+        0 0 1 0 0 1 0 1;
+        -1 1 0 0 0 0 -1 1;
+        0 0 0 0 1 1 1 0;
+        1 -1 1 0 -1 0 0 0;
+        0 1 0 1 0 0 0 1
+    ]
 
-   cyclemat = Catalyst.cycles(S)
-   for i in 1:size(EFMs, 2)
-       EFM = EFMs[:, i]
-       @test rank(cyclemat) == rank(hcat(cyclemat, EFM))
-   end
+    cyclemat = Catalyst.cycles(S)
+    for i in 1:size(EFMs, 2)
+        EFM = EFMs[:, i]
+        @test rank(cyclemat) == rank(hcat(cyclemat, EFM))
+    end
 end
 
 # No cycles should exist in the following network (the graph is treelike and irreversible)
@@ -279,7 +283,7 @@ let
     # Declares network.
     rs = @reaction_network begin
         k1, X1 + X2 --> X3 + X4
-        (k2,k2), X3 + X4 <--> X1
+        (k2, k2), X3 + X4 <--> X1
         k3, X1 --> X2
         k4, X1 + X2 --> X2
     end
@@ -326,7 +330,7 @@ end
 
 let
     MAPK = @reaction_network MAPK begin
-        (k₁, k₂),KKK + E1 <--> KKKE1
+        (k₁, k₂), KKK + E1 <--> KKKE1
         k₃, KKKE1 --> KKK_ + E1
         (k₄, k₅), KKK_ + E2 <--> KKKE2
         k₆, KKKE2 --> KKK + E2
@@ -336,7 +340,7 @@ let
         k₁₂, KKPKKK_ --> KKPP + KKK_
         (k₁₃, k₁₄), KKP + KKPase <--> KKPKKPase
         k₁₅, KKPPKKPase --> KKP + KKPase
-        k₁₆,KKPKKPase --> KK + KKPase
+        k₁₆, KKPKKPase --> KK + KKPase
         (k₁₇, k₁₈), KKPP + KKPase <--> KKPPKKPase
         (k₁₉, k₂₀), KKPP + K <--> KKPPK
         k₂₁, KKPPK --> KKPP + KP
@@ -350,33 +354,34 @@ let
 
     Φ = Catalyst.massactionvector(MAPK)
     specs = species(MAPK)
-    truevec = [MAPK.KKK * MAPK.E1,
-               MAPK.KKKE1,
-               MAPK.KKK_ * MAPK.E1,
-               MAPK.KKK_ * MAPK.E2,
-               MAPK.KKKE2,
-               MAPK.KKK * MAPK.E2,
-               MAPK.KK * MAPK.KKK_,
-               MAPK.KK_KKK_,
-               MAPK.KKP * MAPK.KKK_,
-               MAPK.KKPKKK_,
-               MAPK.KKPP * MAPK.KKK_,
-               MAPK.KKP * MAPK.KKPase,
-               MAPK.KKPKKPase,
-               MAPK.KKPPKKPase,
-               MAPK.KK * MAPK.KKPase,
-               MAPK.KKPP * MAPK.KKPase,
-               MAPK.KKPP * MAPK.K,
-               MAPK.KKPPK,
-               MAPK.KKPP * MAPK.KP,
-               MAPK.KPKKPP,
-               MAPK.KPP * MAPK.KKPP,
-               MAPK.KP * MAPK.KPase,
-               MAPK.KPKPase,
-               MAPK.KKPPKPase,
-               MAPK.K * MAPK.KPase,
-               MAPK.KPP * MAPK.KPase,
-              ]
+    truevec = [
+        MAPK.KKK * MAPK.E1,
+        MAPK.KKKE1,
+        MAPK.KKK_ * MAPK.E1,
+        MAPK.KKK_ * MAPK.E2,
+        MAPK.KKKE2,
+        MAPK.KKK * MAPK.E2,
+        MAPK.KK * MAPK.KKK_,
+        MAPK.KK_KKK_,
+        MAPK.KKP * MAPK.KKK_,
+        MAPK.KKPKKK_,
+        MAPK.KKPP * MAPK.KKK_,
+        MAPK.KKP * MAPK.KKPase,
+        MAPK.KKPKKPase,
+        MAPK.KKPPKKPase,
+        MAPK.KK * MAPK.KKPase,
+        MAPK.KKPP * MAPK.KKPase,
+        MAPK.KKPP * MAPK.K,
+        MAPK.KKPPK,
+        MAPK.KKPP * MAPK.KP,
+        MAPK.KPKKPP,
+        MAPK.KPP * MAPK.KKPP,
+        MAPK.KP * MAPK.KPase,
+        MAPK.KPKPase,
+        MAPK.KKPPKPase,
+        MAPK.K * MAPK.KPase,
+        MAPK.KPP * MAPK.KPase,
+    ]
     @test isequal(Φ, truevec)
 
     K = Catalyst.fluxmat(MAPK)
@@ -392,9 +397,9 @@ let
     @test isequal(K[1, 1], MAPK.k₁)
     @test all(==(0), K[1, 2:end])
     @test isequal(K[2, 2], MAPK.k₂)
-    @test all(==(0), vcat(K[2,1], K[2,3:end]))
+    @test all(==(0), vcat(K[2, 1], K[2, 3:end]))
     @test isequal(K[3, 2], MAPK.k₃)
-    @test all(==(0), vcat(K[3,1], K[3,3:end]))
+    @test all(==(0), vcat(K[3, 1], K[3, 3:end]))
     @test count(k -> !isequal(k, 0), K) == length(reactions(MAPK))
 
     A_k = Catalyst.laplacianmat(MAPK)
@@ -402,11 +407,11 @@ let
 
     S = netstoichmat(MAPK)
     Y = complexstoichmat(MAPK)
-    @test isequal(S*K, Y*A_k)
+    @test isequal(S * K, Y * A_k)
 
     eqs = Catalyst.assemble_oderhs(MAPK, specs)
-    @test all(iszero, simplify(eqs - S*K*Φ))
-    @test all(iszero, simplify(eqs - Y*A_k*Φ))
+    @test all(iszero, simplify(eqs - S * K * Φ))
+    @test all(iszero, simplify(eqs - Y * A_k * Φ))
 
     # Test using numbers
     k = rand(rng, numparams(MAPK))
@@ -424,8 +429,8 @@ let
     for i in 1:length(eqs)
         numeqs[i] = substitute(eqs[i], ratemap)
     end
-    @test all(iszero, simplify(numeqs - S*K*Φ))
-    @test all(iszero, simplify(numeqs - Y*A_k*Φ))
+    @test all(iszero, simplify(numeqs - S * K * Φ))
+    @test all(iszero, simplify(numeqs - Y * A_k * Φ))
 end
 
 # Test handling for weird complexes and combinatoric rate laws.
@@ -437,15 +442,19 @@ let
 
     Φ = Catalyst.massactionvector(rn)
     specs = species(rn)
-    crvec = [rn.X^2/2 * rn.Y * rn.Z^3/6,
-             1.,
-             rn.Y^2/2 * rn.Z^2/2,
-             rn.X^3/6]
+    crvec = [
+        rn.X^2 / 2 * rn.Y * rn.Z^3 / 6,
+        1.0,
+        rn.Y^2 / 2 * rn.Z^2 / 2,
+        rn.X^3 / 6,
+    ]
     @test isequal(Φ, crvec)
-    ncrvec = [rn.X^2 * rn.Y * rn.Z^3,
-              1.,
-              rn.Y^2 * rn.Z^2,
-              rn.X^3]
+    ncrvec = [
+        rn.X^2 * rn.Y * rn.Z^3,
+        1.0,
+        rn.Y^2 * rn.Z^2,
+        rn.X^3,
+    ]
     Φ_2 = Catalyst.massactionvector(rn; combinatoric_ratelaws = false)
     @test isequal(Φ_2, ncrvec)
 
@@ -455,12 +464,12 @@ let
     Y = complexstoichmat(rn)
     K = fluxmat(rn)
     A_k = laplacianmat(rn)
-    @test all(iszero, simplify(eqs - S*K*Φ))
-    @test all(iszero, simplify(eqs - Y*A_k*Φ))
+    @test all(iszero, simplify(eqs - S * K * Φ))
+    @test all(iszero, simplify(eqs - Y * A_k * Φ))
 
     eq_ncr = Catalyst.assemble_oderhs(rn, specs; combinatoric_ratelaws = false)
-    @test all(iszero, simplify(eq_ncr - S*K*Φ_2))
-    @test all(iszero, simplify(eq_ncr - Y*A_k*Φ_2))
+    @test all(iszero, simplify(eq_ncr - S * K * Φ_2))
+    @test all(iszero, simplify(eq_ncr - Y * A_k * Φ_2))
 
     # Test that the ODEs with rate constants are the same.
     k = rand(rng, numparams(rn))
@@ -474,35 +483,35 @@ let
         numeqs[i] = substitute(eqs[i], ratemap)
     end
     # Broken but the difference is just numerical, something on the order of 1e-17 times a term
-    @test all(iszero, simplify(numeqs - S*K*Φ))
-    @test all(iszero, simplify(numeqs - Y*A_k*Φ))
+    @test all(iszero, simplify(numeqs - S * K * Φ))
+    @test all(iszero, simplify(numeqs - Y * A_k * Φ))
 
     numeqs_ncr = similar(eq_ncr)
     for i in 1:length(eq_ncr)
         numeqs_ncr[i] = substitute(eq_ncr[i], ratemap)
     end
-    @test all(iszero, simplify(numeqs_ncr - S*K*Φ_2))
-    @test all(iszero, simplify(numeqs_ncr - Y*A_k*Φ_2))
+    @test all(iszero, simplify(numeqs_ncr - S * K * Φ_2))
+    @test all(iszero, simplify(numeqs_ncr - Y * A_k * Φ_2))
 
     # Test that handling of species concentrations is correct.
-    u0vec = [:X => 3., :Y => .5, :Z => 2.]
+    u0vec = [:X => 3.0, :Y => 0.5, :Z => 2.0]
     u0map = Dict(u0vec)
     u0tup = Tuple(u0vec)
 
     Φ = Catalyst.massactionvector(rn, u0vec)
-    @test isequal(Φ[1], 3.)
+    @test isequal(Φ[1], 3.0)
     Φ_2 = Catalyst.massactionvector(rn, u0tup; combinatoric_ratelaws = false)
-    @test isequal(Φ_2[1], 36.)
+    @test isequal(Φ_2[1], 36.0)
     Φ = Catalyst.massactionvector(rn, u0map)
-    @test isequal(Φ[1], 3.)
+    @test isequal(Φ[1], 3.0)
 
     # Test full simplification.
     u0map = symmap_to_varmap(rn, u0map)
     numeqs = [substitute(eq, u0map) for eq in numeqs]
-    @test isapprox(numeqs, S*K*Φ)
-    @test isapprox(numeqs, Y*A_k*Φ)
+    @test isapprox(numeqs, S * K * Φ)
+    @test isapprox(numeqs, Y * A_k * Φ)
 
     numeqs_ncr = [substitute(eq, u0map) for eq in numeqs_ncr]
-    @test isapprox(numeqs_ncr, S*K*Φ_2)
-    @test isapprox(numeqs_ncr, Y*A_k*Φ_2)
+    @test isapprox(numeqs_ncr, S * K * Φ_2)
+    @test isapprox(numeqs_ncr, Y * A_k * Φ_2)
 end

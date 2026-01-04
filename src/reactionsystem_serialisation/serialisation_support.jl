@@ -31,8 +31,10 @@ get_substring_end(str, idx1, offset) = String(collect(str)[idx1:(end + offset)])
 ### Field Serialisation Support Functions ###
 
 # Function which handles the addition of a single component to the file string.
-function push_field(file_text::String, rn::ReactionSystem,
-        annotate::Bool, top_level::Bool, comp_funcs::Tuple)
+function push_field(
+        file_text::String, rn::ReactionSystem,
+        annotate::Bool, top_level::Bool, comp_funcs::Tuple
+    )
     has_component, get_comp_string, get_comp_annotation = comp_funcs
     has_component(rn) || (return (file_text, false))
 
@@ -69,8 +71,10 @@ end
 
 # Converts a numeric expression (e.g. p*X + 2Y) to a string (e.g. "p*X + 2Y"). Also ensures that for
 # any variables (e.g. X(t)) the call part is stripped, and only variable name (e.g. X) is written.
-function expression_2_string(expr;
-        strip_call_dict = make_strip_call_dict(Symbolics.get_variables(expr)))
+function expression_2_string(
+        expr;
+        strip_call_dict = make_strip_call_dict(Symbolics.get_variables(expr))
+    )
     strip_called_expr = substitute(expr, strip_call_dict)
     return repr(strip_called_expr)
 end
@@ -90,8 +94,10 @@ function syms_2_declaration_string(syms; multiline_format = false)
     decs_string = (multiline_format ? " begin" : "")
     for sym in syms
         delimiter = (multiline_format ? "\n\t" : " ")
-        @string_append! decs_string delimiter sym_2_declaration_string(sym;
-            multiline_format)
+        @string_append! decs_string delimiter sym_2_declaration_string(
+            sym;
+            multiline_format
+        )
     end
     multiline_format && (@string_append! decs_string "\nend")
     return decs_string
@@ -110,7 +116,7 @@ function sym_2_declaration_string(sym; multiline_format = false)
     if !(sym isa BasicSymbolic{Real})
         sym_type = String(Symbol(typeof(Symbolics.unwrap(sym))))
         if (get_substring(sym_type, 1, 28) != "SymbolicUtils.BasicSymbolic{") ||
-           (get_char_end(sym_type, 0) != '}')
+                (get_char_end(sym_type, 0) != '}')
             error("Encountered symbolic of unexpected type: $sym_type.")
         end
         @string_append! dec_string "::" get_substring_end(sym_type, 29, -1)
@@ -212,24 +218,28 @@ end
 
 # List of all recognised metadata (we should add as many as possible), and th keyword used to declare
 # them in code.
-const RECOGNISED_METADATA = Dict([Catalyst.ParameterConstantSpecies => "isconstantspecies"
-                                  Catalyst.VariableBCSpecies => "isbcspecies"
-                                  Catalyst.VariableSpecies => "isspecies"
-                                  Catalyst.EdgeParameter => "edgeparameter"
-                                  Catalyst.CompoundSpecies => "iscompound"
-                                  Catalyst.CompoundComponents => "components"
-                                  Catalyst.CompoundCoefficients => "coefficients"
-                                  ModelingToolkit.VariableDescription => "description"
-                                  ModelingToolkit.VariableBounds => "bounds"
-                                  ModelingToolkit.VariableUnit => "unit"
-                                  ModelingToolkit.VariableConnectType => "connect"
-                                  ModelingToolkit.VariableNoiseType => "noise"
-                                  ModelingToolkit.VariableInput => "input"
-                                  ModelingToolkit.VariableOutput => "output"
-                                  ModelingToolkit.VariableIrreducible => "irreducible"
-                                  ModelingToolkit.VariableStatePriority => "state_priority"
-                                  ModelingToolkit.VariableMisc => "misc"
-                                  ModelingToolkit.TimeDomain => "timedomain"])
+const RECOGNISED_METADATA = Dict(
+    [
+        Catalyst.ParameterConstantSpecies => "isconstantspecies"
+        Catalyst.VariableBCSpecies => "isbcspecies"
+        Catalyst.VariableSpecies => "isspecies"
+        Catalyst.EdgeParameter => "edgeparameter"
+        Catalyst.CompoundSpecies => "iscompound"
+        Catalyst.CompoundComponents => "components"
+        Catalyst.CompoundCoefficients => "coefficients"
+        ModelingToolkit.VariableDescription => "description"
+        ModelingToolkit.VariableBounds => "bounds"
+        ModelingToolkit.VariableUnit => "unit"
+        ModelingToolkit.VariableConnectType => "connect"
+        ModelingToolkit.VariableNoiseType => "noise"
+        ModelingToolkit.VariableInput => "input"
+        ModelingToolkit.VariableOutput => "output"
+        ModelingToolkit.VariableIrreducible => "irreducible"
+        ModelingToolkit.VariableStatePriority => "state_priority"
+        ModelingToolkit.VariableMisc => "misc"
+        ModelingToolkit.TimeDomain => "timedomain"
+    ]
+)
 
 # List of metadata that does not need to be explicitly declared to be added (or which is handled separately).
 const SKIPPED_METADATA = [
@@ -237,7 +247,8 @@ const SKIPPED_METADATA = [
     ModelingToolkit.MTKVariableTypeCtx,
     ModelingToolkit.SymScope,
     Symbolics.VariableDefaultValue,
-    Symbolics.VariableSource]
+    Symbolics.VariableSource,
+]
 
 ### Generic Expression Handling ###
 

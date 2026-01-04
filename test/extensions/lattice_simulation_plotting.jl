@@ -14,7 +14,7 @@ using JumpProcesses, OrdinaryDiffEqTsit5, Test
 let
     # Creates the `LatticeReactionSystem` model.
     rs = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     diffusion_rx = @transport_reaction D X
     for lattice in [CartesianGrid(3), [true, true, false]]
@@ -42,7 +42,7 @@ let
 
             # Plots the kymograph and checks that a stored value is correct.
             fig, ax, hm = lattice_kymograph(sol, :X, lrs)
-            @test_broken hm[3].val[end,1] ≈ sol.u[end][1]
+            @test_broken hm[3].val[end, 1] ≈ sol.u[end][1]
         end
     end
 end
@@ -54,10 +54,10 @@ end
 let
     # Creates the `LatticeReactionSystem` model.
     rs = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     diffusion_rx = @transport_reaction D X
-    for lattice in [CartesianGrid((2,2)), [true true; false true]]
+    for lattice in [CartesianGrid((2, 2)), [true true; false true]]
         lrs = LatticeReactionSystem(rs, [diffusion_rx], lattice)
 
         # Simulates the model (using ODE and jumps).
@@ -89,7 +89,7 @@ let
         d, X --> 0
     end
     diffusion_rx = @transport_reaction D X
-    lattice = CartesianGrid((2,2,2))
+    lattice = CartesianGrid((2, 2, 2))
     lrs = LatticeReactionSystem(rs, [diffusion_rx], lattice)
     oprob = ODEProblem(lrs, [:X => 1.0], 1.0, [:d => 1.0, :D => 0.2])
     osol = solve(oprob, Tsit5())
@@ -105,7 +105,7 @@ end
 let
     # Creates the `LatticeReactionSystem` model.
     rs = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     diffusion_rx = @transport_reaction D X
     lattice = Graphs.SimpleGraphs.cycle_graph(4)

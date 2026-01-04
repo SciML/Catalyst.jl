@@ -32,8 +32,10 @@ Notes:
 - Reaction systems with components that have units cannot currently be saved.
 - The `ReactionSystem` is saved using *programmatic* (not DSL) format for model creation.
 """
-function save_reactionsystem(filename::String, rn::ReactionSystem;
-        annotate = true, safety_check = true)
+function save_reactionsystem(
+        filename::String, rn::ReactionSystem;
+        annotate = true, safety_check = true
+    )
     # Error and warning checks.
     reactionsystem_uptodate_check()
     if !isempty(get_networkproperties(rn))
@@ -71,22 +73,29 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     file_text, _ = push_field(file_text, rn, annotate, top_level, IV_FS)
     file_text, has_sivs = push_field(file_text, rn, annotate, top_level, SIVS_FS)
     file_text, has_parameters,
-    has_species, has_variables = handle_us_n_ps(
-        file_text, rn, annotate, top_level)
+        has_species, has_variables = handle_us_n_ps(
+        file_text, rn, annotate, top_level
+    )
     file_text, has_reactions = push_field(file_text, rn, annotate, top_level, REACTIONS_FS)
     file_text, has_equations = push_field(file_text, rn, annotate, top_level, EQUATIONS_FS)
     file_text, has_observed = push_field(file_text, rn, annotate, top_level, OBSERVED_FS)
     file_text, has_defaults = push_field(file_text, rn, annotate, top_level, DEFAULTS_FS)
     file_text,
-    has_continuous_events = push_field(file_text, rn, annotate,
-        top_level, CONTINUOUS_EVENTS_FS)
+        has_continuous_events = push_field(
+        file_text, rn, annotate,
+        top_level, CONTINUOUS_EVENTS_FS
+    )
     file_text,
-    has_discrete_events = push_field(file_text, rn, annotate,
-        top_level, DISCRETE_EVENTS_FS)
+        has_discrete_events = push_field(
+        file_text, rn, annotate,
+        top_level, DISCRETE_EVENTS_FS
+    )
     file_text, has_systems = push_systems_field(file_text, rn, annotate, top_level)
     file_text,
-    has_connection_type = push_field(file_text, rn, annotate,
-        top_level, CONNECTION_TYPE_FS)
+        has_connection_type = push_field(
+        file_text, rn, annotate,
+        top_level, CONNECTION_TYPE_FS
+    )
 
     # Finalise the system. Creates the final `ReactionSystem` call.
     # Enclose everything in a `let ... end` block. Potentially add Catalyst version number.
@@ -94,7 +103,8 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
         rn, annotate, top_level, has_sivs, has_species,
         has_variables, has_parameters, has_reactions,
         has_equations, has_observed, has_defaults, has_continuous_events,
-        has_discrete_events, has_systems, has_connection_type)
+        has_discrete_events, has_systems, has_connection_type
+    )
     annotate || (@string_prepend! "\n" file_text)
     annotate && top_level &&
         @string_prepend! "\n# Serialised using Catalyst version v$(Catalyst.VERSION)." file_text
@@ -106,10 +116,12 @@ end
 
 # Creates a ReactionSystem call for creating the model. Adds all the correct inputs to it. The input
 # `has_` `Bool`s described which inputs are used. If the model is `complete`, this is handled here.
-function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_sivs,
+function make_reaction_system_call(
+        rs::ReactionSystem, annotate, top_level, has_sivs,
         has_species, has_variables, has_parameters, has_reactions, has_equations,
         has_observed, has_defaults, has_continuous_events, has_discrete_events, has_systems,
-        has_connection_type)
+        has_connection_type
+    )
 
     # Gets the independent variable input.
     iv = x_2_string(get_iv(rs))

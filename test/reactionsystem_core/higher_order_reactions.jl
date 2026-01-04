@@ -34,12 +34,12 @@ let
         r3 * X3 * X4^2 / factorial(2), X3 + 2X4 ⟾ 3X5 + 3X6
         r4 * X2 * X5^3 * X6^3 / (factorial(3) * factorial(3)), 3X5 + 3X6 ⟾ 3X5 + 2X7 + 4X8
         r5 * X5^3 * X7^2 * X8^4 / (factorial(3) * factorial(2) * factorial(4)),
-        3X5 + 2X7 + 4X8 ⟾ 10X9
+            3X5 + 2X7 + 4X8 ⟾ 10X9
         r6 * X9^10 / factorial(10), 10X9 ⟾ X10
         d * X10^2 / factorial(2), 2X10 ⟾ ∅
     end
 
-    for factor in [1e-1, 1e0, 1e1, 1e2]
+    for factor in [1.0e-1, 1.0e0, 1.0e1, 1.0e2]
         u0 = rnd_u0(base_higher_order_network, rng; factor)
         ps = rnd_ps(base_higher_order_network, rng; factor)
         t = rand(rng)
@@ -75,16 +75,18 @@ let
     rate8(u, p, t) = p[9] * binomial(u[10], 2)
 
     affect1!(int) = (int.u[1] += 1)
-    affect2!(int) = (int.u[1] -= 2; int.u[2] += 3;)
-    affect3!(int) = (int.u[2] -= 3; int.u[3] += 1; int.u[4] += 2;)
-    affect4!(int) = (int.u[3] -= 1; int.u[4] -= 2; int.u[5] += 3; int.u[6] += 3;)
-    affect5!(int) = (int.u[5] -= 3; int.u[6] -= 3; int.u[5] += 3; int.u[7] += 2; int.u[8] += 4;)
-    affect6!(int) = (int.u[5] -= 3; int.u[7] -= 2; int.u[8] -= 4; int.u[9] += 10;)
-    affect7!(int) = (int.u[9] -= 10; int.u[10] += 1;)
+    affect2!(int) = (int.u[1] -= 2; int.u[2] += 3)
+    affect3!(int) = (int.u[2] -= 3; int.u[3] += 1; int.u[4] += 2)
+    affect4!(int) = (int.u[3] -= 1; int.u[4] -= 2; int.u[5] += 3; int.u[6] += 3)
+    affect5!(int) = (int.u[5] -= 3; int.u[6] -= 3; int.u[5] += 3; int.u[7] += 2; int.u[8] += 4)
+    affect6!(int) = (int.u[5] -= 3; int.u[7] -= 2; int.u[8] -= 4; int.u[9] += 10)
+    affect7!(int) = (int.u[9] -= 10; int.u[10] += 1)
     affect8!(int) = (int.u[10] -= 2;)
 
-    higher_order_network_alt2 = ConstantRateJump.([rate1, rate2, rate3, rate4, rate5, rate6, rate7, rate8],
-                                [affect1!, affect2!, affect3!, affect4!, affect5!, affect6!, affect7!, affect8!])
+    higher_order_network_alt2 = ConstantRateJump.(
+        [rate1, rate2, rate3, rate4, rate5, rate6, rate7, rate8],
+        [affect1!, affect2!, affect3!, affect4!, affect5!, affect6!, affect7!, affect8!]
+    )
 
     # Prepares JumpProblem via Catalyst.
     u0_base = rnd_u0_Int64(base_higher_order_network, rng)
@@ -108,6 +110,6 @@ let
     sol_alt2 = solve(jprob_alt2, SSAStepper(); seed, saveat = 1.0)
 
     # Checks that species means in the simulations are similar
-    @test mean(sol_base[:X10]) ≈ mean(sol_alt1[:X10]) atol = 1e-1 rtol = 1e-1
-    @test mean(sol_alt1[:X10]) ≈ mean(sol_alt2[10,:]) atol = 1e-1 rtol = 1e-1
+    @test mean(sol_base[:X10]) ≈ mean(sol_alt1[:X10]) atol = 1.0e-1 rtol = 1.0e-1
+    @test mean(sol_alt1[:X10]) ≈ mean(sol_alt2[10, :]) atol = 1.0e-1 rtol = 1.0e-1
 end

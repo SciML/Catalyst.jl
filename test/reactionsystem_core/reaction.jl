@@ -15,33 +15,33 @@ t = default_t()
 # Checks that the `Reaction`s have the correct type, and the correct net stoichiometries are generated.
 let
     # Declare symbolic variables.
-    @parameters k n1 n2::Int32 x [isconstantspecies=true]
+    @parameters k n1 n2::Int32 x [isconstantspecies = true]
     @species X(t) Y(t) Z(t)
     @variables A(t)
 
     # Tries for different types of rates (should not matter).
-    for rate in (k, k*A, 2, 3.0, 4//3)
+    for rate in (k, k * A, 2, 3.0, 4 // 3)
         # Creates `Reaction`s.
         rx1 = Reaction(rate, [X], [])
         rx2 = Reaction(rate, [x], [Y], [1.5], [1])
         rx3 = Reaction(rate, [x, X], [], [n1 + n2, n2], [])
-        rx4 = Reaction(rate, [X, Y], [X, Y, Z], [2//3, 3], [1//3, 1, 2])
+        rx4 = Reaction(rate, [X, Y], [X, Y, Z], [2 // 3, 3], [1 // 3, 1, 2])
         rx5 = Reaction(rate, [X, Y], [X, Y, Z], [2, 3], [1, n1, n2])
         rx6 = Reaction(rate, [X], [x], [n1], [1])
 
         # Check `Reaction` types.
-        @test rx1 isa Reaction{Any,Int64}
-        @test rx2 isa Reaction{Any,Float64}
-        @test rx3 isa Reaction{Any,Any}
-        @test rx4 isa Reaction{Any,Rational{Int64}}
-        @test rx5 isa Reaction{Any,Any}
-        @test rx6 isa Reaction{Any,Any}
+        @test rx1 isa Reaction{Any, Int64}
+        @test rx2 isa Reaction{Any, Float64}
+        @test rx3 isa Reaction{Any, Any}
+        @test rx4 isa Reaction{Any, Rational{Int64}}
+        @test rx5 isa Reaction{Any, Any}
+        @test rx6 isa Reaction{Any, Any}
 
         # Check `Reaction` net stoichiometries.
         issetequal(rx1.netstoich, [X => -1])
         issetequal(rx2.netstoich, [x => -1.5, Y => 1.0])
         issetequal(rx3.netstoich, [x => -n1 - n2, X => -n2])
-        issetequal(rx4.netstoich, [X => -1//3, Y => -2//1, Z => 2//1])
+        issetequal(rx4.netstoich, [X => -1 // 3, Y => -2 // 1, Z => 2 // 1])
         issetequal(rx5.netstoich, [X => -1, Y => n1 - 3, Z => n2])
         issetequal(rx6.netstoich, [X => -n1, x => 1])
     end
@@ -55,13 +55,13 @@ let
     @variables A(t)
 
     # Tests that the three-argument constructor generates correct result.
-    @test Reaction(k*A, [X], [Y, Z]) == Reaction(k*A, [X], [Y, Z], [1], [1, 1])
+    @test Reaction(k * A, [X], [Y, Z]) == Reaction(k * A, [X], [Y, Z], [1], [1, 1])
 
     # Tests that `[]` and `nothing` can be used interchangeably.
-    @test Reaction(k*A, [X, Z], nothing) == Reaction(k*A, [X, Z], [])
-    @test Reaction(k*A, nothing, [Y, Z]) == Reaction(k*A, [], [Y, Z])
-    @test Reaction(k*A, [X, Z], nothing, [n1 + n2, 2], nothing) == Reaction(k*A, [X, Z], [], [n1 + n2, 2], [])
-    @test Reaction(k*A, nothing, [Y, Z], nothing, [n1 + n2, 2]) == Reaction(k*A, [], [Y, Z], [], [n1 + n2, 2])
+    @test Reaction(k * A, [X, Z], nothing) == Reaction(k * A, [X, Z], [])
+    @test Reaction(k * A, nothing, [Y, Z]) == Reaction(k * A, [], [Y, Z])
+    @test Reaction(k * A, [X, Z], nothing, [n1 + n2, 2], nothing) == Reaction(k * A, [X, Z], [], [n1 + n2, 2], [])
+    @test Reaction(k * A, nothing, [Y, Z], nothing, [n1 + n2, 2]) == Reaction(k * A, [], [Y, Z], [], [n1 + n2, 2])
 end
 
 # Tests that various incorrect inputs yields errors.
@@ -72,23 +72,23 @@ let
     @variables A(t)
 
     # Neither substrates nor products.
-    @test_throws ArgumentError Reaction(k*A, [], [])
+    @test_throws ArgumentError Reaction(k * A, [], [])
 
     # Substrate vector not of equal length to substrate stoichiometry vector.
-    @test_throws ArgumentError Reaction(k*A, [X, X, Z], [], [1, 2], [])
+    @test_throws ArgumentError Reaction(k * A, [X, X, Z], [], [1, 2], [])
 
     # Product vector not of equal length to product stoichiometry vector.
-    @test_throws ArgumentError Reaction(k*A, [], [X, X, Z], [], [1, 2])
+    @test_throws ArgumentError Reaction(k * A, [], [X, X, Z], [], [1, 2])
 
     # Repeated substrates.
-    @test_throws ArgumentError Reaction(k*A, [X, X, Z], [])
+    @test_throws ArgumentError Reaction(k * A, [X, X, Z], [])
 
     # Repeated products.
-    @test_throws ArgumentError Reaction(k*A, [], [Y, Z, Z])
+    @test_throws ArgumentError Reaction(k * A, [], [Y, Z, Z])
 
     # Non-valid reactants (parameter or variable).
-    @test_throws ArgumentError Reaction(k*A, [], [A])
-    @test_throws ArgumentError Reaction(k*A, [], [k])
+    @test_throws ArgumentError Reaction(k * A, [], [A])
+    @test_throws ArgumentError Reaction(k * A, [], [k])
 end
 
 
@@ -131,7 +131,7 @@ let
     @species X(t) X2(t)
 
     metadata = [:noise_scaling => 0.0]
-    r = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
+    r = Reaction(k, [X], [X2], [2], [1]; metadata = metadata)
 
     @test Catalyst.getmetadata_dict(r) == [:noise_scaling => 0.0]
     @test hasmetadata(r, :noise_scaling)
@@ -144,7 +144,7 @@ let
     @test getmetadata(r, :test_metadata) == 1111
 
     metadata_repeated = [:noise_scaling => 0.0, :noise_scaling => 1.0, :metadata_entry => "unused"]
-    @test_throws Exception Reaction(k, [X], [X2], [2], [1]; metadata=metadata_repeated)
+    @test_throws Exception Reaction(k, [X], [X2], [2], [1]; metadata = metadata_repeated)
 end
 
 # Tests accessors for system without metadata.
@@ -152,12 +152,12 @@ let
     @parameters k
     @species X(t) X2(t)
 
-    metadata = Pair{Symbol,Any}[]
+    metadata = Pair{Symbol, Any}[]
     r1 = Reaction(k, [X], [X2], [2], [1])
-    r2 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
+    r2 = Reaction(k, [X], [X2], [2], [1]; metadata = metadata)
 
     @test isequal(r1, r2)
-    @test Catalyst.getmetadata_dict(r1) == Pair{Symbol,Any}[]
+    @test Catalyst.getmetadata_dict(r1) == Pair{Symbol, Any}[]
     @test !hasmetadata(r1, :md)
 end
 
@@ -168,16 +168,16 @@ let
     @parameters k
     @species X(t) X2(t)
 
-    metadata = Pair{Symbol,Any}[]
+    metadata = Pair{Symbol, Any}[]
     push!(metadata, :md_1 => 1.0)
     push!(metadata, :md_2 => false)
     push!(metadata, :md_3 => "Hello world")
     push!(metadata, :md_4 => :sym)
-    push!(metadata, :md_5 => X + X2^k -1)
+    push!(metadata, :md_5 => X + X2^k - 1)
     push!(metadata, :md_6 => (0.1, 2.0))
-    r = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
+    r = Reaction(k, [X], [X2], [2], [1]; metadata = metadata)
 
-    @test Catalyst.getmetadata_dict(r) isa Vector{Pair{Symbol,Any}}
+    @test Catalyst.getmetadata_dict(r) isa Vector{Pair{Symbol, Any}}
     @test hasmetadata(r, :md_1)
     @test hasmetadata(r, :md_2)
     @test hasmetadata(r, :md_3)
@@ -190,7 +190,7 @@ let
     @test isequal(getmetadata(r, :md_2), false)
     @test isequal(getmetadata(r, :md_3), "Hello world")
     @test isequal(getmetadata(r, :md_4), :sym)
-    @test isequal(getmetadata(r, :md_5), X + X2^k -1)
+    @test isequal(getmetadata(r, :md_5), X + X2^k - 1)
     @test isequal(getmetadata(r, :md_6), (0.1, 2.0))
 end
 
@@ -200,7 +200,7 @@ let
     @species X(t) X2(t)
 
     r1 = Reaction(k, [X], [X2], [2], [1])
-    r2 = Reaction(k, [X], [X2], [2], [1]; metadata=[:noise_scaling => η])
+    r2 = Reaction(k, [X], [X2], [2], [1]; metadata = [:noise_scaling => η])
 
     @test !Catalyst.hasnoisescaling(r1)
     @test Catalyst.hasnoisescaling(r2)
@@ -215,7 +215,7 @@ let
     @species X(t) X2(t)
 
     r1 = Reaction(k, [X], [X2], [2], [1])
-    r2 = Reaction(k, [X], [X2], [2], [1]; metadata=[:description => "A reaction"])
+    r2 = Reaction(k, [X], [X2], [2], [1]; metadata = [:description => "A reaction"])
 
     @test !Catalyst.hasdescription(r1)
     @test Catalyst.hasdescription(r2)
@@ -230,7 +230,7 @@ let
     @species X(t) X2(t)
 
     r1 = Reaction(k, [X], [X2], [2], [1])
-    r2 = Reaction(k, [X], [X2], [2], [1]; metadata=[:misc => ('M', :M)])
+    r2 = Reaction(k, [X], [X2], [2], [1]; metadata = [:misc => ('M', :M)])
 
     @test !Catalyst.hasmisc(r1)
     @test Catalyst.hasmisc(r2)
@@ -242,10 +242,10 @@ end
 let
     t = default_t()
     @variables E(t) F(t)
-    @species A(t) B(t) C(t) D(t) 
+    @species A(t) B(t) C(t) D(t)
     @parameters k1, k2, η
 
-    rx = Reaction(k1*E, [A, B], [C], [k2*D, 3], [F], metadata = [:noise_scaling => η])
+    rx = Reaction(k1 * E, [A, B], [C], [k2 * D, 3], [F], metadata = [:noise_scaling => η])
     us = Set()
     ps = Set()
     @test eqtype_supports_collect_vars(rx) == true
@@ -267,8 +267,10 @@ let
     rx2 = Reaction(k1, [A], [B], [2], [1])
     @test has_physical_scale(rx2) == false
 
-    rx3 = Reaction(k1, [A], [B], [2], [1]; 
-        metadata = [:physical_scale => PhysicalScale.Jump, :noise_scaling => 0.1])
+    rx3 = Reaction(
+        k1, [A], [B], [2], [1];
+        metadata = [:physical_scale => PhysicalScale.Jump, :noise_scaling => 0.1]
+    )
     @test has_physical_scale(rx3)
-    @test get_physical_scale(rx3) == PhysicalScale.Jump    
+    @test get_physical_scale(rx3) == PhysicalScale.Jump
 end

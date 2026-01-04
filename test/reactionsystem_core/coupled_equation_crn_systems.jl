@@ -25,7 +25,7 @@ let
     eqs = [
         Reaction(p, nothing, [X]),
         Reaction(d, [X], nothing),
-        D(A) ~ p*X - k*A
+        D(A) ~ p * X - k * A,
     ]
     @named coupled_rs = ReactionSystem(eqs, t)
     coupled_rs = complete(coupled_rs)
@@ -46,18 +46,18 @@ let
 
     # Checks that the correct steady state is found through ODEProblem.
     oprob = ODEProblem(coupled_rs, u0, tspan, ps)
-    osol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
-    @test osol[[X,A]][end] ≈ [2.0, 1.0]
+    osol = solve(oprob, Vern7(); abstol = 1.0e-8, reltol = 1.0e-8)
+    @test osol[[X, A]][end] ≈ [2.0, 1.0]
 
     # Checks that the correct steady state is found through NonlinearProblem.
     nlprob = NonlinearProblem(coupled_rs, u0, ps)
-    nlsol = solve(nlprob; abstol = 1e-8, reltol = 1e-8)
-    @test nlsol[[X,A]] ≈ [2.0, 1.0]
+    nlsol = solve(nlprob; abstol = 1.0e-8, reltol = 1.0e-8)
+    @test nlsol[[X, A]] ≈ [2.0, 1.0]
 
     # Checks that the correct steady state is found through SteadyStateProblem.
     ssprob = SteadyStateProblem(coupled_rs, u0, ps)
-    sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
-    @test sssol[[X,A]] ≈ [2.0, 1.0]
+    sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1.0e-8, reltol = 1.0e-8)
+    @test sssol[[X, A]] ≈ [2.0, 1.0]
 end
 
 # Checks that coupled systems created via the DSL, extension, and programmatically are identical.
@@ -74,15 +74,15 @@ let
     eqs_prog = [
         D(A) ~ X1 + a - A,
         D(B) ~ X2 + b - B,
-        Reaction(k1*A, [X1], [X2]),
-        Reaction(k2*B, [X2], [X1])
+        Reaction(k1 * A, [X1], [X2]),
+        Reaction(k2 * B, [X2], [X1]),
     ]
     coupled_rs_prog = ReactionSystem(eqs_prog, t, [A, B, X1, X2], [k1, k2, a, b]; name = :coupled_rs)
     coupled_rs_prog = complete(coupled_rs_prog)
 
     # Creates model by extending a `ReactionSystem` with a ODESystem.
     rn_extended = @network_component begin
-        ($k1*$A, $k2*$B), X1 <--> X2
+        ($k1 * $A, $k2 * $B), X1 <--> X2
     end
     eqs_extended = [
         D(A) ~ X1 + a - A
@@ -98,7 +98,7 @@ let
             D(A) ~ X1 + a - A
             D(B) ~ X2 + b - B
         end
-        (k1*A, k2*B), X1 <--> X2
+        (k1 * A, k2 * B), X1 <--> X2
     end
 
     # Checks that models are equivalent and contain the correct stuff.
@@ -111,12 +111,12 @@ let
 
     # Simulates the three models, checking that they all yield the correct end point.
     u0 = [A => 1.0, B => 1.0, X1 => 10.0, X2 => 10.0]
-    tspan = (0.0, 100.)
+    tspan = (0.0, 100.0)
     ps = [a => 1.0, b => 1.0, k1 => 1.0, k2 => 1.0]
     for coupled_rs in [coupled_rs_prog, coupled_rs_extended, coupled_rs_dsl]
         oprob = ODEProblem(coupled_rs, u0, tspan, ps)
-        osol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
-        osol[[A,B,X1,X2]][end] ≈ [10.0, 10.0, 11.0, 11.0]
+        osol = solve(oprob, Vern7(); abstol = 1.0e-8, reltol = 1.0e-8)
+        osol[[A, B, X1, X2]][end] ≈ [10.0, 10.0, 11.0, 11.0]
     end
 end
 
@@ -134,7 +134,7 @@ let
     eqs = [
         Reaction(p, nothing, [X]),
         Reaction(d, [X], nothing),
-        a*A^2 ~ X + b
+        a * A^2 ~ X + b,
     ]
     @named coupled_rs = ReactionSystem(eqs, t)
     coupled_rs = complete(coupled_rs)
@@ -158,23 +158,27 @@ let
     @test_throws Exception SteadyStateProblem(coupled_rs, u0, ps)
 
     # Checks that the correct steady state is found through ODEProblem.
-    oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true,
-        guesses = [A => 1.0])
-    osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
-    @test osol[[X,A]][end] ≈ [2.0, 3.0]
+    oprob = ODEProblem(
+        coupled_rs, u0, tspan, ps; structural_simplify = true,
+        guesses = [A => 1.0]
+    )
+    osol = solve(oprob, Rosenbrock23(); abstol = 1.0e-8, reltol = 1.0e-8)
+    @test osol[[X, A]][end] ≈ [2.0, 3.0]
 
     # Checks that the correct steady state is found through NonlinearProblem.
-    u0 = [X => 0.1, A => 16.1/2]
+    u0 = [X => 0.1, A => 16.1 / 2]
     nlprob = NonlinearProblem(coupled_rs, u0, ps, structural_simplify = true)
     nlsol = solve(nlprob)
-    @test nlsol[[X,A]] ≈ [2.0, 3.0]
+    @test nlsol[[X, A]] ≈ [2.0, 3.0]
 
     # Checks that the correct steady state is found through SteadyStateProblem.
     u0 = [X => 0.1]
-    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true,
-        guesses = [A => 1.0])
-    sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
-    @test sssol[[X,A]] ≈ [2.0, 3.0]
+    ssprob = SteadyStateProblem(
+        coupled_rs, u0, ps; structural_simplify = true,
+        guesses = [A => 1.0]
+    )
+    sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1.0e-8, reltol = 1.0e-8)
+    @test sssol[[X, A]] ≈ [2.0, 3.0]
 end
 
 
@@ -195,7 +199,7 @@ let
         Δ(B) ~ sqrt(A + X + b) - B,
         Reaction(p, nothing, [X], nothing, [2]),
         Reaction(d, [X], nothing),
-        (X + C)*B ~ A
+        (X + C) * B ~ A,
     ]
     @named coupled_rs = ReactionSystem(eqs, τ)
     coupled_rs = complete(coupled_rs)
@@ -206,14 +210,18 @@ let
 
     # Creates and solves a ODE, SteadyState, and Nonlinear problems.
     # Success is tested by checking that the same steady state solution is found.
-    oprob = ODEProblem(coupled_rs, u0, (0.0, 1000.0), ps; structural_simplify = true,
-        warn_initialize_determined = false)
-    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true,
-        warn_initialize_determined = false)
+    oprob = ODEProblem(
+        coupled_rs, u0, (0.0, 1000.0), ps; structural_simplify = true,
+        warn_initialize_determined = false
+    )
+    ssprob = SteadyStateProblem(
+        coupled_rs, u0, ps; structural_simplify = true,
+        warn_initialize_determined = false
+    )
     nlprob = NonlinearProblem(coupled_rs, u0, ps)
-    osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
-    sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
-    nlsol = solve(nlprob; abstol = 1e-8, reltol = 1e-8)
+    osol = solve(oprob, Rosenbrock23(); abstol = 1.0e-8, reltol = 1.0e-8)
+    sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1.0e-8, reltol = 1.0e-8)
+    nlsol = solve(nlprob; abstol = 1.0e-8, reltol = 1.0e-8)
     @test osol[[A, B, C, X], end] ≈ sssol[[A, B, C, X]] ≈ nlsol[[A, B, C, X]]
 end
 
@@ -233,8 +241,8 @@ let
         Reaction(p, [], [X]),
         Reaction(d, [X], []),
         Reaction(d, [X], nothing, [2], nothing),
-        D(V) ~ X - v*V,
-        W^2 ~ log(V) + X
+        D(V) ~ X - v * V,
+        W^2 ~ log(V) + X,
     ]
     @named coupled_rs = ReactionSystem(eqs, t)
 
@@ -280,8 +288,8 @@ let
     eqs = [
         Reaction(k1, [X], [X2], [2], [1]),
         Reaction(k2, [X2], [X], [1], [2]),
-        D(A) ~ k*X2 - A,
-        B + A ~ b1*X + b2*X2
+        D(A) ~ k * X2 - A,
+        B + A ~ b1 * X + b2 * X2,
     ]
     @named coupled_rs = ReactionSystem(eqs, τ)
     coupled_rs = complete(coupled_rs)
@@ -304,25 +312,25 @@ end
 # Checks that metadata, types, and default values are carried through correctly.
 @test_broken let # SDEs are currently broken with structural simplify (https://github.com/SciML/ModelingToolkit.jl/issues/2614).
     # Creates the model
-    @parameters a1 [description="Parameter a1"] a2::Rational{Int64} a3=0.3 a4::Rational{Int64}=4//10 [description="Parameter a4"]
-    @parameters b1 [description="Parameter b1"] b2::Int64 b3 = 3 b4::Int64=4 [description="Parameter b4"]
-    @parameters c1 [description="Parameter c1"] c2::Float32 c3=30.0 c4::Float32=40.0 [description="Parameter c4"]
-    @species A1(t) [description="Species A1"] A2(t)=0.2 A3(t)=0.3 [description="Species A3"] A4(t)
-    @variables B1(t) [description="Variable B1"] B2(t)=2.0 B3(t)=3.0 [description="Variable B3"] B4(t)
-    @variables C1(t) [description="Variable C1"] C2(t)=20.0 C3(t)=30.0 [description="Variable C3"] C4(t)
+    @parameters a1 [description = "Parameter a1"] a2::Rational{Int64} a3 = 0.3 a4::Rational{Int64} = 4 // 10 [description = "Parameter a4"]
+    @parameters b1 [description = "Parameter b1"] b2::Int64 b3 = 3 b4::Int64 = 4 [description = "Parameter b4"]
+    @parameters c1 [description = "Parameter c1"] c2::Float32 c3 = 30.0 c4::Float32 = 40.0 [description = "Parameter c4"]
+    @species A1(t) [description = "Species A1"] A2(t) = 0.2 A3(t) = 0.3 [description = "Species A3"] A4(t)
+    @variables B1(t) [description = "Variable B1"] B2(t) = 2.0 B3(t) = 3.0 [description = "Variable B3"] B4(t)
+    @variables C1(t) [description = "Variable C1"] C2(t) = 20.0 C3(t) = 30.0 [description = "Variable C3"] C4(t)
     eqs = [
         Reaction(a1, nothing, [A1]),
         Reaction(a2, nothing, [A2]),
         Reaction(a3, nothing, [A3]),
         Reaction(a4, nothing, [A4]),
-        D(B1) ~ b1*B1,
-        D(B2) ~ b2*B2,
-        D(B3) ~ b3*B3,
-        D(B4) ~ b4*B4,
+        D(B1) ~ b1 * B1,
+        D(B2) ~ b2 * B2,
+        D(B3) ~ b3 * B3,
+        D(B4) ~ b4 * B4,
         C1^2 ~ c1 + B1^5,
         C2^2 ~ c2 + B2^5,
         C3^2 ~ c3 + B3^5,
-        C4^2 ~ c4 + B4^5
+        C4^2 ~ c4 + B4^5,
     ]
     @named coupled_rs = ReactionSystem(eqs, t)
     coupled_rs = complete(coupled_rs)
@@ -356,7 +364,7 @@ end
     @test getdescription(coupled_rs.c1) == "Parameter c1"
     @test getdescription(coupled_rs.c4) == "Parameter c4"
     @test getdefault(coupled_rs.a3) == 0.3
-    @test getdefault(coupled_rs.a4) == 4//10
+    @test getdefault(coupled_rs.a4) == 4 // 10
     @test getdefault(coupled_rs.b3) == 3
     @test getdefault(coupled_rs.b4) == 4
     @test getdefault(coupled_rs.c3) == 30
@@ -375,7 +383,7 @@ end
     @test getdefault(coupled_rs.C3) == 30.0
 
     # Creates problem inputs.
-    u0 = [a1 => 0.1, a2 => 2//10, b1 => 1.0, b2 => 2, c1 => 10.0, c2 => 20.0]
+    u0 = [a1 => 0.1, a2 => 2 // 10, b1 => 1.0, b2 => 2, c1 => 10.0, c2 => 20.0]
     tspan = (0.0, 1.0)
     ps = [A1 => 0.1, B1 => 1.0, C1 => 10.0]
 
@@ -398,9 +406,9 @@ end
     for mtk_struct in [oprob, oint, osol, sprob, sint, ssol, nlprob, nlint, nlsol]
         # Parameters.
         @test mtk_struct[a1] == 0.1
-        @test mtk_struct[a2] == 2//10
+        @test mtk_struct[a2] == 2 // 10
         @test mtk_struct[a3] == 0.3
-        @test mtk_struct[a4] == 4//10
+        @test mtk_struct[a4] == 4 // 10
         @test mtk_struct[b1] == 1.0
         @test mtk_struct[b2] == 2
         @test mtk_struct[b3] == 3.0
@@ -412,9 +420,9 @@ end
 
         # Species.
         @test mtk_struct[A1] == 0.1
-        @test mtk_struct[A2] == 2//10
+        @test mtk_struct[A2] == 2 // 10
         @test mtk_struct[A3] == 0.3
-        @test mtk_struct[A4] == 4//10
+        @test mtk_struct[A4] == 4 // 10
 
         # Variables.
         @test mtk_struct[B1] == 1.0
@@ -442,8 +450,8 @@ let
     eqs = [
         Reaction(p, nothing, [X]; metadata = [:noise_scaling => 0.1]),
         Reaction(d, [X], nothing; metadata = [:noise_scaling => 0.1]),
-        D(A) ~ X - k1*A,
-        D(B) ~ k2 - B
+        D(A) ~ X - k1 * A,
+        D(B) ~ k2 - B,
     ]
     @named coupled_rs = ReactionSystem(eqs, t)
     coupled_rs = complete(coupled_rs)
@@ -455,9 +463,9 @@ let
 
     # Checks that the simulations have the expected means (or endpoint, for B).
     sprob = SDEProblem(coupled_rs, u0, tspan, ps)
-    ssol = solve(sprob, ImplicitEM(); maxiters = 1e9, seed)
-    @test mean(ssol[:X]) ≈ 100.0 atol = 1e-2 rtol = 1e-2
-    @test mean(ssol[:A]) ≈ 50.0 atol = 1e-2 rtol = 1e-2
+    ssol = solve(sprob, ImplicitEM(); maxiters = 1.0e9, seed)
+    @test mean(ssol[:X]) ≈ 100.0 atol = 1.0e-2 rtol = 1.0e-2
+    @test mean(ssol[:A]) ≈ 50.0 atol = 1.0e-2 rtol = 1.0e-2
     @test ssol[:B][end] ≈ 20.0
 end
 
@@ -471,7 +479,7 @@ let # SDEs are currently broken with structural simplify (https://github.com/Sci
     eqs = [
         Reaction(p, nothing, [X]),
         Reaction(d, [X], nothing),
-        2 + k1 * A ~ 3 + k2 * X
+        2 + k1 * A ~ 3 + k2 * X,
     ]
     @named coupled_rs = ReactionSystem(eqs, t)
     coupled_rs = complete(coupled_rs)
@@ -509,7 +517,7 @@ let
             @differentials D = Differential(t)
             @variables V(t)
             @equations D(D(V)) ~ 1.0 - V
-            (p,d), 0 <--> X
+            (p, d), 0 <--> X
         end
         @test_throws Exception convert(NonlinearSystem, rs)
     end
@@ -519,7 +527,7 @@ let
         rs = @reaction_network begin
             @variables U(t)
             @equations D(V) ~ 1.0 - V + D(U)
-            (p,d), 0 <--> X
+            (p, d), 0 <--> X
         end
         @test_throws Exception convert(NonlinearSystem, rs)
     end
@@ -530,7 +538,7 @@ let
             @differentials D = Differential(t)
             @variables V(t)
             @equations D(V) + V ~ 1.0 - V
-            (p,d), 0 <--> X
+            (p, d), 0 <--> X
         end
         @test_throws Exception convert(NonlinearSystem, rs)
     end
@@ -549,8 +557,8 @@ let
     eqs = [
         Reaction(p, nothing, [X]),
         Reaction(d, [X], nothing),
-        D(D(A)) + 2ω*D(A) +(ω^2)*A ~ 0,
-        A + k*(B + D(A)) ~ X
+        D(D(A)) + 2ω * D(A) + (ω^2) * A ~ 0,
+        A + k * (B + D(A)) ~ X,
     ]
     @named coupled_rs = ReactionSystem(eqs, t)
     coupled_rs = complete(coupled_rs)
@@ -559,18 +567,18 @@ let
 
     # Checks that ODE an simulation of the system achieves the correct steady state.
     oprob = ODEProblem(coupled_rs, u0, (0.0, 1000.0), ps; structural_simplify = true)
-    osol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
+    osol = solve(oprob, Vern7(); abstol = 1.0e-8, reltol = 1.0e-8)
     @test osol[X][end] ≈ 2.0
-    @test osol[A][end] ≈ 0.0 atol = 1e-8
-    @test osol[D(A)][end] ≈ 0.0 atol = 1e-8
+    @test osol[A][end] ≈ 0.0 atol = 1.0e-8
+    @test osol[D(A)][end] ≈ 0.0 atol = 1.0e-8
     @test osol[B][end] ≈ 1.0
 
     # Checks that SteadyState simulation of the system achieves the correct steady state.
     ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
-    sssol = solve(ssprob, DynamicSS(Vern7()); abstol = 1e-8, reltol = 1e-8)
+    sssol = solve(ssprob, DynamicSS(Vern7()); abstol = 1.0e-8, reltol = 1.0e-8)
     @test sssol[X][end] ≈ 2.0
-    @test sssol[A][end] ≈ 0.0 atol = 1e-8
-    @test sssol[D(A)][end] ≈ 0.0 atol = 1e-8
+    @test sssol[A][end] ≈ 0.0 atol = 1.0e-8
+    @test sssol[D(A)][end] ≈ 0.0 atol = 1.0e-8
     @test sssol[B][end] ≈ 1.0
 
     # Checks that the steady state can be found by solving a nonlinear problem.
@@ -594,44 +602,44 @@ let
     @parameters i r m1 m2 h_max
     u0 = [:S => 999.0, :I => 1.0, :R => 0.0, :M => 1000.0]
     tspan = 500.0
-    ps = [:i => 0.0001, :r => 0.01, :m1 => 5000.0, :m2 => 9000//3, :h_max => 1500.0]
+    ps = [:i => 0.0001, :r => 0.01, :m1 => 5000.0, :m2 => 9000 // 3, :h_max => 1500.0]
 
     # Declares the model in an ordered fashion, and simulates it.
     osol_ordered = let
-        @variables M(t) H(t)=h_max
+        @variables M(t) H(t) = h_max
         @species S(t) I(t) R(t)
         eqs_ordered = [
             Reaction(i, [S, I], [I], [1, 1], [2]),
             Reaction(r, [I], [R]),
-            D(M) ~ -I*M/(m1 + m2),
-            H ~ h_max - I
+            D(M) ~ -I * M / (m1 + m2),
+            H ~ h_max - I,
         ]
         @named coupled_sir_ordered = ReactionSystem(eqs_ordered, t)
         coupled_sir_ordered = complete(coupled_sir_ordered)
 
         # Checks that ODE an simulation of the system achieves the correct steady state.
         oprob_ordered = ODEProblem(coupled_sir_ordered, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
-        solve(oprob_ordered, Vern7(); abstol = 1e-8, reltol = 1e-8, saveat = 1.0)
+        solve(oprob_ordered, Vern7(); abstol = 1.0e-8, reltol = 1.0e-8, saveat = 1.0)
     end
 
     # Declares the model in a messy fashion, and simulates it.
     osol_messy = let
         @parameters τ
-        @variables M(τ) H(τ)=h_max
+        @variables M(τ) H(τ) = h_max
         @species S(τ) I(τ) R(τ)
         Δ = Differential(τ)
         eqs_messy = [
             Reaction(i, [S, I], [I], [1, 1], [2]),
             Reaction(r, [I], [R]),
-            I*M + m1*Δ(M) ~ -m2*Δ(M),
-            H ~ h_max - I
+            I * M + m1 * Δ(M) ~ -m2 * Δ(M),
+            H ~ h_max - I,
         ]
         @named coupled_sir_messy = ReactionSystem(eqs_messy, τ)
         coupled_sir_messy = complete(coupled_sir_messy)
 
         # Checks that ODE an simulation of the system achieves the correct steady state.
         oprob_messy = ODEProblem(coupled_sir_messy, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
-        solve(oprob_messy, Vern7(); abstol = 1e-8, reltol = 1e-8, saveat = 1.0)
+        solve(oprob_messy, Vern7(); abstol = 1.0e-8, reltol = 1.0e-8, saveat = 1.0)
     end
 
     # Checks that the simulations are identical.
@@ -649,28 +657,28 @@ end
 let
     # Creates the model programmatically.
     @species X1(t) X2(t) X3(t)
-    @variables V(t)=5.0 [description="Volume"] N(t) X_conc(t) X_tot(t)
+    @variables V(t) = 5.0 [description = "Volume"] N(t) X_conc(t) X_tot(t)
     @parameters p k1 k2 d v n x_scale::Float32
     eqs = [
         Reaction(p, nothing, [X1])
         Reaction(k1, [X1], [X2])
         Reaction(k2, [X2], [X3])
         Reaction(d, [X3], nothing)
-        D(V) ~ X3/(1+X3) - v*V
-        D(N) ~ - n*N*X3
-        V*X_conc ~ x_scale*(X1 + X2 + X3)
+        D(V) ~ X3 / (1 + X3) - v * V
+        D(N) ~ - n * N * X3
+        V * X_conc ~ x_scale * (X1 + X2 + X3)
         X_tot + X1 + X2 ~ -X3
     ]
     rs_prog = complete(ReactionSystem(eqs, t; name = :coupled_rs))
 
     # Creates the model via the DSL.
     rs_dsl = @reaction_network coupled_rs begin
-        @variables X_conc(t) V(t)=5.0 [description="Volume"] X_tot(t)
+        @variables X_conc(t) V(t) = 5.0 [description = "Volume"] X_tot(t)
         @parameters v n x_scale::Float32
         @equations begin
-            D(V) ~ X3/(1+X3) - v*V
-            D(N) ~ - n*N*X3
-            V*X_conc ~ x_scale*(X1 + X2 + X3)
+            D(V) ~ X3 / (1 + X3) - v * V
+            D(N) ~ - n * N * X3
+            V * X_conc ~ x_scale * (X1 + X2 + X3)
             X_tot + X1 + X2 ~ -X3
         end
         p, 0 --> X1
@@ -707,13 +715,13 @@ end
 let
     # Checks for system with a single differential equation.
     rs_1_line = @reaction_network rs_1 begin
-        @equations D(M) ~ -M*I
+        @equations D(M) ~ -M * I
         i, S + I --> 2I
         r, I --> R
     end
     rs_1_block = @reaction_network rs_1 begin
         @equations begin
-            D(M) ~ -M*I
+            D(M) ~ -M * I
         end
         i, S + I --> 2I
         r, I --> R
@@ -745,7 +753,7 @@ let
     rs_1 = @reaction_network begin
         @variables H(t)
         @equations begin
-            D(M) ~ -M*I
+            D(M) ~ -M * I
             H ~ 100 - I
         end
         i, S + I --> 2I
@@ -757,10 +765,10 @@ let
     # Checks for system with two differential equations, and which do not use `@variables`,
     rs_2 = @reaction_network coupled_rs begin
         @equations begin
-            D(V) ~ X/(1+X) - V
+            D(V) ~ X / (1 + X) - V
             D(N) ~ - V
         end
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     issetequal(species(rs_2), [rs_2.X])
     issetequal(unknowns(rs_2)[2:3], [rs_2.V, rs_2.N])
@@ -769,10 +777,10 @@ let
     rs_2 = @reaction_network coupled_rs begin
         @variables N(t)
         @equations begin
-            D(V) ~ X/(1+X) - V
+            D(V) ~ X / (1 + X) - V
             D(N) ~ - V
         end
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     issetequal(species(rs_2), [rs_2.X])
     issetequal(unknowns(rs_2)[2:3], [rs_2.V, rs_2.N])
@@ -782,7 +790,7 @@ end
 # manually, have their additional inputs properly registered.
 let
     rs = @reaction_network begin
-        @variables V(t)=2.0 [description = "A variable"]
+        @variables V(t) = 2.0 [description = "A variable"]
         @equations D(V) ~ -1
     end
     @test getdefault(rs.V) == 2.0
@@ -799,37 +807,37 @@ let
         @parameters p q
         @species X(t)
         @variables A(t) B(t)
-        @equations X^2 + log(A+X) ~ 1 - sqrt(B) + sin(p + X + π)/exp(A/(1+t)) + q
+        @equations X^2 + log(A + X) ~ 1 - sqrt(B) + sin(p + X + π) / exp(A / (1 + t)) + q
     end
     rs_2 = @reaction_network rs begin
         @parameters p q
         @species X(t)
         @variables A(t) B(t)
-        @equations X^2 + log(A+X) + sqrt(B) - sin(p + X + π)/exp(A/(1+t)) - q ~ 1
+        @equations X^2 + log(A + X) + sqrt(B) - sin(p + X + π) / exp(A / (1 + t)) - q ~ 1
     end
     rs_3 = @reaction_network rs begin
         @parameters p q
         @species X(t)
         @variables A(t) B(t)
-        @equations X^2 + log(A+X) + sqrt(B) - sin(p + X + π)/exp(A/(1+t)) - 1 - q ~ 0
+        @equations X^2 + log(A + X) + sqrt(B) - sin(p + X + π) / exp(A / (1 + t)) - 1 - q ~ 0
     end
     rs_4 = @reaction_network rs begin
         @parameters p q
         @species X(t)
         @variables A(t) B(t)
-        @equations 0 ~ X^2 + log(A+X) + sqrt(B) - sin(p + X + π)/exp(A/(1+t)) - 1 - q
+        @equations 0 ~ X^2 + log(A + X) + sqrt(B) - sin(p + X + π) / exp(A / (1 + t)) - 1 - q
     end
     rs_5 = @reaction_network rs begin
         @parameters p q
         @species X(t)
         @variables A(t) B(t)
-        @equations q ~ X^2 + log(A+X) + sqrt(B) - sin(p + X + π)/exp(A/(1+t)) - 1
+        @equations q ~ X^2 + log(A + X) + sqrt(B) - sin(p + X + π) / exp(A / (1 + t)) - 1
     end
     rs_6 = @reaction_network rs begin
         @parameters p q
         @species X(t)
         @variables A(t) B(t)
-        @equations X^2 + log(A+X) + (A + B)^p ~ 1 - sqrt(B) + sin(p + X + π)/exp(A/(1+t)) + q + (A + B)^p
+        @equations X^2 + log(A + X) + (A + B)^p ~ 1 - sqrt(B) + sin(p + X + π) / exp(A / (1 + t)) + q + (A + B)^p
     end
 
     # Uses a special function to check that all equations indeed are identical.
@@ -871,7 +879,7 @@ let
     # Declares the reaction system using the default differential and iv.
     rs_1 = @reaction_network begin
         @equations D(N) ~ -N
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
 
     # Declares the reaction system using a new iv, and overwriting the default differential.
@@ -881,7 +889,7 @@ let
         @variables N(τ)
         @differentials D = Differential(τ)
         @equations D(N) ~ -N
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
 
     # Declares the reaction system using a new differential and iv.
@@ -891,12 +899,12 @@ let
         @variables N(τ)
         @differentials Δ = Differential(τ)
         @equations Δ(N) ~ -N
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
 
     # Simulates all three models, checking that the results are identical.
     u0 = [:X => 5.0, :N => 10.0]
-    tspan = (0.0, 10.)
+    tspan = (0.0, 10.0)
     ps = [:p => 1.0, :d => 0.2]
     oprob_1 = ODEProblem(rs_1, u0, tspan, ps)
     oprob_2 = ODEProblem(rs_2, u0, tspan, ps)
@@ -950,26 +958,34 @@ let
     E = Differential(τ)
 
     # Variables as reaction reactants.
-    @test_throws Exception ReactionSystem([
-        Reaction(p1, [S1], [V1])
-    ], t; name = :rs)
+    @test_throws Exception ReactionSystem(
+        [
+            Reaction(p1, [S1], [V1]),
+        ], t; name = :rs
+    )
 
     # Species using non-declared independent variable.
-    @test_throws Exception ReactionSystem([
-        Reaction(p1, [R1], [R2])
-    ], t; name = :rs)
+    @test_throws Exception ReactionSystem(
+        [
+            Reaction(p1, [R1], [R2]),
+        ], t; name = :rs
+    )
 
     # Equation with variable using non-declared independent variable.
-    @test_throws Exception ReactionSystem([
-        Reaction(p1, [S1], [S2]),
-        E(U1) ~ S1 + p2
-    ], t; name = :rs)
+    @test_throws Exception ReactionSystem(
+        [
+            Reaction(p1, [S1], [S2]),
+            E(U1) ~ S1 + p2,
+        ], t; name = :rs
+    )
 
     # Differential with respect to non-declared independent variable.
-    @test_throws Exception ReactionSystem([
-        Reaction(p1, [S1], [S2]),
-        E(V1) ~ S1 + p2
-    ], [t, τ]; name = :rs)
+    @test_throws Exception ReactionSystem(
+        [
+            Reaction(p1, [S1], [S2]),
+            E(V1) ~ S1 + p2,
+        ], [t, τ]; name = :rs
+    )
 end
 
 # Checks that various attempts to create `ODEProblem`s from faulty systems generate errors.
@@ -993,7 +1009,7 @@ let
     eqs = [
         Reaction(p1, [S1], [S2]),
         V1 ~ p2 - S1,
-        S2 ~ V1^2 + sqrt(S2)
+        S2 ~ V1^2 + sqrt(S2),
     ]
     @named rs = ReactionSystem(eqs, t)
     rs = complete(rs)

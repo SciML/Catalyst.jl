@@ -18,7 +18,7 @@ D = default_time_deriv()
 # Test discrete event is propagated to ODE solver correctly.
 let
     # Creates model (essentially a jagged oscillation, where `V` is reset to 1.0 every 1.0 time units).
-    @variables V(t)=1.0
+    @variables V(t) = 1.0
     eqs = [D(V) ~ V]
     discrete_events = [1.0 => [V ~ 1.0]]
     rxs = [
@@ -35,17 +35,17 @@ let
     @test length(ModelingToolkit.discrete_events(osys)) == 1
     oprob = ODEProblem(osys, [osys.A => 0.0], (0.0, 20.0))
     sol = solve(oprob, Tsit5())
-    @test sol(10 + 10*eps(), idxs = V) ≈ 1.0
+    @test sol(10 + 10 * eps(), idxs = V) ≈ 1.0
 end
 
 # Test continuous event is propagated to the ODE solver.
 let
     # Creates model (a production/degradation system, but both reactions stop at `t=2.5`).
-    @parameters α=5.0 β=1.0
-    @species V(t)=0.0
+    @parameters α = 5.0 β = 1.0
+    @species V(t) = 0.0
     rxs = [
         Reaction(α, nothing, [V]),
-        Reaction(β, [V], nothing)
+        Reaction(β, [V], nothing),
     ]
     continuous_events = [V ~ 2.5] => [α ~ 0, β ~ 0]
     @named rs = ReactionSystem(rxs, t; continuous_events)
@@ -67,11 +67,11 @@ end
 let
     # Creates model.
     @parameters p d α::Int64 = 1
-    @species X(t) A(t) = 2 [description="A species"]
+    @species X(t) A(t) = 2 [description = "A species"]
     @variables a(t) = 3
     rxs = [
         Reaction(p, nothing, [X]),
-        Reaction(d, [X], nothing)
+        Reaction(d, [X], nothing),
     ]
     continuous_events = [α ~ t] => [A ~ A + a]
     discrete_events = [2.0 => [A ~ α + a]]
@@ -133,7 +133,7 @@ let
     @species X(t)
     rxs = [
         Reaction(p, nothing, [X]),
-        Reaction(d, [X], nothing)
+        Reaction(d, [X], nothing),
     ]
     ce = [X ~ 1.0] => [X ~ 0.5]
     de = [2.0] => [p ~ 1.0]
@@ -152,7 +152,7 @@ let
     @species X(t)
     rxs = [
         Reaction(p, nothing, [X]),
-        Reaction(d, [X], nothing)
+        Reaction(d, [X], nothing),
     ]
 
     # Declares various misformatted events .
@@ -168,7 +168,7 @@ let
     ]
     discrete_events_bad = [
         [2.0] => p ~ 1.0,       # Scalar affect.
-        [2.0] => (p ~ 1.0, ),   # Tuple affect.
+        [2.0] => (p ~ 1.0,),   # Tuple affect.
         #[X > 2.0] => [p ~ 1.0], # Vector conditions. Should probably throw an error here already, currently does not.
         #(1.0, 2.0) => [p ~ 1.0] # Tuple condition. Should probably throw an error here already, currently does not.
     ]
@@ -193,7 +193,7 @@ end
 let
     # Creates model via DSL.
     rn_dsl = @reaction_network rn begin
-        @parameters thres=7.0 dY_up
+        @parameters thres = 7.0 dY_up
         @variables Z(t)
         @continuous_events begin
             [t ~ 2.5] => [p ~ p + 0.2]
@@ -206,18 +206,18 @@ let
         end
 
         (p, dX), 0 <--> X
-        (1.1*p, dY), 0 <--> Y
+        (1.1 * p, dY), 0 <--> Y
     end
 
     # Creates model programmatically.
     t = default_t()
     @variables Z(t)
     @species X(t) Y(t)
-    @parameters p dX dY thres=7.0 dY_up
+    @parameters p dX dY thres = 7.0 dY_up
     rxs = [
         Reaction(p, nothing, [X], nothing, [1])
         Reaction(dX, [X], nothing, [1], nothing)
-        Reaction(1.1*p, nothing, [Y], nothing, [1])
+        Reaction(1.1 * p, nothing, [Y], nothing, [1])
         Reaction(dY, [Y], nothing, [1], nothing)
     ]
     continuous_events = [
@@ -295,7 +295,7 @@ let
     # Tuple affect (discrete events).
     @test_throws Exception @eval @reaction_network begin
         @species X(t)
-        @discrete_events 1.0 => (X ~ X + 1, )
+        @discrete_events 1.0 => (X ~ X + 1,)
     end
 
     # Equation condition (discrete events).
@@ -313,17 +313,17 @@ end
 let
     # Creates model with all types of events. The `e` parameters track whether events are triggered.
     rn = @reaction_network begin
-        @parameters e1=0 e2=0 e3=0 e4=0
+        @parameters e1 = 0 e2 = 0 e3 = 0 e4 = 0
         @continuous_events begin
             [X ~ 1000.0] => [e1 ~ 1]
         end
         @discrete_events begin
             [1.0] => [e2 ~ 1]
             1.0 => [e3 ~ 1]
-            (Y > 1000.0) & (e4==0) => [e4 ~ 1]
+            (Y > 1000.0) & (e4 == 0) => [e4 ~ 1]
         end
-        (p,d), 0 <--> X
-        (p,d), 0 <--> Y
+        (p, d), 0 <--> X
+        (p, d), 0 <--> Y
     end
 
     # Simulates the model for conditions where it *definitely* will cross `X = 1000.0`
@@ -344,13 +344,13 @@ end
 let
     # Creates model with all types of events. The `e` parameters track whether events are triggered.
     rn = @reaction_network begin
-        @parameters e1=0 e2=0 e3=0
+        @parameters e1 = 0 e2 = 0 e3 = 0
         @discrete_events begin
             [1.0] => [e1 ~ 1]
             1.0 => [e2 ~ 1]
-            (X > 1000.0) & (e3==0) => [e3 ~ 1]
+            (X > 1000.0) & (e3 == 0) => [e3 ~ 1]
         end
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
 
     # Simulates the model for conditions where it *definitely* will cross `X = 1000.0`
@@ -375,8 +375,8 @@ let
     rn = @reaction_network begin
         @default_noise_scaling 0.0
         @parameters add::Int64
-        (p,d), 0 <--> X
-        (p,d), 0 <--> Y
+        (p, d), 0 <--> X
+        (p, d), 0 <--> Y
     end
     rn_events = @reaction_network begin
         @default_noise_scaling 0.0
@@ -389,8 +389,8 @@ let
             20.0 => [X ~ X + add]
             (Y < X) => [Y ~ Y + add]
         end
-        (p,d), 0 <--> X
-        (p,d), 0 <--> Y
+        (p, d), 0 <--> X
+        (p, d), 0 <--> Y
     end
     rn_dics_events = @reaction_network begin
         @parameters add::Int64
@@ -399,8 +399,8 @@ let
             20.0 => [X ~ X + add]
             (Y < X) => [Y ~ Y + add]
         end
-        (p,d), 0 <--> X
-        (p,d), 0 <--> Y
+        (p, d), 0 <--> X
+        (p, d), 0 <--> Y
     end
 
     # Sets simulation inputs.
@@ -410,9 +410,9 @@ let
 
     # Create callbacks
     cb_cont = ContinuousCallback((u, t, int) -> (int[:X] - 90.0), int -> (int[:X] += 10.0))
-    cb_disc_1 = PresetTimeCallback([5.0, 10.0], int -> (int[:X] += int.ps[:add]; int[:Y] += int.ps[:add];))
+    cb_disc_1 = PresetTimeCallback([5.0, 10.0], int -> (int[:X] += int.ps[:add]; int[:Y] += int.ps[:add]))
     cb_disc_2 = PresetTimeCallback(20.0:20.0:tspan[end], int -> (int[:X] += int.ps[:add]))
-    cb_disc_3 = DiscreteCallback((u,t,i) -> i[:Y] < i[:X], int -> (int[:Y] += int.ps[:add]))
+    cb_disc_3 = DiscreteCallback((u, t, i) -> i[:Y] < i[:X], int -> (int[:Y] += int.ps[:add]))
     callback = CallbackSet(cb_cont, cb_disc_1, cb_disc_2, cb_disc_3)
 
     # Checks for ODE simulations.

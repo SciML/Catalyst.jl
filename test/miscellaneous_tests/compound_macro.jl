@@ -15,10 +15,10 @@ let
 
     # Basic cases that should pass:
     @compound H2O_1 ~ 2H + O
-    @compound (H2O_2, [output=true]) ~ 2H + O
+    @compound (H2O_2, [output = true]) ~ 2H + O
     @compound (H2O_3 = 1.5) ~ 2H + O
-    @compound (H2O_4 = 4, [output=true]) ~ 2H + O
-    @compound (H2O_5 = p1, [output=true]) ~ 2H + p2*O
+    @compound (H2O_4 = 4, [output = true]) ~ 2H + O
+    @compound (H2O_5 = p1, [output = true]) ~ 2H + p2 * O
     @test iscompound(H2O_1)
     @test iscompound(H2O_2)
     @test iscompound(H2O_3)
@@ -27,20 +27,20 @@ let
 
     # Other errors.
     @test_throws Exception @eval @compound H2O = 2H + O
-    @test_throws Exception @eval @compound (H2O, [output=true]) = 2H + O
+    @test_throws Exception @eval @compound (H2O, [output = true]) = 2H + O
     @test_throws Exception @eval @compound (H2O = 1.5) ~ 2H + O
-    @test_throws Exception @eval @compound (H2O = 4, [output=true]) ~ 2H + O
-    @test_throws Exception @eval @compound (H2O = p1, [output=true]) ~ 2H + p2*O
+    @test_throws Exception @eval @compound (H2O = 4, [output = true]) ~ 2H + O
+    @test_throws Exception @eval @compound (H2O = p1, [output = true]) ~ 2H + p2 * O
 
     # Compounds created in block notation.
     @compounds begin
         CO2_1 ~ 2H + O
     end
     @compounds begin
-        (CO2_2, [output=true]) ~ 2H + O
+        (CO2_2, [output = true]) ~ 2H + O
         (CO2_3 = 1.5) ~ 2H + O
-        (CO2_4 = 4, [output=true]) ~ 2H + O
-        (CO2_5 = p1, [output=true]) ~ 2H + p2*O
+        (CO2_4 = 4, [output = true]) ~ 2H + O
+        (CO2_5 = p1, [output = true]) ~ 2H + p2 * O
     end
     @test iscompound(CO2_1)
     @test iscompound(CO2_2)
@@ -54,10 +54,10 @@ let
         @parameters p1 p2
         @compounds begin
             NH3_1 ~ N + 3H
-            (NH3_2, [output=true]) ~ N + 3H
+            (NH3_2, [output = true]) ~ N + 3H
             (NH3_3 = 1.5) ~ N + 3H
-            (NH3_4 = 4, [output=true]) ~ N + 3H
-            (NH3_5 = p1, [output=true]) ~ N + p2*H
+            (NH3_4 = 4, [output = true]) ~ N + 3H
+            (NH3_5 = p1, [output = true]) ~ N + p2 * H
         end
     end
     @test iscompound(rn.NH3_1)
@@ -122,21 +122,21 @@ end
 # Test using different independent variable combinations.
 let
     @parameters x y z
-    @species C(t) H(x) N(x) O(t) P(t,x) S(x,y)
+    @species C(t) H(x) N(x) O(t) P(t, x) S(x, y)
 
     # Checks that wrong (or absent) independent variable produces errors.
-    @test_throws Exception @eval @compound CO2(t,x) ~ C + 2O
-    @test_throws Exception @eval @compound (NH4(s), [output=true]) ~ N + 4H
+    @test_throws Exception @eval @compound CO2(t, x) ~ C + 2O
+    @test_throws Exception @eval @compound (NH4(s), [output = true]) ~ N + 4H
     @test_throws Exception @eval @compound (H2O = 2.0) ~ 2H + O
     @test_throws Exception @eval @compound PH4(x) ~ P + 4H
-    @test_throws Exception @eval @compound SO2(t,y) ~ S + 2O
+    @test_throws Exception @eval @compound SO2(t, y) ~ S + 2O
 
     # Creates compounds.
     @compound CO2 ~ C + 2O
-    @compound (NH4, [output=true]) ~ N + 4H
-    @compound (H2O(t,x) = 2.0) ~ 2H + O
-    @compound PH4(t,x) ~ P + 4H
-    @compound SO2(t,x,y) ~ S + 2O
+    @compound (NH4, [output = true]) ~ N + 4H
+    @compound (H2O(t, x) = 2.0) ~ 2H + O
+    @compound PH4(t, x) ~ P + 4H
+    @compound SO2(t, x, y) ~ S + 2O
 
     # Checks they have the correct independent variables.
     @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(CO2)), [t])
@@ -184,22 +184,22 @@ let
 
     alpha = 2
     h = H
-    @compound H2_1 ~ 2*H
-    @compound H2_2 ~ alpha*H
-    @compound H2_3 ~ 2*h
-    @compound H2_4 ~ alpha*H
+    @compound H2_1 ~ 2 * H
+    @compound H2_2 ~ alpha * H
+    @compound H2_3 ~ 2 * h
+    @compound H2_4 ~ alpha * H
 
     @test iscompound(H2_1)
     @test iscompound(H2_2)
     @test iscompound(H2_2)
     @test iscompound(H2_4)
 
-    @test isequal(components(H2_1),components(H2_2))
-    @test isequal(components(H2_2),components(H2_3))
-    @test isequal(components(H2_3),components(H2_4))
-    @test isequal(coefficients(H2_1),coefficients(H2_2))
-    @test isequal(coefficients(H2_2),coefficients(H2_3))
-    @test isequal(coefficients(H2_3),coefficients(H2_4))
+    @test isequal(components(H2_1), components(H2_2))
+    @test isequal(components(H2_2), components(H2_3))
+    @test isequal(components(H2_3), components(H2_4))
+    @test isequal(coefficients(H2_1), coefficients(H2_2))
+    @test isequal(coefficients(H2_2), coefficients(H2_3))
+    @test isequal(coefficients(H2_3), coefficients(H2_4))
 end
 
 # Case 4.
@@ -207,13 +207,13 @@ let
     @parameters alpha = 2
     @species H(t)
 
-    @compound H2_1 ~ alpha*H
+    @compound H2_1 ~ alpha * H
     @compound H2_2 ~ 2H
 
     @test iscompound(H2_1)
     @test iscompound(H2_2)
 
-    @test isequal(components(H2_1),components(H2_2))
+    @test isequal(components(H2_1), components(H2_2))
     @test isequal(coefficients(H2_1), @parameters alpha = 2)
 end
 
@@ -227,7 +227,7 @@ let
     @test iscompound(A2)
     @test iscompound(B2)
 
-    @test isequal(components(A2),components(B2))
+    @test isequal(components(A2), components(B2))
     @test isequal(coefficients(A2), coefficients(B2))
     @test isequal(component_coefficients(A2), component_coefficients(B2))
 end
@@ -248,10 +248,10 @@ let
     @test iscompound(OH_alt)
     @test iscompound(C3H5OH3_alt)
 
-    @test isequal(components(OH),components(OH_alt))
+    @test isequal(components(OH), components(OH_alt))
     @test isequal(coefficients(OH), coefficients(OH_alt))
     @test isequal(component_coefficients(OH), component_coefficients(OH_alt))
-    @test isequal(components(C3H5OH3),components(C3H5OH3_alt))
+    @test isequal(components(C3H5OH3), components(C3H5OH3_alt))
     @test isequal(coefficients(C3H5OH3), coefficients(C3H5OH3_alt))
     @test isequal(component_coefficients(C3H5OH3), component_coefficients(C3H5OH3_alt))
 end
@@ -270,7 +270,7 @@ let
     @test iscompound(comp)
     @test iscompound(comp_alt)
 
-    @test isequal(components(comp),components(comp_alt))
+    @test isequal(components(comp), components(comp_alt))
     @test isequal(coefficients(comp), coefficients(comp_alt))
     @test isequal(component_coefficients(comp), component_coefficients(comp_alt))
 end

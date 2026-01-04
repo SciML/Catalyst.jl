@@ -30,16 +30,16 @@ let
     rs1 = complete(ReactionSystem(rxs1, t; name = :rs))
 
     rxs2 = [
-        @reaction p, 0 --> $n1*X
-        @reaction k, n2*X --> n3*Y
+        @reaction p, 0 --> $n1 * X
+        @reaction k, n2 * X --> n3 * Y
         @reaction $d, Y --> 0
     ]
     rs2 = complete(ReactionSystem(rxs2, t; name = :rs))
 
     rs3 = @reaction_network rs begin
         @parameters d::Float64 n1::Int64
-        p, 0 --> n1*X
-        k, n2*X --> n3*Y
+        p, 0 --> n1 * X
+        k, n2 * X --> n3 * Y
         d, Y --> 0
     end
 
@@ -65,8 +65,8 @@ begin
     g = k + α * C
     rs = @reaction_network rs begin
         @parameters k α::Int64
-        t*k, 2*(α^2)*A --> $g*B
-        1.0, α*A + 2*B --> k*C + α*D
+        t * k, 2 * (α^2) * A --> $g * B
+        1.0, α * A + 2 * B --> k * C + α * D
     end
 end
 
@@ -74,8 +74,8 @@ end
 let
     # With combinatoric ratelaws.
     function oderhs(u, p, t)
-        k,α = p
-        A,B,C,D = u
+        k, α = p
+        A, B, C, D = u
         n = 2 * α^2
         rl = t * k / factorial(n) * A^n
         rl2 = A^α * B^2 / (2 * factorial(α))
@@ -91,8 +91,8 @@ let
 
     # Without combinatoric ratelaws.
     function oderhs_no_crl(u, p, t)
-        k,α = p
-        A,B,C,D = u
+        k, α = p
+        A, B, C, D = u
         n = 2 * α^2
         rl = t * k * A^n
         rl2 = A^α * B^2
@@ -111,34 +111,38 @@ end
 let
     # With combinatoric ratelaws.
     function sdenoise(u, p, t)
-        k,α = p
-        A,B,C,D = u
+        k, α = p
+        A, B, C, D = u
         n = 2 * α^2
         rl = sqrt(t * k / factorial(n) * A^n)
         rl2 = sqrt(A^α * B^2 / (2 * factorial(α)))
 
-        du = zeros(4,2)
-        du = [-n*rl (-α*rl2);
-             (k + α * C)*rl (-2*rl2);
-             0.0 k*rl2;
-             0.0 α*rl2]
+        du = zeros(4, 2)
+        du = [
+            -n * rl (-α * rl2);
+            (k + α * C) * rl (-2 * rl2);
+            0.0 k * rl2;
+            0.0 α * rl2
+        ]
         return du
     end
     @test g_eval(rs, u0_1, ps_1, τ) ≈ sdenoise(u0_2, ps_2, τ)
 
     # Without combinatoric ratelaws.
     function sdenoise_no_crl(u, p, t)
-        k,α = p
-        A,B,C,D = u
+        k, α = p
+        A, B, C, D = u
         n = 2 * α^2
         rl = sqrt(t * k * A^n)
         rl2 = sqrt(A^α * B^2)
 
-        du = zeros(4,2)
-        du = [-n*rl (-α*rl2);
-             (k + α * C)*rl (-2*rl2);
-             0.0 k*rl2;
-             0.0 α*rl2]
+        du = zeros(4, 2)
+        du = [
+            -n * rl (-α * rl2);
+            (k + α * C) * rl (-2 * rl2);
+            0.0 k * rl2;
+            0.0 α * rl2
+        ]
         return du
     end
     @test g_eval(rs, u0_1, ps_1, τ; combinatoric_ratelaws = false) ≈ sdenoise_no_crl(u0_2, ps_2, τ)
@@ -150,19 +154,19 @@ let
     function r1(u, p, t)
         k, α = p
         A = u[1]
-        t * k * binomial(A, 2 * α^2)
+        return t * k * binomial(A, 2 * α^2)
     end
     function affect1!(integrator)
         k, α = integrator.p
         C = integrator.u[3]
         integrator.u[1] -= 2 * α^2
         integrator.u[2] += (k + α * C)
-        nothing
+        return nothing
     end
     function r2(u, p, t)
         k, α = p
-        A,B = u[1:2]
-        binomial(Int64(A), Int64(α)) * B * (B - 1) / 2
+        A, B = u[1:2]
+        return binomial(Int64(A), Int64(α)) * B * (B - 1) / 2
     end
     function affect2!(integrator)
         k, α = integrator.p
@@ -170,7 +174,7 @@ let
         integrator.u[2] -= 2
         integrator.u[3] += k
         integrator.u[4] += α
-        nothing
+        return nothing
     end
     jumps = [VariableRateJump(r1, affect1!), VariableRateJump(r2, affect2!)]
 
@@ -196,19 +200,19 @@ let
     # parameter vectors as the non-reference ones.
     rs_int = @reaction_network begin
         @parameters n::Int64
-        (k1, k2), n*X1 <--> X2
+        (k1, k2), n * X1 <--> X2
     end
     rs_dec = @reaction_network begin
         @parameters n::Float64
-        (k1, k2), n*X1 <--> X2
+        (k1, k2), n * X1 <--> X2
     end
     rs_ref_int = @reaction_network begin
         @parameters n::Int64
-        (k1, k2), 3*X1 <--> X2
+        (k1, k2), 3 * X1 <--> X2
     end
     rs_ref_dec = @reaction_network begin
         @parameters n::Float64
-        (k1, k2), 2.5*X1 <--> X2
+        (k1, k2), 2.5 * X1 <--> X2
     end
 
     # Set simulation settings. Initial conditions are design to start, more or less, at
@@ -237,14 +241,14 @@ let
     sprob_int_ref = SDEProblem(rs_ref_int, u0_dec, tspan_stoch, ps_int)
     ssol_int = solve(sprob_int, ImplicitEM(); seed)
     ssol_int_ref = solve(sprob_int_ref, ImplicitEM(); seed)
-    @test mean(ssol_int[:X1]) ≈ mean(ssol_int_ref[:X1]) atol = 2*1e0
+    @test mean(ssol_int[:X1]) ≈ mean(ssol_int_ref[:X1]) atol = 2 * 1.0e0
 
     # Test SDE simulations with decimal coefficients.
     sprob_dec = SDEProblem(rs_dec, u0_dec, tspan_stoch, ps_dec; combinatoric_ratelaws = false)
     sprob_dec_ref = SDEProblem(rs_ref_dec, u0_dec, tspan_stoch, ps_dec; combinatoric_ratelaws = false)
     ssol_dec = solve(sprob_dec, ImplicitEM(); seed)
     ssol_dec_ref = solve(sprob_dec_ref, ImplicitEM(); seed)
-    @test mean(ssol_dec[:X1]) ≈ mean(ssol_dec_ref[:X1]) atol = 2*1e0
+    @test mean(ssol_dec[:X1]) ≈ mean(ssol_dec_ref[:X1]) atol = 2 * 1.0e0
 
     # Test Jump simulations with integer coefficients.
     jin_int = JumpInputs(rs_int, u0_int, tspan_stoch, ps_int)
@@ -253,7 +257,7 @@ let
     jprob_int_ref = JumpProblem(jin_int_ref; rng, save_positions = (false, false))
     jsol_int = solve(jprob_int, SSAStepper(); seed, saveat = 1.0)
     jsol_int_ref = solve(jprob_int_ref, SSAStepper(); seed, saveat = 1.0)
-    @test mean(jsol_int[:X1]) ≈ mean(jsol_int_ref[:X1]) atol = 1e-2 rtol = 1e-2
+    @test mean(jsol_int[:X1]) ≈ mean(jsol_int_ref[:X1]) atol = 1.0e-2 rtol = 1.0e-2
 end
 
 # Check that jump simulations (implemented with and without symbolic stoichiometries) yield simulations
@@ -263,16 +267,16 @@ let
     # Creates the models.
     sir = @reaction_network begin
         @parameters n::Int64 k::Int64
-        i, S + n*I --> k*I
-        r, n*I --> n*R
+        i, S + n * I --> k * I
+        r, n * I --> n * R
     end
     sir_ref = @reaction_network begin
         i, S + I --> 2I
         r, I --> R
     end
 
-    ps = [:i => 1e-4, :r => 1e-2, :n => 1.0, :k => 2.0]
-    ps_ref = [:i => 1e-4, :r => 1e-2]
+    ps = [:i => 1.0e-4, :r => 1.0e-2, :n => 1.0, :k => 2.0]
+    ps_ref = [:i => 1.0e-4, :r => 1.0e-2]
     tspan = (0.0, 250.0) # tspan[2] is selected so that it is in the middle of the outbreak peak.
     u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
     @test issetequal(unknowns(sir), unknowns(sir_ref))
@@ -295,6 +299,6 @@ let
     sols_ref = solve(eprob_ref, SSAStepper(); trajectories = 10000)
     end_vals = [[sol[s][end] for sol in sols.u] for s in species(sir)]
     end_vals_ref = [[sol[s][end] for sol in sols_ref.u] for s in species(sir_ref)]
-    @test mean.(end_vals_ref) ≈ mean.(end_vals) atol=1e-2 rtol = 1e-2
-    @test var.(end_vals_ref) ≈ var.(end_vals) atol=1e-1 rtol = 1e-1
+    @test mean.(end_vals_ref) ≈ mean.(end_vals) atol = 1.0e-2 rtol = 1.0e-2
+    @test var.(end_vals_ref) ≈ var.(end_vals) atol = 1.0e-1 rtol = 1.0e-1
 end

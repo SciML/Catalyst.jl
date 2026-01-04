@@ -30,7 +30,7 @@ let
                 ]
                 for pV in [pV_1, pV_2, pV_3]
                     pE_1 = [sp => 0.01 for sp in spatial_param_syms(lrs)]
-                    pE_2 = [sp => rand_e_vals(lrs)/50.0 for sp in spatial_param_syms(lrs)]
+                    pE_2 = [sp => rand_e_vals(lrs) / 50.0 for sp in spatial_param_syms(lrs)]
                     for pE in [pE_1, pE_2]
                         isempty(spatial_param_syms(lrs)) && (pE = Vector{Pair{Symbol, Float64}}())
                         dprob = DiscreteProblem(lrs, u0, (0.0, 1.0), [pV; pE])
@@ -55,7 +55,7 @@ let
 
     # Prepares various u0 input types.
     u0_1 = [:I => 2.0, :S => 1.0, :R => 3.0]
-    u0_2 = [:I => fill(2., nv(grid)), :S => 1.0, :R => 3.0]
+    u0_2 = [:I => fill(2.0, nv(grid)), :S => 1.0, :R => 3.0]
 
     # Prepare various (compartment) parameter input types.
     pV_1 = [:β => 0.2, :α => 0.1]
@@ -69,7 +69,7 @@ let
 
     # Checks hopping rates and u0 are correct.
     true_u0 = [fill(1.0, 1, 25); fill(2.0, 1, 25); fill(3.0, 1, 25)]
-    true_hopping_rates = cumsum.([fill(dval, length(v)) for dval in [0.01,0.02,0.03], v in grid.fadjlist])
+    true_hopping_rates = cumsum.([fill(dval, length(v)) for dval in [0.01, 0.02, 0.03], v in grid.fadjlist])
     true_maj_scaled_rates = [0.1, 0.2]
     true_maj_reactant_stoch = [[1 => 1, 2 => 1], [2 => 1]]
     true_maj_net_stoch = [[1 => -1, 2 => 1], [2 => -1, 3 => 1]]
@@ -79,7 +79,7 @@ let
             jprob = JumpProblem(lrs, dprob, NSM())
             @test jprob.prob.u0 == true_u0
             @test jprob.discrete_jump_aggregation.hop_rates.hop_const_cumulative_sums == true_hopping_rates
-            @test jprob.massaction_jump.reactant_stoch  == true_maj_reactant_stoch
+            @test jprob.massaction_jump.reactant_stoch == true_maj_reactant_stoch
             @test all(issetequal(ns1, ns2) for (ns1, ns2) in zip(jprob.massaction_jump.net_stoch, true_maj_net_stoch))
         end
     end
@@ -89,7 +89,7 @@ end
 ### SpatialMassActionJump Testing ###
 
 # Checks that the correct structures are produced.
-let 
+let
     # Network for reference:
     # A, ∅ → X
     # 1, 2X + Y → 3X
@@ -107,8 +107,8 @@ let
     jprob = JumpProblem(lrs, dprob, NSM())
 
     # Checks internal structures.
-    jprob.massaction_jump.uniform_rates == [1.0, 0.5 ,10.] # 0.5 is due to combinatoric /2! in (2X + Y).
-    jprob.massaction_jump.spatial_rates[1,:] == ps[2][2]
+    jprob.massaction_jump.uniform_rates == [1.0, 0.5, 10.0] # 0.5 is due to combinatoric /2! in (2X + Y).
+    jprob.massaction_jump.spatial_rates[1, :] == ps[2][2]
     # Test when new SII functions are ready, or we implement them in Catalyst.
     # @test isequal(to_int(getfield.(reactions(reactionsystem(lrs)), :netstoich)), jprob.massaction_jump.net_stoch)
     # @test isequal(to_int(Pair.(getfield.(reactions(reactionsystem(lrs)), :substrates),getfield.(reactions(reactionsystem(lrs)), :substoich))), jprob.massaction_jump.net_stoch)
@@ -119,25 +119,25 @@ end
 
 # Checks that heterogeneous vertex parameters work. Checks that birth-death system with different
 # birth rates produce different means.
-let 
+let
     # Create model.
     birth_death_network = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     srs = [(@transport_reaction D X)]
     lrs = LatticeReactionSystem(birth_death_network, srs, very_small_2d_graph_grid)
-    
+
     # Create JumpProblem.
     u0 = [:X => 1]
     tspan = (0.0, 100.0)
-    ps = [:p => [0.1, 1.0, 10.0, 100.0], :d => 1.0, :D => 0.0]    
+    ps = [:p => [0.1, 1.0, 10.0, 100.0], :d => 1.0, :D => 0.0]
     dprob = DiscreteProblem(lrs, u0, tspan, ps)
     jprob = JumpProblem(lrs, dprob, NSM())
 
     # Simulate model (a few repeats to ensure things don't succeed by change for uniform rates).
     # Check that higher p gives higher mean.
-    for i = 1:5 
-        sol = solve(jprob, SSAStepper(); saveat = 1.)
+    for i in 1:5
+        sol = solve(jprob, SSAStepper(); saveat = 1.0)
         @test mean(getindex.(sol.u, 1)) < mean(getindex.(sol.u, 2)) < mean(getindex.(sol.u, 3)) < mean(getindex.(sol.u, 4))
     end
 end
@@ -146,7 +146,7 @@ end
 ### Tests taken from JumpProcesses ###
 
 # ABC Model Test
-let 
+let
     # Preparations (stuff used in JumpProcesses examples ported over here, could be written directly into code).
     Nsims = 100
     reltol = 0.05
@@ -163,7 +163,7 @@ let
 
     # Make model.
     rn = @reaction_network begin
-        (kB,kD), A + B <--> C
+        (kB, kD), A + B <--> C
     end
     tr_1 = @transport_reaction D A
     tr_2 = @transport_reaction D B
@@ -172,13 +172,13 @@ let
     lrs = LatticeReactionSystem(rn, [tr_1, tr_2, tr_3], lattice)
 
     # Set simulation parameters and create problems.
-    u0 = [:A => [0,0,500,0,0], :B => [0,0,500,0,0], :C => 0]
+    u0 = [:A => [0, 0, 500, 0, 0], :B => [0, 0, 500, 0, 0], :C => 0]
     tspan = (0.0, 10.0)
     pV = [:kB => rates[1], :kD => rates[2]]
     pE = [:D => diffusivity]
     dprob = DiscreteProblem(lrs, u0, tspan, [pV; pE])
     # NRM could be added, but doesn't work. Might need Cartesian grid.
-    jump_problems = [JumpProblem(lrs, dprob, alg(); save_positions = (false, false)) for alg in [NSM, DirectCRDirect]] 
+    jump_problems = [JumpProblem(lrs, dprob, alg(); save_positions = (false, false)) for alg in [NSM, DirectCRDirect]]
 
     # Run tests.
     function get_mean_end_state(jump_prob, Nsims)
@@ -187,7 +187,7 @@ let
             sol = solve(jump_prob, SSAStepper())
             end_state .+= sol.u[end]
         end
-        end_state / Nsims
+        return end_state / Nsims
     end
     for jprob in jump_problems
         solution = solve(jprob, SSAStepper())

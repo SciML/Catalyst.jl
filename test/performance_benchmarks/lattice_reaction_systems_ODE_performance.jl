@@ -54,10 +54,10 @@ let
     pV = brusselator_p
     pE = [:dX => 0.2]
     oprob = ODEProblem(lrs, u0, (0.0, 100.0), [pV; pE])
-    @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver=:GMRES)))
+    @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver = :GMRES)))
 
     runtime_target = 0.013
-    runtime = minimum((@benchmark solve($oprob, CVODE_BDF(linear_solver=:GMRES))).times) / 1000000000
+    runtime = minimum((@benchmark solve($oprob, CVODE_BDF(linear_solver = :GMRES))).times) / 1000000000
     println("Small grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < runtime_reduction_margin * runtime_target
 end
@@ -69,18 +69,20 @@ let
     pV = brusselator_p
     pE = [:dX => 0.2]
     oprob = ODEProblem(lrs, u0, (0.0, 100.0), [pV; pE])
-    @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver=:GMRES)))
+    @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver = :GMRES)))
 
-    runtime_target = 11.
-    runtime = minimum((@benchmark solve($oprob, CVODE_BDF(linear_solver=:GMRES))).times) / 1000000000
+    runtime_target = 11.0
+    runtime = minimum((@benchmark solve($oprob, CVODE_BDF(linear_solver = :GMRES))).times) / 1000000000
     println("Large grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < runtime_reduction_margin * runtime_target
 end
 
 # Small grid, mid-sized, non-stiff, system.
 let
-    lrs = LatticeReactionSystem(CuH_Amination_system, CuH_Amination_srs_2,
-                                small_2d_graph_grid)
+    lrs = LatticeReactionSystem(
+        CuH_Amination_system, CuH_Amination_srs_2,
+        small_2d_graph_grid
+    )
     u0 = [
         :CuoAc => 0.005 .+ rand_v_vals(lrs, 0.005),
         :Ligand => 0.005 .+ rand_v_vals(lrs, 0.005),
@@ -110,8 +112,10 @@ end
 
 # Large grid, mid-sized, non-stiff, system.
 let
-    lrs = LatticeReactionSystem(CuH_Amination_system, CuH_Amination_srs_2,
-                                large_2d_grid)
+    lrs = LatticeReactionSystem(
+        CuH_Amination_system, CuH_Amination_srs_2,
+        large_2d_grid
+    )
     u0 = [
         :CuoAc => 0.005 .+ rand_v_vals(lrs, 0.005),
         :Ligand => 0.005 .+ rand_v_vals(lrs, 0.005),
@@ -157,10 +161,10 @@ let
     pV = sigmaB_p
     pE = [:DσB => 0.1, :Dw => 0.1, :Dv => 0.1]
     oprob = ODEProblem(lrs, u0, (0.0, 50.0), [pV; pE])
-    @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver=:GMRES)))
+    @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver = :GMRES)))
 
     runtime_target = 0.61
-    runtime = minimum((@benchmark solve($oprob, CVODE_BDF(linear_solver=:GMRES))).times) / 1000000000
+    runtime = minimum((@benchmark solve($oprob, CVODE_BDF(linear_solver = :GMRES))).times) / 1000000000
     println("Small grid, mid-sized, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < runtime_reduction_margin * runtime_target
 end
@@ -183,10 +187,10 @@ let
     pV = sigmaB_p
     pE = [:DσB => 0.1, :Dw => 0.1, :Dv => 0.1]
     oprob = ODEProblem(lrs, u0, (0.0, 10.0), [pV; pE]) # Time reduced from 50.0 (which causes Julia to crash).
-    @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver=:GMRES)))
+    @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver = :GMRES)))
 
-    runtime_target = 59.
-    runtime = minimum((@benchmark solve($oprob, CVODE_BDF(linear_solver=:GMRES))).times) / 1000000000
+    runtime_target = 59.0
+    runtime = minimum((@benchmark solve($oprob, CVODE_BDF(linear_solver = :GMRES))).times) / 1000000000
     println("Large grid, mid-sized, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < runtime_reduction_margin * runtime_target
 end

@@ -33,9 +33,11 @@ let
 
     # For the A + B <--> C subsystem one of these must occur
     # as a conservation law.
-    D = [1 -1 0 0 0 0 0 0 0 0;
-         -1 1 0 0 0 0 0 0 0 0
-         0 1 1 0 0 0 0 0 0 0]
+    D = [
+        1 -1 0 0 0 0 0 0 0 0;
+        -1 1 0 0 0 0 0 0 0 0
+        0 1 1 0 0 0 0 0 0 0
+    ]
     @test any(D[j, :] == C[i, :] for i in 1:size(C, 1), j in 1:size(D, 1))
 
     C = conservationlaws(rn)
@@ -55,7 +57,7 @@ let
 
     # Networks for which there are known conservation laws (stored in `reaction_network_conslaws`).
     function consequiv(A, B)
-        rank([A; B]) == rank(A) == rank(B)
+        return rank([A; B]) == rank(A) == rank(B)
     end
     Cs_constraint = map(conservationlaws, reaction_networks_conserved)
     @test all(consequiv.(Matrix{Int}.(Cs_constraint), reaction_network_conslaws))
@@ -84,7 +86,7 @@ end
 let
     # Creates network with/without cached conservation laws.
     rn = @reaction_network rn begin
-        (k1,k2), X1 <--> X2
+        (k1, k2), X1 <--> X2
     end
     rn_cached = deepcopy(rn)
     conservationlaws(rn_cached)
@@ -108,8 +110,10 @@ let
     end
     @unpack A, B, C, D, E, F1, F2, F3, k1, k2, m1, m2, b12, b23, b31 = rn
     sps = species(rn)
-    u0 = [A => 10.0, B => 10.0, C => 0.0, D => 10.0, E => 0.0, F1 => 8.0, F2 => 0.0,
-        F3 => 0.0]
+    u0 = [
+        A => 10.0, B => 10.0, C => 0.0, D => 10.0, E => 0.0, F1 => 8.0, F2 => 0.0,
+        F3 => 0.0,
+    ]
     p = [k1 => 1.0, k2 => 0.1, m1 => 1.0, m2 => 2.0, b12 => 1.0, b23 => 2.0, b31 => 0.1]
     tspan = (0.0, 20.0)
 
@@ -118,9 +122,9 @@ let
     oprob1 = ODEProblem(osys, u0, tspan, p)
     oprob2 = ODEProblem(rn, u0, tspan, p)
     oprob3 = ODEProblem(rn, u0, tspan, p; remove_conserved = true)
-    osol1 = solve(oprob1, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat= 0.2)
-    osol2 = solve(oprob2, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat= 0.2)
-    osol3 = solve(oprob3, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat= 0.2)
+    osol1 = solve(oprob1, Tsit5(); abstol = 1.0e-8, reltol = 1.0e-8, saveat = 0.2)
+    osol2 = solve(oprob2, Tsit5(); abstol = 1.0e-8, reltol = 1.0e-8, saveat = 0.2)
+    osol3 = solve(oprob3, Tsit5(); abstol = 1.0e-8, reltol = 1.0e-8, saveat = 0.2)
     @test osol1[sps] ≈ osol2[sps] ≈ osol3[sps]
 
     # Checks that steady states found using nonlinear solving and steady state simulations are identical.
@@ -130,30 +134,34 @@ let
     nprob1 = NonlinearProblem{true}(nsys, u0, p)
     nprob1b = NonlinearProblem{true}(nsys_ss, u0, p)
     nprob2 = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false)
-    nprob2b = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false, 
-        structural_simplify = true)
-    nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
-    nsol1b = solve(nprob1b, NewtonRaphson(); abstol = 1e-8)
-    nsol2 = solve(nprob2, NewtonRaphson(); abstol = 1e-8)
-    nsol2b = solve(nprob2b, NewtonRaphson(); abstol = 1e-8)
+    nprob2b = NonlinearProblem(
+        rn, u0, p; remove_conserved = true, conseqs_remake_warn = false,
+        structural_simplify = true
+    )
+    nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1.0e-8)
+    nsol1b = solve(nprob1b, NewtonRaphson(); abstol = 1.0e-8)
+    nsol2 = solve(nprob2, NewtonRaphson(); abstol = 1.0e-8)
+    nsol2b = solve(nprob2b, NewtonRaphson(); abstol = 1.0e-8)
     # Nonlinear problems cannot find steady states properly without removing conserved species.
 
     ssprob1 = SteadyStateProblem{true}(osys, u0, p)
     ssprob2 = SteadyStateProblem(rn, u0, p)
     ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true)
-    sssol1 = solve(ssprob1, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-    sssol2 = solve(ssprob2, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-    sssol3 = solve(ssprob3, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-    @test nsol1[sps] ≈ nsol1b[sps] 
-    @test nsol1[sps] ≈ nsol2[sps] 
-    @test nsol1[sps] ≈ nsol2b[sps] 
+    sssol1 = solve(ssprob1, DynamicSS(Tsit5()); abstol = 1.0e-8, reltol = 1.0e-8)
+    sssol2 = solve(ssprob2, DynamicSS(Tsit5()); abstol = 1.0e-8, reltol = 1.0e-8)
+    sssol3 = solve(ssprob3, DynamicSS(Tsit5()); abstol = 1.0e-8, reltol = 1.0e-8)
+    @test nsol1[sps] ≈ nsol1b[sps]
+    @test nsol1[sps] ≈ nsol2[sps]
+    @test nsol1[sps] ≈ nsol2b[sps]
     @test nsol1[sps] ≈ sssol1[sps]
-    @test nsol1[sps] ≈ sssol2[sps] 
+    @test nsol1[sps] ≈ sssol2[sps]
     @test nsol1[sps] ≈ sssol3[sps]
 
     # Creates SDEProblems using various approaches.
-    u0_sde = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
-        F3 => 20.0]
+    u0_sde = [
+        A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
+        F3 => 20.0,
+    ]
     ssys = complete(convert(SDESystem, rn; remove_conserved = true))
     sprob1 = SDEProblem(ssys, u0_sde, tspan, p)
     sprob2 = SDEProblem(rn, u0_sde, tspan, p)
@@ -188,7 +196,7 @@ let
     # Prepares the model.
     rn = @reaction_network rn begin
         @parameters kB::Int64
-        (kB,kD), X + Y <--> XY
+        (kB, kD), X + Y <--> XY
     end
     sps = species(rn)
     @unpack kB, kD, X, Y, XY = rn
@@ -208,7 +216,7 @@ end
 let
     # Creates `SDEProblem`s.
     rn = @reaction_network begin
-        (k1,k2), X1 <--> X2
+        (k1, k2), X1 <--> X2
     end
     u0 = Dict([:X1 => 100.0, :X2 => 120.0])
     ps = [:k1 => 0.2, :k2 => 0.15]
@@ -223,7 +231,7 @@ end
 let
     # Prepares `ODEProblem`s.
     rn = @reaction_network begin
-        (k1,k2), X1 <--> X2
+        (k1, k2), X1 <--> X2
     end
     osys = complete(convert(ODESystem, rn; remove_conserved = true))
     u0_1 = [osys.X1 => 1.0, osys.X2 => 1.0]
@@ -252,7 +260,7 @@ let
     @species X1(t) X2(t)
     rxs = [
         Reaction(k1, [X1], [X2]),
-        Reaction(k2, [X2], [X1])
+        Reaction(k2, [X2], [X1]),
     ]
     @named rs = ReactionSystem(rxs, t)
     osys = complete(convert(ODESystem, complete(rs); remove_conserved = true))
@@ -292,15 +300,15 @@ end
 
 # Checks that conservation law elimination generates a system with a non-singular Jacobian.
 # Does this for different system types (ODE, SDE, and Nonlinear).
-# Checks singularity by checking whether the Jacobian have high enough a condition number 
+# Checks singularity by checking whether the Jacobian have high enough a condition number
 # (when evaluated at the steady state).
 let
     # Creates the model (contains both conserved and non-conserved species).
     rn = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
         d, XY --> Y
-        (k1,k2), X + Y <--> XY
-        (k3,k4), 2Y <--> Y2
+        (k1, k2), X + Y <--> XY
+        (k3, k4), 2Y <--> Y2
     end
 
     # Finds a steady state at which we will compute the Jacobian.
@@ -312,7 +320,7 @@ let
 
     # Creates a function which evaluates whether the Jacobian is singular.
     # Singularity means infinite condition number (here it is about 1e17).
-    function is_singular(prob; infthres = 1e12)
+    function is_singular(prob; infthres = 1.0e12)
         J = zeros(length(prob.u0), length(prob.u0))
         ModelingToolkit.is_time_dependent(prob) ? prob.f.jac(J, prob.u0, prob.p, 0.0) : prob.f.jac(J, prob.u0, prob.p)
         return cond(J) > infthres
@@ -344,8 +352,8 @@ end
 let
     # Prepares the problem inputs and computes the conservation equation.
     rn = @reaction_network begin
-        (k1,k2), 2X1 <--> X2
-        (k3,k4), X1 + X2 <--> X3
+        (k1, k2), 2X1 <--> X2
+        (k3, k4), X1 + X2 <--> X3
     end
     @unpack X1, X2, X3 = rn
     u0 = [X1 => 1.0, X2 => 1.0, X3 => 1.0]
@@ -361,7 +369,7 @@ let
         # For a couple of iterations, updates the problem, ensuring that when a species is updated:
         # - Only that species and the conservation constant have their values updated.
         # The `≈` is because sometimes the computed values will not be fully exact.
-        for _ = 1:3
+        for _ in 1:3
             # Updates X2, checks the values of all species and Γ, then resets `prob_old`.
             X2_new = rand(rng, 1.0:10.0)
             prob_new = remake(prob_old; u0 = [:X2 => X2_new])
@@ -421,7 +429,7 @@ let
             @test substitute(conserved_quantity, Dict([X1 => X1_new, X2 => prob_old[X2], X3 => prob_new[X3]])) ≈ prob_new.ps[:Γ][1]
             prob_old = prob_new
 
-            # Updates X3 (the eliminated species). Since we reset Γ, this has its value modified to 
+            # Updates X3 (the eliminated species). Since we reset Γ, this has its value modified to
             # accommodate the new value of X3.
             X3_new = rand(rng, 1.0:10.0)
             prob_new = remake(prob_old; u0 = [:X3 => X3_new], p = [:Γ => nothing])
@@ -453,7 +461,7 @@ end
 # Checks that `JumpSystem`s with conservation laws cannot be generated.
 let
     rn = @reaction_network begin
-        (k1,k2), X1 <--> X2
+        (k1, k2), X1 <--> X2
     end
     @test_throws ArgumentError convert(JumpSystem, rn; remove_conserved = true)
 end
@@ -463,8 +471,8 @@ end
 let
     # Creates ODESystem with conserved quantities.
     rs = @reaction_network begin
-        (k1,k2), X1 <--> X2
-        (k1,k2), Y1 <--> Y2
+        (k1, k2), X1 <--> X2
+        (k1, k2), Y1 <--> Y2
     end
     osys = convert(ODESystem, rs; remove_conserved = true)
 
@@ -483,7 +491,7 @@ let
     @parameters k[1:2]
     rxs = [
         Reaction(k[1], [X[1]], [X[2]]),
-        Reaction(k[2], [X[2]], [X[1]])
+        Reaction(k[2], [X[2]], [X[1]]),
     ]
     @named rs = ReactionSystem(rxs, t)
     rs = complete(rs)
@@ -503,12 +511,12 @@ end
 let
     # Create models.
     rn = @reaction_network begin
-        (k1,k2), X1 <--> X2
-        (k3,k4), X1 + X2 <--> 2X3
+        (k1, k2), X1 <--> X2
+        (k3, k4), X1 + X2 <--> 2X3
     end
     u0 = [:X1 => 1.0, :X2 => 2.0, :X3 => 3.0]
     ps = [:k1 => 0.1, :k2 => 0.2, :k3 => 0.3, :k4 => 0.4]
-    
+
     # Checks that the warning si given and can be suppressed for the variosu cases.
     @test_nowarn convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false)
     @test_logs (:warn, r"Note, when constructing*") convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = true)
@@ -523,13 +531,15 @@ let
     #     0 ~ -X1 - X2 - X3 + Γ[1]
     # ]
     # initeqs = [Γ[1] ~ Initial(X1) + Initial(X3) + Initial(X2)]
-    # @named nlsys = NonlinearSystem(eqs, [X1, X2, X3], [k1, k2, k3, k4, Γ]; 
+    # @named nlsys = NonlinearSystem(eqs, [X1, X2, X3], [k1, k2, k3, k4, Γ];
     #     initialization_eqs = initeqs)
 
-    
+
     # WITHOUT structural_simplify
-    nlsys = convert(NonlinearSystem, rn; remove_conserved = true, 
-        conseqs_remake_warn = false)
+    nlsys = convert(
+        NonlinearSystem, rn; remove_conserved = true,
+        conseqs_remake_warn = false
+    )
     nlsys1 = complete(nlsys)
     nlprob1 = NonlinearProblem(nlsys1, u0, ps)
 
@@ -544,8 +554,8 @@ let
     @test integ1.ps[:Γ][1] == 6.0
 
     nlprob1b = remake(nlprob1; u0 = [:X3 => nothing], p = [:Γ => [4.0]])
-    @test nlprob1b[:X1] == 1.0   
-    @test nlprob1b[:X2] == 2.0   
+    @test nlprob1b[:X1] == 1.0
+    @test nlprob1b[:X2] == 2.0
     @test_broken nlprob1b[:X3] == 1.0
     @test nlprob1b.ps[:Γ][1] == 4.0
     integ1 = init(nlprob1b, NewtonRaphson())
@@ -564,7 +574,7 @@ let
     @test_broken integ1[:X2] == 0.0
     @test integ1[:X3] == 3.0
     @test integ1.ps[:Γ][1] == 4.0
-    
+
     # WITH structural_simplify
     nlsys2 = structural_simplify(nlsys)
     nlprob2 = NonlinearProblem(nlsys2, u0, ps)
@@ -580,24 +590,24 @@ let
     @test integ2.ps[:Γ][1] == 6.0
 
     nlprob2b = remake(nlprob2; u0 = [:X3 => nothing], p = [:Γ => [4.0]])
-    @test nlprob2b[:X1] == 1.0   
-    @test nlprob2b[:X2] == 2.0   
-    @test nlprob2b[:X3] == 1.0   
-    @test nlprob2b.ps[:Γ][1] == 4.0 
+    @test nlprob2b[:X1] == 1.0
+    @test nlprob2b[:X2] == 2.0
+    @test nlprob2b[:X3] == 1.0
+    @test nlprob2b.ps[:Γ][1] == 4.0
     integ2 = init(nlprob2b, NewtonRaphson())
-    @test integ2[:X1] == 1.0  
-    @test integ2[:X2] == 2.0  
-    @test integ2[:X3] == 1.0  
-    @test integ2.ps[:Γ][1] == 4.0 
+    @test integ2[:X1] == 1.0
+    @test integ2[:X2] == 2.0
+    @test integ2[:X3] == 1.0
+    @test integ2.ps[:Γ][1] == 4.0
 
     nlprob2c = remake(nlprob2; u0 = [:X2 => nothing], p = [:Γ => [4.0]])
-    @test nlprob2c[:X1] == 1.0   
-    @test_broken nlprob2c[:X2] == 0.0 
+    @test nlprob2c[:X1] == 1.0
+    @test_broken nlprob2c[:X2] == 0.0
     @test_broken nlprob2c[:X3] == 3.0
-    @test nlprob2c.ps[:Γ][1] == 4.0 
+    @test nlprob2c.ps[:Γ][1] == 4.0
     integ2 = init(nlprob2c, NewtonRaphson())
-    @test integ2[:X1] == 1.0  
-    @test_broken integ2[:X2] == 0.0 
+    @test integ2[:X1] == 1.0
+    @test_broken integ2[:X2] == 0.0
     @test_broken integ2[:X3] == 3.0
-    @test integ2.ps[:Γ][1] == 4.0 
+    @test integ2.ps[:Γ][1] == 4.0
 end

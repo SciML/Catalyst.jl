@@ -31,7 +31,7 @@ let
         p, k1, k2, k3, d = p
         du[1] = 2 * p - k1 * X1
         du[2] = k1 * X1 - k2 * X2 - k3 * X2
-        du[3] = k2 * X2 + k3 * X2 - d * X3
+        return du[3] = k2 * X2 + k3 * X2 - d * X3
     end
     function real_g_1(du, u, p, t)
         X1, X2, X3 = u
@@ -50,7 +50,7 @@ let
         du[3, 2] = 0
         du[3, 3] = sqrt(k2 * X2)
         du[3, 4] = sqrt(k3 * X2)
-        du[3, 5] = -sqrt(d * X3)
+        return du[3, 5] = -sqrt(d * X3)
     end
     push!(catalyst_networks, reaction_networks_standard[8])
     push!(manual_networks, (f = real_f_1, g = real_g_1, nrp = zeros(3, 5)))
@@ -60,13 +60,13 @@ let
     function real_f_2(du, u, p, t)
         X1, = u
         v, K, n, d = p
-        du[1] = v / 10 + v * X1^n / (X1^n + K^n) - d * X1
+        return du[1] = v / 10 + v * X1^n / (X1^n + K^n) - d * X1
     end
     function real_g_2(du, u, p, t)
         X1, = u
         v, K, n, d = p
         du[1, 1] = sqrt(v / 10 + v * X1^n / (X1^n + K^n))
-        du[1, 2] = -sqrt(d * X1)
+        return du[1, 2] = -sqrt(d * X1)
     end
     push!(catalyst_networks, reaction_networks_hill[6])
     push!(manual_networks, (f = real_f_2, g = real_g_2, nrp = zeros(1, 2)))
@@ -82,7 +82,7 @@ let
         du[4] = -k3 * X3 * X4 + k4 * X5
         du[5] = k3 * X3 * X4 - k4 * X5 - k5 * X5 * X6 + k6 * X7
         du[6] = -k5 * X5 * X6 + k6 * X7
-        du[7] = k5 * X5 * X6 - k6 * X7
+        return du[7] = k5 * X5 * X6 - k6 * X7
     end
     function real_g_3(du, u, p, t)
         X1, X2, X3, X4, X5, X6, X7 = u
@@ -105,7 +105,7 @@ let
         du[6, 5] = -sqrt(k5 * X5 * X6)
         du[6, 6] = sqrt(k6 * X7)
         du[7, 5] = sqrt(k5 * X5 * X6)
-        du[7, 6] = -sqrt(k6 * X7)
+        return du[7, 6] = -sqrt(k6 * X7)
     end
     push!(catalyst_networks, reaction_networks_conserved[9])
     push!(manual_networks, (f = real_f_3, g = real_g_3, nrp = zeros(7, 6)))
@@ -113,7 +113,7 @@ let
     push!(ps_syms, [:k1, :k2, :k3, :k4, :k5, :k6])
 
     for (rn_catalyst, rn_manual, u0_sym, ps_sym) in zip(catalyst_networks, manual_networks, u0_syms, ps_syms)
-        for factor in [1e-1, 1e0], repeat in 1:3
+        for factor in [1.0e-1, 1.0e0], repeat in 1:3
             # Set input values.
             u0_1 = rnd_u0(rn_catalyst, rng; factor, min = 100.0)
             ps_1 = rnd_ps(rn_catalyst, rng; factor, min = 0.01)
@@ -167,7 +167,7 @@ let
         @parameters η1 η2
         @default_noise_scaling η1
         p, 0 --> X1
-        (k1, k2), X1 ↔ X2, ([noise_scaling=η2],[noise_scaling=2 * η2 + 1])
+        (k1, k2), X1 ↔ X2, ([noise_scaling = η2], [noise_scaling = 2 * η2 + 1])
         d, X2 --> 0, [noise_scaling = 0.0]
     end
 
@@ -185,7 +185,7 @@ let
     # Tries with normally declared parameters.
     noise_scaling_network_1 = @reaction_network begin
         @parameters η1 η2
-        (k1, k2), X1 ↔ X2, ([noise_scaling=η1],[noise_scaling=η2])
+        (k1, k2), X1 ↔ X2, ([noise_scaling = η1], [noise_scaling = η2])
     end
     u0 = [:X1 => 1000.0, :X2 => 3000.0]
     sprob_1_1 = SDEProblem(noise_scaling_network_1, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, :η1 => 2.0, :η2 => 2.0])
@@ -201,7 +201,7 @@ let
     # Tries with an array parameter.
     noise_scaling_network_2 = @reaction_network begin
         @parameters η[1:2]
-        (k1, k2), X1 ↔ X2, ([noise_scaling=η[1]],[noise_scaling=η[2]])
+        (k1, k2), X1 ↔ X2, ([noise_scaling = η[1]], [noise_scaling = η[2]])
     end
     @unpack k1, k2, η = noise_scaling_network_2
     sprob_2_1 = SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η => [2.0, 2.0]])
@@ -238,9 +238,9 @@ end
 # Tests the noise_scaling_parameters getter.
 let
     noise_scaling_network = @reaction_network begin
-        @parameters k1 par1 [description="Parameter par1"] par2 η1 η2=0.0 [description="Parameter η2"] η3=1.0 η4
-        (p, d), 0 ↔ X1, ([noise_scaling=η1],[noise_scaling=η2])
-        (k1, k2), X1 ↔ X2, ([noise_scaling=η3],[noise_scaling=η4])
+        @parameters k1 par1 [description = "Parameter par1"] par2 η1 η2 = 0.0 [description = "Parameter η2"] η3 = 1.0 η4
+        (p, d), 0 ↔ X1, ([noise_scaling = η1], [noise_scaling = η2])
+        (k1, k2), X1 ↔ X2, ([noise_scaling = η3], [noise_scaling = η4])
     end
     u0 = [:X1 => 500.0, :X2 => 500.0]
     p = [:p => 20.0, :d => 0.1, :η1 => 0.0, :η3 => 0.0, :η4 => 0.0, :k1 => 2.0, :k2 => 2.0, :par1 => 1000.0, :par2 => 1000.0]
@@ -257,11 +257,11 @@ end
 # tests for default value used in noise scaling parameter.
 let
     noise_scaling_network = @reaction_network begin
-        @parameters η1 η2=0.1
+        @parameters η1 η2 = 0.1
         @default_noise_scaling η1
-        (p,d), 0 <--> X1, ([noise_scaling=η2],[noise_scaling=η2])
-        (p,d), 0 <--> X2, ([description="Y"],[description="Y"])
-        (p,d), 0 <--> X3
+        (p, d), 0 <--> X1, ([noise_scaling = η2], [noise_scaling = η2])
+        (p, d), 0 <--> X2, ([description = "Y"], [description = "Y"])
+        (p, d), 0 <--> X3
     end
 
     u0 = [:X1 => 1000.0, :X2 => 1000.0, :X3 => 1000.0]
@@ -279,15 +279,15 @@ end
 let
     noise_scaling_network = @reaction_network begin
         @parameters η1 η2 η3 η4
-        @species N1(t) N2(t)=0.5
+        @species N1(t) N2(t) = 0.5
         @variables N3(t)
         @default_noise_scaling η1 + N1 + 5.0
         p, 0 --> X1
-        p, 0 --> X2, [noise_scaling=0.33η2^1.2 + N2]
-        p, 0 --> X3, [noise_scaling=N3*η3]
-        p, 0 --> X4, [noise_scaling=exp(-η4) - 0.008]
-        p, 0 --> X5, [noise_scaling=0.0]
-        d, (X1, X2, X3, X4, X5) --> 0, ([], [noise_scaling=0.33η2^1.2 + N2], [noise_scaling=N3*η3], [noise_scaling=exp(-η4) - 0.008], [noise_scaling=0.0])
+        p, 0 --> X2, [noise_scaling = 0.33η2^1.2 + N2]
+        p, 0 --> X3, [noise_scaling = N3 * η3]
+        p, 0 --> X4, [noise_scaling = exp(-η4) - 0.008]
+        p, 0 --> X5, [noise_scaling = 0.0]
+        d, (X1, X2, X3, X4, X5) --> 0, ([], [noise_scaling = 0.33η2^1.2 + N2], [noise_scaling = N3 * η3], [noise_scaling = exp(-η4) - 0.008], [noise_scaling = 0.0])
     end
 
     u0 = [:X1 => 1000.0, :X2 => 1000.0, :X3 => 1000.0, :X4 => 1000.0, :X5 => 1000.0, :N1 => 3.0, :N3 => 0.33]
@@ -319,15 +319,15 @@ let
     @species X(t) H(t)
     @variables h(t)
     @parameters p d η
-    rx1 = Reaction(p, nothing, [X]; metadata = [:noise_scaling => η*H + 1])
-    rx2 = @reaction d, X --> 0, [noise_scaling=$h]
+    rx1 = Reaction(p, nothing, [X]; metadata = [:noise_scaling => η * H + 1])
+    rx2 = @reaction d, X --> 0, [noise_scaling = $h]
     @named rs = ReactionSystem([rx1, rx2], t)
 
     # Checks that noise scaling has been added correctly.
     @test issetequal([X, H], species(rs))
     @test issetequal([X, H, h], unknowns(rs))
     @test issetequal([p, d, η], parameters(rs))
-    @test isequal(getnoisescaling(reactions(rs)[1]), η*H + 1)
+    @test isequal(getnoisescaling(reactions(rs)[1]), η * H + 1)
     @test isequal(getnoisescaling(reactions(rs)[2]), h)
 end
 
@@ -338,7 +338,7 @@ let
     # Creates noise scaling networks.
     noise_scaling_network1 = @reaction_network begin
         @parameters η1
-        p, 0 --> X, [noise_scaling=2.0]
+        p, 0 --> X, [noise_scaling = 2.0]
         d, X --> 0
     end
     @unpack p, d, η1, X = noise_scaling_network1
@@ -360,11 +360,11 @@ end
 let
     # Creates hierarchical model.
     rn1 = @network_component rn1 begin
-        p, 0 --> X, [noise_scaling=2.0]
+        p, 0 --> X, [noise_scaling = 2.0]
         d, X --> 0
     end
     rn2 = @network_component rn2 begin
-        k1, X1 --> X2, [noise_scaling=5.0]
+        k1, X1 --> X2, [noise_scaling = 5.0]
         k2, X2 --> X1
     end
     rn = compose(rn1, [rn2])
@@ -380,7 +380,6 @@ let
 end
 
 
-
 ### Other Tests ###
 
 # Checks that solution values have types consistent with their input types.
@@ -391,7 +390,7 @@ end
 let
     # Create model. Checks when input type is `Float64` the produced values are also `Float64`.
     rn = @reaction_network begin
-        (k1,k2), X1 <--> X2
+        (k1, k2), X1 <--> X2
     end
     u0 = [:X1 => 1.0, :X2 => 3.0]
     ps = [:k1 => 2.0, :k2 => 3.0]
@@ -422,7 +421,7 @@ let
     no_param_network = @reaction_network begin
         (1.2, 5), X1 ↔ X2
     end
-    for factor in [1e3, 1e4]
+    for factor in [1.0e3, 1.0e4]
         u0 = rnd_u0(no_param_network, rng; factor)
         sprob = SDEProblem(no_param_network, u0, (0.0, 1000.0))
         for repeat in 1:5
