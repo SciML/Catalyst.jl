@@ -39,6 +39,7 @@ end
         @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end
         @time @safetestset "Compound Species" begin include("miscellaneous_tests/compound_macro.jl") end
         @time @safetestset "Reaction Balancing" begin include("miscellaneous_tests/reaction_balancing.jl") end
+        @time @safetestset "Explicit Imports" begin include("miscellaneous_tests/explicit_imports.jl") end
 
         # Tests reaction network analysis features.
         @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end

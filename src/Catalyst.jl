@@ -18,34 +18,41 @@ using DynamicQuantities #, Unitful # Having Unitful here as well currently gives
 
 @reexport using ModelingToolkit
 using Symbolics
+using SymbolicUtils
+using SymbolicIndexingInterface
 using LinearAlgebra
 using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
-import Symbolics: BasicSymbolic
+import SymbolicUtils: BasicSymbolic
 using Symbolics: iscall, sorted_arguments
-using ModelingToolkit: Symbolic, value, get_unknowns, get_ps, get_iv, get_systems,
+using SymbolicUtils: Symbolic
+using Symbolics: value
+using ModelingToolkit: get_unknowns, get_ps, get_iv, get_systems,
                        get_eqs, get_defaults, toparam, get_var_to_name, get_observed,
                        getvar, has_iv
 
-import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!,
+import ModelingToolkit: get_variables, namespace_expr, namespace_equation,
                         modified_unknowns!, validate, namespace_variables,
-                        namespace_parameters, rename, renamespace, getname, flatten,
+                        namespace_parameters, renamespace, flatten,
                         is_alg_equation, is_diff_equation, collect_vars!,
                         eqtype_supports_collect_vars
+import Symbolics: get_variables!, rename
+import SymbolicIndexingInterface: getname
 
 # internal but needed ModelingToolkit functions
 import ModelingToolkit: check_variables,
-                        check_parameters, _iszero, _merge, check_units,
+                        check_parameters, _merge, check_units,
                         get_unit, check_equations, iscomplete
+import Symbolics: _iszero
 
-import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
+import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show, occursin
 import MacroTools, Graphs
 using MacroTools: striplines
 import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
-import Symbolics: occursin, wrap
+import Symbolics: wrap
 import Symbolics.RewriteHelpers: hasnode, replacenode
 import SymbolicUtils: getmetadata, hasmetadata, setmetadata
 
