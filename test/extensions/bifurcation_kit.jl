@@ -18,7 +18,7 @@ rng = StableRNG(12345)
 # Checks that bifurcation diagrams can be computed for systems with non-constant rate.
 # Checks that not providing conserved species throws and appropriate error.
 @test_broken let
-    return false
+    return false # Something with mtkcompile being required, need to ivnestigate.
     # Create model.
     extended_brusselator = @reaction_network begin
         @species W(t) = 2.0
@@ -91,8 +91,7 @@ end
 
 # Creates a system where rn is composed of 4, somewhat nested, networks.
 # Tests with defaults within nested networks.
-@test_broken let
-    return false # hierarchical modelling broken due to https://github.com/SciML/ModelingToolkit.jl/pull/4101
+let
     rn1 = @network_component rn1 begin
         @parameters p=1.0
         (p, d), 0 <--> X
@@ -151,7 +150,7 @@ end
 
 # Tests for nested model with conservation laws.
 @test_broken let
-    return false
+    return false # Something with mtkcompile being required, need to ivnestigate.
     # Creates model.
     rn1 = @network_component rn1 begin
         (k1, k2), X1 <--> X2
@@ -188,7 +187,7 @@ end
 
 # Checks that bifurcation diagrams can be computed for coupled CRN/DAE systems.
 @test_broken let
-    return false
+    return false # something with mtkcompile being required, need to ivnestigate.
     # Prepares the model (production/degradation of X, with equations for volume and X concentration).
     rs = @reaction_network begin
         @parameters k

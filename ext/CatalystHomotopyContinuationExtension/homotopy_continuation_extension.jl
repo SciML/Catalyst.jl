@@ -79,7 +79,9 @@ function make_p_val_dict(pre_varmap, rs, ns)
     # Creates a dictionary with the correct default values/equations (again expanding `Γ` to Γ[1], Γ[2]).
     defaults = MT.initial_conditions(ns)
     filter!(p -> !Catalyst.isconserved(p[1]), defaults)
-    foreach(conseq -> defaults[conseq.lhs] = conseq.rhs, conservationlaw_constants(rs))
+    for conseq in conservedequations(rs)
+        MT.write_possibly_indexed_array!(defaults, conseq.lhs, conseq.rhs, conseq.rhs)
+    end
 
     # Creates and return the full parameter value dictionary.p_vals = MT.varmap_to_vars(pre_varmap, all_ps; defaults = def_dict)
     p_vals = varmap_to_vars_mtkv9(pre_varmap, ps; defaults)
@@ -94,7 +96,7 @@ function ___make_int_exps(expr)
     !iscall(expr) && return expr
     if (operation(expr) == ^)
         if _isinteger(sorted_arguments(expr)[2])
-            return sorted_arguments(expr)[1]^Int64(sorted_arguments(expr)[2])
+            return sorted_arguments(expr)[1]^Int64(Symbolics.value(sorted_arguments(expr)[2]))
         else
             error("An non integer ($(sorted_arguments(expr)[2])) was found as a variable exponent. Non-integer exponents are not supported for homotopy continuation based steady state finding.")
         end
@@ -140,7 +142,7 @@ function common_denominator(expr)
         den ^= pow
         return num / den
     end
-    return maketerm(BasicSymbolic, operation(expr), map(common_denominator, arguments(expr)), metadata(expr))
+    return maketerm(Symbolics.SymbolicT, operation(expr), map(common_denominator, arguments(expr)), metadata(expr))
 end
 
 # If the input is a fraction, removes the denominator.

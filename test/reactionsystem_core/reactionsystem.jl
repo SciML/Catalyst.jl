@@ -163,7 +163,7 @@ let
 end
 
 # Test with JumpSystem.
-@test_broken let
+@test_broken let # @Sam, something with the internal jump structures have changed, can you have a look so that test is updated correctly, not exactly what changes would be considred preserving the test.
     return false
     @species A(t) B(t) C(t) D(t) E(t) F(t)
     rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
@@ -452,7 +452,7 @@ function gs!(dg, u, p, t)
 end
 
 # Tests for BC and constant species.
-@test_broken let
+@test_broken let # @Sam, something boundary condition species that I am unsure what desired test beahviour is, can you have a look?
     return false
     @parameters k1 k2 A [isconstantspecies = true]
     @species B(t) C(t) [isbcspecies = true] D(t) E(t)
@@ -549,7 +549,7 @@ end
 
 # Test that jump solutions actually run correctly for constants and BCs.
 @test_broken let
-    return false
+    return false # @Sam: Creation of JumpProblem's from `JumpInput`s is currently broken. 
     @parameters k1 A [isconstantspecies = true]
     @species C(t) [isbcspecies = true] B1(t) B2(t) B3(t)
     @named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
@@ -658,7 +658,7 @@ let
     end
 
     # Checks that creating systems with different in combination produces errors.
-    # Currently broken on MTK, potentially fix in Catalyst once sorted out there (https://github.com/SciML/ModelingToolkit.jl/issues/2883).
+    # Currently broken on MTK, potentially fix in Catalyst once sorted out there (https://github.com/SciML/ModelingToolkit.jl/issues/4092).
     @parameters d
     @species X(t)
     rx = Reaction(d, [X], [])
@@ -963,7 +963,7 @@ end
 # the code might need adaptation to take the updated reaction system into account.
 @test_broken let
     return false
-    @test_nowarn Catalyst.reactionsystem_uptodate_check()
+    @test_nowarn Catalyst.reactionsystem_uptodate_check() # Will fix this once most things are actually workin.
 end
 
 # Test that functions using the incidence matrix properly cache it
@@ -1007,7 +1007,7 @@ end
 
 ########## tests related to hybrid systems ##########
 
-@test_broken let
+@test_broken let # @Sam, I have left everything regarding hybrid tests for you/for when eveyrthing else is finished.
     return false
     # massactionjumps(js::JumpSystem) = equations(js).x[1]
     # constantratejumps(js::JumpSystem) = equations(js).x[2]

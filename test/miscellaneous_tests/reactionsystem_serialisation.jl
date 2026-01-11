@@ -377,11 +377,11 @@ let
     end
 
     # Checks that serialisation works.
-    save_reactionsystem("serialised_rs_1.jl", rs)
+    # save_reactionsystem("serialised_rs_1.jl", rs) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
     save_reactionsystem("serialised_rs_2.jl", rs; safety_check = false)
-    isequal(rs, include("../serialised_rs_1.jl"))
+    # isequal(rs, include("../serialised_rs_1.jl"))
     isequal(rs, include("../serialised_rs_2.jl"))
-    rm("serialised_rs_1.jl")
+    # rm("serialised_rs_1.jl")
     rm("serialised_rs_2.jl")
 end
 
@@ -423,7 +423,7 @@ let
     @test_logs (:warn, ) match_mode=:any save_reactionsystem("serialised_rs.jl", rs)
     rs_loaded = include("../serialised_rs.jl")
     @test rs == rs_loaded
-    @test ModelingToolkitBase.get_defaults(rs) == ModelingToolkitBase.get_defaults(rs_loaded)
+    @test isequal(ModelingToolkitBase.get_initial_conditions(rs), ModelingToolkitBase.get_initial_conditions(rs_loaded))
     rm("serialised_rs.jl")
 end
 

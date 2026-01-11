@@ -152,8 +152,7 @@ let
 end
 
 # Checks that simulations for a large number of potential systems are completed (and don't error).
-@test_broken let
-    return false # PR to fix open in https://github.com/SciML/ModelingToolkit.jl/pull/4087
+let
     for rn in reaction_networks_all
         u0 = rnd_u0_Int64(rn, rng)
         ps = rnd_ps(rn, rng)
@@ -192,7 +191,7 @@ let
     # the direct method needs no dep graphs so is good as a baseline for comparison
     jprobdm = JumpProblem(rn, u0map, tspan, pmap, Direct(); save_positions = (false, false), rng)
     jprobsd = JumpProblem(rn, u0map, tspan, pmap, SortingDirect(); save_positions = (false, false), rng)
-    @test_broken issetequal(jprobsd.discrete_jump_aggregation.dep_gr, [[1,2],[2]])
+    @test_broken issetequal(jprobsd.discrete_jump_aggregation.dep_gr, [[1,2],[2]]) # @Sam, can you have a look at these failures? These is deep enough into the jump interfaces that it is probably better you have a look at it.
     jprobrssa = JumpProblem(rn, u0map, tspan, pmap, RSSA(); save_positions = (false, false), rng)
     @test_broken issetequal(jprobrssa.discrete_jump_aggregation.vartojumps_map, [[],[],[],[1],[2],[]])
     @test_broken issetequal(jprobrssa.discrete_jump_aggregation.jumptovars_map, [[5],[5,6]])
@@ -242,7 +241,7 @@ let
     ps = [:k1 => 2, :k2 => 3]
     jprob = JumpProblem(rn, u0, (0.0, 1.0), ps)
     jsol = solve(jprob)
-    @test_broken eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int64
+    @test_broken eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int64 # Jump species do not preserve integer type, need to raise an issue about this.
     @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float64
 
     # Checks when values are `Float32` (a valid type and should be preserved).
@@ -258,6 +257,6 @@ let
     ps = [:k1 => Int32(2), :k2 => Int32(3)]
     jprob = JumpProblem(rn, u0, (0.0, 1.0), ps)
     jsol = solve(jprob)
-    @test_broken eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int32
+    @test_broken eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int32 # Jump species do not preserve integer type, need to raise an issue about this.
     @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float64
 end

@@ -70,8 +70,7 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     # to the function that creates the next sub-system declarations.
     file_text, _ = push_field(file_text, rn, annotate, top_level, IV_FS)
     file_text, has_sivs = push_field(file_text, rn, annotate, top_level, SIVS_FS)
-    file_text, has_parameters,
-    has_species, has_variables = handle_us_n_ps(
+    file_text, has_parameters, has_discretes, has_species, has_variables = handle_us_n_ps(
         file_text, rn, annotate, top_level)
     file_text, has_reactions = push_field(file_text, rn, annotate, top_level, REACTIONS_FS)
     file_text, has_equations = push_field(file_text, rn, annotate, top_level, EQUATIONS_FS)
@@ -92,7 +91,7 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     # Enclose everything in a `let ... end` block. Potentially add Catalyst version number.
     rs_creation_code = make_reaction_system_call(
         rn, annotate, top_level, has_sivs, has_species,
-        has_variables, has_parameters, has_reactions,
+        has_variables, has_parameters, has_discretes, has_reactions,
         has_equations, has_observed, has_defaults, has_continuous_events,
         has_discrete_events, has_systems, has_connection_type)
     annotate || (@string_prepend! "\n" file_text)
@@ -107,7 +106,7 @@ end
 # Creates a ReactionSystem call for creating the model. Adds all the correct inputs to it. The input
 # `has_` `Bool`s described which inputs are used. If the model is `complete`, this is handled here.
 function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_sivs,
-        has_species, has_variables, has_parameters, has_reactions, has_equations,
+        has_species, has_variables, has_parameters, has_discretes, has_reactions, has_equations,
         has_observed, has_defaults, has_continuous_events, has_discrete_events, has_systems,
         has_connection_type)
 
@@ -137,8 +136,12 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
     end
 
     # Gets the parameters input.
-    if has_parameters
+    if has_parameters && has_discretes
+        ps = "[ps; discs]"
+    elseif has_parameters
         ps = "ps"
+    elseif has_discretes
+        ps = "discs"
     else
         ps = "[]"
     end

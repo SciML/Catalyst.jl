@@ -130,7 +130,7 @@ end
 
 # Tests using various more obscure types of getters.
 @test_broken let
-    return false
+    return false # Metadata interface changed, need to check wit hAayush about the new one.
     # Create LatticeReactionsSystems.
     t = default_t()
     @parameters p d kB kD
@@ -262,8 +262,7 @@ let
 end
 
 # Tests for hierarchical input system (should yield a warning).
-@test_broken let
-    return false
+let
     t = default_t()
     @parameters d D
     @species X(t)

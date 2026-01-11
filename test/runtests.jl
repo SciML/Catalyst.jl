@@ -59,14 +59,14 @@ end
 
     if GROUP == "All" || GROUP == "Hybrid"
         # BROKEN
-        #@time @safetestset "ReactionSystem Hybrid Solvers" begin include("simulation_and_solving/hybrid_models.jl") end
+        #@time @safetestset "ReactionSystem Hybrid Solvers" begin include("simulation_and_solving/hybrid_models.jl") end # @Sam, I will let you have a look at the hybrid stuff when you have oppertunity to do so.
     end
 
     if GROUP == "All" || GROUP == "IO"
         # BROKEN
         @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
         # BROKEN
-        #@time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
+        #@time @safetestset "Latexify" begin include("visualisation/latexify.jl") end # `Latexify.@generate_test latexify(rn)` suddenly generates tests that error.
     end
 
     if GROUP == "All" || GROUP == "Spatial"
@@ -86,9 +86,9 @@ end
 
         @time @safetestset "Graph visualization" begin include("extensions/graphmakie.jl") end
         @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
-        #@time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
+        @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
         @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
-        #@time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
+        @time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
 
         # Test spatial plotting, using CairoMakie and GraphMakie
         @time @safetestset "Lattice Simulation Plotting" begin include("extensions/lattice_simulation_plotting.jl") end

@@ -503,7 +503,7 @@ end
 
 # test scoping in compose
 # code adapted from ModelingToolkit.jl tests
-@test_broken let # DelayParentScope is removed.
+@test_broken let # DelayParentScope is removed. @Sam, can you have a look at this? Not really sure what is going on here.
     return false
     t = default_t()
     D = default_time_deriv()

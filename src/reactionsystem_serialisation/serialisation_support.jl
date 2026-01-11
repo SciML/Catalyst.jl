@@ -71,11 +71,11 @@ end
 # any variables (e.g. X(t)) the call part is stripped, and only variable name (e.g. X) is written.
 function expression_2_string(expr;
         strip_call_dict = make_strip_call_dict(Symbolics.get_variables(expr)))
-    strip_called_expr = substitute(expr, strip_call_dict; filterer = sub_inside_diff_filter)
+    strip_called_expr = substitute(expr, strip_call_dict; filterer = sub_inside_filter)
     return repr(strip_called_expr)
 end
-function sub_inside_diff_filter(ex)
-    return if operation(ex) isa Differential
+function sub_inside_filter(ex)
+    return if operation(ex) isa Union{Differential,Pre}
         true
     else
         SymbolicUtils.default_substitute_filter(ex)
@@ -114,13 +114,8 @@ function sym_2_declaration_string(sym; multiline_format = false)
     # If the symbol has a non-default type, appends the declaration of this.
     # Assumes that the type is on the form `BasicSymbolic{X}`. Contain error checks
     # to ensure that this is the case.
-    if !(sym isa BasicSymbolic{SymReal})
-        sym_type = String(Symbol(typeof(Symbolics.unwrap(sym))))
-        if (get_substring(sym_type, 1, 28) != "SymbolicUtils.BasicSymbolic{") ||
-           (get_char_end(sym_type, 0) != '}')
-            error("Encountered symbolic of unexpected type: $sym_type.")
-        end
-        @string_append! dec_string "::" get_substring_end(sym_type, 29, -1)
+    if SymbolicUtils.symtype(sym) != Real
+        @string_append! dec_string "::" String(Symbol(SymbolicUtils.symtype(sym)))
     end
 
     # If there is a default value, adds this to the declaration.

@@ -120,16 +120,16 @@ end
 
 # If applied to a continuous event, returns it applied to eqs and affect.
 function expand_registered_functions(ce::MT.SymbolicContinuousCallback)
-    eqs = expand_registered_functions(ce.eqs)
-    affect = expand_registered_functions(ce.affect)
-    return MT.SymbolicContinuousCallback(eqs, affect)
+    conditions = expand_registered_functions(ce.conditions)
+    affect = expand_registered_functions(ce.affect.affect)
+    return MT.SymbolicContinuousCallback(conditions, affect = ce.affect.discrete_parameters)
 end
 
 # If applied to a discrete event, returns it applied to condition and affects.
 function expand_registered_functions(de::MT.SymbolicDiscreteCallback)
-    condition = expand_registered_functions(de.condition)
-    affects = expand_registered_functions(de.affects)
-    return MT.SymbolicDiscreteCallback(condition, affects)
+    conditions = expand_registered_functions(de.conditions)
+    affect = expand_registered_functions(de.affect.affect)
+    return MT.SymbolicDiscreteCallback(conditions, affect = de.affect.discrete_parameters)
 end
 
 # If applied to a vector, applies it to every element in the vector.

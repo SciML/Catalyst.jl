@@ -66,7 +66,7 @@ end
 # Tests for both discrete and continuous events. Tests that these quantities can be accessed in Problems.
 # Tests that metadata for these quantities are saved properly
 @test_broken let
-    return false # Now `a` is a variable of teh created system but have no equation, this causes errors. https://github.com/SciML/ModelingToolkit.jl/issues/4102
+    return false # Now `a` is a variable of the created system but have no equation, this causes errors. https://github.com/SciML/ModelingToolkit.jl/issues/4102. Issue closed, but now we get an error when we try `prob = XProb(rs, u0, (0.0, 10.0), ps)`.
     # Creates model.
     @parameters p d α::Int64 = 1
     @species X(t) A(t) = 2 [description="A species"]
@@ -193,7 +193,7 @@ end
 # Checks continuous, discrete, preset time, and periodic events.
 # Tests event affecting non-species components.
 @test_broken let
-    return false # Now `Z` is a variable of teh created system but have no equation, this causes errors. https://github.com/SciML/ModelingToolkit.jl/issues/4102
+    return false # Now `Z` is a variable of teh created system but have no equation, this causes errors. https://github.com/SciML/ModelingToolkit.jl/issues/4102. Issue closed, but there is a new issue down in the test.
     # Creates model via DSL.
     rn_dsl = @reaction_network rn begin
         @parameters thres=7.0 dY_up
@@ -438,5 +438,5 @@ let
     jprob_events = JumpProblem(rn_dics_events, u0, tspan, ps; rng)
     sol = solve(jprob, SSAStepper(); seed, callback)
     sol_events = solve(jprob_events, SSAStepper(); seed)
-    @test_broken sol == sol_events  # seems to be not identical in the sample paths
+    @test_broken sol == sol_events  # Ploting the solutions they seem non-identical, need to investigate.
 end

@@ -173,7 +173,7 @@ let
     u0 = [X => 0.1, A => 1.0]
     ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
-    @test_broken sssol[[X,A]] ≈ [2.0, 3.0]
+    @test_broken sssol[[X,A]] ≈ [2.0, 3.0] # The ss solve on the previous line now fails (sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)).
 end
 
 
@@ -841,10 +841,10 @@ let
         ModelingToolkitBase._iszero(eq1.lhs - eq1.rhs + eq2.lhs - eq2.rhs) && return true
         return false
     end
-    @test_broken is_eqs_equal(rs_1, rs_2)
-    @test_broken is_eqs_equal(rs_1, rs_3)
-    @test_broken is_eqs_equal(rs_1, rs_4)
-    @test_broken is_eqs_equal(rs_1, rs_5)
+    @test_broken is_eqs_equal(rs_1, rs_2) # https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739
+    @test_broken is_eqs_equal(rs_1, rs_3) # https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739
+    @test_broken is_eqs_equal(rs_1, rs_4) # https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739
+    @test_broken is_eqs_equal(rs_1, rs_5) # https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739
     @test is_eqs_equal(rs_1, rs_6)
 end
 

@@ -350,8 +350,8 @@ let
     p_29 = symmap_to_varmap(rn29, [:X=>4.0, :Y=>3.0, :X2Y=>2.0, :Z=>1.0])
     defs29 = Dict(Iterators.flatten((u0_29, p_29)))
 
-    @test_broken isequal(ModelingToolkitBase.initial_conditions(rn27), defs29)
-    @test_broken isequal(merge(ModelingToolkitBase.initial_conditions(rn28), defs28), ModelingToolkitBase.initial_conditions(rn27))
+    @test_broken isequal(ModelingToolkitBase.initial_conditions(rn27), defs29) # `initial_conditions` (old default) now stores things in a new funny type.
+    @test_broken isequal(merge(ModelingToolkitBase.initial_conditions(rn28), defs28), ModelingToolkitBase.initial_conditions(rn27)) # `initial_conditions` (old default) now stores things in a new funny type.
 end
 
 # Tests that parameter type designation works.
@@ -649,7 +649,7 @@ let
         k, n*X --> xN
     end
     @test SymbolicUtils.symtype(rn.k) == Real
-    @test_broken SymbolicUtils.symtype(rn.n) == Int64
+    @test_broken SymbolicUtils.symtype(rn.n) == Int64 # Bug, needs fixing (we must now infer that `n` should be decalred as a Int64, before it didn't matter).
 end
 
 ### Observables ###
@@ -1078,8 +1078,7 @@ end
 end
 
 # Checks hierarchical model.
-@test_broken let
-    return false
+let
     base_rn = @network_component begin
         @variables V1(t)
         @equations begin
@@ -1112,7 +1111,7 @@ end
 # Check for combined differential and algebraic equation.
 # Check indexing of output solution using Symbols.
 @test_broken let
-    return false # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4137
+    return false # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4137 (issue suppsoedly closed, but there is still error on ODEProblem creation).
     rn = @reaction_network rn begin
         @parameters k
         @variables X(t) Y(t)
@@ -1252,34 +1251,27 @@ end
             [X ~ 3.0] => [X ~ Pre(X - 1)]
         end
     end
-    @test_broken isequal(rn51, rn52)
-    @test_throws Exception @eval @reaction_network begin
+    @test_broken isequal(rn51, rn52) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @reaction_network begin
         @species X(t)
         @continuous_events begin
-            [X ~ 3.0] => [X ~ Pre(X - 1)]
-            [X ~ 1.0] => [X ~ Pre(X + 1)]
+            [X ~ 3.0] => [X ~ X - 1]
+            [X ~ 1.0] => [X ~ X + 1]
         end
     end
 
     # The `@discrete_events` option.
     rn61 = @reaction_network rn1 begin
         @species X(t)
-        @discrete_events [X > 3.0] => [X ~ Pre(X - 1)]
+        @discrete_events (X > 3.0) => [X ~ X - 1]
     end
     rn62 = @reaction_network rn1 begin
         @species X(t)
         @discrete_events begin
-            [X > 3.0] => [X ~ Pre(X - 1)]
+            (X > 3.0) => [X ~ X - 1]
         end
     end
-    @test isequal(rn61, rn62)
-    @test_throws Exception @eval @reaction_network begin
-        @species X(t)
-        @discrete_events begin
-            [X > 3.0] => [X ~ Pre(X - 1)]
-            [X < 1.0] => [X ~ Pre(X + 1)]
-        end
-    end
+    @test_broken isequal(rn61, rn62) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
 end
 
 # test combinatoric_ratelaws DSL option

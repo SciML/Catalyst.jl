@@ -146,7 +146,7 @@ end
 
 # Compares the Catalyst-generated jump process jumps to manually computed jumps.
 @test_broken let
-    return false
+    return false # `equations(catalyst_jsys)` is currnetly empty (causing the error). If you want you can have a look @Sam, otherwise I will do later.
     # Manually declares the systems two jumps.
     function r1(u, p, t)
         k, α = p

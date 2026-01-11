@@ -381,7 +381,7 @@ let
 end
 
 ############## tests related to hybrid systems ###################
-@test_broken let
+@test_broken let # @Sam, I will let you have a look at hybrid tests.
     return false
     t = default_t()
     D = default_time_deriv()
@@ -401,11 +401,11 @@ end
             [V ~ 2.0] => [V ~ Pre(V/2), A ~ Pre(A/2)]
         end
     end
-    @test_broken hybrid == rn
+    @test_broken hybrid == rn # @Sam, I will let you have a look at hybrid tests.
 end
 
 # hybrid models
-@test_broken let
+@test_broken let # @Sam, I will let you have a look at hybrid tests.
     return false
     rs = @reaction_network hybrid begin
         @variables V(t)
@@ -432,10 +432,10 @@ end
     rs2 = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents,
         name = :hybrid)
     rs2 = complete(rs2)
-    @test_broken rs == rs2
+    @test_broken rs == rs2 # @Sam, I will let you have a look at hybrid tests.
 end
 
-@test_broken let
+@test_broken let # @Sam, I will let you have a look at hybrid tests.
     return false
     rs = @reaction_network hybrid begin
         @variables V(t)

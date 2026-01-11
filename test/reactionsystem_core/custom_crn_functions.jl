@@ -199,8 +199,8 @@ end
 
     # Checks that the original model is unchanged (equality currently does not consider events).
     @test rs == rs_saved
-    @test get_continuous_events(rs) == get_continuous_events(rs_saved)
-    @test get_discrete_events(rs) == get_discrete_events(rs_saved)
+    @test_broken get_continuous_events(rs) == get_continuous_events(rs_saved) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @test_broken get_discrete_events(rs) == get_discrete_events(rs_saved) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
 
     # Checks that the new system is expanded.
     @unpack v0, X, Y, v, K, n = rs
@@ -215,8 +215,8 @@ end
     continuous_events = ModelingToolkitBase.SymbolicContinuousCallback.(continuous_events)
     discrete_events = ModelingToolkitBase.SymbolicDiscreteCallback.(discrete_events)
     @test isequal(only(Catalyst.get_rxs(rs_expanded)).rate, v0 + v * (X^n) / (X^n + Y^n + K^n))
-    @test isequal(get_continuous_events(rs_expanded), continuous_events)
-    @test isequal(get_discrete_events(rs_expanded), discrete_events)
+    @test_broken isequal(get_continuous_events(rs_expanded), continuous_events) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @test_broken isequal(get_discrete_events(rs_expanded), discrete_events) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
 end
 
 # test for hill function expansion
@@ -303,7 +303,7 @@ let
     @test all(_iszero, simplify.(sdesysnoiseeqs .- neqmat))
 
     @test_broken begin
-        return false
+        return false # `equations(jsys)` is empty now. If you want @Sam you can check, if else, I will get to it later on.
         jsys = make_sck_jump(rn; expand_catalyst_funs = false)
         jsyseqs = equations(jsys).x[2]
         rates = getfield.(jsyseqs, :rate)
