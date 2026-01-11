@@ -64,7 +64,7 @@ end
 
     if GROUP == "All" || GROUP == "IO"
         # BROKEN
-        # @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
+        @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
         # BROKEN
         #@time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
     end
@@ -84,7 +84,7 @@ end
     if GROUP == "All" || GROUP == "Extensions"
         activate_extensions_env()
 
-        #@time @safetestset "Graph visualization" begin include("extensions/graphmakie.jl") end
+        @time @safetestset "Graph visualization" begin include("extensions/graphmakie.jl") end
         @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
         #@time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
         @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end

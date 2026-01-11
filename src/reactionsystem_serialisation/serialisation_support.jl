@@ -71,8 +71,15 @@ end
 # any variables (e.g. X(t)) the call part is stripped, and only variable name (e.g. X) is written.
 function expression_2_string(expr;
         strip_call_dict = make_strip_call_dict(Symbolics.get_variables(expr)))
-    strip_called_expr = substitute(expr, strip_call_dict)
+    strip_called_expr = substitute(expr, strip_call_dict; filterer = sub_inside_diff_filter)
     return repr(strip_called_expr)
+end
+function sub_inside_diff_filter(ex)
+    return if operation(ex) isa Differential
+        true
+    else
+        SymbolicUtils.default_substitute_filter(ex)
+    end
 end
 
 # Converts a vector of symbolics (e.g. the species or parameter vectors) to a string vector. Strips
@@ -254,7 +261,7 @@ end
 
 # If the input is a `ReactionSystem`, extracts the unknowns (i.e. syms depending on another variable).
 function make_strip_call_dict(rn::ReactionSystem)
-    return make_strip_call_dict(get_unknowns(rn))
+    return make_strip_call_dict([get_unknowns(rn); get_ps(rn)])
 end
 
 ### Handle Parameters/Species/Variables Declaration Dependencies ###

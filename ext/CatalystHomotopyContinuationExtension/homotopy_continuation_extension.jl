@@ -93,13 +93,14 @@ end
 function ___make_int_exps(expr)
     !iscall(expr) && return expr
     if (operation(expr) == ^)
-        if isinteger(sorted_arguments(expr)[2])
+        if _isinteger(sorted_arguments(expr)[2])
             return sorted_arguments(expr)[1]^Int64(sorted_arguments(expr)[2])
         else
             error("An non integer ($(sorted_arguments(expr)[2])) was found as a variable exponent. Non-integer exponents are not supported for homotopy continuation based steady state finding.")
         end
     end
 end
+_isinteger(x) = SymbolicUtils.isconst(x) && isinteger(unwrap_const(x))::Bool
 
 # Converts an expression of the form p(x)/q(x) + r(x)/s(x) to t(x)/u(x) (i.e. puts everything
 # above a single denominator, which is what `remove_denominators` is able to simplify away).

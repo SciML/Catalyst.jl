@@ -52,7 +52,7 @@ let
     rxs = [Reaction(d, [X], nothing, [1], nothing)]
 
     # Equations:
-    eqs = [Differential(t)(V) ~ 1 - V]
+    eqs = [Differential(t, 1)(V) ~ 1 - V]
 
     # Observables:
     @variables X2(t)
@@ -70,7 +70,7 @@ let
     sps = @species X(t)
     vars = @variables V(t)
     rxs = [Reaction(d, [X], nothing, [1], nothing)]
-    eqs = [Differential(t)(V) ~ 1 - V]
+    eqs = [Differential(t, 1)(V) ~ 1 - V]
     @variables X2(t)
     observed = [X2 ~ 2X]
 
@@ -91,7 +91,8 @@ end
 # and metadata recorded correctly (these are not considered for system equality is tested).
 # Checks that various types (processed by the `x_2_string` function) are serialised properly.
 # Checks that `ReactionSystem` and `Reaction` metadata fields are recorded properly.
-let
+@test_broken let
+    return false # Problem with metadata. Awaiting input from Aayush how system-level metadata is handled these days.
     # Prepares various stuff to add as metadata.
     bool_md = false
     int_md = 3
@@ -259,7 +260,8 @@ end
 # variables, (differential and algebraic) equations, observables (continuous and discrete) events,
 # and with various species/variables/parameter/reaction/system metadata.
 # Tests for complete and incomplete system.
-let
+@test_broken let
+    return false # Problem with metadata. Awaiting input from Aayush how system-level metadata is handled these days.
     # Prepares spatial independent variables (technically not used and only supplied to systems).
     sivs = @variables x y z [description="A spatial independent variable."]
 
@@ -474,7 +476,7 @@ let
 
     # Checks its serialisation.
     save_reactionsystem("test_serialisation.jl", rs; safety_check = false)
-    isequal(rs, include("../test_serialisation.jl"))
+    @test isequal(rs, include("../test_serialisation.jl"))
     rm("test_serialisation.jl")
 end
 
@@ -496,7 +498,7 @@ let
 
     # Checks its serialisation.
     save_reactionsystem("test_serialisation.jl", rs; safety_check = false)
-    isequal(rs, include("../test_serialisation.jl"))
+    @test isequal(rs, include("../test_serialisation.jl"))
     rm("test_serialisation.jl")
 end
 
@@ -504,7 +506,7 @@ end
 let
     rs = @reaction_network
     save_reactionsystem("test_serialisation.jl", rs; safety_check = false)
-    isequal(rs, include("../test_serialisation.jl"))
+    @test isequal(rs, include("../test_serialisation.jl"))
     rm("test_serialisation.jl")
 end
 

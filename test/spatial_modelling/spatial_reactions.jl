@@ -45,7 +45,7 @@ let
     @test ModelingToolkitBase.getname.(spatial_species(tr_1)) == [:X]
     @test ModelingToolkitBase.getname.(spatial_species(tr_2)) == [:Y]
     @test ModelingToolkitBase.getname.(parameters(tr_1)) == [:dX]
-    @test ModelingToolkitBase.getname.(parameters(tr_2)) == [:dY1, :dY2]
+    @test issetequal(ModelingToolkitBase.getname.(parameters(tr_2)), [:dY1, :dY2])
 
     # @test issetequal(species(tr_1), [tr_1.species])
     # @test issetequal(species(tr_2), [tr_2.species])

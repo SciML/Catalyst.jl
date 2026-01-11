@@ -360,7 +360,7 @@ end
 
 # Extract a string which declares the system's defaults.
 function get_defaults_string(rn::ReactionSystem)
-    defaults_string = "defaults = " * x_2_string(get_defaults(rn))
+    defaults_string = "defaults = " * x_2_string(MT.get_initial_conditions(rn))
     return defaults_string
 end
 
@@ -404,7 +404,7 @@ end
 function continuous_event_string(continuous_event, strip_call_dict)
     # Creates the string corresponding to the equations (i.e. conditions).
     eqs_string = "["
-    for eq in continuous_event.eqs
+    for eq in continuous_event.conditions
         @string_append! eqs_string expression_2_string(eq; strip_call_dict) ", "
     end
     eqs_string = get_substring_end(eqs_string, 1, -2) * "]"
@@ -413,12 +413,19 @@ function continuous_event_string(continuous_event, strip_call_dict)
     # Continuous events' `affect` field should probably be called `affects`. Likely the `s` was
     # dropped by mistake in MTK.
     affects_string = "["
-    for affect in continuous_event.affect
+    for affect in continuous_event.affect.affect
         @string_append! affects_string expression_2_string(affect; strip_call_dict) ", "
     end
     affects_string = get_substring_end(affects_string, 1, -2) * "]"
 
-    return eqs_string * " => " * affects_string
+    # If there are discrete parameters, these have to be added and the full constructor used.
+    event = eqs_string * " => " * affects_string
+    if !isempty(continuous_event.affect.discrete_parameters)
+        dp_string = expression_2_string(continuous_event.affect.discrete_parameters; strip_call_dict)
+        dp_string = dp_string[findfirst('[', dp_string):end]
+        event = "ModelingToolkitBase.SymbolicContinuousCallback($event; discrete_parameters = $dp_string)"
+    end
+    return event
 end
 
 # Creates an annotation for the system's continuous events.
@@ -461,20 +468,27 @@ end
 function discrete_event_string(discrete_event, strip_call_dict)
     # Creates the string corresponding to the conditions. The special check is if the condition is
     # an expression like `X > 5.0`. Here, "(...)" is added for purely aesthetic reasons.
-    condition_string = x_2_string(discrete_event.condition)
-    if discrete_event.condition isa BasicSymbolic
+    condition_string = x_2_string(discrete_event.conditions)
+    if discrete_event.conditions isa BasicSymbolic
         @string_prepend! "(" condition_string
         @string_append! condition_string ")"
     end
 
     # Creates the string corresponding to the affects.
     affects_string = "["
-    for affect in discrete_event.affects
+    for affect in discrete_event.affect.affect
         @string_append! affects_string expression_2_string(affect; strip_call_dict) ", "
     end
     affects_string = get_substring_end(affects_string, 1, -2) * "]"
 
-    return condition_string * " => " * affects_string
+    # If there are discrete parameters, these have to be added and the full constructor used.
+    event = condition_string * " => " * affects_string
+    if !isempty(discrete_event.affect.discrete_parameters)
+        dp_string = expression_2_string(discrete_event.affect.discrete_parameters; strip_call_dict)
+        dp_string = dp_string[findfirst('[', dp_string):end]
+        event = "ModelingToolkitBase.SymbolicDiscreteCallback($event; discrete_parameters = $dp_string)"
+    end
+    return event
 end
 
 # Creates an annotation for the system's discrete events.
