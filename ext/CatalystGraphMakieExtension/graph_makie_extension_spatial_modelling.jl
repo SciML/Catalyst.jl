@@ -20,21 +20,25 @@ end
 function lattice_animation(
         sol, sp, lrs::LatticeReactionSystem{Q, R, <:AbstractGraph, T}, filename::String;
         t = sol.t[end], nframes = 200, framerate = 20, plot_min = nothing, plot_max = nothing,
-        colormap = :BuGn_7, node_size = 50, ttitle = true, kwargs...) where {Q, R, T}
+        colormap = :BuGn_7, node_size = 50, ttitle::Bool = true, kwargs...) where {Q, R, T}
     # Prepares the inputs to the figure.
     plot_graph = SimpleGraph(Catalyst.lattice(lrs))
     t = LinRange(sol.prob.tspan[1], sol.prob.tspan[2], nframes)
     vals, plot_min, plot_max = Catalyst.extract_vals(sol, sp, lrs, plot_min, plot_max, t)
 
     # Creates the base figure (which is modified in the animation).
-    fig, ax, plt = graphplot(plot_graph; node_color = vals[1],
-        node_attr = (colorrange = (plot_min, plot_max), colormap), node_size, kwargs...)
-    ttitle && (ax.title = "Time: $(round(t[1]; sigdigits = 3))")
+    frame = Makie.Observable(1)
+    axis_kwarg = if ttitle
+        (; axis = (; title = Makie.@lift(string("Time: ", round(t[$frame]; sigdigits = 3)))))
+    else
+        (;)
+    end
+    fig, ax, plt = graphplot(plot_graph; node_color = Makie.@lift(vals[$frame]),
+        node_attr = (colorrange = (plot_min, plot_max), colormap), node_size, axis_kwarg..., kwargs...)
 
     # Creates the animation.
     GraphMakie.record(fig, filename, 1:1:nframes; framerate) do i
-        plt.node_color = vals[i]
-        ttitle && (ax.title = "Time: $(round(t[i]; sigdigits = 3))")
+        frame[] = i
     end
     return nothing
 end
