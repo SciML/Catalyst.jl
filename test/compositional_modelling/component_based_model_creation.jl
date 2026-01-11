@@ -182,7 +182,7 @@ t = default_t()
     extended = extend(constraints, network)
     subextended = extend(subsystemconstraints, subnetwork)
     extended = compose(extended, subextended)
-    defs = MT.defaults(extended)
+    defs = MT.initial_conditions(extended)
     @test get(defs, a, nothing) == 1
     @test isequal(get(defs, x, nothing), a)
     @test get(defs, subextended.b, nothing) == 2
@@ -191,8 +191,8 @@ t = default_t()
     extended = extend(constraints, network; name = nameof(network))
     subextended = extend(subsystemconstraints, subnetwork, name = nameof(subnetwork))
     extended = compose(extended, subextended)
-    defs = MT.defaults(extended)
-    defs = MT.defaults(extended)
+    defs = MT.initial_conditions(extended)
+    defs = MT.initial_conditions(extended)
     @test get(defs, a, nothing) == 1
     @test isequal(get(defs, x, nothing), a)
     @test get(defs, subextended.b, nothing) == 2
@@ -412,8 +412,8 @@ let
     @named fullrn = extend(csys, rn)
     setdefaults!(fullrn, [:b => 2.0])
     @unpack b = fullrn
-    @test haskey(MT.defaults(fullrn), b)
-    @test MT.defaults(fullrn)[b] == 2.0
+    @test haskey(MT.initial_conditions(fullrn), b)
+    @test Symbolics.value(MT.initial_conditions(fullrn)[b]) == 2.0
 end
 
 # https://github.com/SciML/Catalyst.jl/issues/545
@@ -489,16 +489,16 @@ let
     osys = make_rre_ode(composed_reaction_system)
     parameters(osys)[1].metadata
 
-    defs = MT.defaults(osys)
+    defs = MT.initial_conditions(osys)
     @unpack p, r, X, Y = rn1
-    defs[p] == 1.0
-    defs[r] == 2.0
-    defs[X] == 3.0
-    defs[Y] == 4.0
-    defs[rn2.p] == 10.0
-    defs[rn2.q] == 20.0
-    defs[rn2.X] == 30.0
-    defs[rn2.Z] == 40.0
+    @test Symbolics.value(defs[p]) == 1.0
+    @test Symbolics.value(defs[r]) == 2.0
+    @test Symbolics.value(defs[X]) == 3.0
+    @test Symbolics.value(defs[Y]) == 4.0
+    @test Symbolics.value(defs[rn2.p]) == 10.0
+    @test Symbolics.value(defs[rn2.q]) == 20.0
+    @test Symbolics.value(defs[rn2.X]) == 30.0
+    @test Symbolics.value(defs[rn2.Z]) == 40.0
 end
 
 # test scoping in compose

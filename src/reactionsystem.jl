@@ -384,7 +384,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, connection_type, nps, cls, cevs,
             devs, metadata, complete, parent)
-        # checks && validate(rs) Temporarily disabled.
+        checks && validate(rs)
         rs
     end
 end
@@ -534,7 +534,7 @@ end
 function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
         spatial_ivs = nothing, continuous_events = [], discrete_events = [],
         observed = [], kwargs...)
-    
+
     # Error if any observables have been declared a species or variable
     obs_vars = Set(obs_eq.lhs for obs_eq in observed)
     any(in(obs_vars), us_in) &&
@@ -604,7 +604,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
         end
     end
     psv = collect(new_ps)
-    
+
     # Passes the processed input into the next `ReactionSystem` call.
     ReactionSystem(fulleqs, t, usv, psv; spatial_ivs, continuous_events,
         discrete_events, observed, kwargs...)
@@ -1215,7 +1215,7 @@ Notes:
 """
 function setdefaults!(rn, newdefs)
     defs = eltype(newdefs) <: Pair{Symbol} ? symmap_to_varmap(rn, newdefs) : newdefs
-    rndefs = MT.get_defaults(rn)
+    rndefs = MT.get_initial_conditions(rn)
     for (var, val) in defs
         rndefs[value(var)] = value(val)
     end
@@ -1592,7 +1592,8 @@ function validate(rs::ReactionSystem, info::String = "")
     timeunits = get_unit(get_iv(rs))
 
     # no units for species, time or parameters then assume validated
-    if (specunits in (MT.unitless, nothing)) && (timeunits in (MT.unitless, nothing))
+    unitless = Base.get_extension(ModelingToolkitBase, :MTKDynamicQuantitiesExt).unitless
+    if (specunits in (unitless, nothing)) && (timeunits in (unitless, nothing))
         all(unitless_symvar(p) for p in get_ps(rs)) && return true
     end
 

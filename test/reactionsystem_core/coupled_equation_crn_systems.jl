@@ -461,7 +461,8 @@ end
 
 # Checks that a coupled SDE + algebraic equations works.
 # Checks that structural_simplify is required to simulate coupled SDE + algebraic equations.
-let # SDEs are currently broken with structural simplify (https://github.com/SciML/ModelingToolkit.jl/issues/2614).
+@test_broken let # SDEs are currently broken with structural simplify (https://github.com/SciML/ModelingToolkit.jl/issues/2614).
+    return false # Currently throws error due to https://github.com/SciML/ModelingToolkit.jl/issues/4137.
     # Creates coupled reactions system.
     @parameters p d k1 k2
     @species X(t)

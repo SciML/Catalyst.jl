@@ -644,13 +644,13 @@ let
 end
 
 # Checks that parameters that occur as stoichiometries are correctly inferred as integers.
-let 
+let
     rn = @reaction_network begin
         k, n*X --> xN
     end
     @test SymbolicUtils.symtype(rn.k) == Real
-    @test_broken SymbolicUtils.symtype(rn.n) == Int64    
-end 
+    @test_broken SymbolicUtils.symtype(rn.n) == Int64
+end
 
 ### Observables ###
 
@@ -997,7 +997,8 @@ end
 # Checks creation of basic network.
 # Check indexing of output solution.
 # Check that DAE is solved correctly.
-let
+@test_broken let
+    return false # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4137
     rn = @reaction_network rn begin
         @parameters k d
         @variables X(t) Y(t)
@@ -1064,7 +1065,8 @@ end
 # Tries with interpolating a value into an equation.
 # Tries using rn.X notation for designating variables.
 # Tries for empty parameter vector.
-let
+@test_broken let
+    return false # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4137
     c = 6.0
     rn = complete(@reaction_network begin
         @variables X(t)
@@ -1109,7 +1111,8 @@ end
 
 # Check for combined differential and algebraic equation.
 # Check indexing of output solution using Symbols.
-let
+@test_broken let
+    return false # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4137
     rn = @reaction_network rn begin
         @parameters k
         @variables X(t) Y(t)

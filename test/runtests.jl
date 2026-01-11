@@ -22,21 +22,21 @@ end
         @time @safetestset "Symbolic Stoichiometry" begin include("reactionsystem_core/symbolic_stoichiometry.jl") end
         @time @safetestset "Parameter Type Designation" begin include("reactionsystem_core/parameter_type_designation.jl") end
         @time @safetestset "Custom CRN Functions" begin include("reactionsystem_core/custom_crn_functions.jl") end
-        # @time @safetestset "Coupled CRN/Equation Systems" begin include("reactionsystem_core/coupled_equation_crn_systems.jl") end
+        @time @safetestset "Coupled CRN/Equation Systems" begin include("reactionsystem_core/coupled_equation_crn_systems.jl") end
         @time @safetestset "Events" begin include("reactionsystem_core/events.jl") end
         @time @safetestset "Functional Parameters" begin include("reactionsystem_core/functional_parameters.jl") end
 
         # Tests model creation via the @reaction_network DSL.
         @time @safetestset "DSL Basic Model Construction" begin include("dsl/dsl_basic_model_construction.jl") end
         @time @safetestset "DSL Advanced Model Construction" begin include("dsl/dsl_advanced_model_construction.jl") end
-        #@time @safetestset "DSL Options" begin include("dsl/dsl_options.jl") end
+        @time @safetestset "DSL Options" begin include("dsl/dsl_options.jl") end
 
         # Tests compositional and hierarchical modelling.
-        #@time @safetestset "ReactionSystem Components Based Creation" begin include("compositional_modelling/component_based_model_creation.jl") end # hierarchical modelling broken due to https://github.com/SciML/ModelingToolkit.jl/pull/4101
+        @time @safetestset "ReactionSystem Components Based Creation" begin include("compositional_modelling/component_based_model_creation.jl") end # hierarchical modelling broken due to https://github.com/SciML/ModelingToolkit.jl/pull/4101
 
         # Tests various miscellaneous features.
         @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
-        #@time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end # `_validate` currently no longer avaiable, awaiting advice.
+        @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end # `_validate` currently no longer avaiable, awaiting advice.
         @time @safetestset "Compound Species" begin include("miscellaneous_tests/compound_macro.jl") end
         @time @safetestset "Reaction Balancing" begin include("miscellaneous_tests/reaction_balancing.jl") end
 
@@ -75,8 +75,8 @@ end
         @time @safetestset "Spatial Reactions" begin include("spatial_modelling/spatial_reactions.jl") end
         @time @safetestset "Lattice Reaction Systems" begin include("spatial_modelling/lattice_reaction_systems.jl") end
         @time @safetestset "Spatial Lattice Variants" begin include("spatial_modelling/lattice_reaction_systems_lattice_types.jl") end
-        #@time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_ODEs.jl") end
-        #@time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_jumps.jl") end
+        @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_ODEs.jl") end
+        @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_jumps.jl") end
         @time @safetestset "Lattice Simulation Structure Interfacing" begin include("spatial_modelling/lattice_simulation_struct_interfacing.jl") end
     end
 
