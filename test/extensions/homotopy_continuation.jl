@@ -113,8 +113,7 @@ end
 # Checks that the correct steady states are found for system with multiple, known, steady states.
 # Checks where (activating/repressing) Hill function is written out/using `hillar`.
 # The system is known to have (exactly five steady states for the given parameter set.
-@test_broken let
-    return false # `f_eval(rs, ss, ps, 0.0) ≈ [0.0, 0.0] atol = 1e-12 rtol = 1e-12` errors during ODEProblem creation. Need to investigate.
+let
     # Finds the model steady states.
     rs = @reaction_network begin
         0.01 + hillar(X,Y,1.0,Kx,3), ∅ --> X
@@ -128,7 +127,7 @@ end
     @test length(sss) == 5
     @test allunique(sss)
     for ss in sss
-        @test f_eval(rs, ss, ps, 0.0) ≈ [0.0, 0.0] atol = 1e-12 rtol = 1e-12
+        @test f_eval(rs, Pair.(unknowns(rs), ss), ps, 0.0) ≈ [0.0, 0.0] atol = 1e-12 rtol = 1e-12
     end
 end
 

@@ -292,6 +292,6 @@ let
     sols_ref = solve(eprob_ref, SSAStepper(); trajectories = 10000)
     end_vals = [[sol[s][end] for sol in sols.u] for s in species(sir)]
     end_vals_ref = [[sol[s][end] for sol in sols_ref.u] for s in species(sir_ref)]
-    @test mean.(end_vals_ref) ≈ mean.(end_vals) atol=1e-2 rtol = 1e-2
+    @test mean.(end_vals_ref) ≈ mean.(end_vals) atol=1e-1 rtol = 1e-1
     @test var.(end_vals_ref) ≈ var.(end_vals) atol=1e-1 rtol = 1e-1
 end

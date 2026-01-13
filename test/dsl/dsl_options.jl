@@ -350,8 +350,15 @@ let
     p_29 = symmap_to_varmap(rn29, [:X=>4.0, :Y=>3.0, :X2Y=>2.0, :Z=>1.0])
     defs29 = Dict(Iterators.flatten((u0_29, p_29)))
 
-    @test_broken isequal(ModelingToolkitBase.initial_conditions(rn27), defs29) # `initial_conditions` (old default) now stores things in a new funny type.
-    @test_broken isequal(merge(ModelingToolkitBase.initial_conditions(rn28), defs28), ModelingToolkitBase.initial_conditions(rn27)) # `initial_conditions` (old default) now stores things in a new funny type.
+    # Checks that the correct default initial conditions are stored. Added a conversion function
+    # to account for MTK having changed the type of `initial_conditions(sys)`.
+    function switch_dict_typrs(d)
+        d_new = Dict{Symbolics.SymbolicT, Symbolics.SymbolicT}()
+        foreach(k -> d_new[ModelingToolkitBase.unwrap(k)] = d[k], keys(d))
+        return d_new
+    end
+    @test isequal(ModelingToolkitBase.initial_conditions(rn27), switch_dict_typrs(defs29)) # `initial_conditions` (old default) now stores things in a new funny type.
+    @test isequal(merge(ModelingToolkitBase.initial_conditions(rn28), switch_dict_typrs(defs28)), ModelingToolkitBase.initial_conditions(rn27)) # `initial_conditions` (old default) now stores things in a new funny type.
 end
 
 # Tests that parameter type designation works.

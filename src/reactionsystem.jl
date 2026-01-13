@@ -241,7 +241,7 @@ all such code and updating it appropriately (e.g. serialization). Please use a s
 # structure have been updated (in the `reactionsystem_uptodate_check` function).
 const reactionsystem_fields = (
     :eqs, :rxs, :iv, :sivs, :unknowns, :species, :ps, :var_to_name,
-    :observed, :name, :systems, :defaults, :connection_type,
+    :observed, :name, :systems, :initial_conditions, :connection_type,
     :networkproperties, :combinatoric_ratelaws, :continuous_events,
     :discrete_events, :metadata, :complete, :parent)
 

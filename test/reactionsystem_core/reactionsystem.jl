@@ -549,7 +549,7 @@ end
 
 # Test that jump solutions actually run correctly for constants and BCs.
 @test_broken let
-    return false # @Sam: Creation of JumpProblem's from `JumpInput`s is currently broken. 
+    return false # @Sam: Creation of JumpProblem's from `JumpInput`s is currently broken.
     @parameters k1 A [isconstantspecies = true]
     @species C(t) [isbcspecies = true] B1(t) B2(t) B3(t)
     @named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
@@ -961,8 +961,7 @@ end
 # structure's fields have been updated, without updating the `reactionsystem_fields` constant. If so,
 # there are several places in the code where the `reactionsystem_uptodate` function is called, here
 # the code might need adaptation to take the updated reaction system into account.
-@test_broken let
-    return false
+let
     @test_nowarn Catalyst.reactionsystem_uptodate_check() # Will fix this once most things are actually workin.
 end
 
