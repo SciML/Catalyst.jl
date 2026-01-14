@@ -130,7 +130,7 @@ end
 
 # Tests using various more obscure types of getters.
 @test_broken let
-    return false # Metadata interface changed, need to check wit hAayush about the new one.
+    return false # Metadata interface changed, need to check wit Aayush about the new one.
     # Create LatticeReactionsSystems.
     t = default_t()
     @parameters p d kB kD

@@ -180,8 +180,7 @@ let
 end
 
 # Tests on model with events.
-@test_broken let
-    return false
+let
     # Creates a model, saves it, and creates an expanded version.
     rs = @reaction_network begin
         @continuous_events begin
@@ -198,7 +197,7 @@ end
     rs_expanded = Catalyst.expand_registered_functions(rs)
 
     # Checks that the original model is unchanged (equality currently does not consider events).
-    @test rs == rs_saved
+    @test_broken rs == rs_saved
     @test_broken get_continuous_events(rs) == get_continuous_events(rs_saved) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
     @test_broken get_discrete_events(rs) == get_discrete_events(rs_saved) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
 

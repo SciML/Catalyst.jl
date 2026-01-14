@@ -1005,7 +1005,7 @@ end
 # Check indexing of output solution.
 # Check that DAE is solved correctly.
 @test_broken let
-    return false # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4137
+    return false # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4164
     rn = @reaction_network rn begin
         @parameters k d
         @variables X(t) Y(t)
@@ -1073,7 +1073,7 @@ end
 # Tries using rn.X notation for designating variables.
 # Tries for empty parameter vector.
 @test_broken let
-    return false # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4137
+    return false # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4164
     c = 6.0
     rn = complete(@reaction_network begin
         @variables X(t)
@@ -1118,7 +1118,7 @@ end
 # Check for combined differential and algebraic equation.
 # Check indexing of output solution using Symbols.
 @test_broken let
-    return false # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4137 (issue suppsoedly closed, but there is still error on ODEProblem creation).
+    return false # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4164.
     rn = @reaction_network rn begin
         @parameters k
         @variables X(t) Y(t)
@@ -1150,7 +1150,7 @@ end
     @test equations(rn)[3] isa Equation
 
     # Checks that simulations has the correct output
-    u0 = Dict([S => 1 + rand(rng), Y => 1 + rand(rng)])
+    u0 = Dict([S => 1 + rand(rng), X => 1 + rand(rng), Y => 1 + rand(rng)])
     ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
     oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify=true)
     sol = solve(oprob, Rosenbrock23(); abstol=1e-9, reltol=1e-9)
@@ -1183,8 +1183,7 @@ end
 
 # Test that various options can be provided in block and single line form.
 # Also checks that the single line form takes maximally one argument.
-@test_broken let
-    return false
+let
     # The `@equations` option.
     rn11 = @reaction_network rn1 begin
         @equations D(V) ~ 1 - V

@@ -224,7 +224,7 @@ function find_event_vars!(ps, us, event::Pair, ivs, vars)
 end
 function find_event_vars!(ps, us, event::MT.AbstractCallback, ivs, vars)
     findvars!(ps, us, event.conditions, ivs, vars)
-    findvars!(ps, us, event.affect, ivs, vars)
+    findvars!(ps, us, event.affect.affect, ivs, vars)
 end
 
 ### ReactionSystem Structure ###
@@ -347,7 +347,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, connection_type, nps, cls, cevs, devs,
-            metadata = nothing, complete = false, parent = nothing; checks::Bool = true)
+            metadata, complete = false, parent = nothing; checks::Bool = true)
 
         # Checks that all parameters have the appropriate Symbolics type. The `Symbolics.CallWithMetadata`
         # check is an exception for callabl;e parameters.
@@ -413,7 +413,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
         spatial_ivs = nothing,
         continuous_events = nothing,
         discrete_events = nothing,
-        metadata = nothing)
+        metadata = [])
 
     # Error checks
     name === nothing &&
@@ -497,7 +497,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     discrete_events = create_symbolic_events(MT.SymbolicDiscreteCallback, discrete_events)
 
     # handles system metadata.
-    metadata === nothing ? Base.ImmutableDict{Symbol,Any}() : metadata
+    metadata = make_metadata(metadata)
 
     ReactionSystem(
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
@@ -513,6 +513,23 @@ create_symbolic_events(type, event::Nothing) = []
 # Converts an input event into a form which ModelingToolkit can handle.
 create_symbolic_event(type, event::MT.AbstractCallback) = event
 create_symbolic_event(type, event) = type(event)
+
+# Reformats the metadata in a format that MTK can handle. Long-term MTK will expose a public function
+# that we can (and should) use instead.
+function make_metadata(metadata)
+    if isempty(metadata)
+        metadata = MT.MetadataT()
+    elseif metadata isa MT.MetadataT
+        metadata = metadata
+    else
+        meta = MT.MetadataT()
+        for kvp in metadata
+            meta = Base.ImmutableDict(meta, kvp)
+        end
+        metadata = meta
+    end
+    metadata = MT.refreshed_metadata(metadata)
+end
 
 # Two-argument constructor (reactions/equations and time variable).
 # Calls the `make_ReactionSystem_internal`, which in turn calls the four-argument constructor.

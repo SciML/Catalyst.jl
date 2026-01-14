@@ -65,12 +65,10 @@ end
 # Tests that species/variables/parameters only encountered in events are added to `ReactionSystem`s properly.
 # Tests for both discrete and continuous events. Tests that these quantities can be accessed in Problems.
 # Tests that metadata for these quantities are saved properly
-@test_broken let
-    return false # Now `a` is a variable of the created system but have no equation, this causes errors. https://github.com/SciML/ModelingToolkit.jl/issues/4102. Issue closed, but now we get an error when we try `prob = XProb(rs, u0, (0.0, 10.0), ps)`.
+let
     # Creates model.
     @parameters p d α::Int64 = 1
-    @species X(t) A(t) = 2 [description="A species"]
-    @variables a(t) = 3
+    @species X(t) A(t) = 2 [description="A species"] a(t) = 3
     rxs = [
         Reaction(p, nothing, [X]),
         Reaction(d, [X], nothing)
@@ -87,15 +85,15 @@ end
     rs_ce_de = complete(rs_ce_de)
 
     # Tests model content.
-    issetequal(species(rs_ce), [X, A])
-    issetequal(species(rs_de), [X, A])
-    issetequal(species(rs_ce_de), [X, A])
-    issetequal(unknowns(rs_ce), [X, A, a])
-    issetequal(unknowns(rs_de), [X, A, a])
-    issetequal(unknowns(rs_ce_de), [X, A, a])
-    issetequal(parameters(rs_ce), [p, d, α])
-    issetequal(parameters(rs_de), [p, d, α])
-    issetequal(parameters(rs_ce_de), [p, d, α])
+    @test issetequal(species(rs_ce), [X, A, a])
+    @test issetequal(species(rs_de), [X, A, a])
+    @test issetequal(species(rs_ce_de), [X, A, a])
+    @test issetequal(unknowns(rs_ce), [X, A, a])
+    @test issetequal(unknowns(rs_de), [X, A, a])
+    @test issetequal(unknowns(rs_ce_de), [X, A, a])
+    @test issetequal(parameters(rs_ce), [p, d, α])
+    @test issetequal(parameters(rs_de), [p, d, α])
+    @test issetequal(parameters(rs_ce_de), [p, d, α])
     @test SymbolicUtils.symtype(rs_ce_de.α) == Int64
     @test SymbolicUtils.symtype(rs_de.α) == Int64
     @test SymbolicUtils.symtype(rs_ce_de.α) == Int64
@@ -116,14 +114,16 @@ end
     end
 
     # Handles `JumpInput`s and `JumpProblem`s (these cannot contain continuous events or variables).
-    discrete_events = [2.0 => [A ~ A + α]]
-    @named rs_de_2 = ReactionSystem(rxs, t; discrete_events)
-    rs_de_2 = complete(rs_de_2)
-    jin = JumpInputs(rs_de_2, u0, (0.0, 10.0), ps)
-    jprob = JumpProblem(jin)
-    @test jprob[A] == 2
-    @test jprob.ps[α] == 1
-    @test jprob.ps[α] isa Int64
+    @test_broken let # Yields a ERROR: The equations of a system must involve the unknowns/observables. The following equations were found to have no unknowns/observables: 0 ~ α. Can you have a look @Sam?
+        discrete_events = [2.0 => [A ~ A + α]]
+        @named rs_de_2 = ReactionSystem(rxs, t; discrete_events)
+        rs_de_2 = complete(rs_de_2)
+        jin = JumpInputs(rs_de_2, u0, (0.0, 10.0), ps)
+        jprob = JumpProblem(jin)
+        @test jprob[A] == 2
+        @test jprob.ps[α] == 1
+        @test jprob.ps[α] isa Int64
+    end
 end
 
 
@@ -163,16 +163,15 @@ let
         X ~ 1.0 => [X ~ 0.5],       # Scalar condition.
         [X ~ 1.0] => X ~ 0.5,       # Scalar affect.
         (X ~ 1.0,) => [X ~ 0.5],    # Tuple condition.
-        #[X ~ 1.0] => (X ~ 0.5,),    # Tuple affect. # Should not work, potentially bad for performance as compared to vectors.
+        #[X ~ 1.0] => (X ~ 0.5,),    # Tuple affect. # Should not work, potentially bad for performance as compared to vectors. (https://github.com/SciML/ModelingToolkit.jl/issues/4167)
         [X - 1.0] => [X ~ 0.5],     # Non-equation condition (1).
         [X == 1.0] => [X ~ 0.5],    # Non-equation condition (2).
-        # [X ~ 1.0] => [X ~ 0.5, p ~ 0.5], # No error on system creation, but permitted. Should probably throw an early error.
     ]
     discrete_events_bad = [
         [2.0] => p ~ 1.0,       # Scalar affect.
-        #[2.0] => (p ~ 1.0, ),    # Tuple affect. # Should not work, potentially bad for performance as compared to vectors.
-        #[X > 2.0] => [p ~ 1.0], # Vector conditions. Should probably throw an error here already, currently does not.
-        #(1.0, 2.0) => [p ~ 1.0] # Tuple condition. Should probably throw an error here already, currently does not.
+        #[2.0] => (p ~ 1.0, ),    # Tuple affect. # Should not work, potentially bad for performance as compared to vectors. (https://github.com/SciML/ModelingToolkit.jl/issues/4167)
+        [X > 2.0] => [p ~ 1.0], # Vector conditions.
+        (1.0, 2.0) => [p ~ 1.0] # Tuple condition.
     ]
 
     # Checks that errors are produced.
@@ -193,7 +192,7 @@ end
 # Checks continuous, discrete, preset time, and periodic events.
 # Tests event affecting non-species components.
 @test_broken let
-    return false # Now `Z` is a variable of teh created system but have no equation, this causes errors. https://github.com/SciML/ModelingToolkit.jl/issues/4102. Issue closed, but there is a new issue down in the test.
+    return false # Now `Z` is a variable of the created system but have no equation, this causes errors. Have asked Aayush whether this should work or not.
     # Creates model via DSL.
     rn_dsl = @reaction_network rn begin
         @parameters thres=7.0 dY_up

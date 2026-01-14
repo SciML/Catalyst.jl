@@ -301,8 +301,7 @@ end
 # Checks for both differential and algebraic equations.
 # Checks for problems, integrators, and solutions yielded by coupled systems.
 # Checks that metadata, types, and default values are carried through correctly.
-@test_broken let # SDEs are currently broken with structural simplify (https://github.com/SciML/ModelingToolkit.jl/issues/2614).
-    return false
+let
     # Creates the model
     @parameters a1 [description="Parameter a1"] a2::Rational{Int64} a3=0.3 a4::Rational{Int64}=4//10 [description="Parameter a4"]
     @parameters b1 [description="Parameter b1"] b2::Int64 b3 = 3 b4::Int64=4 [description="Parameter b4"]
@@ -311,18 +310,18 @@ end
     @variables B1(t) [description="Variable B1"] B2(t)=2.0 B3(t)=3.0 [description="Variable B3"] B4(t)
     @variables C1(t) [description="Variable C1"] C2(t) C3(t) [description="Variable C3"] C4(t)
     eqs = [
-        Reaction(a1, nothing, [A1]),
-        Reaction(a2, nothing, [A2]),
-        Reaction(a3, nothing, [A3]),
-        Reaction(a4, nothing, [A4]),
+        Reaction(a1, [A1], nothing),
+        Reaction(a2, [A2], nothing),
+        Reaction(a3, [A3], nothing),
+        Reaction(a4, [A4], nothing),
         D(B1) ~ b1*B1,
         D(B2) ~ b2*B2,
         D(B3) ~ b3*B3,
         D(B4) ~ b4*B4,
-        C1^2 ~ c1 + B1^5,
-        C2^2 ~ c2 + B2^5,
-        C3^2 ~ c3 + B3^5,
-        C4^2 ~ c4 + B4^5
+        C1 ~ sqrt(c1 + B1^5),
+        C2 ~ sqrt(c2 + B2^5),
+        C3 ~ sqrt(c3 + B3^5),
+        C4 ~ sqrt(c4 + B4^5)
     ]
     @named coupled_rs = ReactionSystem(eqs, t)
     coupled_rs = complete(coupled_rs)
@@ -373,9 +372,10 @@ end
     @test getdefault(coupled_rs.B3) == 3.0
 
     # Creates problem inputs.
-    u0 = [a1 => 0.1, a2 => 2//10, b1 => 1.0, b2 => 2, c1 => 10.0, c2 => 20.0]
+    u0 = [A1 => 0.1, A4 => 0.4, B1 => 1.0, B4 => 4.0]
+    u0_nlp = [A1 => 0.1, A4 => 0.4, B1 => 1.0, B4 => 4.0, C1 => sqrt(10.0 + 1.0^5), C2 => sqrt(20.0 + 2.0^5), C3 => sqrt(30.0 + 3.0^5), C4 => sqrt(40.0 + 4.0^5)]
     tspan = (0.0, 1.0)
-    ps = [A1 => 0.1, A4 => 0.4, B1 => 1.0]
+    ps = [a1 => 0.1, a2 => 2//10, b1 => 1.0, b2 => 2, c1 => 10.0, c2 => 20.0]
 
     # Create ODE structures.
     oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
@@ -388,41 +388,61 @@ end
     ssol = solve(sprob, ImplicitEM())
 
     # Creates Nonlinear structures.
-    nlprob = NonlinearProblem(coupled_rs, u0, ps; structural_simplify = true, warn_initialize_determined = false)
+    nlprob = NonlinearProblem(coupled_rs, u0_nlp, ps; structural_simplify = true, warn_initialize_determined = false)
     nlint = init(nlprob, NewtonRaphson())
     nlsol = solve(nlprob, NewtonRaphson())
 
     # Checks indexing.
     for mtk_struct in [oprob, oint, osol, sprob, sint, ssol, nlprob, nlint, nlsol]
         # Parameters.
-        @test mtk_struct[a1] == 0.1
-        @test mtk_struct[a2] == 2//10
-        @test mtk_struct[a3] == 0.3
-        @test mtk_struct[a4] == 4//10
-        @test mtk_struct[b1] == 1.0
-        @test mtk_struct[b2] == 2
-        @test mtk_struct[b3] == 3.0
-        @test mtk_struct[b4] == 4
-        @test mtk_struct[c1] == 10.0
-        @test mtk_struct[c2] == 20.0
-        @test mtk_struct[c3] == 30.0
-        @test mtk_struct[c4] == 40.0
+        @test mtk_struct.ps[a1] == 0.1
+        @test_broken mtk_struct.ps[a2] == 2//10 # https://github.com/SciML/ModelingToolkit.jl/issues/4163
+        @test mtk_struct.ps[a3] == 0.3
+        @test mtk_struct.ps[a4] == 4//10
+        @test mtk_struct.ps[b1] == 1.0
+        @test mtk_struct.ps[b2] == 2
+        @test mtk_struct.ps[b3] == 3.0
+        @test mtk_struct.ps[b4] == 4
+        @test mtk_struct.ps[c1] == 10.0
+        @test mtk_struct.ps[c2] == 20.0
+        @test mtk_struct.ps[c3] == 30.0
+        @test mtk_struct.ps[c4] == 40.0
+    end
+    for mtk_struct in [oprob, oint, sprob, sint, nlprob, nlint]
 
         # Species.
         @test mtk_struct[A1] == 0.1
-        @test mtk_struct[A2] == 2//10
+        @test mtk_struct[A2] == 0.2
         @test mtk_struct[A3] == 0.3
-        @test mtk_struct[A4] == 4//10
+        @test mtk_struct[A4] == 0.4
 
         # Variables.
         @test mtk_struct[B1] == 1.0
         @test mtk_struct[B2] == 2
         @test mtk_struct[B3] == 3.0
         @test mtk_struct[B4] == 4
-        @test mtk_struct[C1] == 10.0
-        @test mtk_struct[C2] == 20.0
-        @test mtk_struct[C3] == 30.0
-        @test mtk_struct[C4] == 40.0
+        @test mtk_struct[C1] == sqrt(mtk_struct.ps[c1] + mtk_struct[B1]^5)
+        @test mtk_struct[C2] == sqrt(mtk_struct.ps[c2] + mtk_struct[B2]^5)
+        @test mtk_struct[C3] == sqrt(mtk_struct.ps[c3] + mtk_struct[B3]^5)
+        @test mtk_struct[C4] == sqrt(mtk_struct.ps[c4] + mtk_struct[B4]^5)
+    end
+    for mtk_struct in [osol, ssol]
+
+        # Species.
+        @test mtk_struct[A1][1] == 0.1
+        @test mtk_struct[A2][1] == 0.2
+        @test mtk_struct[A3][1] == 0.3
+        @test mtk_struct[A4][1] == 0.4
+
+        # Variables.
+        @test mtk_struct[B1][1] == 1.0
+        @test mtk_struct[B2][1] == 2
+        @test mtk_struct[B3][1] == 3.0
+        @test mtk_struct[B4][1] == 4
+        @test mtk_struct[C1][1] == sqrt(mtk_struct.ps[c1] + mtk_struct[B1][1]^5)
+        @test mtk_struct[C2][1] == sqrt(mtk_struct.ps[c2] + mtk_struct[B2][1]^5)
+        @test mtk_struct[C3][1] == sqrt(mtk_struct.ps[c3] + mtk_struct[B3][1]^5)
+        @test mtk_struct[C4][1] == sqrt(mtk_struct.ps[c4] + mtk_struct[B4][1]^5)
     end
 end
 
@@ -461,8 +481,7 @@ end
 
 # Checks that a coupled SDE + algebraic equations works.
 # Checks that structural_simplify is required to simulate coupled SDE + algebraic equations.
-@test_broken let # SDEs are currently broken with structural simplify (https://github.com/SciML/ModelingToolkit.jl/issues/2614).
-    return false # Currently throws error due to https://github.com/SciML/ModelingToolkit.jl/issues/4137.
+let
     # Creates coupled reactions system.
     @parameters p d k1 k2
     @species X(t)
@@ -476,7 +495,7 @@ end
     coupled_rs = complete(coupled_rs)
 
     # Set simulation inputs.
-    u0 = [X => 100.0]
+    u0 = [X => 100.0, A => 1.0]
     tspan = (0.0, 1000.0)
     ps = Dict([p => 1.0, d => 0.01, k1 => 3.0, k2 => 4.0])
 
@@ -486,7 +505,7 @@ end
     # Checks the algebraic equation holds.
     sprob = SDEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
     ssol = solve(sprob, ImplicitEM())
-    @test_broken (2 .+ ps[k1] * ssol[:A]) ≈ (3 .+ ps[k2] * ssol[:X]) # somehow first value in ssol[:A] is wrong, some MTK bug.
+    @test_broken (2 .+ ps[k1] * ssol[:A]) ≈ (3 .+ ps[k2] * ssol[:X]) # Currently there is an initialization failure I do not understand https://github.com/SciML/ModelingToolkit.jl/issues/4164
 end
 
 
@@ -541,7 +560,7 @@ end
 # Tests that coupled CRN/DAEs with higher order differentials can be created.
 # Tests that these can be solved using ODEs, nonlinear solving, and steady state simulations.
 @test_broken let
-    return false # 2nd differentials currently unsupported by MTKBase (https://github.com/SciML/ModelingToolkit.jl/issues/4096).
+    return false # https://github.com/SciML/ModelingToolkit.jl/issues/4165
     # Create coupled model.
     @species X(t)
     @variables A(t) B(t)
@@ -582,62 +601,6 @@ end
     @test nlsol[X][end] ≈ 2.0
     @test nlsol[A][end] ≈ 0.0
     @test nlsol[B][end] ≈ 1.0
-end
-
-# Checks that DAEs are created properly when provided disorderly.
-# Checks that differential equations can provided in a form no `D(...) ~ ...` (i.e. several
-# differentials, not necessarily on the same side).
-# Checks with non-default iv, and parameters/initial conditions given using Symbols.
-# Checks with default value for algebraic variable.
-@test_broken let
-    return false # Non-trivially expressed diff eqs currently unsupported by MTKBase (https://github.com/SciML/ModelingToolkit.jl/issues/4097).
-    # Prepares stuff common to both simulations.
-    @parameters i r m1 m2 h_max
-    u0 = [:S => 999.0, :I => 1.0, :R => 0.0, :M => 1000.0]
-    tspan = 500.0
-    ps = [:i => 0.0001, :r => 0.01, :m1 => 5000.0, :m2 => 9000//3, :h_max => 1500.0]
-
-    # Declares the model in an ordered fashion, and simulates it.
-    osol_ordered = let
-        @variables M(t) H(t)=h_max
-        @species S(t) I(t) R(t)
-        eqs_ordered = [
-            Reaction(i, [S, I], [I], [1, 1], [2]),
-            Reaction(r, [I], [R]),
-            D(M) ~ -I*M/(m1 + m2),
-            H ~ h_max - I
-        ]
-        @named coupled_sir_ordered = ReactionSystem(eqs_ordered, t)
-        coupled_sir_ordered = complete(coupled_sir_ordered)
-
-        # Checks that ODE an simulation of the system achieves the correct steady state.
-        oprob_ordered = ODEProblem(coupled_sir_ordered, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
-        solve(oprob_ordered, Vern7(); abstol = 1e-8, reltol = 1e-8, saveat = 1.0)
-    end
-
-    # Declares the model in a messy fashion, and simulates it.
-    osol_messy = let
-        @parameters τ
-        @variables M(τ) H(τ)=h_max
-        @species S(τ) I(τ) R(τ)
-        Δ = Differential(τ)
-        eqs_messy = [
-            Reaction(i, [S, I], [I], [1, 1], [2]),
-            Reaction(r, [I], [R]),
-            I*M + m1*Δ(M) ~ -m2*Δ(M),
-            H ~ h_max - I
-        ]
-        @named coupled_sir_messy = ReactionSystem(eqs_messy, τ)
-        coupled_sir_messy = complete(coupled_sir_messy)
-
-        # Checks that ODE an simulation of the system achieves the correct steady state.
-        oprob_messy = ODEProblem(coupled_sir_messy, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
-        solve(oprob_messy, Vern7(); abstol = 1e-8, reltol = 1e-8, saveat = 1.0)
-    end
-
-    # Checks that the simulations are identical.
-    # Some internal details will be different, however, the solutions should be identical.
-    @test osol_messy[[:S, :I, :R, :M, :H]] ≈ osol_ordered[[:S, :I, :R, :M, :H]]
 end
 
 

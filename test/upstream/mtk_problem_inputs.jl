@@ -25,7 +25,6 @@ begin
     end
     @unpack X, Y, Z, kp, kd, k1, k2, Z0 = model
 
-    @test_broken false # Several inputs (static array and tuples with symbols for u0 and ps) are commented out due to https://github.com/SciML/ModelingToolkit.jl/issues/4098.
     u0_alts = [
         # Vectors not providing default values.
         [X => 4, Y => 5],
@@ -38,7 +37,7 @@ begin
         # Static vectors not providing default values.
         SA[X => 4, Y => 5],
         SA[model.X => 4, model.Y => 5],
-        # SA[:X => 4, :Y => 5],
+        SA[:X => 4, :Y => 5],
         # Static vectors providing default values.
         SA[X => 4, Y => 5, Z => 10],
         SA[model.X => 4, model.Y => 5, model.Z => 10],
@@ -54,11 +53,11 @@ begin
         # Tuples not providing default values.
         (X => 4, Y => 5),
         (model.X => 4, model.Y => 5),
-        # (:X => 4, :Y => 5),
+        (:X => 4, :Y => 5),
         # Tuples providing default values.
         (X => 4, Y => 5, Z => 10),
         (model.X => 4, model.Y => 5, model.Z => 10),
-        # (:X => 4, :Y => 5, :Z => 10)
+        (:X => 4, :Y => 5, :Z => 10)
     ]
     tspan = (0.0, 10.0)
     p_alts = [
@@ -77,7 +76,7 @@ begin
         # Static vectors providing default values.
         SA[kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5, Z0 => 10],
         SA[model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.k2 => 0.5, model.Z0 => 10],
-        # SA[:kp => 1.0, :kd => 0.1, :k1 => 0.25, :k2 => 0.5, :Z0 => 10],
+        SA[:kp => 1.0, :kd => 0.1, :k1 => 0.25, :k2 => 0.5, :Z0 => 10],
         # Dicts not providing default values.
         Dict([kp => 1.0, kd => 0.1, k1 => 0.25, Z0 => 10]),
         Dict([model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.Z0 => 10]),
@@ -89,11 +88,11 @@ begin
         # Tuples not providing default values.
         (kp => 1.0, kd => 0.1, k1 => 0.25, Z0 => 10),
         (model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.Z0 => 10),
-        # (:kp => 1.0, :kd => 0.1, :k1 => 0.25, :Z0 => 10),
+        (:kp => 1.0, :kd => 0.1, :k1 => 0.25, :Z0 => 10),
         # Tuples providing default values.
         (kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5, Z0 => 10),
         (model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.k2 => 0.5, model.Z0 => 10),
-        # (:kp => 1.0, :kd => 0.1, :k1 => 0.25, :k2 => 0.5, :Z0 => 10),
+        (:kp => 1.0, :kd => 0.1, :k1 => 0.25, :k2 => 0.5, :Z0 => 10),
     ]
 end
 
@@ -196,7 +195,6 @@ begin
     @named model_vec = ReactionSystem(rxs, t; observed)
     model_vec = complete(model_vec)
 
-    @test_broken false # Several inputs (static array and tuples with symbols for u0 and ps) are commented out due to https://github.com/SciML/ModelingToolkit.jl/issues/4098.
     # Declares various u0 versions (scalarised and vector forms).
     u0_alts_vec = [
         # Vectors not providing default values.
@@ -216,7 +214,7 @@ begin
         SA[X[1] => 1.0, X[2] => 2.0],
         SA[model_vec.X => [1.0, 2.0]],
         SA[model_vec.X[1] => 1.0, model_vec.X[2] => 2.0],
-        # SA[:X => [1.0, 2.0]],
+        SA[:X => [1.0, 2.0]],
         # Static vectors providing default values.
         SA[X => [1.0, 2.0], Y => [10.0, 20.0]],
         SA[X[1] => 1.0, X[2] => 2.0, Y[1] => 10.0, Y[2] => 20.0],
@@ -240,13 +238,13 @@ begin
         (X[1] => 1.0, X[2] => 2.0),
         (model_vec.X => [1.0, 2.0],),
         (model_vec.X[1] => 1.0, model_vec.X[2] => 2.0),
-        # (:X => [1.0, 2.0],),
+        (:X => [1.0, 2.0],),
         # Tuples providing default values.
         (X => [1.0, 2.0], Y => [10.0, 20.0]),
         (X[1] => 1.0, X[2] => 2.0, Y[1] => 10.0, Y[2] => 20.0),
         (model_vec.X => [1.0, 2.0], model_vec.Y => [10.0, 20.0]),
         (model_vec.X[1] => 1.0, model_vec.X[2] => 2.0, model_vec.Y[1] => 10.0, model_vec.Y[2] => 20.0),
-        # (:X => [1.0, 2.0], :Y => [10.0, 20.0]),
+        (:X => [1.0, 2.0], :Y => [10.0, 20.0]),
     ]
 
     # Declares various ps versions (vector forms only).
@@ -262,11 +260,11 @@ begin
         # Static vectors not providing default values.
         SA[p => [4.0, 5.0]],
         SA[model_vec.p => [4.0, 5.0]],
-        # SA[:p => [4.0, 5.0]],
+        SA[:p => [4.0, 5.0]],
         # Static vectors providing default values.
         SA[p => [4.0, 5.0], d => [0.2, 0.5]],
         SA[model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]],
-        # SA[:p => [4.0, 5.0], :d => [0.2, 0.5]],
+        SA[:p => [4.0, 5.0], :d => [0.2, 0.5]],
         # Dicts not providing default values.
         Dict([p => [4.0, 5.0]]),
         Dict([model_vec.p => [4.0, 5.0]]),
@@ -278,11 +276,11 @@ begin
         # Tuples not providing default values.
         (p => [4.0, 5.0],),
         (model_vec.p => [4.0, 5.0],),
-        # (:p => [4.0, 5.0],),
+        (:p => [4.0, 5.0],),
         # Tuples providing default values.
         (p => [4.0, 5.0], d => [0.2, 0.5]),
         (model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]),
-        # (:p => [4.0, 5.0], :d => [0.2, 0.5]),
+        (:p => [4.0, 5.0], :d => [0.2, 0.5]),
     ]
 
     # Declares a timespan.
@@ -424,19 +422,13 @@ let
             end
         end
 
-        # Handles `SteadyStateProblem`s
-        if isequal(ps, ps_valid) && isequal(u0, u0_valid)
-            SteadyStateProblem(rn, u0, ps)
-        else
-            @test_throws Exception SteadyStateProblem(rn, u0, ps)
-        end
-
-        # Handles `NonlinearStateProblem`s (these works even if some species values are missing).
-        if isequal(ps, ps_valid)
-            @test_broken false # For u0 `SA[:X1 => 1]` this fails but should not.
-            # NonlinearProblem(rn, u0, ps)
-        else
-            @test_throws Exception NonlinearProblem(rn, u0, ps)
+        # Handles all types of not time-dependent systems. The `isequal` is because some case should pass.
+        for XProblem in [NonlinearProblem, SteadyStateProblem]
+            if isequal(ps, ps_valid) && isequal(u0, u0_valid)
+                XProblem(rn, u0, ps)
+            else
+                @test_throws Exception XProblem(rn, u0, ps)
+            end
         end
     end
 end
