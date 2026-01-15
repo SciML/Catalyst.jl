@@ -934,10 +934,45 @@ let
     @test isspecies(Catalyst.tospecies(Y))
 end
 
-# Tests system metadata.
+# Tests system-level metadata.
 let
-    # Rewrite now when Metadata is more of an actual thing, and do proper RS metadata tests.
-    @test_broken isnothing(MT.get_metadata(rs))
+    # Create model.
+    @species X(t)
+    @parameters d
+    @named rs1 = ReactionSystem([Reaction(d, [X], nothing)], t)
+    @named rs2 = ReactionSystem([Reaction(d, [X], nothing)], t; metadata = [MiscSystemData => π])
+
+    # Check metadata for `ReactionSystem`s.
+    @test ModelingToolkitBase.getmetadata(rs1, MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(rs2, MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(rs1), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(rs2), MiscSystemData, nothing) == π
+
+    # Check metadata for converted `ReactionSystem`s.
+    @test ModelingToolkitBase.getmetadata(make_rre_ode(complete(rs1)), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(make_rre_ode(complete(rs2)), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(make_rre_ode(complete(rs1))), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(make_rre_ode(complete(rs2))), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(make_cle_sde(complete(rs1)), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(make_cle_sde(complete(rs2)), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(make_cle_sde(complete(rs1))), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(make_cle_sde(complete(rs2))), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(make_sck_jump(complete(rs1)), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(make_sck_jump(complete(rs2)), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(make_sck_jump(complete(rs1))), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(make_sck_jump(complete(rs2))), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(make_rre_algeqs(complete(rs1)), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(make_rre_algeqs(complete(rs2)), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(make_rre_algeqs(complete(rs1))), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(make_rre_algeqs(complete(rs2))), MiscSystemData, nothing) == π
+
+    # Check metadata for `ReactionSystem`s where metadata has been udpated
+    rs1 = ModelingToolkitBase.setmetadata(rs1, MiscSystemData, "Metadata")
+    rs2 = ModelingToolkitBase.setmetadata(rs2, MiscSystemData, ones(2, 3))
+    @test ModelingToolkitBase.getmetadata(rs1, MiscSystemData, nothing) == "Metadata"
+    @test ModelingToolkitBase.getmetadata(rs2, MiscSystemData, nothing) == ones(2, 3)
+    @test ModelingToolkitBase.getmetadata(complete(rs1), MiscSystemData, nothing) == "Metadata"
+    @test ModelingToolkitBase.getmetadata(complete(rs2), MiscSystemData, nothing) == ones(2, 3)
 end
 
 # Tests construction of empty reaction networks.
