@@ -198,7 +198,7 @@ end
 
 Return the negative of the graph Laplacian of the reaction network. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where ``Y`` is the [`complexstoichmat`](@ref) and ``A_k`` is the negative of the graph Laplacian, and ``Φ`` is the [`massactionvector`](@ref). ``A_k`` is an n-by-n matrix, where n is the number of complexes, where ``A_{ij} = k_{ij}`` if a reaction exists between the two complexes and 0 otherwise.
 
-Returns a symbolic matrix by default, but will return a numerical matrix if parameter values are specified via pmap. 
+Returns a symbolic matrix by default, but will return a numerical matrix if parameter values are specified via pmap.
 
 **Warning**: Unlike other Catalyst functions, the `laplacianmat` function will return a `Matrix{Num}` in the symbolic case. This is to allow easier computation of the matrix decomposition of the ODEs, and to ensure that multiplying the sparse form of the matrix will work.
 """
@@ -861,25 +861,27 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     indepspecs = sts[indepidxs]
     depidxs = col_order[(r + 1):end]
     depspecs = sts[depidxs]
-    missingvec = [missing for _ in 1:nullity]
-    constants = MT.unwrap(only(
-        @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] = missing [
-        conserved = true, guess = ones(nullity)]))
 
-    conservedeqs = Equation[]
-    constantdefs = Equation[]
+    # Compute the rhs terms for each conservation constant.
+    rhs_terms = Symbolics.SymbolicT[]
     for (i, depidx) in enumerate(depidxs)
         scaleby = (N[i, depidx] != 1) ? N[i, depidx] : one(eltype(N))
         (scaleby != 0) || error("Error, found a zero in the conservation law matrix where "
-              *
-              "one was not expected.")
+                *
+                "one was not expected.")
         coefs = @view N[i, indepidxs]
-        terms = sum(p -> p[1] / scaleby * p[2], zip(coefs, indepspecs))
-        eq = depspecs[i] ~ constants[i] - terms
-        push!(conservedeqs, eq)
-        eq = constants[i] ~ depspecs[i] + terms
-        push!(constantdefs, eq)
+        push!(rhs_terms, sum(p -> p[1] / scaleby * p[2], zip(coefs, indepspecs)))
     end
+
+    # Declare the conservation constant parameters (`rhs_terms` guesses provides consistency in stored values and (probably) faster initialisation).
+    guesses = [Initial(depspecs[i] + rhs_terms[i]) for i in 1:nullity]
+    constants = MT.unwrap(only(
+        @parameters $(:Γ)[1:nullity] = missing [
+        conserved = true, guess = guesses]))
+
+    # Creates the conservation constant and conservation equation equations.
+    conservedeqs = [depspecs[i] ~ constants[i] - rhs_terms[i] for i in 1:nullity]
+    constantdefs = [constants[i] ~ depspecs[i] + rhs_terms[i] for i in 1:nullity]
 
     # cache in the system
     nps = get_networkproperties(rn)

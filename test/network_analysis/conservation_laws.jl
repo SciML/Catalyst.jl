@@ -97,8 +97,7 @@ end
 ### Simulation & Solving Tests ###
 
 # Test conservation law elimination.
-@test_broken let
-    return false
+let
     # Declares the model
     rn = @reaction_network begin
         (k1, k2), A + B <--> C
@@ -119,38 +118,40 @@ end
     oprob1 = ODEProblem(osys, u0, tspan, p)
     oprob2 = ODEProblem(rn, u0, tspan, p)
     oprob3 = ODEProblem(rn, u0, tspan, p; remove_conserved = true)
-    osol1 = solve(oprob1, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat= 0.2)
-    osol2 = solve(oprob2, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat= 0.2)
-    osol3 = solve(oprob3, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat= 0.2)
+    osol1 = solve(oprob1, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat = 0.2)
+    osol2 = solve(oprob2, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat = 0.2)
+    osol3 = solve(oprob3, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat = 0.2)
     @test osol1[sps] ≈ osol2[sps] ≈ osol3[sps]
 
-    # Checks that steady states found using nonlinear solving and steady state simulations are identical.
-    nsys = make_rre_algeqs(rn; remove_conserved = true, conseqs_remake_warn = false)
-    nsys_ss = structural_simplify(nsys)
-    nsys = complete(nsys)
-    nprob1 = NonlinearProblem{true}(nsys, u0, p)
-    nprob1b = NonlinearProblem{true}(nsys_ss, u0, p)
-    nprob2 = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false)
-    nprob2b = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false,
-        structural_simplify = true)
-    nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
-    nsol1b = solve(nprob1b, NewtonRaphson(); abstol = 1e-8)
-    nsol2 = solve(nprob2, NewtonRaphson(); abstol = 1e-8)
-    nsol2b = solve(nprob2b, NewtonRaphson(); abstol = 1e-8)
-    # Nonlinear problems cannot find steady states properly without removing conserved species.
+    @test_broken let # SteadyStateProblem issue: https://github.com/SciML/ModelingToolkit.jl/issues/4177
+        # Checks that steady states found using nonlinear solving and steady state simulations are identical.
+        nsys = make_rre_algeqs(rn; remove_conserved = true, conseqs_remake_warn = false)
+        nsys_ss = structural_simplify(nsys)
+        nsys = complete(nsys)
+        nprob1 = NonlinearProblem{true}(nsys, u0, p)
+        nprob1b = NonlinearProblem{true}(nsys_ss, u0, p)
+        nprob2 = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false)
+        nprob2b = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false,
+            structural_simplify = true)
+        nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
+        nsol1b = solve(nprob1b, NewtonRaphson(); abstol = 1e-8)
+        nsol2 = solve(nprob2, NewtonRaphson(); abstol = 1e-8)
+        nsol2b = solve(nprob2b, NewtonRaphson(); abstol = 1e-8)
+        # Nonlinear problems cannot find steady states properly without removing conserved species.
 
-    ssprob1 = SteadyStateProblem{true}(osys, u0, p)
-    ssprob2 = SteadyStateProblem(rn, u0, p)
-    ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true)
-    sssol1 = solve(ssprob1, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-    sssol2 = solve(ssprob2, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-    sssol3 = solve(ssprob3, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
-    @test nsol1[sps] ≈ nsol1b[sps]
-    @test nsol1[sps] ≈ nsol2[sps]
-    @test nsol1[sps] ≈ nsol2b[sps]
-    @test nsol1[sps] ≈ sssol1[sps]
-    @test nsol1[sps] ≈ sssol2[sps]
-    @test nsol1[sps] ≈ sssol3[sps]
+        ssprob1 = SteadyStateProblem{true}(osys, u0, p)
+        ssprob2 = SteadyStateProblem(rn, u0, p)
+        ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true)
+        sssol1 = solve(ssprob1, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
+        sssol2 = solve(ssprob2, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
+        sssol3 = solve(ssprob3, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
+        @test nsol1[sps] ≈ nsol1b[sps]
+        @test nsol1[sps] ≈ nsol2[sps]
+        @test nsol1[sps] ≈ nsol2b[sps]
+        @test nsol1[sps] ≈ sssol1[sps]
+        @test nsol1[sps] ≈ sssol2[sps]
+        @test nsol1[sps] ≈ sssol3[sps]
+    end
 
     # Creates SDEProblems using various approaches.
     u0_sde = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
@@ -245,7 +246,6 @@ end
 
 # Tests system problem updating when conservation laws are eliminated.
 # Checks that the correct values are used after the conservation law species are updated.
-# Here is an issue related to the broken tests: https://github.com/SciML/Catalyst.jl/issues/952
 let
     # Create model and fetch the conservation parameter (Γ).
     t = default_t()
@@ -271,7 +271,7 @@ let
     @test oprob.ps[k2] == 0.2
     @test oprob.ps[Γ[1]] == 3.0
 
-    # Update problem parameters using `remake`.
+    # Update (normal) problem parameters using `remake`.
     oprob_new = remake(oprob; p = [k1 => 0.3, k2 => 0.4])
     @test oprob_new.ps[k1] == 0.3
     @test oprob_new.ps[k2] == 0.4
@@ -279,7 +279,7 @@ let
     @test integrator.ps[k1] == 0.3
     @test integrator.ps[k2] == 0.4
 
-    # Update problem parameters using direct indexing.
+    # Update (normal) problem parameters using direct indexing.
     oprob.ps[k1] = 0.5
     oprob.ps[k2] = 0.6
     @test oprob.ps[k1] == 0.5
@@ -342,7 +342,8 @@ end
 # values. If it has been explicitly updated, the corresponding eliminated quantity will have its
 # value updated to accommodate new Γ/species values (however, we have to manually designate this by setting it to `nothing`).
 # Also checks that quantities are correctly updated in integrators and solutions derived from problems.
-let
+@test_broken let
+    return false # Cases of `remake` does not work for `NonlinearSystem`s with `remove_conserved = true`.
     # Prepares the problem inputs and computes the conservation equation.
     rn = @reaction_network begin
         (k1,k2), 2X1 <--> X2
@@ -357,7 +358,6 @@ let
     oprob = ODEProblem(rn, u0, 1.0, ps; remove_conserved = true)
     sprob = SDEProblem(rn, u0, 1.0, ps; remove_conserved = true)
     # nlprob = NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = false)
-    @test_broken false # Cases of `remake` does not work for `NonlinearSystem`s with `remove_conserved = true`.
     for (prob_old, solver) in zip([oprob, sprob], [Tsit5(), ImplicitEM()])
         # For a couple of iterations, updates the problem, ensuring that when a species is updated:
         # - Only that species and the conservation constant have their values updated.
@@ -490,13 +490,12 @@ let
     rs = complete(rs)
 
     # Checks that simulation reaches known equilibrium.
-    @test_broken false # Currently broken on MTK .
-    # u0 = [:X => [3.0, 9.0]]
-    # ps = [:k => [1.0, 2.0]]
-    # oprob = ODEProblem(rs, u0, (0.0, 1000.0), ps; remove_conserved = true)
-    # sol = solve(oprob, Vern7())
-    # @test sol[X[1]][end] ≈ 8.0
-    # @test sol[X[2]][end] ≈ 4.0
+    u0 = [X => [3.0, 9.0]]
+    ps = [k => [1.0, 2.0]]
+    oprob = ODEProblem(rs, u0, (0.0, 1000.0), ps; remove_conserved = true)
+    sol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
+    @test sol[X[1]][end] ≈ 8.0
+    @test sol[X[2]][end] ≈ 4.0
 end
 
 # Check conservation law elimination warnings (and the disabling of these) for `NonlinearSystem`s
