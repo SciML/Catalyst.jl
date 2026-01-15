@@ -241,7 +241,7 @@ let
     ps = [:k1 => 2, :k2 => 3]
     jprob = JumpProblem(rn, u0, (0.0, 1.0), ps)
     jsol = solve(jprob)
-    @test_broken eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int64 # Jump species do not preserve integer type, need to raise an issue about this.
+    @test_broken eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int64 # Jump species do not preserve integer type: https://github.com/SciML/ModelingToolkit.jl/issues/4170.
     @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float64
 
     # Checks when values are `Float32` (a valid type and should be preserved).
@@ -257,6 +257,6 @@ let
     ps = [:k1 => Int32(2), :k2 => Int32(3)]
     jprob = JumpProblem(rn, u0, (0.0, 1.0), ps)
     jsol = solve(jprob)
-    @test_broken eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int32 # Jump species do not preserve integer type, need to raise an issue about this.
+    @test_broken eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int32 # Jump species do not preserve integer type: https://github.com/SciML/ModelingToolkit.jl/issues/4170.
     @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float64
 end
