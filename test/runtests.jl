@@ -63,10 +63,9 @@ end
     end
 
     if GROUP == "All" || GROUP == "IO"
-        # BROKEN
         @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
         # BROKEN
-        #@time @safetestset "Latexify" begin include("visualisation/latexify.jl") end # `Latexify.@generate_test latexify(rn)` suddenly generates tests that error.
+        #@time @safetestset "Latexify" begin include("visualisation/latexify.jl") end # https://github.com/SciML/Catalyst.jl/issues/1352
     end
 
     if GROUP == "All" || GROUP == "Spatial"

@@ -129,8 +129,7 @@ let
 end
 
 # Tests using various more obscure types of getters.
-@test_broken let
-    return false # Metadata interface changed, need to check wit Aayush about the new one.
+let
     # Create LatticeReactionsSystems.
     t = default_t()
     @parameters p d kB kD
@@ -141,7 +140,7 @@ end
         Reaction(kB, [X], [X2], [2], [1])
         Reaction(kD, [X2], [X], [1], [2])
     ]
-    @named rs = ReactionSystem(rxs, t; metadata = "Metadata string")
+    @named rs = ReactionSystem(rxs, t; metadata = [MiscSystemData => "Metadata string"])
     rs = complete(rs)
     tr = @transport_reaction D X2
     lrs = LatticeReactionSystem(rs, [tr], small_2d_cartesian_grid)
@@ -152,7 +151,7 @@ end
     @test isequal(ModelingToolkitBase.get_iv(lrs), t)
     @test isequal(equations(lrs), rxs)
     @test isequal(unknowns(lrs), [X, X2])
-    @test isequal(ModelingToolkitBase.get_metadata(lrs), "Metadata string")
+    @test isequal(ModelingToolkitBase.getmetadata(lrs, MiscSystemData, nothing), "Metadata string")
     @test isequal(ModelingToolkitBase.get_eqs(lrs), rxs)
     @test isequal(ModelingToolkitBase.get_unknowns(lrs), [X, X2])
     @test isequal(ModelingToolkitBase.get_ps(lrs), [p, d, kB, kD])

@@ -173,7 +173,7 @@ let
     u0 = [X => 0.1, A => 1.0]
     ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
-    @test_broken sssol[[X,A]] ≈ [2.0, 3.0] # The ss solve on the previous line now fails (sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)).
+    @test_broken sssol[[X,A]] ≈ [2.0, 3.0] # The previous lines fails: https://github.com/SciML/ModelingToolkit.jl/issues/4174
 end
 
 
@@ -495,7 +495,7 @@ let
     coupled_rs = complete(coupled_rs)
 
     # Set simulation inputs.
-    u0 = [X => 100.0, A => 1.0]
+    u0 = [X => 100.0]
     tspan = (0.0, 1000.0)
     ps = Dict([p => 1.0, d => 0.01, k1 => 3.0, k2 => 4.0])
 
@@ -503,9 +503,9 @@ let
     @test_throws Exception SDEProblem(coupled_rs, u0, tspan, ps)
 
     # Checks the algebraic equation holds.
-    sprob = SDEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
-    ssol = solve(sprob, ImplicitEM())
-    @test_broken (2 .+ ps[k1] * ssol[:A]) ≈ (3 .+ ps[k2] * ssol[:X]) # Currently there is an initialization failure I do not understand https://github.com/SciML/ModelingToolkit.jl/issues/4164
+    sprob = SDEProblem(coupled_rs, u0, tspan, ps; guesses = [A => 1.0], structural_simplify = true, warn_initialize_determined = false)
+    ssol = solve(sprob, ImplicitEM(); abstol = 1e-5, reltol = 1e-5)
+    @test (2 .+ ps[k1] * ssol[:A]) ≈ (3 .+ ps[k2] * ssol[:X]) atol = 1e-1 rtol = 1e-1
 end
 
 

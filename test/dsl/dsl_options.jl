@@ -1004,8 +1004,7 @@ end
 # Checks creation of basic network.
 # Check indexing of output solution.
 # Check that DAE is solved correctly.
-@test_broken let
-    return false # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4164
+let
     rn = @reaction_network rn begin
         @parameters k d
         @variables X(t) Y(t)
@@ -1035,15 +1034,14 @@ end
     @test equations(rn)[1] isa Reaction
     @test equations(rn)[2] isa Reaction
     @test equations(rn)[3] isa Equation
-    @test equations(rn)[3] isa Equation
     @test isequal(equations(rn)[3], X + 5 ~ k*S)
     @test isequal(equations(rn)[4], 3Y + X  ~ S + X*d)
 
     # Checks that simulations has the correct output
     u0 = Dict([S => 1 + rand(rng)])
     ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
-    oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify=true)
-    sol = solve(oprob, Rosenbrock23(); abstol=1e-9, reltol=1e-9)
+    oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify = true, guesses = [X => 1 + rand(rng), Y => 1 + rand(rng)])
+    sol = solve(oprob, Rosenbrock23(); abstol = 1e-9, reltol = 1e-9)
     @test sol[S][end] ≈ sol.ps[p]/sol.ps[d]
     @test sol[X] .+ 5 ≈ sol.ps[k] .*sol[S]
     @test 3*sol[Y] .+ sol[X] ≈ sol[S] .+ sol[X].*sol.ps[d]
@@ -1072,14 +1070,13 @@ end
 # Tries with interpolating a value into an equation.
 # Tries using rn.X notation for designating variables.
 # Tries for empty parameter vector.
-@test_broken let
-    return false # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4164
+let
     c = 6.0
     rn = complete(@reaction_network begin
         @variables X(t)
         @equations 2X ~ $c - X
     end)
-    oprob = ODEProblem(rn, [], (0.0, 100.0), []; structural_simplify = true)
+    oprob = ODEProblem(rn, [], (0.0, 100.0), []; structural_simplify = true, guesses = [rn.X => 1.0])
     sol = solve(oprob, Rosenbrock23(); abstol = 1e-9, reltol = 1e-9)
     @test sol[rn.X][end] ≈ 2.0
 end
@@ -1117,8 +1114,7 @@ end
 
 # Check for combined differential and algebraic equation.
 # Check indexing of output solution using Symbols.
-@test_broken let
-    return false # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4164.
+let
     rn = @reaction_network rn begin
         @parameters k
         @variables X(t) Y(t)
@@ -1147,12 +1143,11 @@ end
     @test equations(rn)[1] isa Reaction
     @test equations(rn)[2] isa Reaction
     @test equations(rn)[3] isa Equation
-    @test equations(rn)[3] isa Equation
 
     # Checks that simulations has the correct output
-    u0 = Dict([S => 1 + rand(rng), X => 1 + rand(rng), Y => 1 + rand(rng)])
+    u0 = Dict([S => 1 + rand(rng), Y => 1 + rand(rng)])
     ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
-    oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify=true)
+    oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify = true, guesses = [X => 1 + rand(rng)])
     sol = solve(oprob, Rosenbrock23(); abstol=1e-9, reltol=1e-9)
     @test sol[:S][end] ≈ sol.ps[:p]/sol.ps[:d]
     @test sol[:X] .+ 5 ≈ sol.ps[:k] .*sol[:S]

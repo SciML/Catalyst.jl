@@ -171,9 +171,12 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
         @string_append! reaction_system_string ", combinatoric_ratelaws = false"
     end
 
-    # Potentially appends `ReactionSystem` metadata value(s). Weird composite types are not supported.
+    # Potentially appends `ReactionSystem` metadata value(s).
     if ModelingToolkitBase.get_metadata(rs) != Base.ImmutableDict(ModelingToolkitBase.MutableCacheKey => Dict{DataType, Any}())
-        @string_append! reaction_system_string ", metadata = $(x_2_string(MT.get_metadata(rs)))"
+        md_string = ", metadata = $(x_2_string(MT.get_metadata(rs)))"
+        md_string = replace(md_string, "ModelingToolkitBase.MutableCacheKey => Dict([]), " => "") # These are added internally by MTK. Unnecessary and makes code less readable.
+        md_string = replace(md_string, ", ModelingToolkitBase.MutableCacheKey => Dict([])" => "")
+        @string_append! reaction_system_string md_string
     end
 
     # Finalises the call. Appends potential annotation. If the system is complete, add a call for this.

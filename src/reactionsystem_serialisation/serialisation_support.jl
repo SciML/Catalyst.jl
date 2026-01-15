@@ -152,6 +152,7 @@ x_2_string(x::Symbol) = ":$x"
 x_2_string(x::Number) = string(x)
 x_2_string(x::Pair) = "$(x_2_string(x[1])) => $(x_2_string(x[2]))"
 x_2_string(x::Nothing) = "nothing"
+x_2_string(x::DataType) = "$x"
 function x_2_string(x::Vector)
     output = "["
     for val in x
@@ -166,12 +167,13 @@ function x_2_string(x::Tuple)
     end
     return get_substring_end(output, 1, -2) * ")"
 end
-function x_2_string(x::Dict)
+function x_2_string(x::Union{Base.ImmutableDict{DataType, Any}, Dict}) # Base.ImmutableDict{DataType, Any} is for writing metadata.
     output = "Dict(["
     for key in keys(x)
         @string_append! output x_2_string(key) " => " x_2_string(x[key]) ", "
     end
-    return get_substring_end(output, 1, -2) * "])"
+    output = isempty(keys(x)) ? output : Catalyst.get_substring_end(output, 1, -2)
+    return output * "])"
 end
 function x_2_string(x::Union{Matrix, Symbolics.Arr{Any, 2}})
     output = "["

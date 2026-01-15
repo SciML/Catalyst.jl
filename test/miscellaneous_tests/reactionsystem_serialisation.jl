@@ -91,8 +91,7 @@ end
 # and metadata recorded correctly (these are not considered for system equality is tested).
 # Checks that various types (processed by the `x_2_string` function) are serialised properly.
 # Checks that `ReactionSystem` and `Reaction` metadata fields are recorded properly.
-@test_broken let
-    return false # Problem with metadata. Awaiting input from Aayush how system-level metadata is handled these days.
+let
     # Prepares various stuff to add as metadata.
     bool_md = false
     int_md = 3
@@ -157,8 +156,8 @@ end
         Reaction(d2 + D2, [V2], [], metadata = [:misc => dict_md])
         Reaction(e2 + E2, [W2], [], metadata = [:misc => mat_md])
     ]
-    @named rs2 = ReactionSystem(rxs2, t; metadata = dict_md)
-    @named rs1 = ReactionSystem(rxs1, t; systems = [rs2], metadata = mat_md)
+    @named rs2 = ReactionSystem(rxs2, t; metadata = [MiscSystemData => dict_md])
+    @named rs1 = ReactionSystem(rxs1, t; systems = [rs2], metadata = [MiscSystemData => mat_md])
     rs = complete(rs1)
 
     # Loads the model and checks that it is correct. Removes the saved file
@@ -260,8 +259,7 @@ end
 # variables, (differential and algebraic) equations, observables (continuous and discrete) events,
 # and with various species/variables/parameter/reaction/system metadata.
 # Tests for complete and incomplete system.
-@test_broken let
-    return false # Problem with metadata. Awaiting input from Aayush how system-level metadata is handled these days.
+let
     # Prepares spatial independent variables (technically not used and only supplied to systems).
     sivs = @variables x y z [description="A spatial independent variable."]
 
@@ -339,23 +337,23 @@ end
     # Creates the systems.
     @named rs_4 = ReactionSystem(eqs_4, t; continuous_events = continuous_events_4,
                                 discrete_events = discrete_events_4, spatial_ivs = sivs,
-                                metadata = "System 4", systems = [])
+                                metadata = [MiscSystemData => "System 4"], systems = [])
     @named rs_2 = ReactionSystem(eqs_2, t; continuous_events = continuous_events_2,
                                 discrete_events = discrete_events_2, spatial_ivs = sivs,
-                                metadata = "System 2", systems = [])
+                                metadata = [MiscSystemData => "System 2"], systems = [])
     @named rs_3 = ReactionSystem(eqs_3, t; continuous_events = continuous_events_3,
                                 discrete_events = discrete_events_3, spatial_ivs = sivs,
-                                metadata = "System 3", systems = [rs_4])
+                                metadata = [MiscSystemData => "System 3"], systems = [rs_4])
     @named rs_1 = ReactionSystem(eqs_1, t; continuous_events = continuous_events_1,
                                 discrete_events = discrete_events_1, spatial_ivs = sivs,
-                                metadata = "System 1", systems = [rs_2, rs_3])
+                                metadata = [MiscSystemData => "System 1"], systems = [rs_2, rs_3])
     rs = complete(rs_1)
 
     # Checks that the correct system is saved (both complete and incomplete ones).
     save_reactionsystem("serialised_rs_incomplete.jl", rs_1; safety_check = false)
-    @test isequal(rs_1, include("../serialised_rs_incomplete.jl"))
+    @test_broken isequal(rs_1, include("../serialised_rs_incomplete.jl")) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
     save_reactionsystem("serialised_rs_complete.jl", rs; safety_check = false)
-    @test isequal(rs, include("../serialised_rs_complete.jl"))
+    @test_broken isequal(rs, include("../serialised_rs_complete.jl")) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
     rm("serialised_rs_incomplete.jl")
     rm("serialised_rs_complete.jl")
 end
