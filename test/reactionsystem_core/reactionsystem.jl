@@ -163,8 +163,7 @@ let
 end
 
 # Test with JumpSystem.
-@test_broken let # @Sam, something with the internal jump structures have changed, can you have a look so that test is updated correctly, not exactly what changes would be considred preserving the test.
-    return false
+let 
     @species A(t) B(t) C(t) D(t) E(t) F(t)
     rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
         Reaction(k[2], [B], nothing),            # B -> 0
@@ -194,9 +193,9 @@ end
     midxs = 1:14
     cidxs = 15:18
     vidxs = 19:20
-    @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.MassActionJump, midxs))
-    @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.ConstantRateJump, cidxs))
-    @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.VariableRateJump, vidxs))
+    @test all(map(i -> typeof(MT.jumps(js)[i]) <: JumpProcesses.MassActionJump, midxs))
+    @test all(map(i -> typeof(MT.jumps(js)[i]) <: JumpProcesses.ConstantRateJump, cidxs))
+    @test all(map(i -> typeof(MT.jumps(js)[i]) <: JumpProcesses.VariableRateJump, vidxs))
 
     p = rand(rng, length(k))
     pmap = [k => p]
@@ -206,65 +205,67 @@ end
     jumps = Vector{Union{ConstantRateJump, MassActionJump, VariableRateJump}}(undef,
                                                                               length(rxs))
 
-    jumps[1] = MassActionJump(p[1], Vector{Pair{Int, Int}}(), [1 => 1])
-    jumps[2] = MassActionJump(p[2], [2 => 1], [2 => -1])
-    jumps[3] = MassActionJump(p[3], [1 => 1], [1 => -1, 3 => 1])
-    jumps[4] = MassActionJump(p[4], [3 => 1], [1 => 1, 2 => 1, 3 => -1])
-    jumps[5] = MassActionJump(p[5], [3 => 1], [1 => 2, 3 => -1])
-    jumps[6] = MassActionJump(p[6], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1])
-    jumps[7] = MassActionJump(p[7], [2 => 2], [1 => 1, 2 => -2])
-    jumps[8] = MassActionJump(p[8], [1 => 1, 2 => 1], [2 => -1, 3 => 1])
-    jumps[9] = MassActionJump(p[9], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1, 4 => 1])
-    jumps[10] = MassActionJump(p[10], [1 => 2], [1 => -2, 3 => 1, 4 => 1])
-    jumps[11] = MassActionJump(p[11], [1 => 2], [1 => -1, 2 => 1])
-    jumps[12] = MassActionJump(p[12], [1 => 1, 2 => 3, 3 => 4],
-                               [1 => -1, 2 => -3, 3 => -2, 4 => 3])
-    jumps[13] = MassActionJump(p[13], [1 => 3, 2 => 1], [1 => -3, 2 => -1])
-    jumps[14] = MassActionJump(p[14], Vector{Pair{Int, Int}}(), [1 => 2])
+    @test_broken let # @Sam: From here on there are some errors relating to quite internal jump-related structures. I think it would be best if you fixed it so that it is done right and we don't remove what we intend to test.
+        jumps[1] = MassActionJump(p[1], Vector{Pair{Int, Int}}(), [1 => 1])
+        jumps[2] = MassActionJump(p[2], [2 => 1], [2 => -1])
+        jumps[3] = MassActionJump(p[3], [1 => 1], [1 => -1, 3 => 1])
+        jumps[4] = MassActionJump(p[4], [3 => 1], [1 => 1, 2 => 1, 3 => -1])
+        jumps[5] = MassActionJump(p[5], [3 => 1], [1 => 2, 3 => -1])
+        jumps[6] = MassActionJump(p[6], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1])
+        jumps[7] = MassActionJump(p[7], [2 => 2], [1 => 1, 2 => -2])
+        jumps[8] = MassActionJump(p[8], [1 => 1, 2 => 1], [2 => -1, 3 => 1])
+        jumps[9] = MassActionJump(p[9], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1, 4 => 1])
+        jumps[10] = MassActionJump(p[10], [1 => 2], [1 => -2, 3 => 1, 4 => 1])
+        jumps[11] = MassActionJump(p[11], [1 => 2], [1 => -1, 2 => 1])
+        jumps[12] = MassActionJump(p[12], [1 => 1, 2 => 3, 3 => 4],
+                                [1 => -1, 2 => -3, 3 => -2, 4 => 3])
+        jumps[13] = MassActionJump(p[13], [1 => 3, 2 => 1], [1 => -3, 2 => -1])
+        jumps[14] = MassActionJump(p[14], Vector{Pair{Int, Int}}(), [1 => 2])
 
-    jumps[15] = ConstantRateJump((u, p, t) -> p[15] * u[1] / (2 + u[1]),
-                                 integrator -> (integrator.u[1] -= 1))
-    jumps[16] = ConstantRateJump((u, p, t) -> p[16],
-                                 integrator -> (integrator.u[1] -= 1; integrator.u[2] += 1))
-    jumps[17] = ConstantRateJump((u, p, t) -> p[17] * u[1] * exp(u[2]) * binomial(u[3], 2),
-                                 integrator -> (integrator.u[3] -= 2; integrator.u[4] += 1))
-    jumps[18] = ConstantRateJump((u, p, t) -> p[18] * u[2],
-                                 integrator -> (integrator.u[2] += 2))
+        jumps[15] = ConstantRateJump((u, p, t) -> p[15] * u[1] / (2 + u[1]),
+                                    integrator -> (integrator.u[1] -= 1))
+        jumps[16] = ConstantRateJump((u, p, t) -> p[16],
+                                    integrator -> (integrator.u[1] -= 1; integrator.u[2] += 1))
+        jumps[17] = ConstantRateJump((u, p, t) -> p[17] * u[1] * exp(u[2]) * binomial(u[3], 2),
+                                    integrator -> (integrator.u[3] -= 2; integrator.u[4] += 1))
+        jumps[18] = ConstantRateJump((u, p, t) -> p[18] * u[2],
+                                    integrator -> (integrator.u[2] += 2))
 
-    jumps[19] = VariableRateJump((u, p, t) -> p[19] * u[4] * t,
-                                 integrator -> (integrator.u[4] -= 1; integrator.u[5] += 1))
-    jumps[20] = VariableRateJump((u, p, t) -> p[20] * t * u[1] * binomial(u[4], 2) * u[5],
-                                 integrator -> (integrator.u[4] -= 2; integrator.u[5] -= 1; integrator.u[6] += 2))
+        jumps[19] = VariableRateJump((u, p, t) -> p[19] * u[4] * t,
+                                    integrator -> (integrator.u[4] -= 1; integrator.u[5] += 1))
+        jumps[20] = VariableRateJump((u, p, t) -> p[20] * t * u[1] * binomial(u[4], 2) * u[5],
+                                    integrator -> (integrator.u[4] -= 2; integrator.u[5] -= 1; integrator.u[6] += 2))
 
-    unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(js)))
-    jprob = JumpProblem(js, merge(Dict(u0map), Dict(pmap)), (0.0, 1.0))
-    mtkpars = jprob.p
-    jspmapper = MT.JumpSysMajParamMapper(js, mtkpars)
-    symmaj = MT.assemble_maj(equations(js).x[1], unknownoid, jspmapper)
-    maj = MassActionJump(symmaj.param_mapper(mtkpars), symmaj.reactant_stoch, symmaj.net_stoch,
-                         symmaj.param_mapper, scale_rates = false)
-    for i in midxs
-        @test abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100 * eps()
-        @test jumps[i].reactant_stoch == maj.reactant_stoch[i]
-        @test jumps[i].net_stoch == maj.net_stoch[i]
-    end
-    for i in cidxs
-        crj = MT.assemble_crj(js, equations(js)[i], unknownoid)
-        @test isapprox(crj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
-        fake_integrator1 = (u = zeros(6), p = mtkpars, t = 0.0)
-        fake_integrator2 = (u = zeros(6), p, t = 0.0)
-        crj.affect!(fake_integrator1)
-        jumps[i].affect!(fake_integrator2)
-        @test fake_integrator1.u == fake_integrator2.u
-    end
-    for i in vidxs
-        crj = MT.assemble_vrj(js, equations(js)[i], unknownoid)
-        @test isapprox(crj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
-        fake_integrator1 = (u = zeros(6), p = mtkpars, t = 0.0)
-        fake_integrator2 = (u = zeros(6), p, t = 0.0)
-        crj.affect!(fake_integrator1)
-        jumps[i].affect!(fake_integrator2)
-        @test fake_integrator1.u == fake_integrator2.u
+        unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(js)))
+        jprob = JumpProblem(js, merge(Dict(u0map), Dict(pmap)), (0.0, 1.0))
+        mtkpars = jprob.p
+        jspmapper = MT.JumpSysMajParamMapper(js, mtkpars)
+        symmaj = MT.assemble_maj(equations(js).x[1], unknownoid, jspmapper)
+        maj = MassActionJump(symmaj.param_mapper(mtkpars), symmaj.reactant_stoch, symmaj.net_stoch,
+                            symmaj.param_mapper, scale_rates = false)
+        for i in midxs
+            @test abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100 * eps()
+            @test jumps[i].reactant_stoch == maj.reactant_stoch[i]
+            @test jumps[i].net_stoch == maj.net_stoch[i]
+        end
+        for i in cidxs
+            crj = MT.assemble_crj(js, equations(js)[i], unknownoid)
+            @test isapprox(crj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
+            fake_integrator1 = (u = zeros(6), p = mtkpars, t = 0.0)
+            fake_integrator2 = (u = zeros(6), p, t = 0.0)
+            crj.affect!(fake_integrator1)
+            jumps[i].affect!(fake_integrator2)
+            @test fake_integrator1.u == fake_integrator2.u
+        end
+        for i in vidxs
+            crj = MT.assemble_vrj(js, equations(js)[i], unknownoid)
+            @test isapprox(crj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
+            fake_integrator1 = (u = zeros(6), p = mtkpars, t = 0.0)
+            fake_integrator2 = (u = zeros(6), p, t = 0.0)
+            crj.affect!(fake_integrator1)
+            jumps[i].affect!(fake_integrator2)
+            @test fake_integrator1.u == fake_integrator2.u
+        end
     end
 end
 
@@ -452,8 +453,7 @@ function gs!(dg, u, p, t)
 end
 
 # Tests for BC and constant species.
-@test_broken let # @Sam, something boundary condition species that I am unsure what desired test beahviour is, can you have a look?
-    return false
+let
     @parameters k1 k2 A [isconstantspecies = true]
     @species B(t) C(t) [isbcspecies = true] D(t) E(t)
     Dt = default_time_deriv()
@@ -491,60 +491,62 @@ end
     end
 
     # Test sde systems.
-    # ERROR HERE: Something with C being a boundary condition species means that it has a noise
-    # equation now, but no normal equations.
-    rxs = [(@reaction k1, $A --> B),
-        (@reaction k2, B --> $A),
-        (@reaction k1, $C + D --> E + $C),
-        (@reaction k2, E + $C --> $C + D)]
-    @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
-    rs = complete(rs)
-    ssys = complete(make_cle_sde(rs))
-    @test issetequal(MT.get_unknowns(ssys), [B, C, D, E])
-    _ps = filter(!isinitial, MT.get_ps(ssys))
-    @test issetequal(_ps, [A, k1, k2])
-    du1 = zeros(4)
-    du2 = zeros(4)
-    sprob = SDEProblem(ssys, u0map, tspan, pmap; check_length = false)
-    sprob.f(du1, sprob.u0, sprob.p, 1.0)
-    fs!(du2, u0, p, 1.0)
-    @test isapprox(du1, du2)
-    dg1 = zeros(4, 4)
-    dg2 = zeros(4, 4)
-    sprob.g(dg1, sprob.u0, sprob.p, 1.0)
-    gs!(dg2, u0, p, t)
-    @test isapprox(dg1, dg2)
-
-    # Test jump systems.
-    rxs = [(@reaction k1, $A --> B),
-        (@reaction k2, B --> $A),
-        (@reaction k1, $C + D --> E + $C),
-        (@reaction k2, $C + E --> $C + D),
-        (@reaction k1 * t, $A + $C --> B + $C),
-        (@reaction k1 * B, 2 * $A + $C --> $C + B)]
-    @named rs = ReactionSystem(rxs, t)
-    rs = complete(rs)
-    jsys = complete(make_sck_jump(rs))
-    @test issetequal(unknowns(jsys), [B, C, D, E])
-    @test issetequal(parameters(jsys), [k1, k2, A])
-    majrates = [k1 * A, k1, k2]
-    majrs = [[], [C => 1, D => 1], [C => 1, E => 1]]
-    majns = [[B => 1], [D => -1, E => 1], [D => 1, E => -1]]
-    for (i, maj) in enumerate(equations(jsys).x[1])
-        @test isequal(maj.scaled_rates, majrates[i])
-        @test issetequal(maj.reactant_stoch, majrs[i])
-        @test issetequal(maj.net_stoch, majns[i])
+    @test_broken let # @Sam: Not fully sure. Leaving it to you for now in case it is BC species-related (I barely know what they do...). Can try to circle back to it myself some time later though.
+        rxs = [(@reaction k1, $A --> B),
+            (@reaction k2, B --> $A),
+            (@reaction k1, $C + D --> E + $C),
+            (@reaction k2, E + $C --> $C + D)]
+        @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
+        rs = complete(rs)
+        ssys = complete(make_cle_sde(rs))
+        @test issetequal(MT.get_unknowns(ssys), [B, C, D, E])
+        _ps = filter(!isinitial, MT.get_ps(ssys))
+        @test issetequal(_ps, [A, k1, k2])
+        du1 = zeros(4)
+        du2 = zeros(4)
+        sprob = SDEProblem(ssys, u0map, tspan, pmap; check_length = false)
+        sprob.f(du1, sprob.u0, sprob.p, 1.0)
+        fs!(du2, u0, p, 1.0)
+        @test isapprox(du1, du2)
+        dg1 = zeros(4, 4)
+        dg2 = zeros(4, 4)
+        sprob.g(dg1, sprob.u0, sprob.p, 1.0)
+        gs!(dg2, u0, p, t)
+        @test isapprox(dg1, dg2)
     end
-    @test isempty(equations(jsys).x[2])
-    vrj1 = equations(jsys).x[3][1]
-    @test isequal(vrj1.rate, k2 * B)
-    @test issetequal(vrj1.affect!, [B ~ B - 1])
-    vrj2 = equations(jsys).x[3][2]
-    @test isequal(vrj2.rate, k1 * t * A * C)
-    @test issetequal(vrj2.affect!, [B ~ B + 1])
-    vrj3 = equations(jsys).x[3][3]
-    @test isequal(vrj3.rate, k1 * B * A * (A - 1) / 2 * C)
-    @test issetequal(vrj3.affect!, [B ~ B + 1])
+
+    @test_broken let # @Sam: The error is related to Jump structure stuff, can you have a look?. Think (hope) it might be a straightforward fix.
+        # Test jump systems.
+        rxs = [(@reaction k1, $A --> B),
+            (@reaction k2, B --> $A),
+            (@reaction k1, $C + D --> E + $C),
+            (@reaction k2, $C + E --> $C + D),
+            (@reaction k1 * t, $A + $C --> B + $C),
+            (@reaction k1 * B, 2 * $A + $C --> $C + B)]
+        @named rs = ReactionSystem(rxs, t)
+        rs = complete(rs)
+        jsys = complete(make_sck_jump(rs))
+        @test issetequal(unknowns(jsys), [B, C, D, E])
+        @test issetequal(parameters(jsys), [k1, k2, A])
+        majrates = [k1 * A, k1, k2]
+        majrs = [[], [C => 1, D => 1], [C => 1, E => 1]]
+        majns = [[B => 1], [D => -1, E => 1], [D => 1, E => -1]]
+        for (i, maj) in enumerate(MT.jumps(jsys).x[1])
+            @test isequal(maj.scaled_rates, majrates[i])
+            @test issetequal(maj.reactant_stoch, majrs[i])
+            @test issetequal(maj.net_stoch, majns[i])
+        end
+        @test isempty(equations(jsys).x[2])
+        vrj1 = equations(jsys).x[3][1]
+        @test isequal(vrj1.rate, k2 * B)
+        @test issetequal(vrj1.affect!, [B ~ B - 1])
+        vrj2 = equations(jsys).x[3][2]
+        @test isequal(vrj2.rate, k1 * t * A * C)
+        @test issetequal(vrj2.affect!, [B ~ B + 1])
+        vrj3 = equations(jsys).x[3][3]
+        @test isequal(vrj3.rate, k1 * B * A * (A - 1) / 2 * C)
+        @test issetequal(vrj3.affect!, [B ~ B + 1])
+    end
 end
 
 # Test that jump solutions actually run correctly for constants and BCs.
@@ -657,12 +659,11 @@ let
         only(@variables X(t))
     end
 
+    @test_broken false # (not sure how to mark a `@test_throws` as broken). Awaiting fix in MT: https://github.com/SciML/ModelingToolkit.jl/issues/4092
     # Checks that creating systems with different in combination produces errors.
-    # Currently broken on MTK, potentially fix in Catalyst once sorted out there (https://github.com/SciML/ModelingToolkit.jl/issues/4092).
     @parameters d
     @species X(t)
     rx = Reaction(d, [X], [])
-    @test_broken false # (not sure how to mark a `@test_throws` as broken)
     # @test_throws ReactionSystem([rx], t, [X, X_sp,], [d, X_p]; name = :rs)
     # @test_throws ReactionSystem([rx], t, [X, X, X_v], [d, X_p]; name = :rs)
     # @test_throws ReactionSystem([rx], t, [X, X_sp, X_v], [d]; name = :rs)
@@ -972,7 +973,7 @@ let
     @test ModelingToolkitBase.getmetadata(rs1, MiscSystemData, nothing) == "Metadata"
     @test ModelingToolkitBase.getmetadata(rs2, MiscSystemData, nothing) == ones(2, 3)
     @test ModelingToolkitBase.getmetadata(complete(rs1), MiscSystemData, nothing) == "Metadata"
-    @test ModelingToolkitBase.getmetadata(complete(rs2), MiscSystemData, nothing) == ones(2, 3)
+    @test_broken ModelingToolkitBase.getmetadata(complete(rs2), MiscSystemData, nothing) == ones(2, 3) # Weird and obscure Catalyst bug: https://github.com/SciML/Catalyst.jl/issues/1353.
 end
 
 # Tests construction of empty reaction networks.
@@ -1041,7 +1042,7 @@ end
 
 ########## tests related to hybrid systems ##########
 
-@test_broken let # @Sam, I have left everything regarding hybrid tests for you/for when eveyrthing else is finished.
+@test_broken let # @Sam: I will leave hybrid-related stuff to you.
     return false
     # massactionjumps(js::JumpSystem) = equations(js).x[1]
     # constantratejumps(js::JumpSystem) = equations(js).x[2]

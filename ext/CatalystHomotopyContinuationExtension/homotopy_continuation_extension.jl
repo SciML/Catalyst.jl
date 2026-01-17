@@ -49,12 +49,28 @@ end
 # For a given reaction system, parameter values, and initial conditions, find the polynomial that HC solves to find steady states.
 function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     # Creates the appropriate nonlinear system, and converts parameters to a form that can
-    # be substituted in later.
+    # be substituted in later. U's not involved conservation laws get dummy values.
     rs = Catalyst.expand_registered_functions(rs)
     ns = complete(make_rre_algeqs(rs; remove_conserved = true, conseqs_remake_warn = false))
-    pre_varmap = [symmap_to_varmap(rs, u0)..., symmap_to_varmap(rs, ps)...]
+    pre_varmap = merge(Dict(symmap_to_varmap(rs, u0)), Dict(symmap_to_varmap(rs, ps)))
     Catalyst.conservationlaw_errorcheck(rs, pre_varmap)
-    p_dict = make_p_val_dict(pre_varmap, rs, ns)
+    for u in setdiff(unknowns(rs), Catalyst.conslaw_species(rs))
+        haskey(pre_varmap, u) || (pre_varmap[u] = -1.0)        
+    end
+    nprob_dummy = NonlinearProblem(ns, pre_varmap)
+    p_dict_pre = Dict(p => nprob_dummy.ps[p] for p in parameters(ns))
+
+    # Expands vector variable stored in the dictionary so they can be substituted into the polynomial (e.g. from `Γ` to `Γ[1]` and `Γ[2]`)
+    p_dict = typeof(p_dict_pre)()
+    for (k,v) in p_dict_pre
+        if v isa AbstractArray
+            for i = 1:length(v)
+                p_dict[k[i]] = v[i]
+            end
+        else
+        p_dict[k] = v
+        end
+    end
 
     # Step by step convert the equation to something HC can work on (adds conserved equations,
     # inserts parameter values and put everything on a side, converts e.g. 2.0 to 2, remove

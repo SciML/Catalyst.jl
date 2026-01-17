@@ -123,7 +123,7 @@ let
     osol3 = solve(oprob3, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat = 0.2)
     @test osol1[sps] ≈ osol2[sps] ≈ osol3[sps]
 
-    @test_broken let # SteadyStateProblem issue: https://github.com/SciML/ModelingToolkit.jl/issues/4177
+    @test_broken let # SteadyStateProblem issue: https://github.com/SciML/ModelingToolkit.jl/issues/4177. NonlinearProblems work.
         # Checks that steady states found using nonlinear solving and steady state simulations are identical.
         nsys = make_rre_algeqs(rn; remove_conserved = true, conseqs_remake_warn = false)
         nsys_ss = structural_simplify(nsys)

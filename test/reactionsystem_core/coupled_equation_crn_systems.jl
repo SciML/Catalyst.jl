@@ -173,7 +173,7 @@ let
     u0 = [X => 0.1, A => 1.0]
     ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
-    @test_broken sssol[[X,A]] ≈ [2.0, 3.0] # The previous lines fails: https://github.com/SciML/ModelingToolkit.jl/issues/4174
+    @test_broken sssol[[X,A]] ≈ [2.0, 3.0] # The previous lines fails to solve. Issue at: https://github.com/SciML/ModelingToolkit.jl/issues/4174.
 end
 
 
@@ -396,7 +396,7 @@ let
     for mtk_struct in [oprob, oint, osol, sprob, sint, ssol, nlprob, nlint, nlsol]
         # Parameters.
         @test mtk_struct.ps[a1] == 0.1
-        @test_broken mtk_struct.ps[a2] == 2//10 # https://github.com/SciML/ModelingToolkit.jl/issues/4163
+        @test_broken mtk_struct.ps[a2] == 2//10 # An equivalent value (but different nominator and denominator) is generated. https://github.com/SciML/ModelingToolkit.jl/issues/4163.
         @test mtk_struct.ps[a3] == 0.3
         @test mtk_struct.ps[a4] == 4//10
         @test mtk_struct.ps[b1] == 1.0
@@ -559,8 +559,7 @@ end
 
 # Tests that coupled CRN/DAEs with higher order differentials can be created.
 # Tests that these can be solved using ODEs, nonlinear solving, and steady state simulations.
-@test_broken let
-    return false # https://github.com/SciML/ModelingToolkit.jl/issues/4165
+@test_broken let # Cannot generate System, issue in  # https://github.com/SciML/ModelingToolkit.jl/issues/4186.
     # Create coupled model.
     @species X(t)
     @variables A(t) B(t)
@@ -804,10 +803,10 @@ let
         ModelingToolkitBase._iszero(eq1.lhs - eq1.rhs + eq2.lhs - eq2.rhs) && return true
         return false
     end
-    @test_broken is_eqs_equal(rs_1, rs_2) # https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739
-    @test_broken is_eqs_equal(rs_1, rs_3) # https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739
-    @test_broken is_eqs_equal(rs_1, rs_4) # https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739
-    @test_broken is_eqs_equal(rs_1, rs_5) # https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739
+    @test_broken is_eqs_equal(rs_1, rs_2) # Test broken due to https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739, not a Catalyst problem.
+    @test_broken is_eqs_equal(rs_1, rs_3) # Test broken due to https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739, not a Catalyst problem.
+    @test_broken is_eqs_equal(rs_1, rs_4) # Test broken due to https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739, not a Catalyst problem.
+    @test_broken is_eqs_equal(rs_1, rs_5) # Test broken due to https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739, not a Catalyst problem.
     @test is_eqs_equal(rs_1, rs_6)
 end
 

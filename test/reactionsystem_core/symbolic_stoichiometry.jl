@@ -145,8 +145,7 @@ let
 end
 
 # Compares the Catalyst-generated jump process jumps to manually computed jumps.
-@test_broken let
-    return false # `equations(catalyst_jsys)` is currently empty (causing the error). If you want you can have a look @Sam, otherwise I will do later.
+let
     # Manually declares the systems two jumps.
     function r1(u, p, t)
         k, α = p
@@ -176,10 +175,10 @@ end
     jumps = [VariableRateJump(r1, affect1!), VariableRateJump(r2, affect2!)]
 
     # Checks that the Catalyst-generated functions are equal to the manually declared ones.
-    for i in 1:2
+    @test_broken for i in 1:2 # @Sam: something internal jump-related is breaking, can you have a look so that it is fixed right?
         catalyst_jsys = make_sck_jump(rs)
         unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(catalyst_jsys)))
-        catalyst_vrj = ModelingToolkitBase.assemble_vrj(catalyst_jsys, equations(catalyst_jsys)[i], unknownoid)
+        catalyst_vrj = ModelingToolkitBase.assemble_vrj(catalyst_jsys, ModelingToolkitBase.jumps(catalyst_jsys)[i], unknownoid)
         @test isapprox(catalyst_vrj.rate(u0_2, ps_2, τ), jumps[i].rate(u0_2, ps_2, τ))
 
         fake_integrator1 = (u = copy(u0_2), p = ps_2, t = τ)

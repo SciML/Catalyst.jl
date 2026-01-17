@@ -928,9 +928,22 @@ conservedquantities(state, cons_laws) = cons_laws * MT.wrap(state)
 # (not whether these are enough for computing conserved quantities, this will yield a less informative error).
 function conservationlaw_errorcheck(rs, pre_varmap)
     vars_with_vals = Set(p[1] for p in pre_varmap)
-    any(s -> s in vars_with_vals, species(rs)) && return
-    isempty(conservedequations(Catalyst.flatten(rs))) ||
-        error("The system has conservation laws but initial conditions were not provided for some species.")
+    missing_cl_vals = filter(sp -> (sp ∉ vars_with_vals) && !MT.hasdefault(sp), conslaw_species(rs))
+    isempty(missing_cl_vals) && return
+    error("The system has conservation laws but initial conditions were not provided for these conservation law-invovled species: $(missing_cl_vals).")
+end
+
+# Returns a vector with all species that are invovled in conservation laws.
+function conslaw_species(rs::ReactionSystem)
+    conservationlaws(rs)
+    nps = get_networkproperties(rs)
+    cl_sps = OrderedSet{SymbolicT}()
+    cl_ps = OrderedSet{SymbolicT}() # Unused, only an input.
+    iv = Catalyst.get_iv(rs)
+    for cons_eq in nps.constantdefs
+        MT.collect_vars!(cl_sps, cl_ps, cons_eq.rhs, iv)
+    end
+    return cl_sps
 end
 
 """

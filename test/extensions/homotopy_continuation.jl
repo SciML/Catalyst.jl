@@ -14,8 +14,7 @@ include("../test_functions.jl")
 # Tests for Symbolics initial condition input.
 # Tests for different types (Symbol/Symbolics) for parameters and initial conditions.
 # Tests that attempts to find steady states of system with conservation laws, while u0 is not provided, gives an error.
-@test_broken let
-    return false # Conservation laws currently broken.
+let
     # Creates the model.
     rs = @reaction_network begin
         (k1,k2), X1 <--> X2
@@ -60,8 +59,7 @@ end
 # Tests correctness in presence of default values.
 # Tests where some default values are overwritten with other values.
 # Tests where input ps/u0 are tuples with mixed types.
-@test_broken let
-    return false # Conservation laws currently broken.
+let
     rs_1 = @reaction_network begin
         @parameters kX1=1.0 kX2=2.0 kY1=12345.0
         @species X1(t)=0.1 X2(t)=0.2 Y1(t)=12345.0
@@ -70,7 +68,7 @@ end
         (kZ1,kZ2), Z1 <--> Z2
     end
     ps = (:kY1 => 1.0, :kY2 => 3, :kZ1 => 1.0, :kZ2 => 4.0)
-    u0_1 = (:Y1 => 1.0, :Y2 => 3, :Z1 => 10, :Z2 =>40.0)
+    u0_1 = (:Y1 => 1.0, :Y2 => 3, :Z1 => 10, :Z2 => 40.0)
 
     ss_1 = sort(hc_steady_states(rs_1, ps; u0 = u0_1, show_progress = false, seed = 0x000004d1), by = sol->sol[1])
     @test ss_1 ≈ [[0.2, 0.1, 3.0, 1.0, 40.0, 10.0]]
@@ -141,7 +139,7 @@ let
         @variables C(t)
         @equations begin
             D(V) ~ k*X - V
-            C ~ X/V
+            0 ~ X/V - C
         end
         (p/V,d/V), 0 <--> X
     end

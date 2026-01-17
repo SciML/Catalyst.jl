@@ -401,7 +401,7 @@ end
             [V ~ 2.0] => [V ~ Pre(V/2), A ~ Pre(A/2)]
         end
     end
-    @test_broken hybrid == rn # @Sam, I will let you have a look at hybrid tests.
+    @test hybrid == rn
 end
 
 # hybrid models
@@ -432,7 +432,7 @@ end
     rs2 = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents,
         name = :hybrid)
     rs2 = complete(rs2)
-    @test_broken rs == rs2 # @Sam, I will let you have a look at hybrid tests.
+    @test rs == rs2
 end
 
 @test_broken let # @Sam, I will let you have a look at hybrid tests.

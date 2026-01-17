@@ -339,8 +339,7 @@ let
 end
 
 # Solves a nonlinear problem (EnsembleProblems are not possible for these).
-@test_broken let
-    return false # Creation of `NonlinearProblem` fails for this model. Something partially realted to vector variables in observed equations, but seems more complicated.
+@test_broken let # The first `NonlinearProblem` creation call throws error. Seems something related to vector variables. Need more work to isolate.
     base_nlprob = NonlinearProblem(model_vec, u0_alts_vec[1], p_alts_vec[1])
     base_sol = solve(base_nlprob, NewtonRaphson())
     for u0 in u0_alts_vec, p in p_alts_vec

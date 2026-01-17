@@ -435,26 +435,30 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     # make dependent species observables and add conservation constants as parameters
     if remove_conserved
         nps = get_networkproperties(rs)
+        
+        # Caches conservationlaws and only proceed if conserved quantities exist.
+        conservationlaws(rs)
+        if nps.nullity != 0
+            # add the conservation constants as parameters and set their values
+            ps = copy(ps)
+            push!(ps, nps.conservedconst)
 
-        # add the conservation constants as parameters and set their values
-        ps = copy(ps)
-        push!(ps, nps.conservedconst)
+            if treat_conserved_as_eqs
+                # add back previously removed dependent species
+                sts = union(sts, nps.depspecs)
 
-        if treat_conserved_as_eqs
-            # add back previously removed dependent species
-            sts = union(sts, nps.depspecs)
+                # treat conserved eqs as normal eqs (lhs must be `0` in case structural simplify is not used)
+                append!(eqs, [0 ~ eq.rhs - eq.lhs for eq in conservationlaw_constants(rs)])
 
-            # treat conserved eqs as normal eqs
-            append!(eqs, conservedequations(rs))
-
-            # add initialization equations for conserved parameters
-            initialmap = Dict(u => Initial(u) for u in species(rs))
-            conseqs = conservationlaw_constants(rs)
-            initeqs = [Symbolics.substitute(conseq, initialmap) for conseq in conseqs]
-        else
-            # add the dependent species as observed
-            obs = copy(obs)
-            append!(obs, conservedequations(rs))
+                # add initialization equations for conserved parameters
+                initialmap = Dict(u => Initial(u) for u in species(rs))
+                conseqs = conservationlaw_constants(rs)
+                initeqs = [Symbolics.substitute(conseq, initialmap) for conseq in conseqs]
+            else
+                # add the dependent species as observed
+                obs = copy(obs)
+                append!(obs, conservedequations(rs))
+            end
         end
     end
 

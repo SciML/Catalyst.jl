@@ -191,10 +191,9 @@ let
     # the direct method needs no dep graphs so is good as a baseline for comparison
     jprobdm = JumpProblem(rn, u0map, tspan, pmap, Direct(); save_positions = (false, false), rng)
     jprobsd = JumpProblem(rn, u0map, tspan, pmap, SortingDirect(); save_positions = (false, false), rng)
-    @test_broken issetequal(jprobsd.discrete_jump_aggregation.dep_gr, [[1,2],[2]]) # @Sam, can you have a look at these failures? These is deep enough into the jump interfaces that it is probably better you have a look at it.
-    jprobrssa = JumpProblem(rn, u0map, tspan, pmap, RSSA(); save_positions = (false, false), rng)
-    @test_broken issetequal(jprobrssa.discrete_jump_aggregation.vartojumps_map, [[],[],[],[1],[2],[]])
-    @test_broken issetequal(jprobrssa.discrete_jump_aggregation.jumptovars_map, [[5],[5,6]])
+    @test_broken issetequal(jprobsd.discrete_jump_aggregation.dep_gr, [[1,2],[2]]) # @Sam: Something internal jump-related is broken, can you have a look and fix?
+    @test_broken issetequal(jprobrssa.discrete_jump_aggregation.vartojumps_map, [[],[],[],[1],[2],[]]) # @Sam: Something internal jump-related is broken, can you have a look and fix?
+    @test_broken issetequal(jprobrssa.discrete_jump_aggregation.jumptovars_map, [[5],[5,6]]) # @Sam: Something internal jump-related is broken, can you have a look and fix?
     N = 1000  # number of simulations to run
     function getmean(N, prob)
         m1 = 0.0

@@ -114,8 +114,8 @@ let
     end
 
     # Handles `JumpInput`s and `JumpProblem`s (these cannot contain continuous events or variables).
-    @test_broken let # Yields a ERROR: The equations of a system must involve the unknowns/observables. The following equations were found to have no unknowns/observables: 0 ~ α. Can you have a look @Sam?
-        discrete_events = [2.0 => [A ~ A + α]]
+    @test_broken let # @Sam `JumpProblem(jin)` seems broken now. Can you have a look how to get it working?
+        discrete_events = [2.0 => [A ~ Pre(A) + Pre(α)]]
         @named rs_de_2 = ReactionSystem(rxs, t; discrete_events)
         rs_de_2 = complete(rs_de_2)
         jin = JumpInputs(rs_de_2, u0, (0.0, 10.0), ps)
@@ -158,18 +158,18 @@ let
     ]
 
     # Declares various misformatted events .
-    @test_broken false # Some misformatted tests should throw error at this stage, but does not (https://github.com/SciML/ModelingToolkit.jl/issues/2612).
+    @test_broken false # Some miss-formatted events don't yield errors, but should (https://github.com/SciML/ModelingToolkit.jl/issues/4167). These are commented out. 
     continuous_events_bad = [
         X ~ 1.0 => [X ~ 0.5],       # Scalar condition.
         [X ~ 1.0] => X ~ 0.5,       # Scalar affect.
         (X ~ 1.0,) => [X ~ 0.5],    # Tuple condition.
-        #[X ~ 1.0] => (X ~ 0.5,),    # Tuple affect. # Should not work, potentially bad for performance as compared to vectors. (https://github.com/SciML/ModelingToolkit.jl/issues/4167)
+        #[X ~ 1.0] => (X ~ 0.5,),    # Tuple affect. # Should not work, potentially bad for performance as compared to vectors (https://github.com/SciML/ModelingToolkit.jl/issues/4167).
         [X - 1.0] => [X ~ 0.5],     # Non-equation condition (1).
         [X == 1.0] => [X ~ 0.5],    # Non-equation condition (2).
     ]
     discrete_events_bad = [
         [2.0] => p ~ 1.0,       # Scalar affect.
-        #[2.0] => (p ~ 1.0, ),    # Tuple affect. # Should not work, potentially bad for performance as compared to vectors. (https://github.com/SciML/ModelingToolkit.jl/issues/4167)
+        #[2.0] => (p ~ 1.0, ),    # Tuple affect. # Should not work, potentially bad for performance as compared to vectors (https://github.com/SciML/ModelingToolkit.jl/issues/4167).
         [X > 2.0] => [p ~ 1.0], # Vector conditions.
         (1.0, 2.0) => [p ~ 1.0] # Tuple condition.
     ]
@@ -191,12 +191,9 @@ end
 # Checks that various simulation inputs works.
 # Checks continuous, discrete, preset time, and periodic events.
 # Tests event affecting non-species components.
-@test_broken let
-    return false # Now `Z` is a variable of the created system but have no equation, this causes errors. Have asked Aayush whether this should work or not.
-    # Creates model via DSL.
+let
     rn_dsl = @reaction_network rn begin
         @parameters thres=7.0 dY_up
-        @variables Z(t)
         @continuous_events begin
             [t ~ 2.5] => [p ~ p + 0.2]
             [X ~ thres, Y ~ X] => [X ~ X - 0.5, Z ~ Z + 0.1]
@@ -209,27 +206,29 @@ end
 
         (p, dX), 0 <--> X
         (1.1*p, dY), 0 <--> Y
+        d, Z --> 0
     end
 
     # Creates model programmatically.
     t = default_t()
-    @variables Z(t)
-    @species X(t) Y(t)
-    @parameters p dX dY thres=7.0 dY_up
+    @species X(t) Y(t) Z(t)
+    @parameters thres=7.0 dY_up d
+    @discretes p(t) dX(t) dY(t)
     rxs = [
-        Reaction(p, nothing, [X], nothing, [1])
-        Reaction(dX, [X], nothing, [1], nothing)
-        Reaction(1.1*p, nothing, [Y], nothing, [1])
-        Reaction(dY, [Y], nothing, [1], nothing)
+        Reaction(p, nothing, [X], nothing, [1]),
+        Reaction(dX, [X], nothing, [1], nothing),
+        Reaction(1.1*p, nothing, [Y], nothing, [1]),
+        Reaction(dY, [Y], nothing, [1], nothing),
+        Reaction(d, [Z], nothing, [1], nothing)
     ]
     continuous_events = [
-        [t ~ 2.5] => [p ~ Pre(p + 0.2)]
-        [X ~ thres, Y ~ X] => [X ~ Pre(X - 0.5), Z ~ Pre(Z + 0.1)]
+        SymbolicContinuousCallback([t ~ 2.5] => [p ~ Pre(p) + 0.2]; discrete_parameters = [p])
+        SymbolicContinuousCallback([X ~ thres, Y ~ X] => [X ~ Pre(X - 0.5), Z ~ Pre(Z) + 0.1])
     ]
     discrete_events = [
-        2.0 => [dX ~ Pre(dX + 0.01), dY ~ Pre(dY + dY_up)]
-        [1.0, 5.0] => [p ~ Pre(p - 0.1)]
-        (Z > Y) => [Z ~ Pre(Z - 0.1)]
+        SymbolicDiscreteCallback(2.0 => [dX ~ Pre(dX) + 0.01, dY ~ Pre(dY) + Pre(dY_up)]; discrete_parameters = [dX, dY])
+        SymbolicDiscreteCallback([1.0, 5.0] => [p ~ Pre(p) - 0.1]; discrete_parameters = [p])
+        (Z > Y) => [Z ~ Pre(Z) - 0.1]
     ]
     rn_prog = ReactionSystem(rxs, t; continuous_events, discrete_events, name = :rn)
     rn_prog = complete(rn_prog)
@@ -239,7 +238,7 @@ end
 
     u0 = [X => 6.0, Y => 4.5, Z => 5.5]
     tspan = (0.0, 20.0)
-    ps = [p => 0.5, dX => 0.025, dY => 0.025, dY_up => 0.01]
+    ps = [p => 0.5, dX => 0.025, dY => 0.025, dY_up => 0.01, d => 0.1]
 
     sol_dsl = solve(ODEProblem(rn_dsl, u0, tspan, ps), Tsit5())
     sol_prog = solve(ODEProblem(rn_prog, u0, tspan, ps), Tsit5())
@@ -383,12 +382,12 @@ let
         @default_noise_scaling 0.0
         @parameters add::Int64
         @continuous_events begin
-            [X ~ 90.0] => [X ~ Pre(X + 10.0)]
+            [X ~ 90.0] => [X ~ X + 10.0]
         end
         @discrete_events begin
-            [5.0, 10.0] => [X ~ Pre(X + add), Y ~ Pre(Y + add)]
-            20.0 => [X ~ Pre(X + add)]
-            (Y < X) => [Y ~ Pre(Y + add)]
+            [5.0, 10.0] => [X ~ X + add, Y ~ Y + add]
+            20.0 => [X ~ X + add]
+            (Y < X) => [Y ~ Y + add]
         end
         (p,d), 0 <--> X
         (p,d), 0 <--> Y
@@ -396,9 +395,9 @@ let
     rn_dics_events = @reaction_network begin
         @parameters add::Int64
         @discrete_events begin
-            [5.0, 10.0] => [X ~ Pre(X + add), Y ~ Pre(Y + add)]
-            20.0 => [X ~ Pre(X + add)]
-            (Y < X) => [Y ~ Pre(Y + add)]
+            [5.0, 10.0] => [X ~ X + add, Y ~ Y + add]
+            20.0 => [X ~ X + add]
+            (Y < X) => [Y ~ Y + add]
         end
         (p,d), 0 <--> X
         (p,d), 0 <--> Y
@@ -437,5 +436,5 @@ let
     jprob_events = JumpProblem(rn_dics_events, u0, tspan, ps; rng)
     sol = solve(jprob, SSAStepper(); seed, callback)
     sol_events = solve(jprob_events, SSAStepper(); seed)
-    @test_broken sol == sol_events  # Ploting the solutions they seem non-identical, need to investigate.
+    @test_broken sol == sol_events  # Plotting the solutions, they seem similar but are not identical. Potentially the test should be redesigned anyway. Also, periodic events are to general work here.
 end

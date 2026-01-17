@@ -13,8 +13,7 @@ rng = StableRNG(12345)
 # Tests that stability is correctly assessed (using simulation) in multi stable system.
 # Tests that `steady_state_jac` function works.
 # Tests using symbolic input.
-@test_broken let
-    return false # remove_conserved = true yields error when there are no conservation laws.
+let
     # System which may have between 1 and 7 fixed points.
     rn = @reaction_network begin
         v/20.0 + hillar(X,Y,v,K,n), 0 --> X
@@ -36,7 +35,7 @@ rng = StableRNG(12345)
 
         # Confirms stability using simulations.
         for (idx, ss) in enumerate(sss)
-            ssprob = SteadyStateProblem(rn, [1.001, 0.999] .* ss, ps)
+            ssprob = SteadyStateProblem(rn, Pair.(unknowns(rn), [1.001, 0.999] .* ss), ps)
             sol = solve(ssprob, DynamicSS(Vern7()); abstol = 1e-8, reltol = 1e-8)
             stabs_3 = isapprox(ss, sol.u; atol = 1e-6)
             @test stabs_1[idx] == stabs_2[idx] == stabs_3
@@ -51,8 +50,7 @@ end
 # Checks stability for system with known stability structure.
 # Tests for system with conservation laws.
 # Tests for various input forms of u0 and ps.
-@test_broken let
-    return false # Conservation laws currently broken. for homotpy continuation.
+let
     # Creates model.
     rn = @reaction_network begin
         k1+Z, Y --> 2X

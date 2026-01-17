@@ -205,8 +205,8 @@ let
     @test isequal(Catalyst.getmisc(get_rxs(rs_loaded.rs2)[5]), mat_md)
 
     # Checks that `ReactionSystem` metadata fields are correct.
-    @test isequal(get_metadata(rs_loaded), mat_md)
-    @test isequal(get_metadata(rs_loaded.rs2), dict_md)
+    @test isequal(ModelingToolkitBase.getmetadata(rs_loaded, MiscSystemData, nothing), mat_md)
+    @test isequal(ModelingToolkitBase.getmetadata(rs_loaded.rs2, MiscSystemData, nothing), dict_md)
 end
 
 # Checks systems where parameters/species/variables have complicated interdependency are correctly

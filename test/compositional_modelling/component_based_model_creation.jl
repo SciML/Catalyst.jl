@@ -15,7 +15,7 @@ t = default_t()
 
 # Repressilator model.
 @test_broken let
-    return false # Created (Nonlinear)Systems no longer have an iv, so when extending (ODE)Systems with these you are extending a system with a iv with one without
+    return false # @Sam, can you have a look? Hierarchical systems not get new and/or weird variables added to them I think.
     @parameters t α₀ α K n δ β μ
     @species m(t) P(t) R(t)
     rxs = [
@@ -339,11 +339,11 @@ let
     rxs = vcat(nrxs1, nrxs2, nrxs3)
     eqs = vcat(nrxs1, nrxs2, neqs2, nrxs3, neqs3)
 
-    @test_broken issetequal(unknowns(rs1), [A1, rs2.A2a, ns2.A2b, rs2.rs3.A3a, rs2.ns3.A3b])
+    @test_broken issetequal(unknowns(rs1), [A1, rs2.A2a, ns2.A2b, rs2.rs3.A3a, rs2.ns3.A3b]) #@Sam, can you have a look here? There are new strange variables in the unknown vector of rs1 (e.g. ` rs2₊ns3₊A3b(rs2₊ns3₊t)`). 
     @test issetequal(species(rs1), [A1, rs2.A2a, rs2.rs3.A3a])
     @test issetequal(parameters(rs1), [p1, rs2.p2a, rs2.p2b, rs2.rs3.p3a, rs2.ns3.p3b])
     @test issetequal(rxs, reactions(rs1))
-    @test_broken issetequal(eqs, equations(rs1))
+    @test_broken issetequal(eqs, equations(rs1)) # @Sam, can you have a look here? There are new strange variables in the equations, e.g. `rs2₊A2a(rs2₊ns3₊t)`.
     @test Catalyst.combinatoric_ratelaws(rs1)
     @test Catalyst.combinatoric_ratelaws(Catalyst.flatten(rs1))
 end
@@ -373,16 +373,18 @@ end
     @test length(equations(rn3)) == 4
 
     # Check conversions work with algebraic constraints.
-    eqs = [0 ~ -a * A + C, 0 ~ -b * C + a * A]
-    @named nlsys = NonlinearSystem(eqs, [A, C], [a, b])
-    rn2 = extend(nlsys, rn)
-    rn2c = complete(rn2)
-    rnodes = complete(cmake_rre_ode(rn2c))
-    rnnlsys = complete(make_rre_algeqs(rn2c))
-    @named nlsys = ODESystem(eqs, t, [A, C], [a, b])
-    rn2 = complete(extend(nlsys, rn))
-    rnodes = make_rre_ode(rn2)
-    rnnlsys = make_rre_algeqs(rn2)
+    @test_broken let # @Sam, can you have a look? Nonlinearsystems no longer have independent variables, causing error in `extend`. I think you need to decide how we should handle this.
+        eqs = [0 ~ -a * A + C, 0 ~ -b * C + a * A]
+        @named nlsys = NonlinearSystem(eqs, [A, C], [a, b])
+        rn2 = extend(nlsys, rn) # Yields `ERROR: Extending ReactionSystem with iv, t, with a system with iv, nothing, this is not supported. Please ensure the `ivs` are the same.`
+        rn2c = complete(rn2)
+        rnodes = complete(cmake_rre_ode(rn2c))
+        rnnlsys = complete(make_rre_algeqs(rn2c))
+        @named nlsys = ODESystem(eqs, t, [A, C], [a, b])
+        rn2 = complete(extend(nlsys, rn))
+        rnodes = make_rre_ode(rn2)
+        rnnlsys = make_rre_algeqs(rn2)
+    end
 end
 
 # https://github.com/SciML/ModelingToolkit.jl/issues/1274
@@ -503,8 +505,7 @@ end
 
 # test scoping in compose
 # code adapted from ModelingToolkit.jl tests
-@test_broken let # DelayParentScope is removed. @Sam, can you have a look at this? Not really sure what is going on here.
-    return false
+@test_broken let # @Sam, I think DelayParentScope has been removed. Can you decide how we should change Catalyst/this test to handle this?
     t = default_t()
     D = default_time_deriv()
     @species x1(t) x2(t)
