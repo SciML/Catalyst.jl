@@ -433,32 +433,28 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     obs = MT.observed(rs)
 
     # make dependent species observables and add conservation constants as parameters
-    if remove_conserved
+    if remove_conserved && !isempty(conservedequations(rs))
         nps = get_networkproperties(rs)
 
-        # Caches conservationlaws and only proceed if conserved quantities exist.
-        conservationlaws(rs)
-        if nps.nullity != 0
-            # add the conservation constants as parameters and set their values
-            ps = copy(ps)
-            push!(ps, nps.conservedconst)
+        # add the conservation constants as parameters and set their values
+        ps = copy(ps)
+        push!(ps, nps.conservedconst)
 
-            if treat_conserved_as_eqs
-                # add back previously removed dependent species
-                sts = union(sts, nps.depspecs)
+        if treat_conserved_as_eqs
+            # add back previously removed dependent species
+            sts = union(sts, nps.depspecs)
 
-                # treat conserved eqs as normal eqs (lhs must be `0` in case structural simplify is not used)
-                append!(eqs, [0 ~ eq.rhs - eq.lhs for eq in conservationlaw_constants(rs)])
+            # treat conserved eqs as normal eqs (lhs must be `0` in case structural simplify is not used)
+            append!(eqs, [0 ~ eq.rhs - eq.lhs for eq in conservationlaw_constants(rs)])
 
-                # add initialization equations for conserved parameters
-                initialmap = Dict(u => Initial(u) for u in species(rs))
-                conseqs = conservationlaw_constants(rs)
-                initeqs = [Symbolics.substitute(conseq, initialmap) for conseq in conseqs]
-            else
-                # add the dependent species as observed
-                obs = copy(obs)
-                append!(obs, conservedequations(rs))
-            end
+            # add initialization equations for conserved parameters
+            initialmap = Dict(u => Initial(u) for u in species(rs))
+            conseqs = conservationlaw_constants(rs)
+            initeqs = [Symbolics.substitute(conseq, initialmap) for conseq in conseqs]
+        else
+            # add the dependent species as observed
+            obs = copy(obs)
+            append!(obs, conservedequations(rs))
         end
     end
 
@@ -838,7 +834,7 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify
-        osys = MT.structural_simplify(osys)
+        osys = MT.mtkcompile(osys)
     elseif has_alg_equations(rs)
         error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
     else
@@ -890,7 +886,7 @@ function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
     nlsys = make_rre_algeqs(rs; name, combinatoric_ratelaws, checks,
         all_differentials_permitted, remove_conserved, conseqs_remake_warn,
         expand_catalyst_funs)
-    nlsys = structural_simplify ? MT.structural_simplify(nlsys) : complete(nlsys)
+    nlsys = structural_simplify ? MT.mtkcompile(nlsys) : complete(nlsys)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
     return NonlinearProblem(nlsys, prob_cond, args...; check_length,
         kwargs...)
@@ -908,7 +904,7 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify
-        (sde_sys = MT.structural_simplify(sde_sys))
+        (sde_sys = MT.mtkcompile(sde_sys))
     elseif has_alg_equations(rs)
         error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
     else
@@ -1072,7 +1068,7 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify
-        (osys = MT.structural_simplify(osys))
+        (osys = MT.mtkcompile(osys))
     elseif has_alg_equations(rs)
         error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
     else

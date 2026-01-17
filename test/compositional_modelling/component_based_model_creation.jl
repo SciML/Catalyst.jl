@@ -38,8 +38,8 @@ t = default_t()
     connections = [sys₁.R ~ sys₃.P,
         sys₂.R ~ sys₁.P,
         sys₃.R ~ sys₂.P]
-    @named connected = ODESystem(connections, t, [], [], systems = [sys₁, sys₂, sys₃])
-    oderepressilator = structural_simplify(connected)
+    @named connected = System(connections, t, [], [], systems = [sys₁, sys₂, sys₃])
+    oderepressilator = mtkcompile(connected)
 
     pvals = [sys₁.α₀ => 5e-4, sys₁.α => 0.5, sys₁.K => 40.0, sys₁.n => 2,
         sys₁.δ => (log(2) / 120), sys₁.β => (20 * log(2) / 120),
@@ -86,25 +86,25 @@ t = default_t()
     connections = [ParentScope(sys₁.R) ~ ParentScope(sys₃.P),
         ParentScope(sys₂.R) ~ ParentScope(sys₁.P),
         ParentScope(sys₃.R) ~ ParentScope(sys₂.P)]
-    @named csys = ODESystem(connections, t, [], [])
+    @named csys = System(connections, t, [], [])
     @named repressilator = ReactionSystem(t; systems = [csys, sys₁, sys₂, sys₃])
     repressilator = complete(repressilator)
     @named oderepressilator2 = make_rre_ode(repressilator, include_zero_odes = false)
-    sys2 = structural_simplify(oderepressilator2)  # FAILS currently
-    oprob = ODEProblem(sys2, u₀, tspan, pvals)
+    sys2 = mtkcompile(oderepressilator2)  # FAILS currently
+    oprob = ODEProblem(sys2, [u₀; pvals], tspan)
     sol = solve(oprob, Tsit5())
     @test all(isapprox.(sol(tvs, idxs = sys₁.P), sol2(tvs, idxs = 4), atol = 1e-4))
 
     # Test conversion to nonlinear system.
     u₀_nl = [sys₁.m => 0.0, sys₁.P => 20.0, sys₁.R => 0.0, sys₂.m => 0.0, sys₂.P => 0.0,
         sys₂.R => 0.0, sys₃.m => 0.0, sys₃.P => 0.0, sys₃.R => 0.0]
-    @named nsys = NonlinearSystem(connections, [], [])
+    @named nsys = System(connections, [], [])
     @named ssrepressilator = ReactionSystem(t; systems = [nsys, sys₁, sys₂, sys₃])
     ssrepressilator = complete(ssrepressilator)
     @named nlrepressilator = make_rre_algeqs(ssrepressilator)
-    sys2 = structural_simplify(nlrepressilator)
+    sys2 = mtkcompile(nlrepressilator)
     @test length(equations(sys2)) <= 6
-    nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
+    nlprob = NonlinearProblem(sys2, [u₀_nl; pvals])
     sol = solve(nlprob; abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
@@ -115,9 +115,9 @@ t = default_t()
     fsys = Catalyst.flatten(ssrepressilator)
     fsys = complete(fsys)
     @named nlrepressilator = make_rre_algeqs(fsys)
-    sys2 = structural_simplify(nlrepressilator)
+    sys2 = mtkcompile(nlrepressilator)
     @test length(equations(sys2)) <= 6
-    nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
+    nlprob = NonlinearProblem(sys2, [u₀_nl; pvals])
     sol = solve(nlprob; abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
@@ -128,14 +128,14 @@ t = default_t()
     connections = [sys₁.R ~ sys₃.P,
         sys₂.R ~ sys₁.P,
         sys₃.R ~ sys₂.P]
-    @named csys = NonlinearSystem(connections, [sys₁.R, sys₃.P, sys₂.R, sys₁.P, sys₃.R, sys₂.P],
+    @named csys = System(connections, [sys₁.R, sys₃.P, sys₂.R, sys₁.P, sys₃.R, sys₂.P],
                                 [])
     @named repressilator2 = ReactionSystem(connections, t; systems = [sys₁, sys₂, sys₃])
     repressilator2 = complete(repressilator2)
     @named nlrepressilator = make_rre_algeqs(repressilator2)
-    sys2 = structural_simplify(nlrepressilator)
+    sys2 = mtkcompile(nlrepressilator)
     @test length(equations(sys2)) <= 6
-    nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
+    nlprob = NonlinearProblem(sys2, [u₀_nl; pvals])
     sol = solve(nlprob; abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
@@ -147,7 +147,7 @@ t = default_t()
     network = @network_component
     @parameters a
     @variables x(t)
-    @named constraints = NonlinearSystem([x ~ a], [x], [a])
+    @named constraints = System([x ~ a], [x], [a])
     extended = extend(constraints, network)
     @test isequal(extended.a, MT.namespace_expr(a, extended))
     @test isequal(extended.x, MT.namespace_expr(x, extended))
@@ -177,8 +177,8 @@ t = default_t()
     subnetwork = @network_component
     @parameters a=1 b=2
     @variables x(t)=a y(t)=b
-    @named constraints = NonlinearSystem([x ~ a], [x], [a])
-    @named subsystemconstraints = NonlinearSystem([y ~ b], [y], [b])
+    @named constraints = System([x ~ a], [x], [a])
+    @named subsystemconstraints = System([y ~ b], [y], [b])
     extended = extend(constraints, network)
     subextended = extend(subsystemconstraints, subnetwork)
     extended = compose(extended, subextended)
@@ -204,8 +204,8 @@ t = default_t()
     subnetwork = @network_component
     @parameters a b
     @variables x(t) y(t)
-    @named constraints = NonlinearSystem([x ~ a], [x], [a])
-    @named subconstraints = NonlinearSystem([y ~ b], [y], [b])
+    @named constraints = System([x ~ a], [x], [a])
+    @named subconstraints = System([y ~ b], [y], [b])
 
     extended = extend(constraints, network; name = nameof(network))
     subextended = extend(subconstraints, subnetwork, name = nameof(subnetwork))
@@ -241,8 +241,8 @@ t = default_t()
 
     # Test can make ODESystem.
     @named oderepressilator = make_rre_ode(repressilator2, include_zero_odes = false)
-    sys2 = structural_simplify(oderepressilator)  # FAILS currently
-    oprob = ODEProblem(sys2, u₀, tspan, pvals)
+    sys2 = mtkcompile(oderepressilator)  # FAILS currently
+    oprob = ODEProblem(sys2, [u₀; pvals], tspan)
     sol = solve(oprob, Tsit5())
     @test all(isapprox.(sol(tvs, idxs = sys₁.P), sol2(tvs, idxs = 4), atol = 1e-4))
 
@@ -252,9 +252,9 @@ t = default_t()
     repressilator2 = extend(csys, repressilator2)
     repressilator2 = complete(repressilator2)
     @named nlrepressilator = make_rre_algeqs(repressilator2)
-    sys2 = structural_simplify(nlrepressilator)
+    sys2 = mtkcompile(nlrepressilator)
     @test length(equations(sys2)) <= 6
-    nlprob = NonlinearProblem(sys2, u₀_nl, pvals)
+    nlprob = NonlinearProblem(sys2, [u₀_nl; pvals])
     sol = solve(nlprob; abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
     @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
@@ -280,20 +280,20 @@ let
     A2 = MT.ParentScope(A)
     B2 = MT.ParentScope(B)
     nseqs = [D ~ 2 * A2 + β * B2]
-    @named ns = ODESystem(nseqs, t, [A2, B2, D], [β])
+    @named ns = System(nseqs, t, [A2, B2, D], [β])
     rs = compose(rs, [ns])
     rs = complete(rs)
     osys = make_rre_ode(rs; include_zero_odes = false)
     p = [r₊ => 1.0, r₋ => 2.0, ns.β => 3.0]
     u₀ = [A => 1.0, B => 2.0, C => 0.0]
-    oprob = ODEProblem(structural_simplify(osys), u₀, (0.0, 10.0), p)
+    oprob = ODEProblem(mtkcompile(osys), u₀, (0.0, 10.0), p)
     sol = solve(oprob, Tsit5())
     @test isapprox(0, norm(sol[ns.D] .- 2 * sol[A] - 3 * sol[B]), atol = (100 * eps()))
     psyms = [:r₊ => 1.0, :r₋ => 2.0, :ns₊β => 3.0]
     u₀syms = [:A => 1.0, :B => 2.0, :C => 0.0]
     p = symmap_to_varmap(osys, psyms)
     u₀ = symmap_to_varmap(osys, u₀syms)
-    oprob = ODEProblem(structural_simplify(osys), u₀, (0.0, 10.0), p)
+    oprob = ODEProblem(mtkcompile(osys), u₀, (0.0, 10.0), p)
     sol = solve(oprob, Tsit5())
     @test isapprox(0, norm(sol[ns.D] .- 2 * sol[A] - 3 * sol[B]), atol = (100 * eps()))
 
@@ -320,10 +320,10 @@ let
 
     @named rs3 = ReactionSystem(rxs3, t, [A3a, ParentScope(A2a)], [p3a, ParentScope(p2a)];
                                 combinatoric_ratelaws = false)
-    @named ns3 = NonlinearSystem(eqs3, [ParentScope(A2a), A3b], [p3b])
+    @named ns3 = System(eqs3, [ParentScope(A2a), A3b], [p3b])
     @named rs2 = ReactionSystem(rxs2, t, [A2a, ParentScope(A1)], [p2a, p2b],
                                 systems = [rs3, ns3]; combinatoric_ratelaws = true)
-    @named ns2 = NonlinearSystem(eqs2, [ParentScope(A1), A2b], [ParentScope(p1)])
+    @named ns2 = System(eqs2, [ParentScope(A1), A2b], [ParentScope(p1)])
     @named rs1 = ReactionSystem(rxs1, t, [A1], [p1], systems = [rs2, ns2];
                                 combinatoric_ratelaws = false)
 
@@ -361,26 +361,26 @@ end
     @variables C(t)
     D = default_time_deriv()
     eqs = [D(C) ~ -b * C + a * A]
-    @named osys = ODESystem(eqs, t, [A, C], [a, b])
+    @named osys = System(eqs, t, [A, C], [a, b])
     rn2 = extend(osys, rn)
     rnodes = make_rre_ode(complete(rn2))
 
     # Ensure right number of equations are generated.
     @variables G(t)
     eqs = [D(G) ~ -G]
-    @named osys2 = ODESystem(eqs, t)
+    @named osys2 = System(eqs, t)
     rn3 = compose(rn2, osys2)
     @test length(equations(rn3)) == 4
 
     # Check conversions work with algebraic constraints.
     @test_broken let # @Sam, can you have a look? Nonlinearsystems no longer have independent variables, causing error in `extend`. I think you need to decide how we should handle this.
         eqs = [0 ~ -a * A + C, 0 ~ -b * C + a * A]
-        @named nlsys = NonlinearSystem(eqs, [A, C], [a, b])
+        @named nlsys = System(eqs, [A, C], [a, b])
         rn2 = extend(nlsys, rn) # Yields `ERROR: Extending ReactionSystem with iv, t, with a system with iv, nothing, this is not supported. Please ensure the `ivs` are the same.`
         rn2c = complete(rn2)
         rnodes = complete(cmake_rre_ode(rn2c))
         rnnlsys = complete(make_rre_algeqs(rn2c))
-        @named nlsys = ODESystem(eqs, t, [A, C], [a, b])
+        @named nlsys = System(eqs, t, [A, C], [a, b])
         rn2 = complete(extend(nlsys, rn))
         rnodes = make_rre_ode(rn2)
         rnnlsys = make_rre_algeqs(rn2)
@@ -410,7 +410,7 @@ let
         k/$V, A + B --> C
     end
     Dt = default_time_deriv()
-    @named csys = ODESystem([Dt(V) ~ -b * V], t)
+    @named csys = System([Dt(V) ~ -b * V], t)
     @named fullrn = extend(csys, rn)
     setdefaults!(fullrn, [:b => 2.0])
     @unpack b = fullrn

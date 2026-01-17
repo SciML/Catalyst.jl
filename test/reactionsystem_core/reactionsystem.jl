@@ -368,7 +368,7 @@ let
         D(V1) ~ p1 - V1,
         D(V2) ~ p2 - V2,
     ]
-    @named sub_osys = ODESystem(sub_eqs, t)
+    @named sub_osys = System(sub_eqs, t)
     rxs = [
         Reaction(k2, [X2], []),
         Reaction(k3, [X3], [])

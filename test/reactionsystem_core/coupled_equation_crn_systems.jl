@@ -88,7 +88,7 @@ let
         D(A) ~ X1 + a - A
         D(B) ~ X2 + b - B
     ]
-    @named osys_extended = ODESystem(eqs_extended, t)
+    @named osys_extended = System(eqs_extended, t)
     coupled_rs_extended = complete(extend(osys_extended, rn_extended; name = :coupled_rs))
 
     # Creates the model through the DSL.

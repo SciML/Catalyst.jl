@@ -437,7 +437,7 @@ let
     ]
     eq = D(V) ~ V_max - V
 
-    @named osys = ODESystem([eq], t)
+    @named osys = System([eq], t)
     @named rs = ReactionSystem(rxs, t; systems = [osys])
     @test_throws Exception save_reactionsystem("failed_serialisation.jl", rs)
     rm("failed_serialisation.jl")

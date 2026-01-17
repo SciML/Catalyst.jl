@@ -272,7 +272,7 @@ let
         k*r, X --> 0
     end
     @variables r(t)
-    @named decaying_rate = NonlinearSystem([r ~ -1], [r], [])
+    @named decaying_rate = System([r ~ -1], [r], [])
     extended = extend(decaying_rate, base_network)
 
     # Latexify.@generate_test latexify(extended)

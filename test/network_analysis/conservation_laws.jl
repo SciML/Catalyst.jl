@@ -115,7 +115,7 @@ let
 
     # Simulates model using ODEs and checks that simulations are identical.
     osys = complete(make_rre_ode(rn; remove_conserved = true))
-    oprob1 = ODEProblem(osys, u0, tspan, p)
+    oprob1 = ODEProblem(osys, [u0; p], tspan)
     oprob2 = ODEProblem(rn, u0, tspan, p)
     oprob3 = ODEProblem(rn, u0, tspan, p; remove_conserved = true)
     osol1 = solve(oprob1, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat = 0.2)
@@ -126,7 +126,7 @@ let
     @test_broken let # SteadyStateProblem issue: https://github.com/SciML/ModelingToolkit.jl/issues/4177. NonlinearProblems work.
         # Checks that steady states found using nonlinear solving and steady state simulations are identical.
         nsys = make_rre_algeqs(rn; remove_conserved = true, conseqs_remake_warn = false)
-        nsys_ss = structural_simplify(nsys)
+        nsys_ss = mtkcompile(nsys)
         nsys = complete(nsys)
         nprob1 = NonlinearProblem{true}(nsys, u0, p)
         nprob1b = NonlinearProblem{true}(nsys_ss, u0, p)
@@ -157,7 +157,7 @@ let
     u0_sde = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
         F3 => 20.0]
     ssys = complete(make_cle_sde(rn; remove_conserved = true))
-    sprob1 = SDEProblem(ssys, u0_sde, tspan, p)
+    sprob1 = SDEProblem(ssys, [u0_sde; p], tspan)
     sprob2 = SDEProblem(rn, u0_sde, tspan, p)
     sprob3 = SDEProblem(rn, u0_sde, tspan, p; remove_conserved = true)
 
@@ -232,8 +232,8 @@ let
     u0_2 = [osys.X1 => 1.0]
     ps_1 = [osys.k1 => 2.0, osys.k2 => 3.0]
     ps_2 = [osys.k1 => 2.0, osys.k2 => 3.0, osys.Γ => [4.0]]
-    oprob1 = ODEProblem(osys, u0_1, 10.0, ps_1)
-    oprob2 = ODEProblem(osys, u0_2, 10.0, ps_2)
+    oprob1 = ODEProblem(osys, [u0_1; ps_1], 10.0)
+    oprob2 = ODEProblem(osys, [u0_2; ps_2], 10.0)
 
     # Checks that the solutions generates the correct conserved quantities.
     sol1 = solve(oprob1; saveat = 1.0)
@@ -262,7 +262,7 @@ let
     # Creates the various problem types.
     u0 = [X1 => 1.0, X2 => 2.0]
     ps = [k1 => 0.1, k2 => 0.2]
-    oprob = ODEProblem(osys, u0, (0.0, 1.0), ps)
+    oprob = ODEProblem(osys, [u0; ps], (0.0, 1.0))
 
     # Check `ODEProblem` content.
     @test oprob[X1] == 1.0
@@ -532,7 +532,7 @@ end
     nlsys = make_rre_algeqs(rn; remove_conserved = true,
         conseqs_remake_warn = false)
     nlsys1 = complete(nlsys)
-    nlprob1 = NonlinearProblem(nlsys1, u0, ps)
+    nlprob1 = NonlinearProblem(nlsys1, [u0; ps])
 
     @test nlprob1[:X1] == 1.0
     @test nlprob1[:X2] == 2.0
@@ -567,8 +567,8 @@ end
     @test integ1.ps[:Γ][1] == 4.0
 
     # WITH structural_simplify
-    nlsys2 = structural_simplify(nlsys)
-    nlprob2 = NonlinearProblem(nlsys2, u0, ps)
+    nlsys2 = mtkcompile(nlsys)
+    nlprob2 = NonlinearProblem(nlsys2, [u0; ps])
 
     @test nlprob2[:X1] == 1.0
     @test nlprob2[:X2] == 2.0
