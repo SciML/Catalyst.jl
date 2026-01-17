@@ -173,7 +173,7 @@ let
     u0 = [X => 0.1, A => 1.0]
     ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
-    @test_broken sssol[[X,A]] ≈ [2.0, 3.0] # The previous lines fails to solve. Issue at: https://github.com/SciML/ModelingToolkit.jl/issues/4174.
+    @test_broken sssol[[X,A]] ≈ [2.0, 3.0] # The previous lines fails to solve. Issue at: https://github.com/SciML/ModelingToolkit.jl/issues/4174. This currently also yields a warning.
 end
 
 

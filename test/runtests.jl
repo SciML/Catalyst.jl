@@ -42,7 +42,7 @@ end
 
         # Tests reaction network analysis features.
         @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end # Multiple issues. https://github.com/SciML/ModelingToolkit.jl/issues/4102 required to start debugging.
-        # @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
+        @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
         @time @safetestset "CRN Theory" begin include("network_analysis/crn_theory.jl") end
 
         # Tests ODE, SDE, jump simulations, nonlinear solving, and steady state simulations.

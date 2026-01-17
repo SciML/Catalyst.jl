@@ -163,7 +163,7 @@ let
 end
 
 # Test with JumpSystem.
-let 
+let
     @species A(t) B(t) C(t) D(t) E(t) F(t)
     rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
         Reaction(k[2], [B], nothing),            # B -> 0
@@ -476,7 +476,7 @@ let
     u0map = [B, D, E, C] .=> u0
     pmap = [A, k1, k2] .=> p
     tspan = (0.0, 5.0)
-    oprob1 = ODEProblem(osys, u0map, tspan, pmap)
+    oprob1 = ODEProblem(osys, [u0map; pmap], tspan)
     sts = [B, D, E, C]
     syms = [:B, :D, :E, :C]
     ofun = ODEFunction(f!; sys = MT.SymbolCache(syms))
@@ -504,7 +504,7 @@ let
         @test issetequal(_ps, [A, k1, k2])
         du1 = zeros(4)
         du2 = zeros(4)
-        sprob = SDEProblem(ssys, u0map, tspan, pmap; check_length = false)
+        sprob = SDEProblem(ssys, [u0map; pmap], tspan; check_length = false)
         sprob.f(du1, sprob.u0, sprob.p, 1.0)
         fs!(du2, u0, p, 1.0)
         @test isapprox(du1, du2)
@@ -795,7 +795,7 @@ let
     osys = make_rre_ode(rs)
     @test issetequal(unknowns(osys), [S1, S3])
     @test issetequal(parameters(osys), [S2, k1, k2])
-    osys2 = structural_simplify(osys)
+    osys2 = mtkcompile(osys)
     @test length(equations(osys2)) == 1
     @test issetequal(unknowns(osys2), [S1])
     @test issetequal(parameters(osys2), [S2, k1, k2])
@@ -814,7 +814,7 @@ let
     osys = make_rre_ode(rs)
     @test issetequal(unknowns(osys), [S1, S3])
     @test issetequal(parameters(osys), [S2, k1, k2])
-    osys2 = structural_simplify(osys)
+    osys2 = mtkcompile(osys)
     @test length(equations(osys2)) == 1
     @test issetequal(unknowns(osys2), [S1])
     @test issetequal(parameters(osys2), [S2, k1, k2])
