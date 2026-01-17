@@ -511,7 +511,7 @@ function get_psexpr(parameters_extracted, options)
     else
         :(@parameters)
     end
-    arg_vec = ((length(pexprs.args) > 2) && Meta.isexpr(pexprs.args[3], :block)) ? 
+    arg_vec = ((length(pexprs.args) > 2) && Meta.isexpr(pexprs.args[3], :block)) ?
         (pexprs.args[3].args) : (pexprs.args)
     foreach(p -> push!(arg_vec, p), parameters_extracted)
     pexprs
@@ -528,7 +528,7 @@ function get_usexpr(us_extracted, options, key = :species; ivs = (DEFAULT_IV_SYM
     else
         Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
     end
-    arg_vec = ((length(usexpr.args) > 2) && Meta.isexpr(usexpr.args[3], :block)) ? 
+    arg_vec = ((length(usexpr.args) > 2) && Meta.isexpr(usexpr.args[3], :block)) ?
         (usexpr.args[3].args) : (usexpr.args)
     for u in us_extracted
         u isa Symbol && push!(arg_vec, Expr(:call, u, ivs...))
@@ -858,13 +858,13 @@ function read_events_option!(options, discs_inferred::Vector, ps_inferred::Vecto
             (affect.args[2] isa Symbol) ||
                 error("The Catalyst DSL currently only supports assignment events where the LHS is a single symbol. This is not the case for: $(affect).")
 
-            # If the event updates an infered parameter, this should be moved to an inferred discretes.
+            # If the event updates an inferred parameter, this should be moved to an inferred discrete.
             if affect.args[2] in ps_inferred
                 push!(discs_inferred, affect.args[2])
                 deleteat!(ps_inferred, findfirst(==(affect.args[2]), ps_inferred))
             end
 
-            # If the event updates an ifnered parameter or decalred discrete, it should be in `discrete_parameters`.
+            # If the event updates an inferred parameter or declared discrete, it should be in `discrete_parameters`.
             (affect.args[2] in [discs_inferred; discs_declared]) && push!(disc_ps.args, affect.args[2])
 
             # Creates the affect RHS (adds `Pre` if it contain symbolics).
@@ -882,8 +882,6 @@ function read_events_option!(options, discs_inferred::Vector, ps_inferred::Vecto
 
     return events_expr
 end
-
-# Creates an event expression
 
 # Returns the `default_reaction_metadata` output. Technically Catalyst's code could have been made
 # more generic to account for other default reaction metadata. Practically, this will likely
