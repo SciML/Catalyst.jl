@@ -240,6 +240,7 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
 
     # Ensures metadata have the correct type.
     metadata = convert(Vector{Pair{Symbol, Any}}, metadata)
+
     Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate, metadata)
 end
 
@@ -353,8 +354,8 @@ MT.is_alg_equation(rx::Reaction) = false
 
 # MTK functions for extracting variables within equation type object
 MT.eqtype_supports_collect_vars(rx::Reaction) = true
-function MT.collect_vars!(unknowns::OrderedSet{SymbolicT}, parameters::OrderedSet{SymbolicT}, 
-        rx::Reaction, iv::Union{SymbolicT, Nothing},  ::Type{op} = Symbolics.Operator; 
+function MT.collect_vars!(unknowns::OrderedSet{SymbolicT}, parameters::OrderedSet{SymbolicT},
+        rx::Reaction, iv::Union{SymbolicT, Nothing},  ::Type{op} = Symbolics.Operator;
         depth = 0) where {op}
     MT.collect_vars!(unknowns, parameters, rx.rate, iv, op; depth)
 
@@ -401,7 +402,7 @@ function ModelingToolkitBase.get_variables!(set, rx::Reaction)
     foreach(prod -> push!(set, prod), rx.products)
     for stoichs in (rx.substoich, rx.prodstoich), stoich in stoichs
 
-        (stoich isa BasicSymbolic) && get_variables!(set, stoich)
+        (stoich isa SymbolicT) && get_variables!(set, stoich)
     end
     if hasnoisescaling(rx)
         get_variables!(set, getnoisescaling(rx))
@@ -688,7 +689,7 @@ end
 """
     @enumx PhysicalScale
 
-EnumX instance representing the physical scale of a reaction. 
+EnumX instance representing the physical scale of a reaction.
 
 Notes: The following values are possible:
 - `Auto`: (DEFAULT) Lets Catalyst decide at the time of system conversion and/or
@@ -701,7 +702,7 @@ Notes: The following values are possible:
   kinetics) term, specifically assigning it to a VariableRateJump.
 """
 @enumx PhysicalScale begin
-    Auto             # the default that lets Catalyst decide 
+    Auto             # the default that lets Catalyst decide
     ODE
     SDE
     Jump             # lets Catalyst decide the jump type
@@ -714,7 +715,7 @@ const NON_CONSTANT_JUMP_SCALES = (PhysicalScale.ODE, PhysicalScale.SDE, Physical
 """
     has_physical_scale(rx::Reaction)
 
-Returns `true` if the input reaction has the `physical_scale` metadata field assigned, 
+Returns `true` if the input reaction has the `physical_scale` metadata field assigned,
 else `false`.
 """
 function has_physical_scale(rx::Reaction)

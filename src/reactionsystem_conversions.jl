@@ -435,7 +435,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     # make dependent species observables and add conservation constants as parameters
     if remove_conserved
         nps = get_networkproperties(rs)
-        
+
         # Caches conservationlaws and only proceed if conserved quantities exist.
         conservationlaws(rs)
         if nps.nullity != 0
@@ -1170,12 +1170,12 @@ symmap_to_varmap(sys, symmap) = symmap
 ### Other Conversion-related Functions ###
 
 """
-    to_multivariate_poly(polyeqs::AbstractVector{BasicSymbolic{SymReal}})
+    to_multivariate_poly(polyeqs::AbstractVector{SymbolicT})
 
 Convert the given system of polynomial equations to multivariate polynomial representation.
 For example, this can be used in HomotopyContinuation.jl functions.
 """
-function to_multivariate_poly(polyeqs::AbstractVector{Symbolics.BasicSymbolic{SymReal}})
+function to_multivariate_poly(polyeqs::AbstractVector{Symbolics.SymbolicT})
     @assert length(polyeqs)>=1 "At least one expression must be passed to `multivariate_poly`."
 
     poly_to_bs = Dict{SymbolicUtils.PolyVarT, Symbolics.SymbolicT}()

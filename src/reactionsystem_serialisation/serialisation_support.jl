@@ -112,8 +112,6 @@ function sym_2_declaration_string(sym; multiline_format = false)
     dec_string = "$(sym)"
 
     # If the symbol has a non-default type, appends the declaration of this.
-    # Assumes that the type is on the form `BasicSymbolic{X}`. Contain error checks
-    # to ensure that this is the case.
     if SymbolicUtils.symtype(sym) != Real
         @string_append! dec_string "::" String(Symbol(SymbolicUtils.symtype(sym)))
     end
@@ -299,6 +297,6 @@ end
 function complicated_declaration(sym)
     isempty(get_metadata_to_declare(sym)) || (return true)
     MT.hasdefault(sym) && (return true)
-    (sym isa BasicSymbolic{SymReal}) || (return true)
+    (sym isa SymbolicT) || (return true)
     return false
 end

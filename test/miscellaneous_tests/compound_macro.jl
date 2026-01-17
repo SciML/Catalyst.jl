@@ -100,7 +100,7 @@ let
 end
 
 # Tests https://github.com/SciML/Catalyst.jl/issues/1151.
-# Checks that compounds are `Num` (and not BasicSymbolics).
+# Checks that compounds are `Num` (and not SymbolicT).
 # Check that ModelingToolkit.get_variables! works on compounds.
 let
     @species C(t) H(t) O(t)

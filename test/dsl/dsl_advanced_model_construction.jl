@@ -390,7 +390,7 @@ end
     @species A(t)
     rx = Reaction(k*V, [], [A])
     eq = D(V) ~ λ*V
-    cevents = [[V ~ 2.0] => [V ~ Pre(V/2), A ~ Pre(A/2)]]
+    cevents = [[V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]]
     @named hybrid = ReactionSystem([rx, eq], t; continuous_events = cevents)
     hybrid = complete(hybrid)
     rn = @reaction_network hybrid begin
@@ -398,7 +398,7 @@ end
         k*V, 0 --> A
         @equations D(V) ~ λ*V
         @continuous_events begin
-            [V ~ 2.0] => [V ~ Pre(V/2), A ~ Pre(A/2)]
+            [V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]
         end
     end
     @test hybrid == rn
@@ -416,7 +416,7 @@ end
         λ, C --> A, [physical_scale = PhysicalScale.ODE]
         @equations D(V) ~ λ*V*C
         @continuous_events begin
-            [V ~ 2.0] => [V ~ Pre(V/2), A ~ Pre(A/2)]
+            [V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]
         end
     end
     t = default_t()
@@ -428,7 +428,7 @@ end
     rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing; metadata),
         Reaction(k, [A, B], nothing), Reaction(λ, [C], [A])]
     eqs = [D(V) ~ λ*V*C]
-    cevents = [[V ~ 2.0] => [V ~ Pre(V/2), A ~ Pre(A/2)]]
+    cevents = [[V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]]
     rs2 = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents,
         name = :hybrid)
     rs2 = complete(rs2)
@@ -446,7 +446,7 @@ end
         λ, C --> A, [physical_scale = PhysicalScale.VariableRateJump]
         @equations D(V) ~ λ*V*C
         @continuous_events begin
-            [V ~ 2.0] => [V ~ Pre(V/2), A ~ Pre(A/2)]
+            [V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]
         end
     end
     t = default_t()
@@ -459,7 +459,7 @@ end
     rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing; metadata = md1),
         Reaction(k, [A, B], nothing), Reaction(λ, [C], [A]; metadata = md2)]
     eqs = [D(V) ~ λ*V*C]
-    cevents = [[V ~ 2.0] => [V ~ Pre(V/2), A ~ Pre(A/2)]]
+    cevents = [[V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]]
     rs2 = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents, name = :hybrid)
     rs2 = complete(rs2)
     @test rs == rs2

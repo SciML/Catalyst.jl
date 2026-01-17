@@ -314,11 +314,7 @@ end
 
 # Test defaults.
 # Uses mutating stuff (`setdefaults!`) and order dependent input (`species(rn) .=> u0`).
-# If you want to test this here @Sam I can write a new one that simulates using defaults.
-# If so, tell me if you have anything specific you want to check though, or I will just implement
-# it as I would.
-@test_broken let
-    return false
+let
     rn = @reaction_network begin
         α, S + I --> 2I
         β, I --> R
@@ -332,7 +328,7 @@ end
     op = ODEProblem(rn, [], tspan, [])
     sol2 = solve(op, Tsit5())
     @test norm(sol.u - sol2.u) ≈ 0
-    @test all(p -> p[1] isa Symbolics.Symbolic, collect(ModelingToolkitBase.defaults(rn)))
+    @test all(p -> p[1] isa Symbolics.SymbolicT, collect(ModelingToolkitBase.initial_conditions(rn)))
 
     rn = @reaction_network begin
         α, S + I --> 2I
@@ -358,7 +354,7 @@ end
         β1, I1 --> R1
     end
     sol3 = unpacktest(rn)
-    @test norm(sol.u - sol3.u) ≈ 0
+    @test norm(sol.u - sol3.u) ≈ 0 atol = 1e-10 rtol = 1e-10
 
     # Test symmap_to_varmap.
     sir = @network_component sir begin
@@ -390,6 +386,7 @@ end
     sol5 = solve(op, Tsit5())
     @test norm(sol.u - sol5.u) ≈ 0
 end
+
 
 # Tests non-integer stoichiometry.
 let

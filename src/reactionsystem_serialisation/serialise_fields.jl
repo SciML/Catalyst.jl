@@ -171,7 +171,7 @@ end
 
 ### Handles Discretes ###
 # Unlike most other fields, these are not called via `push_field`, but rather via `handle_us_n_ps`.
-# Hence they work slightly differently. 
+# Hence they work slightly differently.
 # Discretes are basically time-dependent parameters.
 
 # Checks if the reaction system has any discretes.
@@ -508,7 +508,7 @@ function discrete_event_string(discrete_event, strip_call_dict)
     # Creates the string corresponding to the conditions. The special check is if the condition is
     # an expression like `X > 5.0`. Here, "(...)" is added for purely aesthetic reasons.
     condition_string = x_2_string(discrete_event.conditions)
-    if discrete_event.conditions isa BasicSymbolic
+    if discrete_event.conditions isa SymbolicT
         @string_prepend! "(" condition_string
         @string_append! condition_string ")"
     end

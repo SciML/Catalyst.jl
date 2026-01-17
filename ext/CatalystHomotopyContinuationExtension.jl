@@ -7,7 +7,7 @@ import DynamicPolynomials
 import ModelingToolkitBase as MT
 import HomotopyContinuation as HC
 import Setfield: @set
-import Symbolics: unwrap, wrap, Rewriters, symtype, issym, maketerm, BasicSymbolic, metadata
+import Symbolics: unwrap, wrap, Rewriters, symtype, issym, maketerm, metadata
 using Symbolics: iscall
 
 # Creates and exports hc_steady_states function.

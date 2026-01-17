@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using Catalyst, JumpProcesses, OrdinaryDiffEqTsit5, StochasticDiffEq, Statistics, Test
-using Symbolics: BasicSymbolic, unwrap
+using Symbolics: unwrap
 
 # Sets stable rng number.
 using StableRNGs

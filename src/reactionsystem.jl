@@ -75,7 +75,7 @@ const __UNINITIALIZED_CONSERVED_CONSTS = MT.unwrap(only(@parameters __UNINITIALI
 
 #! format: off
 # Internal cache for various ReactionSystem calculated properties
-Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{SymReal}}
+Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: SymbolicT}
     isempty::Bool = true
     netstoichmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
     conservationmat::Matrix{I} = Matrix{I}(undef, 0, 0)
@@ -87,7 +87,7 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Sy
     depspecs::Set{V} = Set{V}()
     conservedeqs::Vector{Equation} = Equation[]
     constantdefs::Vector{Equation} = Equation[]
-    conservedconst::BasicSymbolic{SymReal} = __UNINITIALIZED_CONSERVED_CONSTS # Was `::` pre MTKv11. Supposedly, this is the new recommendation, and closer assertions would be provided in a constructor if we want.
+    conservedconst::SymbolicT = __UNINITIALIZED_CONSERVED_CONSTS # Was `::` pre MTKv11. Supposedly, this is the new recommendation, and closer assertions would be provided in a constructor if we want.
     speciesmap::Dict{V, Int} = Dict{V, Int}()
     complextorxsmap::OrderedDict{ReactionComplex{Int}, Vector{Pair{Int, Int}}} = OrderedDict{ReactionComplex{Int},Vector{Pair{Int,Int}}}()
     complexes::Vector{ReactionComplex{Int}} = Vector{ReactionComplex{Int}}(undef, 0)
@@ -289,14 +289,14 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """The Reactions defining the system. """
     rxs::Vector{Reaction}
     """Independent variable (usually time)."""
-    iv::BasicSymbolic{SymReal}
+    iv::SymbolicT
     """Spatial independent variables"""
-    sivs::Vector{BasicSymbolic{SymReal}}
+    sivs::Vector{SymbolicT}
     """All dependent (unknown) variables, species and non-species. Must not contain the
     independent variable."""
-    unknowns::Vector{BasicSymbolic{SymReal}}
+    unknowns::Vector{SymbolicT}
     """Dependent unknown variables representing species"""
-    species::Vector{BasicSymbolic{SymReal}}
+    species::Vector{SymbolicT}
     """Parameter variables. Must not contain the independent variable."""
     ps::Vector{Any}
     """Maps Symbol to corresponding variable."""
@@ -352,8 +352,8 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
         # Checks that all parameters have the appropriate Symbolics type. The `Symbolics.CallWithMetadata`
         # check is an exception for callabl;e parameters.
         for p in ps
-            (p isa Symbolics.BasicSymbolic) || (p isa Symbolics.CallWithMetadata) ||
-                error("Parameter $p is not a `BasicSymbolic`. This is required.")
+            (p isa Symbolics.SymbolicT) || (p isa Symbolics.CallWithMetadata) ||
+                error("Parameter $p is not a `SymbolicT`. This is required.")
         end
 
         # unit checks are for ODEs and Reactions only currently
@@ -393,7 +393,7 @@ end
 # or somewhere within the differential expression).
 function is_species_diff(expr)
     Symbolics.is_derivative(expr) || return false
-    return hasnode(ex -> (ex isa Symbolics.BasicSymbolic) && isspecies(ex) && !isbc(ex), expr)
+    return hasnode(ex -> (ex isa SymbolicT) && isspecies(ex) && !isbc(ex), expr)
 end
 
 # Four-argument constructor. Permits additional inputs as optional arguments.
@@ -447,7 +447,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     isempty(unknowns′) && (unknowns′ = SymbolicT[])
     spcs = filter(isspecies, unknowns′)
     ps′ = value.(ps)
-    isempty(ps′) && (ps′ = Vector{SymbolicT}())
+    isempty(ps′) && (ps′ = SymbolicT[])
 
     # Checks that no (by Catalyst) forbidden symbols are used.
     allsyms = Iterators.flatten((ps′, unknowns′))
@@ -1647,9 +1647,3 @@ unitless_exp(u) = iscall(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
 function unitless_symvar(sym)
     return (sym isa Symbolics.CallAndWrap) || (MT.get_unit(sym) == 1)
 end
-
-
-### Unsorted ###
-
-# Function previously used by ModelingToolkit.
-MT.refreshed_metadata(::Nothing) = MT.MetadataT() # FIXME: Type piracy

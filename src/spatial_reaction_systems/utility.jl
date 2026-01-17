@@ -40,7 +40,7 @@ function lattice_process_p(ps_in, ps_vertex_syms::Vector,
     # For uniform parameters these have size 1/(1,1). Else, they have size num_verts/(num_verts,num_verts).
     ps = lattice_process_input(ps_in, [ps_vertex_syms; ps_edge_syms])
 
-    # Split the parameter vector into one for vertex parameters and one for edge parameters. 
+    # Split the parameter vector into one for vertex parameters and one for edge parameters.
     # Next, convert their values to the correct form (vectors for vert_ps and sparse matrices for edge_ps).
     vert_ps, edge_ps = split_parameters(ps, ps_vertex_syms, ps_edge_syms)
     vert_ps = vertex_value_map(vert_ps, lrs)
@@ -80,12 +80,12 @@ end
 # Converts the values for the initial conditions/vertex parameters to the correct form:
 # A map vector from symbolics to vectors of either length 1 (for uniform values) or num_verts.
 function vertex_value_map(values, lrs::LatticeReactionSystem)
-    isempty(values) && (return Pair{BasicSymbolic{SymReal}, Vector{Float64}}[])
+    isempty(values) && (return Pair{SymbolicT, Vector{Float64}}[])
     return [entry[1] => vertex_value_form(entry[2], lrs, entry[1]) for entry in values]
 end
 
 # Converts the values for an individual species/vertex parameter to its correct vector form.
-function vertex_value_form(values, lrs::LatticeReactionSystem, sym::BasicSymbolic)
+function vertex_value_form(values, lrs::LatticeReactionSystem, sym::SymbolicT)
     # If the value is a scalar (i.e. uniform across the lattice), return it in vector form.
     (values isa AbstractArray) || (return [values])
 
@@ -111,7 +111,7 @@ end
 
 # Converts values to the correct vector form for a Cartesian grid lattice.
 function vertex_value_form(values::AbstractArray, num_verts::Int64,
-        lattice::CartesianGridRej{N, T}, sym::BasicSymbolic) where {N, T}
+        lattice::CartesianGridRej{N, T}, sym::SymbolicT) where {N, T}
     if size(values) != lattice.dims
         throw(ArgumentError("The values for $sym did not have the same format as the lattice. Expected a $(lattice.dims) array, got one of size $(size(values))"))
     end
@@ -123,7 +123,7 @@ end
 
 # Converts values to the correct vector form for a masked grid lattice.
 function vertex_value_form(values::AbstractArray, num_verts::Int64,
-        lattice::Array{Bool, T}, sym::BasicSymbolic) where {T}
+        lattice::Array{Bool, T}, sym::SymbolicT) where {T}
     if size(values) != size(lattice)
         throw(ArgumentError("The values for $sym did not have the same format as the lattice. Expected a $(size(lattice)) array, got one of size $(size(values))"))
     end
@@ -147,7 +147,7 @@ end
 # Converts the values for the edge parameters to the correct form:
 # A map vector from symbolics to sparse matrices of size either (1,1) or (num_verts,num_verts).
 function edge_value_map(values, lrs::LatticeReactionSystem)
-    isempty(values) && (return Pair{BasicSymbolic{SymReal}, SparseMatrixCSC{Float64, Int64}}[])
+    isempty(values) && (return Pair{SymbolicT, SparseMatrixCSC{Float64, Int64}}[])
     return [entry[1] => edge_value_form(entry[2], lrs, entry[1]) for entry in values]
 end
 
@@ -164,13 +164,13 @@ function edge_value_form(values, lrs::LatticeReactionSystem, sym)
         throw(ArgumentError("Values was not provided for some edges for edge parameter $sym."))
     end
 
-    # Unlike initial conditions/vertex parameters, (unless uniform) edge parameters' values  are 
+    # Unlike initial conditions/vertex parameters, (unless uniform) edge parameters' values  are
     # always provided in the same (sparse matrix) form.
     return values
 end
 
 # Creates a map, taking each species (with transportation) to its transportation rate.
-# The species is represented by its index (in species(lrs). 
+# The species is represented by its index (in species(lrs).
 # If the rate is uniform across all edges, the transportation rate will be a size (1,1) sparse matrix.
 # Else, the rate will be a size (num_verts,num_verts) sparse matrix.
 function make_sidxs_to_transrate_map(vert_ps::Vector{Pair{R, Vector{T}}},
@@ -190,7 +190,7 @@ end
 # Computes the transport rates for all species with transportation rates. Output is a map
 # taking each species' symbolics form to its transportation rates across all edges.
 function compute_all_transport_rates(p_val_dict, lrs::LatticeReactionSystem)
-    # For all species with transportation, compute their transportation rate (across all edges). 
+    # For all species with transportation, compute their transportation rate (across all edges).
     # This is a vector, pairing each species to these rates.
     unsorted_rates = [s => compute_transport_rates(s, p_val_dict, lrs)
                       for s in spatial_species(lrs)]
@@ -199,11 +199,11 @@ function compute_all_transport_rates(p_val_dict, lrs::LatticeReactionSystem)
     return sort(unsorted_rates; by = rate -> findfirst(isequal(rate[1]), species(lrs)))
 end
 
-# For the expression describing the rate of transport (likely only a single parameter, e.g. `D`), 
+# For the expression describing the rate of transport (likely only a single parameter, e.g. `D`),
 # and the values of all our parameters, compute the transport rate(s).
 # If all parameters that the rate depends on are uniform across all edges, this becomes a length-1 vector.
 # Else it becomes a vector where each value corresponds to the rate at one specific edge.
-function compute_transport_rates(s::BasicSymbolic, p_val_dict, lrs::LatticeReactionSystem)
+function compute_transport_rates(s::SymbolicT, p_val_dict, lrs::LatticeReactionSystem)
     # Find parameters involved in the rate and create a function evaluating the rate law.
     rate_law = get_transport_rate_law(s, lrs)
     relevant_ps = Symbolics.get_variables(rate_law)
@@ -228,7 +228,7 @@ end
 # For a species, retrieve the symbolic expression for its transportation rate
 # (likely only a single parameter, such as `D`, but could be e.g. L*D, where L and D are parameters).
 # If there are several transportation reactions for the species, their sum is used.
-function get_transport_rate_law(s::BasicSymbolic, lrs::LatticeReactionSystem)
+function get_transport_rate_law(s::SymbolicT, lrs::LatticeReactionSystem)
     rates = filter(sr -> isequal(s, sr.species), spatial_reactions(lrs))
     return sum(getfield.(rates, :rate))
 end
@@ -304,7 +304,7 @@ end
 
 ### System Property Checks ###
 
-# For a Symbolic expression, and a parameter set, check if any relevant parameters have a 
+# For a Symbolic expression, and a parameter set, check if any relevant parameters have a
 # spatial component. Filters out any parameters that are edge parameters.
 function has_spatial_vertex_component(exp, ps)
     relevant_syms = Symbolics.get_variables(exp)

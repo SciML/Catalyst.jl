@@ -232,7 +232,7 @@ function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse = false)
     end
 
     rcmap = reactioncomplexmap(rn)
-    mtype = eltype(rates) <: Symbolics.BasicSymbolic ? Num : eltype(rates)
+    mtype = eltype(rates) <: SymbolicT ? Num : eltype(rates)
     if sparse
         return fluxmat(SparseMatrixCSC{mtype, Int}, rcmap, rates)
     else
@@ -319,7 +319,7 @@ function massactionvector(rn::ReactionSystem, scmap::Dict = Dict();
         error("The supplied ReactionSystem has reactions that are not ismassaction. The mass action vector is only defined for pure mass action networks.")
     end
 
-    vtype = eltype(specs) <: Symbolics.BasicSymbolic ? Num : eltype(specs)
+    vtype = eltype(specs) <: SymbolicT ? Num : eltype(specs)
     Φ = Vector{vtype}()
     rcmap = reactioncomplexmap(rn)
     for comp in keys(reactioncomplexmap(rn))
@@ -1104,7 +1104,7 @@ function adjacencymat(rn::ReactionSystem, pmap::Dict = Dict(); sparse = false)
     else
         substitutevals(rn, pmap, parameters(rn), reactionrates(rn))
     end
-    mtype = eltype(rates) <: Symbolics.BasicSymbolic ? Num : eltype(rates)
+    mtype = eltype(rates) <: SymbolicT ? Num : eltype(rates)
 
     if sparse
         return adjacencymat(SparseMatrixCSC{mtype, Int}, incidencemat(rn), rates)
