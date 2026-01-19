@@ -56,7 +56,9 @@ Notes:
 """
 function tospecies(s)
     MT.isparameter(s) &&
-        error("Parameters can not be converted to species. Please pass a variable.")
+        throw(ArgumentError("Parameters, including isconstantspecies parameters, can not be converted to species. Please pass a variable."))
+    MT.getmetadata(MT.unwrap(s), ParameterConstantSpecies, false) && 
+        throw(ArgumentError("isconstantspecies metadata can only be used with parameters."))    
     MT.setmetadata(s, VariableSpecies, true)
 end
 
