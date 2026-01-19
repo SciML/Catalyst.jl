@@ -19,13 +19,6 @@ macro species(ex...)
     return Symbolics.parse_vars(:variables, Real, ex, tospecies)
 end
 
-# Converts a normal variable to a species variable. For internal use by `parse_vars` within `@species`.
-function tospecies(s)
-    s = setmetadata(s, Catalyst.VariableSpecies, true)
-    MT.getmetadata(MT.unwrap(s), ParameterConstantSpecies, false) && throw(ArgumentError("isconstantspecies metadata can only be used with parameters."))
-    return s
-end
-
 ### `@reaction_network` and `@network_component` Macros ###
 
 """
@@ -874,8 +867,8 @@ function read_events_option!(options, discs_inferred::Vector, ps_inferred::Vecto
         end
 
         # Adds the correctly formatted event to the event creation expression.
-        event_func = (event_type == :continuous_events ? :(ModelingToolkitBase.SymbolicContinuousCallback) :
-                      :(ModelingToolkitBase.SymbolicDiscreteCallback))
+        event_func = (event_type == :continuous_events ? :(MT.SymbolicContinuousCallback) :
+                      :(MT.SymbolicDiscreteCallback))
         event = :($event_func($(arg.args[2]) => $affects; discrete_parameters = $disc_ps))
         push!(events_expr.args, event)
     end

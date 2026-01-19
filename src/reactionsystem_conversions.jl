@@ -548,7 +548,7 @@ function make_rre_ode(rs::ReactionSystem; name = nameof(rs),
         checks,
         continuous_events = MT.get_continuous_events(fullrs),
         discrete_events = MT.get_discrete_events(fullrs),
-        metadata = ModelingToolkitBase.get_metadata(rs),
+        metadata = MT.get_metadata(rs),
         kwargs...)
 end
 
@@ -624,7 +624,7 @@ function make_rre_algeqs(rs::ReactionSystem; name = nameof(rs),
         observed = obs, initialization_eqs = initeqs,
         initial_conditions = merge(defaults, defs),
         checks,
-        metadata = ModelingToolkitBase.get_metadata(rs),
+        metadata = MT.get_metadata(rs),
         kwargs...)
 end
 
@@ -709,7 +709,7 @@ function make_cle_sde(rs::ReactionSystem;
         checks,
         continuous_events = MT.get_continuous_events(flatrs),
         discrete_events = MT.get_discrete_events(flatrs),
-        metadata = ModelingToolkitBase.get_metadata(rs),
+        metadata = MT.get_metadata(rs),
         kwargs...)
 end
 
@@ -816,7 +816,7 @@ function make_sck_jump(rs::ReactionSystem; name = nameof(rs),
         checks,
         discrete_events = MT.discrete_events(flatrs),
         continuous_events = MT.continuous_events(flatrs),
-        metadata = ModelingToolkitBase.get_metadata(rs),
+        metadata = MT.get_metadata(rs),
         kwargs...)
 end
 

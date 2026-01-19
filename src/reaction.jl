@@ -396,7 +396,7 @@ encountered in:
     - Among stoichiometries.
     - Among potential noise scaling metadata.
 """
-function ModelingToolkitBase.get_variables!(set, rx::Reaction)
+function MT.get_variables!(set, rx::Reaction)
     get_variables!(set, rx.rate)
     foreach(sub -> push!(set, sub), rx.substrates)
     foreach(prod -> push!(set, prod), rx.products)

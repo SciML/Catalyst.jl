@@ -1491,9 +1491,9 @@ Notes:
 - Returns a new `ReactionSystem` and does not modify `rs`.
 - By default, the new `ReactionSystem` will have the same name as `sys`.
 """
-function ModelingToolkitBase.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
-    complete_check(sys, "ModelingToolkitBase.compose")
-    foreach(s -> complete_check(s, "ModelingToolkitBase.compose"), systems)
+function MT.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
+    complete_check(sys, "MT.compose")
+    foreach(s -> complete_check(s, "MT.compose"), systems)
 
     nsys = length(systems)
     nsys == 0 && return sys
@@ -1530,10 +1530,10 @@ Notes:
 - Returns a new `ReactionSystem` and does not modify `rs`.
 - By default, the new `ReactionSystem` will have the same name as `sys`.
 """
-function ModelingToolkitBase.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
+function MT.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
         name::Symbol = nameof(sys))
-    complete_check(sys, "ModelingToolkitBase.extend")
-    complete_check(rs, "ModelingToolkitBase.extend")
+    complete_check(sys, "MT.extend")
+    complete_check(rs, "MT.extend")
 
     any(T -> sys isa T, (ReactionSystem, ODESystem, NonlinearSystem)) ||
         error("ReactionSystems can only be extended with ReactionSystems, ODESystems and NonlinearSystems currently. Received a $(typeof(sys)) system.")

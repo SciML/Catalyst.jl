@@ -104,7 +104,7 @@ function make_compound(expr)
     # If no ivs were given, inserts  an expression which evaluates to the union of the ivs
     # for the species the compound depends on.
     ivs_get_expr = :(unique(reduce(
-        vcat, (sorted_arguments(ModelingToolkitBase.unwrap(comp))
+        vcat, (sorted_arguments(MT.unwrap(comp))
         for comp in $components))))
     if isempty(ivs)
         species_expr = Catalyst.insert_independent_variable(species_expr, :($ivs_get_expr...))
@@ -126,19 +126,19 @@ function make_compound(expr)
         :($(isempty(ivs)) && (length($ivs_get_expr) > 1) &&
           error($COMPOUND_CREATION_ERROR_DEPENDENT_VAR_REQUIRED)))
     iv_check_expr = Expr(:escape,
-        :(issetequal(arguments(ModelingToolkitBase.unwrap($species_name)), $ivs_get_expr) ||
-          error("The independent variable(S) provided to the compound ($(arguments(ModelingToolkitBase.unwrap($species_name)))), and those of its components ($($ivs_get_expr)))), are not identical.")))
+        :(issetequal(arguments(MT.unwrap($species_name)), $ivs_get_expr) ||
+          error("The independent variable(S) provided to the compound ($(arguments(MT.unwrap($species_name)))), and those of its components ($($ivs_get_expr)))), are not identical.")))
     compound_designation_expr = Expr(:escape,
-        :($species_name = ModelingToolkitBase.setmetadata(
+        :($species_name = MT.setmetadata(
             $species_name, Catalyst.CompoundSpecies, true)))
     components_designation_expr = Expr(:escape,
-        :($species_name = ModelingToolkitBase.setmetadata(
+        :($species_name = MT.setmetadata(
             $species_name, Catalyst.CompoundComponents, $components)))
     coefficients_designation_expr = Expr(:escape,
-        :($species_name = ModelingToolkitBase.setmetadata(
+        :($species_name = MT.setmetadata(
             $species_name, Catalyst.CompoundCoefficients, $coefficients)))
     compound_wrap_expr = Expr(:escape,
-        :($species_name = ModelingToolkitBase.wrap($species_name)))
+        :($species_name = MT.wrap($species_name)))
 
     # Returns the rephrased expression.
     return quote
@@ -199,7 +199,7 @@ function make_compounds(expr)
     push!(compound_declarations.args, :($(Expr(:escape, :($(compound_syms))))))
 
     # The output needs to be converted to Vector{Num} (from  Vector{SymbolicUtils.SymbolicT}) to be consistent with e.g. @variables.
-    compound_declarations.args[end] = :([ModelingToolkitBase.wrap(cmp)
+    compound_declarations.args[end] = :([MT.wrap(cmp)
                                          for cmp in $(compound_declarations.args[end])])
 
     # Returns output that.
