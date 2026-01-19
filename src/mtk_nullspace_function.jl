@@ -5,11 +5,7 @@
 # from the "alias_elimination.jl" file. The code here needed for various network analysis
 # functionality, and was removed from MTK around the v10/v11 changes.
 
-### The "bareiss.jl" file ###
-
-# Keeps compatibility with bariess code moved to Base/stdlib on older releases
-
-# Keeps compatibility with bariess code moved to Base/stdlib on older releases
+### The "structural_transformation/bareiss.jl" file ###
 
 using LinearAlgebra
 using SparseArrays
@@ -143,7 +139,9 @@ function nullspace(A; col_order = nothing)
     end
 
     fill!(pivots_cache, 0)
-    N = reduced_echelon_nullspace(rank, B, pivots_cache) # Modified: Was `N = ModelingToolkit.reduced_echelon_nullspace(rank, B, pivots_cache)`.
+    
+    # Modified: Was `N = ModelingToolkit.reduced_echelon_nullspace(rank, B, pivots_cache)`.
+    N = reduced_echelon_nullspace(rank, B, pivots_cache) 
     apply_inv_pivot_rows!(N, column_pivots)
 end
 
@@ -263,7 +261,7 @@ function reduced_echelon_nullspace(rank, A::AbstractMatrix{T},
 end
 
 
-### From the "alias_elimination.jl file ###
+### From the "systems/alias_elimination.jl file ###
 
 function exactdiv(a::Integer, b)
     d, r = divrem(a, b)
