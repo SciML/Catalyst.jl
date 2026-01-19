@@ -37,7 +37,7 @@ import ModelingToolkitBase: SymmapT
 
 # internal but needed ModelingToolkit functions
 import ModelingToolkitBase: check_variables,
-                        check_parameters, _iszero, merge, check_units,
+                        check_parameters, _iszero, check_units,
                         get_unit, check_equations, iscomplete
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
