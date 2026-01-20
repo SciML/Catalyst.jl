@@ -76,18 +76,33 @@ const __UNINITIALIZED_CONSERVED_CONSTS = MT.unwrap(only(@parameters __UNINITIALI
 #! format: off
 # Internal cache for various ReactionSystem calculated properties
 Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: SymbolicT}
+    """Indicates if the network properties have been computed yet. true if not yet computed."""
     isempty::Bool = true
+    """The network stoichiometric matrix. Rows correspond to species, columns to reactions."""
     netstoichmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
+    """The conservation matrix. Rows correspond to conservation laws, columns to species."""
     conservationmat::Matrix{I} = Matrix{I}(undef, 0, 0)
+    """The cycle matrix."""
     cyclemat::Matrix{I} = Matrix{I}(undef, 0, 0)
+    """The column order of the stoichiometric matrix after row echelon form reduction. First
+    `rank` entries are the indices of independent species, next `nullity` entries are the
+    indices of dependent species."""
     col_order::Vector{Int} = Int[]
+    """The rank of the stoichiometric matrix, i.e. number of independent species."""
     rank::Int = 0
+    """The nullity of the stoichiometric matrix, i.e. number of dependent species."""
     nullity::Int = 0
+    """The independent species."""
     indepspecs::Set{V} = Set{V}()
+    """The dependent species."""
     depspecs::Set{V} = Set{V}()
+    """The conserved equations in the form dependent_species = conserved_constant - ..."""
     conservedeqs::Vector{Equation} = Equation[]
+    """The definitions of the conserved constants in the form conserved_constant = dependent_species + ..."""
     constantdefs::Vector{Equation} = Equation[]
-    conservedconst::SymbolicT = __UNINITIALIZED_CONSERVED_CONSTS # Was `::` pre MTKv11. Supposedly, this is the new recommendation, and closer assertions would be provided in a constructor if we want.
+    """The conserved constant symbolic vector, or a default value if not yet initialized."""
+    conservedconst::SymbolicT = __UNINITIALIZED_CONSERVED_CONSTS 
+    """Map from symbolics for each species to their index in the species vector."""
     speciesmap::Dict{V, Int} = Dict{V, Int}()
     complextorxsmap::OrderedDict{ReactionComplex{Int}, Vector{Pair{Int, Int}}} = OrderedDict{ReactionComplex{Int},Vector{Pair{Int,Int}}}()
     complexes::Vector{ReactionComplex{Int}} = Vector{ReactionComplex{Int}}(undef, 0)

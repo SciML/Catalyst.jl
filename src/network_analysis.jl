@@ -1207,8 +1207,9 @@ end
 """
     cycles(rs::ReactionSystem)
 
-    Returns the matrix of a basis of cycles (or flux vectors), or a basis for reaction fluxes for which the system is at steady state.
-    These correspond to right eigenvectors of the stoichiometric matrix. Equivalent to [`fluxmodebasis`](@ref).
+    Returns the matrix of a basis of cycles (or flux vectors), or a basis for reaction
+    fluxes for which the system is at steady state. These correspond to right eigenvectors
+    of the stoichiometric matrix. Equivalent to [`fluxmodebasis`](@ref).
 """
 function cycles(rs::ReactionSystem)
     nps = get_networkproperties(rs)
