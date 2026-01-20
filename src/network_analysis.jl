@@ -872,7 +872,8 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
         rhs_terms[i] = sum(p -> p[1] / scaleby * p[2], zip(coefs, indepspecs))
     end
 
-    # Declare the conservation constant parameters (`rhs_terms` guesses provides consistency in stored values and (probably) faster initialisation).
+    # Declare the conservation constant parameters 
+    #`using guesses is for consistency and possibly faster initialisation
     guesses = [Initial(depspecs[i] + rhs_terms[i]) for i in 1:nullity]
     Γs = @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] = missing [conserved = true, guess = guesses]
     constants = MT.unwrap(only(Γs))
