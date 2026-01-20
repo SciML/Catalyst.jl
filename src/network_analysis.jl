@@ -854,7 +854,7 @@ end
 
 # Used in the subsequent function.
 function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_order)
-    nullity = size(N, 1)
+    nullity = size(N, 1)             # number of cons laws
     r = numspecies(rn) - nullity     # rank of the netstoichmat
     sts = species(rn)
     indepidxs = col_order[begin:r]
@@ -863,21 +863,19 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     depspecs = sts[depidxs]
 
     # Compute the rhs terms for each conservation constant.
-    rhs_terms = Symbolics.SymbolicT[]
+    rhs_terms = Vector{SymbolicT}(undef, nullity)
     for (i, depidx) in enumerate(depidxs)
         scaleby = (N[i, depidx] != 1) ? N[i, depidx] : one(eltype(N))
-        (scaleby != 0) || error("Error, found a zero in the conservation law matrix where "
-                *
-                "one was not expected.")
+        (scaleby != 0) || 
+            error("Error, found a zero in the conservation law matrix where one was not expected.")
         coefs = @view N[i, indepidxs]
-        push!(rhs_terms, sum(p -> p[1] / scaleby * p[2], zip(coefs, indepspecs)))
+        rhs_terms[i] = sum(p -> p[1] / scaleby * p[2], zip(coefs, indepspecs))
     end
 
     # Declare the conservation constant parameters (`rhs_terms` guesses provides consistency in stored values and (probably) faster initialisation).
     guesses = [Initial(depspecs[i] + rhs_terms[i]) for i in 1:nullity]
-    constants = MT.unwrap(only(
-        @parameters $(:Γ)[1:nullity] = missing [
-        conserved = true, guess = guesses]))
+    Γs = @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] = missing [conserved = true, guess = guesses]
+    constants = MT.unwrap(only(Γs))
 
     # Creates the conservation constant and conservation equation equations.
     conservedeqs = [depspecs[i] ~ constants[i] - rhs_terms[i] for i in 1:nullity]
