@@ -39,11 +39,10 @@ Tests if the given symbolic variable corresponds to a chemical species.
 """
 isspecies(s::Num) = isspecies(MT.value(s))
 function isspecies(s)
-    return if iscall(s) && operation(s) === getindex
-        MT.getmetadata(arguments(MT.unwrap(s))[1], Catalyst.VariableSpecies, false)
-    else
-        MT.getmetadata(s, Catalyst.VariableSpecies, false)
+    if iscall(s) && operation(s) === getindex
+        s = first(arguments(s))
     end
+    return MT.getmetadata(s, Catalyst.VariableSpecies, false)
 end
 
 """
