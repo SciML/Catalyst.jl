@@ -1183,7 +1183,7 @@ function matrixtree(g::SimpleDiGraph, distmx::Matrix)
     # constructed rooted trees for every vertex, compute sum
     for v in 1:n
         rootedTrees = [reverse(Graphs.bfs_tree(t, v, dir = :in)) for t in trees]
-        π[v] = convert(Float64, Symbolics.value(sum([treeweight(t, g, distmx) for t in rootedTrees])))
+        π[v] = convert(eltype(π), Symbolics.value(sum([treeweight(t, g, distmx) for t in rootedTrees])))
     end
 
     # sum the contributions
