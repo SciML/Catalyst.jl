@@ -974,7 +974,9 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 1e-
     spanning_forest = Graphs.kruskal_mst(undir_img)
     outofforest_edges = setdiff(collect(edges(undir_img)), spanning_forest)
 
-    # Independent Cycle Conditions: for any cycle we create by adding in an out-of-forest reaction, the product of forward reaction rates over the cycle must equal the product of reverse reaction rates over the cycle.
+    # Independent Cycle Conditions: for any cycle we create by adding in an out-of-forest
+    # reaction, the product of forward reaction rates over the cycle must equal the product
+    # of reverse reaction rates over the cycle.
     for edge in outofforest_edges
         g = SimpleGraph([spanning_forest..., edge])
         ic = Graphs.cycle_basis(g)[1]
@@ -983,8 +985,9 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 1e-
         isapprox(fwd, rev; atol = abstol, rtol = reltol) ? continue : return false
     end
 
-    # Spanning Forest Conditions: for non-deficiency 0 networks, we get an additional δ equations. Choose an orientation for each reaction pair in the spanning forest (we will take the one given by default from kruskal_mst).
-
+    # Spanning Forest Conditions: for non-deficiency 0 networks, we get an additional δ
+    # equations. Choose an orientation for each reaction pair in the spanning forest (we
+    # will take the one given by default from kruskal_mst).
     if deficiency(rs) > 0
         rxn_idxs = [edgeindex(D, Graphs.src(e), Graphs.dst(e)) for e in spanning_forest]
         S_F = netstoichmat(rs)[:, rxn_idxs]
@@ -1000,7 +1003,7 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 1e-
         end
     end
 
-    true
+    return true
 end
 
 # Helper to find the index of the reaction with a given reactant and product complex.
