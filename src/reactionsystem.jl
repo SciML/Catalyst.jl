@@ -419,7 +419,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
         spatial_ivs = nothing,
         continuous_events = nothing,
         discrete_events = nothing,
-        metadata = MT.MetadataT)
+        metadata = MT.MetadataT())
 
     # Error checks
     name === nothing &&
