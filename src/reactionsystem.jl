@@ -1395,9 +1395,17 @@ Construct an empty [`ReactionSystem`](@ref). `iv` is the independent variable,
 usually time, and `name` is the name to give the `ReactionSystem`.
 """
 function make_empty_network(; iv = DEFAULT_IV, name = gensym(:ReactionSystem))
-    ReactionSystem(Reaction[], iv, [], []; name = name)
+    ReactionSystem(Reaction[], iv, SymbolicT[], SymbolicT[]; name = name)
 end
 
+# Checks if a system is an allowed subsystem (i.e. no SDE parts and no jump).
+is_allowed_subsystem(sys::ReactionSystem) = true
+function is_allowed_subsystem(sys::System)
+    return (isnothing(MT.get_noise_eqs(sys)) || isempty(MT.get_noise_eqs(sys))) &&
+        (isnothing(MT.get_jumps(sys)) || isempty(MT.get_jumps(sys)))
+end
+# If neither a `ReactionSystem` or a `System`, it is something weird we do not know what it is.
+is_allowed_subsystem(sys::MT.AbstractSystem) = false
 
 """
     ModelingToolkitBase.flatten(rs::ReactionSystem)
@@ -1435,15 +1443,6 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
         discrete_events = MT.discrete_events(rs),
         metadata = MT.get_metadata(rs))
 end
-
-# Checks if a system is an allowed subsystem (i.e. no SDE parts and no jump).
-is_allowed_subsystem(sys::ReactionSystem) = true
-function is_allowed_subsystem(sys::System)
-    return (isnothing(MT.get_noise_eqs(sys)) || isempty(MT.get_noise_eqs(sys))) &&
-        (isnothing(MT.get_jumps(sys)) || isempty(MT.get_jumps(sys)))
-end
-# If neither a `ReactionSystem` or a `System`, it is something weird we do not know what it is.
-is_allowed_subsystem(sys::MT.AbstractSystem) = false
 
 function complete_check(sys, method)
     if MT.iscomplete(sys)
