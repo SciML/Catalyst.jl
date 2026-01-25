@@ -302,7 +302,7 @@ let
     @test issetequal(species(rn22), [X Y Y2])
 end
 
-# Tests that defaults work.
+# Tests that initial values in declarations work.
 let
     rn26 = @reaction_network rnname begin
         @parameters p=1.0 d1 d2=5

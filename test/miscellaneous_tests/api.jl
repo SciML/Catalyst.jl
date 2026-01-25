@@ -312,36 +312,10 @@ let
     end
 end
 
-# Test defaults.
-# Uses mutating stuff (`setdefaults!`) and order dependent input (`species(rn) .=> u0`).
+# Test @unpack with symbolic variables.
 let
-    rn = @reaction_network begin
-        α, S + I --> 2I
-        β, I --> R
-    end
-    p = [0.1 / 1000, 0.01]
     tspan = (0.0, 250.0)
-    u0 = [999.0, 1.0, 0.0]
-    op = ODEProblem(rn, species(rn) .=> u0, tspan, parameters(rn) .=> p)
-    sol = solve(op, Tsit5())  # old style
-    setdefaults!(rn, [:S => 999.0, :I => 1.0, :R => 0.0, :α => 1e-4, :β => 0.01])
-    op = ODEProblem(rn, [], tspan, [])
-    sol2 = solve(op, Tsit5())
-    @test norm(sol.u - sol2.u) ≈ 0
-    @test all(p -> p[1] isa Symbolics.SymbolicT, collect(ModelingToolkitBase.initial_conditions(rn)))
 
-    rn = @reaction_network begin
-        α, S + I --> 2I
-        β, I --> R
-    end
-    @parameters α β
-    @species S(t) I(t) R(t)
-    setdefaults!(rn, [S => 999.0, I => 1.0, R => 0.0, α => 1e-4, β => 0.01])
-    op = ODEProblem(rn, [], tspan, [])
-    sol2 = solve(op, Tsit5())
-    @test norm(sol.u - sol2.u) ≈ 0
-
-    # Rest unpacking variables.
     function unpacktest(rn)
         @unpack S1, I1, R1, α1, β1 = rn
         u₀ = [S1 => 999.0, I1 => 1.0, R1 => 0.0]
@@ -353,8 +327,7 @@ let
         α1, S1 + I1 --> 2I1
         β1, I1 --> R1
     end
-    sol3 = unpacktest(rn)
-    @test norm(sol.u - sol3.u) ≈ 0 atol = 1e-10 rtol = 1e-10
+    sol = unpacktest(rn)
 
     # Test symmap_to_varmap.
     sir = @network_component sir begin
@@ -377,14 +350,14 @@ let
     u0map = symmap_to_varmap(sir, [:S => 999.0, :I => 1.0, :R => 0.0])
     pmap = symmap_to_varmap(sir, [:β => 1e-4, :ν => 0.01])
     op = ODEProblem(sir, u0map, tspan, pmap)
-    sol4 = solve(op, Tsit5())
-    @test norm(sol.u - sol4.u) ≈ 0
+    sol2 = solve(op, Tsit5())
+    @test norm(sol.u - sol2.u) ≈ 0 atol = 1e-10
 
     u0map = [:S => 999.0, :I => 1.0, :R => 0.0]
     pmap = (:β => 1e-4, :ν => 0.01)
     op = ODEProblem(sir, u0map, tspan, pmap)
-    sol5 = solve(op, Tsit5())
-    @test norm(sol.u - sol5.u) ≈ 0
+    sol3 = solve(op, Tsit5())
+    @test norm(sol.u - sol3.u) ≈ 0 atol = 1e-10
 end
 
 

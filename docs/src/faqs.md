@@ -146,26 +146,15 @@ plot(sol)
 ```
 
 One can also build a mapping from symbolic parameter/species to value/initial
-condition and pass these to the `ReactionSystem` via the `defaults` keyword
+condition and pass these to the `ReactionSystem` via the `initial_conditions` keyword
 argument:
 ```@example faq3
 @parameters β ν
 @species S(t) I(t) R(t)
 rx1 = Reaction(β, [S,I], [I], [1,1], [2])
 rx2 = Reaction(ν, [I], [R])
-defs = [β => 1e-4, ν => .01, S => 999.0, I => 1.0, R => 0.0]
-@named sir = ReactionSystem([rx1, rx2], t; defaults = defs)
-nothing # hide
-```
-
-Finally, default values can also be added after creating the system via the
-`setdefaults!` command and passing a `Symbol` based mapping, like
-```@example faq3
-sir = @reaction_network sir begin
-    β, S + I --> 2I
-    ν, I --> R
-end
-setdefaults!(sir, [:β => 1e-4, :ν => .01, :S => 999.0, :I => 1.0, :R => 0.0])
+ics = [β => 1e-4, ν => .01, S => 999.0, I => 1.0, R => 0.0]
+@named sir = ReactionSystem([rx1, rx2], t; initial_conditions = ics)
 nothing # hide
 ```
 

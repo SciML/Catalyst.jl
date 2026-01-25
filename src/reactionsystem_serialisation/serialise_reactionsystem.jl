@@ -160,7 +160,7 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
     # Goes through various fields that might exists, and if so, adds them to the string.
     has_sivs && (@string_append! reaction_system_string ", spatial_ivs")
     has_observed && (@string_append! reaction_system_string ", observed")
-    has_defaults && (@string_append! reaction_system_string ", defaults")
+    has_defaults && (@string_append! reaction_system_string ", initial_conditions")
     has_continuous_events && (@string_append! reaction_system_string ", continuous_events")
     has_discrete_events && (@string_append! reaction_system_string ", discrete_events")
     has_systems && (@string_append! reaction_system_string ", systems")

@@ -88,7 +88,7 @@ const CatalystEqType = Union{Reaction, Equation}
 include("reactionsystem.jl")
 export ReactionSystem, isspatial
 export species, nonspecies, reactions, nonreactions, speciesmap, paramsmap
-export numspecies, numreactions, setdefaults!
+export numspecies, numreactions
 export make_empty_network
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export isautonomous

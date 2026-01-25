@@ -401,22 +401,6 @@ let
     @test length(equations(orsc)) == 1
 end
 
-# Test constraint system symbols can be set via setdefaults!.
-let
-    @parameters b
-    @species V(t) [isbcspecies = true]
-    rn = @network_component begin
-        @parameters k
-        k/$V, A + B --> C
-    end
-    Dt = default_time_deriv()
-    @named csys = System([Dt(V) ~ -b * V], t)
-    @named fullrn = extend(csys, rn)
-    setdefaults!(fullrn, [:b => 2.0])
-    @unpack b = fullrn
-    @test haskey(MT.initial_conditions(fullrn), b)
-    @test Symbolics.value(MT.initial_conditions(fullrn)[b]) == 2.0
-end
 
 # https://github.com/SciML/Catalyst.jl/issues/545
 let

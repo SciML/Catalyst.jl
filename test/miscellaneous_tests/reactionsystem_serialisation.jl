@@ -411,10 +411,10 @@ let
         Reaction(k1, [X1], [X2]),
         Reaction(k2, [X2], [X1])
     ]
-    defaults = Dict((X1 => 1.0, k2 => 2))
+    initial_conditions = Dict((X1 => 1.0, k2 => 2))
 
     # Creates model and computes conservation laws.
-    @named rs = ReactionSystem(rxs, t; defaults)
+    @named rs = ReactionSystem(rxs, t; initial_conditions)
     conservationlaws(rs)
 
     # Serialises model and then loads and checks it.

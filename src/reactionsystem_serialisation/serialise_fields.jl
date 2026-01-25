@@ -399,7 +399,7 @@ end
 
 # Extract a string which declares the system's defaults.
 function get_defaults_string(rn::ReactionSystem)
-    defaults_string = "defaults = " * x_2_string(MT.get_initial_conditions(rn))
+    defaults_string = "initial_conditions = " * x_2_string(MT.get_initial_conditions(rn))
     return defaults_string
 end
 

@@ -283,8 +283,8 @@ Keyword Arguments:
 - `systems::Vector{AbstractSystems}`, vector of sub-systems. Can be `ReactionSystem`s,
   `ODESystem`s, or `NonlinearSystem`s.
 - `name::Symbol`, the name of the system (must be provided, or `@named` must be used).
-- `defaults::Dict`, a dictionary mapping parameters to their default values and species to
-  their default initial values.
+- `initial_conditions::SymmapT`, a dictionary mapping parameters and species to their initial
+  values.
 - `checks = true`, boolean for whether to check units.
 - `networkproperties = NetworkProperties()`, cache for network properties calculated via API
   functions.
@@ -323,10 +323,10 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """Internal sub-systems"""
     systems::Vector
     """
-    The default values to use when initial conditions and/or
+    The initial values to use when initial conditions and/or
     parameters are not supplied in `ODEProblem`.
     """
-    initial_conditions::Dict
+    initial_conditions::SymmapT
     """Type of the system"""
     connection_type::Any
     """`NetworkProperties` object that can be filled in by API functions. INTERNAL -- not
@@ -410,9 +410,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
         observed = Equation[],
         systems = [],
         name = nothing,
-        default_u0 = Dict(),
-        default_p = Dict(),
-        defaults = merge(Dict(default_u0), Dict(default_p)),
+        initial_conditions = SymmapT(),
         connection_type = nothing,
         checks = true,
         networkproperties = nothing,
@@ -430,14 +428,8 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     (length(unique(sysnames)) == length(sysnames)) ||
         throw(ArgumentError("System names must be unique."))
 
-    # Handle defaults values provided via optional arguments.
-    if !(isempty(default_u0) && isempty(default_p))
-        Base.depwarn(
-            "`default_u0` and `default_p` are deprecated. Use `defaults` instead.",
-            :ReactionSystem, force = true)
-    end
-    defaults = MT.todict(defaults)
-    defaults = MT.SymmapT(value(k) => value(v) for (k, v) in pairs(defaults))
+    # Process initial_conditions to unwrap Num wrappers.
+    initial_conditions = SymmapT(value(k) => value(v) for (k, v) in pairs(initial_conditions))
 
     # handles "bindings". Recently introduced in MTK/Symbolics, explicit Catalyst support need to be
     # implemented. Left empty for now.
@@ -487,10 +479,10 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     end
 
     # Adds all unknowns/parameters to the `var_to_name` vector.
-    # Adds their (potential) default values to the defaults vector.
+    # Adds their (potential) initial values to the initial_conditions dictionary.
     var_to_name = Dict{Symbol, SymbolicT}()
-    MT.process_variables!(var_to_name, defaults, bindings, unknowns′)
-    MT.process_variables!(var_to_name, defaults, bindings, ps′)
+    MT.process_variables!(var_to_name, initial_conditions, bindings, unknowns′)
+    MT.process_variables!(var_to_name, initial_conditions, bindings, ps′)
     MT.collect_var_to_name!(var_to_name, convert(Vector{SymbolicT}, [eq.lhs for eq in observed]))
 
     # Computes network properties.
@@ -509,7 +501,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
 
     ReactionSystem(
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
-        systems, defaults, connection_type, nps, combinatoric_ratelaws,
+        systems, initial_conditions, connection_type, nps, combinatoric_ratelaws,
         continuous_events, discrete_events, metadata; checks = checks)
 end
 
@@ -1218,45 +1210,6 @@ function reactionsystem_uptodate_check()
     if fieldnames(ReactionSystem) != reactionsystem_fields
         @warn "The `ReactionSystem` structure have been modified without this being taken into account in the functionality you are attempting to use. Please report this at https://github.com/SciML/Catalyst.jl/issues. Proceed with caution, as there might be errors in whichever functionality you are attempting to use."
     end
-end
-
-"""
-    setdefaults!(rn, newdefs)
-
-Sets the default (initial) values of parameters and species in the
-`ReactionSystem`, `rn`.
-
-For example,
-```julia
-sir = @reaction_network SIR begin
-    β, S + I --> 2I
-    ν, I --> R
-end
-setdefaults!(sir, [:S => 999.0, :I => 1.0, :R => 1.0, :β => 1e-4, :ν => .01])
-
-# or
-t = default_t()
-@parameter β ν
-@species S(t) I(t) R(t)
-setdefaults!(sir, [S => 999.0, I => 1.0, R => 0.0, β => 1e-4, ν => .01])
-```
-gives initial/default values to each of `S`, `I` and `β`
-
-Notes:
-- Can not be used to set default values for species, variables or parameters of
-  subsystems or constraint systems. Either set defaults for those systems
-  directly, or [`flatten`](@ref) to collate them into one system before setting
-  defaults.
-- Defaults can be specified in any iterable container of symbols to value pairs
-  or symbolics to value pairs.
-"""
-function setdefaults!(rn, newdefs)
-    defs = eltype(newdefs) <: Pair{Symbol} ? symmap_to_varmap(rn, newdefs) : newdefs
-    rndefs = MT.get_initial_conditions(rn)
-    for (var, val) in defs
-        rndefs[value(var)] = value(val)
-    end
-    nothing
 end
 
 """
