@@ -348,7 +348,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """
     Metadata for the system, to be used by downstream packages.
     """
-    metadata::Any
+    metadata::MT.MetadataT
     """
     complete: if a model `sys` is complete, then `sys.x` no longer performs namespacing.
     """
@@ -419,7 +419,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
         spatial_ivs = nothing,
         continuous_events = nothing,
         discrete_events = nothing,
-        metadata = [])
+        metadata = MT.MetadataT)
 
     # Error checks
     name === nothing &&
@@ -437,17 +437,16 @@ function ReactionSystem(eqs, iv, unknowns, ps;
 
     # Extracts independent variables (iv and sivs), dependent variables (species and variables)
     # and parameters. Sorts so that species comes before variables in unknowns vector.
-    iv′ = value(iv)
+    iv′ = unwrap(iv)
     sivs′ = if spatial_ivs === nothing
         Vector{typeof(iv′)}()
     else
-        value.(spatial_ivs)
+        unwrap.(spatial_ivs)
     end
-    unknowns′ = sort!(value.(unknowns), by = !isspecies)
-    isempty(unknowns′) && (unknowns′ = SymbolicT[])
+
+    unknowns′ = isempty(unknowns) ? SymbolicT[] : sort!(unwrap.(unknowns), by = !isspecies)
     spcs = filter(isspecies, unknowns′)
-    ps′ = value.(ps)
-    isempty(ps′) && (ps′ = SymbolicT[])
+    ps′ = isempty(ps) ? SymbolicT[] : unwrap.(ps)
 
     # Checks that no (by Catalyst) forbidden symbols are used.
     allsyms = Iterators.flatten((ps′, unknowns′))
