@@ -167,7 +167,7 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
     has_connection_type && (@string_append! reaction_system_string ", connection_type")
 
     # Potentially appends a combinatoric_ratelaws statement.
-    if !Symbolics.unwrap(combinatoric_ratelaws(rs))
+    if !unwrap(combinatoric_ratelaws(rs))
         @string_append! reaction_system_string ", combinatoric_ratelaws = false"
     end
 

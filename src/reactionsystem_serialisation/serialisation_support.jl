@@ -85,7 +85,7 @@ end
 # Converts a vector of symbolics (e.g. the species or parameter vectors) to a string vector. Strips
 # any calls (e.g. X(t) becomes X). E.g. a species vector [X, Y, Z] is converted to "[X, Y, Z]".
 function syms_2_strings(syms)
-    strip_called_syms = [strip_call(Symbolics.unwrap(sym)) for sym in syms]
+    strip_called_syms = [strip_call(unwrap(sym)) for sym in syms]
     return get_substring_end("$(convert(Vector{Any}, strip_called_syms))", 4, 0)
 end
 
@@ -251,7 +251,7 @@ end
 
 # For an vector of symbolics, creates a dictionary taking each symbolics to each call-stripped form.
 function make_strip_call_dict(syms)
-    return Dict([sym => strip_call(Symbolics.unwrap(sym)) for sym in syms])
+    return Dict([sym => strip_call(unwrap(sym)) for sym in syms])
 end
 
 # If the input is a `ReactionSystem`, extracts the unknowns (i.e. syms depending on another variable).

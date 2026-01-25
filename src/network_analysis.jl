@@ -283,7 +283,7 @@ function substitutevals(rn::ReactionSystem, map::Dict, syms, symexprs)
     length(map) != length(syms) &&
         error("Incorrect number of parameter-value pairs were specified.")
     map = symmap_to_varmap(rn, map)
-    map = Dict(MT.value(k) => v for (k, v) in map)
+    map = Dict(value(k) => v for (k, v) in map)
     vals = [substitute(expr, map) for expr in symexprs]
 end
 
@@ -774,7 +774,7 @@ isconserved(p)
 Checks if the input parameter (`p`) is a conserved quantity (i.e. have the `conserved`)
 metadata.
 """
-isconserved(x::Num, args...) = isconserved(Symbolics.unwrap(x), args...)
+isconserved(x::Num, args...) = isconserved(unwrap(x), args...)
 function isconserved(x, default = false)
     if iscall(x) && operation(x) === getindex
         x = first(arguments(x))
@@ -877,7 +877,7 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     #`using guesses is for consistency and possibly faster initialisation
     guesses = [Initial(depspecs[i] + rhs_terms[i]) for i in 1:nullity]
     Γs = @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] = missing [conserved = true, guess = guesses]
-    constants = MT.unwrap(only(Γs))
+    constants = unwrap(only(Γs))
 
     # Creates the conservation constant and conservation equation equations.
     conservedeqs = [depspecs[i] ~ constants[i] - rhs_terms[i] for i in 1:nullity]
@@ -964,7 +964,7 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 1e-
     isforestlike(rs) && deficiency(rs) == 0 && return true
 
     pmap = symmap_to_varmap(rs, parametermap)
-    pmap = Dict(MT.value(k) => v for (k, v) in pmap)
+    pmap = Dict(value(k) => v for (k, v) in pmap)
 
     # Construct reaction-complex graph
     complexes, D = reactioncomplexes(rs)
@@ -1188,7 +1188,7 @@ function matrixtree(g::SimpleDiGraph, distmx::Matrix)
     # constructed rooted trees for every vertex, compute sum
     for v in 1:n
         rootedTrees = [reverse(Graphs.bfs_tree(t, v, dir = :in)) for t in trees]
-        π[v] = convert(eltype(π), Symbolics.value(sum([treeweight(t, g, distmx) for t in rootedTrees])))
+        π[v] = convert(eltype(π), value(sum([treeweight(t, g, distmx) for t in rootedTrees])))
     end
 
     # sum the contributions

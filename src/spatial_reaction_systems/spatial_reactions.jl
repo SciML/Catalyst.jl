@@ -15,7 +15,7 @@ Symbolics.option_to_metadata_type(::Val{:edgeparameter}) = EdgeParameter
 
 Returns `true` if the parameter `p` is an edge parameter (else `false`).
 """
-isedgeparameter(x::Num, args...) = isedgeparameter(Symbolics.unwrap(x), args...)
+isedgeparameter(x::Num, args...) = isedgeparameter(unwrap(x), args...)
 function isedgeparameter(x, default = false)
     if iscall(x) && operation(x) === getindex
         x = first(arguments(x))

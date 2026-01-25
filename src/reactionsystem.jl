@@ -71,7 +71,7 @@ end
 Base.Sort.defalg(::ReactionComplex) = Base.DEFAULT_UNSTABLE
 
 ### NetworkProperties Structure ###
-const __UNINITIALIZED_CONSERVED_CONSTS = MT.unwrap(only(@parameters __UNINITIALIZED[1:1]))
+const __UNINITIALIZED_CONSERVED_CONSTS = unwrap(only(@parameters __UNINITIALIZED[1:1]))
 
 #! format: off
 # Internal cache for various ReactionSystem calculated properties
@@ -192,7 +192,7 @@ function get_speciestype(iv, unknowns, systems)
 
     if T <: Nothing
         @variables A($iv)
-        T = typeof(MT.unwrap(A))
+        T = typeof(unwrap(A))
     end
 
     T
@@ -1357,7 +1357,7 @@ function set_default_metadata(rs::ReactionSystem; default_reaction_metadata = []
     if haskey(drm_dict, :noise_scaling)
         # Finds parameters, species, and variables in the noise scaling term.
         ns_expr = drm_dict[:noise_scaling]
-        ns_syms = [Symbolics.unwrap(sym) for sym in get_variables(ns_expr)]
+        ns_syms = [unwrap(sym) for sym in get_variables(ns_expr)]
         ns_ps = Iterators.filter(MT.isparameter, ns_syms)
         ns_sps = Iterators.filter(Catalyst.isspecies, ns_syms)
         ns_vs = Iterators.filter(

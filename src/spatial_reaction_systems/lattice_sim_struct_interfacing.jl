@@ -41,7 +41,7 @@ function lat_setp!(sim_struct, p, lrs::LatticeReactionSystem, p_vals)
 
     # Converts symbol parameter to symbolic and find the correct species index and numbers.
     (p isa Symbol) && (p = _symbol_to_var(lrs, p))
-    (p isa Num) && (p = Symbolics.unwrap(p))
+    (p isa Num) && (p = unwrap(p))
     p_idx, p_tot = get_p_idxs(p, lrs)
 
     # Reshapes the values to a vector of the correct form, and calls lat_setp! on the input structure.
@@ -181,7 +181,7 @@ function lat_setu!(sim_struct, sp, lrs::LatticeReactionSystem, u)
 
     # Converts symbol species to symbolic and finds correct species index and numbers.
     (sp isa Symbol) && (sp = _symbol_to_var(lrs, sp))
-    (sp isa Num) && (sp = Symbolics.unwrap(sp))
+    (sp isa Num) && (sp = unwrap(sp))
     sp_idx, sp_tot = get_sp_idxs(sp, lrs)
 
     # Reshapes the values to a vector of the correct form, and calls lat_setu! on the input structure.

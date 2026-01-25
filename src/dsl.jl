@@ -770,7 +770,7 @@ function read_observables_option(
                 dep_var_expr = :(filter(!MT.isparameter,
                     Symbolics.get_variables($(obs_eq.args[3]))))
                 ivs_get_expr = :(unique(reduce(
-                    vcat, [sorted_arguments(MT.unwrap(dep))
+                    vcat, [sorted_arguments(unwrap(dep))
                            for dep in $dep_var_expr])))
                 ivs_get_expr_sorted = :(sort($(ivs_get_expr);
                     by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $all_ivs)))

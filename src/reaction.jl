@@ -14,7 +14,7 @@ Symbolics.option_to_metadata_type(::Val{:isspecies}) = VariableSpecies
 
 Tests if the given symbolic variable corresponds to a constant species.
 """
-isconstant(s::Num) = isconstant(MT.value(s))
+isconstant(s::Num) = isconstant(value(s))
 function isconstant(s)
     if iscall(s) && operation(s) === getindex
         s = first(arguments(s))
@@ -27,7 +27,7 @@ end
 
 Tests if the given symbolic variable corresponds to a boundary condition species.
 """
-isbc(s::Num) = isbc(MT.value(s))
+isbc(s::Num) = isbc(value(s))
 function isbc(s)
     MT.getmetadata(s, VariableBCSpecies, false)
 end
@@ -37,7 +37,7 @@ end
 
 Tests if the given symbolic variable corresponds to a chemical species.
 """
-isspecies(s::Num) = isspecies(MT.value(s))
+isspecies(s::Num) = isspecies(value(s))
 function isspecies(s)
     if iscall(s) && operation(s) === getindex
         s = first(arguments(s))
@@ -56,7 +56,7 @@ Notes:
 function tospecies(s)
     MT.isparameter(s) &&
         throw(ArgumentError("Parameters, including isconstantspecies parameters, can not be converted to species. Please pass a variable."))
-    MT.getmetadata(MT.unwrap(s), ParameterConstantSpecies, false) && 
+    MT.getmetadata(unwrap(s), ParameterConstantSpecies, false) && 
         throw(ArgumentError("isconstantspecies metadata can only be used with parameters."))    
     MT.setmetadata(s, VariableSpecies, true)
 end
