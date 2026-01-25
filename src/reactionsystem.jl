@@ -701,13 +701,39 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
 
     # coupled systems
     if (length(get_systems(rn1)) != length(get_systems(rn2)))
-        println("Systems have different numbers of subsystems.")
+        debug && println("Systems have different numbers of subsystems.")
         return false
     end
-    debug_comparer(issetequal, get_systems(rn1), get_systems(rn2), "systems"; debug) ||
+    # Use isequivalent recursively for subsystems instead of issetequal (which uses ==).
+    # This is needed because == on ReactionSystems uses object identity.
+    if !systems_are_equivalent(get_systems(rn1), get_systems(rn2); ignorenames, debug)
+        debug && println("Comparison was false for property: systems",
+            "\n    Found: ", get_systems(rn1), " vs ", get_systems(rn2))
         return false
+    end
 
     true
+end
+
+# Helper for isequivalent: checks if two collections of ReactionSystems are equivalent.
+# For each system in sys1, checks there's an equivalent one in sys2 (using isequivalent).
+function systems_are_equivalent(sys1, sys2; ignorenames = true, debug = false)
+    length(sys1) != length(sys2) && return false
+    isempty(sys1) && return true
+    matched = falses(length(sys2))
+    for s1 in sys1
+        found = false
+        for (j, s2) in enumerate(sys2)
+            matched[j] && continue  # already matched to another system
+            if isequivalent(s1, s2; ignorenames, debug)
+                matched[j] = true
+                found = true
+                break
+            end
+        end
+        !found && return false
+    end
+    return true
 end
 
 ### Basic `ReactionSystem`-specific Accessors ###

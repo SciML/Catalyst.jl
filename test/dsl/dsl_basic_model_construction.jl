@@ -78,10 +78,10 @@ let
     rs_empty_comp_3 = @reaction_network $name_sym
 
     # Check that empty networks are correct.
-    isequivalent(rs_empty_1, rs_empty)
+    Catalyst.isequivalent(rs_empty_1, rs_empty)
     rs_empty_2 == rs_empty
     rs_empty_3 == rs_empty
-    isequivalent(rs_empty_comp_1, rs_empty_comp)
+    Catalyst.isequivalent(rs_empty_comp_1, rs_empty_comp)
     rs_empty_comp_2 == rs_empty_comp
     rs_empty_comp_3 == rs_empty_comp
 
@@ -106,10 +106,10 @@ let
     end
 
     # Check that non-empty networks are correct.
-    isequivalent(rs_1, rs)
+    Catalyst.isequivalent(rs_1, rs)
     rs_2 == rs
     rs_3 == rs
-    isequivalent(rs_empty_1, rs_empty)
+    Catalyst.isequivalent(rs_empty_1, rs_empty)
     rs_empty_2 == rs_empty
     rs_empty_3 == rs_empty
 end
@@ -471,7 +471,7 @@ let
         p, ∅ --> X
         d, X --> 0
     end
-    @test rn1 == rn2 == rn3 == rn4 == rn5 == rn6
+    @test all(rn -> Catalyst.isequivalent(rn1, rn), (rn2, rn3, rn4, rn5, rn6))
 end
 
 # Tests backwards and bi-directional arrows.
@@ -490,7 +490,7 @@ let
         b1, B --> 0
     end
 
-    @test rn1 == rn2
+    @test Catalyst.isequivalent(rn1, rn2)
 end
 
 # Tests arrow variants in `@reaction` macro.

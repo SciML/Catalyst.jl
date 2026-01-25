@@ -46,8 +46,8 @@ let
         (k1*X,k2), Y1 <--> Y2
     end
 
-    # Checks that the two model declarations are identical.
-    @test isequal(rs_pIn, rs_pIn_dsl)
+    # Checks that the two model declarations are equivalent.
+    @test Catalyst.isequivalent(rs_pIn, rs_pIn_dsl)
 
     # Makes ODE simulation using different approaches.
     u0 = [X => 1.0, Y1 => 2.0, Y2 => 3.0]
@@ -191,5 +191,5 @@ let
         p, 0 --> X
         $pIn($t_var), 0 --> X
     end
-    @test rn1 == rn2 == rn3
+    @test all(rn -> Catalyst.isequivalent(rn1, rn), (rn2, rn3))
 end

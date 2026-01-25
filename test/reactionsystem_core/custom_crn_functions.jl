@@ -118,7 +118,7 @@ let
         v * (x^n) / (x^n + y^n + k^n), 0 --> x
     end
     rs3 = Catalyst.expand_registered_functions(rs1)
-    @test isequivalent(rs3, rs2; ignorenames = false, debug = true)
+    @test Catalyst.isequivalent(rs3, rs2; ignorenames = false, debug = true)
 end
 
 # Tests `Reaction`s.

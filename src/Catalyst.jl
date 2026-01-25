@@ -93,7 +93,6 @@ export make_empty_network
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export isautonomous
 export reactionrates
-export isequivalent
 export set_default_noise_scaling
 export make_rre_ode, make_cle_sde, make_sck_jump, make_rre_algeqs
 

@@ -89,8 +89,8 @@ let
     rn_cached = deepcopy(rn)
     conservationlaws(rn_cached)
 
-    # Checks that equality is correct (currently equality does not consider network property caching).
-    @test rn_cached == rn
+    # Checks that equivalence is correct (isequivalent does not consider network property caching).
+    @test Catalyst.isequivalent(rn_cached, rn)
     @test Catalyst.get_networkproperties(rn_cached) != Catalyst.get_networkproperties(rn)
 end
 
