@@ -574,11 +574,11 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
 
     # Creates a combined iv vector (iv and sivs). This is used later in the function (so that
     # independent variables can be excluded when encountered quantities are added to `us` and `ps`).
-    t = value(iv)
+    t = unwrap(iv)
     ivs = Set([t])
     if (spatial_ivs !== nothing)
         for siv in (spatial_ivs)
-            push!(ivs, value(siv))
+            push!(ivs, unwrap(siv))
         end
     end
 
@@ -595,7 +595,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
 
     # Loops through all reactions, adding encountered quantities to the unknown and parameter vectors.
     for rx in rxs
-        MT.collect_vars!(us, ps, rx, MT.unwrap(iv))
+        MT.collect_vars!(us, ps, rx, t)
     end
 
     # Extracts any species, variables, and parameters that occur in (non-reaction) equations.
@@ -611,7 +611,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
 
     # get variables in subsystems with scope at this level
     for ssys in get(kwargs, :systems, [])
-        MT.collect_scoped_vars!(us, ps, ssys, MT.unwrap(iv))
+        MT.collect_scoped_vars!(us, ps, ssys, t)
     end
 
     # Loops through all events, adding encountered quantities to the unknown and parameter vectors.
@@ -644,22 +644,6 @@ end
 
 ### Base Function Dispatches ###
 
-"""
-    ==(rn1::ReactionSystem, rn2::ReactionSystem)
-
-Tests whether the underlying species, parameters and reactions are the same in
-the two [`ReactionSystem`](@ref)s. Requires the systems to have the same names
-too.
-
-Notes:
-- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
-    considered different than `(A+1)^2`.
-- Does not include `defaults` in determining equality.
-"""
-function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
-    isequivalent(rn1, rn2; ignorenames = false)
-end
-
 function debug_comparer(fun, prop1, prop2, propname; debug = false)
     if fun(prop1, prop2)
         return true
@@ -678,6 +662,9 @@ Tests whether the underlying species, parameters and reactions are the same in t
 [`ReactionSystem`](@ref)s. Ignores the names of the systems in testing equality.
 
 Notes:
+- This function is primarily intended for testing purposes and is considered internal. It
+    may change without a major release and does not guarantee true equality in notions that
+    others may want.
 - *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be considered
     different than `(A+1)^2`.
 - `ignorenames = false` is used when checking equality of sub and parent systems.
@@ -989,9 +976,8 @@ function MT.equations(sys::ReactionSystem)
     eqs = get_eqs(sys)
     systems = get_systems(sys)
     if !isempty(systems)
-        eqs = CatalystEqType[eqs;
-                             reduce(vcat, MT.namespace_equations.(systems);
-                                 init = Any[])]
+        eqs = CatalystEqType[eqs; 
+            reduce(vcat, MT.namespace_equations.(systems); init = Any[])]
         return sort!(eqs; by = eqsortby)
     end
     return eqs

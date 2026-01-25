@@ -404,7 +404,6 @@ function MT.get_variables!(set, rx::Reaction)
     foreach(sub -> push!(set, sub), rx.substrates)
     foreach(prod -> push!(set, prod), rx.products)
     for stoichs in (rx.substoich, rx.prodstoich), stoich in stoichs
-
         (stoich isa SymbolicT) && get_variables!(set, stoich)
     end
     if hasnoisescaling(rx)
