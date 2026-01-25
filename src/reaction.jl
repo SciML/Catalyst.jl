@@ -384,7 +384,9 @@ encountered in:
     - Among potential noise scaling metadata.
 """
 function get_symbolics(rx::Reaction)
-    return MT.get_variables!(SymbolicT[], rx)
+    vars = Set{SymbolicT}()
+    MT.get_variables!(vars, rx)
+    return collect(vars)
 end
 
 """

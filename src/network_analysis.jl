@@ -648,11 +648,12 @@ function subnetworkmapping(linkageclass, allrxs, complextorxsmap, p)
         end
     end
     specs = collect(specset)
-    newps = Vector{eltype(p)}()
+    newps = Set{eltype(p)}()
     for rx in rxs
         Symbolics.get_variables!(newps, rx.rate, p)
     end
-    rxs, specs, newps   # reactions and species involved in reactions of subnetwork
+    newps_vec = collect(newps)
+    rxs, specs, newps_vec   # reactions and species involved in reactions of subnetwork
 end
 
 """

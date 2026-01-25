@@ -249,7 +249,7 @@ function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
         return false
 
     # if no dependencies must be zero order
-    (length(rxvars) == 0) && return true
+    isempty(rxvars) && return true
 
     if (haveivdep === nothing)
         if isspatial(rs)
@@ -334,7 +334,7 @@ function classify_vrjs(rs, physcales)
     rxs = get_rxs(rs)
     isvrjvec = falses(length(rxs))
     havevrjs = false
-    rxvars = Set()
+    rxvars = Set{SymbolicT}()
     for (i, rx) in enumerate(rxs)
         if physcales[i] in NON_CONSTANT_JUMP_SCALES
             isvrjvec[i] = true
@@ -389,7 +389,7 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
     # it may be that a given jump has isvrjvec[i] = true but has a physical
     isvrjvec = classify_vrjs(rs, physcales)
 
-    rxvars = []
+    rxvars = Set{SymbolicT}()
     for (i, rx) in enumerate(rxs)
         # only process reactions that should give jumps
         (physcales[i] in JUMP_SCALES) || continue

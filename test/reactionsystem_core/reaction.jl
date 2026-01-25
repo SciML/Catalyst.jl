@@ -109,9 +109,13 @@ let
 
     # Test `get_variables!`.
     @test issetequal(get_variables!([value(p)], rx1), [k1, X, p])
+    @test length(get_variables!([value(p)], rx1)) == 3
     @test issetequal(get_variables!([value(p)], rx2), [k1, k2, X, Y, n1, η1, p])
+    @test length(get_variables!([value(p)], rx2)) == 7
     @test issetequal(get_variables!([value(p)], rx3), [k1, k2, A, X, Y, Z, n1, n2, p])
+    @test length(get_variables!([value(p)], rx3)) == 9
     @test issetequal(get_variables!([value(p)], rx4), [X, t, Y, η1, η2, p])
+    @test length(get_variables!([value(p)], rx4)) == 6
 
     # Test `get_symbolics`.
     @test issetequal(get_symbolics(rx1), [k1, X])
