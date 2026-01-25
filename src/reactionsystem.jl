@@ -313,9 +313,9 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """Dependent unknown variables representing species"""
     species::Vector{SymbolicT}
     """Parameter variables. Must not contain the independent variable."""
-    ps::Vector{Any}
+    ps::Vector{SymbolicT}
     """Maps Symbol to corresponding variable."""
-    var_to_name::Dict{Symbol, Any}
+    var_to_name::Dict{Symbol, SymbolicT}
     """Equations for observed variables."""
     observed::Vector{Equation}
     """The name of the system"""
@@ -363,13 +363,6 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, connection_type, nps, cls, cevs, devs,
             metadata, complete = false, parent = nothing; checks::Bool = true)
-
-        # Checks that all parameters have the appropriate Symbolics type. The `Symbolics.CallWithMetadata`
-        # check is an exception for callabl;e parameters.
-        for p in ps
-            (p isa Symbolics.SymbolicT) || (p isa Symbolics.CallWithMetadata) ||
-                error("Parameter $p is not a `SymbolicT`. This is required.")
-        end
 
         # unit checks are for ODEs and Reactions only currently
         nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
@@ -586,7 +579,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     # Preallocates the `vars` set, which is used by `findvars!`
     us = OrderedSet{SymbolicT}(us_in)
     ps = OrderedSet{SymbolicT}(ps_in)
-    vars = OrderedSet()
+    vars = OrderedSet{SymbolicT}()
 
     # Extracts the reactions and equations from the combined reactions + equations input vector.
     all(eq -> eq isa Union{Reaction, Equation}, rxs_and_eqs)
@@ -621,7 +614,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     # Converts the found unknowns and parameters to vectors.
     usv = collect(us)
 
-    new_ps = OrderedSet()
+    new_ps = OrderedSet{SymbolicT}()
     for p in ps
         if iscall(p) && operation(p) === getindex
             par = arguments(p)[begin]
@@ -1315,7 +1308,7 @@ isautonomous(rs2) # Returns `false`.
 """
 function isautonomous(rs::ReactionSystem)
     # Get all variables occurring in reactions and equations.
-    vars = Set()
+    vars = Set{SymbolicT}()
     for eq in equations(rs)
         (eq isa Reaction) ? get_variables!(vars, eq.rate) : get_variables!(vars, eq)
     end

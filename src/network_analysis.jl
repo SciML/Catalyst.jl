@@ -217,7 +217,7 @@ Return an r×c matrix ``K`` such that, if complex ``j`` is the substrate complex
 **Warning**: Unlike other Catalyst functions, the `fluxmat` function will return a `Matrix{Num}` in the symbolic case. This is to allow easier computation of the matrix decomposition of the ODEs, and to ensure that multiplying the sparse form of the matrix will work.
 """
 function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse = false)
-    deps = Set()
+    deps = Set{SymbolicT}()
     for (i, rx) in enumerate(reactions(rn))
         empty!(deps)
         get_variables!(deps, rx.rate, species(rn))
@@ -1094,7 +1094,7 @@ end
         - In `adjacencymat`, the rows and columns both represent complexes, and an entry (c1, c2) is non-zero if there is a reaction c1 --> c2.
 """
 function adjacencymat(rn::ReactionSystem, pmap::Dict = Dict(); sparse = false)
-    deps = Set()
+    deps = Set{SymbolicT}()
     for (i, rx) in enumerate(reactions(rn))
         empty!(deps)
         get_variables!(deps, rx.rate, species(rn))
