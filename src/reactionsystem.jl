@@ -1427,7 +1427,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
     ReactionSystem(equations(rs), get_iv(rs), unknowns(rs), parameters(rs);
         observed = MT.observed(rs),
         name,
-        defaults = MT.initial_conditions(rs),
+        initial_conditions = MT.initial_conditions(rs),
         checks = false,
         combinatoric_ratelaws = combinatoric_ratelaws(rs),
         balanced_bc_check = false,
@@ -1543,7 +1543,7 @@ function MT.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
         observed = obs,
         systems = syss,
         name,
-        defaults = defs,
+        initial_conditions = defs,
         checks = false,
         combinatoric_ratelaws,
         balanced_bc_check = false,

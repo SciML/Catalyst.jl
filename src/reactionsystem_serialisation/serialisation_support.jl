@@ -173,6 +173,10 @@ function x_2_string(x::Union{Base.ImmutableDict{DataType, Any}, Dict}) # Base.Im
     output = isempty(keys(x)) ? output : Catalyst.get_substring_end(output, 1, -2)
     return output * "])"
 end
+# Handle SymmapT (AtomicArrayDict) by converting to Dict.
+function x_2_string(x::MT.SymmapT)
+    return x_2_string(Dict(x))
+end
 function x_2_string(x::Union{Matrix, Symbolics.Arr{Any, 2}})
     output = "["
     for j in 1:size(x)[1]
