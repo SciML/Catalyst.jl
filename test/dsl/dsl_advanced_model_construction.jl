@@ -432,7 +432,7 @@ end
     rs2 = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents,
         name = :hybrid)
     rs2 = complete(rs2)
-    @test rs == rs2
+    @test Catalyst.isequivalent(rs, rs2)
 end
 
 @test_broken let # @Sam, I will let you have a look at hybrid tests.
@@ -462,5 +462,5 @@ end
     cevents = [[V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]]
     rs2 = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents, name = :hybrid)
     rs2 = complete(rs2)
-    @test rs == rs2
+    @test Catalyst.isequivalent(rs, rs2)
 end

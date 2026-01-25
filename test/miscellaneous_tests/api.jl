@@ -36,7 +36,7 @@ let
     rxs2 = [Reaction(k2, [I], [R], [1], [1]),
         Reaction(k1, [S, I], [I], [1, 1], [2])]
     rs2 = ReactionSystem(rxs2, t, [R, I, S], [k2, k1], name = :rs)
-    @test rs == rs2
+    @test Catalyst.isequivalent(rs, rs2)
 
     @parameters k3 k4
     @species D(t)
@@ -48,7 +48,7 @@ let
     rxs2b = [Reaction(k3, [S], [D]), Reaction(k4, [S, I], [D])]
     @named rs2b = ReactionSystem(rxs2b, t)
     @named rs2 = extend(rs2b, rs2; name = :rs)
-    @test rs2 == rs
+    @test Catalyst.isequivalent(rs2, rs)
 
     rxs = [Reaction(k1, [S, I], [I], [1, 1], [2]),
         Reaction(k2, [I], [R])]
@@ -56,7 +56,7 @@ let
     rxs3 = [Reaction(k3, [S], [D]), Reaction(k4, [S, I], [D])]
     @named rs3 = ReactionSystem(rxs3, t)
     rs4 = extend(rs, rs3; name = :rs)
-    @test rs2 == rs4
+    @test Catalyst.isequivalent(rs2, rs4)
 
     rxs = [Reaction(k1 * S, [S, I], [I], [2, 3], [2]),
         Reaction(k2 * R, [I], [R])]
