@@ -657,7 +657,7 @@ end
 
 # Compare two SymbolicDiscreteCallbacks by their conditions and affects.
 function discrete_event_matches(evt1, evt2)
-    isequal(evt1.condition, evt2.condition) && symbolic_affect_matches(evt1.affect, evt2.affect)
+    isequal(evt1.conditions, evt2.conditions) && symbolic_affect_matches(evt1.affect, evt2.affect)
 end
 
 # Convenience wrappers for continuous and discrete event comparison.

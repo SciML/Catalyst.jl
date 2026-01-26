@@ -1129,8 +1129,8 @@ let
 
 end
 
-# Tests of isequivalent for hybrid systems - has multiple pre-existing issues with metadata/events format
-@test_broken let
+# Tests of isequivalent for hybrid systems.
+let
     @parameters k1 k2 k3 k4
     @species A(t) B(t) C(t) E(t)  # Use E instead of D to avoid conflict with Differential
     @variables V(t) X(t)
@@ -1150,7 +1150,7 @@ end
     discrete_events = (X == 1) => [V ~ V/2]
 
     # Define metadata
-    metadata = Dict(:description => "Comprehensive test system")
+    metadata = [MiscSystemData => "Comprehensive test system"]
 
     # Define initial conditions and parameters
     u0 = Dict([A => 1.0, B => 2.0, C => 3.0, E => 4.0, V => 5.0])
