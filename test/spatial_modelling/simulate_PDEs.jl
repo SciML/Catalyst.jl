@@ -49,7 +49,7 @@ let
           0 1 -1 0 0 0 0]
     @test ns == netstoichmat(bpm)
     bpm2 = deepcopy(bpm)
-    @test bpm == bpm2
+    @test Catalyst.isequivalent(bpm, bpm2)
 
     # Check we can build a PDESystem.
     ∂t = default_time_deriv()
