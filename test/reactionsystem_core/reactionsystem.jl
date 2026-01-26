@@ -3,6 +3,7 @@
 # Fetch packages.
 using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEqTsit5, OrdinaryDiffEqVerner, StochasticDiffEq, Test
 const MT = ModelingToolkitBase
+using ModelingToolkitBase: Pre
 
 # Sets stable rng number.
 using StableRNGs
@@ -205,7 +206,7 @@ let
     jumps = Vector{Union{ConstantRateJump, MassActionJump, VariableRateJump}}(undef,
                                                                               length(rxs))
 
-    @test_broken let # @Sam: From here on there are some errors relating to quite internal jump-related structures. I think it would be best if you fixed it so that it is done right and we don't remove what we intend to test.
+    let
         jumps[1] = MassActionJump(p[1], Vector{Pair{Int, Int}}(), [1 => 1])
         jumps[2] = MassActionJump(p[2], [2 => 1], [2 => -1])
         jumps[3] = MassActionJump(p[3], [1 => 1], [1 => -1, 3 => 1])
@@ -238,9 +239,10 @@ let
 
         unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(js)))
         jprob = JumpProblem(js, merge(Dict(u0map), Dict(pmap)), (0.0, 1.0))
-        mtkpars = jprob.p
+        mtkpars = jprob.prob.p
         jspmapper = MT.JumpSysMajParamMapper(js, mtkpars)
-        symmaj = MT.assemble_maj(equations(js).x[1], unknownoid, jspmapper)
+        symbolic_majs = MassActionJump[MT.jumps(js)[i] for i in midxs]
+        symmaj = MT.assemble_maj(symbolic_majs, unknownoid, jspmapper)
         maj = MassActionJump(symmaj.param_mapper(mtkpars), symmaj.reactant_stoch, symmaj.net_stoch,
                             symmaj.param_mapper, scale_rates = false)
         for i in midxs
@@ -249,7 +251,7 @@ let
             @test jumps[i].net_stoch == maj.net_stoch[i]
         end
         for i in cidxs
-            crj = MT.assemble_crj(js, equations(js)[i], unknownoid)
+            crj = MT.assemble_crj(js, MT.jumps(js)[i], unknownoid)
             @test isapprox(crj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
             fake_integrator1 = (u = zeros(6), p = mtkpars, t = 0.0)
             fake_integrator2 = (u = zeros(6), p, t = 0.0)
@@ -258,11 +260,11 @@ let
             @test fake_integrator1.u == fake_integrator2.u
         end
         for i in vidxs
-            crj = MT.assemble_vrj(js, equations(js)[i], unknownoid)
-            @test isapprox(crj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
+            vrj = MT.assemble_vrj(js, MT.jumps(js)[i], unknownoid)
+            @test isapprox(vrj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
             fake_integrator1 = (u = zeros(6), p = mtkpars, t = 0.0)
             fake_integrator2 = (u = zeros(6), p, t = 0.0)
-            crj.affect!(fake_integrator1)
+            vrj.affect!(fake_integrator1)
             jumps[i].affect!(fake_integrator2)
             @test fake_integrator1.u == fake_integrator2.u
         end
@@ -517,7 +519,7 @@ let
         @test isapprox(dg1, dg2)
     end
 
-    @test_broken let # @Sam: The error is related to Jump structure stuff, can you have a look?. Think (hope) it might be a straightforward fix.
+    let
         # Test jump systems.
         rxs = [(@reaction k1, $A --> B),
             (@reaction k2, B --> $A),
@@ -533,21 +535,24 @@ let
         majrates = [k1 * A, k1, k2]
         majrs = [[], [C => 1, D => 1], [C => 1, E => 1]]
         majns = [[B => 1], [D => -1, E => 1], [D => 1, E => -1]]
-        for (i, maj) in enumerate(MT.jumps(jsys).x[1])
+        maj_jumps = filter(j -> j isa MassActionJump, MT.jumps(jsys))
+        for (i, maj) in enumerate(maj_jumps)
             @test isequal(maj.scaled_rates, majrates[i])
             @test issetequal(maj.reactant_stoch, majrs[i])
             @test issetequal(maj.net_stoch, majns[i])
         end
-        @test isempty(equations(jsys).x[2])
-        vrj1 = equations(jsys).x[3][1]
+        crj_jumps = filter(j -> j isa ConstantRateJump, MT.jumps(jsys))
+        @test isempty(crj_jumps)
+        vrj_jumps = filter(j -> j isa VariableRateJump, MT.jumps(jsys))
+        vrj1 = vrj_jumps[1]
         @test isequal(vrj1.rate, k2 * B)
-        @test issetequal(vrj1.affect!, [B ~ B - 1])
-        vrj2 = equations(jsys).x[3][2]
+        @test issetequal(vrj1.affect!, [B ~ -1 + Pre(B)])
+        vrj2 = vrj_jumps[2]
         @test isequal(vrj2.rate, k1 * t * A * C)
-        @test issetequal(vrj2.affect!, [B ~ B + 1])
-        vrj3 = equations(jsys).x[3][3]
+        @test issetequal(vrj2.affect!, [B ~ 1 + Pre(B)])
+        vrj3 = vrj_jumps[3]
         @test isequal(vrj3.rate, k1 * B * A * (A - 1) / 2 * C)
-        @test issetequal(vrj3.affect!, [B ~ B + 1])
+        @test issetequal(vrj3.affect!, [B ~ 1 + Pre(B)])
     end
 end
 
