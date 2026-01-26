@@ -2,6 +2,30 @@
 
 ## Catalyst unreleased (master branch)
 
+#### BREAKING: Jump API Changes
+
+- **`JumpInputs` has been removed.** Use `JumpProblem(rs::ReactionSystem, u0, tspan, p; ...)` directly instead.
+
+- **`DiscreteProblem(rs::ReactionSystem, ...)` has been removed.** Use `JumpProblem(rs::ReactionSystem, u0, tspan, p; ...)` directly instead.
+
+  **Before (old API):**
+  ```julia
+  jinputs = JumpInputs(rs, u0, tspan, p)
+  jprob = JumpProblem(jinputs)
+  ```
+
+  **After (new API):**
+  ```julia
+  jprob = JumpProblem(rs, u0, tspan, p)
+  ```
+
+  For advanced usage where you need to reuse a converted system with different aggregators or customize the JumpSystem, use `make_sck_jump(rs; ...)` to get the System, then call `JumpProblem(sys, op, tspan; ...)` from MTK:
+  ```julia
+  jsys = make_sck_jump(rs; combinatoric_ratelaws = true)
+  op = merge(Dict(u0), Dict(p))
+  jprob = JumpProblem(jsys, op, tspan; aggregator = SortingDirect())
+  ```
+
 ## Catalyst 15.0
 - The Catalyst release process is changing; certain core dependencies of
   Catalyst will now be capped to ensure Catalyst releases are only installed

@@ -413,7 +413,7 @@ let
     # Loops through all potential parameter sets, checking that their inputs yield errors.
     for ps in [[ps_valid]; ps_invalid], u0 in [[u0_valid]; u0s_invalid]
         # Handles all types of time-dependent systems. The `isequal` is because some case should pass.
-        for XProblem in [ODEProblem, SDEProblem, JumpInputs]
+        for XProblem in [ODEProblem, SDEProblem, JumpProblem]
             if isequal(ps, ps_valid) && isequal(u0, u0_valid)
                 XProblem(rn, u0, (0.0, 1.0), ps)
             else

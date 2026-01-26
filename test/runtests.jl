@@ -58,8 +58,7 @@ end
     end
 
     if GROUP == "All" || GROUP == "Hybrid"
-        # BROKEN
-        #@time @safetestset "ReactionSystem Hybrid Solvers" begin include("simulation_and_solving/hybrid_models.jl") end # @Sam, I will let you have a look at the hybrid stuff when you have oppertunity to do so.
+        @time @safetestset "ReactionSystem Hybrid Solvers" begin include("simulation_and_solving/hybrid_models.jl") end
     end
 
     if GROUP == "All" || GROUP == "IO"

@@ -1,6 +1,6 @@
 
 # Fetch packages.
-using Catalyst, DataInterpolations, DynamicQuantities, JumpProcesses, OrdinaryDiffEqDefault, StochasticDiffEq, Test
+using Catalyst, DataInterpolations, DynamicQuantities, JumpProcesses, OrdinaryDiffEqDefault, OrdinaryDiffEqTsit5, StochasticDiffEq, Test
 
 # Sets the default `t` to use.
 t = default_t()
@@ -105,12 +105,12 @@ let
     sde_sol_mean_pIn = EnsembleAnalysis.timeseries_point_mean(solve(esde_prob_pIn, ImplicitEM(); trajectories = 1000), 1.0:10.0).u
     @test sde_sol_mean_base ≈ sde_sol_mean_pIn rtol = 1e-1 atol = 1e-1
 
-    # Checks Jump simulations.
-    # ejmp_prob_base = EnsembleProblem(JumpProblem(JumpInputs(rs_base, u0, tend, ps_base)))
-    # ejmp_prob_pIn = EnsembleProblem(JumpProblem(JumpInputs(rs_pIn, u0, tend, ps)))
-    # jmp_sol_mean_base = EnsembleAnalysis.timeseries_point_mean(solve(ejmp_prob_base; trajectories = 1000), 1.0:10.0).u
-    # jmp_sol_mean_pIn = EnsembleAnalysis.timeseries_point_mean(solve(ejmp_prob_pIn; trajectories = 1000), 1.0:10.0).u
-    @test_broken jmp_sol_mean_base ≈ jmp_sol_meanpIn rtol = 1e-1 atol = 1e-1 # @Sam `JumpProblem(JumpInputs(rs_base, u0, tend, ps_base))` currently fails, we need to look at this, probably (hopefully) easy fix.
+    # Checks Jump simulations (uses Tsit5 because model has time-dependent rates -> VariableRateJumps).
+    ejmp_prob_base = EnsembleProblem(JumpProblem(rs_base, u0, (0.0, tend), ps_base))
+    ejmp_prob_pIn = EnsembleProblem(JumpProblem(rs_pIn, u0, (0.0, tend), ps))
+    jmp_sol_mean_base = EnsembleAnalysis.timeseries_point_mean(solve(ejmp_prob_base, Tsit5(); trajectories = 1000), 1.0:10.0).u
+    jmp_sol_mean_pIn = EnsembleAnalysis.timeseries_point_mean(solve(ejmp_prob_pIn, Tsit5(); trajectories = 1000), 1.0:10.0).u
+    @test jmp_sol_mean_base ≈ jmp_sol_mean_pIn rtol = 1e-1 atol = 1e-1
 end
 
 # Checks correctness for non-time functions.

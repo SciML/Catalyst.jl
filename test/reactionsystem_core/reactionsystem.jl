@@ -552,17 +552,15 @@ let
 end
 
 # Test that jump solutions actually run correctly for constants and BCs.
-@test_broken let
-    return false # @Sam: Creation of JumpProblem's from `JumpInput`s is currently broken.
+let
     @parameters k1 A [isconstantspecies = true]
     @species C(t) [isbcspecies = true] B1(t) B2(t) B3(t)
     @named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
                                    (@reaction k1, $A --> B2),
                                    (@reaction 10 * k1, ∅ --> B3)], t)
     rn = complete(rn)
-    jin = JumpInputs(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
-                            [k1 => 1.0])
-    jprob = JumpProblem(jin; rng, save_positions = (false, false))
+    jprob = JumpProblem(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
+                        [k1 => 1.0]; rng, save_positions = (false, false))
     umean = zeros(4)
     Nsims = 40000
     for i in 1:Nsims
@@ -684,7 +682,7 @@ let
     sol = solve(jprob, SSAStepper())
 
     # Test for https://github.com/SciML/ModelingToolkit.jl/issues/1042.
-    jprob = JumpProblem(rs, [S => 1, I => 1], (0.0, 10.0), [], Direct(); rng, save_positions = (false, false))
+    jprob = JumpProblem(rs, [S => 1, I => 1], (0.0, 10.0), []; aggregator = Direct(), rng, save_positions = (false, false))
 
     @parameters k1 k2
     @species R(t)
@@ -1043,12 +1041,13 @@ end
 
 ########## tests related to hybrid systems ##########
 
-@test_broken let # @Sam: I will leave hybrid-related stuff to you.
-    return false
-    # massactionjumps(js::JumpSystem) = equations(js).x[1]
-    # constantratejumps(js::JumpSystem) = equations(js).x[2]
-    # variableratejumps(js::JumpSystem) = equations(js).x[3]
-    # odeeqs(js::JumpSystem) = equations(js).x[4]
+let
+    # Helper functions to access JumpSystem equation types in MTK 11
+    # Jumps are now stored in a flat vector, filter by type
+    massactionjumps(js) = filter(j -> j isa MassActionJump, MT.jumps(js))
+    constantratejumps(js) = filter(j -> j isa ConstantRateJump, MT.jumps(js))
+    variableratejumps(js) = filter(j -> j isa VariableRateJump, MT.jumps(js))
+    odeeqs(js) = equations(js)
 
     let
         t = default_t()
@@ -1062,10 +1061,8 @@ end
         cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
         @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
         rs = complete(rs)
-        jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
-        @test jinput.prob isa ODEProblem
-        sys = jinput.sys
-        @test sys isa JumpSystem
+        sys = complete(make_sck_jump(rs))
+        @test sys isa MT.System
         @test MT.has_equations(sys)
         @test length(massactionjumps(sys)) == 1
         @test isempty(constantratejumps(sys))
@@ -1087,10 +1084,8 @@ end
         cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
         @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
         rs = complete(rs)
-        jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
-        @test jinput.prob isa ODEProblem
-        sys = jinput.sys
-        @test sys isa JumpSystem
+        sys = complete(make_sck_jump(rs))
+        @test sys isa MT.System
         @test MT.has_equations(sys)
         @test length(massactionjumps(sys)) == 1
         @test isempty(constantratejumps(sys))
@@ -1115,10 +1110,8 @@ end
         cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
         @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
         rs = complete(rs)
-        jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
-        @test jinput.prob isa ODEProblem
-        sys = jinput.sys
-        @test sys isa JumpSystem
+        sys = complete(make_sck_jump(rs))
+        @test sys isa MT.System
         @test MT.has_equations(sys)
         @test isempty(massactionjumps(sys))
         @test isempty(constantratejumps(sys))
@@ -1129,54 +1122,55 @@ end
         @test length(continuous_events(sys)) == 1
     end
 
-    # tests of isequivalent
-    let
-        @parameters k1 k2 k3 k4
-        @species A(t) B(t) C(t) D(t)
-        @variables V(t) X(t)
+end
 
-        # Define reactions
-        rx1 = Reaction(k1, [A], [B])
-        rx2 = Reaction(k2, [B], [C])
-        rx3 = Reaction(k3, [C], [D])
-        rx4 = Reaction(k4, [D], [A])
+# Tests of isequivalent for hybrid systems - has multiple pre-existing issues with metadata/events format
+@test_broken let
+    @parameters k1 k2 k3 k4
+    @species A(t) B(t) C(t) E(t)  # Use E instead of D to avoid conflict with Differential
+    @variables V(t) X(t)
 
-        # Define ODE equation
-        D = default_time_deriv()
-        eq = D(V) ~ -k1 * V + A
+    # Define reactions
+    rx1 = Reaction(k1, [A], [B])
+    rx2 = Reaction(k2, [B], [C])
+    rx3 = Reaction(k3, [C], [E])
+    rx4 = Reaction(k4, [E], [A])
 
-        # Define events
-        continuous_events = [[X ~ 0] => [X ~ -X]]
-        discrete_events = (X == 1) => [V => V/2]
+    # Define ODE equation
+    D = default_time_deriv()
+    eq = D(V) ~ -k1 * V + A
 
-        # Define metadata
-        metadata = Dict(:description => "Comprehensive test system")
+    # Define events
+    continuous_events = [[X ~ 0] => [X ~ -X]]
+    discrete_events = (X == 1) => [V ~ V/2]
 
-        # Define initial conditions and parameters
-        u0 = Dict([A => 1.0, B => 2.0, C => 3.0, D => 4.0, V => 5.0])
-        p = Dict([k1 => 0.1, k2 => 0.2, k3 => 0.3, k4 => 0.4])
-        defs = merge(u0, p)
+    # Define metadata
+    metadata = Dict(:description => "Comprehensive test system")
 
-        # Define observed variables
-        obs = [X ~ A + B]
+    # Define initial conditions and parameters
+    u0 = Dict([A => 1.0, B => 2.0, C => 3.0, E => 4.0, V => 5.0])
+    p = Dict([k1 => 0.1, k2 => 0.2, k3 => 0.3, k4 => 0.4])
+    defs = merge(u0, p)
 
-        # Define a subsystem
-        sub_rx = Reaction(k1, [A], [B])
-        @named sub_rs = ReactionSystem([sub_rx], t)
+    # Define observed variables
+    obs = [X ~ A + B]
 
-        # Create the first reaction system
-        @named rs1 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t;
-            continuous_events, discrete_events,
-            metadata, observed = obs, initial_conditions = defs, systems = [sub_rs])
-        rs1 = complete(rs1)
+    # Define a subsystem
+    sub_rx = Reaction(k1, [A], [B])
+    @named sub_rs = ReactionSystem([sub_rx], t)
 
-        # Create the second reaction system with the same components
-        rs2 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t;
-            continuous_events, discrete_events,
-            metadata, observed = obs, initial_conditions = defs, systems = [sub_rs], name = :rs1)
-        rs2 = complete(rs2)
+    # Create the first reaction system
+    @named rs1 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t;
+        continuous_events, discrete_events,
+        metadata, observed = obs, initial_conditions = defs, systems = [sub_rs])
+    rs1 = complete(rs1)
 
-        # Check equivalence
-        @test Catalyst.isequivalent(rs1, rs2)
-    end
+    # Create the second reaction system with the same components
+    rs2 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t;
+        continuous_events, discrete_events,
+        metadata, observed = obs, initial_conditions = defs, systems = [sub_rs], name = :rs1)
+    rs2 = complete(rs2)
+
+    # Check equivalence
+    @test Catalyst.isequivalent(rs1, rs2)
 end
