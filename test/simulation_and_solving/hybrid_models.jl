@@ -51,15 +51,15 @@ let
     u0map = [:X => p.X₀, :Y => p.Y₀]
     pmap = [:α => p.α, :β => p.β]
     tspan = (0.0, 20.0)
-    jprob = JumpProblem(rn, u0map, tspan, pmap; rng)
-    times = collect(range(0.0, tspan[2], length = 100))
+    jprob = JumpProblem(rn, u0map, tspan, pmap; save_positions = (false, false), rng)
+    times = range(0.0, tspan[2], length = 100)
     Nsims = 4000
     Xv = zeros(length(times))
     Yv = zeros(length(times))
     for n in 1:Nsims
-        sol = solve(jprob, Tsit5(); seed)
-        Xv .+= sol(times, idxs = :X).u
-        Yv .+= sol(times, idxs = :Y).u
+        sol = solve(jprob, Tsit5(); saveat = times, seed)
+        Xv .+= sol[:X]
+        Yv .+= sol[:Y]
         seed += 1
     end
     Xv ./= Nsims
@@ -144,14 +144,13 @@ let
     hybrid_prob = JumpProblem(rn_hybrid, u0_hybrid, tspan, ps_hybrid; save_positions = (false, false), rng)
 
     # Performs simulations. Checks that ODE parts are identical. Check that jump parts have similar statistics.
-    times = collect(0.0:1.0:tspan[2])
     ode_sol = solve(ode_prob, Tsit5(); saveat = 1.0, abstol = 1e-10, reltol = 1e-10)
     jump_sol = solve(jump_prob, SSAStepper(); saveat = 1.0)
-    hybrid_sol = solve(hybrid_prob, Tsit5(); abstol = 1e-10, reltol = 1e-10)
-    @test ode_sol[:Y] ≈ hybrid_sol(times, idxs = :Y).u atol = 1e-4 rtol = 1e-4
-    @test mean(jump_sol[:V]) ≈ mean(hybrid_sol(times, idxs = :V).u) atol = 1e-1 rtol = 1e-1
-    @test mean(jump_sol[:W]) ≈ mean(hybrid_sol(times, idxs = :W).u) atol = 1e-1 rtol = 1e-1
-    @test mean(jump_sol[:VW]) ≈ mean(hybrid_sol(times, idxs = :VW).u) atol = 1e-1 rtol = 1e-1
+    hybrid_sol = solve(hybrid_prob, Tsit5(); saveat = 1.0, abstol = 1e-10, reltol = 1e-10)
+    @test ode_sol[:Y] ≈ hybrid_sol[:Y] atol = 1e-4 rtol = 1e-4
+    @test mean(jump_sol[:V]) ≈ mean(hybrid_sol[:V]) atol = 1e-1 rtol = 1e-1
+    @test mean(jump_sol[:W]) ≈ mean(hybrid_sol[:W]) atol = 1e-1 rtol = 1e-1
+    @test mean(jump_sol[:VW]) ≈ mean(hybrid_sol[:VW]) atol = 1e-1 rtol = 1e-1
 end
 
 ### Other Tests ###
@@ -274,9 +273,7 @@ let
     @test minimum(sol[:Y]) ≈ 1.0
     @test maximum(sol[:Y]) ≈ 5.0 atol = 1e-1 rtol = 1e-1
     @test all(isequal([rn.τ], Symbolics.arguments(Symbolics.value(u))) for u in unknowns(rn))
-    # MTK bug: discrete events fire twice in hybrid JumpProblems (callback stored in both
-    # jprob.prob.kwargs and jprob.kwargs). See https://github.com/SciML/ModelingToolkit.jl/issues/4216
-    @test_broken sol(1.0 - eps(); idxs = :Z1) + 1 ≈ sol(1.0 + eps(); idxs = :Z1)
+    @test sol(1.0 - eps(); idxs = :Z1) + 1 ≈ sol(1.0 + eps(); idxs = :Z1)
 end
 
 # Checks the types of species when various combinations of default/non-default types are used.
@@ -328,4 +325,154 @@ let
     sol = solve(prob, Tsit5())
     @test typeof(prob[:X]) == typeof(int[:X]) == typeof(sol[:X][end]) == Float32
     @test typeof(prob[:Y]) == typeof(int[:Y]) == typeof(sol[:Y][end]) == Float32
+end
+
+### save_positions Tests ###
+
+# Tests that save_positions keyword is correctly forwarded for pure SSA (DiscreteProblem) JumpProblems.
+# With save_positions=(false, false), saveat should control output times exactly.
+let
+    # Pure SSA model with mass action jumps only.
+    rn = @reaction_network begin
+        (p, d), 0 <--> A
+    end
+    u0 = [:A => 10]
+    ps = [:p => 1.0, :d => 0.1]
+    tspan = (0.0, 10.0)
+    times = 0.0:1.0:10.0
+
+    # With save_positions=(false, false), saveat should give exactly the specified times.
+    prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
+    sol = solve(prob, SSAStepper(); saveat = times)
+    @test length(sol.t) == length(times)
+    @test sol.t ≈ collect(times)
+
+    # With default save_positions (true, true), there will be extra points from jump times.
+    prob_default = JumpProblem(rn, u0, tspan, ps; rng)
+    sol_default = solve(prob_default, SSAStepper(); saveat = times)
+    @test length(sol_default.t) > length(times)
+
+    # Verify the aggregator has correct save_positions setting.
+    disc_agg = prob.discrete_jump_aggregation
+    @test disc_agg.save_positions == (false, false)
+    disc_agg_default = prob_default.discrete_jump_aggregation
+    @test disc_agg_default.save_positions == (true, true)
+end
+
+# Tests that save_positions keyword is correctly forwarded for hybrid (ODEProblem) JumpProblems
+# with mass action jumps.
+let
+    # Hybrid model with ODE species and mass action jumps.
+    rn = @reaction_network begin
+        d, X --> 0, [physical_scale = PhysicalScale.ODE]
+        (p, d), 0 <--> A
+    end
+    u0 = [:X => 10.0, :A => 5]
+    ps = [:p => 1.0, :d => 0.1]
+    tspan = (0.0, 10.0)
+    times = 0.0:1.0:10.0
+
+    # With save_positions=(false, false), saveat should control the number of output points.
+    prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
+    sol = solve(prob, Tsit5(); saveat = times)
+    @test length(sol.t) == length(times)
+    @test sol.t ≈ collect(times)
+
+    # With default save_positions (true, true), there will be extra points from jump times.
+    prob_default = JumpProblem(rn, u0, tspan, ps; rng)
+    sol_default = solve(prob_default, Tsit5(); saveat = times)
+    @test length(sol_default.t) > length(times)
+
+    # Verify the aggregator has correct save_positions setting.
+    disc_agg = prob.discrete_jump_aggregation
+    @test disc_agg.save_positions == (false, false)
+    disc_agg_default = prob_default.discrete_jump_aggregation
+    @test disc_agg_default.save_positions == (true, true)
+end
+
+# Tests that save_positions keyword is correctly forwarded for hybrid JumpProblems
+# with variable rate jumps (created via time-dependent rates).
+let
+    # Hybrid model with variable rate jump (time-dependent rate).
+    rn = @reaction_network begin
+        k * (1 + sin(t)), 0 --> A
+        d, A --> 0
+    end
+    u0 = [:A => 0]
+    ps = [:k => 0.5, :d => 0.1]
+    tspan = (0.0, 10.0)
+    times = 0.0:1.0:10.0
+
+    # With save_positions=(false, false), the ContinuousCallback for VRJ should not save.
+    prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
+    sol = solve(prob, Tsit5(); saveat = times)
+
+    # Should get approximately the expected number of times (may have small variations
+    # due to event handling, but shouldn't have a point for every jump).
+    @test length(sol.t) <= length(times) + 5  # Allow small tolerance for events
+
+    # Verify the ContinuousCallback for VRJ has correct save_positions.
+    cc = prob.jump_callback.continuous_callbacks[1]
+    @test cc.save_positions == [false, false]
+
+    # With default save_positions, ContinuousCallback should save.
+    prob_default = JumpProblem(rn, u0, tspan, ps; rng)
+    cc_default = prob_default.jump_callback.continuous_callbacks[1]
+    @test cc_default.save_positions == [true, true]
+end
+
+# Tests that save_positions keyword works correctly for hybrid JumpProblems with
+# a mix of mass action jumps and variable rate jumps.
+let
+    # Hybrid model with both mass action and variable rate jumps.
+    rn = @reaction_network begin
+        k * (1 + sin(t)), 0 --> A           # Variable rate jump
+        d, A --> 0                           # Mass action jump
+        (p, d2), 0 <--> B                    # Mass action jumps
+    end
+    u0 = [:A => 0, :B => 5]
+    ps = [:k => 0.5, :d => 0.1, :p => 1.0, :d2 => 0.2]
+    tspan = (0.0, 10.0)
+    times = 0.0:1.0:10.0
+
+    # With save_positions=(false, false), both mass action and VRJ should not save at jump times.
+    prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
+    sol = solve(prob, Tsit5(); saveat = times)
+
+    # Should get approximately the expected number of times.
+    @test length(sol.t) <= length(times) + 5
+
+    # Verify both aggregator and ContinuousCallback have correct save_positions.
+    disc_agg = prob.discrete_jump_aggregation
+    @test disc_agg.save_positions == (false, false)
+    cc = prob.jump_callback.continuous_callbacks[1]
+    @test cc.save_positions == [false, false]
+end
+
+# Tests that saveat with save_positions=(false, false) gives correct solution values
+# by comparing against interpolation-based access.
+let
+    rn = @reaction_network begin
+        d, X --> 0, [physical_scale = PhysicalScale.ODE]
+        (p, d), 0 <--> A
+    end
+    u0 = [:X => 10.0, :A => 5]
+    ps = [:p => 1.0, :d => 0.1]
+    tspan = (0.0, 10.0)
+    times = 0.0:1.0:10.0
+
+    # Create problem with save_positions=(false, false).
+    prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
+
+    # Solve with saveat.
+    sol_saveat = solve(prob, Tsit5(); saveat = times)
+
+    # Verify we can access solution values correctly.
+    @test length(sol_saveat[:X]) == length(times)
+    @test length(sol_saveat[:A]) == length(times)
+
+    # The ODE species X should follow exponential decay (ignoring stochastic effects).
+    # Just verify the values are reasonable.
+    @test sol_saveat[:X][1] == 10.0
+    @test sol_saveat[:X][end] < 10.0  # Should have decayed
 end

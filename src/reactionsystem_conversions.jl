@@ -934,7 +934,7 @@ function JumpProcesses.JumpProblem(rs::ReactionSystem, u0, tspan,
         p_sym = symmap_to_varmap(jsys, p)
         merge(Dict(u0_sym), Dict(p_sym))
     end
-    return JumpProblem(jsys, op, tspan; kwargs...)
+    return JumpProblem(jsys, op, tspan; save_positions, kwargs...)
 end
 
 # SteadyStateProblem from AbstractReactionNetwork
