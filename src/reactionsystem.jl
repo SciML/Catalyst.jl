@@ -628,6 +628,42 @@ end
 
 ### Base Function Dispatches ###
 
+# Generic helper for comparing event vectors by content rather than identity.
+# Works around MTK issue #3907 where SymbolicContinuousCallback/SymbolicDiscreteCallback
+# don't support proper equality. Takes a matching function to compare individual events.
+function events_equal(evts1, evts2, match_fn)
+    length(evts1) != length(evts2) && return false
+    isempty(evts1) && return true
+    matched = falses(length(evts2))
+    for evt1 in evts1
+        idx = findfirst(j -> !matched[j] && match_fn(evt1, evts2[j]), eachindex(evts2))
+        isnothing(idx) && return false
+        matched[idx] = true
+    end
+    return true
+end
+
+# Compare two SymbolicAffects by their content.
+function symbolic_affect_matches(aff1, aff2)
+    issetequal(aff1.affect, aff2.affect) && issetequal(aff1.discrete_parameters, aff2.discrete_parameters)
+end
+
+# Compare two SymbolicContinuousCallbacks by their conditions and affects.
+function continuous_event_matches(evt1, evt2)
+    issetequal(evt1.conditions, evt2.conditions) &&
+        symbolic_affect_matches(evt1.affect, evt2.affect) &&
+        symbolic_affect_matches(evt1.affect_neg, evt2.affect_neg)
+end
+
+# Compare two SymbolicDiscreteCallbacks by their conditions and affects.
+function discrete_event_matches(evt1, evt2)
+    isequal(evt1.condition, evt2.condition) && symbolic_affect_matches(evt1.affect, evt2.affect)
+end
+
+# Convenience wrappers for continuous and discrete event comparison.
+continuous_events_equal(evts1, evts2) = events_equal(evts1, evts2, continuous_event_matches)
+discrete_events_equal(evts1, evts2) = events_equal(evts1, evts2, discrete_event_matches)
+
 function debug_comparer(fun, prop1, prop2, propname; debug = false)
     if fun(prop1, prop2)
         return true
@@ -685,9 +721,10 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
         issetequal, MT.get_observed(rn1), MT.get_observed(rn2), "observed"; debug) ||
         return false
     debug_comparer(issetequal, get_eqs(rn1), get_eqs(rn2), "eqs"; debug) || return false
-    debug_comparer(issetequal, MT.get_continuous_events(rn1),
+    # Use custom event comparison functions to work around MTK issue #3907
+    debug_comparer(continuous_events_equal, MT.get_continuous_events(rn1),
         MT.get_continuous_events(rn2), "cevents"; debug) || return false
-    debug_comparer(issetequal, MT.get_discrete_events(rn1),
+    debug_comparer(discrete_events_equal, MT.get_discrete_events(rn1),
         MT.get_discrete_events(rn2), "devents"; debug) || return false
 
     # coupled systems

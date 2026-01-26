@@ -812,6 +812,18 @@ function make_obs_eqs(observables_expr)
     return obs_eqs
 end
 
+# Helper function to detect if an expression already contains a `Pre()` call at parse time.
+# Used to avoid double-wrapping when users explicitly write `Pre()` in event affects.
+function expr_contains_pre(expr)
+    if expr isa Expr
+        if expr.head == :call && expr.args[1] == :Pre
+            return true
+        end
+        return any(expr_contains_pre, expr.args)
+    end
+    return false
+end
+
 # Read the events (continuous or discrete) provided as options to the DSL. Returns an expression which evaluates to these.
 # Infered parameters that are updated byu the event should be declared using e.g. `@discretes p(t)`.
 # `read_events_option!` moves these from `ps_inferred` to `discs_inferred`
@@ -860,9 +872,11 @@ function read_events_option!(options, discs_inferred::Vector, ps_inferred::Vecto
             # If the event updates an inferred parameter or declared discrete, it should be in `discrete_parameters`.
             (affect.args[2] in [discs_inferred; discs_declared]) && push!(disc_ps.args, affect.args[2])
 
-            # Creates the affect RHS (adds `Pre` if it contain symbolics).
+            # Creates the affect RHS (adds `Pre` if it doesn't already contain Pre).
             rhs = affect.args[3]
-            (rhs isa Number) || (rhs = :(Pre($(rhs))))
+            if !(rhs isa Number) && !expr_contains_pre(rhs)
+                rhs = :(Pre($(rhs)))
+            end
             push!(affects.args, :($(affect.args[2]) ~ $rhs))
         end
 

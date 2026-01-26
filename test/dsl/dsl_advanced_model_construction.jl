@@ -381,8 +381,7 @@ let
 end
 
 ############## tests related to hybrid systems ###################
-@test_broken let # @Sam, I will let you have a look at hybrid tests.
-    return false
+let
     t = default_t()
     D = default_time_deriv()
     @parameters λ k
@@ -405,8 +404,7 @@ end
 end
 
 # hybrid models
-@test_broken let # @Sam, I will let you have a look at hybrid tests.
-    return false
+let
     rs = @reaction_network hybrid begin
         @variables V(t)
         @parameters λ
@@ -435,8 +433,7 @@ end
     @test Catalyst.isequivalent(rs, rs2)
 end
 
-@test_broken let # @Sam, I will let you have a look at hybrid tests.
-    return false
+let
     rs = @reaction_network hybrid begin
         @variables V(t)
         @parameters λ
