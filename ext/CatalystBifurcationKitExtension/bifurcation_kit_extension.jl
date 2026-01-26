@@ -36,7 +36,7 @@ function bkext_make_nsys(rs, u0)
     cons_eqs = conservationlaw_constants(rs)
     cons_default = [cons_eq.rhs for cons_eq in cons_eqs]
     cons_default = Catalyst.get_networkproperties(rs).conservedconst => cons_default
-    defaults = Dict([u0; cons_default])
-    nsys = make_rre_algeqs(rs; defaults, remove_conserved = true, conseqs_remake_warn = false)
+    initial_conditions = Dict([u0; cons_default])
+    nsys = make_rre_algeqs(rs; initial_conditions, remove_conserved = true, conseqs_remake_warn = false)
     return complete(nsys)
 end
