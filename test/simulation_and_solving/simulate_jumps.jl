@@ -192,8 +192,9 @@ let
     jprobdm = JumpProblem(rn, u0map, tspan, pmap; aggregator = Direct(), save_positions = (false, false), rng)
     jprobsd = JumpProblem(rn, u0map, tspan, pmap; aggregator = SortingDirect(), save_positions = (false, false), rng)
     @test issetequal(jprobsd.discrete_jump_aggregation.dep_gr, [[1,2],[2]])
-    @test_broken issetequal(jprobrssa.discrete_jump_aggregation.vartojumps_map, [[],[],[],[1],[2],[]]) # @Sam: Something internal jump-related is broken, can you have a look and fix?
-    @test_broken issetequal(jprobrssa.discrete_jump_aggregation.jumptovars_map, [[5],[5,6]]) # @Sam: Something internal jump-related is broken, can you have a look and fix?
+    jprobrssa = JumpProblem(rn, u0map, tspan, pmap; aggregator = RSSA(), save_positions = (false, false), rng)
+    @test issetequal(jprobrssa.discrete_jump_aggregation.vartojumps_map, [[],[],[],[1],[2],[]])
+    @test issetequal(jprobrssa.discrete_jump_aggregation.jumptovars_map, [[5],[5,6]])
     N = 1000  # number of simulations to run
     function getmean(N, prob)
         m1 = 0.0
@@ -207,13 +208,15 @@ let
         m2 /= N
         return m1, m2
     end
-    means1 = zeros(2)
-    means2 = zeros(2)
-    for (i,prob) in enumerate((jprobdm, jprobsd))  # skip rssa due JumpProcesses #439 bug
+    means1 = zeros(3)
+    means2 = zeros(3)
+    for (i,prob) in enumerate((jprobdm, jprobsd, jprobrssa))
         means1[i],means2[i] = getmean(N, prob)
     end
-    @test (means1[1] - means1[2]) < .1 * means1[1]
-    @test (means2[1] - means2[2]) < .1 * means2[1]
+    @test abs(means1[1] - means1[2]) < .1 * means1[1]
+    @test abs(means2[1] - means2[2]) < .1 * means2[1]
+    @test abs(means1[1] - means1[3]) < .1 * means1[1]
+    @test abs(means2[1] - means2[3]) < .1 * means2[1]
 end
 
 ### Other Tests ###
