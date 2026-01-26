@@ -266,7 +266,7 @@ end
 
 # Adding algebraic constraints.
 let
-    @parameters t, r₊, r₋, β
+    @parameters r₊, r₋, β
     @species A(t), B(t), C(t)
     @variables D(t)
     rxs1 = [Reaction(r₊, [A, B], [C])]
@@ -330,20 +330,20 @@ let
     # Namespaced reactions.
     nrxs1 = [Reaction(p1, [A1], nothing)]
     nrxs2 = [Reaction(rs2.p2a, [rs2.A2a], nothing), Reaction(rs2.p2b, [A1], nothing)]
-    neqs2 = [0 ~ p1 * ns2.A2b - A1]
+    neqs2 = [A1 ~ p1 * ns2.A2b]
     nrxs3 = [
         Reaction(rs2.rs3.p3a, [rs2.rs3.A3a], nothing),
         Reaction(rs2.p2a, nothing, [rs2.A2a]),
     ]
-    neqs3 = [0 ~ rs2.ns3.p3b * rs2.ns3.A3b - rs2.A2a]
+    neqs3 = [rs2.A2a ~ rs2.ns3.p3b * rs2.ns3.A3b]
     rxs = vcat(nrxs1, nrxs2, nrxs3)
     eqs = vcat(nrxs1, nrxs2, neqs2, nrxs3, neqs3)
 
-    @test_broken issetequal(unknowns(rs1), [A1, rs2.A2a, ns2.A2b, rs2.rs3.A3a, rs2.ns3.A3b]) #@Sam, can you have a look here? There are new strange variables in the unknown vector of rs1 (e.g. ` rs2₊ns3₊A3b(rs2₊ns3₊t)`). 
+    @test issetequal(unknowns(rs1), [A1, rs2.A2a, ns2.A2b, rs2.rs3.A3a, rs2.ns3.A3b]) 
     @test issetequal(species(rs1), [A1, rs2.A2a, rs2.rs3.A3a])
     @test issetequal(parameters(rs1), [p1, rs2.p2a, rs2.p2b, rs2.rs3.p3a, rs2.ns3.p3b])
     @test issetequal(rxs, reactions(rs1))
-    @test_broken issetequal(eqs, equations(rs1)) # @Sam, can you have a look here? There are new strange variables in the equations, e.g. `rs2₊A2a(rs2₊ns3₊t)`.
+    @test issetequal(eqs, equations(rs1))
     @test Catalyst.combinatoric_ratelaws(rs1)
     @test Catalyst.combinatoric_ratelaws(Catalyst.flatten(rs1))
 end
