@@ -41,7 +41,7 @@ let
     # Serialised using Catalyst version v$(Catalyst.VERSION).
 
     # Independent variable:
-    @parameters t
+    @independent_variables t
 
     # Parameters:
     ps = @parameters d
@@ -69,7 +69,7 @@ let
     end"""
     file_string_real = """let
 
-    @parameters t
+    @independent_variables t
     ps = @parameters d
     sps = @species X(t)
     vars = @variables V(t)

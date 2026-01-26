@@ -157,7 +157,7 @@ let
 
     # Defines a `ReactionSystem` using the input parameter (birth/death process, birth split in two parameters).
     # Checks that the units of the reaction rates are correct.
-    @parameters t [unit=u"s"]
+    @independent_variables t [unit=u"s"]
     @species X(t) [unit=u"mol/m^3"]
     @parameters p_base [unit=u"mol"] d [unit=u"1/s"]
     rxs = [

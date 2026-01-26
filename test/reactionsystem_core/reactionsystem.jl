@@ -673,7 +673,6 @@ end
 
 # Test for https://github.com/SciML/ModelingToolkit.jl/issues/436.
 let
-    @parameters t
     @species S(t) I(t)
     rxs = [Reaction(1, [S], [I]), Reaction(1.1, [S], [I])]
     @named rs = ReactionSystem(rxs, t, [S, I], [])

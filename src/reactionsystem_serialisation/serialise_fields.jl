@@ -8,7 +8,7 @@ end
 # Extract a string which declares the system's independent variable.
 function get_iv_string(rn::ReactionSystem)
     iv_dec = MT.get_iv(rn)
-    return "@parameters $(iv_dec)"
+    return "@independent_variables $(iv_dec)"
 end
 
 # Creates an annotation for the system's independent variable.

@@ -324,7 +324,7 @@ end
 # Tests that Reaction System created manually and through macro are identical.
 let
     identical_networks_4 = Vector{Pair}()
-    @parameters v1 K1 v2 K2 k1 k2 k3 k4 k5 p d t
+    @parameters v1 K1 v2 K2 k1 k2 k3 k4 k5 p d
     @species X1(t) X2(t) X3(t) X4(t) X5(t)
 
     rxs_1 = [Reaction(p, nothing, [X1], nothing, [2]),
