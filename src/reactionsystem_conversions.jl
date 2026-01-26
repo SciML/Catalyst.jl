@@ -389,6 +389,15 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
     # it may be that a given jump has isvrjvec[i] = true but has a physical
     isvrjvec = classify_vrjs(rs, physcales)
 
+    # Build substitution dict to wrap unknowns in Pre() for jump affects.
+    # This ensures that any unknown (species, variable, time-dependent parameter)
+    # appearing in stoichiometry is treated as a pre-jump value to read, not an
+    # unknown to solve for.
+    pre_sub_dict = Dict{SymbolicT, SymbolicT}(u => Pre(u) for u in unknownset)
+
+    # Reusable buffer for collecting variables from stoichiometry
+    stoichvars = Set{SymbolicT}()
+
     rxvars = Set{SymbolicT}()
     for (i, rx) in enumerate(rxs)
         # only process reactions that should give jumps
@@ -406,7 +415,18 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
             affect = Vector{Equation}()
             for (spec, stoich) in rx.netstoich
                 # don't change species that are constant or BCs
-                (!drop_dynamics(spec)) && push!(affect, spec ~ Pre(spec) + stoich)
+                if !drop_dynamics(spec)
+                    # Check if stoich contains any unknowns that need Pre() wrapping
+                    adj_stoich = stoich
+                    if stoich isa SymbolicT
+                        empty!(stoichvars)
+                        get_variables!(stoichvars, stoich)
+                        if any(in(unknownset), stoichvars)
+                            adj_stoich = substitute(stoich, pre_sub_dict)
+                        end
+                    end
+                    push!(affect, spec ~ Pre(spec) + adj_stoich)
+                end
             end
             if isvrj
                 push!(veqs, VariableRateJump(rl, affect; save_positions))
