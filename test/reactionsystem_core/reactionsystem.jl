@@ -491,12 +491,14 @@ let
     end
 
     # Test sde systems.
-    @test_broken let # @Sam: Not fully sure. Leaving it to you for now in case it is BC species-related (I barely know what they do...). Can try to circle back to it myself some time later though.
-        rxs = [(@reaction k1, $A --> B),
+    # BC species require a constraint equation to define their dynamics in SDESystems.
+    let
+        eqs = [(@reaction k1, $A --> B),
             (@reaction k2, B --> $A),
             (@reaction k1, $C + D --> E + $C),
-            (@reaction k2, E + $C --> $C + D)]
-        @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
+            (@reaction k2, E + $C --> $C + D),
+            Dt(C) ~ 0]  # Constraint equation for BC species (constant in time)
+        @named rs = ReactionSystem(eqs, t)
         rs = complete(rs)
         ssys = complete(make_cle_sde(rs))
         @test issetequal(MT.get_unknowns(ssys), [B, C, D, E])
