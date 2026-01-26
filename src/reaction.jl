@@ -14,8 +14,11 @@ Symbolics.option_to_metadata_type(::Val{:isspecies}) = VariableSpecies
 
 Tests if the given symbolic variable corresponds to a constant species.
 """
-isconstant(s::Num) = isconstant(MT.value(s))
+isconstant(s::Num) = isconstant(value(s))
 function isconstant(s)
+    if iscall(s) && operation(s) === getindex
+        s = first(arguments(s))
+    end
     MT.getmetadata(s, ParameterConstantSpecies, false)
 end
 
@@ -24,7 +27,7 @@ end
 
 Tests if the given symbolic variable corresponds to a boundary condition species.
 """
-isbc(s::Num) = isbc(MT.value(s))
+isbc(s::Num) = isbc(value(s))
 function isbc(s)
     MT.getmetadata(s, VariableBCSpecies, false)
 end
@@ -34,9 +37,12 @@ end
 
 Tests if the given symbolic variable corresponds to a chemical species.
 """
-isspecies(s::Num) = isspecies(MT.value(s))
+isspecies(s::Num) = isspecies(value(s))
 function isspecies(s)
-    MT.getmetadata(s, VariableSpecies, false)
+    if iscall(s) && operation(s) === getindex
+        s = first(arguments(s))
+    end
+    return MT.getmetadata(s, Catalyst.VariableSpecies, false)
 end
 
 """
@@ -49,7 +55,9 @@ Notes:
 """
 function tospecies(s)
     MT.isparameter(s) &&
-        error("Parameters can not be converted to species. Please pass a variable.")
+        throw(ArgumentError("Parameters, including isconstantspecies parameters, can not be converted to species. Please pass a variable."))
+    MT.getmetadata(unwrap(s), ParameterConstantSpecies, false) && 
+        throw(ArgumentError("isconstantspecies metadata can only be used with parameters."))    
     MT.setmetadata(s, VariableSpecies, true)
 end
 
@@ -137,9 +145,9 @@ struct Reaction{S, T}
     """The rate function (excluding mass action terms)."""
     rate::Any
     """Reaction substrates."""
-    substrates::Vector
+    substrates::Vector{SymbolicT}
     """Reaction products."""
-    products::Vector
+    products::Vector{SymbolicT}
     """The stoichiometric coefficients of the reactants."""
     substoich::Vector{T}
     """The stoichiometric coefficients of the products."""
@@ -315,7 +323,7 @@ end
 
 ### ModelingToolkit Function Dispatches ###
 
-# Used by ModelingToolkit.namespace_equation.
+# Used by ModelingToolkitBase.namespace_equation.
 function apply_if_nonempty(f, v)
     isempty(v) && return v
     s = similar(v)
@@ -347,19 +355,20 @@ MT.is_alg_equation(rx::Reaction) = false
 
 # MTK functions for extracting variables within equation type object
 MT.eqtype_supports_collect_vars(rx::Reaction) = true
-function MT.collect_vars!(unknowns, parameters, rx::Reaction, iv; depth = 0,
-        op = MT.Differential)
-    MT.collect_vars!(unknowns, parameters, rx.rate, iv; depth, op)
+function MT.collect_vars!(unknowns::OrderedSet{SymbolicT}, parameters::OrderedSet{SymbolicT},
+        rx::Reaction, iv::Union{SymbolicT, Nothing},  ::Type{op} = Symbolics.Operator;
+        depth = 0) where {op}
+    MT.collect_vars!(unknowns, parameters, rx.rate, iv, op; depth)
 
     for items in (rx.substrates, rx.products, rx.substoich, rx.prodstoich)
         for item in items
-            MT.collect_vars!(unknowns, parameters, item, iv; depth, op)
+            MT.collect_vars!(unknowns, parameters, item, iv, op; depth)
         end
     end
 
     if hasnoisescaling(rx)
         ns = getnoisescaling(rx)
-        MT.collect_vars!(unknowns, parameters, ns, iv; depth, op)
+        MT.collect_vars!(unknowns, parameters, ns, iv, op; depth)
     end
     return nothing
 end
@@ -375,7 +384,9 @@ encountered in:
     - Among potential noise scaling metadata.
 """
 function get_symbolics(rx::Reaction)
-    return ModelingToolkit.get_variables!([], rx)
+    vars = Set{SymbolicT}()
+    MT.get_variables!(vars, rx)
+    return collect(vars)
 end
 
 """
@@ -388,13 +399,12 @@ encountered in:
     - Among stoichiometries.
     - Among potential noise scaling metadata.
 """
-function ModelingToolkit.get_variables!(set, rx::Reaction)
+function MT.get_variables!(set, rx::Reaction)
     get_variables!(set, rx.rate)
     foreach(sub -> push!(set, sub), rx.substrates)
     foreach(prod -> push!(set, prod), rx.products)
     for stoichs in (rx.substoich, rx.prodstoich), stoich in stoichs
-
-        (stoich isa BasicSymbolic) && get_variables!(set, stoich)
+        (stoich isa SymbolicT) && get_variables!(set, stoich)
     end
     if hasnoisescaling(rx)
         get_variables!(set, getnoisescaling(rx))
@@ -406,7 +416,7 @@ end
 
 # determine which unknowns a reaction depends on
 function MT.get_variables!(deps::Set, rx::Reaction, variables)
-    (rx.rate isa Symbolic) && get_variables!(deps, rx.rate, variables)
+    (rx.rate isa SymbolicT) && get_variables!(deps, rx.rate, variables)
     for s in rx.substrates
         # parametric stoichiometry means may have a parameter as a substrate
         any(isequal(s), variables) && push!(deps, s)
@@ -681,7 +691,7 @@ end
 """
     @enumx PhysicalScale
 
-EnumX instance representing the physical scale of a reaction. 
+EnumX instance representing the physical scale of a reaction.
 
 Notes: The following values are possible:
 - `Auto`: (DEFAULT) Lets Catalyst decide at the time of system conversion and/or
@@ -694,7 +704,7 @@ Notes: The following values are possible:
   kinetics) term, specifically assigning it to a VariableRateJump.
 """
 @enumx PhysicalScale begin
-    Auto             # the default that lets Catalyst decide 
+    Auto             # the default that lets Catalyst decide
     ODE
     SDE
     Jump             # lets Catalyst decide the jump type
@@ -707,7 +717,7 @@ const NON_CONSTANT_JUMP_SCALES = (PhysicalScale.ODE, PhysicalScale.SDE, Physical
 """
     has_physical_scale(rx::Reaction)
 
-Returns `true` if the input reaction has the `physical_scale` metadata field assigned, 
+Returns `true` if the input reaction has the `physical_scale` metadata field assigned,
 else `false`.
 """
 function has_physical_scale(rx::Reaction)

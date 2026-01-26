@@ -28,7 +28,7 @@ end
 # Used to convert a generated initial condition/parameter set to a vector that can be used for normal
 # DiffEq functions (that are created for manual comparison). Requires order list of symbols.
 function map_to_vec(map, syms)
-    syms_dict = Dict([ModelingToolkit.getname(entry[1]) => entry[2] for entry in map])
+    syms_dict = Dict([ModelingToolkitBase.getname(entry[1]) => entry[2] for entry in map])
     issetequal(keys(syms_dict), syms) || error("Map symbols ($(keys(syms_dict))) and symbol vector symbols ($(syms)) do not match.")
     return [syms_dict[sym] for sym in syms]
 end

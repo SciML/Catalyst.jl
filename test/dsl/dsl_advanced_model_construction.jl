@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, ModelingToolkit
+using Catalyst, ModelingToolkitBase
 
 # Set creates the `t` independent variable.
 t = default_t()
@@ -25,14 +25,14 @@ let
     @species A(t)
     rx = Reaction(k, [A], nothing)
     function rntest(rn, name)
-        @test ModelingToolkit.nameof(rn) == name
-        @test isequal(species(rn)[1], ModelingToolkit.unwrap(A))
-        @test isequal(parameters(rn)[1], ModelingToolkit.unwrap(k))
+        @test ModelingToolkitBase.nameof(rn) == name
+        @test isequal(species(rn)[1], ModelingToolkitBase.unwrap(A))
+        @test isequal(parameters(rn)[1], ModelingToolkitBase.unwrap(k))
         @test reactions(rn)[1] == rx
     end
 
     function emptyrntest(rn, name)
-        @test ModelingToolkit.nameof(rn) == name
+        @test ModelingToolkitBase.nameof(rn) == name
         @test numreactions(rn) == 0
         @test numspecies(rn) == 0
     end
@@ -54,7 +54,7 @@ let
         @parameters k
         k, A --> 0
     end
-    rntest(rn, ModelingToolkit.nameof(rn))
+    rntest(rn, ModelingToolkitBase.nameof(rn))
 
     function makern(; name)
         @reaction_network $name begin
@@ -89,7 +89,7 @@ let
         k*$AAA, C --> D
     end
     rn2 = complete(ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn))
-    @test rn == rn2
+    @test Catalyst.isequivalent(rn, rn2)
 
     rn = @reaction_network rn begin
         @parameters k
@@ -97,7 +97,7 @@ let
         k, $AA + C --> D
     end
     rn2 = complete(ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn))
-    @test rn == rn2
+    @test Catalyst.isequivalent(rn, rn2)
 end
 let
     BB = B; A2 = A
@@ -108,7 +108,7 @@ let
     rn2 = complete(ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
                         Reaction(k2, [B], [C, A, B], [2], [1,2,1])],
                         t; name=:rn))
-    @test rn == rn2
+    @test Catalyst.isequivalent(rn, rn2)
 end
 let
     AA = A
@@ -119,7 +119,7 @@ let
         α+$kk1*$kk2*$AA, 2*$AA + B --> $AA
     end
     rn2 = complete(ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; name=:rn))
-    @test rn == rn2
+    @test Catalyst.isequivalent(rn, rn2)
 end
 
 # Miscellaneous interpolation tests. Unsure what they do here (not related to DSL).
@@ -243,7 +243,7 @@ let
         (k7,k8), X7 <--> (Y7,Y8), ([md7="Hi"],([md7="Hello"],[md7="Hi",md8="Yo"]))
     end
 
-    @test isequal(rn1, rn2)
+    @test Catalyst.isequivalent(rn1, rn2)
 end
 
 # Tests that `only_use_rate` option works.
@@ -266,7 +266,7 @@ let
         k6, X6 --> Z6, [only_use_rate=true, unnecessary_metadata=true]
     end
 
-    @test isequal(rn1,rn2)
+    @test Catalyst.isequivalent(rn1, rn2)
 end
 
 # Tests that erroneous metadata declarations yields errors.
@@ -298,14 +298,14 @@ let
     rx3 = Reaction(2*k, [B], [D], [2.5], [2])
     @named mixedsys = ReactionSystem([rx1,rx2,rx3],t,[B,C,D],[k])
     mixedsys = complete(mixedsys)
-    osys = convert(ODESystem, mixedsys; combinatoric_ratelaws=false)
+    osys = make_rre_ode(mixedsys; combinatoric_ratelaws=false)
     rn = @reaction_network mixedsys begin
         @parameters k
         k, 2.5*B + C --> 3.5*B + 2.5*D
         2*k, B --> 2.5*D
         2*k, 2.5*B --> 2*D
     end
-    @test rn == mixedsys
+    @test Catalyst.isequivalent(rn, mixedsys)
 end
 
 # Test that variables that appear only in rates and aren't ps
@@ -337,15 +337,15 @@ let
     @unpack A,B = rn2
     D = default_time_deriv()
     eq = D(B) ~ -B
-    @named osys = ODESystem([eq], t)
+    @named osys = System([eq], t)
     @named rn2 = extend(osys, rn2)
     rn2 = complete(rn2)
     @test issetequal(unknowns(rn2), species(rn2))
     rn = complete(rn)
     @test all(isspecies, species(rn))
-    @test Catalyst.isbc(ModelingToolkit.value(B))
-    @test Catalyst.isbc(ModelingToolkit.value(A)) == false
-    osys2 = complete(convert(ODESystem, rn2))
+    @test Catalyst.isbc(ModelingToolkitBase.value(B))
+    @test Catalyst.isbc(ModelingToolkitBase.value(A)) == false
+    osys2 = complete(make_rre_ode(rn2))
     @test issetequal(unknowns(osys2), unknowns(rn2))
     @test length(equations(osys2)) == 2
 end
@@ -364,7 +364,7 @@ let
     @species (X(t))[1:2] Y(t) C(t)
     rx = Reaction(k[1]*a+k[2], [X[1], X[2]], [Y, C], [1, V[1]], [V[2] * W, B])
     @named arrtest = ReactionSystem([rx], t)
-    @test complete(arrtest) == rn
+    @test Catalyst.isequivalent(complete(arrtest), rn)
 
     rn = @reaction_network twostate begin
         @parameters k[1:2]
@@ -377,7 +377,7 @@ let
     rx1 = Reaction(k[1], [X[1]], [X[2]])
     rx2 = Reaction(k[2], [X[2]], [X[1]])
     @named twostate = ReactionSystem([rx1, rx2], t)
-    @test complete(twostate) == rn
+    @test Catalyst.isequivalent(complete(twostate), rn)
 end
 
 ############## tests related to hybrid systems ###################
@@ -389,7 +389,7 @@ let
     @species A(t)
     rx = Reaction(k*V, [], [A])
     eq = D(V) ~ λ*V
-    cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
+    cevents = [[V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]]
     @named hybrid = ReactionSystem([rx, eq], t; continuous_events = cevents)
     hybrid = complete(hybrid)
     rn = @reaction_network hybrid begin
@@ -397,10 +397,10 @@ let
         k*V, 0 --> A
         @equations D(V) ~ λ*V
         @continuous_events begin
-            [V ~ 2.0] => [V ~ V/2, A ~ A/2]
+            [V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]
         end
-    end        
-    @test hybrid == rn
+    end
+    @test Catalyst.isequivalent(hybrid, rn)
 end
 
 # hybrid models
@@ -414,7 +414,7 @@ let
         λ, C --> A, [physical_scale = PhysicalScale.ODE]
         @equations D(V) ~ λ*V*C
         @continuous_events begin
-            [V ~ 2.0] => [V ~ V/2, A ~ A/2]
+            [V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]
         end
     end
     t = default_t()
@@ -426,11 +426,11 @@ let
     rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing; metadata),
         Reaction(k, [A, B], nothing), Reaction(λ, [C], [A])]
     eqs = [D(V) ~ λ*V*C]
-    cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
-    rs2 = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents, 
+    cevents = [[V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]]
+    rs2 = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents,
         name = :hybrid)
     rs2 = complete(rs2)
-    @test rs == rs2
+    @test Catalyst.isequivalent(rs, rs2)
 end
 
 let
@@ -443,7 +443,7 @@ let
         λ, C --> A, [physical_scale = PhysicalScale.VariableRateJump]
         @equations D(V) ~ λ*V*C
         @continuous_events begin
-            [V ~ 2.0] => [V ~ V/2, A ~ A/2]
+            [V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]
         end
     end
     t = default_t()
@@ -456,8 +456,8 @@ let
     rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing; metadata = md1),
         Reaction(k, [A, B], nothing), Reaction(λ, [C], [A]; metadata = md2)]
     eqs = [D(V) ~ λ*V*C]
-    cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
+    cevents = [[V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]]
     rs2 = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents, name = :hybrid)
     rs2 = complete(rs2)
-    @test rs == rs2
+    @test Catalyst.isequivalent(rs, rs2)
 end

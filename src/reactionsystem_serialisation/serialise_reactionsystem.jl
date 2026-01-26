@@ -45,7 +45,7 @@ function save_reactionsystem(filename::String, rn::ReactionSystem;
         write(file, get_full_system_string(rn, annotate, true))
     end
     if safety_check
-        if !isequal(rn, include(joinpath(pwd(), filename)))
+        if !Catalyst.isequivalent(rn, include(joinpath(pwd(), filename)))
             rm(filename)
             error("The serialised `ReactionSystem` is not equal to the original one. Please make a report (including the full system) at https://github.com/SciML/Catalyst.jl/issues. To disable this behaviour, please pass the `safety_check = false` argument to `save_reactionsystem` (warning, this will permit the serialisation of an erroneous system).")
         end
@@ -70,8 +70,7 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     # to the function that creates the next sub-system declarations.
     file_text, _ = push_field(file_text, rn, annotate, top_level, IV_FS)
     file_text, has_sivs = push_field(file_text, rn, annotate, top_level, SIVS_FS)
-    file_text, has_parameters,
-    has_species, has_variables = handle_us_n_ps(
+    file_text, has_parameters, has_discretes, has_species, has_variables = handle_us_n_ps(
         file_text, rn, annotate, top_level)
     file_text, has_reactions = push_field(file_text, rn, annotate, top_level, REACTIONS_FS)
     file_text, has_equations = push_field(file_text, rn, annotate, top_level, EQUATIONS_FS)
@@ -92,7 +91,7 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     # Enclose everything in a `let ... end` block. Potentially add Catalyst version number.
     rs_creation_code = make_reaction_system_call(
         rn, annotate, top_level, has_sivs, has_species,
-        has_variables, has_parameters, has_reactions,
+        has_variables, has_parameters, has_discretes, has_reactions,
         has_equations, has_observed, has_defaults, has_continuous_events,
         has_discrete_events, has_systems, has_connection_type)
     annotate || (@string_prepend! "\n" file_text)
@@ -107,7 +106,7 @@ end
 # Creates a ReactionSystem call for creating the model. Adds all the correct inputs to it. The input
 # `has_` `Bool`s described which inputs are used. If the model is `complete`, this is handled here.
 function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_sivs,
-        has_species, has_variables, has_parameters, has_reactions, has_equations,
+        has_species, has_variables, has_parameters, has_discretes, has_reactions, has_equations,
         has_observed, has_defaults, has_continuous_events, has_discrete_events, has_systems,
         has_connection_type)
 
@@ -137,8 +136,12 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
     end
 
     # Gets the parameters input.
-    if has_parameters
+    if has_parameters && has_discretes
+        ps = "[ps; discs]"
+    elseif has_parameters
         ps = "ps"
+    elseif has_discretes
+        ps = "discs"
     else
         ps = "[]"
     end
@@ -157,25 +160,28 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
     # Goes through various fields that might exists, and if so, adds them to the string.
     has_sivs && (@string_append! reaction_system_string ", spatial_ivs")
     has_observed && (@string_append! reaction_system_string ", observed")
-    has_defaults && (@string_append! reaction_system_string ", defaults")
+    has_defaults && (@string_append! reaction_system_string ", initial_conditions")
     has_continuous_events && (@string_append! reaction_system_string ", continuous_events")
     has_discrete_events && (@string_append! reaction_system_string ", discrete_events")
     has_systems && (@string_append! reaction_system_string ", systems")
     has_connection_type && (@string_append! reaction_system_string ", connection_type")
 
     # Potentially appends a combinatoric_ratelaws statement.
-    if !Symbolics.unwrap(combinatoric_ratelaws(rs))
+    if !unwrap(combinatoric_ratelaws(rs))
         @string_append! reaction_system_string ", combinatoric_ratelaws = false"
     end
 
-    # Potentially appends `ReactionSystem` metadata value(s). Weird composite types are not supported.
-    if !isnothing(MT.get_metadata(rs))
-        @string_append! reaction_system_string ", metadata = $(x_2_string(MT.get_metadata(rs)))"
+    # Potentially appends `ReactionSystem` metadata value(s).
+    if ModelingToolkitBase.get_metadata(rs) != Base.ImmutableDict(ModelingToolkitBase.MutableCacheKey => Dict{DataType, Any}())
+        md_string = ", metadata = $(x_2_string(MT.get_metadata(rs)))"
+        md_string = replace(md_string, "ModelingToolkitBase.MutableCacheKey => Dict([]), " => "") # These are added internally by MTK. Unnecessary and makes code less readable.
+        md_string = replace(md_string, ", ModelingToolkitBase.MutableCacheKey => Dict([])" => "")
+        @string_append! reaction_system_string md_string
     end
 
     # Finalises the call. Appends potential annotation. If the system is complete, add a call for this.
     @string_append! reaction_system_string ")"
-    if ModelingToolkit.iscomplete(rs)
+    if MT.iscomplete(rs)
         @string_prepend! "rs = " reaction_system_string
         top_level || (@string_prepend! "local " reaction_system_string)
         @string_append! reaction_system_string "\ncomplete(rs)"

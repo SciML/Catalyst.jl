@@ -32,16 +32,16 @@ end
         @time @safetestset "DSL Options" begin include("dsl/dsl_options.jl") end
 
         # Tests compositional and hierarchical modelling.
-        @time @safetestset "ReactionSystem Components Based Creation" begin include("compositional_modelling/component_based_model_creation.jl") end
+        @time @safetestset "ReactionSystem Components Based Creation" begin include("compositional_modelling/component_based_model_creation.jl") end # hierarchical modelling broken due to https://github.com/SciML/ModelingToolkit.jl/pull/4101
 
         # Tests various miscellaneous features.
         @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
-        @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end
+        @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end # `_validate` currently no longer avaiable, awaiting advice.
         @time @safetestset "Compound Species" begin include("miscellaneous_tests/compound_macro.jl") end
         @time @safetestset "Reaction Balancing" begin include("miscellaneous_tests/reaction_balancing.jl") end
 
         # Tests reaction network analysis features.
-        @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end
+        @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end # Multiple issues. https://github.com/SciML/ModelingToolkit.jl/issues/4102 required to start debugging.
         @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
         @time @safetestset "CRN Theory" begin include("network_analysis/crn_theory.jl") end
 
@@ -54,17 +54,18 @@ end
 
         # Tests upstream SciML and DiffEq stuff.
         @time @safetestset "MTK Structure Indexing" begin include("upstream/mtk_structure_indexing.jl") end
-        @time @safetestset "MTK Problem Inputs" begin include("upstream/mtk_problem_inputs.jl") end
+        @time @safetestset "MTK Problem Inputs" begin include("upstream/mtk_problem_inputs.jl") end # Required to fix lots of these: https://github.com/SciML/ModelingToolkit.jl/issues/4098
     end
 
     if GROUP == "All" || GROUP == "Hybrid"
-        @time @safetestset "ReactionSystem Hybrid Solvers" begin include("simulation_and_solving/hybrid_models.jl") end
+        # BROKEN
+        #@time @safetestset "ReactionSystem Hybrid Solvers" begin include("simulation_and_solving/hybrid_models.jl") end # @Sam, I will let you have a look at the hybrid stuff when you have oppertunity to do so.
     end
 
     if GROUP == "All" || GROUP == "IO"
         @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
         # BROKEN
-        # @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
+        #@time @safetestset "Latexify" begin include("visualisation/latexify.jl") end # https://github.com/SciML/Catalyst.jl/issues/1352
     end
 
     if GROUP == "All" || GROUP == "Spatial"

@@ -64,7 +64,7 @@ sol = solve(sprob, EM(), dt=.01, saveat = 2.0)
 p2 = plot(sol, title = "SDE")
 
 # solve as jump process
-jumpsys = convert(JumpSystem, rs)
+jumpsys = make_sck_jump(rs)
 jumpsys = complete(jumpsys)
 u₀map    = [S => 999, I => 1, R => 0]
 dprob = DiscreteProblem(jumpsys, u₀map, tspan, parammap)
@@ -132,8 +132,8 @@ direct access to the corresponding internal fields of the `ReactionSystem`)
 * `ModelingToolkit.get_iv(rn)` is the independent variable used in the system
   (usually `t` to represent time).
 * `ModelingToolkit.get_systems(rn)` is a vector of all sub-systems of `rn`.
-* `ModelingToolkit.get_defaults(rn)` is a dictionary of all the default values
-  for parameters and species in `rn`.
+* `ModelingToolkit.get_initial_conditions(rn)` is a dictionary of all the initial
+  values for parameters and species in `rn`.
 
 The preceding accessors do not allocate, directly accessing internal fields of
 the `ReactionSystem`.
@@ -232,7 +232,6 @@ Catalyst.getmisc
 [`ModelingToolkit.compose`](@ref).
 
 ```@docs
-setdefaults!
 ModelingToolkit.extend
 ModelingToolkit.compose
 Catalyst.flatten

@@ -206,6 +206,6 @@ end
 # Checks that providing a non-spatial `DiscreteProblem` to a `JumpProblem` gives an error.
 let
     lrs = LatticeReactionSystem(binding_system, binding_srs, very_small_2d_masked_grid)
-    dprob = DiscreteProblem(binding_system, binding_u0, (0.0, 10.0), binding_p[1:2])
-    @test_throws ArgumentError JumpProblem(lrs, dprob, NSM())
+    @test_throws Exception dprob = DiscreteProblem(binding_system, binding_u0, (0.0, 10.0), binding_p[1:2])
+    #@test_throws ArgumentError JumpProblem(lrs, dprob, NSM()) # Previously the first step worked, and error only appeared here.
 end

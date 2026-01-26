@@ -2,11 +2,12 @@ module CatalystHomotopyContinuationExtension
 
 # Fetch packages.
 using Catalyst
+import DiffEqBase
 import DynamicPolynomials
-import ModelingToolkit as MT
+import ModelingToolkitBase as MT
 import HomotopyContinuation as HC
 import Setfield: @set
-import Symbolics: unwrap, wrap, Rewriters, symtype, issym, maketerm, BasicSymbolic, metadata
+import Symbolics: unwrap, wrap, Rewriters, symtype, issym, maketerm, metadata
 using Symbolics: iscall
 
 # Creates and exports hc_steady_states function.

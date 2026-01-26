@@ -8,7 +8,7 @@ const double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :�
 const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables,
+const option_keys = (:species, :parameters, :variables, :discretes, :ivs, :compounds, :observables,
     :default_noise_scaling, :differentials, :equations, :continuous_events, :discrete_events,
     :combinatoric_ratelaws, :require_declaration)
 
@@ -16,32 +16,7 @@ const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :obser
 
 # The @species macro, basically a copy of the @variables macro.
 macro species(ex...)
-    vars = Symbolics._parse_vars(:variables, Real, ex)
-
-    # vector of symbols that get defined
-    lastarg = vars.args[end]
-
-    # start adding metadata statements where the vector of symbols was previously declared
-    idx = length(vars.args)
-    resize!(vars.args, idx + length(lastarg.args) + 1)
-    for sym in lastarg.args
-        vars.args[idx] = :($sym = ModelingToolkit.wrap(setmetadata(
-            ModelingToolkit.value($sym), Catalyst.VariableSpecies, true)))
-        idx += 1
-    end
-
-    # check nothing was declared isconstantspecies
-    ex = quote
-        all(!Catalyst.isconstant ∘ ModelingToolkit.value, $lastarg) ||
-            throw(ArgumentError("isconstantspecies metadata can only be used with parameters."))
-    end
-    vars.args[idx] = ex
-    idx += 1
-
-    # put back the vector of the new species symbols
-    vars.args[idx] = lastarg
-
-    esc(vars)
+    return Symbolics.parse_vars(:variables, Real, ex, tospecies)
 end
 
 ### `@reaction_network` and `@network_component` Macros ###
@@ -262,7 +237,6 @@ end
 
 # Function for creating a ReactionSystem structure (used by the @reaction_network macro).
 function make_reaction_system(ex::Expr, name)
-
     # Handle interpolation of variables in the input.
     ex = esc_dollars!(ex)
 
@@ -283,11 +257,12 @@ function make_reaction_system(ex::Expr, name)
     sps_declared = extract_syms(options, :species)
     ps_declared = extract_syms(options, :parameters)
     vs_declared = extract_syms(options, :variables)
+    discs_declared = extract_syms(options, :discretes)
     tiv, sivs, ivs, ivsexpr = read_ivs_option(options)
     cmpexpr_init, cmps_declared = read_compounds_option(options)
     diffsexpr, diffs_declared = read_differentials_option(options)
     syms_declared = collect(Iterators.flatten((cmps_declared, sps_declared, ps_declared,
-        vs_declared, ivs, diffs_declared)))
+        vs_declared, discs_declared, ivs, diffs_declared)))
     if !allunique(syms_declared)
         nonunique_syms = [s for s in syms_declared if count(x -> x == s, syms_declared) > 1]
         error("The following symbols $(unique(nonunique_syms)) have explicitly been declared as multiple types of components (e.g. occur in at least two of the `@species`, `@parameters`, `@variables`, `@ivs`, `@compounds`, `@differentials`). This is not allowed.")
@@ -306,8 +281,9 @@ function make_reaction_system(ex::Expr, name)
         union(sps_declared, vs_declared), all_syms; requiredec)
 
     # Read options not related to the declaration or inference of symbols.
-    continuous_events_expr = read_events_option(options, :continuous_events)
-    discrete_events_expr = read_events_option(options, :discrete_events)
+    discs_inferred = Vector{Symbol}()
+    continuous_events_expr = read_events_option!(options, discs_inferred, ps_inferred, discs_declared, :continuous_events)
+    discrete_events_expr = read_events_option!(options, discs_inferred, ps_inferred, discs_declared, :discrete_events)
     default_reaction_metadata = read_default_noise_scaling_option(options)
     combinatoric_ratelaws = read_combinatoric_ratelaws_option(options)
 
@@ -315,9 +291,11 @@ function make_reaction_system(ex::Expr, name)
     psexpr_init = get_psexpr(ps_inferred, options)
     spsexpr_init = get_usexpr(sps_inferred, options; ivs)
     vsexpr_init = get_usexpr(vs_inferred, options, :variables; ivs)
+    discsexpr_init = get_usexpr(discs_inferred, options, :discretes; ivs)
     psexpr, psvar = assign_var_to_symvar_declaration(psexpr_init, "ps", scalarize = false)
     spsexpr, spsvar = assign_var_to_symvar_declaration(spsexpr_init, "specs")
     vsexpr, vsvar = assign_var_to_symvar_declaration(vsexpr_init, "vars")
+    discsexpr, discsvar = assign_var_to_symvar_declaration(discsexpr_init, "discs")
     cmpsexpr, cmpsvar = assign_var_to_symvar_declaration(cmpexpr_init, "comps")
     rxsexprs = get_rxexprs(reactions, equations, all_syms)
 
@@ -329,6 +307,7 @@ function make_reaction_system(ex::Expr, name)
         $psexpr
         $vsexpr
         $spsexpr
+        $discsexpr
         $obsexpr
         $cmpsexpr
         $diffsexpr
@@ -338,6 +317,7 @@ function make_reaction_system(ex::Expr, name)
         spatial_ivs = $sivs
         rx_eq_vec = $rxsexprs
         us = setdiff(union($spsvar, $vsvar, $cmpsvar), $obs_syms)
+        ps = union($psvar, $discsvar)
         _observed = $obs_eqs
         _continuous_events = $continuous_events_expr
         _discrete_events = $discrete_events_expr
@@ -345,7 +325,7 @@ function make_reaction_system(ex::Expr, name)
         _default_reaction_metadata = $default_reaction_metadata
 
         remake_ReactionSystem_internal(
-            make_ReactionSystem_internal(rx_eq_vec, $tiv, us, $psvar; name, spatial_ivs,
+            make_ReactionSystem_internal(rx_eq_vec, $tiv, us, ps; name, spatial_ivs,
                 observed = _observed, continuous_events = _continuous_events,
                 discrete_events = _discrete_events, combinatoric_ratelaws = _combinatoric_ratelaws);
             default_reaction_metadata = _default_reaction_metadata)
@@ -524,7 +504,9 @@ function get_psexpr(parameters_extracted, options)
     else
         :(@parameters)
     end
-    foreach(p -> push!(pexprs.args, p), parameters_extracted)
+    arg_vec = ((length(pexprs.args) > 2) && Meta.isexpr(pexprs.args[3], :block)) ?
+        (pexprs.args[3].args) : (pexprs.args)
+    foreach(p -> push!(arg_vec, p), parameters_extracted)
     pexprs
 end
 
@@ -539,8 +521,10 @@ function get_usexpr(us_extracted, options, key = :species; ivs = (DEFAULT_IV_SYM
     else
         Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
     end
+    arg_vec = ((length(usexpr.args) > 2) && Meta.isexpr(usexpr.args[3], :block)) ?
+        (usexpr.args[3].args) : (usexpr.args)
     for u in us_extracted
-        u isa Symbol && push!(usexpr.args, Expr(:call, u, ivs...))
+        u isa Symbol && push!(arg_vec, Expr(:call, u, ivs...))
     end
     usexpr
 end
@@ -690,13 +674,11 @@ end
 function read_equations_option!(
         diffsexpr, options, syms_unavailable, tiv; requiredec = false)
     # Prepares the equations. First, extract equations from the provided option (converting to block form if required).
-    # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
+    # Next, uses `parse_equations!` function to split input into a vector with the equations.
     eqs_input = haskey(options, :equations) ? get_block_option(options[:equations]) :
-                :(begin end)
+                MacroTools.striplines(:(begin end))
     eqs_input = option_block_form(eqs_input)
-    equations = Expr[]
-    ModelingToolkit.parse_equations!(Expr(:block), equations,
-        Dict{Symbol, Any}(), eqs_input)
+    equations = eqs_input.args
 
     # Loops through all equations, checks for lhs of the form `D(X) ~ ...`.
     # When this is the case, the variable X and differential D are extracted (for automatic declaration).
@@ -788,7 +770,7 @@ function read_observables_option(
                 dep_var_expr = :(filter(!MT.isparameter,
                     Symbolics.get_variables($(obs_eq.args[3]))))
                 ivs_get_expr = :(unique(reduce(
-                    vcat, [sorted_arguments(MT.unwrap(dep))
+                    vcat, [sorted_arguments(unwrap(dep))
                            for dep in $dep_var_expr])))
                 ivs_get_expr_sorted = :(sort($(ivs_get_expr);
                     by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $all_ivs)))
@@ -830,8 +812,22 @@ function make_obs_eqs(observables_expr)
     return obs_eqs
 end
 
+# Helper function to detect if an expression already contains a `Pre()` call at parse time.
+# Used to avoid double-wrapping when users explicitly write `Pre()` in event affects.
+function expr_contains_pre(expr)
+    if expr isa Expr
+        if expr.head == :call && expr.args[1] == :Pre
+            return true
+        end
+        return any(expr_contains_pre, expr.args)
+    end
+    return false
+end
+
 # Read the events (continuous or discrete) provided as options to the DSL. Returns an expression which evaluates to these.
-function read_events_option(options, event_type::Symbol)
+# Infered parameters that are updated byu the event should be declared using e.g. `@discretes p(t)`.
+# `read_events_option!` moves these from `ps_inferred` to `discs_inferred`
+function read_events_option!(options, discs_inferred::Vector, ps_inferred::Vector, discs_declared::Vector, event_type::Symbol)
     # Prepares the events, if required to, converts them to block form.
     if event_type ∉ [:continuous_events, :discrete_events]
         error("Trying to read an unsupported event type.")
@@ -857,8 +853,38 @@ function read_events_option(options, event_type::Symbol)
             error("The affect part of all events (the right-hand side) must be a vector. This is not the case for: $(arg).")
         end
 
+        # Goes through all affects, checking formatting, recording discrete parameters, and
+        # adding `Pre(...)` statements where necessary.
+        disc_ps = :([])
+        affects = :([])
+        for affect in arg.args[3].args
+            Meta.isexpr(affect, :call) ||
+                error("Event affects must be assignments (e.g. `X ~ X + 1`). This is not the case for: $(affect).")
+            (affect.args[2] isa Symbol) ||
+                error("The Catalyst DSL currently only supports assignment events where the LHS is a single symbol. This is not the case for: $(affect).")
+
+            # If the event updates an inferred parameter, this should be moved to an inferred discrete.
+            if affect.args[2] in ps_inferred
+                push!(discs_inferred, affect.args[2])
+                deleteat!(ps_inferred, findfirst(==(affect.args[2]), ps_inferred))
+            end
+
+            # If the event updates an inferred parameter or declared discrete, it should be in `discrete_parameters`.
+            (affect.args[2] in [discs_inferred; discs_declared]) && push!(disc_ps.args, affect.args[2])
+
+            # Creates the affect RHS (adds `Pre` if it doesn't already contain Pre).
+            rhs = affect.args[3]
+            if !(rhs isa Number) && !expr_contains_pre(rhs)
+                rhs = :(Pre($(rhs)))
+            end
+            push!(affects.args, :($(affect.args[2]) ~ $rhs))
+        end
+
         # Adds the correctly formatted event to the event creation expression.
-        push!(events_expr.args, arg)
+        event_func = (event_type == :continuous_events ? :(MT.SymbolicContinuousCallback) :
+                      :(MT.SymbolicDiscreteCallback))
+        event = :($event_func($(arg.args[2]) => $affects; discrete_parameters = $disc_ps))
+        push!(events_expr.args, event)
     end
 
     return events_expr
@@ -988,9 +1014,8 @@ function recursive_escape_functions!(expr::ExprValues, syms_skip = [])
     (typeof(expr) != Expr) && (return expr)
     foreach(i -> expr.args[i] = recursive_escape_functions!(expr.args[i], syms_skip),
         1:length(expr.args))
-    if (expr.head == :call) && (expr.args[1] isa Symbol) &&
-       !isdefined(Catalyst, expr.args[1]) &&
-       expr.args[1] ∉ syms_skip
+    if (expr.head == :call) && (expr.args[1] isa Symbol) &&!isdefined(Catalyst, expr.args[1]) &&
+            expr.args[1] ∉ syms_skip
         expr.args[1] = esc(expr.args[1])
     end
     expr

@@ -2,8 +2,10 @@
 
 # Fetch packages.
 using Catalyst, Test, LinearAlgebra
-using ModelingToolkit: get_continuous_events, get_discrete_events
+using ModelingToolkitBase: get_continuous_events, get_discrete_events, Pre
+const MT = ModelingToolkitBase
 using Symbolics: derivative
+using SymbolicUtils: _iszero
 
 # Sets stable rng number.
 using StableRNGs
@@ -90,7 +92,7 @@ let
     @test isequal(derivative(Catalyst.hillar(X, Y, v, K, n), v),
                   X^n / (K^n + X^n + Y^n))
     @test isequal(derivative(Catalyst.hillar(X, Y, v, K, n), K),
-                  -n * v * (v^(n - 1)) * (X^n) / (K^n + X^n + Y^n)^2)
+                  -n * v * (K^(n - 1)) * (X^n) / (K^n + X^n + Y^n)^2)
     @test isequal(derivative(Catalyst.hillar(X, Y, v, K, n), n),
                   v * (X^n) * ((K^n + Y^n) * log(X) - (K^n) * log(K) - (Y^n) * log(Y)) /
                   (K^n + X^n + Y^n)^2)
@@ -117,7 +119,7 @@ let
         v * (x^n) / (x^n + y^n + k^n), 0 --> x
     end
     rs3 = Catalyst.expand_registered_functions(rs1)
-    @test isequivalent(rs3, rs2; ignorenames = false, debug = true)
+    @test Catalyst.isequivalent(rs3, rs2; ignorenames = false, debug = true)
 end
 
 # Tests `Reaction`s.
@@ -196,9 +198,9 @@ let
     rs_expanded = Catalyst.expand_registered_functions(rs)
 
     # Checks that the original model is unchanged (equality currently does not consider events).
-    @test rs == rs_saved
-    @test get_continuous_events(rs) == get_continuous_events(rs_saved)
-    @test get_discrete_events(rs) == get_discrete_events(rs_saved)
+    @test_broken rs == rs_saved # Cannot test events equality: https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @test_broken get_continuous_events(rs) == get_continuous_events(rs_saved) # Cannot test events equality: https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @test_broken get_discrete_events(rs) == get_discrete_events(rs_saved) # Cannot test events equality: https://github.com/SciML/ModelingToolkit.jl/issues/3907
 
     # Checks that the new system is expanded.
     @unpack v0, X, Y, v, K, n = rs
@@ -210,11 +212,11 @@ let
         1.0 => [X ~ X]
         (v * (X^n) / (X^n + K^n) > 1000.0) => [X ~ v * (K^n) / (X^n + K^n) + 2]
     ]
-    continuous_events = ModelingToolkit.SymbolicContinuousCallback.(continuous_events)
-    discrete_events = ModelingToolkit.SymbolicDiscreteCallback.(discrete_events)
+    continuous_events = ModelingToolkitBase.SymbolicContinuousCallback.(continuous_events)
+    discrete_events = ModelingToolkitBase.SymbolicDiscreteCallback.(discrete_events)
     @test isequal(only(Catalyst.get_rxs(rs_expanded)).rate, v0 + v * (X^n) / (X^n + Y^n + K^n))
-    @test isequal(get_continuous_events(rs_expanded), continuous_events)
-    @test isequal(get_discrete_events(rs_expanded), discrete_events)
+    @test_broken isequal(get_continuous_events(rs_expanded), continuous_events) # Cannot test events equality: https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @test_broken isequal(get_discrete_events(rs_expanded), discrete_events) # Cannot test events equality: https://github.com/SciML/ModelingToolkit.jl/issues/3907
 end
 
 # test for hill function expansion
@@ -225,7 +227,7 @@ let
         hillr(X, v, K, n), X + Y --> Z
         mmr(X, v, K), X + Y --> Z
     end
-    osys = complete(convert(ODESystem, rn; expand_catalyst_funs = false))
+    osys = complete(make_rre_ode(rn; expand_catalyst_funs = false))
     t = default_t()
     D = default_time_deriv()
     @unpack X, v, K, n, Y, Z = rn
@@ -235,10 +237,10 @@ let
            D(Z) ~ hill(X, v, K, n)*X*Y + mm(X,v,K)*X*Y + hillr(X,v,K,n)*X*Y + mmr(X,v,K)*X*Y]
     reorder = [findfirst(eq -> isequal(eq.lhs, osyseq.lhs), eqs) for osyseq in osyseqs]
     for (osysidx,eqidx) in enumerate(reorder)
-        @test iszero(simplify(eqs[eqidx].rhs - osyseqs[osysidx].rhs))
-    end    
-    
-    osys2 = complete(convert(ODESystem, rn))
+        @test _iszero(simplify(eqs[eqidx].rhs - osyseqs[osysidx].rhs))
+    end
+
+    osys2 = complete(make_rre_ode(rn))
     hill2(x, v, k, n) = v * x^n / (k^n + x^n)
     mm2(X,v,K) = v*X / (X + K)
     mmr2(X,v,K) = v*K / (X + K)
@@ -249,72 +251,74 @@ let
     osyseqs2 = equations(osys2)
     reorder = [findfirst(eq -> isequal(eq.lhs, osyseq.lhs), eqs2) for osyseq in osyseqs2]
     for (osysidx,eqidx) in enumerate(reorder)
-        @test iszero(simplify(eqs2[eqidx].rhs - osyseqs2[osysidx].rhs))
+        @test _iszero(simplify(eqs2[eqidx].rhs - osyseqs2[osysidx].rhs))
     end
-    
-    nlsys = complete(convert(NonlinearSystem, rn; expand_catalyst_funs = false))
+
+    nlsys = complete(make_rre_algeqs(rn; expand_catalyst_funs = false))
     nlsyseqs = equations(nlsys)
     eqs = [0 ~ -hill(X, v, K, n)*X*Y - mm(X,v,K)*X*Y - hillr(X,v,K,n)*X*Y - mmr(X,v,K)*X*Y,
            0 ~ -hill(X, v, K, n)*X*Y - mm(X,v,K)*X*Y - hillr(X,v,K,n)*X*Y - mmr(X,v,K)*X*Y,
            0 ~ hill(X, v, K, n)*X*Y + mm(X,v,K)*X*Y + hillr(X,v,K,n)*X*Y + mmr(X,v,K)*X*Y]
     for (i, eq) in enumerate(eqs)
-        @test iszero(simplify(eq.rhs - nlsyseqs[i].rhs))
+        @test _iszero(simplify(eq.rhs - nlsyseqs[i].rhs))
     end
-    
-    nlsys2 = complete(convert(NonlinearSystem, rn))
+
+    nlsys2 = complete(make_rre_algeqs(rn))
     nlsyseqs2 = equations(nlsys2)
     eqs2 = [0 ~ -hill2(X, v, K, n)*X*Y - mm2(X,v,K)*X*Y - hillr2(X,v,K,n)*X*Y - mmr2(X,v,K)*X*Y,
             0 ~ -hill2(X, v, K, n)*X*Y - mm2(X,v,K)*X*Y - hillr2(X,v,K,n)*X*Y - mmr2(X,v,K)*X*Y,
             0 ~ hill2(X, v, K, n)*X*Y + mm2(X,v,K)*X*Y + hillr2(X,v,K,n)*X*Y + mmr2(X,v,K)*X*Y]
     for (i, eq) in enumerate(eqs2)
-        @test iszero(simplify(eq.rhs - nlsyseqs2[i].rhs))
+        @test _iszero(simplify(eq.rhs - nlsyseqs2[i].rhs))
     end
 
-    sdesys = complete(convert(SDESystem, rn; expand_catalyst_funs = false))
+    sdesys = complete(make_cle_sde(rn; expand_catalyst_funs = false))
     sdesyseqs = equations(sdesys)
     eqs = [D(X) ~ -hill(X, v, K, n)*X*Y - mm(X,v,K)*X*Y - hillr(X,v,K,n)*X*Y - mmr(X,v,K)*X*Y,
            D(Y) ~ -hill(X, v, K, n)*X*Y - mm(X,v,K)*X*Y - hillr(X,v,K,n)*X*Y - mmr(X,v,K)*X*Y,
            D(Z) ~ hill(X, v, K, n)*X*Y + mm(X,v,K)*X*Y + hillr(X,v,K,n)*X*Y + mmr(X,v,K)*X*Y]
     reorder = [findfirst(eq -> isequal(eq.lhs, sdesyseq.lhs), eqs) for sdesyseq in sdesyseqs]
     for (sdesysidx,eqidx) in enumerate(reorder)
-        @test iszero(simplify(eqs[eqidx].rhs - sdesyseqs[sdesysidx].rhs))
-    end               
-    sdesysnoiseeqs = ModelingToolkit.get_noiseeqs(sdesys)
+        @test _iszero(simplify(eqs[eqidx].rhs - sdesyseqs[sdesysidx].rhs))
+    end
+    sdesysnoiseeqs = ModelingToolkitBase.get_noise_eqs(sdesys)
     neqvec = diagm(sqrt.(abs.([hill(X, v, K, n)*X*Y, mm(X,v,K)*X*Y, hillr(X,v,K,n)*X*Y, mmr(X,v,K)*X*Y])))
-    neqmat = [-1 -1 -1 -1; -1 -1 -1 -1; 1 1 1 1] 
+    neqmat = [-1 -1 -1 -1; -1 -1 -1 -1; 1 1 1 1]
     neqmat *= neqvec
-    @test all(iszero, simplify.(sdesysnoiseeqs .- neqmat))
+    @test all(_iszero, simplify.(sdesysnoiseeqs .- neqmat))
 
-    sdesys = complete(convert(SDESystem, rn))
+    sdesys = complete(make_cle_sde(rn))
     sdesyseqs = equations(sdesys)
     eqs = [D(X) ~ -hill2(X, v, K, n)*X*Y - mm2(X,v,K)*X*Y - hillr2(X,v,K,n)*X*Y - mmr2(X,v,K)*X*Y,
            D(Y) ~ -hill2(X, v, K, n)*X*Y - mm2(X,v,K)*X*Y - hillr2(X,v,K,n)*X*Y - mmr2(X,v,K)*X*Y,
            D(Z) ~ hill2(X, v, K, n)*X*Y + mm2(X,v,K)*X*Y + hillr2(X,v,K,n)*X*Y + mmr2(X,v,K)*X*Y]
     reorder = [findfirst(eq -> isequal(eq.lhs, sdesyseq.lhs), eqs) for sdesyseq in sdesyseqs]
     for (sdesysidx,eqidx) in enumerate(reorder)
-        @test iszero(simplify(eqs[eqidx].rhs - sdesyseqs[sdesysidx].rhs))
-    end               
-    sdesysnoiseeqs = ModelingToolkit.get_noiseeqs(sdesys)
+        @test _iszero(simplify(eqs[eqidx].rhs - sdesyseqs[sdesysidx].rhs))
+    end
+    sdesysnoiseeqs = ModelingToolkitBase.get_noise_eqs(sdesys)
     neqvec = diagm(sqrt.(abs.([hill2(X, v, K, n)*X*Y, mm2(X,v,K)*X*Y, hillr2(X,v,K,n)*X*Y, mmr2(X,v,K)*X*Y])))
-    neqmat = [-1 -1 -1 -1; -1 -1 -1 -1; 1 1 1 1] 
+    neqmat = [-1 -1 -1 -1; -1 -1 -1 -1; 1 1 1 1]
     neqmat *= neqvec
-    @test all(iszero, simplify.(sdesysnoiseeqs .- neqmat))
+    @test all(_iszero, simplify.(sdesysnoiseeqs .- neqmat))
 
-    jsys = convert(JumpSystem, rn; expand_catalyst_funs = false)
-    jsyseqs = equations(jsys).x[2]
-    rates = getfield.(jsyseqs, :rate)
-    affects = getfield.(jsyseqs, :affect!)
-    reqs = [ Y*X*hill(X, v, K, n), Y*X*mm(X, v, K), hillr(X, v, K, n)*Y*X, Y*X*mmr(X, v, K)]
-    affeqs = [Z ~ 1 + Z, Y ~ -1 + Y, X ~ -1 + X]
-    @test all(iszero, simplify(rates .- reqs))
-    @test all(aff -> isequal(aff, affeqs), affects)
+    # Test with expand_catalyst_funs = false
+    jsys = make_sck_jump(rn; expand_catalyst_funs = false)
+    jsysjumps = MT.jumps(jsys)
+    rates = getfield.(jsysjumps, :rate)
+    affects = getfield.(jsysjumps, :affect!)
+    reqs = [Y*X*hill(X, v, K, n), Y*X*mm(X, v, K), hillr(X, v, K, n)*Y*X, Y*X*mmr(X, v, K)]
+    affeqs = [Z ~ 1 + Pre(Z), Y ~ -1 + Pre(Y), X ~ -1 + Pre(X)]
+    @test all(_iszero, simplify.(rates .- reqs))
+    @test all(aff -> issetequal(aff, affeqs), affects)
 
-    jsys = convert(JumpSystem, rn)
-    jsyseqs = equations(jsys).x[2]
-    rates = getfield.(jsyseqs, :rate)
-    affects = getfield.(jsyseqs, :affect!)
-    reqs = [ Y*X*hill2(X, v, K, n), Y*X*mm2(X, v, K), hillr2(X, v, K, n)*Y*X, Y*X*mmr2(X, v, K)]
-    affeqs = [Z ~ 1 + Z, Y ~ -1 + Y, X ~ -1 + X]
-    @test all(iszero, simplify(rates .- reqs))
-    @test all(aff -> isequal(aff, affeqs), affects)
+    # Test with expand_catalyst_funs = true (default)
+    jsys = make_sck_jump(rn)
+    jsysjumps = MT.jumps(jsys)
+    rates = getfield.(jsysjumps, :rate)
+    affects = getfield.(jsysjumps, :affect!)
+    reqs = [Y*X*hill2(X, v, K, n), Y*X*mm2(X, v, K), hillr2(X, v, K, n)*Y*X, Y*X*mmr2(X, v, K)]
+    affeqs = [Z ~ 1 + Pre(Z), Y ~ -1 + Pre(Y), X ~ -1 + Pre(X)]
+    @test all(_iszero, simplify.(rates .- reqs))
+    @test all(aff -> issetequal(aff, affeqs), affects)
 end

@@ -198,7 +198,7 @@ end
 
 Return the negative of the graph Laplacian of the reaction network. The ODE system of a chemical reaction network can be factorized as ``\frac{dx}{dt} = Y A_k Φ(x)``, where ``Y`` is the [`complexstoichmat`](@ref) and ``A_k`` is the negative of the graph Laplacian, and ``Φ`` is the [`massactionvector`](@ref). ``A_k`` is an n-by-n matrix, where n is the number of complexes, where ``A_{ij} = k_{ij}`` if a reaction exists between the two complexes and 0 otherwise.
 
-Returns a symbolic matrix by default, but will return a numerical matrix if parameter values are specified via pmap. 
+Returns a symbolic matrix by default, but will return a numerical matrix if parameter values are specified via pmap.
 
 **Warning**: Unlike other Catalyst functions, the `laplacianmat` function will return a `Matrix{Num}` in the symbolic case. This is to allow easier computation of the matrix decomposition of the ODEs, and to ensure that multiplying the sparse form of the matrix will work.
 """
@@ -217,7 +217,7 @@ Return an r×c matrix ``K`` such that, if complex ``j`` is the substrate complex
 **Warning**: Unlike other Catalyst functions, the `fluxmat` function will return a `Matrix{Num}` in the symbolic case. This is to allow easier computation of the matrix decomposition of the ODEs, and to ensure that multiplying the sparse form of the matrix will work.
 """
 function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse = false)
-    deps = Set()
+    deps = Set{SymbolicT}()
     for (i, rx) in enumerate(reactions(rn))
         empty!(deps)
         get_variables!(deps, rx.rate, species(rn))
@@ -232,7 +232,7 @@ function fluxmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse = false)
     end
 
     rcmap = reactioncomplexmap(rn)
-    mtype = eltype(rates) <: Symbolics.BasicSymbolic ? Num : eltype(rates)
+    mtype = eltype(rates) <: SymbolicT ? Num : eltype(rates)
     if sparse
         return fluxmat(SparseMatrixCSC{mtype, Int}, rcmap, rates)
     else
@@ -283,7 +283,7 @@ function substitutevals(rn::ReactionSystem, map::Dict, syms, symexprs)
     length(map) != length(syms) &&
         error("Incorrect number of parameter-value pairs were specified.")
     map = symmap_to_varmap(rn, map)
-    map = Dict(ModelingToolkit.value(k) => v for (k, v) in map)
+    map = Dict(value(k) => v for (k, v) in map)
     vals = [substitute(expr, map) for expr in symexprs]
 end
 
@@ -319,7 +319,7 @@ function massactionvector(rn::ReactionSystem, scmap::Dict = Dict();
         error("The supplied ReactionSystem has reactions that are not ismassaction. The mass action vector is only defined for pure mass action networks.")
     end
 
-    vtype = eltype(specs) <: Symbolics.BasicSymbolic ? Num : eltype(specs)
+    vtype = eltype(specs) <: SymbolicT ? Num : eltype(specs)
     Φ = Vector{vtype}()
     rcmap = reactioncomplexmap(rn)
     for comp in keys(reactioncomplexmap(rn))
@@ -648,11 +648,12 @@ function subnetworkmapping(linkageclass, allrxs, complextorxsmap, p)
         end
     end
     specs = collect(specset)
-    newps = Vector{eltype(p)}()
+    newps = Set{eltype(p)}()
     for rx in rxs
         Symbolics.get_variables!(newps, rx.rate, p)
     end
-    rxs, specs, newps   # reactions and species involved in reactions of subnetwork
+    newps_vec = collect(newps)
+    rxs, specs, newps_vec   # reactions and species involved in reactions of subnetwork
 end
 
 """
@@ -773,10 +774,11 @@ isconserved(p)
 Checks if the input parameter (`p`) is a conserved quantity (i.e. have the `conserved`)
 metadata.
 """
-isconserved(x::Num, args...) = isconserved(Symbolics.unwrap(x), args...)
+isconserved(x::Num, args...) = isconserved(unwrap(x), args...)
 function isconserved(x, default = false)
-    p = Symbolics.getparent(x, nothing)
-    p === nothing || (x = p)
+    if iscall(x) && operation(x) === getindex
+        x = first(arguments(x))
+    end
     Symbolics.getmetadata(x, ConservedParameter, default)
 end
 
@@ -853,32 +855,33 @@ end
 
 # Used in the subsequent function.
 function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_order)
-    nullity = size(N, 1)
+    nullity = size(N, 1)             # number of cons laws
     r = numspecies(rn) - nullity     # rank of the netstoichmat
     sts = species(rn)
     indepidxs = col_order[begin:r]
     indepspecs = sts[indepidxs]
     depidxs = col_order[(r + 1):end]
     depspecs = sts[depidxs]
-    missingvec = [missing for _ in 1:nullity]
-    constants = MT.unwrap(only(
-        @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] = missing [
-        conserved = true, guess = ones(nullity)]))
 
-    conservedeqs = Equation[]
-    constantdefs = Equation[]
+    # Compute the rhs terms for each conservation constant.
+    rhs_terms = Vector{SymbolicT}(undef, nullity)
     for (i, depidx) in enumerate(depidxs)
         scaleby = (N[i, depidx] != 1) ? N[i, depidx] : one(eltype(N))
-        (scaleby != 0) || error("Error, found a zero in the conservation law matrix where "
-              *
-              "one was not expected.")
+        (scaleby != 0) || 
+            error("Error, found a zero in the conservation law matrix where one was not expected.")
         coefs = @view N[i, indepidxs]
-        terms = sum(p -> p[1] / scaleby * p[2], zip(coefs, indepspecs))
-        eq = depspecs[i] ~ constants[i] - terms
-        push!(conservedeqs, eq)
-        eq = constants[i] ~ depspecs[i] + terms
-        push!(constantdefs, eq)
+        rhs_terms[i] = sum(p -> p[1] / scaleby * p[2], zip(coefs, indepspecs))
     end
+
+    # Declare the conservation constant parameters 
+    #`using guesses is for consistency and possibly faster initialisation
+    guesses = [Initial(depspecs[i] + rhs_terms[i]) for i in 1:nullity]
+    Γs = @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] = missing [conserved = true, guess = guesses]
+    constants = unwrap(only(Γs))
+
+    # Creates the conservation constant and conservation equation equations.
+    conservedeqs = [depspecs[i] ~ constants[i] - rhs_terms[i] for i in 1:nullity]
+    constantdefs = [constants[i] ~ depspecs[i] + rhs_terms[i] for i in 1:nullity]
 
     # cache in the system
     nps = get_networkproperties(rn)
@@ -917,7 +920,7 @@ end
 
 Compute conserved quantities for a system with the given conservation laws.
 """
-conservedquantities(state, cons_laws) = cons_laws * state
+conservedquantities(state, cons_laws) = cons_laws * MT.wrap(state)
 
 # If u0s are not given while conservation laws are present, throws an error.
 # Used in HomotopyContinuation and BifurcationKit extensions.
@@ -925,9 +928,22 @@ conservedquantities(state, cons_laws) = cons_laws * state
 # (not whether these are enough for computing conserved quantities, this will yield a less informative error).
 function conservationlaw_errorcheck(rs, pre_varmap)
     vars_with_vals = Set(p[1] for p in pre_varmap)
-    any(s -> s in vars_with_vals, species(rs)) && return
-    isempty(conservedequations(Catalyst.flatten(rs))) ||
-        error("The system has conservation laws but initial conditions were not provided for some species.")
+    missing_cl_vals = filter(sp -> (sp ∉ vars_with_vals) && !MT.hasdefault(sp), conslaw_species(rs))
+    isempty(missing_cl_vals) && return
+    error("The system has conservation laws but initial conditions were not provided for these conservation law-invovled species: $(missing_cl_vals).")
+end
+
+# Returns a vector with all species that are invovled in conservation laws.
+function conslaw_species(rs::ReactionSystem)
+    conservationlaws(rs)
+    nps = get_networkproperties(rs)
+    cl_sps = OrderedSet{SymbolicT}()
+    cl_ps = OrderedSet{SymbolicT}() # Unused, only an input.
+    iv = Catalyst.get_iv(rs)
+    for cons_eq in nps.constantdefs
+        MT.collect_vars!(cl_sps, cl_ps, cons_eq.rhs, iv)
+    end
+    return cl_sps
 end
 
 """
@@ -936,7 +952,7 @@ end
 Constructively compute whether a kinetic system (a reaction network with a set of rate constants) will admit detailed-balanced equilibrium
 solutions, using the Wegscheider conditions, [Feinberg, 1989](https://www.sciencedirect.com/science/article/pii/0009250989851243). A detailed-balanced solution is one for which the rate of every forward reaction exactly equals its reverse reaction. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...].
 """
-function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 0, reltol = 1e-9)
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 1e-12, reltol = 1e-9)
     if length(parametermap) != numparams(rs)
         error("Incorrect number of parameters specified.")
     elseif !isreversible(rs)
@@ -948,7 +964,7 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 0, 
     isforestlike(rs) && deficiency(rs) == 0 && return true
 
     pmap = symmap_to_varmap(rs, parametermap)
-    pmap = Dict(ModelingToolkit.value(k) => v for (k, v) in pmap)
+    pmap = Dict(value(k) => v for (k, v) in pmap)
 
     # Construct reaction-complex graph
     complexes, D = reactioncomplexes(rs)
@@ -959,7 +975,9 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 0, 
     spanning_forest = Graphs.kruskal_mst(undir_img)
     outofforest_edges = setdiff(collect(edges(undir_img)), spanning_forest)
 
-    # Independent Cycle Conditions: for any cycle we create by adding in an out-of-forest reaction, the product of forward reaction rates over the cycle must equal the product of reverse reaction rates over the cycle.
+    # Independent Cycle Conditions: for any cycle we create by adding in an out-of-forest
+    # reaction, the product of forward reaction rates over the cycle must equal the product
+    # of reverse reaction rates over the cycle.
     for edge in outofforest_edges
         g = SimpleGraph([spanning_forest..., edge])
         ic = Graphs.cycle_basis(g)[1]
@@ -968,8 +986,9 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 0, 
         isapprox(fwd, rev; atol = abstol, rtol = reltol) ? continue : return false
     end
 
-    # Spanning Forest Conditions: for non-deficiency 0 networks, we get an additional δ equations. Choose an orientation for each reaction pair in the spanning forest (we will take the one given by default from kruskal_mst).
-
+    # Spanning Forest Conditions: for non-deficiency 0 networks, we get an additional δ
+    # equations. Choose an orientation for each reaction pair in the spanning forest (we
+    # will take the one given by default from kruskal_mst).
     if deficiency(rs) > 0
         rxn_idxs = [edgeindex(D, Graphs.src(e), Graphs.dst(e)) for e in spanning_forest]
         S_F = netstoichmat(rs)[:, rxn_idxs]
@@ -985,7 +1004,7 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 0, 
         end
     end
 
-    true
+    return true
 end
 
 # Helper to find the index of the reaction with a given reactant and product complex.
@@ -1075,7 +1094,7 @@ end
         - In `adjacencymat`, the rows and columns both represent complexes, and an entry (c1, c2) is non-zero if there is a reaction c1 --> c2.
 """
 function adjacencymat(rn::ReactionSystem, pmap::Dict = Dict(); sparse = false)
-    deps = Set()
+    deps = Set{SymbolicT}()
     for (i, rx) in enumerate(reactions(rn))
         empty!(deps)
         get_variables!(deps, rx.rate, species(rn))
@@ -1088,7 +1107,7 @@ function adjacencymat(rn::ReactionSystem, pmap::Dict = Dict(); sparse = false)
     else
         substitutevals(rn, pmap, parameters(rn), reactionrates(rn))
     end
-    mtype = eltype(rates) <: Symbolics.BasicSymbolic ? Num : eltype(rates)
+    mtype = eltype(rates) <: SymbolicT ? Num : eltype(rates)
 
     if sparse
         return adjacencymat(SparseMatrixCSC{mtype, Int}, incidencemat(rn), rates)
@@ -1169,7 +1188,7 @@ function matrixtree(g::SimpleDiGraph, distmx::Matrix)
     # constructed rooted trees for every vertex, compute sum
     for v in 1:n
         rootedTrees = [reverse(Graphs.bfs_tree(t, v, dir = :in)) for t in trees]
-        π[v] = sum([treeweight(t, g, distmx) for t in rootedTrees])
+        π[v] = convert(eltype(π), value(sum([treeweight(t, g, distmx) for t in rootedTrees])))
     end
 
     # sum the contributions
@@ -1189,8 +1208,9 @@ end
 """
     cycles(rs::ReactionSystem)
 
-    Returns the matrix of a basis of cycles (or flux vectors), or a basis for reaction fluxes for which the system is at steady state.
-    These correspond to right eigenvectors of the stoichiometric matrix. Equivalent to [`fluxmodebasis`](@ref).
+    Returns the matrix of a basis of cycles (or flux vectors), or a basis for reaction
+    fluxes for which the system is at steady state. These correspond to right eigenvectors
+    of the stoichiometric matrix. Equivalent to [`fluxmodebasis`](@ref).
 """
 function cycles(rs::ReactionSystem)
     nps = get_networkproperties(rs)
@@ -1206,7 +1226,7 @@ end
 
 function positive_nullspace(M::T; col_order = nothing) where {T <: AbstractMatrix}
     # compute the left nullspace over the integers
-    N = MT.nullspace(M; col_order)
+    N = nullspace(M; col_order)
 
     # if all coefficients for a cycle are negative, make positive
     for Ncol in eachcol(N)

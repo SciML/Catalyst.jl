@@ -8,7 +8,7 @@ end
 # Extract a string which declares the system's independent variable.
 function get_iv_string(rn::ReactionSystem)
     iv_dec = MT.get_iv(rn)
-    return "@parameters $(iv_dec)"
+    return "@independent_variables $(iv_dec)"
 end
 
 # Creates an annotation for the system's independent variable.
@@ -46,15 +46,18 @@ SIVS_FS = (seri_has_sivs, get_sivs_string, get_sivs_annotation)
 function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool,
         top_level::Bool)
     # Fetches the system's parameters, species, and variables. Computes the `has_` `Bool`s.
-    ps_all = get_ps(rn)
+    ps_all = filter(!_is_discrete, get_ps(rn))
+    discs_all = filter(_is_discrete, get_ps(rn))
     sps_all = get_species(rn)
     vars_all = filter(!isspecies, get_unknowns(rn))
     has_ps = seri_has_parameters(rn)
+    has_discs = seri_has_discretes(rn)
     has_sps = seri_has_species(rn)
     has_vars = seri_has_variables(rn)
 
     # Checks which sets have dependencies which require managing.
-    p_deps = any(depends_on(p, [ps_all; sps_all; vars_all]) for p in ps_all)
+    p_deps = any(depends_on(p, [ps_all; discs_all; sps_all; vars_all]) for p in ps_all)
+    disc_deps = any(depends_on(d, [discs_all; sps_all; vars_all]) for d in discs_all)
     sp_deps = any(depends_on(sp, [sps_all; vars_all]) for sp in sps_all)
     var_deps = any(depends_on(var, vars_all) for var in vars_all)
 
@@ -63,6 +66,10 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool,
     if !p_deps && has_ps
         annotate && (@string_append! us_n_ps_string "\n\n# " get_parameters_annotation(rn))
         @string_append! us_n_ps_string "\nps = " get_parameters_string(ps_all)
+    end
+    if !disc_deps && has_discs
+        annotate && (@string_append! us_n_ps_string "\n\n# " get_discretes_annotation(rn))
+        @string_append! us_n_ps_string "\ndiscs = " get_discretes_string(discs_all)
     end
     if !sp_deps && has_sps
         annotate && (@string_append! us_n_ps_string "\n\n# " get_species_annotation(rn))
@@ -79,11 +86,12 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool,
     # which would not require this special treatment. However, this is currently not considered.
     # Considering it would make the written code prettier, but would also require additional
     # work in these functions to handle these cases (can be sorted out in the future).
-    if p_deps || sp_deps || var_deps
+    if p_deps || disc_deps || sp_deps || var_deps
         # Builds an annotation mentioning specially handled stuff.
         if annotate
             @string_append! us_n_ps_string "\n\n# Some "
             p_deps && (@string_append! us_n_ps_string "parameters, ")
+            disc_deps && (@string_append! us_n_ps_string "discretes, ")
             sp_deps && (@string_append! us_n_ps_string "species, ")
             var_deps && (@string_append! us_n_ps_string "variables, ")
             us_n_ps_string = get_substring_end(us_n_ps_string, 1, -2)
@@ -94,21 +102,25 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool,
         # Whenever all/none are written depends on whether there were any initial dependencies.
         # `deepcopy` is required as these get mutated by `dependency_split!`.
         remaining_ps = (p_deps ? deepcopy(ps_all) : [])
+        remaining_discs = (disc_deps ? deepcopy(discs_all) : [])
         remaining_sps = (sp_deps ? deepcopy(sps_all) : [])
         remaining_vars = (var_deps ? deepcopy(vars_all) : [])
 
         # Iteratively loops through all parameters, species, and/or variables. In each iteration,
         # adds the declaration of those that can still be declared.
-        while !(isempty(remaining_ps) && isempty(remaining_sps) && isempty(remaining_vars))
+        while !(isempty(remaining_ps) && isempty(remaining_discs) && isempty(remaining_sps) && isempty(remaining_vars))
             # Checks which parameters/species/variables can be written. The `dependency_split`
             # function updates the `remaining_` input.
-            writable_ps = dependency_split!(remaining_ps, [remaining_ps; remaining_sps; remaining_vars])
-            writable_sps = dependency_split!(remaining_sps, [remaining_ps; remaining_sps; remaining_vars])
-            writable_vars = dependency_split!(remaining_vars, [remaining_ps; remaining_sps; remaining_vars])
+            writable_ps = dependency_split!(remaining_ps, [remaining_ps; remaining_discs; remaining_sps; remaining_vars])
+            writable_discs = dependency_split!(remaining_discs, [remaining_ps; remaining_discs; remaining_sps; remaining_vars])
+            writable_sps = dependency_split!(remaining_sps, [remaining_ps; remaining_discs; remaining_sps; remaining_vars])
+            writable_vars = dependency_split!(remaining_vars, [remaining_ps; remaining_discs; remaining_sps; remaining_vars])
 
             # Writes those that can be written.
             isempty(writable_ps) ||
                 @string_append! us_n_ps_string get_parameters_string(writable_ps) "\n"
+            isempty(writable_discs) ||
+                @string_append! us_n_ps_string get_discretes_string(writable_discs) "\n"
             isempty(writable_sps) ||
                 @string_append! us_n_ps_string get_species_string(writable_sps) "\n"
             isempty(writable_vars) ||
@@ -117,6 +129,7 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool,
 
         # For parameters, species, and/or variables with dependencies, create final vectors.
         p_deps && (@string_append! us_n_ps_string "ps = " syms_2_strings(ps_all) "\n")
+        disc_deps && (@string_append! us_n_ps_string "discs = " syms_2_strings(discs_all) "\n")
         sp_deps && (@string_append! us_n_ps_string "sps = " syms_2_strings(sps_all) "\n")
         var_deps && (@string_append! us_n_ps_string "vars = " syms_2_strings(vars_all) "\n")
         us_n_ps_string = get_substring_end(us_n_ps_string, 1, -1)
@@ -125,12 +138,13 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool,
     # If this is not a top-level system, `local ` must be added to all declarations.
     if !top_level
         us_n_ps_string = replace(us_n_ps_string, "\nps = " => "\nlocal ps = ")
+        us_n_ps_string = replace(us_n_ps_string, "\ndiscs = " => "\nlocal discs = ")
         us_n_ps_string = replace(us_n_ps_string, "\nsps = " => "\nlocal sps = ")
         us_n_ps_string = replace(us_n_ps_string, "\nvars = " => "\nlocal vars = ")
     end
 
     # Merges the file text with `us_n_ps_string` and returns the final outputs.
-    return file_text * us_n_ps_string, has_ps, has_sps, has_vars
+    return file_text * us_n_ps_string, has_ps, has_discs, has_sps, has_vars
 end
 
 ### Handles Parameters ###
@@ -139,7 +153,7 @@ end
 
 # Checks if the reaction system has any parameters.
 function seri_has_parameters(rn::ReactionSystem)
-    return !isempty(get_ps(rn))
+    return any(!_is_discrete(p) for p in get_ps(rn))
 end
 
 # Extract a string which declares the system's parameters. Uses multiline declaration (a
@@ -153,6 +167,31 @@ end
 # Creates an annotation for the system's parameters.
 function get_parameters_annotation(rn::ReactionSystem)
     return "Parameters:"
+end
+
+### Handles Discretes ###
+# Unlike most other fields, these are not called via `push_field`, but rather via `handle_us_n_ps`.
+# Hence they work slightly differently.
+# Discretes are basically time-dependent parameters.
+
+# Checks if the reaction system has any discretes.
+function seri_has_discretes(rn::ReactionSystem)
+    return any(_is_discrete(p) for p in get_ps(rn))
+end
+# Temporary function, repalce with better after reply from Aayush.
+_is_discrete(param) = occursin('(', "$(param)")
+
+# Extract a string which declares the system's discretes. Uses multiline declaration (a
+# `begin ... end` block) if more than 3 discretes have a "complicated" declaration (if they
+# have metadata, default value, or type designation).
+function get_discretes_string(discs)
+    multiline_format = count(complicated_declaration(d) for d in discs) > 3
+    return "@discretes$(syms_2_declaration_string(discs; multiline_format))"
+end
+
+# Creates an annotation for the system's discretes.
+function get_discretes_annotation(rn::ReactionSystem)
+    return "Discretes:"
 end
 
 ### Handles Species ###
@@ -355,12 +394,12 @@ OBSERVED_FS = (seri_has_observed, get_observed_string, get_observed_annotation)
 
 # Checks if the reaction system has any defaults.
 function seri_has_defaults(rn::ReactionSystem)
-    return !isempty(get_defaults(rn))
+    return !isempty(initial_conditions(rn))
 end
 
 # Extract a string which declares the system's defaults.
 function get_defaults_string(rn::ReactionSystem)
-    defaults_string = "defaults = " * x_2_string(get_defaults(rn))
+    defaults_string = "initial_conditions = " * x_2_string(MT.get_initial_conditions(rn))
     return defaults_string
 end
 
@@ -404,7 +443,7 @@ end
 function continuous_event_string(continuous_event, strip_call_dict)
     # Creates the string corresponding to the equations (i.e. conditions).
     eqs_string = "["
-    for eq in continuous_event.eqs
+    for eq in continuous_event.conditions
         @string_append! eqs_string expression_2_string(eq; strip_call_dict) ", "
     end
     eqs_string = get_substring_end(eqs_string, 1, -2) * "]"
@@ -413,12 +452,19 @@ function continuous_event_string(continuous_event, strip_call_dict)
     # Continuous events' `affect` field should probably be called `affects`. Likely the `s` was
     # dropped by mistake in MTK.
     affects_string = "["
-    for affect in continuous_event.affect
+    for affect in continuous_event.affect.affect
         @string_append! affects_string expression_2_string(affect; strip_call_dict) ", "
     end
     affects_string = get_substring_end(affects_string, 1, -2) * "]"
 
-    return eqs_string * " => " * affects_string
+    # If there are discrete parameters, these have to be added and the full constructor used.
+    event = eqs_string * " => " * affects_string
+    if !isempty(continuous_event.affect.discrete_parameters)
+        dp_string = expression_2_string(continuous_event.affect.discrete_parameters; strip_call_dict)
+        dp_string = dp_string[findfirst('[', dp_string):end]
+        event = "ModelingToolkitBase.SymbolicContinuousCallback($event; discrete_parameters = $dp_string)"
+    end
+    return event
 end
 
 # Creates an annotation for the system's continuous events.
@@ -461,20 +507,27 @@ end
 function discrete_event_string(discrete_event, strip_call_dict)
     # Creates the string corresponding to the conditions. The special check is if the condition is
     # an expression like `X > 5.0`. Here, "(...)" is added for purely aesthetic reasons.
-    condition_string = x_2_string(discrete_event.condition)
-    if discrete_event.condition isa BasicSymbolic
+    condition_string = x_2_string(discrete_event.conditions)
+    if discrete_event.conditions isa SymbolicT
         @string_prepend! "(" condition_string
         @string_append! condition_string ")"
     end
 
     # Creates the string corresponding to the affects.
     affects_string = "["
-    for affect in discrete_event.affects
+    for affect in discrete_event.affect.affect
         @string_append! affects_string expression_2_string(affect; strip_call_dict) ", "
     end
     affects_string = get_substring_end(affects_string, 1, -2) * "]"
 
-    return condition_string * " => " * affects_string
+    # If there are discrete parameters, these have to be added and the full constructor used.
+    event = condition_string * " => " * affects_string
+    if !isempty(discrete_event.affect.discrete_parameters)
+        dp_string = expression_2_string(discrete_event.affect.discrete_parameters; strip_call_dict)
+        dp_string = dp_string[findfirst('[', dp_string):end]
+        event = "ModelingToolkitBase.SymbolicDiscreteCallback($event; discrete_parameters = $dp_string)"
+    end
+    return event
 end
 
 # Creates an annotation for the system's discrete events.

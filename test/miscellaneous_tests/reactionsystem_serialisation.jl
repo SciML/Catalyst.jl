@@ -3,16 +3,20 @@
 # Fetch packages.
 using Catalyst, Test
 using Catalyst: get_rxs
-using ModelingToolkit: getdefault, getdescription, get_metadata
+using ModelingToolkitBase: getdefault, getdescription, get_metadata
 using Symbolics: getmetadata
 
 # Creates missing getters for MTK metadata (can be removed once added to MTK).
-getmisc(x) = getmetadata(Symbolics.unwrap(x), ModelingToolkit.VariableMisc, nothing)
-getinput(x) = getmetadata(Symbolics.unwrap(x), ModelingToolkit.VariableInput, nothing)
+getmisc(x) = getmetadata(Symbolics.unwrap(x), ModelingToolkitBase.VariableMisc, nothing)
+getinput(x) = getmetadata(Symbolics.unwrap(x), ModelingToolkitBase.VariableInput, nothing)
 
 # Sets the default `t` and `D` to use.
 t = default_t()
 D = default_time_deriv()
+
+# Create a temporary directory for serialisation test files.
+const SERIALISATION_TEST_DIR = mktempdir(; cleanup = true)
+testpath(filename) = joinpath(SERIALISATION_TEST_DIR, filename)
 
 
 ### Basic Test ###
@@ -27,17 +31,17 @@ let
         @equations D(V) ~ 1 - V
         d, X --> 0
     end
-    save_reactionsystem("test_serialisation_annotated.jl", rn; safety_check = false)
-    save_reactionsystem("test_serialisation.jl", rn; annotate = false, safety_check = false)
+    save_reactionsystem(testpath("test_serialisation_annotated.jl"), rn; safety_check = false)
+    save_reactionsystem(testpath("test_serialisation.jl"), rn; annotate = false, safety_check = false)
 
     # Checks equivalence.
-    file_string_annotated = read("test_serialisation_annotated.jl", String)
-    file_string = read("test_serialisation.jl", String)
+    file_string_annotated = read(testpath("test_serialisation_annotated.jl"), String)
+    file_string = read(testpath("test_serialisation.jl"), String)
     file_string_annotated_real = """let
     # Serialised using Catalyst version v$(Catalyst.VERSION).
 
     # Independent variable:
-    @parameters t
+    @independent_variables t
 
     # Parameters:
     ps = @parameters d
@@ -52,7 +56,7 @@ let
     rxs = [Reaction(d, [X], nothing, [1], nothing)]
 
     # Equations:
-    eqs = [Differential(t)(V) ~ 1 - V]
+    eqs = [Differential(t, 1)(V) ~ 1 - V]
 
     # Observables:
     @variables X2(t)
@@ -65,12 +69,12 @@ let
     end"""
     file_string_real = """let
 
-    @parameters t
+    @independent_variables t
     ps = @parameters d
     sps = @species X(t)
     vars = @variables V(t)
     rxs = [Reaction(d, [X], nothing, [1], nothing)]
-    eqs = [Differential(t)(V) ~ 1 - V]
+    eqs = [Differential(t, 1)(V) ~ 1 - V]
     @variables X2(t)
     observed = [X2 ~ 2X]
 
@@ -82,8 +86,8 @@ let
     @test file_string == file_string_real
 
     # Deletes the files.
-    rm("test_serialisation_annotated.jl")
-    rm("test_serialisation.jl")
+    rm(testpath("test_serialisation_annotated.jl"))
+    rm(testpath("test_serialisation.jl"))
 end
 
 # Tests for hierarchical system created programmatically.
@@ -156,15 +160,15 @@ let
         Reaction(d2 + D2, [V2], [], metadata = [:misc => dict_md])
         Reaction(e2 + E2, [W2], [], metadata = [:misc => mat_md])
     ]
-    @named rs2 = ReactionSystem(rxs2, t; metadata = dict_md)
-    @named rs1 = ReactionSystem(rxs1, t; systems = [rs2], metadata = mat_md)
+    @named rs2 = ReactionSystem(rxs2, t; metadata = [MiscSystemData => dict_md])
+    @named rs1 = ReactionSystem(rxs1, t; systems = [rs2], metadata = [MiscSystemData => mat_md])
     rs = complete(rs1)
 
     # Loads the model and checks that it is correct. Removes the saved file
-    save_reactionsystem("serialised_rs.jl", rs; safety_check = false)
-    rs_loaded = include("../serialised_rs.jl")
-    @test rs == rs_loaded
-    rm("serialised_rs.jl")
+    save_reactionsystem(testpath("serialised_rs.jl"), rs; safety_check = false)
+    rs_loaded = include(testpath("serialised_rs.jl"))
+    @test Catalyst.isequivalent(rs, rs_loaded)
+    rm(testpath("serialised_rs.jl"))
 
     # Checks that parameters/species/variables metadata fields are correct.
     @test isequal(getinput(rs_loaded.a), bool_md)
@@ -205,8 +209,8 @@ let
     @test isequal(Catalyst.getmisc(get_rxs(rs_loaded.rs2)[5]), mat_md)
 
     # Checks that `ReactionSystem` metadata fields are correct.
-    @test isequal(get_metadata(rs_loaded), mat_md)
-    @test isequal(get_metadata(rs_loaded.rs2), dict_md)
+    @test isequal(ModelingToolkitBase.getmetadata(rs_loaded, MiscSystemData, nothing), mat_md)
+    @test isequal(ModelingToolkitBase.getmetadata(rs_loaded.rs2, MiscSystemData, nothing), dict_md)
 end
 
 # Checks systems where parameters/species/variables have complicated interdependency are correctly
@@ -249,9 +253,9 @@ let
 
     # Creates model and checks it against serialised version.
     @named rs = ReactionSystem([], τ, [X, Y, Z, U, V, W, A, B, C, D, E, F, G], [a, b, c, d, e, f])
-    save_reactionsystem("serialised_rs.jl", rs; safety_check = false)
-    @test rs == include("../serialised_rs.jl")
-    rm("serialised_rs.jl")
+    save_reactionsystem(testpath("serialised_rs.jl"), rs; safety_check = false)
+    @test Catalyst.isequivalent(rs, include(testpath("serialised_rs.jl")))
+    rm(testpath("serialised_rs.jl"))
 end
 
 
@@ -337,25 +341,25 @@ let
     # Creates the systems.
     @named rs_4 = ReactionSystem(eqs_4, t; continuous_events = continuous_events_4,
                                 discrete_events = discrete_events_4, spatial_ivs = sivs,
-                                metadata = "System 4", systems = [])
+                                metadata = [MiscSystemData => "System 4"], systems = [])
     @named rs_2 = ReactionSystem(eqs_2, t; continuous_events = continuous_events_2,
                                 discrete_events = discrete_events_2, spatial_ivs = sivs,
-                                metadata = "System 2", systems = [])
+                                metadata = [MiscSystemData => "System 2"], systems = [])
     @named rs_3 = ReactionSystem(eqs_3, t; continuous_events = continuous_events_3,
                                 discrete_events = discrete_events_3, spatial_ivs = sivs,
-                                metadata = "System 3", systems = [rs_4])
+                                metadata = [MiscSystemData => "System 3"], systems = [rs_4])
     @named rs_1 = ReactionSystem(eqs_1, t; continuous_events = continuous_events_1,
                                 discrete_events = discrete_events_1, spatial_ivs = sivs,
-                                metadata = "System 1", systems = [rs_2, rs_3])
+                                metadata = [MiscSystemData => "System 1"], systems = [rs_2, rs_3])
     rs = complete(rs_1)
 
     # Checks that the correct system is saved (both complete and incomplete ones).
-    save_reactionsystem("serialised_rs_incomplete.jl", rs_1; safety_check = false)
-    @test isequal(rs_1, include("../serialised_rs_incomplete.jl"))
-    save_reactionsystem("serialised_rs_complete.jl", rs; safety_check = false)
-    @test isequal(rs, include("../serialised_rs_complete.jl"))
-    rm("serialised_rs_incomplete.jl")
-    rm("serialised_rs_complete.jl")
+    save_reactionsystem(testpath("serialised_rs_incomplete.jl"), rs_1; safety_check = false)
+    @test_broken isequal(rs_1, include(testpath("serialised_rs_incomplete.jl"))) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    save_reactionsystem(testpath("serialised_rs_complete.jl"), rs; safety_check = false)
+    @test_broken isequal(rs, include(testpath("serialised_rs_complete.jl"))) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    rm(testpath("serialised_rs_incomplete.jl"))
+    rm(testpath("serialised_rs_complete.jl"))
 end
 
 # Tests for (slightly more) complicate system created via the DSL.
@@ -375,12 +379,12 @@ let
     end
 
     # Checks that serialisation works.
-    save_reactionsystem("serialised_rs_1.jl", rs)
-    save_reactionsystem("serialised_rs_2.jl", rs; safety_check = false)
-    isequal(rs, include("../serialised_rs_1.jl"))
-    isequal(rs, include("../serialised_rs_2.jl"))
-    rm("serialised_rs_1.jl")
-    rm("serialised_rs_2.jl")
+    # save_reactionsystem(testpath("serialised_rs_1.jl"), rs) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    save_reactionsystem(testpath("serialised_rs_2.jl"), rs; safety_check = false)
+    # isequal(rs, include(testpath("serialised_rs_1.jl")))
+    isequal(rs, include(testpath("serialised_rs_2.jl")))
+    # rm(testpath("serialised_rs_1.jl"))
+    rm(testpath("serialised_rs_2.jl"))
 end
 
 # Tests for system where species depends on multiple independent variables.
@@ -393,9 +397,9 @@ let
         @variables V(t,x,z)
         (kB,kD), X + Y <--> XY
     end
-    save_reactionsystem("serialised_rs.jl", rs)
-    @test ModelingToolkit.isequal(rs, include("../serialised_rs.jl"))
-    rm("serialised_rs.jl")
+    save_reactionsystem(testpath("serialised_rs.jl"), rs)
+    @test Catalyst.isequivalent(rs, include(testpath("serialised_rs.jl")))
+    rm(testpath("serialised_rs.jl"))
 end
 
 
@@ -411,18 +415,18 @@ let
         Reaction(k1, [X1], [X2]),
         Reaction(k2, [X2], [X1])
     ]
-    defaults = Dict((X1 => 1.0, k2 => 2))
+    initial_conditions = Dict((X1 => 1.0, k2 => 2))
 
     # Creates model and computes conservation laws.
-    @named rs = ReactionSystem(rxs, t; defaults)
+    @named rs = ReactionSystem(rxs, t; initial_conditions)
     conservationlaws(rs)
 
     # Serialises model and then loads and checks it.
-    @test_logs (:warn, ) match_mode=:any save_reactionsystem("serialised_rs.jl", rs)
-    rs_loaded = include("../serialised_rs.jl")
-    @test rs == rs_loaded
-    @test ModelingToolkit.get_defaults(rs) == ModelingToolkit.get_defaults(rs_loaded)
-    rm("serialised_rs.jl")
+    @test_logs (:warn, ) match_mode=:any save_reactionsystem(testpath("serialised_rs.jl"), rs)
+    rs_loaded = include(testpath("serialised_rs.jl"))
+    @test Catalyst.isequivalent(rs, rs_loaded)
+    @test isequal(ModelingToolkitBase.get_initial_conditions(rs), ModelingToolkitBase.get_initial_conditions(rs_loaded))
+    rm(testpath("serialised_rs.jl"))
 end
 
 # Tests that an error is generated when non-`ReactionSystem` subs-systems are used.
@@ -437,10 +441,10 @@ let
     ]
     eq = D(V) ~ V_max - V
 
-    @named osys = ODESystem([eq], t)
+    @named osys = System([eq], t)
     @named rs = ReactionSystem(rxs, t; systems = [osys])
-    @test_throws Exception save_reactionsystem("failed_serialisation.jl", rs)
-    rm("failed_serialisation.jl")
+    @test_throws Exception save_reactionsystem(testpath("failed_serialisation.jl"), rs)
+    rm(testpath("failed_serialisation.jl"))
 end
 
 # Checks that completeness is recorded correctly.
@@ -450,19 +454,19 @@ let
     rs_complete = @reaction_network begin
         (p,d), 0 <--> X
     end
-    save_reactionsystem("serialised_rs_complete.jl", rs_complete)
-    rs_complete_loaded = include("../serialised_rs_complete.jl")
-    @test ModelingToolkit.iscomplete(rs_complete_loaded)
-    rm("serialised_rs_complete.jl")
+    save_reactionsystem(testpath("serialised_rs_complete.jl"), rs_complete)
+    rs_complete_loaded = include(testpath("serialised_rs_complete.jl"))
+    @test ModelingToolkitBase.iscomplete(rs_complete_loaded)
+    rm(testpath("serialised_rs_complete.jl"))
 
     # Checks for non-complete system.
     rs_incomplete = @network_component begin
         (p,d), 0 <--> X
     end
-    save_reactionsystem("serialised_rs_incomplete.jl", rs_incomplete)
-    rs_incomplete_loaded = include("../serialised_rs_incomplete.jl")
-    @test !ModelingToolkit.iscomplete(rs_incomplete_loaded)
-    rm("serialised_rs_incomplete.jl")
+    save_reactionsystem(testpath("serialised_rs_incomplete.jl"), rs_incomplete)
+    rs_incomplete_loaded = include(testpath("serialised_rs_incomplete.jl"))
+    @test !ModelingToolkitBase.iscomplete(rs_incomplete_loaded)
+    rm(testpath("serialised_rs_incomplete.jl"))
 end
 
 # Tests network without species, reactions, and parameters.
@@ -473,9 +477,9 @@ let
     end
 
     # Checks its serialisation.
-    save_reactionsystem("test_serialisation.jl", rs; safety_check = false)
-    isequal(rs, include("../test_serialisation.jl"))
-    rm("test_serialisation.jl")
+    save_reactionsystem(testpath("test_serialisation.jl"), rs; safety_check = false)
+    @test Catalyst.isequivalent(rs, include(testpath("test_serialisation.jl")))
+    rm(testpath("test_serialisation.jl"))
 end
 
 # Tests various corner cases (multiple observables, species observables, non-default combinatoric
@@ -495,17 +499,17 @@ let
     end
 
     # Checks its serialisation.
-    save_reactionsystem("test_serialisation.jl", rs; safety_check = false)
-    isequal(rs, include("../test_serialisation.jl"))
-    rm("test_serialisation.jl")
+    save_reactionsystem(testpath("test_serialisation.jl"), rs; safety_check = false)
+    @test Catalyst.isequivalent(rs, include(testpath("test_serialisation.jl")))
+    rm(testpath("test_serialisation.jl"))
 end
 
 # Tests saving of empty network.
 let
     rs = @reaction_network
-    save_reactionsystem("test_serialisation.jl", rs; safety_check = false)
-    isequal(rs, include("../test_serialisation.jl"))
-    rm("test_serialisation.jl")
+    save_reactionsystem(testpath("test_serialisation.jl"), rs; safety_check = false)
+    @test Catalyst.isequivalent(rs, include(testpath("test_serialisation.jl")))
+    rm(testpath("test_serialisation.jl"))
 end
 
 # Test that serialisation of unknown type (here a function) yields an error.
@@ -513,8 +517,8 @@ let
     rs = @reaction_network begin
         d, X --> 0, [misc = x -> 2x]
     end
-    @test_throws Exception save_reactionsystem("test_serialisation.jl", rs)
-    rm("test_serialisation.jl")
+    @test_throws Exception save_reactionsystem(testpath("test_serialisation.jl"), rs)
+    rm(testpath("test_serialisation.jl"))
 end
 
 # Test connection field.

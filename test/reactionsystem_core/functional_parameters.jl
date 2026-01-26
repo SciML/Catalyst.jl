@@ -46,8 +46,8 @@ let
         (k1*X,k2), Y1 <--> Y2
     end
 
-    # Checks that the two model declarations are identical.
-    @test isequal(rs_pIn, rs_pIn_dsl)
+    # Checks that the two model declarations are equivalent.
+    @test Catalyst.isequivalent(rs_pIn, rs_pIn_dsl)
 
     # Makes ODE simulation using different approaches.
     u0 = [X => 1.0, Y1 => 2.0, Y2 => 3.0]
@@ -105,12 +105,12 @@ let
     sde_sol_mean_pIn = EnsembleAnalysis.timeseries_point_mean(solve(esde_prob_pIn, ImplicitEM(); trajectories = 1000), 1.0:10.0).u
     @test sde_sol_mean_base ≈ sde_sol_mean_pIn rtol = 1e-1 atol = 1e-1
 
-    # Checks Jump simulations (cannot currently be created).
+    # Checks Jump simulations.
     # ejmp_prob_base = EnsembleProblem(JumpProblem(JumpInputs(rs_base, u0, tend, ps_base)))
     # ejmp_prob_pIn = EnsembleProblem(JumpProblem(JumpInputs(rs_pIn, u0, tend, ps)))
     # jmp_sol_mean_base = EnsembleAnalysis.timeseries_point_mean(solve(ejmp_prob_base; trajectories = 1000), 1.0:10.0).u
     # jmp_sol_mean_pIn = EnsembleAnalysis.timeseries_point_mean(solve(ejmp_prob_pIn; trajectories = 1000), 1.0:10.0).u
-    @test_broken jmp_sol_mean_base ≈ jmp_sol_meanpIn rtol = 1e-1 atol = 1e-1
+    @test_broken jmp_sol_mean_base ≈ jmp_sol_meanpIn rtol = 1e-1 atol = 1e-1 # @Sam `JumpProblem(JumpInputs(rs_base, u0, tend, ps_base))` currently fails, we need to look at this, probably (hopefully) easy fix.
 end
 
 # Checks correctness for non-time functions.
@@ -157,7 +157,7 @@ let
 
     # Defines a `ReactionSystem` using the input parameter (birth/death process, birth split in two parameters).
     # Checks that the units of the reaction rates are correct.
-    @parameters t [unit=u"s"]
+    @independent_variables t [unit=u"s"]
     @species X(t) [unit=u"mol/m^3"]
     @parameters p_base [unit=u"mol"] d [unit=u"1/s"]
     rxs = [
@@ -191,5 +191,5 @@ let
         p, 0 --> X
         $pIn($t_var), 0 --> X
     end
-    @test rn1 == rn2 == rn3
+    @test all(rn -> Catalyst.isequivalent(rn1, rn), (rn2, rn3))
 end

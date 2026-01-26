@@ -2,8 +2,8 @@
 
 # Fetch packages.
 using Catalyst, Test
-using ModelingToolkit, DomainSets
-const MT = ModelingToolkit
+using ModelingToolkitBase, DomainSets
+const MT = ModelingToolkitBase
 
 # Sets rnd number.
 using StableRNGs
@@ -49,7 +49,7 @@ let
           0 1 -1 0 0 0 0]
     @test ns == netstoichmat(bpm)
     bpm2 = deepcopy(bpm)
-    @test bpm == bpm2
+    @test Catalyst.isequivalent(bpm, bpm2)
 
     # Check we can build a PDESystem.
     ∂t = default_time_deriv()
@@ -59,7 +59,7 @@ let
     eqs = Vector{Equation}(undef, 3)
     bcs = Vector{Equation}()
     smap = speciesmap(bpm)
-    evalat(u, a, b, t) = (operation(ModelingToolkit.unwrap(u)))(a, b, t)
+    evalat(u, a, b, t) = (operation(ModelingToolkitBase.unwrap(u)))(a, b, t)
     @register_symbolic icfun(n, x, y, A)
     L = 32.0
     tstop = 5e4
@@ -74,7 +74,7 @@ let
     domains = [x ∈ Interval(0.0, L),
         y ∈ Interval(0.0, L),
         t ∈ Interval(0.0, tstop)]
-    pmap = collect(MT.defaults(bpm))
+    pmap = collect(MT.initial_conditions(bpm))
     @named bpmpdes = PDESystem(eqs, bcs, domains, [x, y, t], [U, V, W], pmap)
 
     rxs = [Reaction(k[1] * x, [U, W], [V, W]),

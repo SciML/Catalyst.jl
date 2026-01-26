@@ -47,7 +47,7 @@ let
     @test nv(srg) == length(species(MAPK)) + length(reactions(MAPK))
     @test ne(srg) == 90
 
-    # Test that figures are generated properly. 
+    # Test that figures are generated properly.
     f = plot_network(MAPK)
     save("fig.png", f)
     @test isfile("fig.png")
@@ -66,7 +66,7 @@ let
 end
 
 CGME = Base.get_extension(parentmodule(ReactionSystem), :CatalystGraphMakieExtension)
-# Test that rate edges are inferred correctly. We should see two for the following reaction network. 
+# Test that rate edges are inferred correctly. We should see two for the following reaction network.
 let
     # Two rate edges, one to species and one to product
     rn = @reaction_network begin
@@ -89,7 +89,7 @@ let
     @test isfile("fig.png")
     rm("fig.png")
 
-    # Two rate edges, both to reactants 
+    # Two rate edges, both to reactants
     rn = @reaction_network begin
         k, A --> B
         k * A, A --> C
@@ -103,14 +103,14 @@ let
     @test count(==(Graphs.Edge(2, s+3)), edges(srg)) == 2
 end
 
-function test_edgeorder(rn) 
+function test_edgeorder(rn)
     # The initial edgelabels in `plot_complexes` is given by the order of reactions in reactions(rn).
     D = incidencemat(rn; sparse=true)
     rxs = reactions(rn)
     edgelist = Vector{Graphs.SimpleEdge{Int}}()
     rows = rowvals(D)
     vals = nonzeros(D)
-    
+
     for (i, rx) in enumerate(rxs)
         inds = nzrange(D, i)
         val = vals[inds]
@@ -118,7 +118,7 @@ function test_edgeorder(rn)
         (sub, prod) = val[1] == -1 ? (row[1], row[2]) : (row[2], row[1])
         push!(edgelist, Graphs.SimpleEdge(sub, prod))
     end
-        
+
     img, rxorder = CGME.ComplexGraphWrap(rn)
 
     # Label iteration order is given by edgelist[rxorder]. Actual edge drawing iteration order is given by edges(g)

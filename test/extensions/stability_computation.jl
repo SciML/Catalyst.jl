@@ -25,7 +25,7 @@ let
     # Repeats several times, most steady state stability cases should be encountered several times.
     for repeat = 1:20
         # Generates random parameter values (which can generate all steady states cases).
-        ps = (:v => 1.0 + 3*rand(rng), :K => 0.5 + 2*rand(rng), :n => rand(rng,[1,2,3,4]), 
+        ps = (:v => 1.0 + 3*rand(rng), :K => 0.5 + 2*rand(rng), :n => rand(rng,[1,2,3,4]),
               :d => 0.5 + rand(rng))
 
         # Computes stability using various jacobian options.
@@ -35,7 +35,7 @@ let
 
         # Confirms stability using simulations.
         for (idx, ss) in enumerate(sss)
-            ssprob = SteadyStateProblem(rn, [1.001, 0.999] .* ss, ps)
+            ssprob = SteadyStateProblem(rn, Pair.(unknowns(rn), [1.001, 0.999] .* ss), ps)
             sol = solve(ssprob, DynamicSS(Vern7()); abstol = 1e-8, reltol = 1e-8)
             stabs_3 = isapprox(ss, sol.u; atol = 1e-6)
             @test stabs_1[idx] == stabs_2[idx] == stabs_3
@@ -69,8 +69,8 @@ let
     ps_1 = [k1 => 8.0, k2 => 2.0, k3 => 1.0, k4 => 1.5, kD1 => 0.5, kD2 => 2.0]
     ps_2 = [:k1 => 8.0, :k2 => 2.0, :k3 => 1.0, :k4 => 1.5, :kD1 => 0.5, :kD2 => 2.0]
     ps_3 = [rn.k1 => 8.0, rn.k2 => 2.0, rn.k3 => 1.0, rn.k4 => 1.5, rn.kD1 => 0.5, rn.kD2 => 4.0]
-    
-    # Computes stability using various input forms, and checks that the output is correct. 
+
+    # Computes stability using various input forms, and checks that the output is correct.
     sss = hc_steady_states(rn, ps_1; u0 = u0_1, show_progress = false)
     for u0 in [u0_1, u0_2, u0_3, u0_4], ps in [ps_1, ps_2, ps_3]
         stab_1 =  [steady_state_stability(ss, rn, ps) for ss in sss]

@@ -62,11 +62,11 @@ D = default_time_deriv()
 
 @parameters λ = 1.0
 @variables V(t) = 1.0
+@species P(t) = 0.0
 eq = D(V) ~ λ * V
-rx1 = @reaction $V, 0 --> P
-rx2 = @reaction 1.0, P --> 0
+rx1 = @reaction $V, 0 --> $P
+rx2 = @reaction 1.0, $P --> 0
 @named growing_cell = ReactionSystem([rx1, rx2, eq], t)
-setdefaults!(growing_cell, [:P => 0.0])
 growing_cell = complete(growing_cell)
 
 oprob = ODEProblem(growing_cell, [], (0.0, 1.0))

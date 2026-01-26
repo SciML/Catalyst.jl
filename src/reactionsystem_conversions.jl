@@ -28,7 +28,7 @@ function oderatelaw(rx; combinatoric_ratelaw = true, expand_catalyst_funs = true
     expand_catalyst_funs && (rl = expand_registered_functions(rl))
 
     # if the stoichiometric coefficients are not integers error if asking to scale rates
-    !all(s -> s isa Union{Integer, Symbolic}, substoich) &&
+    !all(s -> s isa Union{Integer, SymbolicT}, substoich) &&
         (combinatoric_ratelaw == true) &&
         error("Non-integer stoichiometric coefficients require the combinatoric_ratelaw=false keyword to oderatelaw, or passing combinatoric_ratelaws=false to convert or ODEProblem.")
 
@@ -61,7 +61,7 @@ function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserv
     for (rxidx, rx) in enumerate(get_rxs(rs))
         # check this reaction should be treated as an ODE
         !((physical_scales === nothing) ||
-          (physical_scales[rxidx] == PhysicalScale.ODE)) && continue
+            (physical_scales[rxidx] == PhysicalScale.ODE)) && continue
 
         rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws,
             expand_catalyst_funs)
@@ -75,14 +75,14 @@ function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserv
 
             i = species_to_idx[spec]
             if _iszero(rhsvec[i])
-                if stoich isa Symbolic
+                if stoich isa SymbolicT
                     rhsvec[i] = stoich * rl
                 else
                     signedrl = (stoich > zero(stoich)) ? rl : -rl
                     rhsvec[i] = isone(abs(stoich)) ? signedrl : stoich * rl
                 end
             else
-                if stoich isa Symbolic
+                if stoich isa SymbolicT
                     rhsvec[i] += stoich * rl
                 else
                     Δspec = isone(abs(stoich)) ? rl : abs(stoich) * rl
@@ -143,7 +143,7 @@ function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
             drop_dynamics(spec) && continue
 
             i = species_to_idx[spec]
-            if stoich isa Symbolic
+            if stoich isa SymbolicT
                 eqs[i, j] = stoich * rlsqrt
             else
                 signedrlsqrt = (stoich > zero(stoich)) ? rlsqrt : -rlsqrt
@@ -190,7 +190,7 @@ function jumpratelaw(rx; combinatoric_ratelaw = true, expand_catalyst_funs = tru
         coef = eltype(substoich) <: Number ? one(eltype(substoich)) : 1
         for (i, stoich) in enumerate(substoich)
             s = substrates[i]
-            if stoich isa Symbolic
+            if stoich isa SymbolicT
                 rl *= combinatoric_ratelaw ? binomial(s, stoich) :
                       factorial(s) / factorial(s - stoich)
             else
@@ -249,7 +249,7 @@ function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
         return false
 
     # if no dependencies must be zero order
-    (length(rxvars) == 0) && return true
+    isempty(rxvars) && return true
 
     if (haveivdep === nothing)
         if isspatial(rs)
@@ -334,7 +334,7 @@ function classify_vrjs(rs, physcales)
     rxs = get_rxs(rs)
     isvrjvec = falses(length(rxs))
     havevrjs = false
-    rxvars = Set()
+    rxvars = Set{SymbolicT}()
     for (i, rx) in enumerate(rxs)
         if physcales[i] in NON_CONSTANT_JUMP_SCALES
             isvrjvec[i] = true
@@ -343,7 +343,7 @@ function classify_vrjs(rs, physcales)
         end
 
         empty!(rxvars)
-        (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
+        (rx.rate isa SymbolicT) && get_variables!(rxvars, rx.rate)
         @inbounds for rxvar in rxvars
             if isequal(rxvar, get_iv(rs)) || (!MT.isparameter(rxvar) && !isspecies(rxvar))
                 isvrjvec[i] = true
@@ -386,16 +386,16 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
         error("Must have at least one reaction that will be represented as a jump when constructing a JumpSystem.")
 
     # note isvrjvec indicates which reactions are not constant rate jumps
-    # it may be that a given jump has isvrjvec[i] = true but has a physical 
+    # it may be that a given jump has isvrjvec[i] = true but has a physical
     isvrjvec = classify_vrjs(rs, physcales)
 
-    rxvars = []
+    rxvars = Set{SymbolicT}()
     for (i, rx) in enumerate(rxs)
         # only process reactions that should give jumps
         (physcales[i] in JUMP_SCALES) || continue
 
         empty!(rxvars)
-        (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
+        (rx.rate isa SymbolicT) && get_variables!(rxvars, rx.rate)
 
         isvrj = isvrjvec[i]
         if (!isvrj) && ismassaction(rx, rs; rxvars, haveivdep = false, unknownset)
@@ -406,7 +406,7 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
             affect = Vector{Equation}()
             for (spec, stoich) in rx.netstoich
                 # don't change species that are constant or BCs
-                (!drop_dynamics(spec)) && push!(affect, spec ~ spec + stoich)
+                (!drop_dynamics(spec)) && push!(affect, spec ~ Pre(spec) + stoich)
             end
             if isvrj
                 push!(veqs, VariableRateJump(rl, affect; save_positions))
@@ -429,11 +429,11 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
     ps = get_ps(rs)
     initeqs = Equation[]
-    defs = MT.defaults(rs)
+    defs = MT.initial_conditions(rs)
     obs = MT.observed(rs)
 
     # make dependent species observables and add conservation constants as parameters
-    if remove_conserved
+    if remove_conserved && !isempty(conservedequations(rs))
         nps = get_networkproperties(rs)
 
         # add the conservation constants as parameters and set their values
@@ -444,8 +444,8 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
             # add back previously removed dependent species
             sts = union(sts, nps.depspecs)
 
-            # treat conserved eqs as normal eqs
-            append!(eqs, conservedequations(rs))
+            # treat conserved eqs as normal eqs (lhs must be `0` in case structural simplify is not used)
+            append!(eqs, [0 ~ eq.rhs - eq.lhs for eq in conservationlaw_constants(rs)])
 
             # add initialization equations for conserved parameters
             initialmap = Dict(u => Initial(u) for u in species(rs))
@@ -466,7 +466,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
                   conservation laws. Catalyst does not check that the conserved equations
                   still hold for the final coupled system of equations. Consider using
                   `remove_conserved = false` and instead calling
-                  ModelingToolkit.structural_simplify to simplify any generated ODESystem or
+                  ModelingToolkitBase.structural_simplify to simplify any generated ODESystem or
                   NonlinearSystem.
                   """
         end
@@ -509,7 +509,7 @@ COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be convert
 ```julia
 Base.convert(::Type{<:ODESystem},rs::ReactionSystem)
 ```
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.ODESystem`.
+Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.ODESystem`.
 
 Keyword args and default values:
 - `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,
@@ -524,11 +524,10 @@ Keyword args and default values:
   with their rational function representation when converting to another system type. Set to
   `false`` to disable.
 """
-function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs),
+function make_rre_ode(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
-        default_u0 = Dict(), default_p = Dict(),
-        defaults = _merge(Dict(default_u0), Dict(default_p)), expand_catalyst_funs = true,
+        initial_conditions = Dict(), expand_catalyst_funs = true,
         kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
@@ -544,10 +543,11 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
     ODESystem(eqs, get_iv(fullrs), us, ps;
         observed = obs,
         name,
-        defaults = _merge(defaults, defs),
+        initial_conditions = merge(initial_conditions, defs),
         checks,
         continuous_events = MT.get_continuous_events(fullrs),
         discrete_events = MT.get_discrete_events(fullrs),
+        metadata = MT.get_metadata(rs),
         kwargs...)
 end
 
@@ -572,7 +572,7 @@ end
 Base.convert(::Type{<:NonlinearSystem},rs::ReactionSystem)
 ```
 
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.NonlinearSystem`.
+Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.NonlinearSystem`.
 
 Keyword args and default values:
 - `combinatoric_ratelaws = true` uses factorial scaling factors in calculating the rate law,
@@ -592,11 +592,10 @@ Keyword args and default values:
   with their rational function representation when converting to another system type. Set to
   `false`` to disable.
 """
-function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = nameof(rs),
+function make_rre_algeqs(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, conseqs_remake_warn = true, checks = false,
-        default_u0 = Dict(), default_p = Dict(),
-        defaults = _merge(Dict(default_u0), Dict(default_p)),
+        initial_conditions = Dict(),
         all_differentials_permitted = false, expand_catalyst_funs = true, kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
@@ -610,11 +609,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
         as_odes = false, include_zero_odes = false, expand_catalyst_funs)
-    eqs, us,
-    ps,
-    obs,
-    defs,
-    initeqs = addconstraints!(eqs, fullrs, ists, ispcs;
+    eqs, us, ps, obs, defs, initeqs = addconstraints!(eqs, fullrs, ists, ispcs;
         remove_conserved, treat_conserved_as_eqs = true)
 
     # Throws a warning if there are differential equations in non-standard format.
@@ -625,8 +620,9 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     NonlinearSystem(eqs, us, ps;
         name,
         observed = obs, initialization_eqs = initeqs,
-        defaults = _merge(defaults, defs),
+        initial_conditions = merge(initial_conditions, defs),
         checks,
+        metadata = MT.get_metadata(rs),
         kwargs...)
 end
 
@@ -664,7 +660,7 @@ end
 Base.convert(::Type{<:SDESystem},rs::ReactionSystem)
 ```
 
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.SDESystem`.
+Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.SDESystem`.
 
 Notes:
 - `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,
@@ -679,12 +675,10 @@ Notes:
   with their rational function representation when converting to another system type. Set to
   `false`` to disable.
 """
-function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
+function make_cle_sde(rs::ReactionSystem;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, checks = false, remove_conserved = false,
-        default_u0 = Dict(), default_p = Dict(),
-        defaults = _merge(Dict(default_u0), Dict(default_p)),
-        expand_catalyst_funs = true,
+        initial_conditions = Dict(), expand_catalyst_funs = true,
         kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
@@ -707,10 +701,11 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     SDESystem(eqs, noiseeqs, get_iv(flatrs), us, ps;
         observed = obs,
         name,
-        defaults = _merge(defaults, defs),
+        initial_conditions = merge(initial_conditions, defs),
         checks,
         continuous_events = MT.get_continuous_events(flatrs),
         discrete_events = MT.get_discrete_events(flatrs),
+        metadata = MT.get_metadata(rs),
         kwargs...)
 end
 
@@ -728,7 +723,7 @@ Merge physical scales for a set of reactions.
 function merge_physical_scales(rxs, physical_scales, default)
     scales = get_physical_scale.(rxs)
 
-    # override metadata attached scales 
+    # override metadata attached scales
     if physical_scales !== nothing
         for (key, scale) in physical_scales
             scales[key] = scale
@@ -750,7 +745,7 @@ end
 Base.convert(::Type{<:JumpSystem},rs::ReactionSystem; combinatoric_ratelaws=true)
 ```
 
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.JumpSystem`.
+Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.JumpSystem`.
 
 Notes:
 - `combinatoric_ratelaws=true` uses binomials in calculating the rate law, i.e. for `2S ->
@@ -761,7 +756,7 @@ Notes:
 - Does not currently support `ReactionSystem`s that include coupled algebraic or
   differential equations.
 - Does not currently support continuous events as these are not supported by
-  `ModelingToolkit.JumpSystems`.
+  `ModelingToolkitBase.JumpSystems`.
 - `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
   with their rational function representation when converting to another system type. Set to
   `false`` to disable.
@@ -769,11 +764,11 @@ Notes:
   `VariableRateJump` to save the solution before and/or after the jump occurs. Defaults to
   true for both.
 """
-function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs),
+function make_sck_jump(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        remove_conserved = nothing, checks = false, default_u0 = Dict(), default_p = Dict(),
-        defaults = _merge(Dict(default_u0), Dict(default_p)), expand_catalyst_funs = true,
-        save_positions = (true, true), physical_scales = nothing, kwargs...)
+        remove_conserved = nothing, checks = false, initial_conditions = Dict(),
+        expand_catalyst_funs = true, save_positions = (true, true),
+        physical_scales = nothing, kwargs...)
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, JumpSystem)
     (remove_conserved !== nothing) &&
@@ -794,13 +789,12 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
         physical_scales, save_positions)
     ists, ispcs = get_indep_sts(flatrs)
 
-    # handle coupled ODEs and BC species    
+    # handle coupled ODEs and BC species
     if (PhysicalScale.ODE in unique_scales) || has_nonreactions(flatrs)
         odeeqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws,
             remove_conserved = false, physical_scales, include_zero_odes = true)
         append!(eqs, odeeqs)
-        eqs, us, ps,
-        obs, defs = addconstraints!(eqs, flatrs, ists, ispcs;
+        eqs, us, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs;
             remove_conserved = false)
     else
         any(isbc, get_unknowns(flatrs)) &&
@@ -808,16 +802,17 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
         us = ists
         ps = get_ps(flatrs)
         obs = MT.observed(flatrs)
-        defs = MT.defaults(flatrs)
+        defs = MT.initial_conditions(flatrs)
     end
 
     JumpSystem(eqs, get_iv(flatrs), us, ps;
         observed = obs,
         name,
-        defaults = _merge(defaults, defs),
+        initial_conditions = merge(initial_conditions, defs),
         checks,
         discrete_events = MT.discrete_events(flatrs),
         continuous_events = MT.continuous_events(flatrs),
+        metadata = MT.get_metadata(rs),
         kwargs...)
 end
 
@@ -830,19 +825,20 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
         expand_catalyst_funs = true, structural_simplify = false, kwargs...)
-    osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
+    osys = make_rre_ode(rs; name, combinatoric_ratelaws, include_zero_odes, checks,
         remove_conserved, expand_catalyst_funs)
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify
-        osys = MT.structural_simplify(osys)
+        osys = MT.mtkcompile(osys)
     elseif has_alg_equations(rs)
         error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
     else
         osys = complete(osys)
     end
 
-    return ODEProblem(osys, u0, tspan, p, args...; check_length, kwargs...)
+    prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
+    return ODEProblem(osys, prob_cond, tspan, args...; check_length, kwargs...)
 end
 
 """
@@ -850,12 +846,12 @@ end
 DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         p = DiffEqBase.NullParameters(), args...;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        remove_conserved = false, checks = false, check_length = false, 
-        structural_simplify = remove_conserved, all_differentials_permitted = false, 
+        remove_conserved = false, checks = false, check_length = false,
+        structural_simplify = remove_conserved, all_differentials_permitted = false,
         kwargs...)
 ```
 
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.NonlinearSystem`.
+Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.NonlinearSystem`.
 
 Keyword args and default values:
 - `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,
@@ -867,7 +863,7 @@ Keyword args and default values:
   underlying set of reactions (ignoring coupled ODE or algebraic equations). For each
   conservation law one steady-state equation is eliminated, and replaced with the
   conservation law. This ensures a non-singular Jacobian. When using this option, it is
-  recommended to call `ModelingToolkit.structural_simplify` on the converted system to then
+  recommended to call `ModelingToolkitBase.structural_simplify` on the converted system to then
   eliminate the conservation laws from the system equations.
 - `conseqs_remake_warn = true`, set to false to disable warning about `remake` and
   conservation laws. See the [FAQ
@@ -883,11 +879,12 @@ function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         remove_conserved = false, conseqs_remake_warn = true, checks = false,
         check_length = false, expand_catalyst_funs = true,
         structural_simplify = false, all_differentials_permitted = false, kwargs...)
-    nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, checks,
+    nlsys = make_rre_algeqs(rs; name, combinatoric_ratelaws, checks,
         all_differentials_permitted, remove_conserved, conseqs_remake_warn,
         expand_catalyst_funs)
-    nlsys = structural_simplify ? MT.structural_simplify(nlsys) : complete(nlsys)
-    return NonlinearProblem(nlsys, u0, p, args...; check_length,
+    nlsys = structural_simplify ? MT.mtkcompile(nlsys) : complete(nlsys)
+    prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
+    return NonlinearProblem(nlsys, prob_cond, args...; check_length,
         kwargs...)
 end
 
@@ -898,12 +895,12 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         include_zero_odes = true, checks = false, check_length = false,
         remove_conserved = false, structural_simplify = false,
         expand_catalyst_funs = true, kwargs...)
-    sde_sys = convert(SDESystem, rs; name, combinatoric_ratelaws, expand_catalyst_funs,
+    sde_sys = make_cle_sde(rs; name, combinatoric_ratelaws, expand_catalyst_funs,
         include_zero_odes, checks, remove_conserved)
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify
-        (sde_sys = MT.structural_simplify(sde_sys))
+        (sde_sys = MT.mtkcompile(sde_sys))
     elseif has_alg_equations(rs)
         error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
     else
@@ -911,7 +908,8 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
     end
 
     p_matrix = zeros(length(get_unknowns(sde_sys)), numreactions(rs))
-    return SDEProblem(sde_sys, u0, tspan, p, args...; check_length,
+    prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
+    return SDEProblem(sde_sys, prob_cond, tspan, args...; check_length,
         noise_rate_prototype = p_matrix, kwargs...)
 end
 
@@ -923,7 +921,7 @@ Inputs for a JumpProblem from a given `ReactionSystem`.
 # Fields
 $(FIELDS)
 """
-struct JumpInputs{S <: MT.JumpSystem, T <: SciMLBase.AbstractODEProblem}
+struct JumpInputs{S, T}
     """The `JumpSystem` to define the problem over"""
     sys::S
     """The problem the JumpProblem should be defined over, for example DiscreteProblem"""
@@ -936,8 +934,8 @@ JumpInputs(rs::ReactionSystem, u0, tspan,
             p = DiffEqBase.NullParameters;
             name = nameof(rs),
             combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-            checks = false, physical_scales = nothing, 
-            expand_catalyst_funs = true, 
+            checks = false, physical_scales = nothing,
+            expand_catalyst_funs = true,
             save_positions = (true, true),
             remake_warn = true, kwargs...)
 ```
@@ -988,17 +986,17 @@ function JumpInputs(rs::ReactionSystem, u0, tspan, p = DiffEqBase.NullParameters
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         checks = false, physical_scales = nothing, expand_catalyst_funs = true,
         save_positions = (true, true), remake_warn = true, kwargs...)
-    jsys = complete(convert(JumpSystem, rs; name, combinatoric_ratelaws, checks,
+    jsys = complete(make_sck_jump(rs; name, combinatoric_ratelaws, checks,
         physical_scales, expand_catalyst_funs, save_positions))
 
     if MT.has_variableratejumps(jsys) || MT.has_equations(jsys) ||
-       !isempty(MT.continuous_events(jsys))
+            !isempty(MT.continuous_events(jsys))
         prob = ODEProblem(jsys, u0, tspan, p; kwargs...)
         if remake_warn
             @warn "JumpInputs has detected the system includes ODEs, variable rate jumps, or continuous events. Please note that currently remake does not work for such problems, and both JumpInputs and then JumpProblem must be called again if you wish to change any parameter or initial condition values. This warning can be disabled by passing JumpInputs the keyword argument `remake_warn = false`."
         end
     else
-        prob = DiscreteProblem(jsys, u0, tspan, p; kwargs...)
+        prob = JumpProblem(jsys, merge(Dict(u0), Dict(p)), tspan; kwargs...)
     end
     JumpInputs(jsys, prob)
 end
@@ -1025,7 +1023,7 @@ function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
     Base.depwarn("DiscreteProblem(rn::ReactionSystem, ...) is deprecated and will be \
         removed in Catalyst 16. Use JumpInputs(rn, ...) instead.",
         :DiscreteProblem)
-    jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks,
+    jsys = make_sck_jump(rs; name, combinatoric_ratelaws, checks,
         expand_catalyst_funs)
     jsys = complete(jsys)
     return DiscreteProblem(jsys, u0, tspan, p, args...; kwargs...)
@@ -1033,17 +1031,18 @@ end
 
 # DROP IN CATALYST 16
 # JumpProblem from AbstractReactionNetwork
-function JumpProcesses.JumpProblem(rs::ReactionSystem, prob::SciMLBase.AbstractDEProblem,
-        aggregator = JumpProcesses.NullAggregator(); name = nameof(rs),
-        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+function JumpProcesses.JumpProblem(rs::ReactionSystem, u0, tspan,
+        p = DiffEqBase.NullParameters(), aggregator = JumpProcesses.NullAggregator(), args...;
+        name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         expand_catalyst_funs = true, checks = false, kwargs...)
     Base.depwarn("JumpProblem(rn::ReactionSystem, prob, ...) is \
         deprecated and will be removed in Catalyst 16. Use \
         JumpProblem(JumpInputs(rn, ...), ...) instead.", :JumpProblem)
-    jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws,
+    jsys = make_sck_jump(rs; name, combinatoric_ratelaws,
         expand_catalyst_funs, checks)
     jsys = complete(jsys)
-    return JumpProblem(jsys, prob, aggregator; kwargs...)
+    prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
+    return JumpProblem(jsys, prob_cond, tspan)
 end
 
 # JumpProblem for JumpInputs
@@ -1060,19 +1059,20 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, include_zero_odes = true, checks = false,
         expand_catalyst_funs = true, structural_simplify = false, kwargs...)
-    osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
+    osys = make_rre_ode(rs; name, combinatoric_ratelaws, include_zero_odes, checks,
         remove_conserved, expand_catalyst_funs)
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify
-        (osys = MT.structural_simplify(osys))
+        (osys = MT.mtkcompile(osys))
     elseif has_alg_equations(rs)
         error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
     else
         osys = complete(osys)
     end
 
-    return SteadyStateProblem(osys, u0, p, args...; check_length, kwargs...)
+    prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
+    return SteadyStateProblem(osys, prob_cond, args...; check_length, kwargs...)
 end
 
 ### Symbolic Variable/Symbol Conversions ###
@@ -1082,7 +1082,7 @@ function _symbol_to_var(sys, sym)
     if hasproperty(sys, sym)
         var = getproperty(sys, sym, namespace = false)
     else
-        strs = split(String(sym), ModelingToolkit.NAMESPACE_SEPARATOR)   # need to check if this should be split of not!!!
+        strs = split(String(sym), MT.NAMESPACE_SEPARATOR)   # need to check if this should be split of not!!!
         if length(strs) > 1
             var = getproperty(sys, Symbol(strs[1]), namespace = false)
             for str in view(strs, 2:length(strs))
@@ -1161,25 +1161,22 @@ symmap_to_varmap(sys, symmap) = symmap
 
 ### Other Conversion-related Functions ###
 
-# the following function is adapted from SymbolicUtils.jl v.19
-# later on (September 2023) modified by Torkel and Shashi (now assumes input not on polynomial form, which is handled elsewhere, previous version failed in these cases anyway).
-# Copyright (c) 2020: Shashi Gowda, Yingbo Ma, Mason Protter, Julia Computing.
-# MIT license
 """
-    to_multivariate_poly(polyeqs::AbstractVector{BasicSymbolic{Real}})
+    to_multivariate_poly(polyeqs::AbstractVector{SymbolicT})
 
 Convert the given system of polynomial equations to multivariate polynomial representation.
 For example, this can be used in HomotopyContinuation.jl functions.
 """
-function to_multivariate_poly(polyeqs::AbstractVector{Symbolics.BasicSymbolic{Real}})
+function to_multivariate_poly(polyeqs::AbstractVector{Symbolics.SymbolicT})
     @assert length(polyeqs)>=1 "At least one expression must be passed to `multivariate_poly`."
 
-    pvar2sym, sym2term = SymbolicUtils.get_pvar2sym(), SymbolicUtils.get_sym2term()
+    poly_to_bs = Dict{SymbolicUtils.PolyVarT, Symbolics.SymbolicT}()
+    bs_to_poly = Dict{Symbolics.SymbolicT, SymbolicUtils.PolyVarT}()
     ps = map(polyeqs) do x
         if iscall(x) && operation(x) == (/)
             error("We should not be able to get here, please contact the package authors.")
         else
-            PolyForm(x, pvar2sym, sym2term).p
+            SymbolicUtils.to_poly!(poly_to_bs, bs_to_poly, x, false)
         end
     end
 
