@@ -117,7 +117,7 @@ Let's now use our `ReactionSystem` to generate and solve a corresponding mass
 action ODE model. We first convert the system to a `ModelingToolkit.ODESystem`
 by
 ```@example tut1
-odesys = convert(ODESystem, rn)
+odesys = make_rre_ode(rn)
 ```
 (Here Latexify is used automatically to display `odesys` in Latex within Markdown
 documents or notebook environments like Pluto.jl.)
@@ -155,11 +155,11 @@ oprob = ODEProblem(rn, u₀map, tspan, pmap)
 nothing   # hide
 ```
 By passing `rn` directly to the `ODEProblem`, Catalyst has to
-(internally) call `convert(ODESystem, rn)` again to generate the
+(internally) call `make_rre_ode(rn)` again to generate the
 symbolic ODEs. We could instead pass `odesys` directly like
 ```@example tut1
 odesys = complete(odesys)
-oprob2 = ODEProblem(odesys, u₀map, tspan, pmap)
+oprob2 = ODEProblem(odesys, [u₀map; collect(pmap)], tspan)
 nothing   # hide
 ```
 `oprob` and `oprob2` are functionally equivalent, each representing the same
@@ -198,12 +198,9 @@ using JumpProcesses
 # redefine the initial condition to be integer valued
 u₀map = [:m₁ => 0, :m₂ => 0, :m₃ => 0, :P₁ => 20, :P₂ => 0, :P₃ => 0]
 
-# next we process the inputs for the jump problem
-jinputs = JumpInputs(rn, u₀map, tspan, pmap)
-
 # now, we create a JumpProblem, and let a solver be chosen for us automatically
 # in this case Gillespie's Direct Method will be selected
-jprob = JumpProblem(jinputs)
+jprob = JumpProblem(rn, u₀map, tspan, pmap)
 
 # now, let's solve and plot the jump process:
 sol = solve(jprob)
@@ -218,7 +215,7 @@ list of SSAs (i.e., constant rate jump aggregators) in the
 [documentation](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-for-Exact-Simulation).
 For example, to choose the `SortingDirect` method we would instead say
 ```@example tut1
-jprob = JumpProblem(jinputs, SortingDirect())
+jprob = JumpProblem(rn, u₀map, tspan, pmap; aggregator = SortingDirect())
 sol = solve(jprob)
 plot(sol)
 Catalyst.PNG(plot(sol; fmt = :png, dpi = 200)) # hide
@@ -342,7 +339,7 @@ conversion of a [`ReactionSystem`](@ref) to another system via
 argument, i.e.
 ```julia
 rn = @reaction_network ...
-convert(ODESystem, rn; combinatoric_ratelaws=false)
+make_rre_ode(rn; combinatoric_ratelaws=false)
 ```
 
 For the previous example using this keyword argument would give the rate law

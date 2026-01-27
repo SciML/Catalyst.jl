@@ -30,8 +30,7 @@ chemical kinetics jump process model
 ```@example periodic_event_example
 using JumpProcesses
 u0 = [:X => 150, :Xᴾ => 50]  # define u0 as integers now
-jinput = JumpInputs(circadian_model, u0, tspan, ps)
-jprob = JumpProblem(jinput)
+jprob = JumpProblem(circadian_model, u0, tspan, ps)
 jsol = solve(jprob)
 plot(jsol)
 Catalyst.PNG(plot(jsol; fmt = :png, dpi = 200)) # hide
@@ -58,8 +57,7 @@ using JumpProcesses
 u0 = [:X => 150, :Xᴾ => 50]
 ps = [:kₚ => 0.1, :kᵢ => 0.1, :l => 1.0]
 tspan = (0.0, 100.0)
-jinput = JumpInputs(circadian_model, u0, tspan, ps)
-jprob = JumpProblem(jinput)
+jprob = JumpProblem(circadian_model, u0, tspan, ps)
 nothing # hide
 ```
 Next, if we simulate our model, we note that the events do not seem to be

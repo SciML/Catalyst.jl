@@ -238,7 +238,7 @@ rx2 = @reaction 1.0, $P --> 0
 Before creating our `ReactionSystem` we make the event.
 ```@example ceq3
 # every 1.0 time unit we half the volume of the cell and the number of proteins
-continuous_events = [V ~ 2.0] => [V ~ V/2, P ~ P/2]
+continuous_events = [V ~ 2.0] => [V ~ Pre(V)/2, P ~ Pre(P)/2]
 ```
 We can now create and simulate our model
 ```@example ceq3
@@ -255,14 +255,15 @@ events, we start by creating reaction equations, parameters, variables, and
 unknowns.
 ```@example ceq3
 t = default_t()
-@parameters k_on switch_time k_off
+@parameters switch_time k_off
+@discretes k_on(t)
 @species A(t) B(t)
 
 rxs = [(@reaction k_on, A --> B), (@reaction k_off, B --> A)]
 ```
 Now we add an event such that at time `t` (`switch_time`), `k_on` is set to zero.
 ```@example ceq3
-discrete_events = (t == switch_time) => [k_on ~ 0.0]
+discrete_events = ModelingToolkitBase.SymbolicDiscreteCallback((t == switch_time) => [k_on ~ 0.0]; discrete_parameters = [k_on])
 
 u0 = [:A => 10.0, :B => 0.0]
 tspan = (0.0, 4.0)

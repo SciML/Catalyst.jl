@@ -14,7 +14,7 @@ nothing    # hide
 Let's convert it to a system of ODEs, using the conservation laws of the system
 to eliminate two of the species:
 ```@example faq1
-osys = convert(ODESystem, rn; remove_conserved = true)
+osys = make_rre_ode(rn; remove_conserved = true)
 osys = complete(osys)
 ```
 Notice the resulting ODE system has just one ODE, while algebraic observables
@@ -66,7 +66,7 @@ of `k*X*(X-1)` for jumps. This can be disabled when directly `convert`ing a
 [`ReactionSystem`](@ref). If `rn` is a generated [`ReactionSystem`](@ref), we can
 do
 ```@example faq1
-osys = convert(ODESystem, rn; combinatoric_ratelaws=false)
+osys = make_rre_ode(rn; combinatoric_ratelaws=false)
 ```
 Disabling these rescalings should work for all conversions of `ReactionSystem`s
 to other `ModelingToolkit.AbstractSystem`s.
@@ -98,10 +98,10 @@ rx2 = Reaction(2*k, [B], [D], [1], [2.5])
 rx3 = Reaction(2*k, [B], [D], [2.5], [2])
 @named mixedsys = ReactionSystem([rx1, rx2, rx3], t, [A, B, C, D], [k, b])
 mixedsys = complete(mixedsys)
-osys = convert(ODESystem, mixedsys; combinatoric_ratelaws = false)
+osys = make_rre_ode(mixedsys; combinatoric_ratelaws = false)
 osys = complete(osys)
 ```
-Note, when using `convert(ODESystem, mixedsys; combinatoric_ratelaws=false)` the
+Note, when using `make_rre_ode(mixedsys; combinatoric_ratelaws=false)` the
 `combinatoric_ratelaws=false` parameter must be passed. This is also true when
 calling `ODEProblem(mixedsys,...; combinatoric_ratelaws=false)`. As described
 above, this disables Catalyst's standard rescaling of reaction rates when
@@ -209,12 +209,12 @@ rx2 = @reaction $f, 0 --> A
 eq = f ~ (1 + sin(t))
 @named rs = ReactionSystem([rx1, rx2, eq], t)
 rs = complete(rs)
-osys = convert(ODESystem, rs)
+osys = make_rre_ode(rs)
 ```
 In the final ODE model, `f` can be eliminated by using
-`ModelingToolkit.structural_simplify`
+`ModelingToolkitBase.mtkcompile`
 ```@example faq5
-osyss = structural_simplify(osys)
+osyss = mtkcompile(osys)
 full_equations(osyss)
 ```
 
@@ -229,9 +229,9 @@ using Catalyst
 rn = @reaction_network begin
     k, A --> 0
 end
-osys = convert(ODESystem, rn)
+osys = make_rre_ode(rn)
 dAdteq = equations(osys)[1]
-t      = ModelingToolkit.get_iv(osys)
+t      = ModelingToolkitBase.get_iv(osys)
 dAdteq = Equation(dAdteq.lhs, dAdteq.rhs + 1 + sin(t))
 
 # create a new ODESystem with the modified equation
@@ -246,7 +246,7 @@ using Catalyst
 rn = @reaction_network begin
     k, X --> ∅
 end
-convert(ODESystem, rn)
+make_rre_ode(rn)
 ```
 occurs at the (ODE) rate ``d[X]/dt = -k[X]``, it is possible to override this by
 using any of the following non-filled arrows when declaring the reaction: `<=`,
@@ -255,7 +255,7 @@ using any of the following non-filled arrows when declaring the reaction: `<=`,
 rn = @reaction_network begin
     k, X => ∅
 end
-convert(ODESystem, rn)
+make_rre_ode(rn)
 ```
 will occur at rate ``d[X]/dt = -k`` (which might become a problem since ``[X]``
 will be degraded at a constant rate even when very small or equal to 0).
@@ -265,7 +265,7 @@ Note, stoichiometric coefficients are still included, i.e. the reaction
 rn = @reaction_network begin
     k, 2*X ⇒ ∅
 end
-convert(ODESystem, rn)
+make_rre_ode(rn)
 ```
 has rate ``d[X]/dt = -2 k``.
 
@@ -360,7 +360,7 @@ end
 When constructing `NonlinearSystem`s or `NonlinearProblem`s with `remove_conserved = true`, i.e.
 ```julia
 # for rn a ReactionSystem
-nsys = convert(NonlinearSystem, rn; remove_conserved = true)
+nsys = make_rre_algeqs(rn; remove_conserved = true)
 
 # or 
 nprob = NonlinearProblem(rn, u0, p; remove_conserved = true)
@@ -375,7 +375,7 @@ rn = @reaction_network begin
 end
 u0 = [:X₁ => 1.0, :X₂ => 2.0, :X₃ => 3.0]
 ps = [:k₁ => 0.1, :k₂ => 0.2, :k₃ => 0.3, :k₄ => 0.4]
-nlsys = convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false)
+nlsys = make_rre_algeqs(rn; remove_conserved = true, conseqs_remake_warn = false)
 nlsys = complete(nlsys)
 equations(nlsys)
 ```
@@ -448,8 +448,8 @@ Finally, we note there is one extra consideration to take into account if using
 being an observed. It will then always correspond to the updated value if one
 tries to manually change `Γ`. Let's see what happens here directly
 ```@example faq_remake
-nlsys = convert(NonlinearSystem, rn; remove_conserved = true, conseqs_remake_warn = false)
-nlsys = structural_simplify(nlsys)
+nlsys = make_rre_algeqs(rn; remove_conserved = true, conseqs_remake_warn = false)
+nlsys = mtkcompile(nlsys)
 nlprob1 = NonlinearProblem(nlsys, u0, ps)
 ```
 We can now try to change just `Γ` and implicitly the observed variable that was
@@ -460,7 +460,7 @@ obs_unknown = only(observed(nlsys)).lhs
 ```
 We can figure out its index in `u0` via
 ```@example faq_remake
-obs_symbol = ModelingToolkit.getname(obs_unknown)
+obs_symbol = ModelingToolkitBase.getname(obs_unknown)
 obsidx = findfirst(p -> p[1] == obs_symbol, u0)
 ```
 Let's now remake 

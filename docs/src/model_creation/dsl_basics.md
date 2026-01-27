@@ -324,6 +324,7 @@ It is also possible to have non-integer stoichiometric coefficients for substrat
 It is possible for stoichiometric coefficients to be parameters. E.g. here we create a generic polymerisation system where `n` copies of `X` bind to form `Xn`:
 ```@example dsl_basics
 rn = @reaction_network begin
+    @parameters n::Int64 
     (kB,kD), n*X <--> Xn
 end
 ```

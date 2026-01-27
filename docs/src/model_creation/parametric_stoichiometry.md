@@ -7,7 +7,7 @@ use symbolic stoichiometries, and discuss several caveats to be aware of.
 Let's first consider a simple reversible reaction where the number of reactants
 is a parameter, and the number of products is the product of two parameters.
 ```@example s1
-using Catalyst, Latexify, OrdinaryDiffEqTsit5, ModelingToolkit, Plots
+using Catalyst, Latexify, OrdinaryDiffEqTsit5, ModelingToolkitBase, Plots
 revsys = @reaction_network revsys begin
     @parameters m::Int64 n::Int64
     k₊, m*A --> (m*n)*B
@@ -63,16 +63,18 @@ stoichiometries `(F,2*H,2)`.
 
 Let's now convert `revsys` to ODEs and look at the resulting equations:
 ```@example s1
-osys = convert(ODESystem, revsys)
+osys = make_rre_ode(revsys)
 osys = complete(osys)
 equations(osys)
 show(stdout, MIME"text/plain"(), equations(osys)) # hide
 ```
 Specifying the parameter and initial condition values,
 ```@example s1
-p  = (revsys.k₊ => 1.0, revsys.k₋ => 1.0, revsys.m => 2, revsys.n => 2)
-u₀ = [revsys.A => 1.0, revsys.B => 1.0]
-oprob = ODEProblem(osys, u₀, (0.0, 1.0), p)
+sim_cond = (
+    revsys.k₊ => 1.0, revsys.k₋ => 1.0, revsys.m => 2, revsys.n => 2,
+    revsys.A => 1.0, revsys.B => 1.0
+)
+oprob = ODEProblem(osys, sim_cond, (0.0, 1.0))
 nothing # hide
 ```
 we can now solve and plot the system
@@ -94,7 +96,7 @@ revsys = @reaction_network revsys begin
     k₊, m*A --> (m*n)*B
     k₋, B --> A
 end
-osys = convert(ODESystem, revsys; combinatoric_ratelaws = false)
+osys = make_rre_ode(revsys; combinatoric_ratelaws = false)
 osys = complete(osys)
 equations(osys)
 show(stdout, MIME"text/plain"(), equations(osys)) # hide
@@ -102,8 +104,11 @@ show(stdout, MIME"text/plain"(), equations(osys)) # hide
 Since we no longer have factorial functions appearing, our example will now run
 with `m` and `n` treated as floating point parameters:
 ```@example s1
-p  = (revsys.k₊ => 1.0, revsys.k₋ => 1.0, revsys.m => 2.0, revsys.n => 2.0)
-oprob = ODEProblem(osys, u₀, (0.0, 1.0), p)
+sim_cond = (
+    revsys.k₊ => 1.0, revsys.k₋ => 1.0, revsys.m => 2.0, revsys.n => 2.0,
+    revsys.A => 1.0, revsys.B => 1.0
+)
+oprob = ODEProblem(osys, sim_cond, (0.0, 1.0))
 sol = solve(oprob, Tsit5())
 plot(sol)
 ```
@@ -150,20 +155,20 @@ We next convert our network to a jump process representation
 using JumpProcesses
 jsys = make_sck_jump(burstyrn; combinatoric_ratelaws = false)
 jsys = complete(jsys)
-equations(jsys)
-show(stdout, MIME"text/plain"(), equations(jsys)) # hide
+jumps(jsys)
+show(stdout, MIME"text/plain"(), jumps(jsys)) # hide
 ```
 Notice, the `equations` of `jsys` have three `MassActionJump`s for the first
 three reactions, and one `ConstantRateJump` for the last reaction. If we examine
 the `ConstantRateJump` more closely we can see the generated `rate` and
 `affect!` functions for the bursty reaction that makes protein
 ```@example s1
-equations(jsys)[4].rate
-show(stdout, MIME"text/plain"(), equations(jsys)[4].rate) # hide
+jumps(jsys)[4].rate
+show(stdout, MIME"text/plain"(), jumps(jsys)[4].rate) # hide
 ```
 ```@example s1
-equations(jsys)[4].affect!
-show(stdout, MIME"text/plain"(), equations(jsys)[4].affect!) # hide
+jumps(jsys)[4].affect!
+show(stdout, MIME"text/plain"(), jumps(jsys)[4].affect!) # hide
 ```
 Finally, we can now simulate our `JumpSystem`
 ```@example s1
@@ -173,11 +178,12 @@ bval = 70
 k₋val = 0.001
 k₊val = 0.05
 kₚval = pmean * γₚval * (k₋val * pmean^2 + k₊val) / (k₊val * bval)
-p = (:k₊ => k₊val, :k₋ => k₋val, :kₚ => kₚval, :γₚ => γₚval, :b => bval)
-u₀ = [:G₊ => 1, :G₋ => 0, :P => 1]
+sim_cond = [
+    :k₊ => k₊val, :k₋ => k₋val, :kₚ => kₚval, :γₚ => γₚval, :b => bval,
+    :G₊ => 1, :G₋ => 0, :P => 1
+]
 tspan = (0., 6.0)   # time interval to solve over
-dprob = DiscreteProblem(jsys, u₀, tspan, p)
-jprob = JumpProblem(jsys, dprob, Direct())
+jprob = JumpProblem(jsys, sim_cond, tspan)
 sol = solve(jprob)
 plot(sol.t, sol[jsys.P], legend = false, xlabel = "time", ylabel = "P(t)")
 ```
