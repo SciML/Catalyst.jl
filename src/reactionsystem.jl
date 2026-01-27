@@ -565,9 +565,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
             push!(ivs, unwrap(siv))
         end
     end
-if isdefined(Main, :Infiltrator)
-  Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
-end
+
     # Initialises the new unknowns and parameter vectors.
     # Preallocates the `vars` set, which is used by `findvars!`
     us = OrderedSet{SymbolicT}(us_in)
