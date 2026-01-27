@@ -115,6 +115,7 @@ let
     ModelingToolkitBase.get_variables!(vars, O₂)
     ModelingToolkitBase.get_variables!(vars, CH₄)
     @test issetequal(vars, [O₂, CH₄])
+    @test length(vars) == 2
 end
 
 ### Independent Variables ###

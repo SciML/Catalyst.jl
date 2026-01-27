@@ -102,7 +102,8 @@ let
     end
 
     # Checks that models are equivalent and contain the correct stuff.
-    @test coupled_rs_prog == coupled_rs_extended == coupled_rs_dsl
+    @test Catalyst.isequivalent(coupled_rs_prog, coupled_rs_extended)
+    @test Catalyst.isequivalent(coupled_rs_extended, coupled_rs_dsl)
     @test issetequal(parameters(coupled_rs_extended), [a, b, k1, k2])
     @test issetequal(species(coupled_rs_extended), [X1, X2])
     @test issetequal(unknowns(coupled_rs_extended)[1:2], [X1, X2])
@@ -643,7 +644,7 @@ let
     end
 
     # Checks that models are identical. Also checks that they have the correct content.
-    @test rs_prog == rs_dsl
+    @test Catalyst.isequivalent(rs_prog, rs_dsl)
     @test getdescription(rs_dsl.V) == "Volume"
     @test getdefault(rs_dsl.V) == 5.0
     @test SymbolicUtils.symtype(rs_dsl.x_scale) == Float32
@@ -681,7 +682,7 @@ let
         i, S + I --> 2I
         r, I --> R
     end
-    @test rs_1_line == rs_1_block
+    @test Catalyst.isequivalent(rs_1_line, rs_1_block)
 
     # Checks for system with a single algebraic equation.
     rs_2_line = @reaction_network rs_2 begin
@@ -698,7 +699,7 @@ let
         i, S + I --> 2I
         r, I --> R
     end
-    @test rs_2_line == rs_2_block
+    @test Catalyst.isequivalent(rs_2_line, rs_2_block)
 end
 
 # Checks that lhs variable is correctly inferred from differential equations.

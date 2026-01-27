@@ -85,7 +85,7 @@ end
 # Converts a vector of symbolics (e.g. the species or parameter vectors) to a string vector. Strips
 # any calls (e.g. X(t) becomes X). E.g. a species vector [X, Y, Z] is converted to "[X, Y, Z]".
 function syms_2_strings(syms)
-    strip_called_syms = [strip_call(Symbolics.unwrap(sym)) for sym in syms]
+    strip_called_syms = [strip_call(unwrap(sym)) for sym in syms]
     return get_substring_end("$(convert(Vector{Any}, strip_called_syms))", 4, 0)
 end
 
@@ -173,6 +173,10 @@ function x_2_string(x::Union{Base.ImmutableDict{DataType, Any}, Dict}) # Base.Im
     output = isempty(keys(x)) ? output : Catalyst.get_substring_end(output, 1, -2)
     return output * "])"
 end
+# Handle SymmapT (AtomicArrayDict) by converting to Dict.
+function x_2_string(x::MT.SymmapT)
+    return x_2_string(Dict(x))
+end
 function x_2_string(x::Union{Matrix, Symbolics.Arr{Any, 2}})
     output = "["
     for j in 1:size(x)[1]
@@ -251,7 +255,7 @@ end
 
 # For an vector of symbolics, creates a dictionary taking each symbolics to each call-stripped form.
 function make_strip_call_dict(syms)
-    return Dict([sym => strip_call(Symbolics.unwrap(sym)) for sym in syms])
+    return Dict([sym => strip_call(unwrap(sym)) for sym in syms])
 end
 
 # If the input is a `ReactionSystem`, extracts the unknowns (i.e. syms depending on another variable).

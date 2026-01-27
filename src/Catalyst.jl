@@ -23,9 +23,9 @@ using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
 import Symbolics: SymbolicT
-using Symbolics: iscall, sorted_arguments
-using ModelingToolkitBase: Symbolic, value, get_unknowns, get_ps, get_iv, get_systems,
-                       get_eqs, get_defaults, toparam, get_var_to_name, get_observed,
+using Symbolics: iscall, sorted_arguments, unwrap, value
+using ModelingToolkitBase: get_unknowns, get_ps, get_iv, get_systems,
+                       get_eqs, toparam, get_var_to_name, get_observed,
                        getvar, has_iv
 
 import ModelingToolkitBase: get_variables, namespace_expr, namespace_equation, get_variables!,
@@ -37,7 +37,7 @@ import ModelingToolkitBase: SymmapT
 
 # internal but needed ModelingToolkit functions
 import ModelingToolkitBase: check_variables,
-                        check_parameters, _iszero, merge, check_units,
+                        check_parameters, _iszero, check_units,
                         get_unit, check_equations, iscomplete
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
@@ -88,12 +88,11 @@ const CatalystEqType = Union{Reaction, Equation}
 include("reactionsystem.jl")
 export ReactionSystem, isspatial
 export species, nonspecies, reactions, nonreactions, speciesmap, paramsmap
-export numspecies, numreactions, setdefaults!
+export numspecies, numreactions
 export make_empty_network
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export isautonomous
 export reactionrates
-export isequivalent
 export set_default_noise_scaling
 export make_rre_ode, make_cle_sde, make_sck_jump, make_rre_algeqs
 

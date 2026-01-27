@@ -113,7 +113,7 @@ let
     @test Catalyst.isequivalent(rs, "Not a ReactionSystem") == false
 end
 
-# Defaults test (now called `initial_conditions` in MTK).
+# Initial conditions test.
 let
     kvals = Float64.(1:length(k))
     def_p = [k => kvals]
@@ -121,7 +121,7 @@ let
     defs = merge(Dict(def_p), Dict(def_u0))
     defs_typed = convert(Dict{Symbolics.SymbolicT,Symbolics.SymbolicT}, defs)
 
-    @named rs = ReactionSystem(rxs, t, [A, B, C, D], [k]; defaults = defs)
+    @named rs = ReactionSystem(rxs, t, [A, B, C, D], [k]; initial_conditions = defs)
     rs = complete(rs)
     odesys = complete(make_rre_ode(rs))
     sdesys = complete(make_cle_sde(rs))
@@ -491,12 +491,14 @@ let
     end
 
     # Test sde systems.
-    @test_broken let # @Sam: Not fully sure. Leaving it to you for now in case it is BC species-related (I barely know what they do...). Can try to circle back to it myself some time later though.
-        rxs = [(@reaction k1, $A --> B),
+    # BC species require a constraint equation to define their dynamics in SDESystems.
+    let
+        eqs = [(@reaction k1, $A --> B),
             (@reaction k2, B --> $A),
             (@reaction k1, $C + D --> E + $C),
-            (@reaction k2, E + $C --> $C + D)]
-        @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
+            (@reaction k2, E + $C --> $C + D),
+            Dt(C) ~ 0]  # Constraint equation for BC species (constant in time)
+        @named rs = ReactionSystem(eqs, t)
         rs = complete(rs)
         ssys = complete(make_cle_sde(rs))
         @test issetequal(MT.get_unknowns(ssys), [B, C, D, E])
@@ -673,7 +675,6 @@ end
 
 # Test for https://github.com/SciML/ModelingToolkit.jl/issues/436.
 let
-    @parameters t
     @species S(t) I(t)
     rxs = [Reaction(1, [S], [I]), Reaction(1.1, [S], [I])]
     @named rs = ReactionSystem(rxs, t, [S, I], [])
@@ -1166,13 +1167,13 @@ end
         # Create the first reaction system
         @named rs1 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t;
             continuous_events, discrete_events,
-            metadata, observed = obs, defaults = defs, systems = [sub_rs])
+            metadata, observed = obs, initial_conditions = defs, systems = [sub_rs])
         rs1 = complete(rs1)
 
         # Create the second reaction system with the same components
         rs2 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t;
             continuous_events, discrete_events,
-            metadata, observed = obs, defaults = defs, systems = [sub_rs], name = :rs1)
+            metadata, observed = obs, initial_conditions = defs, systems = [sub_rs], name = :rs1)
         rs2 = complete(rs2)
 
         # Check equivalence

@@ -14,7 +14,7 @@ Symbolics.option_to_metadata_type(::Val{:coefficients}) = CompoundCoefficients
 
 Returns `true` if the input is a compound species (else false).
 """
-iscompound(s::Num) = iscompound(MT.value(s))
+iscompound(s::Num) = iscompound(value(s))
 function iscompound(s)
     MT.getmetadata(s, CompoundSpecies, false)
 end
@@ -24,7 +24,7 @@ end
 
 Returns a vector with a list of all the components of a compound species (created using e.g. the @compound macro).
 """
-components(s::Num) = components(MT.value(s))
+components(s::Num) = components(value(s))
 function components(s)
     MT.getmetadata(s, CompoundComponents)
 end
@@ -34,7 +34,7 @@ end
 
 Returns a vector with a list of all the stoichiometric coefficients of the components of a compound species (created using e.g. the @compound macro).
 """
-coefficients(s::Num) = coefficients(MT.value(s))
+coefficients(s::Num) = coefficients(value(s))
 function coefficients(s)
     MT.getmetadata(s, CompoundCoefficients)
 end
@@ -44,7 +44,7 @@ end
 
 Returns a Vector{Pari{Symbol,Int64}}, listing a compounds species (created using e.g. the @compound macro) all the coefficients and their stoichiometric coefficients.
 """
-component_coefficients(s::Num) = component_coefficients(MT.value(s))
+component_coefficients(s::Num) = component_coefficients(value(s))
 function component_coefficients(s)
     return [c => co for (c, co) in zip(components(s), coefficients(s))]
 end
@@ -104,7 +104,7 @@ function make_compound(expr)
     # If no ivs were given, inserts  an expression which evaluates to the union of the ivs
     # for the species the compound depends on.
     ivs_get_expr = :(unique(reduce(
-        vcat, (sorted_arguments(ModelingToolkitBase.unwrap(comp))
+        vcat, (Symbolics.sorted_arguments(Symbolics.unwrap(comp))
         for comp in $components))))
     if isempty(ivs)
         species_expr = Catalyst.insert_independent_variable(species_expr, :($ivs_get_expr...))
@@ -126,8 +126,8 @@ function make_compound(expr)
         :($(isempty(ivs)) && (length($ivs_get_expr) > 1) &&
           error($COMPOUND_CREATION_ERROR_DEPENDENT_VAR_REQUIRED)))
     iv_check_expr = Expr(:escape,
-        :(issetequal(arguments(ModelingToolkitBase.unwrap($species_name)), $ivs_get_expr) ||
-          error("The independent variable(S) provided to the compound ($(arguments(ModelingToolkitBase.unwrap($species_name)))), and those of its components ($($ivs_get_expr)))), are not identical.")))
+        :(issetequal(Symbolics.arguments(Symbolics.unwrap($species_name)), $ivs_get_expr) ||
+          error("The independent variable(S) provided to the compound ($(Symbolics.arguments(Symbolics.unwrap($species_name)))), and those of its components ($($ivs_get_expr)))), are not identical.")))
     compound_designation_expr = Expr(:escape,
         :($species_name = ModelingToolkitBase.setmetadata(
             $species_name, Catalyst.CompoundSpecies, true)))

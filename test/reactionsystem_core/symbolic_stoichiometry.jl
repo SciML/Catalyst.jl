@@ -43,7 +43,8 @@ let
         d, Y --> 0
     end
 
-    @test rs1 == rs2 == rs3
+    @test Catalyst.isequivalent(rs1, rs2)
+    @test Catalyst.isequivalent(rs2, rs3)
     @test issetequal(unknowns(rs1), [X, Y])
     @test issetequal(parameters(rs1), [p, k, d, n1, n2, n3])
     @test SymbolicUtils.symtype(d) == Float64

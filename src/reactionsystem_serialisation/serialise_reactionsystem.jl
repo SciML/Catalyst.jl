@@ -45,7 +45,7 @@ function save_reactionsystem(filename::String, rn::ReactionSystem;
         write(file, get_full_system_string(rn, annotate, true))
     end
     if safety_check
-        if !isequal(rn, include(joinpath(pwd(), filename)))
+        if !Catalyst.isequivalent(rn, include(joinpath(pwd(), filename)))
             rm(filename)
             error("The serialised `ReactionSystem` is not equal to the original one. Please make a report (including the full system) at https://github.com/SciML/Catalyst.jl/issues. To disable this behaviour, please pass the `safety_check = false` argument to `save_reactionsystem` (warning, this will permit the serialisation of an erroneous system).")
         end
@@ -160,14 +160,14 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
     # Goes through various fields that might exists, and if so, adds them to the string.
     has_sivs && (@string_append! reaction_system_string ", spatial_ivs")
     has_observed && (@string_append! reaction_system_string ", observed")
-    has_defaults && (@string_append! reaction_system_string ", defaults")
+    has_defaults && (@string_append! reaction_system_string ", initial_conditions")
     has_continuous_events && (@string_append! reaction_system_string ", continuous_events")
     has_discrete_events && (@string_append! reaction_system_string ", discrete_events")
     has_systems && (@string_append! reaction_system_string ", systems")
     has_connection_type && (@string_append! reaction_system_string ", connection_type")
 
     # Potentially appends a combinatoric_ratelaws statement.
-    if !Symbolics.unwrap(combinatoric_ratelaws(rs))
+    if !unwrap(combinatoric_ratelaws(rs))
         @string_append! reaction_system_string ", combinatoric_ratelaws = false"
     end
 

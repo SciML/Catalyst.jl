@@ -8,7 +8,7 @@ end
 # Extract a string which declares the system's independent variable.
 function get_iv_string(rn::ReactionSystem)
     iv_dec = MT.get_iv(rn)
-    return "@parameters $(iv_dec)"
+    return "@independent_variables $(iv_dec)"
 end
 
 # Creates an annotation for the system's independent variable.
@@ -399,7 +399,7 @@ end
 
 # Extract a string which declares the system's defaults.
 function get_defaults_string(rn::ReactionSystem)
-    defaults_string = "defaults = " * x_2_string(MT.get_initial_conditions(rn))
+    defaults_string = "initial_conditions = " * x_2_string(MT.get_initial_conditions(rn))
     return defaults_string
 end
 

@@ -46,8 +46,8 @@ let
         (k1*X,k2), Y1 <--> Y2
     end
 
-    # Checks that the two model declarations are identical.
-    @test isequal(rs_pIn, rs_pIn_dsl)
+    # Checks that the two model declarations are equivalent.
+    @test Catalyst.isequivalent(rs_pIn, rs_pIn_dsl)
 
     # Makes ODE simulation using different approaches.
     u0 = [X => 1.0, Y1 => 2.0, Y2 => 3.0]
@@ -157,7 +157,7 @@ let
 
     # Defines a `ReactionSystem` using the input parameter (birth/death process, birth split in two parameters).
     # Checks that the units of the reaction rates are correct.
-    @parameters t [unit=u"s"]
+    @independent_variables t [unit=u"s"]
     @species X(t) [unit=u"mol/m^3"]
     @parameters p_base [unit=u"mol"] d [unit=u"1/s"]
     rxs = [
@@ -191,5 +191,5 @@ let
         p, 0 --> X
         $pIn($t_var), 0 --> X
     end
-    @test rn1 == rn2 == rn3
+    @test all(rn -> Catalyst.isequivalent(rn1, rn), (rn2, rn3))
 end

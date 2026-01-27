@@ -19,13 +19,6 @@ macro species(ex...)
     return Symbolics.parse_vars(:variables, Real, ex, tospecies)
 end
 
-# Converts a normal variable to a species variable. For internal use by `parse_vars` within `@species`.
-function tospecies(s)
-    s = setmetadata(s, Catalyst.VariableSpecies, true)
-    MT.getmetadata(MT.unwrap(s), ParameterConstantSpecies, false) && throw(ArgumentError("isconstantspecies metadata can only be used with parameters."))
-    return s
-end
-
 ### `@reaction_network` and `@network_component` Macros ###
 
 """
@@ -777,7 +770,7 @@ function read_observables_option(
                 dep_var_expr = :(filter(!MT.isparameter,
                     Symbolics.get_variables($(obs_eq.args[3]))))
                 ivs_get_expr = :(unique(reduce(
-                    vcat, [sorted_arguments(MT.unwrap(dep))
+                    vcat, [sorted_arguments(unwrap(dep))
                            for dep in $dep_var_expr])))
                 ivs_get_expr_sorted = :(sort($(ivs_get_expr);
                     by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $all_ivs)))
@@ -817,6 +810,18 @@ function make_obs_eqs(observables_expr)
     obs_eqs = :([])
     foreach(arg -> push!(obs_eqs.args, arg), observables_expr.args)
     return obs_eqs
+end
+
+# Helper function to detect if an expression already contains a `Pre()` call at parse time.
+# Used to avoid double-wrapping when users explicitly write `Pre()` in event affects.
+function expr_contains_pre(expr)
+    if expr isa Expr
+        if expr.head == :call && expr.args[1] == :Pre
+            return true
+        end
+        return any(expr_contains_pre, expr.args)
+    end
+    return false
 end
 
 # Read the events (continuous or discrete) provided as options to the DSL. Returns an expression which evaluates to these.
@@ -867,15 +872,17 @@ function read_events_option!(options, discs_inferred::Vector, ps_inferred::Vecto
             # If the event updates an inferred parameter or declared discrete, it should be in `discrete_parameters`.
             (affect.args[2] in [discs_inferred; discs_declared]) && push!(disc_ps.args, affect.args[2])
 
-            # Creates the affect RHS (adds `Pre` if it contain symbolics).
+            # Creates the affect RHS (adds `Pre` if it doesn't already contain Pre).
             rhs = affect.args[3]
-            (rhs isa Number) || (rhs = :(Pre($(rhs))))
+            if !(rhs isa Number) && !expr_contains_pre(rhs)
+                rhs = :(Pre($(rhs)))
+            end
             push!(affects.args, :($(affect.args[2]) ~ $rhs))
         end
 
         # Adds the correctly formatted event to the event creation expression.
-        event_func = (event_type == :continuous_events ? :(ModelingToolkitBase.SymbolicContinuousCallback) :
-                      :(ModelingToolkitBase.SymbolicDiscreteCallback))
+        event_func = (event_type == :continuous_events ? :(MT.SymbolicContinuousCallback) :
+                      :(MT.SymbolicDiscreteCallback))
         event = :($event_func($(arg.args[2]) => $affects; discrete_parameters = $disc_ps))
         push!(events_expr.args, event)
     end

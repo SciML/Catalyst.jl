@@ -2,7 +2,8 @@
 
 # Fetch packages.
 using Catalyst, Test, LinearAlgebra
-using ModelingToolkitBase: get_continuous_events, get_discrete_events
+using ModelingToolkitBase: get_continuous_events, get_discrete_events, Pre
+const MT = ModelingToolkitBase
 using Symbolics: derivative
 using SymbolicUtils: _iszero
 
@@ -118,7 +119,7 @@ let
         v * (x^n) / (x^n + y^n + k^n), 0 --> x
     end
     rs3 = Catalyst.expand_registered_functions(rs1)
-    @test isequivalent(rs3, rs2; ignorenames = false, debug = true)
+    @test Catalyst.isequivalent(rs3, rs2; ignorenames = false, debug = true)
 end
 
 # Tests `Reaction`s.
@@ -301,24 +302,23 @@ let
     neqmat *= neqvec
     @test all(_iszero, simplify.(sdesysnoiseeqs .- neqmat))
 
-    @test_broken begin
-        return false # `equations(jsys)` is empty now. If you want @Sam you can check, if else, I will get to it later on.
-        jsys = make_sck_jump(rn; expand_catalyst_funs = false)
-        jsyseqs = equations(jsys).x[2]
-        rates = getfield.(jsyseqs, :rate)
-        affects = getfield.(jsyseqs, :affect!)
-        reqs = [ Y*X*hill(X, v, K, n), Y*X*mm(X, v, K), hillr(X, v, K, n)*Y*X, Y*X*mmr(X, v, K)]
-        affeqs = [Z ~ 1 + Z, Y ~ -1 + Y, X ~ -1 + X]
-        @test all(_iszero, simplify(rates .- reqs))
-        @test all(aff -> isequal(aff, affeqs), affects)
+    # Test with expand_catalyst_funs = false
+    jsys = make_sck_jump(rn; expand_catalyst_funs = false)
+    jsysjumps = MT.jumps(jsys)
+    rates = getfield.(jsysjumps, :rate)
+    affects = getfield.(jsysjumps, :affect!)
+    reqs = [Y*X*hill(X, v, K, n), Y*X*mm(X, v, K), hillr(X, v, K, n)*Y*X, Y*X*mmr(X, v, K)]
+    affeqs = [Z ~ 1 + Pre(Z), Y ~ -1 + Pre(Y), X ~ -1 + Pre(X)]
+    @test all(_iszero, simplify.(rates .- reqs))
+    @test all(aff -> issetequal(aff, affeqs), affects)
 
-        jsys = make_sck_jump(rn)
-        jsyseqs = equations(jsys).x[2]
-        rates = getfield.(jsyseqs, :rate)
-        affects = getfield.(jsyseqs, :affect!)
-        reqs = [ Y*X*hill2(X, v, K, n), Y*X*mm2(X, v, K), hillr2(X, v, K, n)*Y*X, Y*X*mmr2(X, v, K)]
-        affeqs = [Z ~ 1 + Z, Y ~ -1 + Y, X ~ -1 + X]
-        @test all(_iszero, simplify(rates .- reqs))
-        @test all(aff -> isequal(aff, affeqs), affects)
-    end
+    # Test with expand_catalyst_funs = true (default)
+    jsys = make_sck_jump(rn)
+    jsysjumps = MT.jumps(jsys)
+    rates = getfield.(jsysjumps, :rate)
+    affects = getfield.(jsysjumps, :affect!)
+    reqs = [Y*X*hill2(X, v, K, n), Y*X*mm2(X, v, K), hillr2(X, v, K, n)*Y*X, Y*X*mmr2(X, v, K)]
+    affeqs = [Z ~ 1 + Pre(Z), Y ~ -1 + Pre(Y), X ~ -1 + Pre(X)]
+    @test all(_iszero, simplify.(rates .- reqs))
+    @test all(aff -> issetequal(aff, affeqs), affects)
 end

@@ -249,7 +249,7 @@ function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
         return false
 
     # if no dependencies must be zero order
-    (length(rxvars) == 0) && return true
+    isempty(rxvars) && return true
 
     if (haveivdep === nothing)
         if isspatial(rs)
@@ -334,7 +334,7 @@ function classify_vrjs(rs, physcales)
     rxs = get_rxs(rs)
     isvrjvec = falses(length(rxs))
     havevrjs = false
-    rxvars = Set()
+    rxvars = Set{SymbolicT}()
     for (i, rx) in enumerate(rxs)
         if physcales[i] in NON_CONSTANT_JUMP_SCALES
             isvrjvec[i] = true
@@ -389,7 +389,7 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
     # it may be that a given jump has isvrjvec[i] = true but has a physical
     isvrjvec = classify_vrjs(rs, physcales)
 
-    rxvars = []
+    rxvars = Set{SymbolicT}()
     for (i, rx) in enumerate(rxs)
         # only process reactions that should give jumps
         (physcales[i] in JUMP_SCALES) || continue
@@ -527,8 +527,7 @@ Keyword args and default values:
 function make_rre_ode(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
-        default_u0 = Dict(), default_p = Dict(),
-        defaults = merge(Dict(default_u0), Dict(default_p)), expand_catalyst_funs = true,
+        initial_conditions = Dict(), expand_catalyst_funs = true,
         kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
@@ -544,11 +543,11 @@ function make_rre_ode(rs::ReactionSystem; name = nameof(rs),
     ODESystem(eqs, get_iv(fullrs), us, ps;
         observed = obs,
         name,
-        initial_conditions = merge(defaults, defs),
+        initial_conditions = merge(initial_conditions, defs),
         checks,
         continuous_events = MT.get_continuous_events(fullrs),
         discrete_events = MT.get_discrete_events(fullrs),
-        metadata = ModelingToolkitBase.get_metadata(rs),
+        metadata = MT.get_metadata(rs),
         kwargs...)
 end
 
@@ -596,8 +595,7 @@ Keyword args and default values:
 function make_rre_algeqs(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, conseqs_remake_warn = true, checks = false,
-        default_u0 = Dict(), default_p = Dict(),
-        defaults = merge(Dict(default_u0), Dict(default_p)),
+        initial_conditions = Dict(),
         all_differentials_permitted = false, expand_catalyst_funs = true, kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
@@ -622,9 +620,9 @@ function make_rre_algeqs(rs::ReactionSystem; name = nameof(rs),
     NonlinearSystem(eqs, us, ps;
         name,
         observed = obs, initialization_eqs = initeqs,
-        initial_conditions = merge(defaults, defs),
+        initial_conditions = merge(initial_conditions, defs),
         checks,
-        metadata = ModelingToolkitBase.get_metadata(rs),
+        metadata = MT.get_metadata(rs),
         kwargs...)
 end
 
@@ -680,9 +678,7 @@ Notes:
 function make_cle_sde(rs::ReactionSystem;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, checks = false, remove_conserved = false,
-        default_u0 = Dict(), default_p = Dict(),
-        defaults = merge(Dict(default_u0), Dict(default_p)),
-        expand_catalyst_funs = true,
+        initial_conditions = Dict(), expand_catalyst_funs = true,
         kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
@@ -705,11 +701,11 @@ function make_cle_sde(rs::ReactionSystem;
     SDESystem(eqs, noiseeqs, get_iv(flatrs), us, ps;
         observed = obs,
         name,
-        initial_conditions = merge(defaults, defs),
+        initial_conditions = merge(initial_conditions, defs),
         checks,
         continuous_events = MT.get_continuous_events(flatrs),
         discrete_events = MT.get_discrete_events(flatrs),
-        metadata = ModelingToolkitBase.get_metadata(rs),
+        metadata = MT.get_metadata(rs),
         kwargs...)
 end
 
@@ -770,9 +766,9 @@ Notes:
 """
 function make_sck_jump(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        remove_conserved = nothing, checks = false, default_u0 = Dict(), default_p = Dict(),
-        defaults = merge(Dict(default_u0), Dict(default_p)), expand_catalyst_funs = true,
-        save_positions = (true, true), physical_scales = nothing, kwargs...)
+        remove_conserved = nothing, checks = false, initial_conditions = Dict(),
+        expand_catalyst_funs = true, save_positions = (true, true),
+        physical_scales = nothing, kwargs...)
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, JumpSystem)
     (remove_conserved !== nothing) &&
@@ -812,11 +808,11 @@ function make_sck_jump(rs::ReactionSystem; name = nameof(rs),
     JumpSystem(eqs, get_iv(flatrs), us, ps;
         observed = obs,
         name,
-        initial_conditions = merge(defaults, defs),
+        initial_conditions = merge(initial_conditions, defs),
         checks,
         discrete_events = MT.discrete_events(flatrs),
         continuous_events = MT.continuous_events(flatrs),
-        metadata = ModelingToolkitBase.get_metadata(rs),
+        metadata = MT.get_metadata(rs),
         kwargs...)
 end
 

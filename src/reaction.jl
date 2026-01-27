@@ -14,7 +14,7 @@ Symbolics.option_to_metadata_type(::Val{:isspecies}) = VariableSpecies
 
 Tests if the given symbolic variable corresponds to a constant species.
 """
-isconstant(s::Num) = isconstant(MT.value(s))
+isconstant(s::Num) = isconstant(value(s))
 function isconstant(s)
     if iscall(s) && operation(s) === getindex
         s = first(arguments(s))
@@ -27,7 +27,7 @@ end
 
 Tests if the given symbolic variable corresponds to a boundary condition species.
 """
-isbc(s::Num) = isbc(MT.value(s))
+isbc(s::Num) = isbc(value(s))
 function isbc(s)
     MT.getmetadata(s, VariableBCSpecies, false)
 end
@@ -37,13 +37,12 @@ end
 
 Tests if the given symbolic variable corresponds to a chemical species.
 """
-isspecies(s::Num) = isspecies(MT.value(s))
+isspecies(s::Num) = isspecies(value(s))
 function isspecies(s)
-    return if iscall(s) && operation(s) === getindex
-        MT.getmetadata(arguments(MT.unwrap(s))[1], Catalyst.VariableSpecies, false)
-    else
-        MT.getmetadata(s, Catalyst.VariableSpecies, false)
+    if iscall(s) && operation(s) === getindex
+        s = first(arguments(s))
     end
+    return MT.getmetadata(s, Catalyst.VariableSpecies, false)
 end
 
 """
@@ -56,7 +55,9 @@ Notes:
 """
 function tospecies(s)
     MT.isparameter(s) &&
-        error("Parameters can not be converted to species. Please pass a variable.")
+        throw(ArgumentError("Parameters, including isconstantspecies parameters, can not be converted to species. Please pass a variable."))
+    MT.getmetadata(unwrap(s), ParameterConstantSpecies, false) && 
+        throw(ArgumentError("isconstantspecies metadata can only be used with parameters."))    
     MT.setmetadata(s, VariableSpecies, true)
 end
 
@@ -144,9 +145,9 @@ struct Reaction{S, T}
     """The rate function (excluding mass action terms)."""
     rate::Any
     """Reaction substrates."""
-    substrates::Vector
+    substrates::Vector{SymbolicT}
     """Reaction products."""
-    products::Vector
+    products::Vector{SymbolicT}
     """The stoichiometric coefficients of the reactants."""
     substoich::Vector{T}
     """The stoichiometric coefficients of the products."""
@@ -383,7 +384,9 @@ encountered in:
     - Among potential noise scaling metadata.
 """
 function get_symbolics(rx::Reaction)
-    return MT.get_variables!([], rx)
+    vars = Set{SymbolicT}()
+    MT.get_variables!(vars, rx)
+    return collect(vars)
 end
 
 """
@@ -396,12 +399,11 @@ encountered in:
     - Among stoichiometries.
     - Among potential noise scaling metadata.
 """
-function ModelingToolkitBase.get_variables!(set, rx::Reaction)
+function MT.get_variables!(set, rx::Reaction)
     get_variables!(set, rx.rate)
     foreach(sub -> push!(set, sub), rx.substrates)
     foreach(prod -> push!(set, prod), rx.products)
     for stoichs in (rx.substoich, rx.prodstoich), stoich in stoichs
-
         (stoich isa SymbolicT) && get_variables!(set, stoich)
     end
     if hasnoisescaling(rx)

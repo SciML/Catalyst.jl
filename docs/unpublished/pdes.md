@@ -12,7 +12,7 @@ parameters in (Kim et al., J. Chem. Phys., 146, 2017).
 First we load the packages we'll use
 ```julia
 using Catalyst, MethodOfLines, DomainSets, OrdinaryDiffEqSDIRK, Plots, Random, Distributions
-using ModelingToolkitBase: scalarize, unwrap, operation, defaults
+using ModelingToolkit: scalarize, unwrap, operation, initial_conditions
 ```
 
 Next let's specify our default parameter values
@@ -88,7 +88,7 @@ domains = [x ∈ Interval(0.0, L),
            y ∈ Interval(0.0, L),
            t ∈ Interval(0.0, tstop)]
 
-pmap = collect(defaults(bpm))
+pmap = collect(initial_conditions(bpm))
 @named bpmpdes = PDESystem(eqs, bcs, domains, [x,y,t], [U, V, W], pmap)
 ```
 

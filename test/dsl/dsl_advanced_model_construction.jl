@@ -89,7 +89,7 @@ let
         k*$AAA, C --> D
     end
     rn2 = complete(ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn))
-    @test rn == rn2
+    @test Catalyst.isequivalent(rn, rn2)
 
     rn = @reaction_network rn begin
         @parameters k
@@ -97,7 +97,7 @@ let
         k, $AA + C --> D
     end
     rn2 = complete(ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn))
-    @test rn == rn2
+    @test Catalyst.isequivalent(rn, rn2)
 end
 let
     BB = B; A2 = A
@@ -108,7 +108,7 @@ let
     rn2 = complete(ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
                         Reaction(k2, [B], [C, A, B], [2], [1,2,1])],
                         t; name=:rn))
-    @test rn == rn2
+    @test Catalyst.isequivalent(rn, rn2)
 end
 let
     AA = A
@@ -119,7 +119,7 @@ let
         α+$kk1*$kk2*$AA, 2*$AA + B --> $AA
     end
     rn2 = complete(ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; name=:rn))
-    @test rn == rn2
+    @test Catalyst.isequivalent(rn, rn2)
 end
 
 # Miscellaneous interpolation tests. Unsure what they do here (not related to DSL).
@@ -243,7 +243,7 @@ let
         (k7,k8), X7 <--> (Y7,Y8), ([md7="Hi"],([md7="Hello"],[md7="Hi",md8="Yo"]))
     end
 
-    @test isequal(rn1, rn2)
+    @test Catalyst.isequivalent(rn1, rn2)
 end
 
 # Tests that `only_use_rate` option works.
@@ -266,7 +266,7 @@ let
         k6, X6 --> Z6, [only_use_rate=true, unnecessary_metadata=true]
     end
 
-    @test isequal(rn1,rn2)
+    @test Catalyst.isequivalent(rn1, rn2)
 end
 
 # Tests that erroneous metadata declarations yields errors.
@@ -305,7 +305,7 @@ let
         2*k, B --> 2.5*D
         2*k, 2.5*B --> 2*D
     end
-    @test rn == mixedsys
+    @test Catalyst.isequivalent(rn, mixedsys)
 end
 
 # Test that variables that appear only in rates and aren't ps
@@ -364,7 +364,7 @@ let
     @species (X(t))[1:2] Y(t) C(t)
     rx = Reaction(k[1]*a+k[2], [X[1], X[2]], [Y, C], [1, V[1]], [V[2] * W, B])
     @named arrtest = ReactionSystem([rx], t)
-    @test complete(arrtest) == rn
+    @test Catalyst.isequivalent(complete(arrtest), rn)
 
     rn = @reaction_network twostate begin
         @parameters k[1:2]
@@ -377,12 +377,11 @@ let
     rx1 = Reaction(k[1], [X[1]], [X[2]])
     rx2 = Reaction(k[2], [X[2]], [X[1]])
     @named twostate = ReactionSystem([rx1, rx2], t)
-    @test complete(twostate) == rn
+    @test Catalyst.isequivalent(complete(twostate), rn)
 end
 
 ############## tests related to hybrid systems ###################
-@test_broken let # @Sam, I will let you have a look at hybrid tests.
-    return false
+let
     t = default_t()
     D = default_time_deriv()
     @parameters λ k
@@ -401,12 +400,11 @@ end
             [V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]
         end
     end
-    @test hybrid == rn
+    @test Catalyst.isequivalent(hybrid, rn)
 end
 
 # hybrid models
-@test_broken let # @Sam, I will let you have a look at hybrid tests.
-    return false
+let
     rs = @reaction_network hybrid begin
         @variables V(t)
         @parameters λ
@@ -432,11 +430,10 @@ end
     rs2 = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents,
         name = :hybrid)
     rs2 = complete(rs2)
-    @test rs == rs2
+    @test Catalyst.isequivalent(rs, rs2)
 end
 
-@test_broken let # @Sam, I will let you have a look at hybrid tests.
-    return false
+let
     rs = @reaction_network hybrid begin
         @variables V(t)
         @parameters λ
@@ -462,5 +459,5 @@ end
     cevents = [[V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]]
     rs2 = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents, name = :hybrid)
     rs2 = complete(rs2)
-    @test rs == rs2
+    @test Catalyst.isequivalent(rs, rs2)
 end

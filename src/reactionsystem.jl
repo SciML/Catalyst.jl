@@ -71,23 +71,38 @@ end
 Base.Sort.defalg(::ReactionComplex) = Base.DEFAULT_UNSTABLE
 
 ### NetworkProperties Structure ###
-const __UNINITIALIZED_CONSERVED_CONSTS = MT.unwrap(only(@parameters __UNINITIALIZED[1:1]))
+const __UNINITIALIZED_CONSERVED_CONSTS = unwrap(only(@parameters __UNINITIALIZED[1:1]))
 
 #! format: off
 # Internal cache for various ReactionSystem calculated properties
 Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: SymbolicT}
+    """Indicates if the network properties have been computed yet. true if not yet computed."""
     isempty::Bool = true
+    """The network stoichiometric matrix. Rows correspond to species, columns to reactions."""
     netstoichmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
+    """The conservation matrix. Rows correspond to conservation laws, columns to species."""
     conservationmat::Matrix{I} = Matrix{I}(undef, 0, 0)
+    """The cycle matrix."""
     cyclemat::Matrix{I} = Matrix{I}(undef, 0, 0)
+    """The column order of the stoichiometric matrix after row echelon form reduction. First
+    `rank` entries are the indices of independent species, next `nullity` entries are the
+    indices of dependent species."""
     col_order::Vector{Int} = Int[]
+    """The rank of the stoichiometric matrix, i.e. number of independent species."""
     rank::Int = 0
+    """The nullity of the stoichiometric matrix, i.e. number of dependent species."""
     nullity::Int = 0
+    """The independent species."""
     indepspecs::Set{V} = Set{V}()
+    """The dependent species."""
     depspecs::Set{V} = Set{V}()
+    """The conserved equations in the form dependent_species = conserved_constant - ..."""
     conservedeqs::Vector{Equation} = Equation[]
+    """The definitions of the conserved constants in the form conserved_constant = dependent_species + ..."""
     constantdefs::Vector{Equation} = Equation[]
-    conservedconst::SymbolicT = __UNINITIALIZED_CONSERVED_CONSTS # Was `::` pre MTKv11. Supposedly, this is the new recommendation, and closer assertions would be provided in a constructor if we want.
+    """The conserved constant symbolic vector, or a default value if not yet initialized."""
+    conservedconst::SymbolicT = __UNINITIALIZED_CONSERVED_CONSTS 
+    """Map from symbolics for each species to their index in the species vector."""
     speciesmap::Dict{V, Int} = Dict{V, Int}()
     complextorxsmap::OrderedDict{ReactionComplex{Int}, Vector{Pair{Int, Int}}} = OrderedDict{ReactionComplex{Int},Vector{Pair{Int,Int}}}()
     complexes::Vector{ReactionComplex{Int}} = Vector{ReactionComplex{Int}}(undef, 0)
@@ -177,7 +192,7 @@ function get_speciestype(iv, unknowns, systems)
 
     if T <: Nothing
         @variables A($iv)
-        T = typeof(MT.unwrap(A))
+        T = typeof(unwrap(A))
     end
 
     T
@@ -268,8 +283,8 @@ Keyword Arguments:
 - `systems::Vector{AbstractSystems}`, vector of sub-systems. Can be `ReactionSystem`s,
   `ODESystem`s, or `NonlinearSystem`s.
 - `name::Symbol`, the name of the system (must be provided, or `@named` must be used).
-- `defaults::Dict`, a dictionary mapping parameters to their default values and species to
-  their default initial values.
+- `initial_conditions::SymmapT`, a dictionary mapping parameters and species to their initial
+  values.
 - `checks = true`, boolean for whether to check units.
 - `networkproperties = NetworkProperties()`, cache for network properties calculated via API
   functions.
@@ -298,9 +313,9 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """Dependent unknown variables representing species"""
     species::Vector{SymbolicT}
     """Parameter variables. Must not contain the independent variable."""
-    ps::Vector{Any}
+    ps::Vector{SymbolicT}
     """Maps Symbol to corresponding variable."""
-    var_to_name::Dict{Symbol, Any}
+    var_to_name::Dict{Symbol, SymbolicT}
     """Equations for observed variables."""
     observed::Vector{Equation}
     """The name of the system"""
@@ -308,10 +323,10 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """Internal sub-systems"""
     systems::Vector
     """
-    The default values to use when initial conditions and/or
+    The initial values to use when initial conditions and/or
     parameters are not supplied in `ODEProblem`.
     """
-    initial_conditions::Dict
+    initial_conditions::SymmapT
     """Type of the system"""
     connection_type::Any
     """`NetworkProperties` object that can be filled in by API functions. INTERNAL -- not
@@ -333,7 +348,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """
     Metadata for the system, to be used by downstream packages.
     """
-    metadata::Any
+    metadata::MT.MetadataT
     """
     complete: if a model `sys` is complete, then `sys.x` no longer performs namespacing.
     """
@@ -348,13 +363,6 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, connection_type, nps, cls, cevs, devs,
             metadata, complete = false, parent = nothing; checks::Bool = true)
-
-        # Checks that all parameters have the appropriate Symbolics type. The `Symbolics.CallWithMetadata`
-        # check is an exception for callabl;e parameters.
-        for p in ps
-            (p isa Symbolics.SymbolicT) || (p isa Symbolics.CallWithMetadata) ||
-                error("Parameter $p is not a `SymbolicT`. This is required.")
-        end
 
         # unit checks are for ODEs and Reactions only currently
         nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
@@ -402,9 +410,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
         observed = Equation[],
         systems = [],
         name = nothing,
-        default_u0 = Dict(),
-        default_p = Dict(),
-        defaults = merge(Dict(default_u0), Dict(default_p)),
+        initial_conditions = SymmapT(),
         connection_type = nothing,
         checks = true,
         networkproperties = nothing,
@@ -413,7 +419,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
         spatial_ivs = nothing,
         continuous_events = nothing,
         discrete_events = nothing,
-        metadata = [])
+        metadata = MT.MetadataT())
 
     # Error checks
     name === nothing &&
@@ -422,14 +428,8 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     (length(unique(sysnames)) == length(sysnames)) ||
         throw(ArgumentError("System names must be unique."))
 
-    # Handle defaults values provided via optional arguments.
-    if !(isempty(default_u0) && isempty(default_p))
-        Base.depwarn(
-            "`default_u0` and `default_p` are deprecated. Use `defaults` instead.",
-            :ReactionSystem, force = true)
-    end
-    defaults = MT.todict(defaults)
-    defaults = MT.SymmapT(value(k) => value(v) for (k, v) in pairs(defaults))
+    # Process initial_conditions to unwrap Num wrappers.
+    initial_conditions = SymmapT(value(k) => value(v) for (k, v) in pairs(initial_conditions))
 
     # handles "bindings". Recently introduced in MTK/Symbolics, explicit Catalyst support need to be
     # implemented. Left empty for now.
@@ -437,17 +437,16 @@ function ReactionSystem(eqs, iv, unknowns, ps;
 
     # Extracts independent variables (iv and sivs), dependent variables (species and variables)
     # and parameters. Sorts so that species comes before variables in unknowns vector.
-    iv′ = value(iv)
+    iv′ = unwrap(iv)
     sivs′ = if spatial_ivs === nothing
         Vector{typeof(iv′)}()
     else
-        value.(spatial_ivs)
+        unwrap.(spatial_ivs)
     end
-    unknowns′ = sort!(value.(unknowns), by = !isspecies)
-    isempty(unknowns′) && (unknowns′ = SymbolicT[])
+
+    unknowns′ = isempty(unknowns) ? SymbolicT[] : sort!(unwrap.(unknowns), by = !isspecies)
     spcs = filter(isspecies, unknowns′)
-    ps′ = value.(ps)
-    isempty(ps′) && (ps′ = SymbolicT[])
+    ps′ = isempty(ps) ? SymbolicT[] : unwrap.(ps)
 
     # Checks that no (by Catalyst) forbidden symbols are used.
     allsyms = Iterators.flatten((ps′, unknowns′))
@@ -479,10 +478,10 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     end
 
     # Adds all unknowns/parameters to the `var_to_name` vector.
-    # Adds their (potential) default values to the defaults vector.
+    # Adds their (potential) initial values to the initial_conditions dictionary.
     var_to_name = Dict{Symbol, SymbolicT}()
-    MT.process_variables!(var_to_name, defaults, bindings, unknowns′)
-    MT.process_variables!(var_to_name, defaults, bindings, ps′)
+    MT.process_variables!(var_to_name, initial_conditions, bindings, unknowns′)
+    MT.process_variables!(var_to_name, initial_conditions, bindings, ps′)
     MT.collect_var_to_name!(var_to_name, convert(Vector{SymbolicT}, [eq.lhs for eq in observed]))
 
     # Computes network properties.
@@ -501,7 +500,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
 
     ReactionSystem(
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
-        systems, defaults, connection_type, nps, combinatoric_ratelaws,
+        systems, initial_conditions, connection_type, nps, combinatoric_ratelaws,
         continuous_events, discrete_events, metadata; checks = checks)
 end
 
@@ -559,11 +558,11 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
 
     # Creates a combined iv vector (iv and sivs). This is used later in the function (so that
     # independent variables can be excluded when encountered quantities are added to `us` and `ps`).
-    t = value(iv)
+    t = unwrap(iv)
     ivs = Set([t])
     if (spatial_ivs !== nothing)
         for siv in (spatial_ivs)
-            push!(ivs, value(siv))
+            push!(ivs, unwrap(siv))
         end
     end
 
@@ -571,7 +570,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     # Preallocates the `vars` set, which is used by `findvars!`
     us = OrderedSet{SymbolicT}(us_in)
     ps = OrderedSet{SymbolicT}(ps_in)
-    vars = OrderedSet()
+    vars = OrderedSet{SymbolicT}()
 
     # Extracts the reactions and equations from the combined reactions + equations input vector.
     all(eq -> eq isa Union{Reaction, Equation}, rxs_and_eqs)
@@ -580,7 +579,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
 
     # Loops through all reactions, adding encountered quantities to the unknown and parameter vectors.
     for rx in rxs
-        MT.collect_vars!(us, ps, rx, MT.unwrap(iv))
+        MT.collect_vars!(us, ps, rx, t)
     end
 
     # Extracts any species, variables, and parameters that occur in (non-reaction) equations.
@@ -596,7 +595,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
 
     # get variables in subsystems with scope at this level
     for ssys in get(kwargs, :systems, [])
-        MT.collect_scoped_vars!(us, ps, ssys, MT.unwrap(iv))
+        MT.collect_scoped_vars!(us, ps, ssys, t)
     end
 
     # Loops through all events, adding encountered quantities to the unknown and parameter vectors.
@@ -606,7 +605,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     # Converts the found unknowns and parameters to vectors.
     usv = collect(us)
 
-    new_ps = OrderedSet()
+    new_ps = OrderedSet{SymbolicT}()
     for p in ps
         if iscall(p) && operation(p) === getindex
             par = arguments(p)[begin]
@@ -629,21 +628,41 @@ end
 
 ### Base Function Dispatches ###
 
-"""
-    ==(rn1::ReactionSystem, rn2::ReactionSystem)
-
-Tests whether the underlying species, parameters and reactions are the same in
-the two [`ReactionSystem`](@ref)s. Requires the systems to have the same names
-too.
-
-Notes:
-- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
-    considered different than `(A+1)^2`.
-- Does not include `defaults` in determining equality.
-"""
-function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
-    isequivalent(rn1, rn2; ignorenames = false)
+# Generic helper for comparing event vectors by content rather than identity.
+# Works around MTK issue #3907 where SymbolicContinuousCallback/SymbolicDiscreteCallback
+# don't support proper equality. Takes a matching function to compare individual events.
+function events_equal(evts1, evts2, match_fn)
+    length(evts1) != length(evts2) && return false
+    isempty(evts1) && return true
+    matched = falses(length(evts2))
+    for evt1 in evts1
+        idx = findfirst(j -> !matched[j] && match_fn(evt1, evts2[j]), eachindex(evts2))
+        isnothing(idx) && return false
+        matched[idx] = true
+    end
+    return true
 end
+
+# Compare two SymbolicAffects by their content.
+function symbolic_affect_matches(aff1, aff2)
+    issetequal(aff1.affect, aff2.affect) && issetequal(aff1.discrete_parameters, aff2.discrete_parameters)
+end
+
+# Compare two SymbolicContinuousCallbacks by their conditions and affects.
+function continuous_event_matches(evt1, evt2)
+    issetequal(evt1.conditions, evt2.conditions) &&
+        symbolic_affect_matches(evt1.affect, evt2.affect) &&
+        symbolic_affect_matches(evt1.affect_neg, evt2.affect_neg)
+end
+
+# Compare two SymbolicDiscreteCallbacks by their conditions and affects.
+function discrete_event_matches(evt1, evt2)
+    isequal(evt1.condition, evt2.condition) && symbolic_affect_matches(evt1.affect, evt2.affect)
+end
+
+# Convenience wrappers for continuous and discrete event comparison.
+continuous_events_equal(evts1, evts2) = events_equal(evts1, evts2, continuous_event_matches)
+discrete_events_equal(evts1, evts2) = events_equal(evts1, evts2, discrete_event_matches)
 
 function debug_comparer(fun, prop1, prop2, propname; debug = false)
     if fun(prop1, prop2)
@@ -663,6 +682,9 @@ Tests whether the underlying species, parameters and reactions are the same in t
 [`ReactionSystem`](@ref)s. Ignores the names of the systems in testing equality.
 
 Notes:
+- This function is primarily intended for testing purposes and is considered internal. It
+    may change without a major release and does not guarantee true equality in notions that
+    others may want.
 - *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be considered
     different than `(A+1)^2`.
 - `ignorenames = false` is used when checking equality of sub and parent systems.
@@ -699,20 +721,47 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
         issetequal, MT.get_observed(rn1), MT.get_observed(rn2), "observed"; debug) ||
         return false
     debug_comparer(issetequal, get_eqs(rn1), get_eqs(rn2), "eqs"; debug) || return false
-    debug_comparer(issetequal, MT.get_continuous_events(rn1),
+    # Use custom event comparison functions to work around MTK issue #3907
+    debug_comparer(continuous_events_equal, MT.get_continuous_events(rn1),
         MT.get_continuous_events(rn2), "cevents"; debug) || return false
-    debug_comparer(issetequal, MT.get_discrete_events(rn1),
+    debug_comparer(discrete_events_equal, MT.get_discrete_events(rn1),
         MT.get_discrete_events(rn2), "devents"; debug) || return false
 
     # coupled systems
     if (length(get_systems(rn1)) != length(get_systems(rn2)))
-        println("Systems have different numbers of subsystems.")
+        debug && println("Systems have different numbers of subsystems.")
         return false
     end
-    debug_comparer(issetequal, get_systems(rn1), get_systems(rn2), "systems"; debug) ||
+    # Use isequivalent recursively for subsystems instead of issetequal (which uses ==).
+    # This is needed because == on ReactionSystems uses object identity.
+    if !systems_are_equivalent(get_systems(rn1), get_systems(rn2); ignorenames, debug)
+        debug && println("Comparison was false for property: systems",
+            "\n    Found: ", get_systems(rn1), " vs ", get_systems(rn2))
         return false
+    end
 
     true
+end
+
+# Helper for isequivalent: checks if two collections of ReactionSystems are equivalent.
+# For each system in sys1, checks there's an equivalent one in sys2 (using isequivalent).
+function systems_are_equivalent(sys1, sys2; ignorenames = true, debug = false)
+    length(sys1) != length(sys2) && return false
+    isempty(sys1) && return true
+    matched = falses(length(sys2))
+    for s1 in sys1
+        found = false
+        for (j, s2) in enumerate(sys2)
+            matched[j] && continue  # already matched to another system
+            if isequivalent(s1, s2; ignorenames, debug)
+                matched[j] = true
+                found = true
+                break
+            end
+        end
+        !found && return false
+    end
+    return true
 end
 
 ### Basic `ReactionSystem`-specific Accessors ###
@@ -974,9 +1023,8 @@ function MT.equations(sys::ReactionSystem)
     eqs = get_eqs(sys)
     systems = get_systems(sys)
     if !isempty(systems)
-        eqs = CatalystEqType[eqs;
-                             reduce(vcat, MT.namespace_equations.(systems);
-                                 init = Any[])]
+        eqs = CatalystEqType[eqs; 
+            reduce(vcat, MT.namespace_equations.(systems); init = Any[])]
         return sort!(eqs; by = eqsortby)
     end
     return eqs
@@ -1201,45 +1249,6 @@ function reactionsystem_uptodate_check()
 end
 
 """
-    setdefaults!(rn, newdefs)
-
-Sets the default (initial) values of parameters and species in the
-`ReactionSystem`, `rn`.
-
-For example,
-```julia
-sir = @reaction_network SIR begin
-    β, S + I --> 2I
-    ν, I --> R
-end
-setdefaults!(sir, [:S => 999.0, :I => 1.0, :R => 1.0, :β => 1e-4, :ν => .01])
-
-# or
-t = default_t()
-@parameter β ν
-@species S(t) I(t) R(t)
-setdefaults!(sir, [S => 999.0, I => 1.0, R => 0.0, β => 1e-4, ν => .01])
-```
-gives initial/default values to each of `S`, `I` and `β`
-
-Notes:
-- Can not be used to set default values for species, variables or parameters of
-  subsystems or constraint systems. Either set defaults for those systems
-  directly, or [`flatten`](@ref) to collate them into one system before setting
-  defaults.
-- Defaults can be specified in any iterable container of symbols to value pairs
-  or symbolics to value pairs.
-"""
-function setdefaults!(rn, newdefs)
-    defs = eltype(newdefs) <: Pair{Symbol} ? symmap_to_varmap(rn, newdefs) : newdefs
-    rndefs = MT.get_initial_conditions(rn)
-    for (var, val) in defs
-        rndefs[value(var)] = value(val)
-    end
-    nothing
-end
-
-"""
     reset_networkproperties!(rn::ReactionSystem)
 
 Clears the cache of various properties (like the netstoichiometry matrix). Use if such
@@ -1314,7 +1323,7 @@ isautonomous(rs2) # Returns `false`.
 """
 function isautonomous(rs::ReactionSystem)
     # Get all variables occurring in reactions and equations.
-    vars = Set()
+    vars = Set{SymbolicT}()
     for eq in equations(rs)
         (eq isa Reaction) ? get_variables!(vars, eq.rate) : get_variables!(vars, eq)
     end
@@ -1363,7 +1372,7 @@ function set_default_metadata(rs::ReactionSystem; default_reaction_metadata = []
     if haskey(drm_dict, :noise_scaling)
         # Finds parameters, species, and variables in the noise scaling term.
         ns_expr = drm_dict[:noise_scaling]
-        ns_syms = [Symbolics.unwrap(sym) for sym in get_variables(ns_expr)]
+        ns_syms = [unwrap(sym) for sym in get_variables(ns_expr)]
         ns_ps = Iterators.filter(MT.isparameter, ns_syms)
         ns_sps = Iterators.filter(Catalyst.isspecies, ns_syms)
         ns_vs = Iterators.filter(
@@ -1423,9 +1432,17 @@ Construct an empty [`ReactionSystem`](@ref). `iv` is the independent variable,
 usually time, and `name` is the name to give the `ReactionSystem`.
 """
 function make_empty_network(; iv = DEFAULT_IV, name = gensym(:ReactionSystem))
-    ReactionSystem(Reaction[], iv, [], []; name = name)
+    ReactionSystem(Reaction[], iv, SymbolicT[], SymbolicT[]; name = name)
 end
 
+# Checks if a system is an allowed subsystem (i.e. no SDE parts and no jump).
+is_allowed_subsystem(sys::ReactionSystem) = true
+function is_allowed_subsystem(sys::System)
+    return (isnothing(MT.get_noise_eqs(sys)) || isempty(MT.get_noise_eqs(sys))) &&
+        (isnothing(MT.get_jumps(sys)) || isempty(MT.get_jumps(sys)))
+end
+# If neither a `ReactionSystem` or a `System`, it is something weird we do not know what it is.
+is_allowed_subsystem(sys::MT.AbstractSystem) = false
 
 """
     ModelingToolkitBase.flatten(rs::ReactionSystem)
@@ -1454,7 +1471,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
     ReactionSystem(equations(rs), get_iv(rs), unknowns(rs), parameters(rs);
         observed = MT.observed(rs),
         name,
-        defaults = MT.initial_conditions(rs),
+        initial_conditions = MT.initial_conditions(rs),
         checks = false,
         combinatoric_ratelaws = combinatoric_ratelaws(rs),
         balanced_bc_check = false,
@@ -1463,15 +1480,6 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
         discrete_events = MT.discrete_events(rs),
         metadata = MT.get_metadata(rs))
 end
-
-# Checks if a system is an allowed subsystem (i.e. no SDE parts and no jump).
-is_allowed_subsystem(sys::ReactionSystem) = true
-function is_allowed_subsystem(sys::System)
-    return (isnothing(MT.get_noise_eqs(sys)) || isempty(MT.get_noise_eqs(sys))) &&
-        (isnothing(MT.get_jumps(sys)) || isempty(MT.get_jumps(sys)))
-end
-# If neither a `ReactionSystem` or a `System`, it is something weird we do not know what it is.
-is_allowed_subsystem(sys::MT.AbstractSystem) = false
 
 function complete_check(sys, method)
     if MT.iscomplete(sys)
@@ -1491,9 +1499,9 @@ Notes:
 - Returns a new `ReactionSystem` and does not modify `rs`.
 - By default, the new `ReactionSystem` will have the same name as `sys`.
 """
-function ModelingToolkitBase.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
-    complete_check(sys, "ModelingToolkitBase.compose")
-    foreach(s -> complete_check(s, "ModelingToolkitBase.compose"), systems)
+function MT.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
+    complete_check(sys, "MT.compose")
+    foreach(s -> complete_check(s, "MT.compose"), systems)
 
     nsys = length(systems)
     nsys == 0 && return sys
@@ -1530,10 +1538,10 @@ Notes:
 - Returns a new `ReactionSystem` and does not modify `rs`.
 - By default, the new `ReactionSystem` will have the same name as `sys`.
 """
-function ModelingToolkitBase.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
+function MT.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
         name::Symbol = nameof(sys))
-    complete_check(sys, "ModelingToolkitBase.extend")
-    complete_check(rs, "ModelingToolkitBase.extend")
+    complete_check(sys, "MT.extend")
+    complete_check(rs, "MT.extend")
 
     any(T -> sys isa T, (ReactionSystem, ODESystem, NonlinearSystem)) ||
         error("ReactionSystems can only be extended with ReactionSystems, ODESystems and NonlinearSystems currently. Received a $(typeof(sys)) system.")
@@ -1570,7 +1578,7 @@ function ModelingToolkitBase.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
         observed = obs,
         systems = syss,
         name,
-        defaults = defs,
+        initial_conditions = defs,
         checks = false,
         combinatoric_ratelaws,
         balanced_bc_check = false,
