@@ -240,7 +240,6 @@ Catalyst.flatten
 ```@docs
 ==(rn1::Reaction, rn2::Reaction)
 isequivalent
-==(rn1::ReactionSystem, rn2::ReactionSystem)
 ```
 
 ## [Network visualization](@id network_visualization)

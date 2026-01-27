@@ -36,7 +36,7 @@ pages = Any[
     # "model_simulation/finite_state_projection_simulation.md", # Wait for update with new version.
     "Examples" => Any[
         # "model_simulation/examples/periodic_events_simulation.md", # fails du to something probably realted to https://github.com/SciML/ModelingToolkit.jl/issues/4030/.
-        "model_simulation/examples/activation_time_distribution_measurement.md",
+        # "model_simulation/examples/activation_time_distribution_measurement.md", # Error in https://github.com/SciML/ModelingToolkit.jl/issues/4231. Might want to redesign a bit anyway though (to accommodate MTK changes for when defaults/bindings are assigned to paraemters).
         "model_simulation/examples/interactive_brusselator_simulation.md"
     ]
 ],

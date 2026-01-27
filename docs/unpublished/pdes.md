@@ -12,7 +12,7 @@ parameters in (Kim et al., J. Chem. Phys., 146, 2017).
 First we load the packages we'll use
 ```julia
 using Catalyst, MethodOfLines, DomainSets, OrdinaryDiffEqSDIRK, Plots, Random, Distributions
-using ModelingToolkit: scalarize, unwrap, operation, initial_conditions
+using ModelingToolkitBase: scalarize, unwrap, operation, initial_conditions
 ```
 
 Next let's specify our default parameter values
