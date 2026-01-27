@@ -64,7 +64,7 @@ pages = Any[
     "inverse_problems/structural_identifiability.md",
     "inverse_problems/global_sensitivity_analysis.md"
     #"Examples" => Any[
-    #    "inverse_problems/examples/ode_fitting_oscillation.md"
+    #    "inverse_problems/examples/ode_fitting_oscillation.md" # https://github.com/SciML/ModelingToolkit.jl/issues/4234
     #]
 ],
 "Spatial modelling" => Any[
