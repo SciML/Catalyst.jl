@@ -130,8 +130,8 @@ direct access to the corresponding internal fields of the `ReactionSystem`)
   corresponds to the first `length(get_rxs(rn))` entries in `get_eqs(rn)`.
 * `ModelingToolkitBase.get_iv(rn)` is the independent variable used in the system
   (usually `t` to represent time).
-* `ModelingToolkit.get_systems(rn)` is a vector of all sub-systems of `rn`.
-* `ModelingToolkit.get_initial_conditions(rn)` is a dictionary of all the initial
+* `ModelingToolkitBase.get_systems(rn)` is a vector of all sub-systems of `rn`.
+* `ModelingToolkitBase.get_initial_conditions(rn)` is a dictionary of all the initial
   values for parameters and species in `rn`.
 
 The preceding accessors do not allocate, directly accessing internal fields of
@@ -231,8 +231,8 @@ Catalyst.getmisc
 [`ModelingToolkitBase.compose`](@ref).
 
 ```@docs
-ModelingToolkit.extend
-ModelingToolkit.compose
+ModelingToolkitBase.extend
+ModelingToolkitBase.compose
 Catalyst.flatten
 ```
 
