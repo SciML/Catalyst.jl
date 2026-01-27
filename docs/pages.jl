@@ -35,7 +35,7 @@ pages = Any[
     "model_simulation/sde_simulation_performance.md",
     # "model_simulation/finite_state_projection_simulation.md", # Wait for update with new version.
     "Examples" => Any[
-        # "model_simulation/examples/periodic_events_simulation.md", # fails du to something probably realted to https://github.com/SciML/ModelingToolkit.jl/issues/4030/.
+        # "model_simulation/examples/periodic_events_simulation.md", # fails due to something probably realted to https://github.com/SciML/ModelingToolkit.jl/issues/4030/.
         # "model_simulation/examples/activation_time_distribution_measurement.md", # Error in https://github.com/SciML/ModelingToolkit.jl/issues/4231. Might want to redesign a bit anyway though (to accommodate MTK changes for when defaults/bindings are assigned to paraemters).
         "model_simulation/examples/interactive_brusselator_simulation.md"
     ]
@@ -49,7 +49,7 @@ pages = Any[
     "steady_state_functionality/homotopy_continuation.md",
     "steady_state_functionality/nonlinear_solve.md",
     "steady_state_functionality/steady_state_stability_computation.md",
-    # "steady_state_functionality/bifurcation_diagrams.md", # Awaiting response from Aayush on issue.
+    # "steady_state_functionality/bifurcation_diagrams.md", # https://github.com/SciML/ModelingToolkit.jl/issues/4228
     "steady_state_functionality/dynamical_systems.md",
     "Examples" => Any[
         "steady_state_functionality/examples/nullcline_plotting.md",
