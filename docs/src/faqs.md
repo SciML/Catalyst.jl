@@ -432,47 +432,6 @@ and
 println("Correct Γ is: ", 4.0, "\n", "remade value is: ", nlprob4.ps[:Γ][1])
 ```
 
-Finally, we note there is one extra consideration to take into account if using
-`structural_simplify`. In this case one of `X₁`, `X₂`, or `X₃` will be moved to
-being an observed. It will then always correspond to the updated value if one
-tries to manually change `Γ`. Let's see what happens here directly
-```@example faq_remake
-nlsys = make_rre_algeqs(rn; remove_conserved = true, conseqs_remake_warn = false)
-nlsys = mtkcompile(nlsys)
-nlprob1 = NonlinearProblem(nlsys, u0, ps)
-```
-We can now try to change just `Γ` and implicitly the observed variable that was
-removed will be assumed to have changed its initial value to compensate for it.
-Let's confirm this. First we find the observed variable that was eliminated.
-```@example faq_remake
-obs_unknown = only(observed(nlsys)).lhs
-```
-We can figure out its index in `u0` via
-```@example faq_remake
-obs_symbol = ModelingToolkitBase.getname(obs_unknown)
-obsidx = findfirst(p -> p[1] == obs_symbol, u0)
-```
-Let's now remake 
-```@example faq_remake
-nlprob2 = remake(nlprob1; u0 = [obs_unknown => nothing], p = [:Γ => [8.0]])
-```
-Here we indicate that the observed variable should be treated as unspecified
-during initialization. Since the observed variable is not considered an unknown,
-everything now works, with the observed variable's assumed initial value
-adjusted to allow `Γ = 8`:
-```@example faq_remake
-correct_u0 = last.(u0)
-correct_u0[obsidx] = 8 - sum(correct_u0) + correct_u0[obsidx]
-println("Correct u0 is: ", (1.0, 2.0, 5.0), "\n", "remade value is: ", nlprob2[(:X₁, :X₂, :X₃)]) 
-```
-and `Γ` becomes
-```@example faq_remake
-println("Correct Γ is: ", 8.0, "\n", "remade value is: ", nlprob2.ps[:Γ][1])
-```
-Unfortunately, as with our first example, trying to enforce that a
-non-eliminated species should have its initial value updated instead of the
-observed species will not work.
-
 *Summary:* it is not recommended to directly update `Γ` via `remake`, but to
 instead update values of the initial guesses in `u0` to obtain a desired `Γ`. At
 this time the behavior when updating `Γ` can result in `u0` values that do not

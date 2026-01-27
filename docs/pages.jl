@@ -7,7 +7,7 @@ pages = Any[
 ],
 "Model creation and properties" => Any[
     "model_creation/dsl_basics.md",
-    "model_creation/dsl_advanced.md",
+    # "model_creation/dsl_advanced.md", Problem due to `collect_vars!` bug in MTK. Awaiting reply from Aayush on how to fix.
     "model_creation/programmatic_CRN_construction.md",
     "model_creation/compositional_modeling.md",
     # "model_creation/constraint_equations.md", # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4199.
@@ -35,7 +35,7 @@ pages = Any[
     "model_simulation/sde_simulation_performance.md",
     # "model_simulation/finite_state_projection_simulation.md", # Wait for update with new version.
     "Examples" => Any[
-        # "model_simulation/examples/periodic_events_simulation.md", # fails due to something probably realted to https://github.com/SciML/ModelingToolkit.jl/issues/4030/.
+        # "model_simulation/examples/periodic_events_simulation.md", # fails due to something probably related to https://github.com/SciML/ModelingToolkit.jl/issues/4030/.
         # "model_simulation/examples/activation_time_distribution_measurement.md", # Error in https://github.com/SciML/ModelingToolkit.jl/issues/4231. Might want to redesign a bit anyway though (to accommodate MTK changes for when defaults/bindings are assigned to paraemters).
         "model_simulation/examples/interactive_brusselator_simulation.md"
     ]
