@@ -3,6 +3,7 @@
 # Fetch packages.
 using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEqTsit5, OrdinaryDiffEqVerner, StochasticDiffEq, Test
 const MT = ModelingToolkitBase
+using ModelingToolkitBase: Pre
 
 # Sets stable rng number.
 using StableRNGs
@@ -205,7 +206,7 @@ let
     jumps = Vector{Union{ConstantRateJump, MassActionJump, VariableRateJump}}(undef,
                                                                               length(rxs))
 
-    @test_broken let # @Sam: From here on there are some errors relating to quite internal jump-related structures. I think it would be best if you fixed it so that it is done right and we don't remove what we intend to test.
+    let
         jumps[1] = MassActionJump(p[1], Vector{Pair{Int, Int}}(), [1 => 1])
         jumps[2] = MassActionJump(p[2], [2 => 1], [2 => -1])
         jumps[3] = MassActionJump(p[3], [1 => 1], [1 => -1, 3 => 1])
@@ -238,9 +239,10 @@ let
 
         unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(js)))
         jprob = JumpProblem(js, merge(Dict(u0map), Dict(pmap)), (0.0, 1.0))
-        mtkpars = jprob.p
+        mtkpars = jprob.prob.p
         jspmapper = MT.JumpSysMajParamMapper(js, mtkpars)
-        symmaj = MT.assemble_maj(equations(js).x[1], unknownoid, jspmapper)
+        symbolic_majs = MassActionJump[MT.jumps(js)[i] for i in midxs]
+        symmaj = MT.assemble_maj(symbolic_majs, unknownoid, jspmapper)
         maj = MassActionJump(symmaj.param_mapper(mtkpars), symmaj.reactant_stoch, symmaj.net_stoch,
                             symmaj.param_mapper, scale_rates = false)
         for i in midxs
@@ -249,7 +251,7 @@ let
             @test jumps[i].net_stoch == maj.net_stoch[i]
         end
         for i in cidxs
-            crj = MT.assemble_crj(js, equations(js)[i], unknownoid)
+            crj = MT.assemble_crj(js, MT.jumps(js)[i], unknownoid)
             @test isapprox(crj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
             fake_integrator1 = (u = zeros(6), p = mtkpars, t = 0.0)
             fake_integrator2 = (u = zeros(6), p, t = 0.0)
@@ -258,11 +260,11 @@ let
             @test fake_integrator1.u == fake_integrator2.u
         end
         for i in vidxs
-            crj = MT.assemble_vrj(js, equations(js)[i], unknownoid)
-            @test isapprox(crj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
+            vrj = MT.assemble_vrj(js, MT.jumps(js)[i], unknownoid)
+            @test isapprox(vrj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
             fake_integrator1 = (u = zeros(6), p = mtkpars, t = 0.0)
             fake_integrator2 = (u = zeros(6), p, t = 0.0)
-            crj.affect!(fake_integrator1)
+            vrj.affect!(fake_integrator1)
             jumps[i].affect!(fake_integrator2)
             @test fake_integrator1.u == fake_integrator2.u
         end
@@ -517,7 +519,7 @@ let
         @test isapprox(dg1, dg2)
     end
 
-    @test_broken let # @Sam: The error is related to Jump structure stuff, can you have a look?. Think (hope) it might be a straightforward fix.
+    let
         # Test jump systems.
         rxs = [(@reaction k1, $A --> B),
             (@reaction k2, B --> $A),
@@ -533,36 +535,37 @@ let
         majrates = [k1 * A, k1, k2]
         majrs = [[], [C => 1, D => 1], [C => 1, E => 1]]
         majns = [[B => 1], [D => -1, E => 1], [D => 1, E => -1]]
-        for (i, maj) in enumerate(MT.jumps(jsys).x[1])
+        maj_jumps = filter(j -> j isa MassActionJump, MT.jumps(jsys))
+        for (i, maj) in enumerate(maj_jumps)
             @test isequal(maj.scaled_rates, majrates[i])
             @test issetequal(maj.reactant_stoch, majrs[i])
             @test issetequal(maj.net_stoch, majns[i])
         end
-        @test isempty(equations(jsys).x[2])
-        vrj1 = equations(jsys).x[3][1]
+        crj_jumps = filter(j -> j isa ConstantRateJump, MT.jumps(jsys))
+        @test isempty(crj_jumps)
+        vrj_jumps = filter(j -> j isa VariableRateJump, MT.jumps(jsys))
+        vrj1 = vrj_jumps[1]
         @test isequal(vrj1.rate, k2 * B)
-        @test issetequal(vrj1.affect!, [B ~ B - 1])
-        vrj2 = equations(jsys).x[3][2]
+        @test issetequal(vrj1.affect!, [B ~ -1 + Pre(B)])
+        vrj2 = vrj_jumps[2]
         @test isequal(vrj2.rate, k1 * t * A * C)
-        @test issetequal(vrj2.affect!, [B ~ B + 1])
-        vrj3 = equations(jsys).x[3][3]
+        @test issetequal(vrj2.affect!, [B ~ 1 + Pre(B)])
+        vrj3 = vrj_jumps[3]
         @test isequal(vrj3.rate, k1 * B * A * (A - 1) / 2 * C)
-        @test issetequal(vrj3.affect!, [B ~ B + 1])
+        @test issetequal(vrj3.affect!, [B ~ 1 + Pre(B)])
     end
 end
 
 # Test that jump solutions actually run correctly for constants and BCs.
-@test_broken let
-    return false # @Sam: Creation of JumpProblem's from `JumpInput`s is currently broken.
+let
     @parameters k1 A [isconstantspecies = true]
     @species C(t) [isbcspecies = true] B1(t) B2(t) B3(t)
     @named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
                                    (@reaction k1, $A --> B2),
                                    (@reaction 10 * k1, ∅ --> B3)], t)
     rn = complete(rn)
-    jin = JumpInputs(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
-                            [k1 => 1.0])
-    jprob = JumpProblem(jin; rng, save_positions = (false, false))
+    jprob = JumpProblem(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
+                        [k1 => 1.0]; rng, save_positions = (false, false))
     umean = zeros(4)
     Nsims = 40000
     for i in 1:Nsims
@@ -684,7 +687,7 @@ let
     sol = solve(jprob, SSAStepper())
 
     # Test for https://github.com/SciML/ModelingToolkit.jl/issues/1042.
-    jprob = JumpProblem(rs, [S => 1, I => 1], (0.0, 10.0), [], Direct(); rng, save_positions = (false, false))
+    jprob = JumpProblem(rs, [S => 1, I => 1], (0.0, 10.0), []; aggregator = Direct(), rng, save_positions = (false, false))
 
     @parameters k1 k2
     @species R(t)
@@ -1043,12 +1046,13 @@ end
 
 ########## tests related to hybrid systems ##########
 
-@test_broken let # @Sam: I will leave hybrid-related stuff to you.
-    return false
-    # massactionjumps(js::JumpSystem) = equations(js).x[1]
-    # constantratejumps(js::JumpSystem) = equations(js).x[2]
-    # variableratejumps(js::JumpSystem) = equations(js).x[3]
-    # odeeqs(js::JumpSystem) = equations(js).x[4]
+let
+    # Helper functions to access JumpSystem equation types in MTK 11
+    # Jumps are now stored in a flat vector, filter by type
+    massactionjumps(js) = filter(j -> j isa MassActionJump, MT.jumps(js))
+    constantratejumps(js) = filter(j -> j isa ConstantRateJump, MT.jumps(js))
+    variableratejumps(js) = filter(j -> j isa VariableRateJump, MT.jumps(js))
+    odeeqs(js) = equations(js)
 
     let
         t = default_t()
@@ -1062,10 +1066,8 @@ end
         cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
         @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
         rs = complete(rs)
-        jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
-        @test jinput.prob isa ODEProblem
-        sys = jinput.sys
-        @test sys isa JumpSystem
+        sys = complete(make_sck_jump(rs))
+        @test sys isa MT.System
         @test MT.has_equations(sys)
         @test length(massactionjumps(sys)) == 1
         @test isempty(constantratejumps(sys))
@@ -1087,10 +1089,8 @@ end
         cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
         @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
         rs = complete(rs)
-        jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
-        @test jinput.prob isa ODEProblem
-        sys = jinput.sys
-        @test sys isa JumpSystem
+        sys = complete(make_sck_jump(rs))
+        @test sys isa MT.System
         @test MT.has_equations(sys)
         @test length(massactionjumps(sys)) == 1
         @test isempty(constantratejumps(sys))
@@ -1115,10 +1115,8 @@ end
         cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
         @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
         rs = complete(rs)
-        jinput = JumpInputs(rs, [:A => 0, :B => 1, :C => 1, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
-        @test jinput.prob isa ODEProblem
-        sys = jinput.sys
-        @test sys isa JumpSystem
+        sys = complete(make_sck_jump(rs))
+        @test sys isa MT.System
         @test MT.has_equations(sys)
         @test isempty(massactionjumps(sys))
         @test isempty(constantratejumps(sys))
@@ -1129,54 +1127,55 @@ end
         @test length(continuous_events(sys)) == 1
     end
 
-    # tests of isequivalent
-    let
-        @parameters k1 k2 k3 k4
-        @species A(t) B(t) C(t) D(t)
-        @variables V(t) X(t)
+end
 
-        # Define reactions
-        rx1 = Reaction(k1, [A], [B])
-        rx2 = Reaction(k2, [B], [C])
-        rx3 = Reaction(k3, [C], [D])
-        rx4 = Reaction(k4, [D], [A])
+# Tests of isequivalent for hybrid systems.
+let
+    @parameters k1 k2 k3 k4
+    @species A(t) B(t) C(t) E(t)  # Use E instead of D to avoid conflict with Differential
+    @variables V(t) X(t)
 
-        # Define ODE equation
-        D = default_time_deriv()
-        eq = D(V) ~ -k1 * V + A
+    # Define reactions
+    rx1 = Reaction(k1, [A], [B])
+    rx2 = Reaction(k2, [B], [C])
+    rx3 = Reaction(k3, [C], [E])
+    rx4 = Reaction(k4, [E], [A])
 
-        # Define events
-        continuous_events = [[X ~ 0] => [X ~ -X]]
-        discrete_events = (X == 1) => [V => V/2]
+    # Define ODE equation
+    D = default_time_deriv()
+    eq = D(V) ~ -k1 * V + A
 
-        # Define metadata
-        metadata = Dict(:description => "Comprehensive test system")
+    # Define events
+    continuous_events = [[X ~ 0] => [X ~ -X]]
+    discrete_events = (X == 1) => [V ~ V/2]
 
-        # Define initial conditions and parameters
-        u0 = Dict([A => 1.0, B => 2.0, C => 3.0, D => 4.0, V => 5.0])
-        p = Dict([k1 => 0.1, k2 => 0.2, k3 => 0.3, k4 => 0.4])
-        defs = merge(u0, p)
+    # Define metadata
+    metadata = [MiscSystemData => "Comprehensive test system"]
 
-        # Define observed variables
-        obs = [X ~ A + B]
+    # Define initial conditions and parameters
+    u0 = Dict([A => 1.0, B => 2.0, C => 3.0, E => 4.0, V => 5.0])
+    p = Dict([k1 => 0.1, k2 => 0.2, k3 => 0.3, k4 => 0.4])
+    defs = merge(u0, p)
 
-        # Define a subsystem
-        sub_rx = Reaction(k1, [A], [B])
-        @named sub_rs = ReactionSystem([sub_rx], t)
+    # Define observed variables
+    obs = [X ~ A + B]
 
-        # Create the first reaction system
-        @named rs1 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t;
-            continuous_events, discrete_events,
-            metadata, observed = obs, initial_conditions = defs, systems = [sub_rs])
-        rs1 = complete(rs1)
+    # Define a subsystem
+    sub_rx = Reaction(k1, [A], [B])
+    @named sub_rs = ReactionSystem([sub_rx], t)
 
-        # Create the second reaction system with the same components
-        rs2 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t;
-            continuous_events, discrete_events,
-            metadata, observed = obs, initial_conditions = defs, systems = [sub_rs], name = :rs1)
-        rs2 = complete(rs2)
+    # Create the first reaction system
+    @named rs1 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t;
+        continuous_events, discrete_events,
+        metadata, observed = obs, initial_conditions = defs, systems = [sub_rs])
+    rs1 = complete(rs1)
 
-        # Check equivalence
-        @test Catalyst.isequivalent(rs1, rs2)
-    end
+    # Create the second reaction system with the same components
+    rs2 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t;
+        continuous_events, discrete_events,
+        metadata, observed = obs, initial_conditions = defs, systems = [sub_rs], name = :rs1)
+    rs2 = complete(rs2)
+
+    # Check equivalence
+    @test Catalyst.isequivalent(rs1, rs2)
 end

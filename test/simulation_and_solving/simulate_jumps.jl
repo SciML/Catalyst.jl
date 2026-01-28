@@ -130,7 +130,7 @@ let
             zip(catalyst_networks, manual_networks, u0_syms, ps_syms, u0s, ps, sps)
 
         # Simulates the Catalyst-created model.
-        jprob_1 = JumpProblem(rn_catalyst, u0_1, (0.0, 10000.0), ps_1, Direct(); rng)
+        jprob_1 = JumpProblem(rn_catalyst, u0_1, (0.0, 10000.0), ps_1; aggregator = Direct(), rng)
         sol1 = solve(jprob_1, SSAStepper(); seed, saveat = 1.0)
 
         # simulate using auto-alg
@@ -189,11 +189,12 @@ let
     tspan = (0.0, 25.0)
 
     # the direct method needs no dep graphs so is good as a baseline for comparison
-    jprobdm = JumpProblem(rn, u0map, tspan, pmap, Direct(); save_positions = (false, false), rng)
-    jprobsd = JumpProblem(rn, u0map, tspan, pmap, SortingDirect(); save_positions = (false, false), rng)
-    @test_broken issetequal(jprobsd.discrete_jump_aggregation.dep_gr, [[1,2],[2]]) # @Sam: Something internal jump-related is broken, can you have a look and fix?
-    @test_broken issetequal(jprobrssa.discrete_jump_aggregation.vartojumps_map, [[],[],[],[1],[2],[]]) # @Sam: Something internal jump-related is broken, can you have a look and fix?
-    @test_broken issetequal(jprobrssa.discrete_jump_aggregation.jumptovars_map, [[5],[5,6]]) # @Sam: Something internal jump-related is broken, can you have a look and fix?
+    jprobdm = JumpProblem(rn, u0map, tspan, pmap; aggregator = Direct(), save_positions = (false, false), rng)
+    jprobsd = JumpProblem(rn, u0map, tspan, pmap; aggregator = SortingDirect(), save_positions = (false, false), rng)
+    @test issetequal(jprobsd.discrete_jump_aggregation.dep_gr, [[1,2],[2]])
+    jprobrssa = JumpProblem(rn, u0map, tspan, pmap; aggregator = RSSA(), save_positions = (false, false), rng)
+    @test issetequal(jprobrssa.discrete_jump_aggregation.vartojumps_map, [[],[],[],[1],[2],[]])
+    @test issetequal(jprobrssa.discrete_jump_aggregation.jumptovars_map, [[5],[5,6]])
     N = 1000  # number of simulations to run
     function getmean(N, prob)
         m1 = 0.0
@@ -207,13 +208,20 @@ let
         m2 /= N
         return m1, m2
     end
+    # Note: RSSA with VRJs is currently broken due to JumpProcesses issue with ExtendedJumpArray.
+    # The RSSA aggregator's ulow/uhigh arrays are sized for species only, but update_u_brackets!
+    # iterates over the full ExtendedJumpArray (species + VRJ tracking variables).
+    # See: https://github.com/SciML/JumpProcesses.jl/issues/545
     means1 = zeros(2)
     means2 = zeros(2)
-    for (i,prob) in enumerate((jprobdm, jprobsd))  # skip rssa due JumpProcesses #439 bug
+    for (i,prob) in enumerate((jprobdm, jprobsd))
         means1[i],means2[i] = getmean(N, prob)
     end
-    @test (means1[1] - means1[2]) < .1 * means1[1]
-    @test (means2[1] - means2[2]) < .1 * means2[1]
+    @test abs(means1[1] - means1[2]) < .1 * means1[1]
+    @test abs(means2[1] - means2[2]) < .1 * means2[1]
+    # RSSA simulation tests are broken - see comment above
+    # @test_broken abs(means1[1] - means1[3]) < .1 * means1[1]
+    # @test_broken abs(means2[1] - means2[3]) < .1 * means2[1]
 end
 
 ### Other Tests ###
@@ -221,8 +229,6 @@ end
 # Checks that solution values have types consistent with their input types.
 # Check that both float and integer types are preserved in the solution (and problems).
 # Checks that the time types are correct (`Float64` by default or possibly `Float32`).
-# `JumpInputs` currently does not support integer time spans. When it does, we will check that
-# these produce `Float64` time values.
 let
     # Create model. Checks when input type is `Float64` the produced values are also `Float64`.
     rn = @reaction_network begin

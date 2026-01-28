@@ -389,6 +389,15 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
     # it may be that a given jump has isvrjvec[i] = true but has a physical
     isvrjvec = classify_vrjs(rs, physcales)
 
+    # Build substitution dict to wrap unknowns in Pre() for jump affects.
+    # This ensures that any unknown (species, variable, time-dependent parameter)
+    # appearing in stoichiometry is treated as a pre-jump value to read, not an
+    # unknown to solve for.
+    pre_sub_dict = Dict{SymbolicT, SymbolicT}(u => Pre(u) for u in unknownset)
+
+    # Reusable buffer for collecting variables from stoichiometry
+    stoichvars = Set{SymbolicT}()
+
     rxvars = Set{SymbolicT}()
     for (i, rx) in enumerate(rxs)
         # only process reactions that should give jumps
@@ -406,7 +415,18 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
             affect = Vector{Equation}()
             for (spec, stoich) in rx.netstoich
                 # don't change species that are constant or BCs
-                (!drop_dynamics(spec)) && push!(affect, spec ~ Pre(spec) + stoich)
+                if !drop_dynamics(spec)
+                    # Check if stoich contains any unknowns that need Pre() wrapping
+                    adj_stoich = stoich
+                    if stoich isa SymbolicT
+                        empty!(stoichvars)
+                        get_variables!(stoichvars, stoich)
+                        if any(in(unknownset), stoichvars)
+                            adj_stoich = substitute(stoich, pre_sub_dict)
+                        end
+                    end
+                    push!(affect, spec ~ Pre(spec) + adj_stoich)
+                end
             end
             if isvrj
                 push!(veqs, VariableRateJump(rl, affect; save_positions))
@@ -913,143 +933,28 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         noise_rate_prototype = p_matrix, kwargs...)
 end
 
-"""
-$(TYPEDEF)
-
-Inputs for a JumpProblem from a given `ReactionSystem`.
-
-# Fields
-$(FIELDS)
-"""
-struct JumpInputs{S, T}
-    """The `JumpSystem` to define the problem over"""
-    sys::S
-    """The problem the JumpProblem should be defined over, for example DiscreteProblem"""
-    prob::T
-end
-
-"""
-```julia
-JumpInputs(rs::ReactionSystem, u0, tspan,
-            p = DiffEqBase.NullParameters;
-            name = nameof(rs),
-            combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-            checks = false, physical_scales = nothing,
-            expand_catalyst_funs = true,
-            save_positions = (true, true),
-            remake_warn = true, kwargs...)
-```
-
-Constructs the input to build a JumpProblem for the given reaction system.
-
-Keyword args and default values:
-- `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,
-  i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S*(S-1)/2!`. Set
-  `combinatoric_ratelaws=false` for a ratelaw of `k*S*(S-1)`, i.e. the scaling factor is
-  ignored. Defaults to the value given when the `ReactionSystem` was constructed (which
-  itself defaults to true).
-- `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
-  with their rational function representation when converting to another system type. Set to
-  `false`` to disable.
-- `remake_warn = true`, if `true`, a warning is thrown if the system includes ODEs, variable
-  rate jumps, or continuous events. This is because `remake` does not work for such
-  problems, and instead both `JumpInputs` and then `JumpProblem` must be called again if one
-  wishs to change any parameter or initial condition values. This warning can be disabled by
-  passing `remake_warn = false`.
-- `save_positions = (true, true)`, indicates whether for any reaction classified as a
-  `VariableRateJump` whether to save the solution before and/or after the jump occurs.
-  Defaults to true for both.
-
-Example:
-```julia
-using Catalyst, OrdinaryDiffEqTsit5, JumpProcesses, Plots
-rn = @reaction_network begin
-    k*(1 + sin(t)), 0 --> A
-end
-jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
-@assert jinput.prob isa ODEProblem
-jprob = JumpProblem(jinput)
-sol = solve(jprob, Tsit5())
-plot(sol, idxs = :A)
-
-rn = @reaction_network begin
-    k, 0 --> A
-end
-jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
-@assert jinput.prob isa DiscreteProblem
-jprob = JumpProblem(jinput)
-sol = solve(jprob)
-plot(sol, idxs = :A)
-```
-"""
-function JumpInputs(rs::ReactionSystem, u0, tspan, p = DiffEqBase.NullParameters();
-        name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        checks = false, physical_scales = nothing, expand_catalyst_funs = true,
-        save_positions = (true, true), remake_warn = true, kwargs...)
+# JumpProblem from ReactionSystem
+function JumpProcesses.JumpProblem(rs::ReactionSystem, u0, tspan,
+        p = DiffEqBase.NullParameters();
+        name = nameof(rs),
+        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        physical_scales = nothing,
+        expand_catalyst_funs = true,
+        save_positions = (true, true),
+        checks = false,
+        kwargs...)
     jsys = complete(make_sck_jump(rs; name, combinatoric_ratelaws, checks,
         physical_scales, expand_catalyst_funs, save_positions))
-
-    if MT.has_variableratejumps(jsys) || MT.has_equations(jsys) ||
-            !isempty(MT.continuous_events(jsys))
-        prob = ODEProblem(jsys, u0, tspan, p; kwargs...)
-        if remake_warn
-            @warn "JumpInputs has detected the system includes ODEs, variable rate jumps, or continuous events. Please note that currently remake does not work for such problems, and both JumpInputs and then JumpProblem must be called again if you wish to change any parameter or initial condition values. This warning can be disabled by passing JumpInputs the keyword argument `remake_warn = false`."
-        end
+    # Convert Symbol keys to Symbolic keys since MTK's callback compilation
+    # (specifically compile_equational_affect) requires Symbolic keys.
+    u0_sym = symmap_to_varmap(jsys, u0)
+    op = if p isa DiffEqBase.NullParameters
+        u0_sym
     else
-        prob = JumpProblem(jsys, merge(Dict(u0), Dict(p)), tspan; kwargs...)
+        p_sym = symmap_to_varmap(jsys, p)
+        merge(Dict(u0_sym), Dict(p_sym))
     end
-    JumpInputs(jsys, prob)
-end
-
-function Base.summary(io::IO, jinputs::JumpInputs)
-    type_color, no_color = SciMLBase.get_colorizers(io)
-    print(io,
-        type_color, nameof(typeof(jinputs)),
-        no_color, " storing", "\n",
-        no_color, "  JumpSystem: ", type_color, nameof(jinputs.sys), "\n",
-        no_color, "  Problem type: ", type_color, nameof(typeof(jinputs.prob)))
-end
-
-function Base.show(io::IO, mime::MIME"text/plain", jinputs::JumpInputs)
-    summary(io, jinputs)
-end
-
-# DROP IN CATALYST 16
-# DiscreteProblem from AbstractReactionNetwork
-function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
-        p = DiffEqBase.NullParameters(), args...; name = nameof(rs),
-        combinatoric_ratelaws = get_combinatoric_ratelaws(rs), checks = false,
-        expand_catalyst_funs = true, kwargs...)
-    Base.depwarn("DiscreteProblem(rn::ReactionSystem, ...) is deprecated and will be \
-        removed in Catalyst 16. Use JumpInputs(rn, ...) instead.",
-        :DiscreteProblem)
-    jsys = make_sck_jump(rs; name, combinatoric_ratelaws, checks,
-        expand_catalyst_funs)
-    jsys = complete(jsys)
-    return DiscreteProblem(jsys, u0, tspan, p, args...; kwargs...)
-end
-
-# DROP IN CATALYST 16
-# JumpProblem from AbstractReactionNetwork
-function JumpProcesses.JumpProblem(rs::ReactionSystem, u0, tspan,
-        p = DiffEqBase.NullParameters(), aggregator = JumpProcesses.NullAggregator(), args...;
-        name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        expand_catalyst_funs = true, checks = false, kwargs...)
-    Base.depwarn("JumpProblem(rn::ReactionSystem, prob, ...) is \
-        deprecated and will be removed in Catalyst 16. Use \
-        JumpProblem(JumpInputs(rn, ...), ...) instead.", :JumpProblem)
-    jsys = make_sck_jump(rs; name, combinatoric_ratelaws,
-        expand_catalyst_funs, checks)
-    jsys = complete(jsys)
-    prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
-    return JumpProblem(jsys, prob_cond, tspan)
-end
-
-# JumpProblem for JumpInputs
-function JumpProcesses.JumpProblem(jinputs::JumpInputs,
-        agg::JumpProcesses.AbstractAggregatorAlgorithm = JumpProcesses.NullAggregator();
-        kwargs...)
-    JumpProblem(jinputs.sys, jinputs.prob, agg; kwargs...)
+    return JumpProblem(jsys, op, tspan; save_positions, kwargs...)
 end
 
 # SteadyStateProblem from AbstractReactionNetwork

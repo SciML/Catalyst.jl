@@ -113,13 +113,12 @@ let
         @test prob.ps[α] isa Int64
     end
 
-    # Handles `JumpInput`s and `JumpProblem`s (these cannot contain continuous events or variables).
-    @test_broken let # @Sam `JumpProblem(jin)` seems broken now. Can you have a look how to get it working?
+    # Handles `JumpProblem`s (these cannot contain continuous events or variables).
+    let
         discrete_events = [2.0 => [A ~ Pre(A) + Pre(α)]]
         @named rs_de_2 = ReactionSystem(rxs, t; discrete_events)
         rs_de_2 = complete(rs_de_2)
-        jin = JumpInputs(rs_de_2, u0, (0.0, 10.0), ps)
-        jprob = JumpProblem(jin)
+        jprob = JumpProblem(rs_de_2, u0, (0.0, 10.0), ps)
         @test jprob[A] == 2
         @test jprob.ps[α] == 1
         @test jprob.ps[α] isa Int64

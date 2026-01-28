@@ -102,7 +102,7 @@ export params, numparams
 # Conversions of the `ReactionSystem` structure.
 include("reactionsystem_conversions.jl")
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem,
-       SteadyStateProblem, JumpInputs
+       SteadyStateProblem
 export ismassaction, oderatelaw, jumpratelaw
 export symmap_to_varmap
 
