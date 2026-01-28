@@ -10,7 +10,7 @@ pages = Any[
     # "model_creation/dsl_advanced.md", Problem due to `collect_vars!` bug in MTK. Awaiting reply from Aayush on how to fix.
     "model_creation/programmatic_CRN_construction.md",
     "model_creation/compositional_modeling.md",
-    # "model_creation/constraint_equations.md", # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4199.
+    "model_creation/constraint_equations.md", # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4199.
     "model_creation/conservation_laws.md",
     "model_creation/parametric_stoichiometry.md",
     "model_creation/functional_parameters.md",
@@ -64,7 +64,7 @@ pages = Any[
     "inverse_problems/structural_identifiability.md",
     "inverse_problems/global_sensitivity_analysis.md"
     #"Examples" => Any[
-    #    "inverse_problems/examples/ode_fitting_oscillation.md" # https://github.com/SciML/ModelingToolkit.jl/issues/4234
+    #    "inverse_problems/examples/ode_fitting_oscillation.md" # Throws and error due to https://github.com/JuliaDiff/ChainRules.jl/issues/830.
     #]
 ],
 "Spatial modelling" => Any[

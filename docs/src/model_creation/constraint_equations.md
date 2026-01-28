@@ -259,7 +259,7 @@ t = default_t()
 @discretes k_on(t)
 @species A(t) B(t)
 
-rxs = [(@reaction k_on, A --> B), (@reaction k_off, B --> A)]
+rxs = [Reaction(k_on, [A], [B]), Reaction(k_off, [B], [A])]
 ```
 Now we add an event such that at time `t` (`switch_time`), `k_on` is set to zero.
 ```@example ceq3
