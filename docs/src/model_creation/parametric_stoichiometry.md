@@ -70,10 +70,8 @@ show(stdout, MIME"text/plain"(), equations(osys)) # hide
 ```
 Specifying the parameter and initial condition values,
 ```@example s1
-sim_cond = (
-    revsys.k₊ => 1.0, revsys.k₋ => 1.0, revsys.m => 2, revsys.n => 2,
-    revsys.A => 1.0, revsys.B => 1.0
-)
+sim_cond = (revsys.k₊ => 1.0, revsys.k₋ => 1.0, revsys.m => 2, revsys.n => 2,
+    revsys.A => 1.0, revsys.B => 1.0)
 oprob = ODEProblem(osys, sim_cond, (0.0, 1.0))
 nothing # hide
 ```
