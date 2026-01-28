@@ -104,10 +104,8 @@ show(stdout, MIME"text/plain"(), equations(osys)) # hide
 Since we no longer have factorial functions appearing, our example will now run
 with `m` and `n` treated as floating point parameters:
 ```@example s1
-sim_cond = (
-    revsys.k₊ => 1.0, revsys.k₋ => 1.0, revsys.m => 2.0, revsys.n => 2.0,
-    revsys.A => 1.0, revsys.B => 1.0
-)
+sim_cond = (revsys.k₊ => 1.0, revsys.k₋ => 1.0, revsys.m => 2.0, revsys.n => 2.0,
+    revsys.A => 1.0, revsys.B => 1.0)
 oprob = ODEProblem(osys, sim_cond, (0.0, 1.0))
 sol = solve(oprob, Tsit5())
 plot(sol)
