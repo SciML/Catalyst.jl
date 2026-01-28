@@ -104,7 +104,7 @@ rs = complete(rs)
 We now convert the [`ReactionSystem`](@ref) into a `ModelingToolkit.JumpSystem`, and solve it using Gillespie's direct method. For details on other possible solvers (SSAs), see the [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/types/jump_types/) documentation
 ```@example smcoag1
 # solving the system
-jprob = JumpProblem(rs, u₀map, tspan; aggregator = Direct(), save_positions = (false, false))
+jprob = JumpProblem(rs, u₀map, tspan; save_positions = (false, false))
 jsol = solve(jprob; saveat = tspan[2] / 30)
 nothing #hide
 ```
