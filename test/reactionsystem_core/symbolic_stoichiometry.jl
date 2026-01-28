@@ -3,6 +3,18 @@
 # Fetch packages.
 using Catalyst, JumpProcesses, OrdinaryDiffEqTsit5, StochasticDiffEq, Statistics, Test
 using Symbolics: unwrap
+import SymbolicIndexingInterface as SII
+
+# Mock integrator type for testing generated VRJ affect functions.
+# MTKBase's generated affects use SymbolicIndexingInterface, so we need a proper type.
+mutable struct TestIntegrator{U, V, T}
+    u::U
+    p::V
+    t::T
+end
+SII.state_values(x::TestIntegrator) = x.u
+SII.parameter_values(x::TestIntegrator) = x.p
+SII.current_time(x::TestIntegrator) = x.t
 
 # Sets stable rng number.
 using StableRNGs
@@ -176,18 +188,54 @@ let
     jumps = [VariableRateJump(r1, affect1!), VariableRateJump(r2, affect2!)]
 
     # Checks that the Catalyst-generated functions are equal to the manually declared ones.
-    @test_broken for i in 1:2 # @Sam: something internal jump-related is breaking, can you have a look so that it is fixed right?
-        catalyst_jsys = make_sck_jump(rs)
-        unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(catalyst_jsys)))
+    # Note: MTKBase's generated affect functions use SymbolicIndexingInterface, requiring a
+    # proper integrator type (TestIntegrator defined at top of file).
+    catalyst_jsys = make_sck_jump(rs)
+    unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(catalyst_jsys)))
+    for i in 1:2
         catalyst_vrj = ModelingToolkitBase.assemble_vrj(catalyst_jsys, ModelingToolkitBase.jumps(catalyst_jsys)[i], unknownoid)
+
+        # Rate functions should match
         @test isapprox(catalyst_vrj.rate(u0_2, ps_2, τ), jumps[i].rate(u0_2, ps_2, τ))
 
-        fake_integrator1 = (u = copy(u0_2), p = ps_2, t = τ)
-        fake_integrator2 = deepcopy(fake_integrator1)
+        # Test affect functions
+        fake_integrator1 = TestIntegrator(copy(u0_2), ps_2, τ)
+        fake_integrator2 = TestIntegrator(copy(u0_2), ps_2, τ)
         catalyst_vrj.affect!(fake_integrator1)
         jumps[i].affect!(fake_integrator2)
-        @test fake_integrator1 == fake_integrator2
+        @test all(fake_integrator1.u .== fake_integrator2.u)
     end
+end
+
+# Tests that non-species unknowns (regular variables) in stoichiometry are properly wrapped in Pre().
+# This ensures MTKBase generates explicit affects rather than implicit ones.
+let
+    @parameters k
+    @variables V(t)
+    @species X(t) Y(t)
+
+    # Reaction where V (a non-species variable) appears in the stoichiometry
+    rs = @reaction_network begin
+        @parameters k
+        @variables V(t)
+        k, X --> V*Y
+    end
+
+    # The JumpSystem should have explicit affects (no equations after mtkcompile)
+    jsys = make_sck_jump(rs)
+    js = ModelingToolkitBase.jumps(jsys)
+    @test length(js) == 1
+
+    # Check that V appears as Pre(V(t)) in the affect equations
+    affect_str = string(js[1].affect!)
+    @test occursin("Pre(V(t))", affect_str)
+
+    # Verify it creates an explicit affect (empty equations after mtkcompile)
+    iv = unwrap(t)
+    aff = ModelingToolkitBase.AffectSystem(js[1].affect!; iv)
+    affsys = ModelingToolkitBase.system(aff)
+    eqs = ModelingToolkitBase.equations(ModelingToolkitBase.unhack_system(affsys))
+    @test isempty(eqs)  # Should be explicit, not implicit
 end
 
 # Tests symbolic stoichiometries in simulations.
