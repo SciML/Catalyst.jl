@@ -503,6 +503,7 @@ let
         @named rs = ReactionSystem(eqs, t)
         rs = complete(rs)
         ssys = complete(make_cle_sde(rs))
+        ssys = MT.mtkcompile(ssys)  # Required for Brownian-based SDE systems with constraints
         @test issetequal(MT.get_unknowns(ssys), [B, C, D, E])
         _ps = filter(!isinitial, MT.get_ps(ssys))
         @test issetequal(_ps, [A, k1, k2])
