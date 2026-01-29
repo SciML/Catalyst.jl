@@ -1,5 +1,6 @@
 # Fetch packages.
 using Catalyst, JumpProcesses, ModelingToolkitBase, OrdinaryDiffEqTsit5, Statistics, Test, Random
+import DiffEqNoiseProcess  # Required for SDEProblem via mtkcompile
 
 # Sets stable rng number.
 using StableRNGs
@@ -697,4 +698,78 @@ let
     prob = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5])
     sol = solve(prob, Tsit5())
     @test SciMLBase.successful_retcode(sol)
+end
+
+### HybridProblem Return Type Tests ###
+
+# Tests that HybridProblem returns correct problem types based on scales.
+let
+    rn = @reaction_network begin
+        k1, S --> P
+        k2, P --> S
+    end
+
+    # Pure ODE → ODEProblem
+    prob_ode = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5];
+        default_scale = PhysicalScale.ODE)
+    @test prob_ode isa ODEProblem
+    sol = solve(prob_ode, Tsit5())
+    @test SciMLBase.successful_retcode(sol)
+
+    # Pure SDE → SDEProblem
+    prob_sde = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5];
+        default_scale = PhysicalScale.SDE)
+    @test prob_sde isa SDEProblem
+
+    # Pure Jump → JumpProblem
+    prob_jump = HybridProblem(rn, [:S => 100, :P => 0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5];
+        default_scale = PhysicalScale.Jump)
+    @test prob_jump isa JumpProcesses.JumpProblem
+    sol = solve(prob_jump, SSAStepper())
+    @test SciMLBase.successful_retcode(sol)
+end
+
+# Tests ODE+Jump hybrid returns JumpProblem.
+let
+    rn = @reaction_network begin
+        k1, S --> P, [physical_scale = PhysicalScale.ODE]
+        k2, P --> S, [physical_scale = PhysicalScale.Jump]
+    end
+
+    prob = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5])
+    @test prob isa JumpProcesses.JumpProblem
+    sol = solve(prob, Tsit5())
+    @test SciMLBase.successful_retcode(sol)
+end
+
+# Tests ODE+SDE (no jumps) returns SDEProblem.
+let
+    rn = @reaction_network begin
+        k1, S --> P, [physical_scale = PhysicalScale.ODE]
+        k2, P --> S, [physical_scale = PhysicalScale.SDE]
+    end
+
+    prob = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5])
+    @test prob isa SDEProblem
+end
+
+# Tests SDE+Jump hybrid throws an error (not yet supported).
+let
+    rn = @reaction_network begin
+        k1, S --> P, [physical_scale = PhysicalScale.SDE]
+        k2, P --> S, [physical_scale = PhysicalScale.Jump]
+    end
+
+    @test_throws ArgumentError HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5])
+end
+
+# Tests ODE+SDE+Jump full hybrid throws an error (SDE+Jump not yet supported).
+let
+    rn = @reaction_network begin
+        k1, S --> P, [physical_scale = PhysicalScale.ODE]
+        k2, P --> S, [physical_scale = PhysicalScale.SDE]
+        k3, S --> 0, [physical_scale = PhysicalScale.Jump]
+    end
+
+    @test_throws ArgumentError HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5, :k3 => 0.1])
 end

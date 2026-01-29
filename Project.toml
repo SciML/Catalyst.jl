@@ -79,6 +79,7 @@ julia = "1.10"
 [extras]
 DataInterpolations = "82cc6244-b520-54b8-b5a6-8a565e85f1d0"
 DiffEqCallbacks = "459566f4-90b8-5000-8ac3-15dfb0a30def"
+DiffEqNoiseProcess = "77a26b50-5914-5dd7-bc55-306e6241c503"
 DomainSets = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -101,9 +102,9 @@ SymbolicIndexingInterface = "2efcf032-c050-4f8e-a9bb-153293bab1f5"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["DataInterpolations", "DiffEqCallbacks", "DomainSets", "Logging", 
-    "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqDefault", 
-    "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner", 
-    "Pkg", "Plots", "Random", "SafeTestsets", "StableRNGs", 
-    "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", 
+test = ["DataInterpolations", "DiffEqCallbacks", "DiffEqNoiseProcess", "DomainSets",
+    "Logging", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqDefault",
+    "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner",
+    "Pkg", "Plots", "Random", "SafeTestsets", "StableRNGs",
+    "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq",
     "SymbolicIndexingInterface", "Test"]

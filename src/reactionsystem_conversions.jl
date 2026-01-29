@@ -981,6 +981,14 @@ function merge_physical_scales(rxs, physical_scales::AbstractVector{<:PhysicalSc
     scales
 end
 
+# Returns (has_ode, has_sde, has_jump) for the resolved scales.
+function detect_scale_types(scales)
+    has_ode = any(==(PhysicalScale.ODE), scales)
+    has_sde = any(==(PhysicalScale.SDE), scales)
+    has_jump = any(s -> s in (PhysicalScale.Jump, PhysicalScale.VariableRateJump), scales)
+    (has_ode, has_sde, has_jump)
+end
+
 """
 ```julia
 Base.convert(::Type{<:JumpSystem},rs::ReactionSystem; combinatoric_ratelaws=true)
@@ -1171,12 +1179,20 @@ end
 
 """
     HybridProblem(rs::ReactionSystem, u0, tspan, p = nothing;
-                  physical_scales = nothing, default_scale = PhysicalScale.Auto, ...)
+                  physical_scales = nothing, default_scale = PhysicalScale.Jump, ...)
 
-Create a problem for hybrid ODE+SDE+Jump systems from a [`ReactionSystem`](@ref).
+Create a problem from a [`ReactionSystem`](@ref) with per-reaction scale control.
 
 This function uses `make_hybrid_model` internally and respects per-reaction
 `PhysicalScale` metadata as well as `physical_scales` kwarg overrides.
+
+The return type depends on which reaction scales are present:
+- Pure ODE (only ODE-scale reactions) → `ODEProblem`
+- Pure SDE or ODE+SDE (no jumps) → `SDEProblem`
+- ODE + Jump (no SDE) → `JumpProblem`
+
+Note: SDE+Jump combinations are not yet supported. For SDE+Jump systems, construct
+the `SDEProblem` and `JumpProblem` separately.
 
 # Arguments
 - `rs`: The ReactionSystem to convert.
@@ -1191,20 +1207,29 @@ This function uses `make_hybrid_model` internally and respects per-reaction
   Defaults to `Jump` so that only reactions explicitly tagged as ODE/SDE are treated as continuous.
 - `combinatoric_ratelaws = get_combinatoric_ratelaws(rs)`: Use factorial/binomial scaling.
 - `save_positions = (true, true)`: For VariableRateJumps, save before/after jump.
+- `structural_simplify = false`: Apply structural simplification (required for algebraic equations).
 - Other kwargs passed to the underlying problem constructor.
 
 # Returns
-A `JumpProblem` that can be solved with an appropriate solver (e.g., `Tsit5()` for hybrid
-ODE+Jump systems).
+- `ODEProblem` if all reactions are ODE-scale
+- `SDEProblem` if reactions are ODE/SDE-scale with no jumps
+- `JumpProblem` if reactions are ODE/Jump-scale with no SDE
+- Throws `ArgumentError` for SDE+Jump combinations (not yet supported)
 
 # Example
 ```julia
+# Hybrid ODE+Jump system
 rn = @reaction_network begin
     k1, S --> P, [physical_scale = PhysicalScale.ODE]
     k2, P --> S, [physical_scale = PhysicalScale.Jump]
 end
 prob = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5])
 sol = solve(prob, Tsit5())
+
+# Pure ODE via HybridProblem
+prob_ode = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5];
+    default_scale = PhysicalScale.ODE)
+sol_ode = solve(prob_ode, Tsit5())
 ```
 """
 function HybridProblem(rs::ReactionSystem, u0, tspan,
@@ -1216,23 +1241,72 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
         expand_catalyst_funs = true,
         save_positions = (true, true),
         checks = false,
+        structural_simplify = false,
         kwargs...)
 
-    sys = complete(make_hybrid_model(rs;
-        name, physical_scales, default_scale, combinatoric_ratelaws,
-        expand_catalyst_funs, save_positions, checks))
+    # Determine which scale types are present.
+    flatrs = Catalyst.flatten(rs)
+    resolved_scales = merge_physical_scales(reactions(flatrs), physical_scales, default_scale)
+    has_ode, has_sde, has_jump = detect_scale_types(resolved_scales)
 
-    # Convert Symbol keys to Symbolic keys.
-    u0_sym = symmap_to_varmap(sys, u0)
-    op = if p isa DiffEqBase.NullParameters
-        u0_sym
+    if has_jump
+        # Any jumps present → JumpProblem
+        # Note: SDE+Jump hybrid is not yet supported (requires SDEProblem as base, which
+        # JumpProblem doesn't automatically handle). Use separate SDEProblem + JumpProblem
+        # construction manually if needed.
+        if has_sde
+            throw(ArgumentError("HybridProblem does not currently support SDE+Jump combinations. " *
+                "For SDE-scale reactions with jumps, construct the SDEProblem and JumpProblem separately."))
+        end
+
+        sys = complete(make_hybrid_model(rs;
+            name, physical_scales, default_scale, combinatoric_ratelaws,
+            expand_catalyst_funs, save_positions, checks))
+
+        # Convert Symbol keys to Symbolic keys.
+        u0_sym = symmap_to_varmap(sys, u0)
+        op = if p isa DiffEqBase.NullParameters
+            u0_sym
+        else
+            p_sym = symmap_to_varmap(sys, p)
+            merge(Dict(u0_sym), Dict(p_sym))
+        end
+
+        return JumpProblem(sys, op, tspan; save_positions, kwargs...)
+
+    elseif has_sde
+        # SDE (with or without ODE) → SDEProblem
+        # make_hybrid_model uses Brownian variables for SDE, so mtkcompile is always needed
+        # to extract the noise matrix. The use_legacy_noise option doesn't apply here.
+        sys = make_hybrid_model(rs;
+            name, physical_scales, default_scale, combinatoric_ratelaws,
+            expand_catalyst_funs, checks)
+
+        if !structural_simplify && has_alg_equations(rs)
+            error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `HybridProblem` call.")
+        end
+
+        sys = MT.mtkcompile(sys)
+        prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
+        return SDEProblem(sys, prob_cond, tspan; kwargs...)
+
     else
-        p_sym = symmap_to_varmap(sys, p)
-        merge(Dict(u0_sym), Dict(p_sym))
-    end
+        # Pure ODE → ODEProblem
+        sys = make_hybrid_model(rs;
+            name, physical_scales, default_scale, combinatoric_ratelaws,
+            expand_catalyst_funs, checks)
 
-    # Return JumpProblem which handles the hybrid system.
-    return JumpProblem(sys, op, tspan; save_positions, kwargs...)
+        if structural_simplify
+            sys = MT.mtkcompile(sys)
+        elseif has_alg_equations(rs)
+            error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `HybridProblem` call.")
+        else
+            sys = complete(sys)
+        end
+
+        prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
+        return ODEProblem(sys, prob_cond, tspan; kwargs...)
+    end
 end
 
 # SteadyStateProblem from AbstractReactionNetwork

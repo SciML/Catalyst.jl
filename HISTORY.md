@@ -29,19 +29,45 @@
   sys = make_hybrid_model(rn; physical_scales = [1 => PhysicalScale.ODE, 2 => PhysicalScale.Jump])
   ```
 
-#### New: `HybridProblem` for hybrid ODE+SDE+Jump systems
+#### New: `HybridProblem` with scale-dependent return types
 
 - **New `HybridProblem(rs, u0, tspan, p; physical_scales, default_scale, ...)` function** creates
-  problems for hybrid systems that mix ODE, SDE, and Jump reactions. Uses `make_hybrid_model`
-  internally and respects per-reaction `PhysicalScale` metadata.
+  problems for systems with per-reaction scale control. Uses `make_hybrid_model` internally and
+  respects per-reaction `PhysicalScale` metadata.
+
+  **The return type depends on which reaction scales are present:**
+  - Pure ODE (only ODE-scale reactions) → `ODEProblem`
+  - Pure SDE or ODE+SDE (no jumps) → `SDEProblem`
+  - ODE + Jump (no SDE) → `JumpProblem`
+
+  **Note:** SDE+Jump combinations are not yet supported due to limitations in how
+  `JumpProblem` handles stochastic noise. For SDE+Jump systems, construct the
+  `SDEProblem` and `JumpProblem` separately.
 
   ```julia
   rn = @reaction_network begin
+      k1, S --> P
+      k2, P --> S
+  end
+
+  # Pure ODE via HybridProblem
+  prob_ode = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5];
+      default_scale = PhysicalScale.ODE)
+  prob_ode isa ODEProblem  # true
+
+  # Pure SDE via HybridProblem
+  prob_sde = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5];
+      default_scale = PhysicalScale.SDE)
+  prob_sde isa SDEProblem  # true
+
+  # Hybrid ODE+Jump
+  rn2 = @reaction_network begin
       k1, S --> P, [physical_scale = PhysicalScale.ODE]
       k2, P --> S, [physical_scale = PhysicalScale.Jump]
   end
-  prob = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5])
-  sol = solve(prob, Tsit5())
+  prob_hybrid = HybridProblem(rn2, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5])
+  prob_hybrid isa JumpProblem  # true
+  sol = solve(prob_hybrid, Tsit5())
   ```
 
 - **`JumpProblem` simplified** — now produces pure jump systems only (symmetric with
