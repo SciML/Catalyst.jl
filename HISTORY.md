@@ -29,16 +29,45 @@
   sys = make_hybrid_model(rn; physical_scales = [1 => PhysicalScale.ODE, 2 => PhysicalScale.Jump])
   ```
 
-#### BREAKING: SDE noise representation changed to Brownian variables
+#### New: `HybridProblem` for hybrid ODE+SDE+Jump systems
 
-- **`make_cle_sde` now uses Brownian variables** instead of a `noise_eqs` matrix. SDE noise
-  terms are embedded directly in the equation RHS as `stoich * sqrt(|ratelaw|) * B_j`. The
-  `mtkcompile` function automatically extracts the noise matrix during simplification.
+- **New `HybridProblem(rs, u0, tspan, p; physical_scales, default_scale, ...)` function** creates
+  problems for hybrid systems that mix ODE, SDE, and Jump reactions. Uses `make_hybrid_model`
+  internally and respects per-reaction `PhysicalScale` metadata.
 
-- **`SDEProblem(rs::ReactionSystem, ...)` now always calls `mtkcompile`** to extract the noise
-  matrix from Brownian variables. The explicit `noise_rate_prototype` argument is no longer
-  passed. This is a necessary change since `ModelingToolkitBase` requires `mtkcompile` for
-  Brownian-based systems.
+  ```julia
+  rn = @reaction_network begin
+      k1, S --> P, [physical_scale = PhysicalScale.ODE]
+      k2, P --> S, [physical_scale = PhysicalScale.Jump]
+  end
+  prob = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5])
+  sol = solve(prob, Tsit5())
+  ```
+
+- **`JumpProblem` simplified** — now produces pure jump systems only (symmetric with
+  `ODEProblem` and `SDEProblem`). Use `HybridProblem` for hybrid ODE+Jump systems.
+
+- **`make_sck_jump` no longer respects ODE/SDE metadata** — it forces all reactions to Jump,
+  only preserving `VariableRateJump` metadata if explicitly set.
+
+#### New: `use_legacy_noise` kwarg for SDE systems
+
+- **`make_cle_sde` and `SDEProblem` now accept `use_legacy_noise = true` (default)** which
+  uses the traditional `noise_eqs` matrix approach for simple SDE systems without constraints,
+  avoiding the overhead of `mtkcompile`. Set to `false` to use the new Brownian-based approach.
+
+#### SDE noise representation: Brownian variables available (opt-in)
+
+- **`make_cle_sde` can use Brownian variables** instead of a `noise_eqs` matrix when
+  `use_legacy_noise = false`. SDE noise terms are embedded directly in the equation RHS as
+  `stoich * sqrt(|ratelaw|) * B_j`. The `mtkcompile` function automatically extracts the noise
+  matrix during simplification.
+
+- **By default (`use_legacy_noise = true`), the traditional `noise_eqs` matrix approach** is
+  used for simple SDE systems without constraints. This avoids the overhead of `mtkcompile`.
+
+- **`SDEProblem(rs::ReactionSystem, ...)` calls `mtkcompile` only when necessary** (when using
+  Brownian-based noise or when the system has constraints/algebraic equations).
 
 #### BREAKING: Jump API Changes
 
