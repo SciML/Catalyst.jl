@@ -154,6 +154,73 @@ function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
     eqs
 end
 
+### Brownian Noise Helpers ###
+
+"""
+    create_sde_brownians(flatrs, scales)
+
+Create one scalar Brownian variable per SDE-scale reaction. Returns a tuple
+`(brownian_vars, brownian_map)` where `brownian_vars` is a `Vector{SymbolicT}` of
+the Brownian variables and `brownian_map` is a `Vector{Pair{Int, SymbolicT}}` mapping
+reaction indices to their Brownian variable.
+"""
+function create_sde_brownians(scales)
+    sde_indices = [i for (i, s) in enumerate(scales) if s == PhysicalScale.SDE]
+    brownian_vars = SymbolicT[]
+    brownian_map = Pair{Int, SymbolicT}[]
+
+    for (j, rx_idx) in enumerate(sde_indices)
+        B = unwrap(only(@brownians $(Symbol(:B, :_, j))))
+        push!(brownian_vars, B)
+        push!(brownian_map, rx_idx => B)
+    end
+    brownian_vars, brownian_map
+end
+
+"""
+    add_noise_to_rhs!(rhsvec, rs, ispcs, brownian_map; kwargs...)
+
+Mutate the RHS vector `rhsvec` to add Brownian noise terms for each SDE-scale
+reaction. For each such reaction, adds `stoich * sqrt(|ratelaw|) * [noise_scaling] * B_j`
+to the corresponding species' RHS entry.
+"""
+function add_noise_to_rhs!(rhsvec, rs, ispcs, brownian_map;
+        combinatoric_ratelaws = true, remove_conserved = false,
+        expand_catalyst_funs = true)
+    nps = get_networkproperties(rs)
+    species_to_idx = Dict(x => i for (i, x) in enumerate(ispcs))
+    depspec_submap = if remove_conserved
+        Dict(eq.lhs => eq.rhs for eq in nps.conservedeqs)
+    else
+        Dict()
+    end
+
+    for (rx_idx, B_j) in brownian_map
+        rx = get_rxs(rs)[rx_idx]
+        rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws,
+            expand_catalyst_funs)
+        rlsqrt = sqrt(abs(rl))
+        hasnoisescaling(rx) && (rlsqrt *= getnoisescaling(rx))
+        remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
+
+        for (spec, stoich) in rx.netstoich
+            remove_conserved && (spec in nps.depspecs) && continue
+            drop_dynamics(spec) && continue
+            i = species_to_idx[spec]
+
+            # Build noise term: stoich * sqrt(|ratelaw|) * [noise_scaling] * B_j
+            if stoich isa SymbolicT
+                noise_term = stoich * rlsqrt * B_j
+            else
+                signedrlsqrt = (stoich > zero(stoich)) ? rlsqrt : -rlsqrt
+                noise_term = isone(abs(stoich)) ? signedrlsqrt * B_j : stoich * rlsqrt * B_j
+            end
+
+            rhsvec[i] = _iszero(rhsvec[i]) ? noise_term : rhsvec[i] + noise_term
+        end
+    end
+end
+
 ### Jumps Assembly ###
 
 """
@@ -526,6 +593,142 @@ COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be convert
 ### System Conversions ###
 
 """
+    make_hybrid_model(rs::ReactionSystem; kwargs...)
+
+Convert a [`ReactionSystem`](@ref) to a unified `ModelingToolkitBase.System` that can
+contain ODE equations, Brownian noise terms, and/or jump processes depending on each
+reaction's assigned [`PhysicalScale`](@ref).
+
+# Keyword Arguments
+- `name = nameof(rs)`: name for the returned `System`.
+- `physical_scales = nothing`: overrides for per-reaction physical scales. Can be an
+  iterable of `index => PhysicalScale` pairs, or a `Vector{PhysicalScale.T}` with one
+  entry per reaction in the flattened system.
+- `default_scale = PhysicalScale.Auto`: fallback scale for reactions with
+  `PhysicalScale.Auto`. If any reaction remains `Auto` after resolution, an error is thrown.
+- `combinatoric_ratelaws = get_combinatoric_ratelaws(rs)`: whether to use factorial/binomial
+  scaling in rate laws.
+- `include_zero_odes = true`: whether to include ODE equations with zero RHS.
+- `remove_conserved = false`: whether to apply conservation law elimination. Not compatible
+  with jump-scale reactions.
+- `expand_catalyst_funs = true`: replace Catalyst functions (e.g. `hill`) with their
+  rational form.
+- `save_positions = (true, true)`: for `VariableRateJump`s, whether to save the solution
+  before and/or after the jump.
+- `checks = false`: whether to run `System` constructor checks.
+- `initial_conditions = Dict()`: additional initial conditions to merge into the system defaults.
+
+# Scale Resolution Order
+1. `physical_scales` kwarg (user override per reaction index)
+2. Per-reaction metadata (`get_physical_scale(rx)`)
+3. `default_scale` kwarg (fallback for `Auto`)
+4. If still `Auto` after all three → error
+"""
+function make_hybrid_model(rs::ReactionSystem;
+        name = nameof(rs),
+        physical_scales = nothing,
+        default_scale = PhysicalScale.Auto,
+        _override_all_scales = nothing,
+        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        include_zero_odes = true,
+        remove_conserved = false,
+        expand_catalyst_funs = true,
+        save_positions = (true, true),
+        checks = false,
+        initial_conditions = Dict(),
+        kwargs...)
+
+    # Error checks.
+    iscomplete(rs) || error(COMPLETENESS_ERROR)
+    spatial_convert_err(rs, MT.System)
+
+    flatrs = Catalyst.flatten(rs)
+
+    # Resolve scales: _override_all_scales (internal) takes precedence over everything.
+    if _override_all_scales !== nothing
+        scales = fill(_override_all_scales, length(reactions(flatrs)))
+    else
+        scales = merge_physical_scales(reactions(flatrs), physical_scales, default_scale)
+    end
+    any(==(PhysicalScale.Auto), scales) &&
+        error("Unresolved PhysicalScale.Auto scales remain. Provide `default_scale` or per-reaction `physical_scales`.")
+
+    has_ode = any(==(PhysicalScale.ODE), scales)
+    has_sde = any(==(PhysicalScale.SDE), scales)
+    has_jump = any(in(JUMP_SCALES), scales)
+    has_continuous = has_ode || has_sde || has_nonreactions(flatrs)
+
+    # Conservation law elimination is not compatible with jump reactions.
+    remove_conserved && has_jump &&
+        throw(ArgumentError("Cannot remove conserved species with Jump-scale reactions."))
+    remove_conserved && conservationlaws(flatrs)
+
+    ists, ispcs = get_indep_sts(flatrs, remove_conserved)
+
+    # --- Build drift RHS (ODE + SDE reactions both contribute drift) ---
+    eqs = Equation[]
+    brownian_vars = SymbolicT[]
+
+    if has_continuous
+        # Both ODE and SDE reactions contribute to drift; remap SDE→ODE for filtering
+        # so that assemble_oderhs includes SDE reactions in the drift.
+        drift_scales = copy(scales)
+        for i in eachindex(drift_scales)
+            drift_scales[i] == PhysicalScale.SDE && (drift_scales[i] = PhysicalScale.ODE)
+        end
+
+        rhsvec = assemble_oderhs(flatrs, ispcs; combinatoric_ratelaws, remove_conserved,
+            physical_scales = drift_scales, expand_catalyst_funs)
+
+        # Add Brownian noise terms for SDE-scale reactions.
+        if has_sde
+            brownian_vars, brownian_map = create_sde_brownians(scales)
+            add_noise_to_rhs!(rhsvec, flatrs, ispcs, brownian_map;
+                combinatoric_ratelaws, remove_conserved, expand_catalyst_funs)
+        end
+
+        # Convert RHS vector to D(x) ~ rhs equations.
+        D = Differential(get_iv(flatrs))
+        eqs = [Equation(D(x), rhs)
+               for (x, rhs) in zip(ispcs, rhsvec)
+               if (include_zero_odes || (!_iszero(rhs)))]
+    end
+
+    # --- Build jumps (Jump + VariableRateJump reactions only) ---
+    jumps = Any[]
+    if has_jump
+        jumps = assemble_jumps(flatrs; combinatoric_ratelaws, expand_catalyst_funs,
+            physical_scales = scales, save_positions)
+    end
+
+    # --- Add constraints (BC species, constraint equations, conserved species) ---
+    if has_continuous
+        eqs, us, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
+    else
+        # Pure jump case.
+        any(isbc, get_unknowns(flatrs)) &&
+            (ists = vcat(ists, filter(isbc, get_unknowns(flatrs))))
+        us = ists
+        ps = get_ps(flatrs)
+        obs = MT.observed(flatrs)
+        defs = MT.initial_conditions(flatrs)
+    end
+
+    # --- Construct unified System ---
+    # Note: brownians is a positional arg (5th) in the System constructor.
+    MT.System(eqs, get_iv(flatrs), us, ps, brownian_vars;
+        jumps,
+        observed = obs,
+        name,
+        initial_conditions = merge(initial_conditions, defs),
+        checks,
+        continuous_events = MT.get_continuous_events(flatrs),
+        discrete_events = MT.get_discrete_events(flatrs),
+        metadata = MT.get_metadata(rs),
+        kwargs...)
+end
+
+"""
 ```julia
 Base.convert(::Type{<:ODESystem},rs::ReactionSystem)
 ```
@@ -549,26 +752,11 @@ function make_rre_ode(rs::ReactionSystem; name = nameof(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
         initial_conditions = Dict(), expand_catalyst_funs = true,
         kwargs...)
-    # Error checks.
-    iscomplete(rs) || error(COMPLETENESS_ERROR)
-    spatial_convert_err(rs::ReactionSystem, ODESystem)
-
-    fullrs = Catalyst.flatten(rs)
-    remove_conserved && conservationlaws(fullrs)
-    ists, ispcs = get_indep_sts(fullrs, remove_conserved)
-    eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
-        include_zero_odes, expand_catalyst_funs)
-    eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
-
-    ODESystem(eqs, get_iv(fullrs), us, ps;
-        observed = obs,
-        name,
-        initial_conditions = merge(initial_conditions, defs),
-        checks,
-        continuous_events = MT.get_continuous_events(fullrs),
-        discrete_events = MT.get_discrete_events(fullrs),
-        metadata = MT.get_metadata(rs),
-        kwargs...)
+    make_hybrid_model(rs;
+        _override_all_scales = PhysicalScale.ODE,
+        name, combinatoric_ratelaws, include_zero_odes,
+        remove_conserved, checks, initial_conditions,
+        expand_catalyst_funs, kwargs...)
 end
 
 const NONLIN_PROB_REMAKE_WARNING = """
@@ -700,33 +888,11 @@ function make_cle_sde(rs::ReactionSystem;
         include_zero_odes = true, checks = false, remove_conserved = false,
         initial_conditions = Dict(), expand_catalyst_funs = true,
         kwargs...)
-    # Error checks.
-    iscomplete(rs) || error(COMPLETENESS_ERROR)
-    spatial_convert_err(rs::ReactionSystem, SDESystem)
-
-    flatrs = Catalyst.flatten(rs)
-
-    remove_conserved && conservationlaws(flatrs)
-    ists, ispcs = get_indep_sts(flatrs, remove_conserved)
-    eqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws, include_zero_odes,
-        remove_conserved, expand_catalyst_funs)
-    noiseeqs = assemble_diffusion(flatrs, ists, ispcs; combinatoric_ratelaws,
-        remove_conserved, expand_catalyst_funs)
-    eqs, us, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
-
-    if any(isbc, get_unknowns(flatrs))
-        @info "Boundary condition species detected. As constraint equations are not currently supported when converting to SDESystems, the resulting system will be undetermined. Consider using constant species instead."
-    end
-
-    SDESystem(eqs, noiseeqs, get_iv(flatrs), us, ps;
-        observed = obs,
-        name,
-        initial_conditions = merge(initial_conditions, defs),
-        checks,
-        continuous_events = MT.get_continuous_events(flatrs),
-        discrete_events = MT.get_discrete_events(flatrs),
-        metadata = MT.get_metadata(rs),
-        kwargs...)
+    make_hybrid_model(rs;
+        _override_all_scales = PhysicalScale.SDE,
+        name, combinatoric_ratelaws, include_zero_odes,
+        remove_conserved, checks, initial_conditions,
+        expand_catalyst_funs, kwargs...)
 end
 
 """
@@ -760,6 +926,17 @@ function merge_physical_scales(rxs, physical_scales, default)
     scales
 end
 
+# Overload for when physical_scales is already a fully-resolved vector of scales.
+function merge_physical_scales(rxs, physical_scales::AbstractVector{<:PhysicalScale.T}, default)
+    length(physical_scales) == length(rxs) ||
+        error("Length of physical_scales ($(length(physical_scales))) must match number of reactions ($(length(rxs))).")
+    scales = copy(physical_scales)
+    for (idx, s) in enumerate(scales)
+        s == PhysicalScale.Auto && (scales[idx] = default)
+    end
+    scales
+end
+
 """
 ```julia
 Base.convert(::Type{<:JumpSystem},rs::ReactionSystem; combinatoric_ratelaws=true)
@@ -789,51 +966,19 @@ function make_sck_jump(rs::ReactionSystem; name = nameof(rs),
         remove_conserved = nothing, checks = false, initial_conditions = Dict(),
         expand_catalyst_funs = true, save_positions = (true, true),
         physical_scales = nothing, kwargs...)
-    iscomplete(rs) || error(COMPLETENESS_ERROR)
-    spatial_convert_err(rs::ReactionSystem, JumpSystem)
     (remove_conserved !== nothing) &&
         throw(ArgumentError("Catalyst does not support removing conserved species when converting to JumpSystems."))
 
+    # Resolve per-reaction scales: respect ODE and VariableRateJump metadata,
+    # default Auto-tagged reactions to Jump.
     flatrs = Catalyst.flatten(rs)
+    jump_scales = merge_physical_scales(reactions(flatrs), physical_scales, PhysicalScale.Jump)
 
-    physical_scales = merge_physical_scales(reactions(flatrs), physical_scales,
-        PhysicalScale.Jump)
-    admissible_scales = (PhysicalScale.ODE, PhysicalScale.Jump,
-        PhysicalScale.VariableRateJump)
-    unique_scales = unique(physical_scales)
-    (unique_scales ⊆ admissible_scales) ||
-        error("Physical scales must currently be one of $admissible_scales for hybrid systems.")
-
-    # basic jump states and equations
-    eqs = assemble_jumps(flatrs; combinatoric_ratelaws, expand_catalyst_funs,
-        physical_scales, save_positions)
-    ists, ispcs = get_indep_sts(flatrs)
-
-    # handle coupled ODEs and BC species
-    if (PhysicalScale.ODE in unique_scales) || has_nonreactions(flatrs)
-        odeeqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws,
-            remove_conserved = false, physical_scales, include_zero_odes = true)
-        append!(eqs, odeeqs)
-        eqs, us, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs;
-            remove_conserved = false)
-    else
-        any(isbc, get_unknowns(flatrs)) &&
-            (ists = vcat(ists, filter(isbc, get_unknowns(flatrs))))
-        us = ists
-        ps = get_ps(flatrs)
-        obs = MT.observed(flatrs)
-        defs = MT.initial_conditions(flatrs)
-    end
-
-    JumpSystem(eqs, get_iv(flatrs), us, ps;
-        observed = obs,
-        name,
-        initial_conditions = merge(initial_conditions, defs),
-        checks,
-        discrete_events = MT.discrete_events(flatrs),
-        continuous_events = MT.continuous_events(flatrs),
-        metadata = MT.get_metadata(rs),
-        kwargs...)
+    make_hybrid_model(rs;
+        physical_scales = jump_scales,
+        default_scale = PhysicalScale.Jump,
+        name, combinatoric_ratelaws, checks, initial_conditions,
+        expand_catalyst_funs, save_positions, kwargs...)
 end
 
 ### Problems ###
@@ -918,19 +1063,15 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
     sde_sys = make_cle_sde(rs; name, combinatoric_ratelaws, expand_catalyst_funs,
         include_zero_odes, checks, remove_conserved)
 
-    # Handles potential differential algebraic equations (which requires `structural_simplify`).
-    if structural_simplify
-        (sde_sys = MT.mtkcompile(sde_sys))
-    elseif has_alg_equations(rs)
-        error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
-    else
-        sde_sys = complete(sde_sys)
+    # Brownian-based SDE systems require mtkcompile to extract the noise matrix.
+    # This also handles algebraic equations (structural simplification).
+    if !structural_simplify && has_alg_equations(rs)
+        error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `SDEProblem` call.")
     end
+    sde_sys = MT.mtkcompile(sde_sys)
 
-    p_matrix = zeros(length(get_unknowns(sde_sys)), numreactions(rs))
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
-    return SDEProblem(sde_sys, prob_cond, tspan, args...; check_length,
-        noise_rate_prototype = p_matrix, kwargs...)
+    return SDEProblem(sde_sys, prob_cond, tspan, args...; check_length, kwargs...)
 end
 
 # JumpProblem from ReactionSystem

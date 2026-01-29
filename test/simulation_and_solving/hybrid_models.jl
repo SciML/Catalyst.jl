@@ -476,3 +476,182 @@ let
     @test sol_saveat[:X][1] == 10.0
     @test sol_saveat[:X][end] < 10.0  # Should have decayed
 end
+
+### make_hybrid_model Tests ###
+
+# Tests that make_hybrid_model produces correct structure for pure ODE, SDE, and Jump cases.
+let
+    rn = @reaction_network begin
+        k1, S --> P
+        k2, P --> S
+    end
+
+    # Pure ODE: should have ODE equations, no brownians, no jumps.
+    sys_ode = make_hybrid_model(rn; default_scale = PhysicalScale.ODE)
+    @test length(equations(sys_ode)) == 2
+    @test isempty(ModelingToolkitBase.get_brownians(sys_ode))
+    @test isempty(ModelingToolkitBase.get_jumps(sys_ode))
+
+    # Pure SDE: should have ODE+noise equations with brownians, no jumps.
+    sys_sde = make_hybrid_model(rn; default_scale = PhysicalScale.SDE)
+    @test length(equations(sys_sde)) == 2
+    @test length(ModelingToolkitBase.get_brownians(sys_sde)) == 2
+    @test isempty(ModelingToolkitBase.get_jumps(sys_sde))
+
+    # Pure Jump: should have no ODE equations, no brownians, only jumps.
+    sys_jump = make_hybrid_model(rn; default_scale = PhysicalScale.Jump)
+    @test isempty(equations(sys_jump))
+    @test isempty(ModelingToolkitBase.get_brownians(sys_jump))
+    @test length(ModelingToolkitBase.get_jumps(sys_jump)) == 2
+end
+
+# Tests that make_rre_ode and make_cle_sde thin wrappers produce equivalent results
+# to direct make_hybrid_model calls.
+let
+    rn = @reaction_network begin
+        k1, S --> P
+        k2, P --> S
+    end
+
+    # make_rre_ode should produce same equations as make_hybrid_model with ODE override.
+    sys_ode = make_rre_ode(rn)
+    sys_hybrid_ode = make_hybrid_model(rn; default_scale = PhysicalScale.ODE)
+    @test length(equations(sys_ode)) == length(equations(sys_hybrid_ode))
+    for (eq1, eq2) in zip(equations(sys_ode), equations(sys_hybrid_ode))
+        @test isequal(eq1.lhs, eq2.lhs)
+        @test isequal(eq1.rhs, eq2.rhs)
+    end
+
+    # make_cle_sde should produce same structure as make_hybrid_model with SDE override.
+    sys_sde = make_cle_sde(rn)
+    sys_hybrid_sde = make_hybrid_model(rn; default_scale = PhysicalScale.SDE)
+    @test length(equations(sys_sde)) == length(equations(sys_hybrid_sde))
+    @test length(ModelingToolkitBase.get_brownians(sys_sde)) ==
+          length(ModelingToolkitBase.get_brownians(sys_hybrid_sde))
+
+    # make_sck_jump should produce same number of jumps as make_hybrid_model with Jump override.
+    sys_jump = make_sck_jump(rn)
+    sys_hybrid_jump = make_hybrid_model(rn; default_scale = PhysicalScale.Jump)
+    @test length(ModelingToolkitBase.get_jumps(sys_jump)) ==
+          length(ModelingToolkitBase.get_jumps(sys_hybrid_jump))
+end
+
+# Tests that the Brownian noise matrix extracted by mtkcompile matches assemble_diffusion.
+let
+    rn = @reaction_network begin
+        k1, S --> P
+        k2, P --> S
+    end
+
+    # Build via make_cle_sde (Brownian-based) and compile.
+    sys_sde = make_cle_sde(rn)
+    compiled = ModelingToolkitBase.mtkcompile(sys_sde)
+    noise_matrix_brownian = ModelingToolkitBase.get_noise_eqs(compiled)
+
+    # Build the old-style noise matrix via assemble_diffusion for comparison.
+    flatrs = Catalyst.flatten(rn)
+    ists, ispcs = Catalyst.get_indep_sts(flatrs, false)
+    noise_matrix_old = Catalyst.assemble_diffusion(flatrs, ists, ispcs;
+        combinatoric_ratelaws = true, remove_conserved = false, expand_catalyst_funs = true)
+
+    # Both should be 2×2 matrices. Verify they are symbolically equivalent.
+    @test size(noise_matrix_brownian) == size(noise_matrix_old)
+    for i in axes(noise_matrix_brownian, 1), j in axes(noise_matrix_brownian, 2)
+        @test Symbolics._iszero(Symbolics.simplify(noise_matrix_brownian[i, j] - noise_matrix_old[i, j]))
+    end
+end
+
+# Tests make_hybrid_model with per-reaction physical_scales override.
+let
+    rn = @reaction_network begin
+        k1, S --> P
+        k2, P --> S
+    end
+
+    # Override reaction 1 to ODE, reaction 2 to Jump.
+    sys = make_hybrid_model(rn; physical_scales = [1 => PhysicalScale.ODE, 2 => PhysicalScale.Jump])
+    @test length(equations(sys)) == 2  # ODE equations present (for the ODE species)
+    @test isempty(ModelingToolkitBase.get_brownians(sys))
+    @test length(ModelingToolkitBase.get_jumps(sys)) == 1  # One jump (reaction 2)
+end
+
+# Tests that unresolved PhysicalScale.Auto throws an error.
+let
+    rn = @reaction_network begin
+        k1, S --> P
+        k2, P --> S
+    end
+
+    @test_throws ErrorException make_hybrid_model(rn; default_scale = PhysicalScale.Auto)
+end
+
+# Tests that remove_conserved with jump-scale reactions throws an error.
+let
+    rn = @reaction_network begin
+        k1, S --> P
+        k2, P --> S
+    end
+
+    @test_throws ArgumentError make_hybrid_model(rn;
+        default_scale = PhysicalScale.Jump, remove_conserved = true)
+end
+
+# Tests that events pass through to the hybrid system.
+let
+    rn = @reaction_network begin
+        @continuous_events begin
+            [S ~ 50.0] => [S ~ 25.0]
+        end
+        @discrete_events [1.0] => [P ~ Pre(P) + 1.0]
+        k1, S --> P
+        k2, P --> S
+    end
+
+    sys = make_hybrid_model(rn; default_scale = PhysicalScale.ODE)
+    @test length(ModelingToolkitBase.get_continuous_events(sys)) == 1
+    @test length(ModelingToolkitBase.get_discrete_events(sys)) == 1
+end
+
+# Tests that make_hybrid_model works for a mixed ODE+SDE+Jump hybrid system.
+let
+    rn = @reaction_network begin
+        k1, S --> P, [physical_scale = PhysicalScale.ODE]
+        k2, P --> S, [physical_scale = PhysicalScale.SDE]
+        k3, S --> 0, [physical_scale = PhysicalScale.Jump]
+    end
+
+    sys = make_hybrid_model(rn)
+    @test length(equations(sys)) == 2  # ODE+SDE contribute drift equations
+    @test length(ModelingToolkitBase.get_brownians(sys)) == 1  # One SDE reaction → one Brownian
+    @test length(ModelingToolkitBase.get_jumps(sys)) == 1  # One jump reaction
+end
+
+# Tests that SDEProblem construction works end-to-end via the refactored path.
+let
+    rn = @reaction_network begin
+        k1, S --> P
+        k2, P --> S
+    end
+
+    prob = SDEProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5])
+    @test prob.u0 == [100.0, 0.0]
+    @test prob.tspan == (0.0, 1.0)
+end
+
+# Tests that make_sck_jump preserves VariableRateJump metadata.
+# Uses independent species so VRJ classification doesn't propagate via dependency graph.
+let
+    rn = @reaction_network begin
+        k1, A --> B, [physical_scale = PhysicalScale.VariableRateJump]
+        k2, S --> P
+    end
+
+    sys = make_sck_jump(rn)
+    jumps = ModelingToolkitBase.get_jumps(sys)
+    # Reaction 1 should be a VariableRateJump (from metadata).
+    # Reaction 2 should be a MassActionJump (independent species, default for make_sck_jump).
+    has_vrj = any(j -> j isa JumpProcesses.VariableRateJump, jumps)
+    has_maj = any(j -> j isa JumpProcesses.MassActionJump, jumps)
+    @test has_vrj
+    @test has_maj
+end

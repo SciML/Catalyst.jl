@@ -2,6 +2,44 @@
 
 ## Catalyst unreleased (master branch)
 
+#### New: `make_hybrid_model` unified conversion function
+
+- **New `make_hybrid_model(rs::ReactionSystem; ...)` function** that converts a
+  `ReactionSystem` to a unified `ModelingToolkitBase.System` containing ODE equations,
+  Brownian noise terms (SDE), and/or jump processes, based on each reaction's
+  `PhysicalScale` metadata.
+
+  The existing `make_rre_ode`, `make_cle_sde`, and `make_sck_jump` are now thin wrappers
+  around `make_hybrid_model`. This enables true hybrid models mixing ODE, SDE, and Jump
+  reactions in a single system.
+
+  ```julia
+  # Tag reactions with different physical scales
+  rn = @reaction_network begin
+      k1, S --> P, [physical_scale = PhysicalScale.ODE]
+      k2, P --> S, [physical_scale = PhysicalScale.SDE]
+      k3, S --> 0, [physical_scale = PhysicalScale.Jump]
+  end
+  sys = make_hybrid_model(rn)
+  ```
+
+  Users can also override scales via keyword arguments:
+  ```julia
+  sys = make_hybrid_model(rn; default_scale = PhysicalScale.ODE)
+  sys = make_hybrid_model(rn; physical_scales = [1 => PhysicalScale.ODE, 2 => PhysicalScale.Jump])
+  ```
+
+#### BREAKING: SDE noise representation changed to Brownian variables
+
+- **`make_cle_sde` now uses Brownian variables** instead of a `noise_eqs` matrix. SDE noise
+  terms are embedded directly in the equation RHS as `stoich * sqrt(|ratelaw|) * B_j`. The
+  `mtkcompile` function automatically extracts the noise matrix during simplification.
+
+- **`SDEProblem(rs::ReactionSystem, ...)` now always calls `mtkcompile`** to extract the noise
+  matrix from Brownian variables. The explicit `noise_rate_prototype` argument is no longer
+  passed. This is a necessary change since `ModelingToolkitBase` requires `mtkcompile` for
+  Brownian-based systems.
+
 #### BREAKING: Jump API Changes
 
 - **`JumpInputs` has been removed.** Use `JumpProblem(rs::ReactionSystem, u0, tspan, p; ...)` directly instead.
