@@ -7,7 +7,7 @@ pages = Any[
 ],
 "Model creation and properties" => Any[
     "model_creation/dsl_basics.md",
-    "model_creation/dsl_advanced.md",
+    # "model_creation/dsl_advanced.md", Problem due to `collect_vars!` bug in MTK. Awaiting reply from Aayush on how to fix.
     "model_creation/programmatic_CRN_construction.md",
     "model_creation/compositional_modeling.md",
     "model_creation/constraint_equations.md",
@@ -33,10 +33,10 @@ pages = Any[
     "model_simulation/ensemble_simulations.md",
     "model_simulation/ode_simulation_performance.md",
     "model_simulation/sde_simulation_performance.md",
-    "model_simulation/finite_state_projection_simulation.md",
+    # "model_simulation/finite_state_projection_simulation.md", # Wait for update with new version.
     "Examples" => Any[
-        "model_simulation/examples/periodic_events_simulation.md",
-        "model_simulation/examples/activation_time_distribution_measurement.md",
+        # "model_simulation/examples/periodic_events_simulation.md", # fails due to something probably related to https://github.com/SciML/ModelingToolkit.jl/issues/4030/.
+        # "model_simulation/examples/activation_time_distribution_measurement.md", # Error in https://github.com/SciML/ModelingToolkit.jl/issues/4231. Might want to redesign a bit anyway though (to accommodate MTK changes for when defaults/bindings are assigned to paraemters).
         "model_simulation/examples/interactive_brusselator_simulation.md"
     ]
 ],
@@ -49,7 +49,7 @@ pages = Any[
     "steady_state_functionality/homotopy_continuation.md",
     "steady_state_functionality/nonlinear_solve.md",
     "steady_state_functionality/steady_state_stability_computation.md",
-    "steady_state_functionality/bifurcation_diagrams.md",
+    # "steady_state_functionality/bifurcation_diagrams.md", # https://github.com/SciML/ModelingToolkit.jl/issues/4228
     "steady_state_functionality/dynamical_systems.md",
     "Examples" => Any[
         "steady_state_functionality/examples/nullcline_plotting.md",
@@ -58,11 +58,14 @@ pages = Any[
     ]
 ],
 "Inverse problems" => Any[
-    "inverse_problems/petab_ode_param_fitting.md",
+    # "inverse_problems/petab_ode_param_fitting.md", # Await PEtab update.
     "inverse_problems/optimization_ode_param_fitting.md",
-    "inverse_problems/behaviour_optimisation.md",
+    # "inverse_problems/behaviour_optimisation.md", # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4030/
     "inverse_problems/structural_identifiability.md",
-    "inverse_problems/global_sensitivity_analysis.md"    #"Examples" => Any[    #    "inverse_problems/examples/ode_fitting_oscillation.md"    #]
+    "inverse_problems/global_sensitivity_analysis.md"
+    #"Examples" => Any[
+    #    "inverse_problems/examples/ode_fitting_oscillation.md" # Throws and error due to https://github.com/JuliaDiff/ChainRules.jl/issues/830.
+    #]
 ],
 "Spatial modelling" => Any[
     "spatial_modelling/lattice_reaction_systems.md",

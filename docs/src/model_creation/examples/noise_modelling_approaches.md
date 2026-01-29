@@ -95,7 +95,7 @@ Finally, we will again perform ensemble simulations of our model. This time, at 
 ```@example noise_modelling_approaches
 function prob_func_Kin(prob, i, repeat)
     p = [ps; :K_in => make_K_series()]    
-    return ODEProblem(repressilator_Kin, prob.u0, prob.tspan, p)
+    return remake(prob; p)
 end
 oprob = ODEProblem(repressilator_Kin, u0, tend, [ps; :K_in => make_K_series()])
 eprob_inputnoise = EnsembleProblem(oprob; prob_func = prob_func_Kin)

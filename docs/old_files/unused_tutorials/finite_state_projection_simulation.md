@@ -83,7 +83,7 @@ using JumpProcesses, Plots
 u0 = [:X => 5]
 tspan = (0.0, 10.0)
 ps = [:p => 20.0, :d => 0.5]
-jprob = JumpProblem(JumpInputs(rs, u0, tspan, ps))
+jprob = JumpProblem(rs, u0, tspan, ps)
 eprob = EnsembleProblem(jprob)
 esol = solve(eprob, SSAStepper(); trajectories = 10)
 plot(esol; ylimit = (0.0, Inf))
@@ -171,7 +171,7 @@ heatmap(0:24, 0:24, sssol; xguide = "X₂", yguide = "X")
 Finally, we can also approximate this steady state through Monte Carlo jump simulations.
 ```@example state_projection_multi_species
 using JumpProcesses # hide
-jprob = JumpProblem(JumpInputs(rs, [:X => 0, :X₂ => 0], (0.0, 100.0), ps))
+jprob = JumpProblem(rs, [:X => 0, :X₂ => 0], (0.0, 100.0), ps)
 output_func(sol, i) = (sol[end], false)
 eprob = EnsembleProblem(jprob; output_func)
 esol = solve(eprob, SSAStepper(); trajectories = 10000)

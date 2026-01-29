@@ -1,6 +1,6 @@
-# This file contain the code required for MTK's `nullspace` function. The code is fetched from a 
+# This file contain the code required for MTK's `nullspace` function. The code is fetched from a
 # MTKv9.80.1 (MIT-licensed). Later copies of MTK have moved this functionality to the AGPL license.
-# A single line have been modified (to remove a `ModelingToolkit.`). This is marked with a 
+# A single line have been modified (to remove a `ModelingToolkit.`). This is marked with a
 # comment at the appropriate line. The code consists of the full "bareiss.jl" file, and a single function
 # from the "alias_elimination.jl" file. The code here needed for various network analysis
 # functionality, and was removed from MTK around the v10/v11 changes.

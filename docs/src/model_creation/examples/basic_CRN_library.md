@@ -52,8 +52,7 @@ nothing # hide
 Next, a stochastic chemical kinetics-based jump simulation:
 ```@example crn_library_birth_death
 using JumpProcesses
-jinput = JumpInputs(bd_process, u0, tspan, ps)
-jprob = JumpProblem(jinput)
+jprob = JumpProblem(bd_process, u0, tspan, ps)
 jsol = solve(jprob)
 jsol = solve(jprob; seed = 12) # hide
 nothing # hide
@@ -124,8 +123,7 @@ ssol = solve(sprob, STrapezoid())
 ssol = solve(sprob, STrapezoid(); seed = 12) # hide
 
 using JumpProcesses
-jinput = JumpInputs(mm_system, u0, tspan, ps)
-jprob = JumpProblem(jinput)
+jprob = JumpProblem(mm_system, u0, tspan, ps)
 jsol = solve(jprob)
 jsol = solve(jprob; seed = 12) # hide
 
@@ -163,8 +161,7 @@ plot(osol; title = "Reaction rate equation (ODE)", size=(800,350))
 Next, we perform 3 different Jump simulations. Note that for the stochastic model, the occurrence of an outbreak is not certain. Rather, there is a possibility that it fizzles out without a noteworthy peak.
 ```@example crn_library_sir
 using JumpProcesses
-jinput = JumpInputs(sir_model, u0, tspan, ps)
-jprob = JumpProblem(jinput)
+jprob = JumpProblem(sir_model, u0, tspan, ps)
 
 jsol1 = solve(jprob)
 jsol2 = solve(jprob)
@@ -260,8 +257,7 @@ ps = [:v₀ => 0.1, :v => 2.0, :K => 10.0, :n => 2, :d => 0.1]
 oprob = ODEProblem(sa_loop, u0, tspan, ps)
 osol = solve(oprob)
 
-jinput = JumpInputs(sa_loop, u0, tspan, ps)
-jprob = JumpProblem(jinput)
+jprob = JumpProblem(sa_loop, u0, tspan, ps)
 jsol = solve(jprob)
 jsol = solve(jprob, seed = 12) # hide
 
