@@ -1090,7 +1090,7 @@ let
         cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
         @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
         rs = complete(rs)
-        sys = complete(make_sck_jump(rs))
+        sys = complete(make_hybrid_model(rs; default_scale = PhysicalScale.Jump))
         @test sys isa MT.System
         @test MT.has_equations(sys)
         @test length(massactionjumps(sys)) == 1
@@ -1116,7 +1116,7 @@ let
         cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
         @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
         rs = complete(rs)
-        sys = complete(make_sck_jump(rs))
+        sys = complete(make_hybrid_model(rs; default_scale = PhysicalScale.Jump))
         @test sys isa MT.System
         @test MT.has_equations(sys)
         @test isempty(massactionjumps(sys))
