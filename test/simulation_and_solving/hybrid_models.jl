@@ -773,3 +773,26 @@ let
 
     @test_throws ArgumentError HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5, :k3 => 0.1])
 end
+
+# Tests that species-only reaction systems (no reactions) produce valid ODE systems with zero ODEs.
+# This is important for spatial modeling where transport is added separately.
+let
+    # Species-only network with no reactions.
+    rn = @reaction_network begin
+        @species X(t) Y(t)
+    end
+
+    # make_rre_ode should produce D(X) ~ 0 and D(Y) ~ 0 equations.
+    sys = make_rre_ode(rn)
+    @test length(equations(sys)) == 2
+    for eq in equations(sys)
+        @test Symbolics._iszero(eq.rhs)
+    end
+
+    # Solving should keep species at initial values.
+    prob = ODEProblem(rn, [:X => 5.0, :Y => 3.0], (0.0, 1.0), [])
+    sol = solve(prob, Tsit5())
+    @test SciMLBase.successful_retcode(sol)
+    @test sol[:X][end] ≈ 5.0
+    @test sol[:Y][end] ≈ 3.0
+end

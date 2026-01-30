@@ -659,8 +659,8 @@ function make_hybrid_model(rs::ReactionSystem;
     any(==(PhysicalScale.Auto), scales) &&
         error("Unresolved PhysicalScale.Auto scales remain. Provide `default_scale` or per-reaction `physical_scales`.")
 
-    has_ode = any(==(PhysicalScale.ODE), scales)
-    has_sde = any(==(PhysicalScale.SDE), scales)
+    has_ode = any(==(PhysicalScale.ODE), scales) || (_override_all_scales == PhysicalScale.ODE)
+    has_sde = any(==(PhysicalScale.SDE), scales) || (_override_all_scales == PhysicalScale.SDE)
     has_jump = any(in(JUMP_SCALES), scales)
     has_continuous = has_ode || has_sde || has_nonreactions(flatrs)
 
