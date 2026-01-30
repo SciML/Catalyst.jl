@@ -333,10 +333,10 @@ let
     sol = solve(sprob, ImplicitEM(); seed)
 
     # Checks that all `e` parameters have been updated properly.
-    @test_broken sol.ps[:e1][2] == 1 # https://github.com/SciML/ModelingToolkit.jl/issues/4030
-    @test_broken sol.ps[:e2][2] == 1 # https://github.com/SciML/ModelingToolkit.jl/issues/4030
-    @test_broken sol.ps[:e3][2] == 1 # https://github.com/SciML/ModelingToolkit.jl/issues/4030
-    @test_broken sol.ps[:e4][2] == 1 # https://github.com/SciML/ModelingToolkit.jl/issues/4030
+    @test sol.ps[:e1][2] == 1
+    @test sol.ps[:e2][2] == 1
+    @test sol.ps[:e3][2] == 1
+    @test sol.ps[:e4][2] == 1
 end
 
 # Tests that events are properly triggered for Jump simulations.
@@ -360,9 +360,9 @@ let
     sol = solve(jprob, SSAStepper(); seed)
 
     # Checks that all `e` parameters have been updated properly.
-    @test_broken sol.ps[:e1][2] == 1 # https://github.com/SciML/ModelingToolkit.jl/issues/4030
-    @test_broken sol.ps[:e2][2] == 1 # https://github.com/SciML/ModelingToolkit.jl/issues/4030
-    @test_broken sol.ps[:e3][2] == 1 # https://github.com/SciML/ModelingToolkit.jl/issues/4030
+    @test sol.ps[:e1][2] == 1
+    @test sol.ps[:e2][2] == 1
+    @test sol.ps[:e3][2] == 1
 end
 
 # Compares simulations using MTK type events with those generated through callbacks.

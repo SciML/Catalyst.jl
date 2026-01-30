@@ -94,7 +94,7 @@ export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export isautonomous
 export reactionrates
 export set_default_noise_scaling
-export make_rre_ode, make_cle_sde, make_sck_jump, make_rre_algeqs
+export make_rre_ode, make_cle_sde, make_sck_jump, make_rre_algeqs, make_hybrid_model
 
 # depreciated functions to remove in future releases
 export params, numparams
@@ -102,7 +102,7 @@ export params, numparams
 # Conversions of the `ReactionSystem` structure.
 include("reactionsystem_conversions.jl")
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem,
-       SteadyStateProblem
+       SteadyStateProblem, HybridProblem
 export ismassaction, oderatelaw, jumpratelaw
 export symmap_to_varmap
 
