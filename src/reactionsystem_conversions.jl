@@ -649,6 +649,7 @@ function make_hybrid_model(rs::ReactionSystem;
     any(==(PhysicalScale.Auto), scales) &&
         error("Unresolved PhysicalScale.Auto scales remain. Provide `default_scale` or per-reaction `physical_scales`.")
 
+    # the || below ensure the empty scale case is handled correctly
     has_ode = any(==(PhysicalScale.ODE), scales) || (_override_all_scales == PhysicalScale.ODE)
     has_sde = any(==(PhysicalScale.SDE), scales) || (_override_all_scales == PhysicalScale.SDE)
     has_jump = any(in(JUMP_SCALES), scales)
