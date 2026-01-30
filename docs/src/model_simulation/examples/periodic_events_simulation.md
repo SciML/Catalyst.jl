@@ -80,26 +80,21 @@ Catalyst.PNG(plot(sol; fmt = :png, dpi = 200)) # hide
 ```
 
 ## [Plotting the light level](@id periodic_event_simulation_plotting_light)
-Sometimes when simulating models with periodic parameters, one would like to plot the parameter's value across the simulation. For this, there are two potential strategies. One includes creating a [*saving callback*](https://docs.sciml.ai/DiffEqCallbacks/stable/output_saving/#DiffEqCallbacks.SavingCallback). The other one, which we will demonstrate here, includes turning the parameter $l$ to a *variable* (so that its value is recorded throughout the simulation):
+Parameters which values change throughout the simulation can be plotted directly using the normal interface.
 ```@example periodic_event_example
 circadian_model = @reaction_network begin
-    @variables l(t)
     @discrete_events begin
         12 => [l ~ (l + 1)%2]
     end
  (kₚ*l,kᵢ), X <--> Xᴾ
 end
-nothing # hide
-```
-Next, we simulate our model like before (but providing $l$'s value as an initial condition):
-```@example periodic_event_example
-u0 = [:X => 150.0, :Xᴾ => 50.0, :l => 1.0]
-ps = [:kₚ => 0.1, :kᵢ => 0.1]
+u0 = [:X => 150.0, :Xᴾ => 50.0]
+ps = [:kₚ => 0.1, :kᵢ => 0.1, :l => 1.0]
 oprob = ODEProblem(circadian_model, u0, (0.0, 100.0), ps)
 sol = solve(oprob)
 nothing # hide
 ```
-If we directly plot $l$'s value, it will be too small (compared to $X$ and $Xᴾ$ to be discernible). We instead [`@unpack` our variables](@ref dsl_advanced_options_symbolics_and_DSL_unpack), and then plot a re-scaled version:
+Here, if we directly plot $l$'s value, it will be too small (compared to $X$ and $Xᴾ$ to be discernible). We instead [`@unpack` our variables](@ref dsl_advanced_options_symbolics_and_DSL_unpack), and then plot a re-scaled version:
 ```@example periodic_event_example
 @unpack X, Xᴾ, l = circadian_model
 plot(sol; idxs = [X, Xᴾ, 150*l], labels = ["X" "Xᴾ" "Light amplitude"])
