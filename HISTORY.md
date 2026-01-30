@@ -2,6 +2,99 @@
 
 ## Catalyst unreleased (master branch)
 
+#### New: `make_hybrid_model` unified conversion function
+
+- **New `make_hybrid_model(rs::ReactionSystem; ...)` function** that converts a
+  `ReactionSystem` to a unified `ModelingToolkitBase.System` containing ODE equations,
+  Brownian noise terms (SDE), and/or jump processes, based on each reaction's
+  `PhysicalScale` metadata.
+
+  The existing `make_rre_ode`, `make_cle_sde`, and `make_sck_jump` are now thin wrappers
+  around `make_hybrid_model`. This enables true hybrid models mixing ODE, SDE, and Jump
+  reactions in a single system.
+
+  ```julia
+  # Tag reactions with different physical scales
+  rn = @reaction_network begin
+      k1, S --> P, [physical_scale = PhysicalScale.ODE]
+      k2, P --> S, [physical_scale = PhysicalScale.SDE]
+      k3, S --> 0, [physical_scale = PhysicalScale.Jump]
+  end
+  sys = make_hybrid_model(rn)
+  ```
+
+  Users can also override scales via keyword arguments:
+  ```julia
+  sys = make_hybrid_model(rn; default_scale = PhysicalScale.ODE)
+  sys = make_hybrid_model(rn; physical_scales = [1 => PhysicalScale.ODE, 2 => PhysicalScale.Jump])
+  ```
+
+#### New: `HybridProblem` with scale-dependent return types
+
+- **New `HybridProblem(rs, u0, tspan, p; physical_scales, default_scale, ...)` function** creates
+  problems for systems with per-reaction scale control. Uses `make_hybrid_model` internally and
+  respects per-reaction `PhysicalScale` metadata.
+
+  **The return type depends on which reaction scales are present:**
+  - Pure ODE (only ODE-scale reactions) → `ODEProblem`
+  - Pure SDE or ODE+SDE (no jumps) → `SDEProblem`
+  - ODE + Jump (no SDE) → `JumpProblem`
+
+  **Note:** SDE+Jump combinations are not yet supported due to limitations in how
+  `JumpProblem` handles stochastic noise. For SDE+Jump systems, construct the
+  `SDEProblem` and `JumpProblem` separately.
+
+  ```julia
+  rn = @reaction_network begin
+      k1, S --> P
+      k2, P --> S
+  end
+
+  # Pure ODE via HybridProblem
+  prob_ode = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5];
+      default_scale = PhysicalScale.ODE)
+  prob_ode isa ODEProblem  # true
+
+  # Pure SDE via HybridProblem
+  prob_sde = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5];
+      default_scale = PhysicalScale.SDE)
+  prob_sde isa SDEProblem  # true
+
+  # Hybrid ODE+Jump
+  rn2 = @reaction_network begin
+      k1, S --> P, [physical_scale = PhysicalScale.ODE]
+      k2, P --> S, [physical_scale = PhysicalScale.Jump]
+  end
+  prob_hybrid = HybridProblem(rn2, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5])
+  prob_hybrid isa JumpProblem  # true
+  sol = solve(prob_hybrid, Tsit5())
+  ```
+
+- **`JumpProblem` simplified** — now produces pure jump systems only (symmetric with
+  `ODEProblem` and `SDEProblem`). Use `HybridProblem` for hybrid ODE+Jump systems.
+
+- **`make_sck_jump` no longer respects ODE/SDE metadata** — it forces all reactions to Jump,
+  only preserving `VariableRateJump` metadata if explicitly set.
+
+#### New: `use_legacy_noise` kwarg for SDE systems
+
+- **`make_cle_sde` and `SDEProblem` now accept `use_legacy_noise = true` (default)** which
+  uses the traditional `noise_eqs` matrix approach for simple SDE systems without constraints,
+  avoiding the overhead of `mtkcompile`. Set to `false` to use the new Brownian-based approach.
+
+#### SDE noise representation: Brownian variables available (opt-in)
+
+- **`make_cle_sde` can use Brownian variables** instead of a `noise_eqs` matrix when
+  `use_legacy_noise = false`. SDE noise terms are embedded directly in the equation RHS as
+  `stoich * sqrt(|ratelaw|) * B_j`. The `mtkcompile` function automatically extracts the noise
+  matrix during simplification.
+
+- **By default (`use_legacy_noise = true`), the traditional `noise_eqs` matrix approach** is
+  used for simple SDE systems without constraints. This avoids the overhead of `mtkcompile`.
+
+- **`SDEProblem(rs::ReactionSystem, ...)` calls `mtkcompile` only when necessary** (when using
+  Brownian-based noise or when the system has constraints/algebraic equations).
+
 #### BREAKING: Jump API Changes
 
 - **`JumpInputs` has been removed.** Use `JumpProblem(rs::ReactionSystem, u0, tspan, p; ...)` directly instead.
