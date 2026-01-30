@@ -1,21 +1,21 @@
 # [Measuring the Distribution of System Activation Times](@id activation_time_distribution_measurement)
 In this example we will consider a model which, while initially inactive, activates in response to an input. The model is *stochastic*, causing the activation times to be *random*. By combining events, callbacks, and stochastic ensemble simulations, we will measure the probability distribution of the activation times (so-called [*first passage times*](https://en.wikipedia.org/wiki/First-hitting-time_model)).
 
-Our model will be a version of the [simple self-activation loop](@ref basic_CRN_library_self_activation) (the ensemble simulations of which we have [considered previously](@ref ensemble_simulations_monte_carlo)). Here, we will consider the activation threshold parameter ($K$) to be activated by an input (at an input time $t = 0$). Before the input, $K$ is very large (essentially keeping the system inactive). After the input, it is reduced to a lower value (which permits the system to activate). We will model this using two additional parameters ($Kᵢ$ and $Kₐ$, describing the pre and post-activation values of $K$, respectively). Initially, $K$ will [default to](@ref dsl_advanced_options_default_vals) $Kᵢ$. Next, at the input time ($t = 0$), an event will change $K$'s value to $Kᵢ$.
+Our model will be a version of the [simple self-activation loop](@ref basic_CRN_library_self_activation) (the ensemble simulations of which we have [considered previously](@ref ensemble_simulations_monte_carlo)). Here, we will consider the activation threshold parameter ($K$) to be activated by an input (at an input time $t = 0$). Before the input, $K$ is very large (essentially keeping the system inactive). After the input, it is reduced to a lower value (which permits the system to activate). We will model this using two an additional parameter, $Kₐ$, which represents the active value of $K$. At the input time ($t = 0$), an event will change $K$'s value to $Kₐ$.
 ```@example activation_time_distribution_measurement
 using Catalyst
 sa_model = @reaction_network begin
-    @parameters Kᵢ Kₐ K=Kᵢ
+    @parameters Kₐ
     @discrete_events [0.0] => [K ~ Kₐ]
     v0 + hill(X,v,K,n), 0 --> X
     deg, X --> 0
 end
 ```
-Next, to perform stochastic simulations of the system we will create an `SDEProblem`. Here, we will need to assign parameter values to $Kᵢ$ and $Kₐ$, but not to $K$ (as its value is controlled by its default and the event). Also note that we start the simulation at a time $t = -200 < 0$. This ensures that by the input time ($t = 0$), the system has (more or less) reached its (inactive) steady state distribution. It also means that the activation time can be measured exactly as the simulation time at the time of activation (as this will be the time from the input at $t = 0$).
+Next, to perform stochastic simulations of the system we will create an `SDEProblem`. Note that we start the simulation at a time $t = -200 < 0$. This ensures that by the input time ($t = 0$), the system has (more or less) reached its (inactive) steady state distribution. It also means that the activation time can be measured exactly as the simulation time at the time of activation (as this will be the time from the input at $t = 0$).
 ```@example activation_time_distribution_measurement
 u0 = [:X => 10.0]
 tspan = (-200.0, 2000.0)
-ps = [:v0 => 0.1, :v => 2.5, :Kᵢ => 1000.0, :Kₐ => 40.0, :n => 3.0, :deg => 0.01]
+ps = [:v0 => 0.1, :v => 2.5, :K => 1000.0, :Kₐ => 40.0, :n => 3.0, :deg => 0.01]
 sprob = SDEProblem(sa_model, u0, tspan, ps)
 nothing # hide 
 ```
