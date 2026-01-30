@@ -573,14 +573,6 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     eqs, sts, ps, obs, defs, initeqs
 end
 
-# used by flattened systems that don't support constraint equations currently
-function error_if_constraints(::Type{T}, sys::ReactionSystem) where {T <: MT.AbstractSystem}
-    any(eq -> eq isa Equation, get_eqs(sys)) &&
-        error("Can not convert to a system of type ", T,
-            " when there are constraint equations.")
-    nothing
-end
-
 ### Utility ###
 
 # Throws an error when attempting to convert a spatial system to an unsupported type.
