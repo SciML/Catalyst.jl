@@ -122,6 +122,36 @@ function assemble_drift(rs, ispcs; combinatoric_ratelaws = true, as_odes = true,
     eqs
 end
 
+"""
+    foreach_noise_coeff(f, rx, species_to_idx, nps, depspec_submap; kwargs...)
+
+Iterate over (species_idx, noise_coef) pairs for a reaction and call `f(i, coef)` for each.
+The noise coefficient is `stoich * sqrt(|ratelaw|) * [noise_scaling]`.
+
+This is a shared helper used by both `assemble_diffusion` (legacy noise matrix path) and
+`add_noise_to_rhs!` (Brownian-based path) to avoid code duplication.
+"""
+function foreach_noise_coeff(f, rx, species_to_idx, nps, depspec_submap;
+        combinatoric_ratelaws = true, remove_conserved = false,
+        expand_catalyst_funs = true)
+    rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws, expand_catalyst_funs)
+    rlsqrt = sqrt(abs(rl))
+    hasnoisescaling(rx) && (rlsqrt *= getnoisescaling(rx))
+    remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
+
+    for (spec, stoich) in rx.netstoich
+        remove_conserved && (spec in nps.depspecs) && continue
+        drop_dynamics(spec) && continue
+        if !haskey(species_to_idx, spec)
+            error("Species $spec appears in reaction $rx but is not in the independent species list. " *
+                  "This indicates a problem with the reaction system structure.")
+        end
+        i = species_to_idx[spec]
+        coef = _signed_stoich_term(stoich, rlsqrt)
+        f(i, coef)
+    end
+end
+
 # this doesn't work with constraint equations currently
 function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
         remove_conserved = false, expand_catalyst_funs = true)
@@ -169,33 +199,6 @@ function create_sde_brownians(scales)
         push!(brownian_map, rx_idx => B)
     end
     brownian_vars, brownian_map
-end
-
-"""
-    foreach_noise_coeff(f, rx, species_to_idx, nps, depspec_submap; kwargs...)
-
-Iterate over (species_idx, noise_coef) pairs for a reaction and call `f(i, coef)` for each.
-The noise coefficient is `stoich * sqrt(|ratelaw|) * [noise_scaling]`.
-
-This is a shared helper used by both `assemble_diffusion` (legacy noise matrix path) and
-`add_noise_to_rhs!` (Brownian-based path) to avoid code duplication.
-"""
-function foreach_noise_coeff(f, rx, species_to_idx, nps, depspec_submap;
-        combinatoric_ratelaws = true, remove_conserved = false,
-        expand_catalyst_funs = true)
-    rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws, expand_catalyst_funs)
-    rlsqrt = sqrt(abs(rl))
-    hasnoisescaling(rx) && (rlsqrt *= getnoisescaling(rx))
-    remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
-
-    for (spec, stoich) in rx.netstoich
-        remove_conserved && (spec in nps.depspecs) && continue
-        drop_dynamics(spec) && continue
-        haskey(species_to_idx, spec) || continue
-        i = species_to_idx[spec]
-        coef = _signed_stoich_term(stoich, rlsqrt)
-        f(i, coef)
-    end
 end
 
 """
