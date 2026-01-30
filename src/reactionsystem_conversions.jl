@@ -47,12 +47,6 @@ end
 # including non-species variables.
 drop_dynamics(s) = isconstant(s) || isbc(s) || (!isspecies(s))
 
-# Check if an SDE system has constraints requiring mtkcompile (algebraic equations or BC species).
-function has_sde_constraints(rs::ReactionSystem)
-    flatrs = Catalyst.flatten(rs)
-    has_alg_equations(rs) || any(isbc, get_unknowns(flatrs))
-end
-
 # Compute signed stoichiometry term: stoich * expr, optimized for common cases.
 # Used in both ODE RHS assembly and noise coefficient computation.
 function _signed_stoich_term(stoich, expr)
@@ -895,13 +889,16 @@ function make_cle_sde(rs::ReactionSystem;
         use_legacy_noise = true,
         kwargs...)
 
+    # Flatten once upfront and check for constraints.
+    flatrs = Catalyst.flatten(rs)
+    has_constraints = has_alg_equations(flatrs) || any(isbc, get_unknowns(flatrs))
+
     # For simple SDE systems without constraints, use legacy noise_eqs matrix approach
     # (avoids mtkcompile overhead).
-    if use_legacy_noise && !has_sde_constraints(rs)
+    if use_legacy_noise && !has_constraints
         iscomplete(rs) || error(COMPLETENESS_ERROR)
         spatial_convert_err(rs, MT.System)
 
-        flatrs = Catalyst.flatten(rs)
         remove_conserved && conservationlaws(flatrs)
         ists, ispcs = get_indep_sts(flatrs, remove_conserved)
 
@@ -927,7 +924,7 @@ function make_cle_sde(rs::ReactionSystem;
             kwargs...)
     else
         # New path: Brownians via make_hybrid_model (requires mtkcompile for SDEProblem).
-        return make_hybrid_model(rs;
+        return make_hybrid_model(flatrs;
             _override_all_scales = PhysicalScale.SDE,
             name, combinatoric_ratelaws, include_zero_odes,
             remove_conserved, checks, initial_conditions,
@@ -1032,7 +1029,7 @@ function make_sck_jump(rs::ReactionSystem; name = nameof(rs),
         end
     end
 
-    make_hybrid_model(rs;
+    make_hybrid_model(flatrs;
         physical_scales = jump_scales,
         default_scale = PhysicalScale.Jump,
         name, combinatoric_ratelaws, checks, initial_conditions,
@@ -1119,22 +1116,25 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         remove_conserved = false, structural_simplify = false,
         expand_catalyst_funs = true, use_legacy_noise = true, kwargs...)
 
-    sde_sys = make_cle_sde(rs; name, combinatoric_ratelaws, expand_catalyst_funs,
+    # Flatten once upfront and pass to make_cle_sde.
+    flatrs = Catalyst.flatten(rs)
+    sde_sys = make_cle_sde(flatrs; name, combinatoric_ratelaws, expand_catalyst_funs,
         include_zero_odes, checks, remove_conserved, use_legacy_noise)
 
     # Determine if we need mtkcompile:
     # - If using Brownian-based approach (not legacy), mtkcompile extracts the noise matrix
     # - If there are algebraic equations, mtkcompile handles structural simplification
     # - If structural_simplify is requested explicitly
+    has_constraints = has_alg_equations(flatrs) || any(isbc, get_unknowns(flatrs))
     needs_mtkcompile = structural_simplify ||
-                       has_alg_equations(rs) ||
+                       has_alg_equations(flatrs) ||
                        !use_legacy_noise ||
-                       has_sde_constraints(rs)
+                       has_constraints
 
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
 
     if needs_mtkcompile
-        if !structural_simplify && has_alg_equations(rs)
+        if !structural_simplify && has_alg_equations(flatrs)
             error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `SDEProblem` call.")
         end
         sde_sys = MT.mtkcompile(sde_sys)
@@ -1142,7 +1142,7 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
     else
         # Legacy path: complete + noise_rate_prototype
         sde_sys = complete(sde_sys)
-        p_matrix = zeros(length(get_unknowns(sde_sys)), numreactions(rs))
+        p_matrix = zeros(length(get_unknowns(sde_sys)), numreactions(flatrs))
         return SDEProblem(sde_sys, prob_cond, tspan, args...; check_length,
             noise_rate_prototype = p_matrix, kwargs...)
     end
@@ -1255,7 +1255,7 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
                 "For SDE-scale reactions with jumps, construct the SDEProblem and JumpProblem separately."))
         end
 
-        sys = complete(make_hybrid_model(rs;
+        sys = complete(make_hybrid_model(flatrs;
             name, physical_scales, default_scale, combinatoric_ratelaws,
             expand_catalyst_funs, save_positions, checks))
 
@@ -1274,11 +1274,11 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
         # SDE (with or without ODE) → SDEProblem
         # make_hybrid_model uses Brownian variables for SDE, so mtkcompile is always needed
         # to extract the noise matrix. The use_legacy_noise option doesn't apply here.
-        sys = make_hybrid_model(rs;
+        sys = make_hybrid_model(flatrs;
             name, physical_scales, default_scale, combinatoric_ratelaws,
             expand_catalyst_funs, checks)
 
-        if !structural_simplify && has_alg_equations(rs)
+        if !structural_simplify && has_alg_equations(flatrs)
             error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `HybridProblem` call.")
         end
 
@@ -1288,13 +1288,13 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
 
     else
         # Pure ODE → ODEProblem
-        sys = make_hybrid_model(rs;
+        sys = make_hybrid_model(flatrs;
             name, physical_scales, default_scale, combinatoric_ratelaws,
             expand_catalyst_funs, checks)
 
         if structural_simplify
             sys = MT.mtkcompile(sys)
-        elseif has_alg_equations(rs)
+        elseif has_alg_equations(flatrs)
             error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `HybridProblem` call.")
         else
             sys = complete(sys)
