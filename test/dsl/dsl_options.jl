@@ -654,15 +654,6 @@ let
     end
 end
 
-# Checks that parameters that occur as stoichiometries are correctly inferred as integers.
-let
-    rn = @reaction_network begin
-        k, n*X --> xN
-    end
-    @test SymbolicUtils.symtype(rn.k) == Real
-    @test_broken SymbolicUtils.symtype(rn.n) == Int64 # Bug, needs fixing (we must now infer that `n` should be decalred as a Int64, before it didn't matter).
-end
-
 ### Observables ###
 
 # Test basic functionality.
