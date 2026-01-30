@@ -155,7 +155,7 @@ end
 
 # Test inferring with stoichiometry symbols and interpolation.
 let
-    @parameters k g h gg X y [isconstantspecies = true]
+    @parameters k::Int64 g::Int64 h::Int64 gg X y [isconstantspecies = true]
     t = Catalyst.DEFAULT_IV
     @species A(t) B(t) BB(t) C(t)
 
