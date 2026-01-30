@@ -53,6 +53,17 @@ function has_sde_constraints(rs::ReactionSystem)
     has_alg_equations(rs) || any(isbc, get_unknowns(flatrs))
 end
 
+# Compute signed stoichiometry term: stoich * expr, optimized for common cases.
+# Used in both ODE RHS assembly and noise coefficient computation.
+function _signed_stoich_term(stoich, expr)
+    if stoich isa SymbolicT
+        stoich * expr
+    else
+        signed_expr = (stoich > zero(stoich)) ? expr : -expr
+        isone(abs(stoich)) ? signed_expr : stoich * expr
+    end
+end
+
 function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserved = false,
         physical_scales = nothing, expand_catalyst_funs = true)
     nps = get_networkproperties(rs)
@@ -126,7 +137,7 @@ function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
     # we make a matrix sized by the number of reactions
     eqs = Matrix{Any}(undef, length(sts) + num_bcsts, length(get_rxs(rs)))
     eqs .= 0
-    species_to_idx = Dict((x => i for (i, x) in enumerate(ispcs)))
+    species_to_idx = Dict(x => i for (i, x) in enumerate(ispcs))
     nps = get_networkproperties(rs)
     depspec_submap = if remove_conserved
         Dict(eq.lhs => eq.rhs for eq in nps.conservedeqs)
@@ -135,26 +146,9 @@ function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
     end
 
     for (j, rx) in enumerate(get_rxs(rs))
-        rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws,
-            expand_catalyst_funs)
-        rlsqrt = sqrt(abs(rl))
-        hasnoisescaling(rx) && (rlsqrt *= getnoisescaling(rx))
-        remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
-
-        for (spec, stoich) in rx.netstoich
-            # dependent species don't get an equation
-            remove_conserved && (spec in nps.depspecs) && continue
-
-            # constant or BC species also do not get equations
-            drop_dynamics(spec) && continue
-
-            i = species_to_idx[spec]
-            if stoich isa SymbolicT
-                eqs[i, j] = stoich * rlsqrt
-            else
-                signedrlsqrt = (stoich > zero(stoich)) ? rlsqrt : -rlsqrt
-                eqs[i, j] = isone(abs(stoich)) ? signedrlsqrt : stoich * rlsqrt
-            end
+        foreach_noise_coeff(rx, species_to_idx, nps, depspec_submap;
+                combinatoric_ratelaws, remove_conserved, expand_catalyst_funs) do i, coef
+            eqs[i, j] = coef
         end
     end
     eqs
@@ -184,6 +178,33 @@ function create_sde_brownians(scales)
 end
 
 """
+    foreach_noise_coeff(f, rx, species_to_idx, nps, depspec_submap; kwargs...)
+
+Iterate over (species_idx, noise_coef) pairs for a reaction and call `f(i, coef)` for each.
+The noise coefficient is `stoich * sqrt(|ratelaw|) * [noise_scaling]`.
+
+This is a shared helper used by both `assemble_diffusion` (legacy noise matrix path) and
+`add_noise_to_rhs!` (Brownian-based path) to avoid code duplication.
+"""
+function foreach_noise_coeff(f, rx, species_to_idx, nps, depspec_submap;
+        combinatoric_ratelaws = true, remove_conserved = false,
+        expand_catalyst_funs = true)
+    rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws, expand_catalyst_funs)
+    rlsqrt = sqrt(abs(rl))
+    hasnoisescaling(rx) && (rlsqrt *= getnoisescaling(rx))
+    remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
+
+    for (spec, stoich) in rx.netstoich
+        remove_conserved && (spec in nps.depspecs) && continue
+        drop_dynamics(spec) && continue
+        haskey(species_to_idx, spec) || continue
+        i = species_to_idx[spec]
+        coef = _signed_stoich_term(stoich, rlsqrt)
+        f(i, coef)
+    end
+end
+
+"""
     add_noise_to_rhs!(rhsvec, rs, ispcs, brownian_map; kwargs...)
 
 Mutate the RHS vector `rhsvec` to add Brownian noise terms for each SDE-scale
@@ -203,26 +224,9 @@ function add_noise_to_rhs!(rhsvec, rs, ispcs, brownian_map;
 
     for (rx_idx, B_j) in brownian_map
         rx = get_rxs(rs)[rx_idx]
-        rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws,
-            expand_catalyst_funs)
-        rlsqrt = sqrt(abs(rl))
-        hasnoisescaling(rx) && (rlsqrt *= getnoisescaling(rx))
-        remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
-
-        for (spec, stoich) in rx.netstoich
-            remove_conserved && (spec in nps.depspecs) && continue
-            drop_dynamics(spec) && continue
-            i = species_to_idx[spec]
-
-            # Build noise term: stoich * sqrt(|ratelaw|) * [noise_scaling] * B_j
-            if stoich isa SymbolicT
-                noise_term = stoich * rlsqrt * B_j
-            else
-                signedrlsqrt = (stoich > zero(stoich)) ? rlsqrt : -rlsqrt
-                noise_term = isone(abs(stoich)) ? signedrlsqrt * B_j : stoich * rlsqrt * B_j
-            end
-
-            rhsvec[i] = _iszero(rhsvec[i]) ? noise_term : rhsvec[i] + noise_term
+        foreach_noise_coeff(rx, species_to_idx, nps, depspec_submap;
+                combinatoric_ratelaws, remove_conserved, expand_catalyst_funs) do i, coef
+            rhsvec[i] += coef * B_j
         end
     end
 end
