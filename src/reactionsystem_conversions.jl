@@ -1167,14 +1167,8 @@ function JumpProcesses.JumpProblem(rs::ReactionSystem, u0, tspan,
         expand_catalyst_funs, save_positions))
     # Convert Symbol keys to Symbolic keys since MTK's callback compilation
     # (specifically compile_equational_affect) requires Symbolic keys.
-    u0_sym = symmap_to_varmap(jsys, u0)
-    op = if p isa DiffEqBase.NullParameters
-        u0_sym
-    else
-        p_sym = symmap_to_varmap(jsys, p)
-        merge(Dict(u0_sym), Dict(p_sym))
-    end
-    return JumpProblem(jsys, op, tspan; save_positions, kwargs...)
+    prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
+    return JumpProblem(jsys, prob_cond, tspan; save_positions, kwargs...)
 end
 
 """
@@ -1263,16 +1257,8 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
             name, physical_scales, default_scale, combinatoric_ratelaws,
             expand_catalyst_funs, save_positions, checks))
 
-        # Convert Symbol keys to Symbolic keys.
-        u0_sym = symmap_to_varmap(sys, u0)
-        op = if p isa DiffEqBase.NullParameters
-            u0_sym
-        else
-            p_sym = symmap_to_varmap(sys, p)
-            merge(Dict(u0_sym), Dict(p_sym))
-        end
-
-        return JumpProblem(sys, op, tspan; save_positions, kwargs...)
+        prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
+        return JumpProblem(sys, prob_cond, tspan; save_positions, kwargs...)
 
     elseif has_sde
         # SDE (with or without ODE) → SDEProblem
@@ -1355,8 +1341,8 @@ end
 """
     symmap_to_varmap(sys, symmap)
 
-Given a system and map of `Symbol`s to values, generates a map from
-corresponding symbolic variables/parameters to the values that can be used to
+Function for internal usage only. Given a system and map of `Symbol`s to values, generates
+a map from corresponding symbolic variables/parameters to the values that can be used to
 pass initial conditions and parameter mappings.
 
 For example,
