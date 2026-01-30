@@ -356,7 +356,7 @@ MT.is_alg_equation(rx::Reaction) = false
 # MTK functions for extracting variables within equation type object
 MT.eqtype_supports_collect_vars(rx::Reaction) = true
 function MT.collect_vars!(unknowns::OrderedSet{SymbolicT}, parameters::OrderedSet{SymbolicT},
-        rx::Reaction, iv::Union{SymbolicT, Nothing},  ::Type{op} = Symbolics.Operator;
+        rx::Reaction, iv::Union{SymbolicT, Nothing}, ::Type{op} = Symbolics.Operator;
         depth = 0) where {op}
     MT.collect_vars!(unknowns, parameters, rx.rate, iv, op; depth)
 

@@ -429,7 +429,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
         throw(ArgumentError("System names must be unique."))
 
     # Process initial_conditions to unwrap Num wrappers.
-    initial_conditions = SymmapT(value(k) => value(v) for (k, v) in pairs(initial_conditions))
+    initial_conditions = SymmapT(value(entry[1]) => value(entry[2]) for entry in initial_conditions)
 
     # handles "bindings". Recently introduced in MTK/Symbolics, explicit Catalyst support need to be
     # implemented. Left empty for now.
@@ -601,7 +601,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     # Loops through all events, adding encountered quantities to the unknown and parameter vectors.
     find_event_vars!(ps, us, continuous_events, ivs, vars)
     find_event_vars!(ps, us, discrete_events, ivs, vars)
-
+    
     # Converts the found unknowns and parameters to vectors.
     usv = collect(us)
 

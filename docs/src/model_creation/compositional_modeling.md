@@ -25,13 +25,13 @@ rx = Reaction(d, [X], nothing)
 ```
 We can test whether a system is complete using the `ModelingToolkit.iscomplete` function:
 ```@example ex0
-ModelingToolkit.iscomplete(degradation_component)
+ModelingToolkitBase.iscomplete(degradation_component)
 ```
 To mark a system as complete, after which it should be considered as
 representing a finalized model, use the `complete` function
 ```@example ex0
 degradation_component_complete = complete(degradation_component)
-ModelingToolkit.iscomplete(degradation_component_complete)
+ModelingToolkitBase.iscomplete(degradation_component_complete)
 ```
 
 ## Compositional modeling tooling
@@ -69,7 +69,7 @@ prefaced) by the name of the system they come from.
 
 We can see the subsystems of a given system by
 ```@example ex1
-ModelingToolkit.get_systems(rn)
+ModelingToolkitBase.get_systems(rn)
 ```
 They naturally form a tree-like structure
 ```julia
@@ -116,7 +116,7 @@ flatrn = Catalyst.flatten(rn)
 ```
 where
 ```@example ex1
-ModelingToolkit.get_systems(flatrn)
+ModelingToolkitBase.get_systems(flatrn)
 ```
 
 More about ModelingToolkit's interface for compositional modeling can be found

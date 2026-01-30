@@ -90,7 +90,7 @@ broadcasting to apply it to each element of `rxs`.
 Let's check that this really gives the same ODEs as Catalyst. Here is what Catalyst
 generates by converting to an `ODESystem`
 ```@example s1
-osys = convert(ODESystem, repressilator)
+osys = make_rre_ode(repressilator)
 
 # for display purposes we just pull out the right side of the equations
 odes = [eq.rhs for eq in equations(osys)]

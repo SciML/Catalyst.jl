@@ -5,7 +5,7 @@ The Smoluchowski coagulation equation describes a system of reactions in which m
 
 We begin by importing some necessary packages.
 ```@example smcoag1
-using ModelingToolkit, Catalyst, LinearAlgebra
+using ModelingToolkitBase, Catalyst, LinearAlgebra
 using JumpProcesses
 using Plots, SpecialFunctions
 ```
@@ -104,8 +104,7 @@ rs = complete(rs)
 We now convert the [`ReactionSystem`](@ref) into a `ModelingToolkit.JumpSystem`, and solve it using Gillespie's direct method. For details on other possible solvers (SSAs), see the [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/types/jump_types/) documentation
 ```@example smcoag1
 # solving the system
-jinputs = JumpInputs(rs, u₀map, tspan)
-jprob = JumpProblem(jinputs, Direct(); save_positions = (false, false))
+jprob = JumpProblem(rs, u₀map, tspan; save_positions = (false, false))
 jsol = solve(jprob; saveat = tspan[2] / 30)
 nothing #hide
 ```

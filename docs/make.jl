@@ -47,7 +47,7 @@ makedocs(sitename = "Catalyst.jl",
     clean = true,
     pages = pages,
     pagesonly = true,
-    warnonly = [:missing_docs])
+    warnonly = [:missing_docs, :cross_references]) # `:cross_references` here temporarily while getting docs to work on v16.
 
 deploydocs(repo = "github.com/SciML/Catalyst.jl.git";
     push_preview = true)

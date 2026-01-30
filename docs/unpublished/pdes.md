@@ -12,7 +12,7 @@ parameters in (Kim et al., J. Chem. Phys., 146, 2017).
 First we load the packages we'll use
 ```julia
 using Catalyst, MethodOfLines, DomainSets, OrdinaryDiffEqSDIRK, Plots, Random, Distributions
-using ModelingToolkit: scalarize, unwrap, operation, initial_conditions
+using ModelingToolkitBase: scalarize, unwrap, operation, initial_conditions
 ```
 
 Next let's specify our default parameter values
@@ -65,7 +65,7 @@ rxeqs = Catalyst.assemble_oderhs(bpm, unknowns(bpm), combinatoric_ratelaws=false
 smap = speciesmap(bpm)
 
 # for defining boundary conditions
-evalat(u, a, b, t) = (operation(ModelingToolkit.unwrap(u)))(a, b, t)
+evalat(u, a, b, t) = (operation(ModelingToolkitBase.unwrap(u)))(a, b, t)
 
 # construct the PDEs and bcs
 ∂t = Differential(t)

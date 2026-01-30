@@ -149,14 +149,6 @@ oprob = ODEProblem(rn, u0, tspan, p)
 sol = solve(oprob, Tsit5())
 plot(sol)
 ```
-It is still possible to designate $X$'s value in `u0`, in which case this overrides the default value.
-```@example dsl_advanced_defaults
-u0 = [:X => 0.5]
-p = [:X₀ => 1.0, :p => 1.0, :d => 0.5]
-oprob = ODEProblem(rn, u0, tspan, p)
-sol = solve(oprob, Tsit5())
-plot(sol)
-```
 Please note that `X₀` is still a parameter of the system, and as such its value must still be designated to simulate the model (even if it is not actually used).
 
 ### [Designating metadata for species and parameters](@id dsl_advanced_options_species_and_parameters_metadata)
@@ -198,9 +190,9 @@ two_state_system = @reaction_network begin
 end
 ```
 
-Each metadata has its own getter functions. E.g. we can get the description of the parameter `kA` using `ModelingToolkit.getdescription`:
+Each metadata has its own getter functions. E.g. we can get the description of the parameter `kA` using `ModelingToolkitBase.getdescription`:
 ```@example dsl_advanced_metadata
-ModelingToolkit.getdescription(two_state_system.kA)
+ModelingToolkitBase.getdescription(two_state_system.kA)
 ```
 
 ### [Designating constant-valued/fixed species parameters](@id dsl_advanced_options_constant_species)

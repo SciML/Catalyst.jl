@@ -62,7 +62,7 @@ nothing # hide
 ```
 Finally, we will also create a `record_from_solution` function. This is a function which records information of the solution at each step of the continuation (which we can later plot or investigate using other means).
 ```@example bifurcationkit_periodic_orbits
-X_idx = findfirst(isequal(repressilator.X), unknowns(complete(convert(NonlinearSystem, repressilator))))
+X_idx = findfirst(isequal(repressilator.X), unknowns(complete(make_rre_algeqs(repressilator))))
 function record_from_solution(x, p; kwargs...)
  xtt = get_periodic_orbit(p.prob, x, p.p)
  min, max = extrema(xtt[1,:])
