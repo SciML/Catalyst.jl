@@ -276,14 +276,14 @@ let
 
     rn20 = @reaction_network rnname begin
         @species X(t)
-        @parameters S
+        @parameters S::Int64
         mm(X,v,K), 0 --> Y
         (k1,k2), 2Y <--> Y2
         d*Y, S*(Y2+Y) --> 0
     end
     rn21 = @reaction_network rnname begin
         @species X(t) Y(t) Y2(t)
-        @parameters v K k1 k2 d S
+        @parameters v K k1 k2 d S::Int64
         mm(X,v,K), 0 --> Y
         (k1,k2), 2Y <--> Y2
         d*Y, S*(Y2+Y) --> 0
@@ -296,7 +296,7 @@ let
         d*Y, S*(Y2+Y) --> 0
     end
     @test all(rn -> Catalyst.isequivalent(rn20, rn), (rn21, rn22))
-    @parameters v K k1 k2 d S
+    @parameters v K k1 k2 d S::Int64
     @species X(t) Y(t) Y2(t)
     @test issetequal(parameters(rn22),[v K k1 k2 d S])
     @test issetequal(species(rn22), [X Y Y2])
