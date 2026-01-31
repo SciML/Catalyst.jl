@@ -266,18 +266,22 @@ end
 
 # Checks when combined with equations (nonlinear system).
 # Technically tests would work, however, the display is non-ideal (https://github.com/SciML/Catalyst.jl/issues/927).
-let
-    t = default_t()
-    base_network = @reaction_network begin
-        k*r, X --> 0
-    end
-    @variables r(t)
-    @named decaying_rate = System([r ~ -1], [r], [])
-    extended = extend(decaying_rate, base_network)
-
-    # Latexify.@generate_test latexify(extended)
-    @test_broken false
-
-    # Latexify.@generate_test latexify(extended, mathjax=false)
-    @test_broken false
-end
+# NOTE: This test was disabled because:
+# 1. extend/compose only work with ReactionSystem+ReactionSystem now (not System+ReactionSystem)
+# 2. The tests were @test_broken anyway (not testing actual functionality)
+# Revisit once issue #927 is addressed.
+# let
+#     t = default_t()
+#     base_network = @network_component begin
+#         k*r, X --> 0
+#     end
+#     @variables r(t)
+#     @named decaying_rate = ReactionSystem([r ~ -1], t)
+#     extended = extend(decaying_rate, base_network)
+#
+#     # Latexify.@generate_test latexify(extended)
+#     @test_broken false
+#
+#     # Latexify.@generate_test latexify(extended, mathjax=false)
+#     @test_broken false
+# end
