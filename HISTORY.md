@@ -95,6 +95,69 @@
 - **`SDEProblem(rs::ReactionSystem, ...)` calls `mtkcompile` only when necessary** (when using
   Brownian-based noise or when the system has constraints/algebraic equations).
 
+#### New: `brownians` and `jumps` fields in ReactionSystem
+
+- **`ReactionSystem` now has `brownians` and `jumps` fields** to support non-reaction coupled
+  Brownian motion and jump processes. This mirrors the capability in ModelingToolkitBase's
+  `System` struct and enables modeling hybrid stochastic systems where reactions couple with
+  other noise/jump sources.
+
+  ```julia
+  using Catalyst
+  import ModelingToolkitBase as MT
+  t = default_t()
+  D = default_time_deriv()
+  @brownians B
+  @variables V(t)
+  @species S(t) P(t)
+  @parameters k λ
+
+  # brownians is the 5th positional argument (after unknowns/ps), jumps is a keyword arg
+  @named sys = ReactionSystem([Reaction(k, [S], [P]), D(V) ~ -V + B], t, [V, S, P], [k, λ], [B];
+                               jumps = JumpType[])
+  ```
+
+  The two-argument constructor auto-discovers brownians from equations, just like
+  ModelingToolkitBase's `System`:
+
+  ```julia
+  @brownians B
+  @variables V(t)
+  @parameters λ
+  # B is automatically extracted as a brownian from the equation
+  @named sys = ReactionSystem([D(V) ~ λ*V + B], t)
+  ```
+
+- **User-provided brownians/jumps are merged** with reaction-generated ones at conversion time
+  in `make_hybrid_model`, `make_cle_sde`, and `HybridProblem`.
+
+- **Conversion functions enforce scale constraints:**
+  - `make_rre_ode`: Errors if brownians OR jumps are present (pure ODE only)
+  - `make_cle_sde`: Errors if jumps are present (ODE + SDE constraints allowed)
+  - `make_sck_jump`: Errors if brownians OR non-reaction equations are present (pure Jump only)
+  - Use `HybridProblem` for mixed systems with ODE+SDE, ODE+Jump, or brownian+reaction combinations
+
+#### BREAKING: ReactionSystem composition restricted to ReactionSystems only
+
+- **`compose`, `extend`, and `flatten` now only accept `ReactionSystem` subsystems.**
+  Composing a `ReactionSystem` with a generic `System` (ODESystem, NonlinearSystem, etc.)
+  is no longer supported.
+
+  This is a simplification that avoids edge cases with incompatible fields between
+  `ReactionSystem` and generic `System` types (e.g., `costs`, `constraints`, `consolidate`,
+  `initialization_eqs`, `guesses`, `bindings`, `noise_eqs`).
+
+  **Migration:** Convert your `System` to a `ReactionSystem` with algebraic/ODE equations:
+  ```julia
+  # Before (no longer works):
+  @named constraints = System([x ~ a], t, [x], [a])
+  extended = extend(constraints, rn)
+
+  # After:
+  @named constraints = ReactionSystem([x ~ a], t; observed = Equation[])
+  extended = extend(constraints, rn)
+  ```
+
 #### BREAKING: Jump API Changes
 
 - **`JumpInputs` has been removed.** Use `JumpProblem(rs::ReactionSystem, u0, tspan, p; ...)` directly instead.

@@ -85,7 +85,7 @@ let
     connections = [ParentScope(sys₁.R) ~ ParentScope(sys₃.P),
         ParentScope(sys₂.R) ~ ParentScope(sys₁.P),
         ParentScope(sys₃.R) ~ ParentScope(sys₂.P)]
-    @named csys = System(connections, t, [], [])
+    @named csys = ReactionSystem(connections, t; observed = Equation[])
     @named repressilator = ReactionSystem(t; systems = [csys, sys₁, sys₂, sys₃])
     repressilator = complete(repressilator)
     @named oderepressilator2 = make_rre_ode(repressilator, include_zero_odes = false)
@@ -97,7 +97,7 @@ let
     # Test conversion to nonlinear system.
     u₀_nl = [sys₁.m => 0.0, sys₁.P => 20.0, sys₁.R => 0.0, sys₂.m => 0.0, sys₂.P => 0.0,
         sys₂.R => 0.0, sys₃.m => 0.0, sys₃.P => 0.0, sys₃.R => 0.0]
-    @named nsys = System(connections, t, [], [])
+    @named nsys = ReactionSystem(connections, t; observed = Equation[])
     @named ssrepressilator = ReactionSystem(t; systems = [nsys, sys₁, sys₂, sys₃])
     ssrepressilator = complete(ssrepressilator)
     @named nlrepressilator = make_rre_algeqs(ssrepressilator)
@@ -127,8 +127,7 @@ let
     connections = [sys₁.R ~ sys₃.P,
         sys₂.R ~ sys₁.P,
         sys₃.R ~ sys₂.P]
-    @named csys = System(connections, t, [sys₁.R, sys₃.P, sys₂.R, sys₁.P, sys₃.R, sys₂.P],
-                                [])
+    @named csys = ReactionSystem(connections, t; observed = Equation[])
     @named repressilator2 = ReactionSystem(connections, t; systems = [sys₁, sys₂, sys₃])
     repressilator2 = complete(repressilator2)
     @named nlrepressilator = make_rre_algeqs(repressilator2)
@@ -146,7 +145,7 @@ let
     network = @network_component
     @parameters a
     @variables x(t)
-    @named constraints = System([x ~ a], t, [x], [a])
+    @named constraints = ReactionSystem([x ~ a], t; observed = Equation[])
     extended = extend(constraints, network)
     @test isequal(extended.a, MT.namespace_expr(a, extended))
     @test isequal(extended.x, MT.namespace_expr(x, extended))
@@ -160,7 +159,8 @@ let
 
     # Test that the namespacing still works if the extended system takes the name
     # of the ReactionSystem.
-    extended = extend(constraints, network; name = nameof(network))
+    @named constraints2 = ReactionSystem([x ~ a], t; observed = Equation[])
+    extended = extend(constraints2, network; name = nameof(network))
     @test isequal(extended.a, MT.namespace_expr(a, extended))
     @test isequal(extended.x, MT.namespace_expr(x, extended))
     # and after conversion to an AbstractSystem.
@@ -169,15 +169,15 @@ let
     @test isequal(system.a, MT.namespace_expr(a, system))
     @test isequal(system.x, MT.namespace_expr(x, system; ivs = independent_variables(extended)))
     @test length(equations(system)) == 1
-    @test Set(equations(system)) == Set(equations(constraints))
+    @test Set(equations(system)) == Set(equations(constraints2))
 
     # Test that extending a system with constraints correctly handles default values.
     network = @network_component
     subnetwork = @network_component
     @parameters a=1 b=2
     @variables x(t)=a y(t)=b
-    @named constraints = System([x ~ a], t, [x], [a])
-    @named subsystemconstraints = System([y ~ b], t, [y], [b])
+    @named constraints = ReactionSystem([x ~ a], t; observed = Equation[])
+    @named subsystemconstraints = ReactionSystem([y ~ b], t; observed = Equation[])
     extended = extend(constraints, network)
     subextended = extend(subsystemconstraints, subnetwork)
     extended = compose(extended, subextended)
@@ -203,8 +203,8 @@ let
     subnetwork = @network_component
     @parameters a b
     @variables x(t) y(t)
-    @named constraints = System([x ~ a], t, [x], [a])
-    @named subconstraints = System([y ~ b], t, [y], [b])
+    @named constraints = ReactionSystem([x ~ a], t; observed = Equation[])
+    @named subconstraints = ReactionSystem([y ~ b], t; observed = Equation[])
 
     extended = extend(constraints, network; name = nameof(network))
     subextended = extend(subconstraints, subnetwork, name = nameof(subnetwork))
@@ -279,7 +279,7 @@ let
     A2 = MT.ParentScope(A)
     B2 = MT.ParentScope(B)
     nseqs = [D ~ 2 * A2 + β * B2]
-    @named ns = System(nseqs, t, [A2, B2, D], [β])
+    @named ns = ReactionSystem(nseqs, t; observed = Equation[])
     rs = compose(rs, [ns])
     rs = complete(rs)
     osys = make_rre_ode(rs; include_zero_odes = false)
@@ -307,7 +307,8 @@ let
 
     # Check several levels of nesting namespace and filter ok for the API functions.
     @parameters p1, p2a, p2b, p3a, p3b
-    @species A1(t), A2a(t), A2b(t), A3a(t), A3b(t)
+    @species A1(t), A2a(t), A3a(t)
+    @variables A2b(t), A3b(t)  # Variables for algebraic equations (not species)
     rxs1 = [Reaction(p1, [A1], nothing)]
     rxs2 = [Reaction(p2a, [A2a], nothing), Reaction(p2b, [ParentScope(A1)], nothing)]
     eqs2 = [ParentScope(A1) ~ ParentScope(p1) * A2b]
@@ -319,10 +320,10 @@ let
 
     @named rs3 = ReactionSystem(rxs3, t, [A3a, ParentScope(A2a)], [p3a, ParentScope(p2a)];
                                 combinatoric_ratelaws = false)
-    @named ns3 = System(eqs3, t, [ParentScope(A2a), A3b], [p3b])
+    @named ns3 = ReactionSystem(eqs3, t; observed = Equation[])
     @named rs2 = ReactionSystem(rxs2, t, [A2a, ParentScope(A1)], [p2a, p2b],
                                 systems = [rs3, ns3]; combinatoric_ratelaws = true)
-    @named ns2 = System(eqs2, t, [ParentScope(A1), A2b], [ParentScope(p1)])
+    @named ns2 = ReactionSystem(eqs2, t; observed = Equation[])
     @named rs1 = ReactionSystem(rxs1, t, [A1], [p1], systems = [rs2, ns2];
                                 combinatoric_ratelaws = false)
 
@@ -358,21 +359,21 @@ let
     @variables C(t)
     D = default_time_deriv()
     eqs = [D(C) ~ -b * C + a * A]
-    @named osys = System(eqs, t, [A, C], [a, b])
+    @named osys = ReactionSystem(eqs, t; observed = Equation[])
     rn2 = extend(osys, rn)
     rnodes = make_rre_ode(complete(rn2))
 
     # Ensure right number of equations are generated.
     @variables G(t)
     eqs = [D(G) ~ -G]
-    @named osys2 = System(eqs, t)
+    @named osys2 = ReactionSystem(eqs, t; observed = Equation[])
     rn3 = compose(rn2, osys2)
     @test length(equations(rn3)) == 4
 
     # Check conversions work with algebraic constraints.
-    # Note: Systems must be created WITH an iv to extend with ReactionSystems.
+    # Note: ReactionSystems must be created WITH an iv to extend with other ReactionSystems.
     eqs = [0 ~ -a * A + C, 0 ~ -b * C + a * A]
-    @named nlsys = System(eqs, t, [A, C], [a, b])
+    @named nlsys = ReactionSystem(eqs, t; observed = Equation[])
     rn2 = complete(extend(nlsys, rn))
     rnodes = make_rre_ode(rn2)
     rnnlsys = make_rre_algeqs(rn2)
