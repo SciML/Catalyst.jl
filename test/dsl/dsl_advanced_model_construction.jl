@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, ModelingToolkitBase
+using Catalyst, ModelingToolkitBase, OrdinaryDiffEqRosenbrock
 
 # Set creates the `t` independent variable.
 t = default_t()
@@ -287,6 +287,58 @@ let
     end
 end
 
+### Automated DSL Content Inference ###
+
+# Checks that parameters that occur as stoichiometries are correctly inferred as integers.
+let
+    # Checks for `ReactionSystem`
+    rs1 = @reaction_network rs begin
+        k, n*X --> xN
+    end
+    @test SymbolicUtils.symtype(rs1.k) == Real
+    @test SymbolicUtils.symtype(rs1.n) == Int64 
+
+    # Check for `Reaction. Check that the `Reaction` generates an equivalent `ReactionSystem`.  
+    rx = @reaction k, n*X --> xN
+    rs2 = complete(ReactionSystem([rx], t; name = :rs))
+    @test SymbolicUtils.symtype(rx.substoich[1]) == Int64 
+    @test SymbolicUtils.symtype(rs2.k) == Real
+    @test SymbolicUtils.symtype(rs2.n) == Int64 
+    @test Catalyst.isequivalent(rs1, rs2)
+end
+
+# Checks that system with symbolic stoichiometries can be simulated.
+let
+    # Generate and simulate the model.
+    rs = @reaction_network rs begin
+        k, n*X --> m*Y
+    end
+    u0 = [:X => 10.0, :Y => 0.0]
+    ps = [:k => 20.0, :n => 2, :m => 3]
+    oprob = ODEProblem(rs, u0, 100.0, ps)
+    sol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
+
+    # Checks that simulation looks correct. Check that correct type of values are stored.
+    @test typeof(oprob.ps[:n]) == typeof(oprob.ps[:m]) == typeof(sol.ps[:n]) == typeof(sol.ps[:m]) == Int64
+    @test typeof(oprob.ps[:k]) == typeof(sol.ps[:k]) == Float64
+    @test oprob[:X] / oprob.ps[:n] ≈ sol[:Y][end] / oprob.ps[:m] atol = 1e-3 rtol = 1e-3
+end
+
+# Checks that non-Int64 stoichiometry can be used.
+let
+    # Create model and simulates it.
+    rn = @reaction_network begin
+        @parameters n::Float64
+        k, n*X --> Y
+    end
+    oprob = ODEProblem(rn, [:X => 3.0, :Y => 0.0], 10.0, [:k => 10.0, :n => 1.5]; combinatoric_ratelaws = false)
+    sol = solve(oprob)
+
+    # Checks that stored `n` parameters are Float64. Check that correct simulation values are attained.
+    @test all((sol[:X] .+ 1.5 .* sol[:Y]) .≈ 3.0)
+    @time SymbolicUtils.symtype(rn.n) == SymbolicUtils.symtype(oprob.ps[:n]) == SymbolicUtils.symtype(sol.ps[:n]) == Float64
+end
+
 ### Other Tests ###
 
 # Test floating point stoichiometry work.
@@ -359,7 +411,7 @@ let
         k[1]*a+k[2], X[1] + V[1]*X[2] --> V[2]*W*Y + B*C
     end
 
-    @parameters k[1:2] a B
+    @parameters k[1:2] a B::Int64
     @variables (V(t))[1:2] W(t)
     @species (X(t))[1:2] Y(t) C(t)
     rx = Reaction(k[1]*a+k[2], [X[1], X[2]], [Y, C], [1, V[1]], [V[2] * W, B])

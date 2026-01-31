@@ -155,7 +155,7 @@ end
 
 # Test inferring with stoichiometry symbols and interpolation.
 let
-    @parameters k g h gg X y [isconstantspecies = true]
+    @parameters k::Int64 g::Int64 h::Int64 gg X y [isconstantspecies = true]
     t = Catalyst.DEFAULT_IV
     @species A(t) B(t) BB(t) C(t)
 
@@ -276,14 +276,14 @@ let
 
     rn20 = @reaction_network rnname begin
         @species X(t)
-        @parameters S
+        @parameters S::Int64
         mm(X,v,K), 0 --> Y
         (k1,k2), 2Y <--> Y2
         d*Y, S*(Y2+Y) --> 0
     end
     rn21 = @reaction_network rnname begin
         @species X(t) Y(t) Y2(t)
-        @parameters v K k1 k2 d S
+        @parameters v K k1 k2 d S::Int64
         mm(X,v,K), 0 --> Y
         (k1,k2), 2Y <--> Y2
         d*Y, S*(Y2+Y) --> 0
@@ -296,7 +296,7 @@ let
         d*Y, S*(Y2+Y) --> 0
     end
     @test all(rn -> Catalyst.isequivalent(rn20, rn), (rn21, rn22))
-    @parameters v K k1 k2 d S
+    @parameters v K k1 k2 d S::Int64
     @species X(t) Y(t) Y2(t)
     @test issetequal(parameters(rn22),[v K k1 k2 d S])
     @test issetequal(species(rn22), [X Y Y2])
@@ -652,15 +652,6 @@ let
         @continuous_event [X > 1.0] => [V => V/2]
         d, X --> 0
     end
-end
-
-# Checks that parameters that occur as stoichiometries are correctly inferred as integers.
-let
-    rn = @reaction_network begin
-        k, n*X --> xN
-    end
-    @test SymbolicUtils.symtype(rn.k) == Real
-    @test_broken SymbolicUtils.symtype(rn.n) == Int64 # Bug, needs fixing (we must now infer that `n` should be decalred as a Int64, before it didn't matter).
 end
 
 ### Observables ###

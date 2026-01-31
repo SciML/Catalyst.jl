@@ -32,7 +32,7 @@ include("../test_functions.jl")
 
 # Checks that systems with symbolic stoichiometries, created using different approaches, are identical.
 let
-    @parameters p k d::Float64 n1::Int64 n2 n3
+    @parameters p k d::Float64 n1::Int64 n2::Int64 n3::Int64
     @species X(t) Y(t)
     rxs1 = [
         Reaction(p, nothing, [X], nothing, [n1])
