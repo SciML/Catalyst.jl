@@ -324,6 +324,21 @@ let
     @test oprob[:X] / oprob.ps[:n] ≈ sol[:Y][end] / oprob.ps[:m] atol = 1e-3 rtol = 1e-3
 end
 
+# Checks that non-Int64 stoichiometry can be used.
+let
+    # Create model and simulates it.
+    rn = @reaction_network begin
+        @parameters n::Float64
+        k, n*X --> Y
+    end
+    oprob = ODEProblem(rn, [:X => 3.0, :Y => 0.0], 10.0, [:k => 10.0, :n => 1.5]; combinatoric_ratelaws = false)
+    sol = solve(oprob)
+
+    # Checks that stored `n` parameters are Float64. Check that correct simulation values are attained.
+    @test all((sol[:X] .+ 1.5 .* sol[:Y]) .≈ 3.0)
+    @time SymbolicUtils.symtype(rn.n) == SymbolicUtils.symtype(oprob.ps[:n]) == SymbolicUtils.symtype(sol.ps[:n]) == Float64
+end
+
 ### Other Tests ###
 
 # Test floating point stoichiometry work.
