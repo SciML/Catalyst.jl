@@ -82,6 +82,10 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     file_text,
     has_discrete_events = push_field(file_text, rn, annotate,
         top_level, DISCRETE_EVENTS_FS)
+    has_brownians = push_field(file_text, rn, annotate,
+        top_level, BROWNIAN_TYPE_FS)
+    has_jumps = push_field(file_text, rn, annotate,
+        top_level, JUMP_TYPE_FS)
     file_text, has_systems = push_systems_field(file_text, rn, annotate, top_level)
     file_text,
     has_connection_type = push_field(file_text, rn, annotate,
@@ -93,7 +97,7 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
         rn, annotate, top_level, has_sivs, has_species,
         has_variables, has_parameters, has_discretes, has_reactions,
         has_equations, has_observed, has_defaults, has_continuous_events,
-        has_discrete_events, has_systems, has_connection_type)
+        has_discrete_events, has_brownians, has_jumps, has_systems, has_connection_type)
     annotate || (@string_prepend! "\n" file_text)
     annotate && top_level &&
         @string_prepend! "\n# Serialised using Catalyst version v$(Catalyst.VERSION)." file_text
@@ -107,8 +111,8 @@ end
 # `has_` `Bool`s described which inputs are used. If the model is `complete`, this is handled here.
 function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_sivs,
         has_species, has_variables, has_parameters, has_discretes, has_reactions, has_equations,
-        has_observed, has_defaults, has_continuous_events, has_discrete_events, has_systems,
-        has_connection_type)
+        has_observed, has_defaults, has_continuous_events, has_discrete_events, has_brownians, 
+        has_jumps, has_systems, has_connection_type)
 
     # Gets the independent variable input.
     iv = x_2_string(get_iv(rs))
@@ -163,6 +167,8 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
     has_defaults && (@string_append! reaction_system_string ", initial_conditions")
     has_continuous_events && (@string_append! reaction_system_string ", continuous_events")
     has_discrete_events && (@string_append! reaction_system_string ", discrete_events")
+    has_brownians && (@string_append! reaction_system_string ", brownians")
+    has_jumps && (@string_append! reaction_system_string ", jumps")
     has_systems && (@string_append! reaction_system_string ", systems")
     has_connection_type && (@string_append! reaction_system_string ", connection_type")
 

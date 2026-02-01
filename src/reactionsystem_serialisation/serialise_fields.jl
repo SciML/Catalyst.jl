@@ -538,6 +538,46 @@ end
 # Combines the 3 -related functions in a constant tuple.
 DISCRETE_EVENTS_FS = (seri_has_discrete_events, get_discrete_events_string, get_discrete_events_annotation)
 
+### Handles Brownian Types ###
+
+# Checks if the reaction system has any brownian types.
+function seri_has_brownian_type(rn::ReactionSystem)
+    return false
+end
+
+# Extract a string which declares the system's brownian types.
+function get_brownian_type_string(rn::ReactionSystem)
+    get_unsupported_comp_string("brownian types")
+end
+
+# Creates an annotation for the system's brownian types.
+function get_brownian_type_annotation(rn::ReactionSystem)
+    get_unsupported_comp_annotation("Brownian types:")
+end
+
+# Combines the 3 brownian types-related functions in a constant tuple.
+BROWNIAN_TYPE_FS = (seri_has_brownian_type, get_brownian_type_string, get_brownian_type_annotation)
+
+### Handles Jump Types ###
+
+# Checks if the reaction system has any jump types.
+function seri_has_jump_type(rn::ReactionSystem)
+    return false
+end
+
+# Extract a string which declares the system's jump types.
+function get_jump_type_string(rn::ReactionSystem)
+    get_unsupported_comp_string("jump types")
+end
+
+# Creates an annotation for the system's jump types.
+function get_jump_type_annotation(rn::ReactionSystem)
+    get_unsupported_comp_annotation("Jump types:")
+end
+
+# Combines the 3 jump types-related functions in a constant tuple.
+JUMP_TYPE_FS = (seri_has_jump_type, get_jump_type_string, get_jump_type_annotation)
+
 ### Handles Systems ###
 
 # Specific `push_field` function, which is used for the system field (where the annotation option
