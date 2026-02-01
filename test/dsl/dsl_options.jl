@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, ModelingToolkitBase, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, StochasticDiffEq, Plots, Test
+using Catalyst, ModelingToolkitBase, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, Statistics, StochasticDiffEq, Plots, Test
 using Symbolics: unwrap
 
 # Sets stable rng number.
