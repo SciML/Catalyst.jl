@@ -27,7 +27,8 @@ jobs:
           - "lts"
           - "pre"
         group:
-          - Core
+          - Modeling
+          - Simulation
           - Hybrid
           - IO
           - Spatial

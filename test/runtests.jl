@@ -14,7 +14,7 @@ end
 
 ### Run Tests ###
 @time begin
-    if GROUP == "All" || GROUP == "Core"
+    if GROUP == "All" || GROUP == "Modeling"
         # Tests the `ReactionSystem` structure and its properties.
         @time @safetestset "Reaction Structure" begin include("reactionsystem_core/reaction.jl") end
         @time @safetestset "ReactionSystem Structure" begin include("reactionsystem_core/reactionsystem.jl") end
@@ -44,7 +44,9 @@ end
         @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end # Multiple issues. https://github.com/SciML/ModelingToolkit.jl/issues/4102 required to start debugging.
         @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
         @time @safetestset "CRN Theory" begin include("network_analysis/crn_theory.jl") end
+    end
 
+    if GROUP == "All" || GROUP == "Simulation"
         # Tests ODE, SDE, jump simulations, nonlinear solving, and steady state simulations.
         @time @safetestset "ODE System Simulations" begin include("simulation_and_solving/simulate_ODEs.jl") end
         @time @safetestset "Automatic Jacobian Construction" begin include("simulation_and_solving/jacobian_construction.jl") end
