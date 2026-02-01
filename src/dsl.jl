@@ -261,7 +261,7 @@ function make_reaction_system(ex::Expr, name)
     tiv, sivs, ivs, ivsexpr = read_ivs_option(options)
     cmpexpr_init, cmps_declared = read_compounds_option(options)
     diffsexpr, diffs_declared = read_differentials_option(options)
-    brownsexpr, browns_declared = read_brownians_option(options)
+    brownsexpr_init, browns_declared = read_brownians_option(options)
     syms_declared = collect(Iterators.flatten((cmps_declared, sps_declared, ps_declared,
         vs_declared, discs_declared, ivs, diffs_declared, browns_declared)))
     if !allunique(syms_declared)
@@ -298,6 +298,7 @@ function make_reaction_system(ex::Expr, name)
     vsexpr, vsvar = assign_var_to_symvar_declaration(vsexpr_init, "vars")
     discsexpr, discsvar = assign_var_to_symvar_declaration(discsexpr_init, "discs")
     cmpsexpr, cmpsvar = assign_var_to_symvar_declaration(cmpexpr_init, "comps")
+    brownsexpr, brownsvar = assign_var_to_symvar_declaration(brownsexpr_init, "brownians", scalarize = false)
     rxsexprs = get_rxexprs(reactions, equations, all_syms)
 
     # Assemblies the full expression that declares all required symbolic variables, and
@@ -327,7 +328,7 @@ function make_reaction_system(ex::Expr, name)
         _default_reaction_metadata = $default_reaction_metadata
 
         remake_ReactionSystem_internal(
-            make_ReactionSystem_internal(rx_eq_vec, $tiv, us, ps; name, spatial_ivs,
+            make_ReactionSystem_internal(rx_eq_vec, $tiv, us, ps, $brownsvar; name, spatial_ivs,
                 observed = _observed, continuous_events = _continuous_events,
                 discrete_events = _discrete_events, combinatoric_ratelaws = _combinatoric_ratelaws);
             default_reaction_metadata = _default_reaction_metadata)
@@ -679,8 +680,8 @@ end
 # declared as brownians by the `@brownian` option.
 function read_brownians_option(options)
     browns_declared = extract_syms(options, :brownians)    
-    brownsexpr = haskey(options, :brownians) ? options[:brownians] : :()
-    return brownsexpr, browns_declared
+    brownsexpr_init = haskey(options, :brownians) ? options[:brownians] : :()
+    return brownsexpr_init, browns_declared
 end
 
 # Reads the variables options. Outputs a list of the variables inferred from the equations,

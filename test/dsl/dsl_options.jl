@@ -1066,6 +1066,34 @@ let
     @test std(ssol_catalyst[:X2]) ≈ std(ssol_manual[:X2]) atol = 1e-1 rtol = 1e-1
 end
 
+# Checks that Brownians are correctly added to the system (whether they are used in equations or not,
+# or if the are interpolated.).
+let
+    # Declares models.
+    rs1 = @reaction_network rs begin
+        @brownians B1
+        (p,d), 0 <--> X
+    end
+    rs2 = @reaction_network rs begin
+        @brownians B1 B2
+        @equations D(V) ~ 1 - V + B2
+        (p,d), 0 <--> X
+    end
+    B2_var = only(@brownians B2)
+    rs3 = @reaction_network rs begin
+        @brownians B1
+        @equations D(V) ~ 1 - V + $(B2_var)
+        (p,d), 0 <--> X
+    end
+
+    # Performs tests checking that content is correct
+    @test length(ModelingToolkitBase.get_brownians(rs1)) == 1
+    @test length(ModelingToolkitBase.get_brownians(rs2)) == 2
+    @test length(ModelingToolkitBase.get_brownians(rs3)) == 2
+    @test !Catalyst.isequivalent(rs1, rs3)
+    @test !Catalyst.isequivalent(rs1, rs3)
+    @test Catalyst.isequivalent(rs2, rs3)
+end
 
 ### Test `@equations` Option for Coupled CRN/Equations Models ###
 
