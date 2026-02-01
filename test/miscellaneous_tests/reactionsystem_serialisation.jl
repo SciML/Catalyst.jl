@@ -442,9 +442,7 @@ let
     eq = D(V) ~ V_max - V
 
     @named osys = System([eq], t)
-    @named rs = ReactionSystem(rxs, t; systems = [osys])
-    @test_throws Exception save_reactionsystem(testpath("failed_serialisation.jl"), rs)
-    rm(testpath("failed_serialisation.jl"))
+    @test_throws Exception ReactionSystem(rxs, t; systems = [osys], name = :rs)
 end
 
 # Checks that completeness is recorded correctly.

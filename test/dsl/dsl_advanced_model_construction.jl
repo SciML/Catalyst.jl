@@ -389,8 +389,8 @@ let
     @unpack A,B = rn2
     D = default_time_deriv()
     eq = D(B) ~ -B
-    @named osys = System([eq], t)
-    @named rn2 = extend(osys, rn2)
+    @named rs_eqs = ReactionSystem([eq], t)
+    @named rn2 = extend(rs_eqs, rn2)
     rn2 = complete(rn2)
     @test issetequal(unknowns(rn2), species(rn2))
     rn = complete(rn)

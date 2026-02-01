@@ -351,8 +351,8 @@ let
     @test isequal(Catalyst.independent_variables(rs), [t])
 end
 
-# Tests `numparams` and `numreactions` for reaction system with subsystem.
-# Tests where a subssystem is a non-`ReactionSystem`.
+# Tests `numparams` and `numreactions` for reaction system with subsystems.
+# Tests with multiple ReactionSystem subsystems (one with reactions, one with ODE equations).
 let
     # Prepares content
     @parameters k1 k2 k3 p1 p2
@@ -360,7 +360,7 @@ let
     @variables V1(t) V2(t)
     D = default_time_deriv()
 
-    # Creates a reaction system with a subsystem.
+    # Creates a reaction system with subsystems.
     sub_rxs = [
         Reaction(k1, [X1], []),
         Reaction(k2, [X2], [])
@@ -370,7 +370,8 @@ let
         D(V1) ~ p1 - V1,
         D(V2) ~ p2 - V2,
     ]
-    @named sub_osys = System(sub_eqs, t)
+    # Use a ReactionSystem with ODE equations instead of a System
+    @named sub_osys = ReactionSystem(sub_eqs, t)
     rxs = [
         Reaction(k2, [X2], []),
         Reaction(k3, [X3], [])
@@ -1055,6 +1056,7 @@ let
     variableratejumps(js) = filter(j -> j isa VariableRateJump, MT.jumps(js))
     odeeqs(js) = equations(js)
 
+    # Test that make_sck_jump errors when given ODE equations (use make_hybrid_model instead)
     let
         t = default_t()
         D = default_time_deriv()
@@ -1067,14 +1069,7 @@ let
         cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
         @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
         rs = complete(rs)
-        sys = complete(make_sck_jump(rs))
-        @test sys isa MT.System
-        @test MT.has_equations(sys)
-        @test length(massactionjumps(sys)) == 1
-        @test isempty(constantratejumps(sys))
-        @test length(variableratejumps(sys)) == 3
-        @test length(odeeqs(sys)) == 4
-        @test length(continuous_events(sys)) == 1
+        @test_throws ErrorException make_sck_jump(rs)
     end
 
     let

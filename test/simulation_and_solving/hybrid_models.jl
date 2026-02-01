@@ -25,7 +25,7 @@ let
     sol = solve(jprob, SSAStepper())
     @test sol(10.0; idxs = :A) > 0
 
-    # Hybrid model with ODE equations and events
+    # Hybrid model with ODE equations and events - requires HybridProblem
     rn = @reaction_network begin
         @parameters λ
         k*V, 0 --> A
@@ -34,7 +34,8 @@ let
             [V ~ 2.0] => [V ~ V/2, A ~ A/2]
         end
     end
-    jprob = JumpProblem(rn, [:A => 0, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4]; rng)
+    # JumpProblem no longer supports ODE equations - use HybridProblem instead
+    jprob = HybridProblem(rn, [:A => 0, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4]; rng)
     sol = solve(jprob, Tsit5())
 end
 
