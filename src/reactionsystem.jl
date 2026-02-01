@@ -348,7 +348,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """Brownian variables for non-reaction noise, created via @brownians."""
     brownians::Vector{SymbolicT}
     """Non-reaction jumps (VariableRateJump, ConstantRateJump, MassActionJump)."""
-    jumps::Vector{MT.JumpType}
+    jumps::Vector{JumpType}
     """
     Metadata for the system, to be used by downstream packages.
     """
@@ -413,7 +413,7 @@ end
 # Note: brownians is explicit (not auto-discovered) in this constructor; use the
 # two-argument constructor for auto-discovery of brownians from equations.
 function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
-        jumps = MT.JumpType[],
+        jumps = JumpType[],
         observed = Equation[],
         systems = [],
         name = nothing,
@@ -512,7 +512,7 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
 
     # Process brownians and jumps (unwrap brownians to be consistent with other symbolic vars).
     brownians′ = isempty(brownians) ? SymbolicT[] : unwrap.(brownians)
-    jumps′ = isempty(jumps) ? MT.JumpType[] : collect(jumps)
+    jumps′ = isempty(jumps) ? JumpType[] : collect(jumps)
 
     ReactionSystem(
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,

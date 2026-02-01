@@ -371,7 +371,7 @@ let
         D(V2) ~ p2 - V2,
     ]
     # Use a ReactionSystem with ODE equations instead of a System
-    @named sub_osys = ReactionSystem(sub_eqs, t; observed = Equation[])
+    @named sub_osys = ReactionSystem(sub_eqs, t)
     rxs = [
         Reaction(k2, [X2], []),
         Reaction(k3, [X3], [])

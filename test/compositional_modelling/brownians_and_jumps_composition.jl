@@ -357,7 +357,7 @@ let
 
     # Should have both reaction-generated and user brownians.
     # Reaction brownian + user brownian = at least 2.
-    @test length(get_brownians(sys)) >= 2
+    @test length(get_brownians(sys)) == 2
     @test any(isequal(B_user), get_brownians(sys))
 end
 
@@ -383,7 +383,7 @@ let
     )
 
     # Should have both reaction-generated and user jumps.
-    @test length(get_jumps(sys)) >= 2
+    @test length(get_jumps(sys)) == 2
 end
 
 ### Test isequivalent with Brownians and Jumps ###

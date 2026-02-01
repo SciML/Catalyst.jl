@@ -509,7 +509,7 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
             end
         end
     end
-    reduce(vcat, (meqs, ceqs, veqs); init = Any[])
+    reduce(vcat, (meqs, ceqs, veqs); init = JumpType[])
 end
 
 ### Equation Coupling ###
@@ -714,7 +714,7 @@ function make_hybrid_model(rs::ReactionSystem;
     end
 
     # --- Build jumps (Jump + VariableRateJump reactions only) ---
-    rxn_jumps = Any[]
+    rxn_jumps = JumpType[]
     if has_rxn_jump
         rxn_jumps = assemble_jumps(flatrs; combinatoric_ratelaws, expand_catalyst_funs,
             physical_scales = scales, save_positions)
@@ -1318,9 +1318,8 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
     end
 
     # Build the unified System from the flattened ReactionSystem.
-    sys = make_hybrid_model(flatrs;
-        name, physical_scales, default_scale, combinatoric_ratelaws,
-        expand_catalyst_funs, save_positions, checks)
+    sys = make_hybrid_model(flatrs; name, physical_scales, default_scale, 
+        combinatoric_ratelaws, expand_catalyst_funs, save_positions, checks)
 
     # Build problem conditions (u0 + p merged).
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
@@ -1337,11 +1336,7 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
 
     elseif has_sde
         # SDE (with or without ODE) → SDEProblem
-        # make_hybrid_model uses Brownian variables for SDE, so mtkcompile is always needed
-        # to extract the noise matrix.
-        if !structural_simplify && has_alg_equations(flatrs)
-            error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `HybridProblem` call.")
-        end
+        # using Brownian variables for SDEs, so mtkcompile is always needed
         sys = MT.mtkcompile(sys)
         return SDEProblem(sys, prob_cond, tspan; kwargs...)
 
