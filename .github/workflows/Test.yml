@@ -27,11 +27,11 @@ jobs:
           - "lts"
           - "pre"
         group:
-          - Core
+          - Modeling
+          - Simulation
           - Hybrid
           - IO
           - Spatial
-          - Extensions
     uses: "SciML/.github/.github/workflows/tests.yml@v1"
     with:
       julia-version: "${{ matrix.version }}"
