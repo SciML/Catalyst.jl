@@ -999,7 +999,7 @@ end
 ### Brownians ###
 
 # Checks identity with brownian model created using DSL and programmatically.
-begin
+let
     # Creates models and check equivalence.
     rs_dsl = @reaction_network rs begin
         @parameters η
