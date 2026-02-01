@@ -43,7 +43,7 @@ jobs:
 
       - name: "Instantiate and precompile extensions environment"
         run: |
-          julia --code-coverage=user --project=test/extensions -e '
+          julia --code-coverage=@$(pwd) --project=test/extensions -e '
             using Pkg
             Pkg.develop(PackageSpec(path=pwd()))
             Pkg.instantiate()
