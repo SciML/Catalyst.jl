@@ -1,0 +1,70 @@
+name: "Extensions Tests"
+
+on:
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - 'docs/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  extensions-tests:
+    name: "Extensions Tests"
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - "1"
+          - "lts"
+          - "pre"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Setup Julia ${{ matrix.version }}"
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: "${{ matrix.version }}"
+
+      - name: "Cache Julia packages"
+        uses: julia-actions/cache@v1
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: "Build main package"
+        uses: julia-actions/julia-buildpkg@v1
+
+      - name: "Instantiate and precompile extensions environment"
+        run: |
+          julia --code-coverage=user --check-bounds=yes --compiled-modules=yes --inline=yes \
+                --project=test/extensions -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path=pwd()))
+            Pkg.instantiate()
+            Pkg.precompile()
+          '
+
+      - name: "Run Extensions tests"
+        run: |
+          julia --code-coverage=user --check-bounds=yes --compiled-modules=yes --inline=yes \
+                --project=test/extensions --color=yes \
+                test/runtests_extensions.jl
+
+      - uses: julia-actions/julia-processcoverage@v1
+        with:
+          directories: "src,ext"
+
+      - name: "Report Coverage with Codecov"
+        uses: codecov/codecov-action@v5
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        with:
+          files: lcov.info
+          token: "${{ secrets.CODECOV_TOKEN }}"
+          fail_ci_if_error: true
