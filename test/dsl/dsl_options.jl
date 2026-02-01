@@ -15,6 +15,9 @@ seed = rand(rng, 1:100)
 t = default_t()
 D = default_time_deriv()
 
+# Fetch test functions.
+include("../test_functions.jl")
+
 ### Tests `@parameters`, `@species`, and `@variables` Options ###
 
 # Test creating networks with/without options.
@@ -991,6 +994,76 @@ let
         d, X --> 0
     end
 
+end
+
+### Brownians ###
+
+# Checks identity with brownian model created using DSL and programmatically.
+begin
+    # Creates models and check equivalence.
+    rs_dsl = @reaction_network rs begin
+        @parameters η
+        @brownians B
+        @equations begin
+            D(V) ~ X - V + η*B
+            D(W) ~ V - W
+        end
+        (p,d), 0 <--> X
+    end
+    @brownians B
+    @parameters p d η
+    @species X(t)
+    @variables V(t) W(t)
+    eqs = [
+        Reaction(p, [], [X]),
+        Reaction(d, [X], []),
+        D(V) ~ X - V + η*B,
+        D(W) ~ V - W
+    ]
+    rs_prog = complete(ReactionSystem(eqs, t; name = :rs))
+    Catalyst.isequivalent(rs_dsl, rs_prog)
+
+    # Checks that drift and diffusion terms are evaluated identically.
+    u0 = rnd_u0(rs_dsl, rng)
+    ps = rnd_ps(rs_dsl, rng)
+    @test g_eval(rs_dsl, u0, ps, 0.0; structural_simplify = true) == g_eval(rs_prog, u0, ps, 0.0; structural_simplify = true)
+end
+
+# Compare CLE simulations generated via Catalyst and manual implementation of the SDE.
+let
+    # Declare the same CLE model using reactions and through SDEs (in the DSL, using brownian option).
+    cle_catalyst = @reaction_network rs begin
+        (k1,k2), X1 <--> X2
+    end
+    cle_manual = @reaction_network rs begin
+        @parameters k1 k2
+        @variables X1(t) X2(t)
+        @brownians B_1 B_2
+        @equations begin
+            D(X1) ~ k2*X2 - k1*X1 - sqrt(abs(k1*X1))*B_1 + sqrt(abs(k2*X2))*B_2
+            D(X2) ~ k1*X1 - k2*X2 + sqrt(abs(k1*X1))*B_1 - sqrt(abs(k2*X2))*B_2
+        end    
+    end
+
+    # Checks that the models generates the same equations.
+    ssys_catalyst = make_cle_sde(cle_catalyst, use_legacy_noise = false)
+    ssys_manual = make_cle_sde(cle_manual)
+    @test isequal(equations(ssys_catalyst), equations(ssys_manual))
+
+    # Simulate the two CELs using identical conditions.
+    u0 = [:X1 => 100.0, :X2 => 200.0]
+    tend = 10000.0
+    ps = [:k1 => 0.1, :k2 => 0.2]
+    sprob_catalyst = SDEProblem(cle_catalyst, u0, tend, ps; structural_simplify = true)
+    sprob_manual = SDEProblem(cle_manual, u0,  tend, ps; structural_simplify = true)
+    @time ssol_catalyst = solve(sprob_catalyst, ImplicitEM())
+    @time ssol_manual = solve(sprob_manual, ImplicitEM())
+
+    # Checks that simulations have similar properties.
+    @test mean(ssol_catalyst[:X1]) ≈ mean(ssol_manual[:X1]) atol = 1e-1 rtol = 1e-1
+    @test mean(ssol_catalyst[:X2]) ≈ mean(ssol_manual[:X2]) atol = 1e-1 rtol = 1e-1
+    @test std(ssol_catalyst[:X1]) ≈ std(ssol_manual[:X1]) atol = 1e-1 rtol = 1e-1
+    @test std(ssol_catalyst[:X2]) ≈ std(ssol_manual[:X2]) atol = 1e-1 rtol = 1e-1
 end
 
 
