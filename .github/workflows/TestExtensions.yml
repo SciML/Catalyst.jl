@@ -43,7 +43,8 @@ jobs:
 
       - name: "Instantiate and precompile extensions environment"
         run: |
-          julia --code-coverage=@$(pwd) --project=test/extensions -e '
+          julia --code-coverage=user --check-bounds=yes --compiled-modules=yes --inline=yes \
+                --project=test/extensions -e '
             using Pkg
             Pkg.develop(PackageSpec(path=pwd()))
             Pkg.instantiate()
@@ -51,11 +52,10 @@ jobs:
           '
 
       - name: "Run Extensions tests"
-        uses: julia-actions/julia-runtest@v1
-        with:
-          coverage: true
-        env:
-          GROUP: "Extensions"
+        run: |
+          julia --code-coverage=user --check-bounds=yes --compiled-modules=yes --inline=yes \
+                --project=test/extensions --color=yes \
+                test/runtests_extensions.jl
 
       - uses: julia-actions/julia-processcoverage@v1
         with:
