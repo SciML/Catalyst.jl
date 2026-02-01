@@ -59,7 +59,7 @@ end
 # Also checks that in place and out of place evaluations are identical.
 function g_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, structural_simplify = false)
     prob = SDEProblem(rs, u, 0.0, p; combinatoric_ratelaws, structural_simplify)
-    dW = zeros(length(u), numreactions(rs))
+    dW = zeros(length(u), numreactions(rs) + length(ModelingToolkitBase.get_brownians(rs)))
     prob.g(dW, prob.u0, prob.p, t)
     @test dW == prob.g(prob.u0, prob.p, t)
     return dW
