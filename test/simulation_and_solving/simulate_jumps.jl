@@ -195,7 +195,7 @@ let
     jprobrssa = JumpProblem(rn, u0map, tspan, pmap; aggregator = RSSA(), save_positions = (false, false), rng)
     @test issetequal(jprobrssa.discrete_jump_aggregation.vartojumps_map, [[],[],[],[1],[2],[]])
     @test issetequal(jprobrssa.discrete_jump_aggregation.jumptovars_map, [[5],[5,6]])
-    N = 1000  # number of simulations to run
+    N = 4000  # number of simulations to run
     function getmean(N, prob)
         m1 = 0.0
         m2 = 0.0
