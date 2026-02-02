@@ -38,11 +38,10 @@
   **The return type depends on which reaction scales are present:**
   - Pure ODE (only ODE-scale reactions) → `ODEProblem`
   - Pure SDE or ODE+SDE (no jumps) → `SDEProblem`
-  - ODE + Jump (no SDE) → `JumpProblem`
+  - Any jumps present (ODE+Jump, SDE+Jump, ODE+SDE+Jump) → `JumpProblem`
 
-  **Note:** SDE+Jump combinations are not yet supported due to limitations in how
-  `JumpProblem` handles stochastic noise. For SDE+Jump systems, construct the
-  `SDEProblem` and `JumpProblem` separately.
+  For SDE+Jump combinations, the returned `JumpProblem` wraps an `SDEProblem` internally,
+  allowing simulation of hybrid systems with both diffusive noise and discrete jumps.
 
   ```julia
   rn = @reaction_network begin
@@ -68,6 +67,16 @@
   prob_hybrid = HybridProblem(rn2, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5])
   prob_hybrid isa JumpProblem  # true
   sol = solve(prob_hybrid, Tsit5())
+
+  # Hybrid SDE+Jump (JumpProblem wrapping SDEProblem, requires SDE solver)
+  rn3 = @reaction_network begin
+      k1, S --> P, [physical_scale = PhysicalScale.SDE]
+      k2, P --> S, [physical_scale = PhysicalScale.Jump]
+  end
+  prob_sde_jump = HybridProblem(rn3, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5])
+  prob_sde_jump isa JumpProblem  # true
+  prob_sde_jump.prob isa SDEProblem  # true - the underlying problem is an SDE
+  sol = solve(prob_sde_jump, SRIW1())  # use SDE solver from StochasticDiffEq
   ```
 
 - **`JumpProblem` simplified** — now produces pure jump systems only (symmetric with

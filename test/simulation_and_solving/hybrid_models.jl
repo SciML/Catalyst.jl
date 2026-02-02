@@ -1,5 +1,6 @@
 # Fetch packages.
 using Catalyst, JumpProcesses, ModelingToolkitBase, OrdinaryDiffEqTsit5, Statistics, Test, Random
+using StochasticDiffEq: SRIW1  # For SDE+Jump hybrid problems
 import DiffEqNoiseProcess  # Required for SDEProblem via mtkcompile
 
 # Sets stable rng number.
@@ -754,17 +755,23 @@ let
     @test prob isa SDEProblem
 end
 
-# Tests SDE+Jump hybrid throws an error (not yet supported).
+# Tests SDE+Jump hybrid returns JumpProblem wrapping SDEProblem.
 let
     rn = @reaction_network begin
         k1, S --> P, [physical_scale = PhysicalScale.SDE]
         k2, P --> S, [physical_scale = PhysicalScale.Jump]
     end
 
-    @test_throws ArgumentError HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5])
+    prob = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5])
+    @test prob isa JumpProcesses.JumpProblem
+    @test prob.prob isa SciMLBase.SDEProblem
+
+    # Test that we can solve it (use SDE solver since underlying problem is SDEProblem)
+    sol = solve(prob, SRIW1())
+    @test SciMLBase.successful_retcode(sol)
 end
 
-# Tests ODE+SDE+Jump full hybrid throws an error (SDE+Jump not yet supported).
+# Tests ODE+SDE+Jump full hybrid system.
 let
     rn = @reaction_network begin
         k1, S --> P, [physical_scale = PhysicalScale.ODE]
@@ -772,7 +779,93 @@ let
         k3, S --> 0, [physical_scale = PhysicalScale.Jump]
     end
 
-    @test_throws ArgumentError HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5, :k3 => 0.1])
+    prob = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0),
+        [:k1 => 1.0, :k2 => 0.5, :k3 => 0.1])
+    @test prob isa JumpProcesses.JumpProblem
+    @test prob.prob isa SciMLBase.SDEProblem
+
+    # Use SDE solver since underlying problem is SDEProblem
+    sol = solve(prob, SRIW1())
+    @test SciMLBase.successful_retcode(sol)
+end
+
+# Mathematical correctness test: Compare Catalyst SDE+Jump to manually coded version.
+# Uses a simple birth-death model with CLE noise for birth and jump for death.
+# dX = k1 dt + sqrt(k1) dW - (jump: X -> X-1 at rate k2*X)
+let
+    # Parameters
+    k1 = 10.0  # birth rate
+    k2 = 0.1   # death rate per molecule
+    X0 = 50.0
+    tspan = (0.0, 50.0)
+    N = 500  # number of trajectories
+
+    # --- Catalyst version ---
+    rn = @reaction_network begin
+        k1, 0 --> X, [physical_scale = PhysicalScale.SDE]
+        k2, X --> 0, [physical_scale = PhysicalScale.Jump]
+    end
+    cat_prob = HybridProblem(rn, [:X => X0], tspan, [:k1 => k1, :k2 => k2])
+
+    # --- Manually coded version using JumpProcesses + StochasticDiffEq ---
+    # SDE: dX = k1 dt + sqrt(k1) dW
+    f_manual!(du, u, p, t) = (du[1] = p[1])  # k1
+    g_manual!(du, u, p, t) = (du[1] = sqrt(p[1]))  # sqrt(k1)
+    # Jump: X -> X-1 at rate k2*X
+    rate_manual(u, p, t) = p[2] * u[1]  # k2 * X
+    affect_manual!(integrator) = (integrator.u[1] -= 1)
+    jump_manual = ConstantRateJump(rate_manual, affect_manual!)
+
+    sde_prob = SciMLBase.SDEProblem(f_manual!, g_manual!, [X0], tspan, [k1, k2])
+    manual_prob = JumpProblem(sde_prob, Direct(), jump_manual; rng)
+
+    # Run simulations and collect final values (use SDE solver since underlying problem is SDEProblem)
+    cat_finals = zeros(N)
+    manual_finals = zeros(N)
+    for i in 1:N
+        cat_sol = solve(cat_prob, SRIW1(); saveat = tspan[2])
+        manual_sol = solve(manual_prob, SRIW1(); saveat = tspan[2])
+        cat_finals[i] = cat_sol[1, end]
+        manual_finals[i] = manual_sol[1, end]
+    end
+
+    # Compare means (should be close to steady state k1/k2 = 100)
+    cat_mean = mean(cat_finals)
+    manual_mean = mean(manual_finals)
+    expected_mean = k1 / k2  # = 100 at steady state
+
+    @test cat_mean ≈ expected_mean rtol = 0.15
+    @test manual_mean ≈ expected_mean rtol = 0.15
+    @test cat_mean ≈ manual_mean rtol = 0.15
+end
+
+# Mathematical correctness test: Two-species system with known steady-state.
+# Production with CLE noise, degradation as jump.
+let
+    # S --k1--> S + P (SDE, CLE approximation)
+    # P --k2--> 0 (Jump)
+    # At steady state: E[P] = k1/k2
+    k1 = 5.0
+    k2 = 0.5
+    tspan = (0.0, 100.0)
+    N = 300
+
+    rn = @reaction_network begin
+        k1, S --> S + P, [physical_scale = PhysicalScale.SDE]
+        k2, P --> 0, [physical_scale = PhysicalScale.Jump]
+    end
+
+    prob = HybridProblem(rn, [:S => 1.0, :P => 0.0], tspan, [:k1 => k1, :k2 => k2])
+
+    # Use SDE solver since underlying problem is SDEProblem
+    finals = zeros(N)
+    for i in 1:N
+        sol = solve(prob, SRIW1(); saveat = tspan[2])
+        finals[i] = sol[:P][end]
+    end
+
+    expected_mean = k1 / k2  # = 10
+    @test mean(finals) ≈ expected_mean rtol = 0.2
 end
 
 # Tests that species-only reaction systems (no reactions) produce valid ODE systems with zero ODEs.
