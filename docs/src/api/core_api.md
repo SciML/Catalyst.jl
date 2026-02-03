@@ -96,8 +96,8 @@ of all options currently available.
 - [`default_noise_scaling`](@ref simulation_intro_SDEs_noise_saling): Enables the setting of a default noise scaling expression.
 - [`differentials`](@ref constraint_equations_coupling_constraints): Allows the designation of differentials.
 - [`equations`](@ref constraint_equations_coupling_constraints): Allows the creation of algebraic and/or differential equations.
-- [`continuous_events`](@ref constraint_equations_events): Allows the creation of continuous events.
-- [`discrete_events`](@ref constraint_equations_events): Allows the creation of discrete events.
+- [`continuous_events`](@ref events): Allows the creation of continuous events.
+- [`discrete_events`](@ref events): Allows the creation of discrete events.
 - [`combinatoric_ratelaws`](@ref faq_combinatoric_ratelaws): Takes a single option (`true` or `false`), which sets whether to use combinatorial rate laws.
 
 ## [ModelingToolkit and Catalyst accessor functions](@id api_accessor_functions)

@@ -136,7 +136,7 @@ nonreactions(coupled_crn)
 ### [Accessing other model properties](@id model_accessing_basics_others)
 There exist several other functions for accessing model properties. 
 
-The `observed`, `continuous_events`, `discrete_events` functions can be used to access a model's [observables](@ref dsl_advanced_options_observables), [continuous events](@ref constraint_equations_events), and [discrete events](@ref constraint_equations_events), respectively.
+The `observed`, `continuous_events`, `discrete_events` functions can be used to access a model's [observables](@ref dsl_advanced_options_observables), [continuous events](@ref events), and [discrete events](@ref events), respectively.
 
 The `ModelingToolkitBase.get_iv` function can be used to retrieve a [model's independent variable](@ref programmatic_CRN_construction):
 ```@example model_accessing_basics
