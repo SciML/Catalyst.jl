@@ -242,6 +242,14 @@ function find_event_vars!(ps, us, event::MT.AbstractCallback, ivs, vars)
     findvars!(ps, us, event.affect.affect, ivs, vars)
 end
 
+# Loops through all jumps, adding all unknowns and parameters found to their respective vectors.
+# Uses MT.collect_vars! which has dispatches for MassActionJump, ConstantRateJump, and VariableRateJump.
+function find_jump_vars!(ps, us, jumps::Vector, t)
+    for jump in jumps
+        MT.collect_vars!(us, ps, jump, t)
+    end
+end
+
 ### ReactionSystem Structure ###
 
 """
@@ -565,7 +573,7 @@ end
 # but carried out at a later stage.
 function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
         spatial_ivs = nothing, continuous_events = [], discrete_events = [],
-        observed = [], kwargs...)
+        observed = [], jumps = JumpType[], kwargs...)
 
     # Error if any observables have been declared a species or variable
     obs_vars = Set(obs_eq.lhs for obs_eq in observed)
@@ -621,6 +629,9 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     find_event_vars!(ps, us, continuous_events, ivs, vars)
     find_event_vars!(ps, us, discrete_events, ivs, vars)
 
+    # Loops through all jumps, adding encountered quantities to the unknown and parameter vectors.
+    find_jump_vars!(ps, us, jumps, t)
+
     # Converts the found unknowns and parameters to vectors.
     usv = collect(us)
 
@@ -643,7 +654,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     # Passes the processed input into the next `ReactionSystem` call.
     # Note: brownians are passed as the 5th positional argument.
     ReactionSystem(fulleqs, t, usv, psv, brownians; spatial_ivs, continuous_events,
-        discrete_events, observed, kwargs...)
+        discrete_events, observed, jumps, kwargs...)
 end
 
 ### Base Function Dispatches ###
