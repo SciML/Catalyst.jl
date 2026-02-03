@@ -64,9 +64,9 @@ function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserv
     species_to_idx = Dict(x => i for (i, x) in enumerate(ispcs))
     rhsvec = Any[0 for _ in ispcs]
     depspec_submap = if remove_conserved
-        Dict(eq.lhs => eq.rhs for eq in nps.conservedeqs)
+        Dict{SymbolicT, SymbolicT}(eq.lhs => eq.rhs for eq in nps.conservedeqs)
     else
-        Dict()
+        Dict{SymbolicT, SymbolicT}()
     end
 
     for (rxidx, rx) in enumerate(get_rxs(rs))
@@ -164,9 +164,9 @@ function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
     species_to_idx = Dict(x => i for (i, x) in enumerate(ispcs))
     nps = get_networkproperties(rs)
     depspec_submap = if remove_conserved
-        Dict(eq.lhs => eq.rhs for eq in nps.conservedeqs)
+        Dict{SymbolicT, SymbolicT}(eq.lhs => eq.rhs for eq in nps.conservedeqs)
     else
-        Dict()
+        Dict{SymbolicT, SymbolicT}()
     end
 
     for (j, rx) in enumerate(get_rxs(rs))
@@ -214,9 +214,9 @@ function add_noise_to_rhs!(rhsvec, rs, ispcs, brownian_map;
     nps = get_networkproperties(rs)
     species_to_idx = Dict(x => i for (i, x) in enumerate(ispcs))
     depspec_submap = if remove_conserved
-        Dict(eq.lhs => eq.rhs for eq in nps.conservedeqs)
+        Dict{SymbolicT, SymbolicT}(eq.lhs => eq.rhs for eq in nps.conservedeqs)
     else
-        Dict()
+        Dict{SymbolicT, SymbolicT}()
     end
 
     for (rx_idx, B_j) in brownian_map
@@ -353,7 +353,7 @@ end
 @inline function makemajump(rx; combinatoric_ratelaw = true)
     @unpack rate, substrates, substoich, netstoich = rx
     zeroorder = (length(substoich) == 0)
-    reactant_stoch = Vector{Pair{Any, eltype(substoich)}}()
+    reactant_stoch = Vector{Pair{SymbolicT, eltype(substoich)}}()
     @inbounds for (i, spec) in enumerate(substrates)
         # move constant species into the rate
         if isconstant(spec)

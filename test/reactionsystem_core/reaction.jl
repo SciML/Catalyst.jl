@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using Catalyst, DataStructures, Test
-using Catalyst: get_symbolics
+using Catalyst: get_symbolics, SymbolicT
 using ModelingToolkitBase: value, get_variables!
 using Catalyst: has_physical_scale, get_physical_scale
 
@@ -30,12 +30,12 @@ let
         rx6 = Reaction(rate, [X], [x], [n1], [1])
 
         # Check `Reaction` types.
-        @test rx1 isa Reaction{Any,Int64}
-        @test rx2 isa Reaction{Any,Float64}
-        @test rx3 isa Reaction{Any,Any}
-        @test rx4 isa Reaction{Any,Rational{Int64}}
-        @test rx5 isa Reaction{Any,Any}
-        @test rx6 isa Reaction{Any,Any}
+        @test rx1 isa Reaction{SymbolicT,Int64}
+        @test rx2 isa Reaction{SymbolicT,Float64}
+        @test rx3 isa Reaction{SymbolicT,Any}
+        @test rx4 isa Reaction{SymbolicT,Rational{Int64}}
+        @test rx5 isa Reaction{SymbolicT,Any}
+        @test rx6 isa Reaction{SymbolicT,Any}
 
         # Check `Reaction` net stoichiometries.
         issetequal(rx1.netstoich, [X => -1])

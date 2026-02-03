@@ -82,7 +82,7 @@ end
 # calculates the net stoichiometry of a reaction as a vector of pairs (sub,substoich)
 function get_netstoich(subs, prods, sstoich, pstoich)
     # stoichiometry as a Dictionary
-    nsdict = Dict{Any, eltype(sstoich)}(sub => -sstoich[i] for (i, sub) in enumerate(subs))
+    nsdict = Dict{eltype(subs), eltype(sstoich)}(sub => -sstoich[i] for (i, sub) in enumerate(subs))
     for (i, p) in enumerate(prods)
         coef = pstoich[i]
         @inbounds nsdict[p] = haskey(nsdict, p) ? nsdict[p] + coef : coef
