@@ -563,7 +563,7 @@ end
 # the model creation) and creates the corresponding vectors.
 # While species are ordered before variables in the unknowns vector, this ordering is not imposed here,
 # but carried out at a later stage.
-function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
+function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in, brownians = SymbolicT[];
         spatial_ivs = nothing, continuous_events = [], discrete_events = [],
         observed = [], kwargs...)
 
@@ -601,13 +601,12 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     # Extracts any species, variables, and parameters that occur in (non-reaction) equations.
     # Creates the new reactions + equations vector, `fulleqs` (sorted reactions first, equations next).
     # System automatically extracts brownians from equations (variables with BROWNIAN type).
-    brownians = SymbolicT[]
     if !isempty(eqs)
         sys = MT.System(eqs, iv; name = gensym())
         fulleqs = CatalystEqType[rxs; equations(sys)]
         union!(us, unknowns(sys))
         union!(ps, parameters(sys))
-        brownians = MT.brownians(sys)
+        union!(brownians, MT.brownians(sys))
     else
         fulleqs = rxs
     end
