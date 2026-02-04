@@ -425,8 +425,9 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
     # Process initial_conditions to unwrap Num wrappers.
     initial_conditions = SymmapT(value(entry[1]) => value(entry[2]) for entry in initial_conditions)
 
-    # handles "bindings". Recently introduced in MTK/Symbolics, explicit Catalyst support need to be
-    # implemented. Left empty for now.
+    # Bindings are auto-discovered by MTKBase from variable metadata when Systems are created.
+    # The 5-argument System constructor calls process_variables! which extracts bindings from
+    # variables with symbolic default values. No explicit Catalyst handling is needed.
     bindings = MT.SymmapT()
 
     # Extracts independent variables (iv and sivs), dependent variables (species and variables)
@@ -1022,10 +1023,6 @@ Returns whether `rn` has any spatial independent variables (i.e. is a spatial ne
 isspatial(rn::ReactionSystem) = !isempty(get_sivs(rn))
 
 ### ModelingToolkit Function Dispatches ###
-
-# Retrieves events.
-MT.get_continuous_events(sys::ReactionSystem) = getfield(sys, :continuous_events)
-# `MT.get_discrete_events(sys::ReactionSystem) = getfield(sys, :get_discrete_events)` should be added here.
 
 # need a custom equations since ReactionSystem.eqs are a mix of Reactions and Equations
 function MT.equations(sys::ReactionSystem)
