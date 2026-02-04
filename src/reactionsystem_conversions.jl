@@ -1199,15 +1199,7 @@ function JumpProcesses.JumpProblem(rs::ReactionSystem, u0, tspan,
     # Pure jump system - use HybridProblem for hybrid ODE+SDE+Jump systems.
     jsys = complete(make_sck_jump(rs; name, combinatoric_ratelaws, checks,
         expand_catalyst_funs, save_positions))
-    # Convert Symbol keys to Symbolic keys since MTK's callback compilation
-    # (specifically compile_equational_affect) requires Symbolic keys.
-    u0_sym = symmap_to_varmap(jsys, u0)
-    op = if p isa DiffEqBase.NullParameters
-        u0_sym
-    else
-        p_sym = symmap_to_varmap(jsys, p)
-        merge(Dict(u0_sym), Dict(p_sym))
-    end
+    op = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
     return JumpProblem(jsys, op, tspan; save_positions, kwargs...)
 end
 
@@ -1223,10 +1215,9 @@ This function uses `make_hybrid_model` internally and respects per-reaction
 The return type depends on which reaction scales are present:
 - Pure ODE (only ODE-scale reactions) → `ODEProblem`
 - Pure SDE or ODE+SDE (no jumps) → `SDEProblem`
-- ODE + Jump (no SDE) → `JumpProblem`
+- Any jumps present (ODE+Jump, SDE+Jump, ODE+SDE+Jump) → `JumpProblem`
 
-Note: SDE+Jump combinations are not yet supported. For SDE+Jump systems, construct
-the `SDEProblem` and `JumpProblem` separately.
+For SDE+Jump combinations, the returned `JumpProblem` wraps an `SDEProblem` internally.
 
 # Arguments
 - `rs`: The ReactionSystem to convert.
@@ -1247,8 +1238,7 @@ the `SDEProblem` and `JumpProblem` separately.
 # Returns
 - `ODEProblem` if all reactions are ODE-scale
 - `SDEProblem` if reactions are ODE/SDE-scale with no jumps
-- `JumpProblem` if reactions are ODE/Jump-scale with no SDE
-- Throws `ArgumentError` for SDE+Jump combinations (not yet supported)
+- `JumpProblem` if any jumps are present (wrapping `ODEProblem` for ODE+Jump, or `SDEProblem` for SDE+Jump)
 
 # Example
 ```julia
@@ -1264,6 +1254,15 @@ sol = solve(prob, Tsit5())
 prob_ode = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5];
     default_scale = PhysicalScale.ODE)
 sol_ode = solve(prob_ode, Tsit5())
+
+# SDE+Jump hybrid system (requires SDE solver like SRIW1 from StochasticDiffEq)
+rn_sde_jump = @reaction_network begin
+    k1, S --> P, [physical_scale = PhysicalScale.SDE]
+    k2, P --> S, [physical_scale = PhysicalScale.Jump]
+end
+prob_sde_jump = HybridProblem(rn_sde_jump, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5])
+# prob_sde_jump.prob isa SDEProblem  # true - JumpProblem wraps SDEProblem
+sol = solve(prob_sde_jump, SRIW1())
 ```
 """
 function HybridProblem(rs::ReactionSystem, u0, tspan,
@@ -1291,28 +1290,19 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
     has_sde = has_sde || user_has_sde
     has_jump = has_jump || user_has_jump
 
-    # SDE+Jump hybrid is not yet supported.
-    if has_sde && has_jump
-        throw(ArgumentError("HybridProblem does not currently support SDE+Jump combinations. " *
-            "For SDE-scale reactions with jumps, construct the SDEProblem and JumpProblem separately."))
-    end
-
     # Build the unified System from the flattened ReactionSystem.
-    sys = make_hybrid_model(flatrs; name, physical_scales, default_scale, 
+    sys = make_hybrid_model(flatrs; name, physical_scales, default_scale,
         combinatoric_ratelaws, expand_catalyst_funs, save_positions, checks)
 
     # Build problem conditions (u0 + p merged).
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict(u0), Dict(p))
 
     if has_jump
-        # Any jumps present → JumpProblem
-        # Need symmap_to_varmap for events - callback compilation requires Symbolic keys.
-        # MTKBase bug: compile_equational_affect creates ImplicitDiscreteProblem(affsys, op)
-        # where affsys is a different system than the main sys. Symbol keys in op can't be
-        # converted because they're looked up in affsys's symbol table, not sys's.
-        sys = complete(sys)
-        prob_cond_sym = symmap_to_varmap(sys, prob_cond)
-        return JumpProblem(sys, prob_cond_sym, tspan; save_positions, kwargs...)
+        # Any jumps present → JumpProblem (wrapping ODEProblem or SDEProblem as needed)
+        # For SDE+Jump: mtkcompile converts brownians → noise_eqs via extract_brownians_to_noise_eqs
+        # For pure Jump: complete is sufficient (avoids unnecessary mtkcompile overhead)
+        sys = has_sde ? MT.mtkcompile(sys) : complete(sys)
+        return JumpProblem(sys, prob_cond, tspan; save_positions, kwargs...)
 
     elseif has_sde
         # SDE (with or without ODE) → SDEProblem
