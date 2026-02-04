@@ -84,6 +84,67 @@ let
     @test !any(isequal(V), get_brownians(rn))
 end
 
+# Tests auto-discovery of variables from ConstantRateJump via the two-argument constructor.
+let
+    @species S(t) P(t)
+    @parameters k d
+
+    # Create a ConstantRateJump that references S and k.
+    user_jump = MT.ConstantRateJump(k, [S ~ Pre(S) + 1])
+
+    # Two-argument constructor - should auto-discover S, k from jump.
+    # Only explicitly provide the reaction's variables (P, d).
+    rn = ReactionSystem(
+        [Reaction(d, [P], nothing)],
+        t;
+        jumps = [user_jump],
+        name = :rn
+    )
+
+    # S from jump affect, P from reaction.
+    @test issetequal(unknowns(rn), [S, P])
+    # k from jump rate, d from reaction.
+    @test issetequal(parameters(rn), [k, d])
+end
+
+# Tests auto-discovery of variables from VariableRateJump.
+let
+    @species X(t)
+    @variables Y(t)
+    @parameters α β
+
+    # VariableRateJump with rate depending on Y and α.
+    user_jump = MT.VariableRateJump(α * Y, [X ~ Pre(X) + 1])
+
+    rn = ReactionSystem(
+        [D(Y) ~ -β * Y],  # ODE for Y
+        t;
+        jumps = [user_jump],
+        name = :rn
+    )
+
+    # X from jump affect, Y from equation and jump rate.
+    @test issetequal(unknowns(rn), [X, Y])
+    # α from jump rate, β from equation.
+    @test issetequal(parameters(rn), [α, β])
+end
+
+# Tests auto-discovery of variables from MassActionJump.
+let
+    @species A(t) B(t)
+    @parameters k_ma
+
+    # MassActionJump: A -> B with rate k_ma.
+    user_jump = MT.MassActionJump(k_ma, [A => 1], [A => -1, B => 1])
+
+    rn = ReactionSystem([], t; jumps = [user_jump], name = :rn)
+
+    # A and B from jump stoichiometry.
+    @test issetequal(unknowns(rn), [A, B])
+    # k_ma from jump rate.
+    @test issetequal(parameters(rn), [k_ma])
+end
+
 ### Test Composition with Brownians and Jumps ###
 
 # Tests that brownians are collected from subsystems during flatten.
