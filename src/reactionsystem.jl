@@ -175,48 +175,21 @@ end
 # Used to sort the reaction/equation vector as reactions first, equations second.
 eqsortby(eq::CatalystEqType) = eq isa Reaction ? 1 : 2
 
-# search the symbolic expression for parameters or unknowns
-# and save in ps and us respectively. vars is used to cache results
-function findvars!(ps, us, exprtosearch, ivs, vars)
-    MT.get_variables!(vars, exprtosearch; is_atomic = pre_is_not_atomic)
-    for var in vars
-        (var ∈ ivs) && continue
-        if MT.isparameter(var)
-            push!(ps, var)
-        else
-            push!(us, var)
-        end
-    end
-    empty!(vars)
-end
-# Special dispatch for equations, applied `findvars!` to left-hand and right-hand sides.
-function findvars!(ps, us, eq_to_search::Equation, ivs, vars)
-    findvars!(ps, us, eq_to_search.lhs, ivs, vars)
-    findvars!(ps, us, eq_to_search.rhs, ivs, vars)
-end
-# Special dispatch for Vectors (applies it to each vector element).
-function findvars!(ps, us, exprs_to_search::Vector, ivs, vars)
-    foreach(exprtosearch -> findvars!(ps, us, exprtosearch, ivs, vars), exprs_to_search)
-end
-
-# Used to ensure that `X`, not `Pre(X)` is sxtracted from expressions like `Pre(x)`.
-pre_is_not_atomic(x) = SymbolicUtils.default_is_atomic(x) && !(iscall(x) && operation(x) isa Pre)
-
-# Loops through all events in an supplied event vector, adding all unknowns and parameters found in
+# Loops through all events in a supplied event vector, adding all unknowns and parameters found in
 # its condition and affect functions to their respective vectors (`ps` and `us`).
-function find_event_vars!(ps, us, events::Vector, ivs, vars)
-    foreach(event -> find_event_vars!(ps, us, event, ivs, vars), events)
+# Uses MT.collect_vars! for consistency with other variable discovery in the codebase.
+function find_event_vars!(ps, us, events::Vector, t)
+    foreach(event -> find_event_vars!(ps, us, event, t), events)
 end
 # For a single event, adds quantities from its condition and affect expression(s) to `ps` and `us`.
-# Applies `findvars!` to the event's condition (`event[1])` and affec (`event[2]`).
-# Two dispatches required, and the event can be given as a MTK structure of a Pair of symbolic expressions/equations.
-function find_event_vars!(ps, us, event::Pair, ivs, vars)
-    findvars!(ps, us, event[1], ivs, vars)
-    findvars!(ps, us, event[2], ivs, vars)
+# Two dispatches required: events can be given as a MTK callback structure or a Pair of symbolic expressions.
+function find_event_vars!(ps, us, event::Pair, t)
+    MT.collect_vars!(us, ps, event[1], t)  # condition
+    MT.collect_vars!(us, ps, event[2], t)  # affect
 end
-function find_event_vars!(ps, us, event::MT.AbstractCallback, ivs, vars)
-    findvars!(ps, us, event.conditions, ivs, vars)
-    findvars!(ps, us, event.affect.affect, ivs, vars)
+function find_event_vars!(ps, us, event::MT.AbstractCallback, t)
+    MT.collect_vars!(us, ps, event.conditions, t)
+    MT.collect_vars!(us, ps, event.affect.affect, t)
 end
 
 # Loops through all jumps, adding all unknowns and parameters found to their respective vectors.
@@ -566,10 +539,8 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in, bro
     end
 
     # Initialises the new unknowns and parameter vectors.
-    # Preallocates the `vars` set, which is used by `findvars!`
     us = OrderedSet{SymbolicT}(us_in)
     ps = OrderedSet{SymbolicT}(ps_in)
-    vars = OrderedSet{SymbolicT}()
 
     # Extracts the reactions and equations from the combined reactions + equations input vector.
     all(eq -> eq isa Union{Reaction, Equation}, rxs_and_eqs)
@@ -600,11 +571,17 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in, bro
     end
 
     # Loops through all events, adding encountered quantities to the unknown and parameter vectors.
-    find_event_vars!(ps, us, continuous_events, ivs, vars)
-    find_event_vars!(ps, us, discrete_events, ivs, vars)
+    find_event_vars!(ps, us, continuous_events, t)
+    find_event_vars!(ps, us, discrete_events, t)
 
     # Loops through all jumps, adding encountered quantities to the unknown and parameter vectors.
     find_jump_vars!(ps, us, jumps, t)
+
+    # Discover parameters/unknowns from observed equation RHS.
+    # Only process RHS to avoid adding observable LHS to unknowns (observables stay observables).
+    for eq in observed
+        MT.collect_vars!(us, ps, eq.rhs, t)
+    end
 
     # Converts the found unknowns and parameters to vectors.
     usv = collect(us)

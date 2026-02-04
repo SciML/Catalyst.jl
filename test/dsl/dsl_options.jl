@@ -771,6 +771,35 @@ let
     @test sol[:X][1] ≈ u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]
 end
 
+# Tests that parameters appearing only in observable RHS are discovered via programmatic API.
+# This is a regression test for the fix where such parameters were not being discovered.
+let
+    @parameters k k_obs k_ratio eps_val
+    @species A(t) B(t) C(t)
+    @variables X(t) Total(t) Ratio(t)
+
+    rxs = [Reaction(k, [A, B], [C])]
+    observed = [
+        X ~ A + k_obs * B,
+        Total ~ A + B + C,
+        Ratio ~ k_ratio * A / (B + eps_val)
+    ]
+
+    @named rs = ReactionSystem(rxs, t; observed)
+    rs = complete(rs)
+
+    # k_obs, k_ratio, eps_val should be discovered from observable RHS
+    @test issetequal(parameters(rs), [k, k_obs, k_ratio, eps_val])
+    # Observable LHS should NOT be in unknowns
+    @test !any(isequal(X), unknowns(rs))
+    @test !any(isequal(Total), unknowns(rs))
+    @test !any(isequal(Ratio), unknowns(rs))
+    # Observable LHS SHOULD be in var_to_name (for symbolic indexing)
+    @test haskey(Catalyst.get_var_to_name(rs), :X)
+    @test haskey(Catalyst.get_var_to_name(rs), :Total)
+    @test haskey(Catalyst.get_var_to_name(rs), :Ratio)
+end
+
 # Checks that models created w/o specifying `@variables` for observables are identical.
 # Compares both to model with explicit declaration, and programmatically created model.
 let
