@@ -1023,10 +1023,6 @@ isspatial(rn::ReactionSystem) = !isempty(get_sivs(rn))
 
 ### ModelingToolkit Function Dispatches ###
 
-# Retrieves events.
-MT.get_continuous_events(sys::ReactionSystem) = getfield(sys, :continuous_events)
-# `MT.get_discrete_events(sys::ReactionSystem) = getfield(sys, :get_discrete_events)` should be added here.
-
 # need a custom equations since ReactionSystem.eqs are a mix of Reactions and Equations
 function MT.equations(sys::ReactionSystem)
     ivs = independent_variables(sys)
