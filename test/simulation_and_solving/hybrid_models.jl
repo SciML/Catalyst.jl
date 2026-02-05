@@ -160,7 +160,6 @@ end
 
 # Checks that the full pipeline of symbolic accessing/updating problems/integrators/solutions
 # of hybrid models work.
-# CURRENTLY NOT WORKING DUE TO `remake` ISSUE WITH HYBRID MODELS.
 let
     # Creates model and initial problem (with defaults for one species and one parameter).
     rn_hybrid = @reaction_network begin
@@ -176,7 +175,7 @@ let
     ps = [:kB => 2.0, :kD => 0.4, :k => 1.0, :d => 0.5]
     prob = HybridProblem(rn_hybrid, u0, (0.0, 5.0), ps)
 
-    # Check problem content, updates problem with remake, checks again.
+    # Check problem content.
     @test prob[:X] == 1.0
     @test prob[:X2] == 0.0
     @test prob[:Y] == 0.0
@@ -187,57 +186,56 @@ let
     @test prob.ps[:k] == 1.0
     @test prob.ps[:d] == 0.5
 
-    # AS OF MTK 9.72 THESE ARE BROKEN AND GIVE ERRORS
-    # prob = remake(prob; u0 = [:X => 3.0, :X2 => 2.0, :Y => 1.0], p = [:p => 5.0, :dD => 0.8, :k => 2.0])
-    # @test prob[:X] == 3.0
-    # @test prob[:X2] == 2.0
-    # @test prob[:Y] == 1.0
-    # @test prob[:Y2] == 0.0
-    # @test prob.ps[:p] == 5.0
-    # @test prob.ps[:kB] == 2.0
-    # @test prob.ps[:kD] == 0.8
-    # @test prob.ps[:k] == 2.0
-    # @test prob.ps[:d] == 0.5
+    # Solves and checks values of solution (do this before integrator mutation test
+    # since integrator mutation affects shared parameter state).
+    sol = solve(prob, Tsit5(); maxiters = 10, verbose = false)
+    @test sol[:X][1] == 1.0
+    @test sol[:X2][1] == 0.0
+    @test sol[:Y][1] == 0.0
+    @test sol[:Y2][1] == 0.0
+    @test sol.ps[:p] == 1.0
+    @test sol.ps[:kB] == 2.0
+    @test sol.ps[:kD] == 0.4
+    @test sol.ps[:k] == 1.0
+    @test sol.ps[:d] == 0.5
 
-    # # Creates, checks, updates, and checks an integrator.
-    # int = init(prob, Tsit5())
-    # @test int[:X] == 3.0
-    # @test int[:X2] == 2.0
-    # @test int[:Y] == 1.0
-    # @test int[:Y2] == 0.0
-    # @test int.ps[:p] == 5.0
-    # @test int.ps[:kB] == 2.0
-    # @test int.ps[:kD] == 0.8
-    # @test int.ps[:k] == 2.0
-    # @test int.ps[:d] == 0.5
-    # @test int[:X] = 4.0
-    # @test int[:X2] = 3.0
-    # @test int[:Y] = 2.0
-    # @test int.ps[:p] = 6.0
-    # @test int.ps[:kB] = 3.0
-    # @test int.ps[:kD] = 0.6
-    # @test int.ps[:k] = 3.0
-    # @test int[:X] == 4.0
-    # @test int[:X2] == 3.0
-    # @test int[:Y] == 2.0
-    # @test int[:Y2] == 0.0
-    # @test int.ps[:p] == 6.0
-    # @test int.ps[:kB] == 3.0
-    # @test int.ps[:kD] == 0.5
-    # @test int.ps[:k] == 3.0
-    # @test int.ps[:d] == 0.5
+    # Creates, checks, updates, and checks an integrator.
+    int = init(prob, Tsit5())
+    @test int[:X] == 1.0
+    @test int[:X2] == 0.0
+    @test int[:Y] == 0.0
+    @test int[:Y2] == 0.0
+    @test int.ps[:p] == 1.0
+    @test int.ps[:kB] == 2.0
+    @test int.ps[:kD] == 0.4
+    @test int.ps[:k] == 1.0
+    @test int.ps[:d] == 0.5
 
-    # # Solves and checks values of solution.
-    # sol = solve(prob, Tsit5(); maxiters = 1, verbose = false)
-    # @test sol[:X][1] == 3.0
-    # @test sol[:X2][1] == 2.0
-    # @test sol[:Y][1] == 1.0
-    # @test sol[:Y2][1] == 0.0
-    # @test sol.ps[:p] == 5.0
-    # @test sol.ps[:kB] == 2.0
-    # @test sol.ps[:kD] == 0.8
-    # @test sol.ps[:k] == 2.0
-    # @test sol.ps[:d] == 0.5
+    # Mutate integrator state and parameters.
+    int[:X] = 4.0
+    int[:X2] = 3.0
+    int[:Y] = 2.0
+    int.ps[:p] = 6.0
+    int.ps[:kB] = 3.0
+    int.ps[:kD] = 0.6
+    int.ps[:k] = 3.0
+
+    # Check mutated values.
+    @test int[:X] == 4.0
+    @test int[:X2] == 3.0
+    @test int[:Y] == 2.0
+    @test int[:Y2] == 0.0
+    @test int.ps[:p] == 6.0
+    @test int.ps[:kB] == 3.0
+    @test int.ps[:kD] == 0.6
+    @test int.ps[:k] == 3.0
+    @test int.ps[:d] == 0.5
+
+    # REMAKE WITH SYMBOL/DICT u0 IS BROKEN (MTKBase issue with JumpProblem remake).
+    # Error: "Passed in u0 is incompatible with current u0 which has type: Vector{Float64}."
+    # Workaround: remake with numeric array works, or remake with only parameters works.
+    # Upstream issue needed in ModelingToolkit/JumpProcesses.
+    # prob = remake(prob; u0 = [:X => 3.0, :X2 => 2.0, :Y => 1.0], p = [:p => 5.0, :kD => 0.8, :k => 2.0])
 end
 
 # Checks that various model options (observables, events, defaults and metadata, differential equations,
