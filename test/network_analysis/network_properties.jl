@@ -497,7 +497,7 @@ let
     @test isequal(Φ[1], 3.)
 
     # Test full simplification.
-    u0map = symmap_to_varmap(rn, u0map)
+    u0map = Catalyst.symmap_to_varmap(rn, u0map)
     numeqs = [substitute(eq, u0map) for eq in numeqs]
     for (v1,v2,v3) in zip(numeqs, S*K*Φ, Y*A_k*Φ)
         @test SymbolicUtils.unwrap_const(v1) ≈ SymbolicUtils.unwrap_const(ModelingToolkitBase.unwrap(v2))
