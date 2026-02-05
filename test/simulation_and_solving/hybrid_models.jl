@@ -160,7 +160,6 @@ end
 
 # Checks that the full pipeline of symbolic accessing/updating problems/integrators/solutions
 # of hybrid models work.
-# CURRENTLY NOT WORKING DUE TO `remake` ISSUE WITH HYBRID MODELS.
 let
     # Creates model and initial problem (with defaults for one species and one parameter).
     rn_hybrid = @reaction_network begin
@@ -176,7 +175,7 @@ let
     ps = [:kB => 2.0, :kD => 0.4, :k => 1.0, :d => 0.5]
     prob = HybridProblem(rn_hybrid, u0, (0.0, 5.0), ps)
 
-    # Check problem content, updates problem with remake, checks again.
+    # Check problem content.
     @test prob[:X] == 1.0
     @test prob[:X2] == 0.0
     @test prob[:Y] == 0.0
@@ -187,57 +186,56 @@ let
     @test prob.ps[:k] == 1.0
     @test prob.ps[:d] == 0.5
 
-    # AS OF MTK 9.72 THESE ARE BROKEN AND GIVE ERRORS
-    # prob = remake(prob; u0 = [:X => 3.0, :X2 => 2.0, :Y => 1.0], p = [:p => 5.0, :dD => 0.8, :k => 2.0])
-    # @test prob[:X] == 3.0
-    # @test prob[:X2] == 2.0
-    # @test prob[:Y] == 1.0
-    # @test prob[:Y2] == 0.0
-    # @test prob.ps[:p] == 5.0
-    # @test prob.ps[:kB] == 2.0
-    # @test prob.ps[:kD] == 0.8
-    # @test prob.ps[:k] == 2.0
-    # @test prob.ps[:d] == 0.5
+    # Solves and checks values of solution (do this before integrator mutation test
+    # since integrator mutation affects shared parameter state).
+    sol = solve(prob, Tsit5(); maxiters = 10, verbose = false)
+    @test sol[:X][1] == 1.0
+    @test sol[:X2][1] == 0.0
+    @test sol[:Y][1] == 0.0
+    @test sol[:Y2][1] == 0.0
+    @test sol.ps[:p] == 1.0
+    @test sol.ps[:kB] == 2.0
+    @test sol.ps[:kD] == 0.4
+    @test sol.ps[:k] == 1.0
+    @test sol.ps[:d] == 0.5
 
-    # # Creates, checks, updates, and checks an integrator.
-    # int = init(prob, Tsit5())
-    # @test int[:X] == 3.0
-    # @test int[:X2] == 2.0
-    # @test int[:Y] == 1.0
-    # @test int[:Y2] == 0.0
-    # @test int.ps[:p] == 5.0
-    # @test int.ps[:kB] == 2.0
-    # @test int.ps[:kD] == 0.8
-    # @test int.ps[:k] == 2.0
-    # @test int.ps[:d] == 0.5
-    # @test int[:X] = 4.0
-    # @test int[:X2] = 3.0
-    # @test int[:Y] = 2.0
-    # @test int.ps[:p] = 6.0
-    # @test int.ps[:kB] = 3.0
-    # @test int.ps[:kD] = 0.6
-    # @test int.ps[:k] = 3.0
-    # @test int[:X] == 4.0
-    # @test int[:X2] == 3.0
-    # @test int[:Y] == 2.0
-    # @test int[:Y2] == 0.0
-    # @test int.ps[:p] == 6.0
-    # @test int.ps[:kB] == 3.0
-    # @test int.ps[:kD] == 0.5
-    # @test int.ps[:k] == 3.0
-    # @test int.ps[:d] == 0.5
+    # Creates, checks, updates, and checks an integrator.
+    int = init(prob, Tsit5())
+    @test int[:X] == 1.0
+    @test int[:X2] == 0.0
+    @test int[:Y] == 0.0
+    @test int[:Y2] == 0.0
+    @test int.ps[:p] == 1.0
+    @test int.ps[:kB] == 2.0
+    @test int.ps[:kD] == 0.4
+    @test int.ps[:k] == 1.0
+    @test int.ps[:d] == 0.5
 
-    # # Solves and checks values of solution.
-    # sol = solve(prob, Tsit5(); maxiters = 1, verbose = false)
-    # @test sol[:X][1] == 3.0
-    # @test sol[:X2][1] == 2.0
-    # @test sol[:Y][1] == 1.0
-    # @test sol[:Y2][1] == 0.0
-    # @test sol.ps[:p] == 5.0
-    # @test sol.ps[:kB] == 2.0
-    # @test sol.ps[:kD] == 0.8
-    # @test sol.ps[:k] == 2.0
-    # @test sol.ps[:d] == 0.5
+    # Mutate integrator state and parameters.
+    int[:X] = 4.0
+    int[:X2] = 3.0
+    int[:Y] = 2.0
+    int.ps[:p] = 6.0
+    int.ps[:kB] = 3.0
+    int.ps[:kD] = 0.6
+    int.ps[:k] = 3.0
+
+    # Check mutated values.
+    @test int[:X] == 4.0
+    @test int[:X2] == 3.0
+    @test int[:Y] == 2.0
+    @test int[:Y2] == 0.0
+    @test int.ps[:p] == 6.0
+    @test int.ps[:kB] == 3.0
+    @test int.ps[:kD] == 0.6
+    @test int.ps[:k] == 3.0
+    @test int.ps[:d] == 0.5
+
+    # REMAKE WITH SYMBOL/DICT u0 IS BROKEN (MTKBase issue with JumpProblem remake).
+    # Error: "Passed in u0 is incompatible with current u0 which has type: Vector{Float64}."
+    # Workaround: remake with numeric array works, or remake with only parameters works.
+    # Upstream issue needed in ModelingToolkit/JumpProcesses.
+    # prob = remake(prob; u0 = [:X => 3.0, :X2 => 2.0, :Y => 1.0], p = [:p => 5.0, :kD => 0.8, :k => 2.0])
 end
 
 # Checks that various model options (observables, events, defaults and metadata, differential equations,
@@ -410,9 +408,9 @@ let
     prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
     sol = solve(prob, Tsit5(); saveat = times)
 
-    # Should get approximately the expected number of times (may have small variations
-    # due to event handling, but shouldn't have a point for every jump).
-    @test length(sol.t) <= length(times) + 5  # Allow small tolerance for events
+    # With save_positions=(false, false), saveat should give exactly the specified times.
+    @test length(sol.t) == length(times)
+    @test sol.t ≈ collect(times)
 
     # Verify the ContinuousCallback for VRJ has correct save_positions.
     cc = prob.jump_callback.continuous_callbacks[1]
@@ -442,8 +440,9 @@ let
     prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
     sol = solve(prob, Tsit5(); saveat = times)
 
-    # Should get approximately the expected number of times.
-    @test length(sol.t) <= length(times) + 5
+    # With save_positions=(false, false), saveat should give exactly the specified times.
+    @test length(sol.t) == length(times)
+    @test sol.t ≈ collect(times)
 
     # Verify both aggregator and ContinuousCallback have correct save_positions.
     disc_agg = prob.discrete_jump_aggregation
@@ -478,6 +477,68 @@ let
     # Just verify the values are reasonable.
     @test sol_saveat[:X][1] == 10.0
     @test sol_saveat[:X][end] < 10.0  # Should have decayed
+end
+
+# Tests that save_positions keyword is correctly forwarded for SDE+Jump hybrid systems
+# (SDEProblem with jumps overlaid).
+let
+    # Hybrid model with SDE noise and mass action jumps.
+    rn = @reaction_network begin
+        k1, S --> P, [physical_scale = PhysicalScale.SDE]
+        (p, d), 0 <--> A
+    end
+    u0 = [:S => 50.0, :P => 0.0, :A => 10]
+    ps = [:k1 => 0.1, :p => 1.0, :d => 0.1]
+    tspan = (0.0, 10.0)
+    times = 0.0:1.0:10.0
+
+    # With save_positions=(false, false), saveat should control output times.
+    prob = HybridProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
+    sol = solve(prob, SRIW1(); saveat = times)
+    @test length(sol.t) == length(times)
+    @test sol.t ≈ collect(times)
+
+    # With default save_positions (true, true), there will be extra points from jump times.
+    prob_default = HybridProblem(rn, u0, tspan, ps; rng)
+    sol_default = solve(prob_default, SRIW1(); saveat = times)
+    @test length(sol_default.t) > length(times)
+
+    # Verify the aggregator has correct save_positions setting.
+    disc_agg = prob.discrete_jump_aggregation
+    @test disc_agg.save_positions == (false, false)
+    disc_agg_default = prob_default.discrete_jump_aggregation
+    @test disc_agg_default.save_positions == (true, true)
+end
+
+# Tests that save_positions keyword works for SDE+VariableRateJump hybrid systems.
+let
+    # Hybrid model with SDE noise and variable rate jump (time-dependent rate).
+    rn = @reaction_network begin
+        k1, S --> P, [physical_scale = PhysicalScale.SDE]
+        k2 * (1 + sin(t)), 0 --> A
+        d, A --> 0
+    end
+    u0 = [:S => 50.0, :P => 0.0, :A => 0]
+    ps = [:k1 => 0.1, :k2 => 0.5, :d => 0.1]
+    tspan = (0.0, 10.0)
+    times = 0.0:1.0:10.0
+
+    # With save_positions=(false, false), both SDE and VRJ should not save at event times.
+    prob = HybridProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
+    sol = solve(prob, SRIW1(); saveat = times)
+
+    # With save_positions=(false, false), saveat should give exactly the specified times.
+    @test length(sol.t) == length(times)
+    @test sol.t ≈ collect(times)
+
+    # Verify the ContinuousCallback for VRJ has correct save_positions.
+    cc = prob.jump_callback.continuous_callbacks[1]
+    @test cc.save_positions == [false, false]
+
+    # With default save_positions, ContinuousCallback should save.
+    prob_default = HybridProblem(rn, u0, tspan, ps; rng)
+    cc_default = prob_default.jump_callback.continuous_callbacks[1]
+    @test cc_default.save_positions == [true, true]
 end
 
 ### make_hybrid_model Tests ###
