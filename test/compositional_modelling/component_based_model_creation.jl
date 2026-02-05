@@ -290,9 +290,7 @@ let
     @test isapprox(0, norm(sol[ns.D] .- 2 * sol[A] - 3 * sol[B]), atol = (100 * eps()))
     psyms = [:r₊ => 1.0, :r₋ => 2.0, :ns₊β => 3.0]
     u₀syms = [:A => 1.0, :B => 2.0, :C => 0.0]
-    p = Catalyst.symmap_to_varmap(osys, psyms)
-    u₀ = Catalyst.symmap_to_varmap(osys, u₀syms)
-    oprob = ODEProblem(mtkcompile(osys), u₀, (0.0, 10.0), p)
+    oprob = ODEProblem(mtkcompile(osys), merge(Dict(u₀syms), Dict(psyms)), (0.0, 10.0))
     sol = solve(oprob, Tsit5())
     @test isapprox(0, norm(sol[ns.D] .- 2 * sol[A] - 3 * sol[B]), atol = (100 * eps()))
 
