@@ -410,9 +410,9 @@ let
     prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
     sol = solve(prob, Tsit5(); saveat = times)
 
-    # Should get approximately the expected number of times (may have small variations
-    # due to event handling, but shouldn't have a point for every jump).
-    @test length(sol.t) <= length(times) + 5  # Allow small tolerance for events
+    # With save_positions=(false, false), saveat should give exactly the specified times.
+    @test length(sol.t) == length(times)
+    @test sol.t ≈ collect(times)
 
     # Verify the ContinuousCallback for VRJ has correct save_positions.
     cc = prob.jump_callback.continuous_callbacks[1]
@@ -442,8 +442,9 @@ let
     prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
     sol = solve(prob, Tsit5(); saveat = times)
 
-    # Should get approximately the expected number of times.
-    @test length(sol.t) <= length(times) + 5
+    # With save_positions=(false, false), saveat should give exactly the specified times.
+    @test length(sol.t) == length(times)
+    @test sol.t ≈ collect(times)
 
     # Verify both aggregator and ContinuousCallback have correct save_positions.
     disc_agg = prob.discrete_jump_aggregation
@@ -478,6 +479,68 @@ let
     # Just verify the values are reasonable.
     @test sol_saveat[:X][1] == 10.0
     @test sol_saveat[:X][end] < 10.0  # Should have decayed
+end
+
+# Tests that save_positions keyword is correctly forwarded for SDE+Jump hybrid systems
+# (SDEProblem with jumps overlaid).
+let
+    # Hybrid model with SDE noise and mass action jumps.
+    rn = @reaction_network begin
+        k1, S --> P, [physical_scale = PhysicalScale.SDE]
+        (p, d), 0 <--> A
+    end
+    u0 = [:S => 50.0, :P => 0.0, :A => 10]
+    ps = [:k1 => 0.1, :p => 1.0, :d => 0.1]
+    tspan = (0.0, 10.0)
+    times = 0.0:1.0:10.0
+
+    # With save_positions=(false, false), saveat should control output times.
+    prob = HybridProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
+    sol = solve(prob, SRIW1(); saveat = times)
+    @test length(sol.t) == length(times)
+    @test sol.t ≈ collect(times)
+
+    # With default save_positions (true, true), there will be extra points from jump times.
+    prob_default = HybridProblem(rn, u0, tspan, ps; rng)
+    sol_default = solve(prob_default, SRIW1(); saveat = times)
+    @test length(sol_default.t) > length(times)
+
+    # Verify the aggregator has correct save_positions setting.
+    disc_agg = prob.discrete_jump_aggregation
+    @test disc_agg.save_positions == (false, false)
+    disc_agg_default = prob_default.discrete_jump_aggregation
+    @test disc_agg_default.save_positions == (true, true)
+end
+
+# Tests that save_positions keyword works for SDE+VariableRateJump hybrid systems.
+let
+    # Hybrid model with SDE noise and variable rate jump (time-dependent rate).
+    rn = @reaction_network begin
+        k1, S --> P, [physical_scale = PhysicalScale.SDE]
+        k2 * (1 + sin(t)), 0 --> A
+        d, A --> 0
+    end
+    u0 = [:S => 50.0, :P => 0.0, :A => 0]
+    ps = [:k1 => 0.1, :k2 => 0.5, :d => 0.1]
+    tspan = (0.0, 10.0)
+    times = 0.0:1.0:10.0
+
+    # With save_positions=(false, false), both SDE and VRJ should not save at event times.
+    prob = HybridProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
+    sol = solve(prob, SRIW1(); saveat = times)
+
+    # With save_positions=(false, false), saveat should give exactly the specified times.
+    @test length(sol.t) == length(times)
+    @test sol.t ≈ collect(times)
+
+    # Verify the ContinuousCallback for VRJ has correct save_positions.
+    cc = prob.jump_callback.continuous_callbacks[1]
+    @test cc.save_positions == [false, false]
+
+    # With default save_positions, ContinuousCallback should save.
+    prob_default = HybridProblem(rn, u0, tspan, ps; rng)
+    cc_default = prob_default.jump_callback.continuous_callbacks[1]
+    @test cc_default.save_positions == [true, true]
 end
 
 ### make_hybrid_model Tests ###
