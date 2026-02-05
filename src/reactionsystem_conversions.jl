@@ -1369,8 +1369,8 @@ end
 """
     symmap_to_varmap(sys, symmap)
 
-Given a system and map of `Symbol`s to values, generates a map from
-corresponding symbolic variables/parameters to the values that can be used to
+Function for internal usage only. Given a system and map of `Symbol`s to values, generates
+a map from corresponding symbolic variables/parameters to the values that can be used to
 pass initial conditions and parameter mappings.
 
 For example,

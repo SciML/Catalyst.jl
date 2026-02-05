@@ -4,6 +4,7 @@
 
 # Fetch packages.
 using Catalyst, ModelingToolkitBase, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, Statistics, StochasticDiffEq, Plots, Test
+using Catalyst: symmap_to_varmap
 using Symbolics: unwrap
 
 # Sets stable rng number.

@@ -4,6 +4,7 @@
 
 # Fetch packages.
 using Catalyst, NonlinearSolve, OrdinaryDiffEqTsit5, SparseArrays, StochasticDiffEq, Test
+using Catalyst: symmap_to_varmap
 using LinearAlgebra: norm
 using ModelingToolkitBase: value
 
