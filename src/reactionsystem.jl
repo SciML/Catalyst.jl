@@ -175,71 +175,29 @@ end
 # Used to sort the reaction/equation vector as reactions first, equations second.
 eqsortby(eq::CatalystEqType) = eq isa Reaction ? 1 : 2
 
-# Figures out a type.
-function get_speciestype(iv, unknowns, systems)
-    T = Nothing
-    !isempty(unknowns) && (T = typeof(first(unknowns)))
-
-    if !isempty(systems)
-        for sys in Iterators.filter(s -> s isa ReactionSystem, systems)
-            sts = MT.unknowns(sys)
-            if !isempty(sts)
-                T = typeof(first(sts))
-                break
-            end
-        end
-    end
-
-    if T <: Nothing
-        @variables A($iv)
-        T = typeof(unwrap(A))
-    end
-
-    T
-end
-
-# search the symbolic expression for parameters or unknowns
-# and save in ps and us respectively. vars is used to cache results
-function findvars!(ps, us, exprtosearch, ivs, vars)
-    MT.get_variables!(vars, exprtosearch; is_atomic = pre_is_not_atomic)
-    for var in vars
-        (var ∈ ivs) && continue
-        if MT.isparameter(var)
-            push!(ps, var)
-        else
-            push!(us, var)
-        end
-    end
-    empty!(vars)
-end
-# Special dispatch for equations, applied `findvars!` to left-hand and right-hand sides.
-function findvars!(ps, us, eq_to_search::Equation, ivs, vars)
-    findvars!(ps, us, eq_to_search.lhs, ivs, vars)
-    findvars!(ps, us, eq_to_search.rhs, ivs, vars)
-end
-# Special dispatch for Vectors (applies it to each vector element).
-function findvars!(ps, us, exprs_to_search::Vector, ivs, vars)
-    foreach(exprtosearch -> findvars!(ps, us, exprtosearch, ivs, vars), exprs_to_search)
-end
-
-# Used to ensure that `X`, not `Pre(X)` is sxtracted from expressions like `Pre(x)`.
-pre_is_not_atomic(x) = SymbolicUtils.default_is_atomic(x) && !(iscall(x) && operation(x) isa Pre)
-
-# Loops through all events in an supplied event vector, adding all unknowns and parameters found in
+# Loops through all events in a supplied event vector, adding all unknowns and parameters found in
 # its condition and affect functions to their respective vectors (`ps` and `us`).
-function find_event_vars!(ps, us, events::Vector, ivs, vars)
-    foreach(event -> find_event_vars!(ps, us, event, ivs, vars), events)
+# Uses MT.collect_vars! for consistency with other variable discovery in the codebase.
+function find_event_vars!(ps, us, events::Vector, t)
+    foreach(event -> find_event_vars!(ps, us, event, t), events)
 end
 # For a single event, adds quantities from its condition and affect expression(s) to `ps` and `us`.
-# Applies `findvars!` to the event's condition (`event[1])` and affec (`event[2]`).
-# Two dispatches required, and the event can be given as a MTK structure of a Pair of symbolic expressions/equations.
-function find_event_vars!(ps, us, event::Pair, ivs, vars)
-    findvars!(ps, us, event[1], ivs, vars)
-    findvars!(ps, us, event[2], ivs, vars)
+# Two dispatches required: events can be given as a MTK callback structure or a Pair of symbolic expressions.
+function find_event_vars!(ps, us, event::Pair, t)
+    MT.collect_vars!(us, ps, event[1], t)  # condition
+    MT.collect_vars!(us, ps, event[2], t)  # affect
 end
-function find_event_vars!(ps, us, event::MT.AbstractCallback, ivs, vars)
-    findvars!(ps, us, event.conditions, ivs, vars)
-    findvars!(ps, us, event.affect.affect, ivs, vars)
+function find_event_vars!(ps, us, event::MT.AbstractCallback, t)
+    MT.collect_vars!(us, ps, event.conditions, t)
+    MT.collect_vars!(us, ps, event.affect.affect, t)
+end
+
+# Loops through all jumps, adding all unknowns and parameters found to their respective vectors.
+# Uses MT.collect_vars! which has dispatches for MassActionJump, ConstantRateJump, and VariableRateJump.
+function find_jump_vars!(ps, us, jumps::Vector, t)
+    for jump in jumps
+        MT.collect_vars!(us, ps, jump, t)
+    end
 end
 
 ### ReactionSystem Structure ###
@@ -256,9 +214,9 @@ all such code and updating it appropriately (e.g. serialization). Please use a s
 # structure have been updated (in the `reactionsystem_uptodate_check` function).
 const reactionsystem_fields = (
     :eqs, :rxs, :iv, :sivs, :unknowns, :species, :ps, :var_to_name,
-    :observed, :name, :systems, :initial_conditions, :connection_type,
+    :observed, :name, :systems, :initial_conditions,
     :networkproperties, :combinatoric_ratelaws, :continuous_events,
-    :discrete_events, :metadata, :complete, :parent)
+    :discrete_events, :brownians, :jumps, :metadata, :complete, :parent)
 
 """
 $(TYPEDEF)
@@ -321,14 +279,12 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """The name of the system"""
     name::Symbol
     """Internal sub-systems"""
-    systems::Vector
+    systems::Vector{ReactionSystem}
     """
     The initial values to use when initial conditions and/or
     parameters are not supplied in `ODEProblem`.
     """
     initial_conditions::SymmapT
-    """Type of the system"""
-    connection_type::Any
     """`NetworkProperties` object that can be filled in by API functions. INTERNAL -- not
     considered part of the public API."""
     networkproperties::V
@@ -345,6 +301,10 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     true at the end of an integration step.
     """
     discrete_events::Vector{MT.SymbolicDiscreteCallback}
+    """Brownian variables for non-reaction noise, created via @brownians."""
+    brownians::Vector{SymbolicT}
+    """Non-reaction jumps (VariableRateJump, ConstantRateJump, MassActionJump)."""
+    jumps::Vector{JumpType}
     """
     Metadata for the system, to be used by downstream packages.
     """
@@ -357,12 +317,12 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     The hierarchical parent system before simplification that MTK now seems to require for
     hierarchical namespacing to work in indexing.
     """
-    parent::Any
+    parent::Union{Nothing, ReactionSystem}
 
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
-            name, systems, defaults, connection_type, nps, cls, cevs, devs,
-            metadata, complete = false, parent = nothing; checks::Bool = true)
+            name, systems, defaults, nps, cls, cevs, devs,
+            brownians, jumps, metadata, complete = false, parent = nothing; checks::Bool = true)
 
         # unit checks are for ODEs and Reactions only currently
         nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
@@ -390,8 +350,8 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
         end
         rs = new{typeof(nps)}(
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
-            name, systems, defaults, connection_type, nps, cls, cevs,
-            devs, metadata, complete, parent)
+            name, systems, defaults, nps, cls, cevs,
+            devs, brownians, jumps, metadata, complete, parent)
         checks && validate(rs)
         rs
     end
@@ -404,14 +364,16 @@ function is_species_diff(expr)
     return hasnode(ex -> (ex isa SymbolicT) && isspecies(ex) && !isbc(ex), expr)
 end
 
-# Four-argument constructor. Permits additional inputs as optional arguments.
+# Five-argument constructor. Permits additional inputs as optional arguments.
 # Calls the full constructor.
-function ReactionSystem(eqs, iv, unknowns, ps;
+# Note: brownians is explicit (not auto-discovered) in this constructor; use the
+# two-argument constructor for auto-discovery of brownians from equations.
+function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
+        jumps = JumpType[],
         observed = Equation[],
         systems = [],
         name = nothing,
         initial_conditions = SymmapT(),
-        connection_type = nothing,
         checks = true,
         networkproperties = nothing,
         combinatoric_ratelaws = true,
@@ -428,11 +390,17 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     (length(unique(sysnames)) == length(sysnames)) ||
         throw(ArgumentError("System names must be unique."))
 
+    # Validate that all subsystems are ReactionSystems.
+    for sys in systems
+        sys isa ReactionSystem || error("ReactionSystem subsystems must be ReactionSystems. Got $(typeof(sys)).")
+    end
+
     # Process initial_conditions to unwrap Num wrappers.
     initial_conditions = SymmapT(value(entry[1]) => value(entry[2]) for entry in initial_conditions)
 
-    # handles "bindings". Recently introduced in MTK/Symbolics, explicit Catalyst support need to be
-    # implemented. Left empty for now.
+    # Bindings are auto-discovered by MTKBase from variable metadata when Systems are created.
+    # The 5-argument System constructor calls process_variables! which extracts bindings from
+    # variables with symbolic default values. No explicit Catalyst handling is needed.
     bindings = MT.SymmapT()
 
     # Extracts independent variables (iv and sivs), dependent variables (species and variables)
@@ -486,7 +454,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
 
     # Computes network properties.
     nps = if networkproperties === nothing
-        NetworkProperties{Int, get_speciestype(iv′, unknowns′, systems)}()
+        NetworkProperties{Int, SymbolicT}()
     else
         networkproperties
     end
@@ -498,10 +466,14 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     # handles system metadata.
     metadata = make_metadata(metadata)
 
+    # Process brownians and jumps (unwrap brownians to be consistent with other symbolic vars).
+    brownians′ = isempty(brownians) ? SymbolicT[] : unwrap.(brownians)
+    jumps′ = isempty(jumps) ? JumpType[] : collect(jumps)
+
     ReactionSystem(
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
-        systems, initial_conditions, connection_type, nps, combinatoric_ratelaws,
-        continuous_events, discrete_events, metadata; checks = checks)
+        systems, initial_conditions, nps, combinatoric_ratelaws,
+        continuous_events, discrete_events, brownians′, jumps′, metadata; checks = checks)
 end
 
 # Handles that events can be a single event or a vector.
@@ -547,9 +519,9 @@ end
 # the model creation) and creates the corresponding vectors.
 # While species are ordered before variables in the unknowns vector, this ordering is not imposed here,
 # but carried out at a later stage.
-function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
+function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in, brownians = SymbolicT[];
         spatial_ivs = nothing, continuous_events = [], discrete_events = [],
-        observed = [], kwargs...)
+        observed = [], jumps = JumpType[], kwargs...)
 
     # Error if any observables have been declared a species or variable
     obs_vars = Set(obs_eq.lhs for obs_eq in observed)
@@ -567,10 +539,8 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     end
 
     # Initialises the new unknowns and parameter vectors.
-    # Preallocates the `vars` set, which is used by `findvars!`
     us = OrderedSet{SymbolicT}(us_in)
     ps = OrderedSet{SymbolicT}(ps_in)
-    vars = OrderedSet{SymbolicT}()
 
     # Extracts the reactions and equations from the combined reactions + equations input vector.
     all(eq -> eq isa Union{Reaction, Equation}, rxs_and_eqs)
@@ -584,11 +554,13 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
 
     # Extracts any species, variables, and parameters that occur in (non-reaction) equations.
     # Creates the new reactions + equations vector, `fulleqs` (sorted reactions first, equations next).
+    # System automatically extracts brownians from equations (variables with BROWNIAN type).
     if !isempty(eqs)
-        osys = ODESystem(eqs, iv; name = gensym())
-        fulleqs = CatalystEqType[rxs; equations(osys)]
-        union!(us, unknowns(osys))
-        union!(ps, parameters(osys))
+        sys = MT.System(eqs, iv; name = gensym())
+        fulleqs = CatalystEqType[rxs; equations(sys)]
+        union!(us, unknowns(sys))
+        union!(ps, parameters(sys))
+        union!(brownians, MT.brownians(sys))
     else
         fulleqs = rxs
     end
@@ -599,9 +571,18 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     end
 
     # Loops through all events, adding encountered quantities to the unknown and parameter vectors.
-    find_event_vars!(ps, us, continuous_events, ivs, vars)
-    find_event_vars!(ps, us, discrete_events, ivs, vars)
-    
+    find_event_vars!(ps, us, continuous_events, t)
+    find_event_vars!(ps, us, discrete_events, t)
+
+    # Loops through all jumps, adding encountered quantities to the unknown and parameter vectors.
+    find_jump_vars!(ps, us, jumps, t)
+
+    # Discover parameters/unknowns from observed equation RHS.
+    # Only process RHS to avoid adding observable LHS to unknowns (observables stay observables).
+    for eq in observed
+        MT.collect_vars!(us, ps, eq.rhs, t)
+    end
+
     # Converts the found unknowns and parameters to vectors.
     usv = collect(us)
 
@@ -622,8 +603,9 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     psv = collect(new_ps)
 
     # Passes the processed input into the next `ReactionSystem` call.
-    ReactionSystem(fulleqs, t, usv, psv; spatial_ivs, continuous_events,
-        discrete_events, observed, kwargs...)
+    # Note: brownians are passed as the 5th positional argument.
+    ReactionSystem(fulleqs, t, usv, psv, brownians; spatial_ivs, continuous_events,
+        discrete_events, observed, jumps, kwargs...)
 end
 
 ### Base Function Dispatches ###
@@ -726,6 +708,12 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
         MT.get_continuous_events(rn2), "cevents"; debug) || return false
     debug_comparer(discrete_events_equal, MT.get_discrete_events(rn1),
         MT.get_discrete_events(rn2), "devents"; debug) || return false
+
+    # brownians and jumps
+    debug_comparer(issetequal, MT.get_brownians(rn1), MT.get_brownians(rn2), "brownians"; debug) ||
+        return false
+    debug_comparer(issetequal, MT.get_jumps(rn1), MT.get_jumps(rn2), "jumps"; debug) ||
+        return false
 
     # coupled systems
     if (length(get_systems(rn1)) != length(get_systems(rn2)))
@@ -1013,10 +1001,6 @@ isspatial(rn::ReactionSystem) = !isempty(get_sivs(rn))
 
 ### ModelingToolkit Function Dispatches ###
 
-# Retrieves events.
-MT.get_continuous_events(sys::ReactionSystem) = getfield(sys, :continuous_events)
-# `MT.get_discrete_events(sys::ReactionSystem) = getfield(sys, :get_discrete_events)` should be added here.
-
 # need a custom equations since ReactionSystem.eqs are a mix of Reactions and Equations
 function MT.equations(sys::ReactionSystem)
     ivs = independent_variables(sys)
@@ -1024,7 +1008,7 @@ function MT.equations(sys::ReactionSystem)
     systems = get_systems(sys)
     if !isempty(systems)
         eqs = CatalystEqType[eqs; 
-            reduce(vcat, MT.namespace_equations.(systems); init = Any[])]
+            reduce(vcat, MT.namespace_equations.(systems); init = CatalystEqType[])]
         return sort!(eqs; by = eqsortby)
     end
     return eqs
@@ -1435,13 +1419,9 @@ function make_empty_network(; iv = DEFAULT_IV, name = gensym(:ReactionSystem))
     ReactionSystem(Reaction[], iv, SymbolicT[], SymbolicT[]; name = name)
 end
 
-# Checks if a system is an allowed subsystem (i.e. no SDE parts and no jump).
+# Checks if a system is an allowed subsystem.
+# Only ReactionSystems are allowed as subsystems of ReactionSystems.
 is_allowed_subsystem(sys::ReactionSystem) = true
-function is_allowed_subsystem(sys::System)
-    return (isnothing(MT.get_noise_eqs(sys)) || isempty(MT.get_noise_eqs(sys))) &&
-        (isnothing(MT.get_jumps(sys)) || isempty(MT.get_jumps(sys)))
-end
-# If neither a `ReactionSystem` or a `System`, it is something weird we do not know what it is.
 is_allowed_subsystem(sys::MT.AbstractSystem) = false
 
 """
@@ -1454,8 +1434,7 @@ Notes:
 - All `Reaction`s within subsystems are namespaced and merged into the list of `Reactions`
   of `rs`. The merged list is then available as `reactions(rs)`.
 - All algebraic and differential equations are merged in the equations of `rs`.
-- Currently only `ReactionSystem`s, `NonlinearSystem`s and `ODESystem`s are supported as
-  sub-systems when flattening.
+- Only `ReactionSystem`s are supported as subsystems when flattening.
 - `rs.networkproperties` is reset upon flattening.
 - The default value of `combinatoric_ratelaws` will be the logical or of all
   `ReactionSystem`s.
@@ -1463,12 +1442,14 @@ Notes:
 function MT.flatten(rs::ReactionSystem; name = nameof(rs))
     isempty(get_systems(rs)) && return rs
 
-    # right now we only guarantee tht certain types of systems work with flatten
-    allowed_types = (ReactionSystem, NonlinearSystem, ODESystem)
+    # Only ReactionSystems are allowed as subsystems
     isnothing(get_systems(rs)) || all(is_allowed_subsystem, get_systems(rs)) ||
-        error("flattening is currently only supported for subsystems mixing ReactionSystems, and Systems withour noise equations and jumps.")
+        error("flattening is only supported for ReactionSystem subsystems. Use `extend` or `compose` only with other ReactionSystems.")
 
-    ReactionSystem(equations(rs), get_iv(rs), unknowns(rs), parameters(rs);
+    # Note: brownians and jumps are 5th positional arg and kwarg respectively.
+    # MT.brownians(rs) and MT.jumps(rs) are recursive accessors that collect from all subsystems.
+    ReactionSystem(equations(rs), get_iv(rs), unknowns(rs), parameters(rs), MT.brownians(rs);
+        jumps = MT.jumps(rs),
         observed = MT.observed(rs),
         name,
         initial_conditions = MT.initial_conditions(rs),
@@ -1491,17 +1472,22 @@ end
 """
     ModelingToolkitBase.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
 
-Compose the indicated [`ReactionSystem`](@ref) with one or more `AbstractSystem`s.
+Compose the indicated [`ReactionSystem`](@ref) with one or more `ReactionSystem`s.
 
 Notes:
-- The `AbstractSystem` being added in must be an `ODESystem`, `NonlinearSystem`,
-  or `ReactionSystem` currently.
-- Returns a new `ReactionSystem` and does not modify `rs`.
+- Only `ReactionSystem`s can be composed with a `ReactionSystem`.
+- Returns a new `ReactionSystem` and does not modify `sys`.
 - By default, the new `ReactionSystem` will have the same name as `sys`.
+- Brownians and jumps from subsystems are collected at flatten time via recursive accessors.
 """
 function MT.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
     complete_check(sys, "MT.compose")
     foreach(s -> complete_check(s, "MT.compose"), systems)
+
+    # Validate that all systems are ReactionSystems
+    for s in systems
+        s isa ReactionSystem || error("ReactionSystems can only be composed with other ReactionSystems. Got $(typeof(s)).")
+    end
 
     nsys = length(systems)
     nsys == 0 && return sys
@@ -1528,29 +1514,23 @@ function MT.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(s
 end
 
 """
-    ModelingToolkitBase.extend(sys::AbstractSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
+    ModelingToolkitBase.extend(sys::ReactionSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
 
-Extends the indicated [`ReactionSystem`](@ref) with another `AbstractSystem`.
+Extends the indicated [`ReactionSystem`](@ref) with another `ReactionSystem`.
 
 Notes:
-- The `AbstractSystem` being added in must be an `ODESystem`, `NonlinearSystem`,
-  or `ReactionSystem` currently.
+- Only `ReactionSystem`s can be used to extend a `ReactionSystem`.
 - Returns a new `ReactionSystem` and does not modify `rs`.
 - By default, the new `ReactionSystem` will have the same name as `sys`.
 """
-function MT.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
+function MT.extend(sys::ReactionSystem, rs::ReactionSystem;
         name::Symbol = nameof(sys))
     complete_check(sys, "MT.extend")
     complete_check(rs, "MT.extend")
 
-    any(T -> sys isa T, (ReactionSystem, ODESystem, NonlinearSystem)) ||
-        error("ReactionSystems can only be extended with ReactionSystems, ODESystems and NonlinearSystems currently. Received a $(typeof(sys)) system.")
-
     t = get_iv(rs)
-    if MT.has_iv(sys)
-        isequal(get_iv(sys), t) ||
-            error("Extending ReactionSystem with iv, $(get_iv(rs)), with a system with iv, $(get_iv(sys)), this is not supported. Please ensure the `ivs` are the same.")
-    end
+    isequal(get_iv(sys), t) ||
+        error("Extending ReactionSystem with iv, $(get_iv(rs)), with a system with iv, $(get_iv(sys)), this is not supported. Please ensure the `ivs` are the same.")
 
     # generic system properties
     eqs = union(get_eqs(rs), get_eqs(sys))
@@ -1563,18 +1543,16 @@ function MT.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
     discrete_events = union(MT.get_discrete_events(rs), MT.get_discrete_events(sys))
 
     # ReactionSystem specific properties
-    if sys isa ReactionSystem
-        combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(sys) |
-                                Catalyst.get_combinatoric_ratelaws(rs)
-        sivs = union(get_sivs(sys), get_sivs(rs))
-    else
-        combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rs)
-        sysivs = MT.has_ivs(sys) ? filter(!isequal(t), independent_variables(sys)) :
-                 Vector{typeof(t)}()
-        sivs = (length(sysivs) > 0) ? union(get_sivs(rs), sysivs) : get_sivs(rs)
-    end
+    combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(sys) |
+                            Catalyst.get_combinatoric_ratelaws(rs)
+    sivs = union(get_sivs(sys), get_sivs(rs))
 
-    ReactionSystem(eqs, t, sts, ps;
+    # Union brownians and jumps from both systems
+    new_brownians = union(MT.get_brownians(rs), MT.get_brownians(sys))
+    new_jumps = union(MT.get_jumps(rs), MT.get_jumps(sys))
+
+    ReactionSystem(eqs, t, sts, ps, collect(new_brownians);
+        jumps = collect(new_jumps),
         observed = obs,
         systems = syss,
         name,

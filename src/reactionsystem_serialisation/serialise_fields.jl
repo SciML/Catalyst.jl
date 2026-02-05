@@ -593,22 +593,3 @@ end
 # Combines the 3 systems-related functions in a constant tuple.
 SYSTEMS_FS = (seri_has_systems, get_systems_string, get_systems_annotation)
 
-### Handles Connection Types ###
-
-# Checks if the reaction system has any connection types.
-function seri_has_connection_type(rn::ReactionSystem)
-    return false
-end
-
-# Extract a string which declares the system's connection types.
-function get_connection_type_string(rn::ReactionSystem)
-    get_unsupported_comp_string("connection types")
-end
-
-# Creates an annotation for the system's connection types.
-function get_connection_type_annotation(rn::ReactionSystem)
-    get_unsupported_comp_annotation("Connection types:")
-end
-
-# Combines the 3 connection types-related functions in a constant tuple.
-CONNECTION_TYPE_FS = (seri_has_connection_type, get_connection_type_string, get_connection_type_annotation)

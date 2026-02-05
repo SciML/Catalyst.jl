@@ -78,8 +78,8 @@ plot(sol)
 ## [Coupling ODE constraints via extending a system](@id constraint_equations_coupling_constraints)
 
 Finally, we could also construct our model by using compositional modeling. Here
-we create separate `ReactionSystem`s and `ODESystem`s with their respective
-components, and then extend the `ReactionSystem` with the `ODESystem`. Let's
+we create separate `ReactionSystem`s, one with the reaction part of the model, and one with
+the differential equation part. Next, we extend the first `ReactionSystem` with the second one. Let's
 begin by creating these two systems.
 
 Here, to create differentials with respect to time (for our differential
@@ -99,9 +99,9 @@ D = default_time_deriv()
 # set the initial volume to 1.0
 @variables V(t) = 1.0
 
-# build the ODESystem for dV/dt
+# build the ReactionSystem for dV/dt
 eq = [D(V) ~ λ * V]
-@named osys = ODESystem(eq, t)
+@named osys = ReactionSystem(eq, t)
 
 # build the ReactionSystem with no protein initially
 rn = @network_component begin

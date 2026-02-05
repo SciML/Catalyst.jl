@@ -10,7 +10,7 @@ const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔
 # Declares the keys used for various options.
 const option_keys = (:species, :parameters, :variables, :discretes, :ivs, :compounds, :observables,
     :default_noise_scaling, :differentials, :equations, :continuous_events, :discrete_events,
-    :combinatoric_ratelaws, :require_declaration)
+    :brownians, :combinatoric_ratelaws, :require_declaration)
 
 ### `@species` Macro ###
 
@@ -261,8 +261,9 @@ function make_reaction_system(ex::Expr, name)
     tiv, sivs, ivs, ivsexpr = read_ivs_option(options)
     cmpexpr_init, cmps_declared = read_compounds_option(options)
     diffsexpr, diffs_declared = read_differentials_option(options)
+    brownsexpr_init, browns_declared = read_brownians_option(options)
     syms_declared = collect(Iterators.flatten((cmps_declared, sps_declared, ps_declared,
-        vs_declared, discs_declared, ivs, diffs_declared)))
+        vs_declared, discs_declared, ivs, diffs_declared, browns_declared)))
     if !allunique(syms_declared)
         nonunique_syms = [s for s in syms_declared if count(x -> x == s, syms_declared) > 1]
         error("The following symbols $(unique(nonunique_syms)) have explicitly been declared as multiple types of components (e.g. occur in at least two of the `@species`, `@parameters`, `@variables`, `@ivs`, `@compounds`, `@differentials`). This is not allowed.")
@@ -271,7 +272,7 @@ function make_reaction_system(ex::Expr, name)
     # Reads the reactions and equation. From these, infer species, variables, and parameters.
     requiredec = haskey(options, :require_declaration)
     reactions = get_reactions(reaction_lines)
-    sps_inferred, ps_pre_inferred = extract_sps_and_ps(reactions, syms_declared; requiredec)
+    sps_inferred, ps_pre_inferred, stoich_ps = extract_sps_and_ps(reactions, syms_declared; requiredec)
     vs_inferred, diffs_inferred, equations = read_equations_option!(diffsexpr, options,
         union(syms_declared, sps_inferred), tiv; requiredec)
     ps_inferred = setdiff(ps_pre_inferred, vs_inferred, diffs_inferred)
@@ -288,7 +289,7 @@ function make_reaction_system(ex::Expr, name)
     combinatoric_ratelaws = read_combinatoric_ratelaws_option(options)
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
-    psexpr_init = get_psexpr(ps_inferred, options)
+    psexpr_init = get_psexpr(ps_inferred, stoich_ps, options)
     spsexpr_init = get_usexpr(sps_inferred, options; ivs)
     vsexpr_init = get_usexpr(vs_inferred, options, :variables; ivs)
     discsexpr_init = get_usexpr(discs_inferred, options, :discretes; ivs)
@@ -297,6 +298,7 @@ function make_reaction_system(ex::Expr, name)
     vsexpr, vsvar = assign_var_to_symvar_declaration(vsexpr_init, "vars")
     discsexpr, discsvar = assign_var_to_symvar_declaration(discsexpr_init, "discs")
     cmpsexpr, cmpsvar = assign_var_to_symvar_declaration(cmpexpr_init, "comps")
+    brownsexpr, brownsvar = assign_var_to_symvar_declaration(brownsexpr_init, "brownians", scalarize = false)
     rxsexprs = get_rxexprs(reactions, equations, all_syms)
 
     # Assemblies the full expression that declares all required symbolic variables, and
@@ -311,6 +313,7 @@ function make_reaction_system(ex::Expr, name)
         $obsexpr
         $cmpsexpr
         $diffsexpr
+        $brownsexpr
 
         # Stores each kwarg in a variable. Not necessary, but useful when debugging generated code.
         name = $name
@@ -325,7 +328,7 @@ function make_reaction_system(ex::Expr, name)
         _default_reaction_metadata = $default_reaction_metadata
 
         remake_ReactionSystem_internal(
-            make_ReactionSystem_internal(rx_eq_vec, $tiv, us, ps; name, spatial_ivs,
+            make_ReactionSystem_internal(rx_eq_vec, $tiv, us, ps, $brownsvar; name, spatial_ivs,
                 observed = _observed, continuous_events = _continuous_events,
                 discrete_events = _discrete_events, combinatoric_ratelaws = _combinatoric_ratelaws);
             default_reaction_metadata = _default_reaction_metadata)
@@ -447,6 +450,8 @@ end
 
 # Function looping through all reactions, to find undeclared symbols (species or
 # parameters) and assign them to the right category.
+# `stoich_ps` records parameters used in stoichiometries (if these are not declare separately,
+# these are infered to be integers)..
 function extract_sps_and_ps(reactions, excluded_syms; requiredec = false)
     # Loops through all reactants and extract undeclared ones as species.
     species = OrderedSet{Union{Symbol, Expr}}()
@@ -461,32 +466,34 @@ function extract_sps_and_ps(reactions, excluded_syms; requiredec = false)
 
     # Loops through all rates and stoichiometries, extracting used symbols as parameters.
     parameters = OrderedSet{Union{Symbol, Expr}}()
+    stoich_ps = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
         add_syms_from_expr!(parameters, reaction.rate, excluded_syms)
         (!isempty(parameters) && requiredec) &&
             throw(UndeclaredSymbolicError("Unrecognized symbol $(join(parameters, ", ")) detected in rate expression: $(reaction.rate) for the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters option."))
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
-            add_syms_from_expr!(parameters, reactant.stoichiometry, excluded_syms)
+            add_syms_from_expr!(parameters, reactant.stoichiometry, excluded_syms, stoich_ps)
             (!isempty(parameters) && requiredec) &&
                 throw(UndeclaredSymbolicError("Unrecognized symbol $(join(parameters, ", ")) detected in the stoichiometry for reactant $(reactant.reactant) in the following reaction expression: \"$(string(reaction.rxexpr))\". Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters option."))
         end
     end
 
-    collect(species), collect(parameters)
+    collect(species), collect(parameters), collect(stoich_ps)
 end
 
 # Function called by `extract_sps_and_ps`, recursively loops through an expression and find
 # symbols (adding them to the push_symbols vector). Returns `nothing` to ensure type stability.
-function add_syms_from_expr!(push_symbols::AbstractSet, expr::ExprValues, excluded_syms)
+function add_syms_from_expr!(push_symbols::AbstractSet, expr::ExprValues, excluded_syms, push_symbols2 = nothing)
     # If we have encountered a Symbol in the recursion, we can try extracting it.
     if expr isa Symbol
         if !(expr in forbidden_symbols_skip) && !(expr in excluded_syms)
             push!(push_symbols, expr)
+            isnothing(push_symbols2) || push!(push_symbols2, expr)
         end
     elseif expr isa Expr
         # note, this (correctly) skips $(...) expressions
         for i in 2:length(expr.args)
-            add_syms_from_expr!(push_symbols, expr.args[i], excluded_syms)
+            add_syms_from_expr!(push_symbols, expr.args[i], excluded_syms, push_symbols2)
         end
     end
     nothing
@@ -496,7 +503,7 @@ end
 
 # Given the parameters that were extracted from the reactions, and the options dictionary,
 # creates the `@parameters ...` expression for the macro output.
-function get_psexpr(parameters_extracted, options)
+function get_psexpr(parameters_extracted, stoich_ps, options)
     pexprs = if haskey(options, :parameters)
         options[:parameters]
     elseif isempty(parameters_extracted)
@@ -506,7 +513,8 @@ function get_psexpr(parameters_extracted, options)
     end
     arg_vec = ((length(pexprs.args) > 2) && Meta.isexpr(pexprs.args[3], :block)) ?
         (pexprs.args[3].args) : (pexprs.args)
-    foreach(p -> push!(arg_vec, p), parameters_extracted)
+    foreach(p -> push!(arg_vec, p), setdiff(parameters_extracted, stoich_ps))
+    foreach(p -> push!(arg_vec, :($p::Int64)), stoich_ps)
     pexprs
 end
 
@@ -666,6 +674,14 @@ function read_differentials_option(options)
     end
 
     return diffsexpr, diffs_declared
+end
+
+# Creates the initial expression for declaring brownians. Also extracts any symbols 
+# declared as brownians by the `@brownian` option.
+function read_brownians_option(options)
+    browns_declared = extract_syms(options, :brownians)    
+    brownsexpr_init = haskey(options, :brownians) ? options[:brownians] : :()
+    return brownsexpr_init, browns_declared
 end
 
 # Reads the variables options. Outputs a list of the variables inferred from the equations,
@@ -978,14 +994,14 @@ function make_reaction(ex::Expr)
 
     # Parses reactions. Extracts species and parameters within it.
     reaction = get_reaction(ex)
-    species, parameters = extract_sps_and_ps([reaction], [])
+    species, parameters, stoich_ps = extract_sps_and_ps([reaction], [])
 
     # Checks for input errors. Needed here but not in `@reaction_network` as `ReactionSystem` performs this check but `Reaction` doesn't.
     forbidden_symbol_check(union(species, parameters))
 
     # Creates expressions corresponding to code for declaring the parameters, species, and reaction.
     spexprs = get_usexpr(species, Dict{Symbol, Expr}())
-    pexprs = get_psexpr(parameters, Dict{Symbol, Expr}())
+    pexprs = get_psexpr(parameters, stoich_ps, Dict{Symbol, Expr}())
     rxexpr = get_rxexpr(reaction)
     iv = :($(DEFAULT_IV_SYM) = default_t())
 

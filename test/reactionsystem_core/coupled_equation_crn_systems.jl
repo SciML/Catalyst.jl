@@ -80,7 +80,7 @@ let
     coupled_rs_prog = ReactionSystem(eqs_prog, t, [A, B, X1, X2], [k1, k2, a, b]; name = :coupled_rs)
     coupled_rs_prog = complete(coupled_rs_prog)
 
-    # Creates model by extending a `ReactionSystem` with a ODESystem.
+    # Creates model by extending a `ReactionSystem` with another ReactionSystem containing ODEs.
     rn_extended = @network_component begin
         ($k1*$A, $k2*$B), X1 <--> X2
     end
@@ -88,8 +88,8 @@ let
         D(A) ~ X1 + a - A
         D(B) ~ X2 + b - B
     ]
-    @named osys_extended = System(eqs_extended, t)
-    coupled_rs_extended = complete(extend(osys_extended, rn_extended; name = :coupled_rs))
+    @named rs_extended = ReactionSystem(eqs_extended, t)
+    coupled_rs_extended = complete(extend(rs_extended, rn_extended; name = :coupled_rs))
 
     # Creates the model through the DSL.
     coupled_rs_dsl = @reaction_network coupled_rs begin

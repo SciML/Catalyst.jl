@@ -35,8 +35,8 @@ pages = Any[
     "model_simulation/sde_simulation_performance.md",
     # "model_simulation/finite_state_projection_simulation.md", # Wait for update with new version.
     "Examples" => Any[
-        # "model_simulation/examples/periodic_events_simulation.md", # fails due to something probably related to https://github.com/SciML/ModelingToolkit.jl/issues/4030/.
-        # "model_simulation/examples/activation_time_distribution_measurement.md", # Error in https://github.com/SciML/ModelingToolkit.jl/issues/4231. Might want to redesign a bit anyway though (to accommodate MTK changes for when defaults/bindings are assigned to paraemters).
+        "model_simulation/examples/periodic_events_simulation.md",
+        "model_simulation/examples/activation_time_distribution_measurement.md",
         "model_simulation/examples/interactive_brusselator_simulation.md"
     ]
 ],
@@ -60,7 +60,7 @@ pages = Any[
 "Inverse problems" => Any[
     # "inverse_problems/petab_ode_param_fitting.md", # Await PEtab update.
     "inverse_problems/optimization_ode_param_fitting.md",
-    # "inverse_problems/behaviour_optimisation.md", # Fails due to https://github.com/SciML/ModelingToolkit.jl/issues/4030/
+    "inverse_problems/behaviour_optimisation.md",
     "inverse_problems/structural_identifiability.md",
     "inverse_problems/global_sensitivity_analysis.md"
     #"Examples" => Any[

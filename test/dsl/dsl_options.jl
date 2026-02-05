@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, ModelingToolkitBase, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, StochasticDiffEq, Plots, Test
+using Catalyst, ModelingToolkitBase, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, Statistics, StochasticDiffEq, Plots, Test
 using Catalyst: symmap_to_varmap
 using Symbolics: unwrap
 
@@ -15,6 +15,9 @@ seed = rand(rng, 1:100)
 # Sets the default `t` to use.
 t = default_t()
 D = default_time_deriv()
+
+# Fetch test functions.
+include("../test_functions.jl")
 
 ### Tests `@parameters`, `@species`, and `@variables` Options ###
 
@@ -156,7 +159,7 @@ end
 
 # Test inferring with stoichiometry symbols and interpolation.
 let
-    @parameters k g h gg X y [isconstantspecies = true]
+    @parameters k::Int64 g::Int64 h::Int64 gg X y [isconstantspecies = true]
     t = Catalyst.DEFAULT_IV
     @species A(t) B(t) BB(t) C(t)
 
@@ -277,14 +280,14 @@ let
 
     rn20 = @reaction_network rnname begin
         @species X(t)
-        @parameters S
+        @parameters S::Int64
         mm(X,v,K), 0 --> Y
         (k1,k2), 2Y <--> Y2
         d*Y, S*(Y2+Y) --> 0
     end
     rn21 = @reaction_network rnname begin
         @species X(t) Y(t) Y2(t)
-        @parameters v K k1 k2 d S
+        @parameters v K k1 k2 d S::Int64
         mm(X,v,K), 0 --> Y
         (k1,k2), 2Y <--> Y2
         d*Y, S*(Y2+Y) --> 0
@@ -297,7 +300,7 @@ let
         d*Y, S*(Y2+Y) --> 0
     end
     @test all(rn -> Catalyst.isequivalent(rn20, rn), (rn21, rn22))
-    @parameters v K k1 k2 d S
+    @parameters v K k1 k2 d S::Int64
     @species X(t) Y(t) Y2(t)
     @test issetequal(parameters(rn22),[v K k1 k2 d S])
     @test issetequal(species(rn22), [X Y Y2])
@@ -655,15 +658,6 @@ let
     end
 end
 
-# Checks that parameters that occur as stoichiometries are correctly inferred as integers.
-let
-    rn = @reaction_network begin
-        k, n*X --> xN
-    end
-    @test SymbolicUtils.symtype(rn.k) == Real
-    @test_broken SymbolicUtils.symtype(rn.n) == Int64 # Bug, needs fixing (we must now infer that `n` should be decalred as a Int64, before it didn't matter).
-end
-
 ### Observables ###
 
 # Test basic functionality.
@@ -776,6 +770,35 @@ let
     sol = solve(oprob, Tsit5())
 
     @test sol[:X][1] ≈ u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]
+end
+
+# Tests that parameters appearing only in observable RHS are discovered via programmatic API.
+# This is a regression test for the fix where such parameters were not being discovered.
+let
+    @parameters k k_obs k_ratio eps_val
+    @species A(t) B(t) C(t)
+    @variables X(t) Total(t) Ratio(t)
+
+    rxs = [Reaction(k, [A, B], [C])]
+    observed = [
+        X ~ A + k_obs * B,
+        Total ~ A + B + C,
+        Ratio ~ k_ratio * A / (B + eps_val)
+    ]
+
+    @named rs = ReactionSystem(rxs, t; observed)
+    rs = complete(rs)
+
+    # k_obs, k_ratio, eps_val should be discovered from observable RHS
+    @test issetequal(parameters(rs), [k, k_obs, k_ratio, eps_val])
+    # Observable LHS should NOT be in unknowns
+    @test !any(isequal(X), unknowns(rs))
+    @test !any(isequal(Total), unknowns(rs))
+    @test !any(isequal(Ratio), unknowns(rs))
+    # Observable LHS SHOULD be in var_to_name (for symbolic indexing)
+    @test haskey(Catalyst.get_var_to_name(rs), :X)
+    @test haskey(Catalyst.get_var_to_name(rs), :Total)
+    @test haskey(Catalyst.get_var_to_name(rs), :Ratio)
 end
 
 # Checks that models created w/o specifying `@variables` for observables are identical.
@@ -1003,6 +1026,104 @@ let
 
 end
 
+### Brownians ###
+
+# Checks identity with brownian model created using DSL and programmatically.
+let
+    # Creates models and check equivalence.
+    rs_dsl = @reaction_network rs begin
+        @parameters η
+        @brownians B
+        @equations begin
+            D(V) ~ X - V + η*B
+            D(W) ~ V - W
+        end
+        (p,d), 0 <--> X
+    end
+    @brownians B
+    @parameters p d η
+    @species X(t)
+    @variables V(t) W(t)
+    eqs = [
+        Reaction(p, [], [X]),
+        Reaction(d, [X], []),
+        D(V) ~ X - V + η*B,
+        D(W) ~ V - W
+    ]
+    rs_prog = complete(ReactionSystem(eqs, t; name = :rs))
+    Catalyst.isequivalent(rs_dsl, rs_prog)
+
+    # Checks that drift and diffusion terms are evaluated identically.
+    u0 = rnd_u0(rs_dsl, rng)
+    ps = rnd_ps(rs_dsl, rng)
+    @test g_eval(rs_dsl, u0, ps, 0.0; structural_simplify = true) == g_eval(rs_prog, u0, ps, 0.0; structural_simplify = true)
+end
+
+# Compare CLE simulations generated via Catalyst and manual implementation of the SDE.
+let
+    # Declare the same CLE model using reactions and through SDEs (in the DSL, using brownian option).
+    cle_catalyst = @reaction_network rs begin
+        (k1,k2), X1 <--> X2
+    end
+    cle_manual = @reaction_network rs begin
+        @parameters k1 k2
+        @variables X1(t) X2(t)
+        @brownians B_1 B_2
+        @equations begin
+            D(X1) ~ k2*X2 - k1*X1 - sqrt(abs(k1*X1))*B_1 + sqrt(abs(k2*X2))*B_2
+            D(X2) ~ k1*X1 - k2*X2 + sqrt(abs(k1*X1))*B_1 - sqrt(abs(k2*X2))*B_2
+        end    
+    end
+
+    # Checks that the models generates the same equations.
+    ssys_catalyst = make_cle_sde(cle_catalyst, use_legacy_noise = false)
+    ssys_manual = make_cle_sde(cle_manual)
+    @test isequal(equations(ssys_catalyst), equations(ssys_manual))
+
+    # Simulate the two CELs using identical conditions.
+    u0 = [:X1 => 100.0, :X2 => 200.0]
+    tend = 10000.0
+    ps = [:k1 => 0.1, :k2 => 0.2]
+    sprob_catalyst = SDEProblem(cle_catalyst, u0, tend, ps; structural_simplify = true)
+    sprob_manual = SDEProblem(cle_manual, u0,  tend, ps; structural_simplify = true)
+    @time ssol_catalyst = solve(sprob_catalyst, ImplicitEM())
+    @time ssol_manual = solve(sprob_manual, ImplicitEM())
+
+    # Checks that simulations have similar properties.
+    @test mean(ssol_catalyst[:X1]) ≈ mean(ssol_manual[:X1]) atol = 1e-1 rtol = 1e-1
+    @test mean(ssol_catalyst[:X2]) ≈ mean(ssol_manual[:X2]) atol = 1e-1 rtol = 1e-1
+    @test std(ssol_catalyst[:X1]) ≈ std(ssol_manual[:X1]) atol = 1e-1 rtol = 1e-1
+    @test std(ssol_catalyst[:X2]) ≈ std(ssol_manual[:X2]) atol = 1e-1 rtol = 1e-1
+end
+
+# Checks that Brownians are correctly added to the system (whether they are used in equations or not,
+# or if the are interpolated.).
+let
+    # Declares models.
+    rs1 = @reaction_network rs begin
+        @brownians B1
+        (p,d), 0 <--> X
+    end
+    rs2 = @reaction_network rs begin
+        @brownians B1 B2
+        @equations D(V) ~ 1 - V + B2
+        (p,d), 0 <--> X
+    end
+    B2_var = only(@brownians B2)
+    rs3 = @reaction_network rs begin
+        @brownians B1
+        @equations D(V) ~ 1 - V + $(B2_var)
+        (p,d), 0 <--> X
+    end
+
+    # Performs tests checking that content is correct
+    @test length(ModelingToolkitBase.get_brownians(rs1)) == 1
+    @test length(ModelingToolkitBase.get_brownians(rs2)) == 2
+    @test length(ModelingToolkitBase.get_brownians(rs3)) == 2
+    @test !Catalyst.isequivalent(rs1, rs3)
+    @test !Catalyst.isequivalent(rs1, rs3)
+    @test Catalyst.isequivalent(rs2, rs3)
+end
 
 ### Test `@equations` Option for Coupled CRN/Equations Models ###
 

@@ -284,7 +284,7 @@ function substitutevals(rn::ReactionSystem, map::Dict, syms, symexprs)
         error("Incorrect number of parameter-value pairs were specified.")
     map = symmap_to_varmap(rn, map)
     map = Dict(value(k) => v for (k, v) in map)
-    vals = [substitute(expr, map) for expr in symexprs]
+    vals = [value(substitute(expr, map)) for expr in symexprs]
 end
 
 """
@@ -952,7 +952,7 @@ end
 Constructively compute whether a kinetic system (a reaction network with a set of rate constants) will admit detailed-balanced equilibrium
 solutions, using the Wegscheider conditions, [Feinberg, 1989](https://www.sciencedirect.com/science/article/pii/0009250989851243). A detailed-balanced solution is one for which the rate of every forward reaction exactly equals its reverse reaction. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...].
 """
-function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 1e-12, reltol = 1e-9)
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 0, reltol = 1e-9)
     if length(parametermap) != numparams(rs)
         error("Incorrect number of parameters specified.")
     elseif !isreversible(rs)

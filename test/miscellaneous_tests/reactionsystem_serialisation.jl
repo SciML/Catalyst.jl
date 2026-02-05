@@ -442,9 +442,7 @@ let
     eq = D(V) ~ V_max - V
 
     @named osys = System([eq], t)
-    @named rs = ReactionSystem(rxs, t; systems = [osys])
-    @test_throws Exception save_reactionsystem(testpath("failed_serialisation.jl"), rs)
-    rm(testpath("failed_serialisation.jl"))
+    @test_throws Exception ReactionSystem(rxs, t; systems = [osys], name = :rs)
 end
 
 # Checks that completeness is recorded correctly.
@@ -521,12 +519,3 @@ let
     rm(testpath("test_serialisation.jl"))
 end
 
-# Test connection field.
-# Not really used for `ReactionSystem`s right now, so tests the direct function and its warning.
-let
-    rs = @reaction_network begin
-        d, X --> 0
-    end
-    @test (@test_logs (:warn, ) match_mode=:any Catalyst.get_connection_type_string(rs)) == ""
-    @test Catalyst.get_connection_type_annotation(rs) == "Connection types:: (OBS: Currently not supported, and hence empty)"
-end

@@ -26,7 +26,7 @@ import Symbolics: SymbolicT
 using Symbolics: iscall, sorted_arguments, unwrap, value
 using ModelingToolkitBase: get_unknowns, get_ps, get_iv, get_systems,
                        get_eqs, toparam, get_var_to_name, get_observed,
-                       getvar, has_iv
+                       getvar, has_iv, JumpType
 
 import ModelingToolkitBase: get_variables, namespace_expr, namespace_equation, get_variables!,
                         modified_unknowns!, validate, namespace_variables,
