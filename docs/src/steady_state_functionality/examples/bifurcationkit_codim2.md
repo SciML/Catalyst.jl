@@ -50,8 +50,8 @@ plot(plot(sol_nosc; title = "v = 5"), plot(sol_osc; title = "v = 15"), size = (1
 ## [Tracking the bifurcation point w.r.t. a second parameter](@id bifurcationkit_codim2_2ndpar_cont)
 Next, we will investigate how the Hopf bifurcation point moves (in $v$-$X$ space) as a second parameter ($K$) is changed. To do this we will use BifurcationKit.jl's [`continuation` function](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.continuation) (the [`bifurcationdiagram` function](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.bifurcationdiagram), which we previously have used, works by calling `continuation` recursively). We will call it on the Hopf bifurcation point. First we need to retrieve some indexes that are required to make Catalyst (which primarily indexes through symbols) work with BifurcationKit (which primarily indexes through numbers). A smoother interface for this will hopefully be added in the future.
 ```@example bifurcationkit_codim2
-K_idx = findfirst(isequal(repressilator.K), parameters(complete(convert(NonlinearSystem, repressilator))))
-v_idx = findfirst(isequal(repressilator.v), parameters(complete(convert(NonlinearSystem, repressilator))))
+K_idx = findfirst(isequal(repressilator.K), parameters(complete(make_rre_algeqs(repressilator))))
+v_idx = findfirst(isequal(repressilator.v), parameters(complete(make_rre_algeqs(repressilator))))
 K_sym = Symbol(:p, K_idx)
 v_sym = Symbol(:p, v_idx)
 nothing # hide

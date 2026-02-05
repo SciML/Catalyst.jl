@@ -8,8 +8,8 @@ function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
     end
 
     # Converts symbols to symbolics.
-    (bif_par isa Symbol) && (bif_par = ModelingToolkit.get_var_to_name(rs)[bif_par])
-    (plot_var isa Symbol) && (plot_var = ModelingToolkit.get_var_to_name(rs)[plot_var])
+    (bif_par isa Symbol) && (bif_par = ModelingToolkitBase.get_var_to_name(rs)[bif_par])
+    (plot_var isa Symbol) && (plot_var = ModelingToolkitBase.get_var_to_name(rs)[plot_var])
     if (u0_bif isa Vector{<:Pair{Symbol, <:Any}}) || (u0_bif isa Dict{Symbol, <:Any})
         u0_bif = symmap_to_varmap(rs, u0_bif)
     end
@@ -36,8 +36,7 @@ function bkext_make_nsys(rs, u0)
     cons_eqs = conservationlaw_constants(rs)
     cons_default = [cons_eq.rhs for cons_eq in cons_eqs]
     cons_default = Catalyst.get_networkproperties(rs).conservedconst => cons_default
-    defaults = Dict([u0; cons_default])
-    nsys = convert(
-        NonlinearSystem, rs; defaults, remove_conserved = true, conseqs_remake_warn = false)
+    initial_conditions = Dict([u0; cons_default])
+    nsys = make_rre_algeqs(rs; initial_conditions, remove_conserved = true, conseqs_remake_warn = false)
     return complete(nsys)
 end

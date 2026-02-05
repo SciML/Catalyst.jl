@@ -2,6 +2,7 @@
 *.jl.*.cov
 *.jl.mem
 Manifest.toml
+docs/src/assets/Project.toml
 
 # Vim files
 *.swp

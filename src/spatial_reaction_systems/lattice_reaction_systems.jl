@@ -57,7 +57,7 @@ continuous space systems with them is possible, but requires the user to determi
 (the lattice). Better support for continuous space models is a work in progress.
 - Catalyst contains extensive documentation on spatial modelling, which can be found [here](https://docs.sciml.ai/Catalyst/stable/spatial_modelling/lattice_reaction_systems/).
 """
-struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
+struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractSystem
     # Input values.
     """The (non-spatial) reaction system within each vertex."""
     reactionsystem::ReactionSystem{Q}
@@ -75,7 +75,7 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
     num_species::Int64
 
     """List of species that may move spatially."""
-    spatial_species::Vector{BasicSymbolic{Real}}
+    spatial_species::Vector{SymbolicT}
     """
     All parameters related to the lattice reaction system
     (both those whose values are tied to vertices and edges).
@@ -127,7 +127,7 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
         # Computes the species which are parts of spatial reactions. Also counts the total number of
         # species types.
         if isempty(spatial_reactions)
-            spat_species = Vector{BasicSymbolic{Real}}[]
+            spat_species = SymbolicT[]
         else
             spat_species = unique(reduce(vcat,
                 [spatial_species(sr) for sr in spatial_reactions]))
@@ -137,7 +137,7 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
         # Computes the sets of vertex, edge, and all, parameters.
         rs_edge_parameters = filter(isedgeparameter, parameters(rs))
         if isempty(spatial_reactions)
-            srs_edge_parameters = Vector{BasicSymbolic{Real}}[]
+            srs_edge_parameters = SymbolicT[]
         else
             srs_edge_parameters = setdiff(
                 reduce(vcat, [parameters(sr) for sr in spatial_reactions]), parameters(rs))
@@ -154,9 +154,8 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
             spatial_reactions)
 
         # Additional error checks.
-        if any(haskey(Symbolics.unwrap(symvar).metadata, Symbolics.ArrayShapeCtx)
-        for symvar in [ps; species(rs)])
-            throw(ArgumentError("Some species and/or parameters used to create the `LatticeReactionSystem` are array variables ($(filter(symvar -> haskey(Symbolics.unwrap(symvar).metadata, Symbolics.ArrayShapeCtx), [ps; species(rs)]))). This is currently not supported."))
+        if any(is_array_symvar(symvar) for symvar in [ps; species(rs)])
+            throw(ArgumentError("Some species and/or parameters used to create the `LatticeReactionSystem` are array variables ($(filter(is_array_symvar, [ps; species(rs)]))). This is currently not supported."))
         end
 
         return new{Q, R, S, T}(
@@ -164,6 +163,9 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
             spat_species, ps, vertex_parameters, edge_parameters, edge_iterator)
     end
 end
+
+# Checks if a variable is a (non-/)scalarised array symbolic variable.
+is_array_symvar(sym) = SymbolicUtils.is_array_shape(SymbolicUtils.shape(sym)) || (iscall(sym) && operation(sym) === getindex)
 
 # Creates a LatticeReactionSystem from a (directed) Graph lattice (graph grid).
 function LatticeReactionSystem(rs, srs, lattice::DiGraph)

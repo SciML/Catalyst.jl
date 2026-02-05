@@ -124,26 +124,26 @@ sol(1.0; idxs = [:C])
 Internally, species and parameter values are stored in vectors. Whenever e.g. `oprob[:C]` is called, Julia must first find which index in the storage vector $C$ is stored in. Next, its value can be retrieved. If `oprob[:C]` is called a large number of times, this index must be found in each call. If a large number of such accesses are carried out, and performance is essential, it can be worthwhile to pre-compute a function to carry this out.
 
 There exist four different functions, each returning a function for performing a specific type of interfacing:
-- `ModelingToolkit.getu`: For accessing species values.
-- `ModelingToolkit.getp`: For accessing parameter values.
-- `ModelingToolkit.setu`: For changing species values.
-- `ModelingToolkit.setp`: For changing parameter values.
+- `ModelingToolkitBase.getu`: For accessing species values.
+- `ModelingToolkitBase.getp`: For accessing parameter values.
+- `ModelingToolkitBase.setu`: For changing species values.
+- `ModelingToolkitBase.setp`: For changing parameter values.
 
 For each species (or parameter) we wish to interface with, a new interfacing function must be created. Here we first creates a function for retrieving the value of $C$, and then use it for this purpose:
 ```@example structure_indexing
-get_C = ModelingToolkit.getu(oprob, :C)
+get_C = ModelingToolkitBase.getu(oprob, :C)
 get_C(oprob)
 ```
 Here, `getu` (as well as `getp`, `setu`, and `setp`) first takes the structure we wish to interface with, and then the target quantity. When using `setu` and `setp`, in the second step, we must also provide the update value:
 ```@example structure_indexing
-set_C = ModelingToolkit.setu(oprob, :C)
+set_C = ModelingToolkitBase.setu(oprob, :C)
 set_C(oprob, 0.2)
 get_C(oprob)
 ```
 
 Like when indexing-based interfacing is used, these functions also work with vectors:
 ```@example structure_indexing
-get_S = ModelingToolkit.getu(oprob, [:S₁, :S₂])
+get_S = ModelingToolkitBase.getu(oprob, [:S₁, :S₂])
 get_S(oprob)
 ```
 

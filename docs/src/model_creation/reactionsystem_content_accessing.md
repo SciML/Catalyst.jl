@@ -138,9 +138,9 @@ There exist several other functions for accessing model properties.
 
 The `observed`, `continuous_events`, `discrete_events` functions can be used to access a model's [observables](@ref dsl_advanced_options_observables), [continuous events](@ref constraint_equations_events), and [discrete events](@ref constraint_equations_events), respectively.
 
-The `ModelingToolkit.get_iv` function can be used to retrieve a [model's independent variable](@ref programmatic_CRN_construction):
+The `ModelingToolkitBase.get_iv` function can be used to retrieve a [model's independent variable](@ref programmatic_CRN_construction):
 ```@example model_accessing_basics
-ModelingToolkit.get_iv(sir)
+ModelingToolkitBase.get_iv(sir)
 ```
 
 ## [Accessing properties of hierarchical models](@id model_accessing_hierarchical)
@@ -225,12 +225,12 @@ Similarly, `parameters` retrieves five different parameters. Here, we note that 
 parameters(rs)
 ```
 
-If we wish to retrieve the species (or parameters) that are specifically contained in the top-level system (and not only indirectly through its subsystems), we can use the `Catalyst.get_species` (or `ModelingToolkit.getps`) functions:
+If we wish to retrieve the species (or parameters) that are specifically contained in the top-level system (and not only indirectly through its subsystems), we can use the `Catalyst.get_species` (or `ModelingToolkitBase.getps`) functions:
 ```@example model_accessing_hierarchical
 Catalyst.get_species(rs)
 ```
 ```@example model_accessing_hierarchical
-ModelingToolkit.get_ps(rs)
+ModelingToolkitBase.get_ps(rs)
 ```
 Here, our top-level model contains a single parameter (`kₜ`), and two the two versions of the `Xᵢ` species. These are all the symbolic variables that occur in the transportation reaction (`@kₜ, $(nucleus_sys.Xᵢ) --> $(cytoplasm_sys.Xᵢ)`), which is the only reaction of the top-level system. We can apply these functions to the systems as well. However, when we do so, the systems' names are not prepended:
 ```@example model_accessing_hierarchical

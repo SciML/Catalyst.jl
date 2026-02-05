@@ -61,7 +61,7 @@ function make_hopping_constants(dprob::DiscreteProblem, lrs::LatticeReactionSyst
                       for s in species(lrs)]
 
     # Creates an array (of the same size as the hopping constant array) containing all edges.
-    # First the array is a NxM matrix (number of species x number of vertices). Each element is a 
+    # First the array is a NxM matrix (number of species x number of vertices). Each element is a
     # vector containing all edges leading out from that vertex (sorted by destination index).
     edge_array = [Pair{Int64, Int64}[] for _1 in 1:num_species(lrs), _2 in 1:num_verts(lrs)]
     for e in edge_iterator(lrs), s_idx in 1:num_species(lrs)
@@ -70,7 +70,7 @@ function make_hopping_constants(dprob::DiscreteProblem, lrs::LatticeReactionSyst
     end
     foreach(e_vec -> sort!(e_vec; by = e -> e[2]), edge_array)
 
-    # Creates the hopping constants array. It has the same shape as the edge array, but each 
+    # Creates the hopping constants array. It has the same shape as the edge array, but each
     # element is that species transportation rate along that edge
     hopping_constants = [[Catalyst.get_edge_value(all_diff_rates[s_idx], e)
                           for e in edge_array[s_idx, src_idx]]
@@ -124,23 +124,23 @@ end
 
 ### Extra ###
 
-# Temporary. Awaiting implementation in SII, or proper implementation within Catalyst (with 
+# Temporary. Awaiting implementation in SII, or proper implementation within Catalyst (with
 # more general functionality).
 function int_map(map_in, sys)
-    return [ModelingToolkit.variable_index(sys, pair[1]) => pair[2] for pair in map_in]
+    return [MT.variable_index(sys, pair[1]) => pair[2] for pair in map_in]
 end
 
 # Currently unused. If we want to create certain types of MassActionJumps (instead of SpatialMassActionJumps) we can take this one back.
 # Creates the (non-spatial) mass action jumps from a (non-spatial) DiscreteProblem (and its Reaction System of origin).
 # function make_majumps(non_spat_dprob, rs::ReactionSystem)
 #     # Computes various required inputs for assembling the mass action jumps.
-#     js = convert(JumpSystem, rs)
-#     statetoid = Dict(ModelingToolkit.value(state) => i for (i, state) in enumerate(unknowns(rs)))
+#     js = make_sck_jump(rs)
+#     statetoid = Dict(value(state) => i for (i, state) in enumerate(unknowns(rs)))
 #     eqs = equations(js)
 #     invttype = non_spat_dprob.tspan[1] === nothing ? Float64 : typeof(1 / non_spat_dprob.tspan[2])
 #
 #     # Assembles the non-spatial mass action jumps.
 #     p = (non_spat_dprob.p isa DiffEqBase.NullParameters || non_spat_dprob.p === nothing) ? Num[] : non_spat_dprob.p
-#     majpmapper = ModelingToolkit.JumpSysMajParamMapper(js, p; jseqs = eqs, rateconsttype = invttype)
-#     return ModelingToolkit.assemble_maj(eqs.x[1], statetoid, majpmapper)
+#     majpmapper = MT.JumpSysMajParamMapper(js, p; jseqs = eqs, rateconsttype = invttype)
+#     return MT.assemble_maj(eqs.x[1], statetoid, majpmapper)
 # end

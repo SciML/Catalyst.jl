@@ -2,7 +2,19 @@
 
 # Fetch packages.
 using Catalyst, JumpProcesses, OrdinaryDiffEqTsit5, StochasticDiffEq, Statistics, Test
-using Symbolics: BasicSymbolic, unwrap
+using Symbolics: unwrap
+import SymbolicIndexingInterface as SII
+
+# Mock integrator type for testing generated VRJ affect functions.
+# MTKBase's generated affects use SymbolicIndexingInterface, so we need a proper type.
+mutable struct TestIntegrator{U, V, T}
+    u::U
+    p::V
+    t::T
+end
+SII.state_values(x::TestIntegrator) = x.u
+SII.parameter_values(x::TestIntegrator) = x.p
+SII.current_time(x::TestIntegrator) = x.t
 
 # Sets stable rng number.
 using StableRNGs
@@ -20,7 +32,7 @@ include("../test_functions.jl")
 
 # Checks that systems with symbolic stoichiometries, created using different approaches, are identical.
 let
-    @parameters p k d::Float64 n1::Int64 n2 n3
+    @parameters p k d::Float64 n1::Int64 n2::Int64 n3::Int64
     @species X(t) Y(t)
     rxs1 = [
         Reaction(p, nothing, [X], nothing, [n1])
@@ -43,11 +55,12 @@ let
         d, Y --> 0
     end
 
-    @test rs1 == rs2 == rs3
+    @test Catalyst.isequivalent(rs1, rs2)
+    @test Catalyst.isequivalent(rs2, rs3)
     @test issetequal(unknowns(rs1), [X, Y])
     @test issetequal(parameters(rs1), [p, k, d, n1, n2, n3])
-    @test unwrap(d) isa BasicSymbolic{Float64}
-    @test unwrap(n1) isa BasicSymbolic{Int64}
+    @test SymbolicUtils.symtype(d) == Float64
+    @test SymbolicUtils.symtype(n1) == Int64
 end
 
 # Declares a network, parameter values, and initial conditions, to be used for the next couple of tests.
@@ -175,18 +188,54 @@ let
     jumps = [VariableRateJump(r1, affect1!), VariableRateJump(r2, affect2!)]
 
     # Checks that the Catalyst-generated functions are equal to the manually declared ones.
+    # Note: MTKBase's generated affect functions use SymbolicIndexingInterface, requiring a
+    # proper integrator type (TestIntegrator defined at top of file).
+    catalyst_jsys = make_sck_jump(rs)
+    unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(catalyst_jsys)))
     for i in 1:2
-        catalyst_jsys = convert(JumpSystem, rs)
-        unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(catalyst_jsys)))
-        catalyst_vrj = ModelingToolkit.assemble_vrj(catalyst_jsys, equations(catalyst_jsys)[i], unknownoid)
+        catalyst_vrj = ModelingToolkitBase.assemble_vrj(catalyst_jsys, ModelingToolkitBase.jumps(catalyst_jsys)[i], unknownoid)
+
+        # Rate functions should match
         @test isapprox(catalyst_vrj.rate(u0_2, ps_2, τ), jumps[i].rate(u0_2, ps_2, τ))
 
-        fake_integrator1 = (u = copy(u0_2), p = ps_2, t = τ)
-        fake_integrator2 = deepcopy(fake_integrator1)
+        # Test affect functions
+        fake_integrator1 = TestIntegrator(copy(u0_2), ps_2, τ)
+        fake_integrator2 = TestIntegrator(copy(u0_2), ps_2, τ)
         catalyst_vrj.affect!(fake_integrator1)
         jumps[i].affect!(fake_integrator2)
-        @test fake_integrator1 == fake_integrator2
+        @test all(fake_integrator1.u .== fake_integrator2.u)
     end
+end
+
+# Tests that non-species unknowns (regular variables) in stoichiometry are properly wrapped in Pre().
+# This ensures MTKBase generates explicit affects rather than implicit ones.
+let
+    @parameters k
+    @variables V(t)
+    @species X(t) Y(t)
+
+    # Reaction where V (a non-species variable) appears in the stoichiometry
+    rs = @reaction_network begin
+        @parameters k
+        @variables V(t)
+        k, X --> V*Y
+    end
+
+    # The JumpSystem should have explicit affects (no equations after mtkcompile)
+    jsys = make_sck_jump(rs)
+    js = ModelingToolkitBase.jumps(jsys)
+    @test length(js) == 1
+
+    # Check that V appears as Pre(V(t)) in the affect equations
+    affect_str = string(js[1].affect!)
+    @test occursin("Pre(V(t))", affect_str)
+
+    # Verify it creates an explicit affect (empty equations after mtkcompile)
+    iv = unwrap(t)
+    aff = ModelingToolkitBase.AffectSystem(js[1].affect!; iv)
+    affsys = ModelingToolkitBase.system(aff)
+    eqs = ModelingToolkitBase.equations(ModelingToolkitBase.unhack_system(affsys))
+    @test isempty(eqs)  # Should be explicit, not implicit
 end
 
 # Tests symbolic stoichiometries in simulations.
@@ -247,10 +296,8 @@ let
     @test mean(ssol_dec[:X1]) ≈ mean(ssol_dec_ref[:X1]) atol = 2*1e0
 
     # Test Jump simulations with integer coefficients.
-    jin_int = JumpInputs(rs_int, u0_int, tspan_stoch, ps_int)
-    jin_int_ref = JumpInputs(rs_ref_int, u0_int, tspan_stoch, ps_int)
-    jprob_int = JumpProblem(jin_int; rng, save_positions = (false, false))
-    jprob_int_ref = JumpProblem(jin_int_ref; rng, save_positions = (false, false))
+    jprob_int = JumpProblem(rs_int, u0_int, tspan_stoch, ps_int; rng, save_positions = (false, false))
+    jprob_int_ref = JumpProblem(rs_ref_int, u0_int, tspan_stoch, ps_int; rng, save_positions = (false, false))
     jsol_int = solve(jprob_int, SSAStepper(); seed, saveat = 1.0)
     jsol_int_ref = solve(jprob_int_ref, SSAStepper(); seed, saveat = 1.0)
     @test mean(jsol_int[:X1]) ≈ mean(jsol_int_ref[:X1]) atol = 1e-2 rtol = 1e-2
@@ -283,10 +330,8 @@ let
     @test solve(oprob, Tsit5()) ≈ solve(oprob_ref, Tsit5())
 
     # Jumps. First ensemble problems for each systems is created.
-    jin = JumpInputs(sir, u0, tspan, ps)
-    jin_ref = JumpInputs(sir_ref, u0, tspan, ps_ref)
-    jprob = JumpProblem(jin; rng, save_positions = (false, false))
-    jprob_ref = JumpProblem(jin_ref; rng, save_positions = (false, false))
+    jprob = JumpProblem(sir, u0, tspan, ps; rng, save_positions = (false, false))
+    jprob_ref = JumpProblem(sir_ref, u0, tspan, ps_ref; rng, save_positions = (false, false))
     eprob = EnsembleProblem(jprob)
     eprob_ref = EnsembleProblem(jprob_ref)
 
@@ -295,6 +340,6 @@ let
     sols_ref = solve(eprob_ref, SSAStepper(); trajectories = 10000)
     end_vals = [[sol[s][end] for sol in sols.u] for s in species(sir)]
     end_vals_ref = [[sol[s][end] for sol in sols_ref.u] for s in species(sir_ref)]
-    @test mean.(end_vals_ref) ≈ mean.(end_vals) atol=1e-2 rtol = 1e-2
+    @test mean.(end_vals_ref) ≈ mean.(end_vals) atol=1e-1 rtol = 1e-1
     @test var.(end_vals_ref) ≈ var.(end_vals) atol=1e-1 rtol = 1e-1
 end

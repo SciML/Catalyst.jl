@@ -140,7 +140,7 @@ let
         Reaction(kB, [X], [X2], [2], [1])
         Reaction(kD, [X2], [X], [1], [2])
     ]
-    @named rs = ReactionSystem(rxs, t; metadata = "Metadata string")
+    @named rs = ReactionSystem(rxs, t; metadata = [MiscSystemData => "Metadata string"])
     rs = complete(rs)
     tr = @transport_reaction D X2
     lrs = LatticeReactionSystem(rs, [tr], small_2d_cartesian_grid)
@@ -148,14 +148,14 @@ let
     # Generic ones (simply forwards call to the non-spatial system).
     @test isequal(reactions(lrs), rxs)
     @test isequal(nameof(lrs), :rs)
-    @test isequal(ModelingToolkit.get_iv(lrs), t)
+    @test isequal(ModelingToolkitBase.get_iv(lrs), t)
     @test isequal(equations(lrs), rxs)
     @test isequal(unknowns(lrs), [X, X2])
-    @test isequal(ModelingToolkit.get_metadata(lrs), "Metadata string")
-    @test isequal(ModelingToolkit.get_eqs(lrs), rxs)
-    @test isequal(ModelingToolkit.get_unknowns(lrs), [X, X2])
-    @test isequal(ModelingToolkit.get_ps(lrs), [p, d, kB, kD])
-    @test isequal(ModelingToolkit.get_systems(lrs), [])
+    @test isequal(ModelingToolkitBase.getmetadata(lrs, MiscSystemData, nothing), "Metadata string")
+    @test isequal(ModelingToolkitBase.get_eqs(lrs), rxs)
+    @test isequal(ModelingToolkitBase.get_unknowns(lrs), [X, X2])
+    @test isequal(ModelingToolkitBase.get_ps(lrs), [p, d, kB, kD])
+    @test isequal(ModelingToolkitBase.get_systems(lrs), [])
     @test isequal(independent_variables(lrs), [t])
 end
 
@@ -228,7 +228,7 @@ let
 end
 
 # Tests various networks with non-permitted content.
-    let
+let
     tr = @transport_reaction D X
 
     # Variable unknowns.

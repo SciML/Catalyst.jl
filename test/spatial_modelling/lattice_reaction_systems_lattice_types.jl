@@ -94,7 +94,8 @@ let
     graph_lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, graph_grid)
 
     # Check internal structures.
-    @test reactionsystem(cartesian_lrs) == reactionsystem(masked_lrs) == reactionsystem(graph_lrs)
+    @test Catalyst.isequivalent(reactionsystem(cartesian_lrs), reactionsystem(masked_lrs))
+    @test Catalyst.isequivalent(reactionsystem(masked_lrs), reactionsystem(graph_lrs))
     @test spatial_reactions(cartesian_lrs) == spatial_reactions(masked_lrs) == spatial_reactions(graph_lrs)
     @test num_verts(cartesian_lrs) == num_verts(masked_lrs) == num_verts(graph_lrs)
     @test num_edges(cartesian_lrs) == num_edges(masked_lrs) == num_edges(graph_lrs)

@@ -15,10 +15,11 @@ Symbolics.option_to_metadata_type(::Val{:edgeparameter}) = EdgeParameter
 
 Returns `true` if the parameter `p` is an edge parameter (else `false`).
 """
-isedgeparameter(x::Num, args...) = isedgeparameter(Symbolics.unwrap(x), args...)
+isedgeparameter(x::Num, args...) = isedgeparameter(unwrap(x), args...)
 function isedgeparameter(x, default = false)
-    p = Symbolics.getparent(x, nothing)
-    p === nothing || (x = p)
+    if iscall(x) && operation(x) === getindex
+        x = first(arguments(x))
+    end
     Symbolics.getmetadata(x, EdgeParameter, default)
 end
 
@@ -30,7 +31,7 @@ struct TransportReaction <: AbstractSpatialReaction
     """The rate function (excluding mass action terms). Currently, only constants supported"""
     rate::Any
     """The species that is subject to diffusion."""
-    species::BasicSymbolic{Real}
+    species::SymbolicT
 
     # Creates a diffusion reaction.
     function TransportReaction(rate, species)
@@ -59,7 +60,7 @@ function make_transport_reaction(rateex, species)
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     sexprs = get_usexpr([species], Dict{Symbol, Expr}())
-    pexprs = get_psexpr(parameters, Dict{Symbol, Expr}())
+    pexprs = get_psexpr(parameters, [], Dict{Symbol, Expr}())
     iv = :($(DEFAULT_IV_SYM) = default_t())
     trxexpr = :(TransportReaction($rateex, $species))
 
@@ -77,7 +78,7 @@ function make_transport_reaction(rateex, species)
 end
 
 # Gets the parameters in a `TransportReaction`.
-ModelingToolkit.parameters(tr::TransportReaction) = Symbolics.get_variables(tr.rate)
+MT.parameters(tr::TransportReaction) = collect(Symbolics.get_variables(tr.rate))
 
 # Gets the species in a `TransportReaction`.
 spatial_species(tr::TransportReaction) = [tr.species]
@@ -93,9 +94,9 @@ function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReacti
     end
 
     # Checks that the rate does not depend on species.
-    rate_vars = ModelingToolkit.getname.(Symbolics.get_variables(tr.rate))
-    if !isempty(intersect(ModelingToolkit.getname.(species(rs)), rate_vars))
-        error("The following species were used in rates of a transport reactions: $(setdiff(ModelingToolkit.getname.(species(rs)), rate_vars)).")
+    rate_vars = MT.getname.(Symbolics.get_variables(tr.rate))
+    if !isempty(intersect(MT.getname.(species(rs)), rate_vars))
+        error("The following species were used in rates of a transport reactions: $(setdiff(MT.getname.(species(rs)), rate_vars)).")
     end
 
     # Checks that the species does not exist in the system with different metadata.

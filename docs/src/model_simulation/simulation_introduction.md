@@ -296,7 +296,7 @@ While the `@default_noise_scaling` option is unavailable for [programmatically c
 
 Catalyst uses the [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) package to perform jump simulations. This section provides a brief introduction, with [JumpProcesses's documentation](https://docs.sciml.ai/JumpProcesses/stable/) providing a more extensive description.
 
-Jump simulations are performed using so-called `JumpProblem`s. Unlike ODEs and SDEs (for which the corresponding problem types can be created directly), jump simulations require first processing inputs into a correct format creating an intermediary `JumpInputs`. In this example, we first declare our two-state model and its initial conditions, time span, and parameter values.
+Jump simulations are performed using so-called `JumpProblem`s. In this example, we first declare our two-state model and its initial conditions, time span, and parameter values.
 ```@example simulation_intro_jumps
 using Catalyst, JumpProcesses, Plots
 two_state_model = @reaction_network begin
@@ -310,14 +310,9 @@ nothing # hide
 !!! note
     Since jump simulations typically simulate the integer copy-numbers of each species present in the system, we designate our initial conditions for jump simulations as integers. Decimal-numbered initial conditions (and thus jump simulations) are, however, also possible. While ODE and SDE simulations accept integer initial conditions, these will be converted to decimal numbers.
 
-Next, we process these into a `JumpInputs`:
+Next, we use these as inputs to a `JumpProblem`:
 ```@example simulation_intro_jumps
-jinput = JumpInputs(two_state_model, u0, tspan, ps)
-nothing # hide
-```
-This is then used as input to a `JumpProblem`:
-```@example simulation_intro_jumps
-jprob = JumpProblem(jinput)
+jprob = JumpProblem(two_state_model, u0, tspan, ps)
 nothing # hide
 ```
 The `JumpProblem` can now be simulated using `solve` (just like any other problem type).
@@ -334,9 +329,9 @@ plot(sol)
 ### [Designating aggregators and simulation methods for jump simulations](@id simulation_intro_jumps_solver_designation)
 Jump simulations (just like ODEs and SDEs) are performed using stochastic simulation algorithms (SSAs) to generate exact samples of the underlying jump process. In JumpProcesses.jl and Catalyst, we call SSAs *aggregators*. These methods determine the time until, and type of, the next reaction in a system. A separate time-stepping method is then used to actually step from one reaction instance to the next.
 
-Several different aggregators are available (a full list is provided [here](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-for-Exact-Simulation)). To designate a specific one, provide it as the second argument to the `JumpProblem`. E.g. to designate that the sorting direct method (`SortingDirect`) should be used, use:
+Several different aggregators are available (a full list is provided [here](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-for-Exact-Simulation)). To designate a specific one, we use `JumpProblem`'s `aggregator` argument. E.g. to designate that the sorting direct method (`SortingDirect`) should be used, use:
 ```@example simulation_intro_jumps
-jprob = JumpProblem(jinput, SortingDirect())
+jprob = JumpProblem(two_state_model, u0, tspan, ps; aggregator =  SortingDirect())
 nothing # hide
 ```
 Especially for large systems, the choice of aggregator can dramatically impact
@@ -356,8 +351,7 @@ using OrdinaryDiffEqTsit5
 u0map = [:P => 0]
 pmap = [:f => 1.0, :A => 2.0, :ϕ => 0.0, :d => 1.0]
 tspan = (0.0, 24.0)
-jinputs = JumpInputs(circadian_model, u0map, tspan, pmap)
-jprob = JumpProblem(jinputs)
+jprob = JumpProblem(circadian_model, u0map, tspan, pmap)
 sol = solve(jprob, Tsit5())  # use the Tsit5 ODE solver to time-step
 plot(sol; idxs = :P, lw = 2)
 ```

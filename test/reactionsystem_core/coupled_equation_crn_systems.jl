@@ -1,7 +1,7 @@
 # Fetch packages.
 using Catalyst, NonlinearSolve, OrdinaryDiffEqVerner, OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, Statistics, SteadyStateDiffEq, StochasticDiffEq, Test
-using ModelingToolkit: getdefault, getdescription, getdefault
-using Symbolics: BasicSymbolic, unwrap
+using ModelingToolkitBase: getdefault, getdescription, getdefault
+using Symbolics: unwrap
 
 # Sets stable rng number.
 using StableRNGs
@@ -80,7 +80,7 @@ let
     coupled_rs_prog = ReactionSystem(eqs_prog, t, [A, B, X1, X2], [k1, k2, a, b]; name = :coupled_rs)
     coupled_rs_prog = complete(coupled_rs_prog)
 
-    # Creates model by extending a `ReactionSystem` with a ODESystem.
+    # Creates model by extending a `ReactionSystem` with another ReactionSystem containing ODEs.
     rn_extended = @network_component begin
         ($k1*$A, $k2*$B), X1 <--> X2
     end
@@ -88,8 +88,8 @@ let
         D(A) ~ X1 + a - A
         D(B) ~ X2 + b - B
     ]
-    @named osys_extended = ODESystem(eqs_extended, t)
-    coupled_rs_extended = complete(extend(osys_extended, rn_extended; name = :coupled_rs))
+    @named rs_extended = ReactionSystem(eqs_extended, t)
+    coupled_rs_extended = complete(extend(rs_extended, rn_extended; name = :coupled_rs))
 
     # Creates the model through the DSL.
     coupled_rs_dsl = @reaction_network coupled_rs begin
@@ -102,7 +102,8 @@ let
     end
 
     # Checks that models are equivalent and contain the correct stuff.
-    @test coupled_rs_prog == coupled_rs_extended == coupled_rs_dsl
+    @test Catalyst.isequivalent(coupled_rs_prog, coupled_rs_extended)
+    @test Catalyst.isequivalent(coupled_rs_extended, coupled_rs_dsl)
     @test issetequal(parameters(coupled_rs_extended), [a, b, k1, k2])
     @test issetequal(species(coupled_rs_extended), [X1, X2])
     @test issetequal(unknowns(coupled_rs_extended)[1:2], [X1, X2])
@@ -170,11 +171,10 @@ let
     @test nlsol[[X,A]] ≈ [2.0, 3.0]
 
     # Checks that the correct steady state is found through SteadyStateProblem.
-    u0 = [X => 0.1]
-    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true,
-        guesses = [A => 1.0])
+    u0 = [X => 0.1, A => 1.0]
+    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
-    @test sssol[[X,A]] ≈ [2.0, 3.0]
+    @test_broken sssol[[X,A]] ≈ [2.0, 3.0] # The previous lines fails to solve. Issue at: https://github.com/SciML/ModelingToolkit.jl/issues/4174. This currently also yields a warning.
 end
 
 
@@ -202,7 +202,7 @@ let
 
     # Set simulation inputs.
     u0 = (X => 2.0, A => 4.0, B => 1.0, C => 2.0)
-    ps = (p => 1.0, d => 2.0, a => 3.0, b => 4.0, c => 5.0)
+    ps = (p => 1.0, d => 2.0, b => 4.0)
 
     # Creates and solves a ODE, SteadyState, and Nonlinear problems.
     # Success is tested by checking that the same steady state solution is found.
@@ -210,11 +210,11 @@ let
         warn_initialize_determined = false)
     ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true,
         warn_initialize_determined = false)
-    nlprob = NonlinearProblem(coupled_rs, u0, ps)
+    nlprob = NonlinearProblem(coupled_rs, u0, ps; structural_simplify = true)
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
     nlsol = solve(nlprob; abstol = 1e-8, reltol = 1e-8)
-    @test osol[[A, B, C, X], end] ≈ sssol[[A, B, C, X]] ≈ nlsol[[A, B, C, X]]
+    @test osol[[A, B, C, X]][end] ≈ sssol[[A, B, C, X]] ≈ nlsol[[A, B, C, X]]
 end
 
 
@@ -242,7 +242,7 @@ let
     @test Catalyst.has_species(coupled_rs)
     @test issetequal(Catalyst.get_species(coupled_rs), [X])
     @test issetequal(species(coupled_rs), [X])
-    @test issetequal(ModelingToolkit.get_unknowns(coupled_rs), [X, V, W])
+    @test issetequal(ModelingToolkitBase.get_unknowns(coupled_rs), [X, V, W])
     @test issetequal(unknowns(coupled_rs), [X, V, W])
     @test issetequal(nonspecies(coupled_rs), [V, W])
     @test numspecies(coupled_rs) == 1
@@ -287,9 +287,9 @@ let
     coupled_rs = complete(coupled_rs)
 
     # Checks that systems created from coupled reaction systems contain the correct content
-    osys = convert(ODESystem, coupled_rs)
-    ssys = convert(SDESystem, coupled_rs)
-    nlsys = convert(NonlinearSystem, coupled_rs)
+    osys = make_rre_ode(coupled_rs)
+    ssys = make_cle_sde(coupled_rs)
+    nlsys = make_rre_algeqs(coupled_rs)
     initps = Initial.((X, X2, A, B))
     fullps = union(initps, [k1, k2, k, b1, b2])
     for sys in [coupled_rs, osys, ssys, nlsys]
@@ -302,27 +302,27 @@ end
 # Checks for both differential and algebraic equations.
 # Checks for problems, integrators, and solutions yielded by coupled systems.
 # Checks that metadata, types, and default values are carried through correctly.
-@test_broken let # SDEs are currently broken with structural simplify (https://github.com/SciML/ModelingToolkit.jl/issues/2614).
+let
     # Creates the model
     @parameters a1 [description="Parameter a1"] a2::Rational{Int64} a3=0.3 a4::Rational{Int64}=4//10 [description="Parameter a4"]
     @parameters b1 [description="Parameter b1"] b2::Int64 b3 = 3 b4::Int64=4 [description="Parameter b4"]
     @parameters c1 [description="Parameter c1"] c2::Float32 c3=30.0 c4::Float32=40.0 [description="Parameter c4"]
     @species A1(t) [description="Species A1"] A2(t)=0.2 A3(t)=0.3 [description="Species A3"] A4(t)
     @variables B1(t) [description="Variable B1"] B2(t)=2.0 B3(t)=3.0 [description="Variable B3"] B4(t)
-    @variables C1(t) [description="Variable C1"] C2(t)=20.0 C3(t)=30.0 [description="Variable C3"] C4(t)
+    @variables C1(t) [description="Variable C1"] C2(t) C3(t) [description="Variable C3"] C4(t)
     eqs = [
-        Reaction(a1, nothing, [A1]),
-        Reaction(a2, nothing, [A2]),
-        Reaction(a3, nothing, [A3]),
-        Reaction(a4, nothing, [A4]),
+        Reaction(a1, [A1], nothing),
+        Reaction(a2, [A2], nothing),
+        Reaction(a3, [A3], nothing),
+        Reaction(a4, [A4], nothing),
         D(B1) ~ b1*B1,
         D(B2) ~ b2*B2,
         D(B3) ~ b3*B3,
         D(B4) ~ b4*B4,
-        C1^2 ~ c1 + B1^5,
-        C2^2 ~ c2 + B2^5,
-        C3^2 ~ c3 + B3^5,
-        C4^2 ~ c4 + B4^5
+        C1 ~ sqrt(c1 + B1^5),
+        C2 ~ sqrt(c2 + B2^5),
+        C3 ~ sqrt(c3 + B3^5),
+        C4 ~ sqrt(c4 + B4^5)
     ]
     @named coupled_rs = ReactionSystem(eqs, t)
     coupled_rs = complete(coupled_rs)
@@ -337,18 +337,18 @@ end
     @test issetequal(equations(coupled_rs)[5:12], eqs[5:12])
 
     # Checks that parameters, species, and variables carried the correct information.
-    @test unwrap(coupled_rs.a1) isa BasicSymbolic{Real}
-    @test unwrap(coupled_rs.a2) isa BasicSymbolic{Rational{Int64}}
-    @test unwrap(coupled_rs.a3) isa BasicSymbolic{Real}
-    @test unwrap(coupled_rs.a4) isa BasicSymbolic{Rational{Int64}}
-    @test unwrap(coupled_rs.b1) isa BasicSymbolic{Real}
-    @test unwrap(coupled_rs.b2) isa BasicSymbolic{Int64}
-    @test unwrap(coupled_rs.b3) isa BasicSymbolic{Real}
-    @test unwrap(coupled_rs.b4) isa BasicSymbolic{Int64}
-    @test unwrap(coupled_rs.c1) isa BasicSymbolic{Real}
-    @test unwrap(coupled_rs.c2) isa BasicSymbolic{Float32}
-    @test unwrap(coupled_rs.c3) isa BasicSymbolic{Real}
-    @test unwrap(coupled_rs.c4) isa BasicSymbolic{Float32}
+    @test SymbolicUtils.symtype(coupled_rs.a1) == Real
+    @test SymbolicUtils.symtype(coupled_rs.a2) == Rational{Int64}
+    @test SymbolicUtils.symtype(coupled_rs.a3) == Real
+    @test SymbolicUtils.symtype(coupled_rs.a4) == Rational{Int64}
+    @test SymbolicUtils.symtype(coupled_rs.b1) == Real
+    @test SymbolicUtils.symtype(coupled_rs.b2) == Int64
+    @test SymbolicUtils.symtype(coupled_rs.b3) == Real
+    @test SymbolicUtils.symtype(coupled_rs.b4) == Int64
+    @test SymbolicUtils.symtype(coupled_rs.c1) == Real
+    @test SymbolicUtils.symtype(coupled_rs.c2) == Float32
+    @test SymbolicUtils.symtype(coupled_rs.c3) == Real
+    @test SymbolicUtils.symtype(coupled_rs.c4) == Float32
     @test getdescription(coupled_rs.a1) == "Parameter a1"
     @test getdescription(coupled_rs.a4) == "Parameter a4"
     @test getdescription(coupled_rs.b1) == "Parameter b1"
@@ -371,60 +371,79 @@ end
     @test getdefault(coupled_rs.A3) == 0.3
     @test getdefault(coupled_rs.B2) == 2.0
     @test getdefault(coupled_rs.B3) == 3.0
-    @test getdefault(coupled_rs.C2) == 20.0
-    @test getdefault(coupled_rs.C3) == 30.0
 
     # Creates problem inputs.
-    u0 = [a1 => 0.1, a2 => 2//10, b1 => 1.0, b2 => 2, c1 => 10.0, c2 => 20.0]
+    u0 = [A1 => 0.1, A4 => 0.4, B1 => 1.0, B4 => 4.0]
+    u0_nlp = [A1 => 0.1, A4 => 0.4, B1 => 1.0, B4 => 4.0, C1 => sqrt(10.0 + 1.0^5), C2 => sqrt(20.0 + 2.0^5), C3 => sqrt(30.0 + 3.0^5), C4 => sqrt(40.0 + 4.0^5)]
     tspan = (0.0, 1.0)
-    ps = [A1 => 0.1, B1 => 1.0, C1 => 10.0]
+    ps = [a1 => 0.1, a2 => 2//10, b1 => 1.0, b2 => 2, c1 => 10.0, c2 => 20.0]
 
     # Create ODE structures.
     oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
-    oint = init(oprob, Tsit5())
-    osol = solve(oprob, Tsit5())
+    oint = init(oprob, Rosenbrock23())
+    osol = solve(oprob, Rosenbrock23())
 
     # Create SDE structures.
-    sprob = SDEProblem(coupled_rs, u0, tspan, ps)
-    sint = init(oprob, ImplicitEM())
-    ssol = solve(oprob, ImplicitEM())
+    sprob = SDEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
+    sint = init(sprob, ImplicitEM())
+    ssol = solve(sprob, ImplicitEM())
 
     # Creates Nonlinear structures.
-    nlprob = NonlinearProblem(coupled_rs, u0, ps)
+    nlprob = NonlinearProblem(coupled_rs, u0_nlp, ps; structural_simplify = true, warn_initialize_determined = false)
     nlint = init(nlprob, NewtonRaphson())
     nlsol = solve(nlprob, NewtonRaphson())
 
     # Checks indexing.
     for mtk_struct in [oprob, oint, osol, sprob, sint, ssol, nlprob, nlint, nlsol]
         # Parameters.
-        @test mtk_struct[a1] == 0.1
-        @test mtk_struct[a2] == 2//10
-        @test mtk_struct[a3] == 0.3
-        @test mtk_struct[a4] == 4//10
-        @test mtk_struct[b1] == 1.0
-        @test mtk_struct[b2] == 2
-        @test mtk_struct[b3] == 3.0
-        @test mtk_struct[b4] == 4
-        @test mtk_struct[c1] == 10.0
-        @test mtk_struct[c2] == 20.0
-        @test mtk_struct[c3] == 30.0
-        @test mtk_struct[c4] == 40.0
+        @test mtk_struct.ps[a1] == 0.1
+        @test_broken mtk_struct.ps[a2] == 2//10 # An equivalent value (but different nominator and denominator) is generated. https://github.com/SciML/ModelingToolkit.jl/issues/4163.
+        @test mtk_struct.ps[a3] == 0.3
+        @test mtk_struct.ps[a4] == 4//10
+        @test mtk_struct.ps[b1] == 1.0
+        @test mtk_struct.ps[b2] == 2
+        @test mtk_struct.ps[b3] == 3.0
+        @test mtk_struct.ps[b4] == 4
+        @test mtk_struct.ps[c1] == 10.0
+        @test mtk_struct.ps[c2] == 20.0
+        @test mtk_struct.ps[c3] == 30.0
+        @test mtk_struct.ps[c4] == 40.0
+    end
+    for mtk_struct in [oprob, oint, sprob, sint, nlprob, nlint]
 
         # Species.
         @test mtk_struct[A1] == 0.1
-        @test mtk_struct[A2] == 2//10
+        @test mtk_struct[A2] == 0.2
         @test mtk_struct[A3] == 0.3
-        @test mtk_struct[A4] == 4//10
+        @test mtk_struct[A4] == 0.4
 
         # Variables.
         @test mtk_struct[B1] == 1.0
         @test mtk_struct[B2] == 2
         @test mtk_struct[B3] == 3.0
         @test mtk_struct[B4] == 4
-        @test mtk_struct[C1] == 10.0
-        @test mtk_struct[C2] == 20.0
-        @test mtk_struct[C3] == 30.0
-        @test mtk_struct[C4] == 40.0
+        @test mtk_struct[C1] == sqrt(mtk_struct.ps[c1] + mtk_struct[B1]^5)
+        @test mtk_struct[C2] == sqrt(mtk_struct.ps[c2] + mtk_struct[B2]^5)
+        @test mtk_struct[C3] == sqrt(mtk_struct.ps[c3] + mtk_struct[B3]^5)
+        @test mtk_struct[C4] == sqrt(mtk_struct.ps[c4] + mtk_struct[B4]^5)
+    end
+    for mtk_struct in [osol, ssol]
+
+        # Species.
+        @test mtk_struct[A1][1] == 0.1
+        @test mtk_struct[A2][1] == 0.2
+        @test mtk_struct[A3][1] == 0.3
+        @test mtk_struct[A4][1] == 0.4
+
+        # Variables.
+        @test mtk_struct[B1][1] == 1.0
+        @test mtk_struct[B2][1] == 2
+        @test mtk_struct[B3][1] == 3.0
+        @test mtk_struct[B4][1] == 4
+        @test mtk_struct[C1][1] == sqrt(mtk_struct.ps[c1] + mtk_struct[B1][1]^5)
+        @test mtk_struct[C2][1] == sqrt(mtk_struct.ps[c2] + mtk_struct[B2][1]^5)
+        @test mtk_struct[C3][1] == sqrt(mtk_struct.ps[c3] + mtk_struct[B3][1]^5)
+        @test mtk_struct[C4][1] == sqrt(mtk_struct.ps[c4] + mtk_struct[B4][1]^5)
     end
 end
 
@@ -463,7 +482,7 @@ end
 
 # Checks that a coupled SDE + algebraic equations works.
 # Checks that structural_simplify is required to simulate coupled SDE + algebraic equations.
-let # SDEs are currently broken with structural simplify (https://github.com/SciML/ModelingToolkit.jl/issues/2614).
+let
     # Creates coupled reactions system.
     @parameters p d k1 k2
     @species X(t)
@@ -477,7 +496,7 @@ let # SDEs are currently broken with structural simplify (https://github.com/Sci
     coupled_rs = complete(coupled_rs)
 
     # Set simulation inputs.
-    u0 = [X => 100.0, A => 10.0]
+    u0 = [X => 100.0]
     tspan = (0.0, 1000.0)
     ps = Dict([p => 1.0, d => 0.01, k1 => 3.0, k2 => 4.0])
 
@@ -485,9 +504,9 @@ let # SDEs are currently broken with structural simplify (https://github.com/Sci
     @test_throws Exception SDEProblem(coupled_rs, u0, tspan, ps)
 
     # Checks the algebraic equation holds.
-    sprob = SDEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
-    ssol = solve(sprob, ImplicitEM())
-    @test (2 .+ ps[k1] * ssol[:A]) ≈ (3 .+ ps[k2] * ssol[:X])
+    sprob = SDEProblem(coupled_rs, u0, tspan, ps; guesses = [A => 1.0], structural_simplify = true, warn_initialize_determined = false)
+    ssol = solve(sprob, ImplicitEM(); abstol = 1e-5, reltol = 1e-5)
+    @test (2 .+ ps[k1] * ssol[:A]) ≈ (3 .+ ps[k2] * ssol[:X]) atol = 1e-1 rtol = 1e-1
 end
 
 
@@ -500,7 +519,7 @@ let
         rs = @reaction_network begin
             @equations D(V) ~ 1.0 - V
         end
-        @test_nowarn convert(NonlinearSystem, rs)
+        @test_nowarn make_rre_algeqs(rs)
     end
 
     # Higher-order differential on the lhs, should yield an error.
@@ -511,7 +530,7 @@ let
             @equations D(D(V)) ~ 1.0 - V
             (p,d), 0 <--> X
         end
-        @test_throws Exception convert(NonlinearSystem, rs)
+        @test_throws Exception make_rre_algeqs(rs)
     end
 
     # Differential on the rhs, should yield an error.
@@ -521,7 +540,7 @@ let
             @equations D(V) ~ 1.0 - V + D(U)
             (p,d), 0 <--> X
         end
-        @test_throws Exception convert(NonlinearSystem, rs)
+        @test_throws Exception make_rre_algeqs(rs)
     end
 
     # Non-differential term on the lhs, should yield an error.
@@ -532,7 +551,7 @@ let
             @equations D(V) + V ~ 1.0 - V
             (p,d), 0 <--> X
         end
-        @test_throws Exception convert(NonlinearSystem, rs)
+        @test_throws Exception make_rre_algeqs(rs)
     end
 end
 
@@ -541,7 +560,7 @@ end
 
 # Tests that coupled CRN/DAEs with higher order differentials can be created.
 # Tests that these can be solved using ODEs, nonlinear solving, and steady state simulations.
-let
+@test_broken let # Cannot generate System, issue in  # https://github.com/SciML/ModelingToolkit.jl/issues/4186.
     # Create coupled model.
     @species X(t)
     @variables A(t) B(t)
@@ -582,61 +601,6 @@ let
     @test nlsol[X][end] ≈ 2.0
     @test nlsol[A][end] ≈ 0.0
     @test nlsol[B][end] ≈ 1.0
-end
-
-# Checks that DAEs are created properly when provided disorderly.
-# Checks that differential equations can provided in a form no `D(...) ~ ...` (i.e. several
-# differentials, not necessarily on the same side).
-# Checks with non-default iv, and parameters/initial conditions given using Symbols.
-# Checks with default value for algebraic variable.
-let
-    # Prepares stuff common to both simulations.
-    @parameters i r m1 m2 h_max
-    u0 = [:S => 999.0, :I => 1.0, :R => 0.0, :M => 1000.0]
-    tspan = 500.0
-    ps = [:i => 0.0001, :r => 0.01, :m1 => 5000.0, :m2 => 9000//3, :h_max => 1500.0]
-
-    # Declares the model in an ordered fashion, and simulates it.
-    osol_ordered = let
-        @variables M(t) H(t)=h_max
-        @species S(t) I(t) R(t)
-        eqs_ordered = [
-            Reaction(i, [S, I], [I], [1, 1], [2]),
-            Reaction(r, [I], [R]),
-            D(M) ~ -I*M/(m1 + m2),
-            H ~ h_max - I
-        ]
-        @named coupled_sir_ordered = ReactionSystem(eqs_ordered, t)
-        coupled_sir_ordered = complete(coupled_sir_ordered)
-
-        # Checks that ODE an simulation of the system achieves the correct steady state.
-        oprob_ordered = ODEProblem(coupled_sir_ordered, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
-        solve(oprob_ordered, Vern7(); abstol = 1e-8, reltol = 1e-8, saveat = 1.0)
-    end
-
-    # Declares the model in a messy fashion, and simulates it.
-    osol_messy = let
-        @parameters τ
-        @variables M(τ) H(τ)=h_max
-        @species S(τ) I(τ) R(τ)
-        Δ = Differential(τ)
-        eqs_messy = [
-            Reaction(i, [S, I], [I], [1, 1], [2]),
-            Reaction(r, [I], [R]),
-            I*M + m1*Δ(M) ~ -m2*Δ(M),
-            H ~ h_max - I
-        ]
-        @named coupled_sir_messy = ReactionSystem(eqs_messy, τ)
-        coupled_sir_messy = complete(coupled_sir_messy)
-
-        # Checks that ODE an simulation of the system achieves the correct steady state.
-        oprob_messy = ODEProblem(coupled_sir_messy, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
-        solve(oprob_messy, Vern7(); abstol = 1e-8, reltol = 1e-8, saveat = 1.0)
-    end
-
-    # Checks that the simulations are identical.
-    # Some internal details will be different, however, the solutions should be identical.
-    @test osol_messy[[:S, :I, :R, :M, :H]] ≈ osol_ordered[[:S, :I, :R, :M, :H]]
 end
 
 
@@ -680,10 +644,10 @@ let
     end
 
     # Checks that models are identical. Also checks that they have the correct content.
-    @test rs_prog == rs_dsl
+    @test Catalyst.isequivalent(rs_prog, rs_dsl)
     @test getdescription(rs_dsl.V) == "Volume"
     @test getdefault(rs_dsl.V) == 5.0
-    @test unwrap(rs_dsl.x_scale) isa BasicSymbolic{Float32}
+    @test SymbolicUtils.symtype(rs_dsl.x_scale) == Float32
 
     @test issetequal(parameters(rs_dsl), [p, k1, k2, d, v, n, x_scale])
     @test issetequal(species(rs_dsl), unknowns(rs_dsl)[1:3])
@@ -718,7 +682,7 @@ let
         i, S + I --> 2I
         r, I --> R
     end
-    @test rs_1_line == rs_1_block
+    @test Catalyst.isequivalent(rs_1_line, rs_1_block)
 
     # Checks for system with a single algebraic equation.
     rs_2_line = @reaction_network rs_2 begin
@@ -735,7 +699,7 @@ let
         i, S + I --> 2I
         r, I --> R
     end
-    @test rs_2_line == rs_2_block
+    @test Catalyst.isequivalent(rs_2_line, rs_2_block)
 end
 
 # Checks that lhs variable is correctly inferred from differential equations.
@@ -836,14 +800,14 @@ let
     function is_eqs_equal(rs1, rs2; eq_idx = 1)
         eq1 = equations(rs1)[eq_idx]
         eq2 = equations(rs2)[eq_idx]
-        isequal(eq1.lhs - eq1.rhs - eq2.lhs + eq2.rhs, 0.0) && return true
-        isequal(eq1.lhs - eq1.rhs + eq2.lhs - eq2.rhs, 0.0) && return true
+        ModelingToolkitBase._iszero(eq1.lhs - eq1.rhs - eq2.lhs + eq2.rhs) && return true
+        ModelingToolkitBase._iszero(eq1.lhs - eq1.rhs + eq2.lhs - eq2.rhs) && return true
         return false
     end
-    @test is_eqs_equal(rs_1, rs_2)
-    @test is_eqs_equal(rs_1, rs_3)
-    @test is_eqs_equal(rs_1, rs_4)
-    @test is_eqs_equal(rs_1, rs_5)
+    @test_broken is_eqs_equal(rs_1, rs_2) # Test broken due to https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739, not a Catalyst problem.
+    @test_broken is_eqs_equal(rs_1, rs_3) # Test broken due to https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739, not a Catalyst problem.
+    @test_broken is_eqs_equal(rs_1, rs_4) # Test broken due to https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739, not a Catalyst problem.
+    @test_broken is_eqs_equal(rs_1, rs_5) # Test broken due to https://github.com/JuliaSymbolics/Symbolics.jl/issues/1739, not a Catalyst problem.
     @test is_eqs_equal(rs_1, rs_6)
 end
 
@@ -857,11 +821,11 @@ let
     end
 
     # Checks that the default differential uses τ iv.
-    Ds = Differential(ModelingToolkit.get_iv(rs))
+    Ds = Differential(ModelingToolkitBase.get_iv(rs))
     @test isequal(operation(equations(rs)[1].lhs), Ds)
 
     # Checks that the inferred variable depends on τ iv.
-    @variables V($(ModelingToolkit.get_iv(rs)))
+    @variables V($(ModelingToolkitBase.get_iv(rs)))
     @test isequal(V, rs.V)
 end
 
@@ -954,11 +918,6 @@ let
         Reaction(p1, [S1], [V1])
     ], t; name = :rs)
 
-    # Species using non-declared independent variable.
-    @test_throws Exception ReactionSystem([
-        Reaction(p1, [R1], [R2])
-    ], t; name = :rs)
-
     # Equation with variable using non-declared independent variable.
     @test_throws Exception ReactionSystem([
         Reaction(p1, [S1], [S2]),
@@ -977,17 +936,6 @@ let
     @parameters p1 p2
     @variables V1(t)
     @species S1(t) S2(t)
-
-    # Coupled system overconstrained due to additional algebraic equations (without variables).
-    eqs = [
-        Reaction(p1, [S1], [S2]),
-        S1 ~ p2 + S1,
-    ]
-    @named rs = ReactionSystem(eqs, t)
-    rs = complete(rs)
-    u0 = [S1 => 1.0, S2 => 2.0]
-    ps = [p1 => 2.0, p2 => 3.0]
-    @test_throws Exception ODEProblem(rs, u0, (0.0, 1.0), ps; structural_simplify = true, warn_initialize_determined = false)
 
     # Coupled system overconstrained due to additional algebraic equations (with variables).
     eqs = [

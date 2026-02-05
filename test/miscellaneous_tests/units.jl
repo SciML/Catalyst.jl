@@ -4,7 +4,7 @@
 
 # Fetch packages.
 using Catalyst, DynamicQuantities, Test
-using ModelingToolkit: get_iv, get_unit, validate, ValidationError
+using ModelingToolkitBase: get_iv, get_unit, validate, ValidationError
 
 
 ### Basic Tests ###
@@ -12,7 +12,7 @@ using ModelingToolkit: get_iv, get_unit, validate, ValidationError
 # Checks that units work with programmatic model creation.
 let
     # Creates a `ReactionSystem` programmatically, while designating units.
-    @parameters t [unit=u"s"]
+    @independent_variables t [unit=u"s"]
     @species A(t) [unit=u"mol/m^3"] B(t) [unit=u"mol/m^3"] C(t) [unit=u"mol/m^3"]
     @parameters k1 [unit=u"mol/(m^3*s)"] k2 [unit=u"s^(-1)"] k3 [unit=u"(m^3)/(s*mol)"]
     rxs = [Reaction(k1, nothing, [A]),
@@ -30,10 +30,10 @@ let
     end
 
     # Tests that the system can be converted to MTK systems without warnings.
-    @test_nowarn convert(ODESystem, rs)
-    @test_nowarn convert(SDESystem, rs)
-    @test_nowarn convert(JumpSystem, rs)
-    @test_nowarn convert(NonlinearSystem, rs)
+    @test_nowarn make_rre_ode(rs)
+    @test_nowarn make_cle_sde(rs)
+    @test_nowarn make_sck_jump(rs)
+    @test_nowarn make_rre_algeqs(rs)
 
     # Tests that creating `Reaction`s with non-matching units yields warnings.
     @species B(t) [unit=u"mol"] D(t) [unit=u"kg"]

@@ -5,7 +5,7 @@
 # Fetch packages.
 using Catalyst, NonlinearSolve, OrdinaryDiffEqTsit5, SparseArrays, StochasticDiffEq, Test
 using LinearAlgebra: norm
-using ModelingToolkit: value
+using ModelingToolkitBase: value
 
 # Sets the default `t` to use.
 t = default_t()
@@ -36,7 +36,7 @@ let
     rxs2 = [Reaction(k2, [I], [R], [1], [1]),
         Reaction(k1, [S, I], [I], [1, 1], [2])]
     rs2 = ReactionSystem(rxs2, t, [R, I, S], [k2, k1], name = :rs)
-    @test rs == rs2
+    @test Catalyst.isequivalent(rs, rs2)
 
     @parameters k3 k4
     @species D(t)
@@ -48,7 +48,7 @@ let
     rxs2b = [Reaction(k3, [S], [D]), Reaction(k4, [S, I], [D])]
     @named rs2b = ReactionSystem(rxs2b, t)
     @named rs2 = extend(rs2b, rs2; name = :rs)
-    @test rs2 == rs
+    @test Catalyst.isequivalent(rs2, rs)
 
     rxs = [Reaction(k1, [S, I], [I], [1, 1], [2]),
         Reaction(k2, [I], [R])]
@@ -56,14 +56,14 @@ let
     rxs3 = [Reaction(k3, [S], [D]), Reaction(k4, [S, I], [D])]
     @named rs3 = ReactionSystem(rxs3, t)
     rs4 = extend(rs, rs3; name = :rs)
-    @test rs2 == rs4
+    @test Catalyst.isequivalent(rs2, rs4)
 
     rxs = [Reaction(k1 * S, [S, I], [I], [2, 3], [2]),
         Reaction(k2 * R, [I], [R])]
     @named rs = ReactionSystem(rxs, t)
     deps = dependents(rxs[2], rs)
-    @test isequal(deps, [R, I])
-    @test isequal(dependents(rxs[1], rs), dependants(rxs[1], rs))
+    @test issetequal(deps, [R, I])
+    @test issetequal(dependents(rxs[1], rs), dependants(rxs[1], rs))
  end
 
 # Tests `substoichmat` and `prodstoichmat` getters.
@@ -312,39 +312,10 @@ let
     end
 end
 
-# Test defaults.
-# Uses mutating stuff (`setdefaults!`) and order dependent input (`species(rn) .=> u0`).
-# If you want to test this here @Sam I can write a new one that simulates using defaults.
-# If so, tell me if you have anything specific you want to check though, or I will just implement
-# it as I would.
+# Test @unpack with symbolic variables.
 let
-    rn = @reaction_network begin
-        α, S + I --> 2I
-        β, I --> R
-    end
-    p = [0.1 / 1000, 0.01]
     tspan = (0.0, 250.0)
-    u0 = [999.0, 1.0, 0.0]
-    op = ODEProblem(rn, species(rn) .=> u0, tspan, parameters(rn) .=> p)
-    sol = solve(op, Tsit5())  # old style
-    setdefaults!(rn, [:S => 999.0, :I => 1.0, :R => 0.0, :α => 1e-4, :β => 0.01])
-    op = ODEProblem(rn, [], tspan, [])
-    sol2 = solve(op, Tsit5())
-    @test norm(sol.u - sol2.u) ≈ 0
-    @test all(p -> p[1] isa Symbolics.Symbolic, collect(ModelingToolkit.defaults(rn)))
 
-    rn = @reaction_network begin
-        α, S + I --> 2I
-        β, I --> R
-    end
-    @parameters α β
-    @species S(t) I(t) R(t)
-    setdefaults!(rn, [S => 999.0, I => 1.0, R => 0.0, α => 1e-4, β => 0.01])
-    op = ODEProblem(rn, [], tspan, [])
-    sol2 = solve(op, Tsit5())
-    @test norm(sol.u - sol2.u) ≈ 0
-
-    # Rest unpacking variables.
     function unpacktest(rn)
         @unpack S1, I1, R1, α1, β1 = rn
         u₀ = [S1 => 999.0, I1 => 1.0, R1 => 0.0]
@@ -356,8 +327,7 @@ let
         α1, S1 + I1 --> 2I1
         β1, I1 --> R1
     end
-    sol3 = unpacktest(rn)
-    @test norm(sol.u - sol3.u) ≈ 0
+    sol = unpacktest(rn)
 
     # Test symmap_to_varmap.
     sir = @network_component sir begin
@@ -380,15 +350,16 @@ let
     u0map = symmap_to_varmap(sir, [:S => 999.0, :I => 1.0, :R => 0.0])
     pmap = symmap_to_varmap(sir, [:β => 1e-4, :ν => 0.01])
     op = ODEProblem(sir, u0map, tspan, pmap)
-    sol4 = solve(op, Tsit5())
-    @test norm(sol.u - sol4.u) ≈ 0
+    sol2 = solve(op, Tsit5())
+    @test norm(sol.u - sol2.u) ≈ 0 atol = 1e-10
 
     u0map = [:S => 999.0, :I => 1.0, :R => 0.0]
     pmap = (:β => 1e-4, :ν => 0.01)
     op = ODEProblem(sir, u0map, tspan, pmap)
-    sol5 = solve(op, Tsit5())
-    @test norm(sol.u - sol5.u) ≈ 0
+    sol3 = solve(op, Tsit5())
+    @test norm(sol.u - sol3.u) ≈ 0 atol = 1e-10
 end
+
 
 # Tests non-integer stoichiometry.
 let
@@ -421,7 +392,7 @@ let
         (p,d), 0 <--> X
         (kB,kD), 2X <--> X2
     end
-    ns = convert(NonlinearSystem, rn)
+    ns = make_rre_algeqs(rn)
     neweqs = getfield.(equations(ns), :rhs)
     poly = Catalyst.to_multivariate_poly(neweqs)
     @test length(poly) == 2
@@ -432,7 +403,7 @@ let
     rn = @reaction_network begin
         (p/X,d), 0 <--> X
     end
-    ns = convert(NonlinearSystem, rn)
+    ns = make_rre_algeqs(rn)
     neweqs = getfield.(equations(ns), :rhs)
     poly = Catalyst.to_multivariate_poly(neweqs)
     @test length(poly) == 1
@@ -441,9 +412,9 @@ end
 # Test empty network.
 let
     rn = @reaction_network
-    ns = convert(NonlinearSystem, rn)
+    ns = make_rre_algeqs(rn)
     neweqs = getfield.(equations(ns), :rhs)
-    @test_throws MethodError Catalyst.to_multivariate_poly(neweqs)
+    @test_throws AssertionError Catalyst.to_multivariate_poly(neweqs)
 end
 
 # Tests `isautonomous` function.
@@ -492,17 +463,17 @@ let
     @test isautonomous(rn7)
 
     # Using a coupled CRN/equation model.
-    rn7 = @reaction_network begin
+    rn8 = @reaction_network begin
         @equations D(V) ~ X/(1+t) - V
         (p,d), 0 <--> X
     end
-    @test !isautonomous(rn7)
+    @test !isautonomous(rn8)
 
     # Using a registered function.
     f(d,t) = d/(1 + t)
     Symbolics.@register_symbolic f(d,t)
-    rn8 = @reaction_network begin
+    rn9 = @reaction_network begin
         f(d,t), X --> 0
     end
-    @test !isautonomous(rn8)
+    @test !isautonomous(rn9)
 end

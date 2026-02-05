@@ -1,5 +1,5 @@
 using Documenter
-using Catalyst, ModelingToolkit
+using Catalyst, ModelingToolkitBase
 # Add packages for plotting
 using GraphMakie, CairoMakie
 
@@ -27,7 +27,7 @@ include("pages.jl")
 #                                   prettyurls = (get(ENV, "CI", nothing) == "true"),
 #                                   assets = ["assets/favicon.ico"],
 #                                   canonical = "https://docs.sciml.ai/Catalyst/stable/"),
-#          modules = [Catalyst, ModelingToolkit],
+#          modules = [Catalyst, ModelingToolkitBase],
 #          doctest = false,
 #          clean = true,
 #          pages = pages)
@@ -39,7 +39,7 @@ makedocs(sitename = "Catalyst.jl",
         collapselevel = 1,
         assets = ["assets/favicon.ico"],
         canonical = "https://docs.sciml.ai/Catalyst/stable/"),
-    modules = [Catalyst, ModelingToolkit,
+    modules = [Catalyst, ModelingToolkitBase,
         isdefined(Base, :get_extension) ?
         Base.get_extension(Catalyst, :CatalystGraphMakieExtension) :
         Catalyst.CatalystGraphMakieExtension],
@@ -47,7 +47,7 @@ makedocs(sitename = "Catalyst.jl",
     clean = true,
     pages = pages,
     pagesonly = true,
-    warnonly = [:missing_docs])
+    warnonly = [:missing_docs, :cross_references]) # `:cross_references` here temporarily while getting docs to work on v16.
 
 deploydocs(repo = "github.com/SciML/Catalyst.jl.git";
     push_preview = true)

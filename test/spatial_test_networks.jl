@@ -1,7 +1,8 @@
 ### Fetch packages ###
 using Catalyst, Graphs
-using Catalyst: reactionsystem, spatial_reactions, lattice, num_verts, num_edges, num_species, 
+using Catalyst: reactionsystem, spatial_reactions, lattice, num_verts, num_edges, num_species,
                 spatial_species, vertex_parameters, edge_parameters, edge_iterator
+const MT = ModelingToolkitBase
 
 # Sets rnd number.
 using StableRNGs
@@ -12,7 +13,7 @@ rng = StableRNG(12345)
 # Generates randomised initial condition or parameter values.
 rand_v_vals(grid, x::Number) = rand_v_vals(grid) * x
 rand_v_vals(lrs::LatticeReactionSystem) = rand_v_vals(lattice(lrs))
-function rand_v_vals(grid::DiGraph) 
+function rand_v_vals(grid::DiGraph)
     return rand(rng, nv(grid))
 end
 function rand_v_vals(grid::Catalyst.CartesianGridRej{N,T}) where {N,T}
@@ -42,7 +43,7 @@ end
 
 # Gets a symbol list of spatial parameters.
 function spatial_param_syms(lrs::LatticeReactionSystem)
-    ModelingToolkit.getname.(edge_parameters(lrs))
+    MT.getname.(edge_parameters(lrs))
 end
 
 # Converts to integer value (for JumpProcess simulations).

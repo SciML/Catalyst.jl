@@ -62,11 +62,11 @@ D = default_time_deriv()
 
 @parameters λ = 1.0
 @variables V(t) = 1.0
+@species P(t) = 0.0
 eq = D(V) ~ λ * V
-rx1 = @reaction $V, 0 --> P
-rx2 = @reaction 1.0, P --> 0
+rx1 = @reaction $V, 0 --> $P
+rx2 = @reaction 1.0, $P --> 0
 @named growing_cell = ReactionSystem([rx1, rx2, eq], t)
-setdefaults!(growing_cell, [:P => 0.0])
 growing_cell = complete(growing_cell)
 
 oprob = ODEProblem(growing_cell, [], (0.0, 1.0))
@@ -78,8 +78,8 @@ plot(sol)
 ## [Coupling ODE constraints via extending a system](@id constraint_equations_coupling_constraints)
 
 Finally, we could also construct our model by using compositional modeling. Here
-we create separate `ReactionSystem`s and `ODESystem`s with their respective
-components, and then extend the `ReactionSystem` with the `ODESystem`. Let's
+we create separate `ReactionSystem`s, one with the reaction part of the model, and one with
+the differential equation part. Next, we extend the first `ReactionSystem` with the second one. Let's
 begin by creating these two systems.
 
 Here, to create differentials with respect to time (for our differential
@@ -99,9 +99,9 @@ D = default_time_deriv()
 # set the initial volume to 1.0
 @variables V(t) = 1.0
 
-# build the ODESystem for dV/dt
+# build the ReactionSystem for dV/dt
 eq = [D(V) ~ λ * V]
-@named osys = ODESystem(eq, t)
+@named osys = ReactionSystem(eq, t)
 
 # build the ReactionSystem with no protein initially
 rn = @network_component begin
@@ -238,7 +238,7 @@ rx2 = @reaction 1.0, $P --> 0
 Before creating our `ReactionSystem` we make the event.
 ```@example ceq3
 # every 1.0 time unit we half the volume of the cell and the number of proteins
-continuous_events = [V ~ 2.0] => [V ~ V/2, P ~ P/2]
+continuous_events = [V ~ 2.0] => [V ~ Pre(V)/2, P ~ Pre(P)/2]
 ```
 We can now create and simulate our model
 ```@example ceq3
@@ -255,14 +255,15 @@ events, we start by creating reaction equations, parameters, variables, and
 unknowns.
 ```@example ceq3
 t = default_t()
-@parameters k_on switch_time k_off
+@parameters switch_time k_off
+@discretes k_on(t)
 @species A(t) B(t)
 
-rxs = [(@reaction k_on, A --> B), (@reaction k_off, B --> A)]
+rxs = [(@reaction $k_on, A --> B), (@reaction k_off, B --> A)]
 ```
 Now we add an event such that at time `t` (`switch_time`), `k_on` is set to zero.
 ```@example ceq3
-discrete_events = (t == switch_time) => [k_on ~ 0.0]
+discrete_events = ModelingToolkitBase.SymbolicDiscreteCallback((t == switch_time) => [k_on ~ 0.0]; discrete_parameters = [k_on])
 
 u0 = [:A => 10.0, :B => 0.0]
 tspan = (0.0, 4.0)
