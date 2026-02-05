@@ -52,7 +52,7 @@ function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     # be substituted in later. U's not involved conservation laws get dummy values.
     rs = Catalyst.expand_registered_functions(rs)
     ns = complete(make_rre_algeqs(rs; remove_conserved = true, conseqs_remake_warn = false))
-    pre_varmap = merge(Dict(symmap_to_varmap(rs, u0)), Dict(symmap_to_varmap(rs, ps)))
+    pre_varmap = merge(Dict(Catalyst.symmap_to_varmap(rs, u0)), Dict(Catalyst.symmap_to_varmap(rs, ps)))
     Catalyst.conservationlaw_errorcheck(rs, pre_varmap)
     for u in setdiff(unknowns(rs), Catalyst.conslaw_species(rs))
         haskey(pre_varmap, u) || (pre_varmap[u] = -1.0)        
