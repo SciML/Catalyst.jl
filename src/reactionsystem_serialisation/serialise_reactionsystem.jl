@@ -92,7 +92,7 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
         rn, annotate, top_level, has_sivs, has_species,
         has_variables, has_parameters, has_discretes, has_reactions,
         has_equations, has_observed, has_defaults, has_continuous_events,
-        has_discrete_events, has_brownians, has_jumps, has_systems, has_connection_type)
+        has_discrete_events, has_brownians, has_jumps, has_systems)
     annotate || (@string_prepend! "\n" file_text)
     annotate && top_level &&
         @string_prepend! "\n# Serialised using Catalyst version v$(Catalyst.VERSION)." file_text
@@ -107,7 +107,7 @@ end
 function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_sivs,
         has_species, has_variables, has_parameters, has_discretes, has_reactions, has_equations,
         has_observed, has_defaults, has_continuous_events, has_discrete_events, has_brownians, 
-        has_jumps, has_systems, has_connection_type)
+        has_jumps, has_systems)
 
     # Gets the independent variable input.
     iv = x_2_string(get_iv(rs))
