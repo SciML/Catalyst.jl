@@ -24,6 +24,7 @@ RuntimeGeneratedFunctions = "7e49a35a-f44a-4d26-94aa-eba1b4ca6b47"
 SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+SymbolicIndexingInterface = "2efcf032-c050-4f8e-a9bb-153293bab1f5"
 SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
@@ -54,6 +55,7 @@ DocStringExtensions = "0.8, 0.9"
 DynamicPolynomials = "0.6"
 DynamicQuantities = "1"
 EnumX = "1"
+ExplicitImports = "1.15"
 GraphMakie = "0.5, 0.6"
 Graphs = "1.4"
 HomotopyContinuation = "2.9"
@@ -71,6 +73,7 @@ RuntimeGeneratedFunctions = "0.5.12"
 SciMLBase = "2.84"
 Setfield = "1"
 StructuralIdentifiability = "0.5.11"
+SymbolicIndexingInterface = "0.3"
 SymbolicUtils = "4.9.1"
 Symbolics = "7.2.0"
 Unitful = "1.12.4"
@@ -78,6 +81,7 @@ julia = "1.10"
 
 [extras]
 DataInterpolations = "82cc6244-b520-54b8-b5a6-8a565e85f1d0"
+ExplicitImports = "7d51a73a-1435-4ff3-83d9-f097790105c7"
 DiffEqCallbacks = "459566f4-90b8-5000-8ac3-15dfb0a30def"
 DiffEqNoiseProcess = "77a26b50-5914-5dd7-bc55-306e6241c503"
 DomainSets = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
@@ -98,13 +102,11 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 SteadyStateDiffEq = "9672c7b4-1e72-59bd-8a11-6ac3964bc41f"
 StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
-SymbolicIndexingInterface = "2efcf032-c050-4f8e-a9bb-153293bab1f5"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["DataInterpolations", "DiffEqCallbacks", "DiffEqNoiseProcess", "DomainSets",
-    "Logging", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqDefault",
+    "ExplicitImports", "Logging", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqDefault",
     "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner",
     "Pkg", "Plots", "Random", "SafeTestsets", "StableRNGs",
-    "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq",
-    "SymbolicIndexingInterface", "Test"]
+    "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test"]

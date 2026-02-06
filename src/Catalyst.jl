@@ -18,6 +18,7 @@ using DynamicQuantities #, Unitful # Having Unitful here as well currently gives
 
 @reexport using ModelingToolkitBase
 using Symbolics
+using SymbolicIndexingInterface
 using LinearAlgebra
 using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
@@ -28,17 +29,24 @@ using ModelingToolkitBase: get_unknowns, get_ps, get_iv, get_systems,
                        get_eqs, toparam, get_var_to_name, get_observed,
                        getvar, has_iv, JumpType
 
-import ModelingToolkitBase: get_variables, namespace_expr, namespace_equation, get_variables!,
+import ModelingToolkitBase: get_variables, namespace_expr, namespace_equation,
                         modified_unknowns!, validate, namespace_variables,
-                        namespace_parameters, rename, renamespace, getname, flatten,
+                        namespace_parameters, renamespace, flatten,
                         is_alg_equation, is_diff_equation, collect_vars!,
                         eqtype_supports_collect_vars
+
+# Import from owner modules (not re-exporters) per ExplicitImports.jl audit
+import Symbolics: get_variables!, rename
+import SymbolicIndexingInterface: getname
 import ModelingToolkitBase: SymmapT
 
 # internal but needed ModelingToolkit functions
 import ModelingToolkitBase: check_variables,
-                        check_parameters, _iszero, check_units,
+                        check_parameters, check_units,
                         get_unit, check_equations, iscomplete
+
+# Import _iszero from owner module (SymbolicUtils) per ExplicitImports.jl audit
+import SymbolicUtils: _iszero
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
@@ -46,7 +54,8 @@ using MacroTools: striplines
 import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
-import Symbolics: occursin, wrap
+# Note: occursin is from Base (not Symbolics), so we don't import it
+import Symbolics: wrap
 import Symbolics.RewriteHelpers: hasnode, replacenode
 import SymbolicUtils: getmetadata, hasmetadata, setmetadata
 
