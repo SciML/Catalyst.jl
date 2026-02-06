@@ -242,11 +242,11 @@ let
     @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float64
 
     # Checks that `Int64` gives `Int64` species values.
-    u0 = [:X1 => 1 :X2 => 3]
+    u0 = [:X1 => 1, :X2 => 3]
     ps = [:k1 => 2, :k2 => 3]
     jprob = JumpProblem(rn, u0, (0.0, 1.0), ps)
     jsol = solve(jprob)
-    @test_broken eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int64 # Jump species do not preserve integer type: https://github.com/SciML/ModelingToolkit.jl/issues/4170.
+    @test eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int64
     @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float64
 
     # Checks when values are `Float32` (a valid type and should be preserved).
@@ -262,7 +262,7 @@ let
     ps = [:k1 => Int32(2), :k2 => Int32(3)]
     jprob = JumpProblem(rn, u0, (0.0, 1.0), ps)
     jsol = solve(jprob)
-    @test_broken eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int32 # Jump species do not preserve integer type: https://github.com/SciML/ModelingToolkit.jl/issues/4170.
+    @test eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int32
     @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float64
 end
 
@@ -302,4 +302,111 @@ let
     @test disc_agg.save_positions == (false, false)
     disc_agg_default = prob_default.discrete_jump_aggregation
     @test disc_agg_default.save_positions == (true, true)
+end
+
+### Integer Type Preservation Tests ###
+
+# Tests that integer u0 with float parameters preserves integer type in solution.
+let
+    rn = @reaction_network begin
+        k1, 0 --> X
+        k2, X --> 0
+    end
+
+    # Integer u0 with Float64 parameters - should preserve Int64 in problem and solution.
+    u0 = [:X => 10]
+    ps = [:k1 => 5.0, :k2 => 0.1]
+    jprob = JumpProblem(rn, u0, (0.0, 1.0), ps)
+    @test eltype(jprob.prob.u0) == Int64
+    @test typeof(jprob[:X]) == Int64
+    jsol = solve(jprob, SSAStepper())
+    @test eltype(jsol[:X]) == Int64
+end
+
+# Tests explicit u0_eltype override.
+let
+    rn = @reaction_network begin
+        k1, 0 --> X
+        k2, X --> 0
+    end
+
+    # Float u0 but explicitly request Int64 - should use Int64.
+    u0 = [:X => 10.0]
+    ps = [:k1 => 5.0, :k2 => 0.1]
+    jprob = JumpProblem(rn, u0, (0.0, 1.0), ps; u0_eltype = Int64)
+    @test eltype(jprob.prob.u0) == Int64
+end
+
+# Tests Int32 preservation.
+let
+    rn = @reaction_network begin
+        k1, 0 --> X
+        k2, X --> 0
+    end
+
+    u0 = [:X => Int32(10)]
+    ps = [:k1 => 5.0, :k2 => 0.1]
+    jprob = JumpProblem(rn, u0, (0.0, 1.0), ps)
+    @test eltype(jprob.prob.u0) == Int32
+    @test typeof(jprob[:X]) == Int32
+    jsol = solve(jprob, SSAStepper())
+    @test eltype(jsol[:X]) == Int32
+end
+
+# Tests mixed integer types promotion.
+let
+    rn = @reaction_network begin
+        k, X1 + X2 --> X3
+    end
+
+    # Mixed Int32 and Int64 should promote to Int64.
+    u0 = [:X1 => Int32(10), :X2 => Int64(20), :X3 => Int32(0)]
+    ps = [:k => 0.01]
+    jprob = JumpProblem(rn, u0, (0.0, 1.0), ps)
+    @test eltype(jprob.prob.u0) == Int64
+end
+
+# Tests that remake with integer symbolic maps preserves integer type.
+let
+    rn = @reaction_network begin
+        k1, 0 --> X
+        k2, X --> 0
+    end
+
+    u0 = [:X => 10]
+    ps = [:k1 => 5.0, :k2 => 0.1]
+    jprob = JumpProblem(rn, u0, (0.0, 1.0), ps)
+    @test eltype(jprob.prob.u0) == Int64
+
+    # Remake with integer u0 should preserve Int64.
+    jprob2 = remake(jprob; u0 = [:X => 50])
+    @test eltype(jprob2.prob.u0) == Int64
+    @test jprob2[:X] == 50
+end
+
+# Tests that VariableRateJump systems do NOT preserve integers (require ODEProblem with floats).
+let
+    rn = @reaction_network begin
+        k * (1 + sin(t)), 0 --> X  # Time-dependent rate → VariableRateJump
+        d, X --> 0
+    end
+
+    # Integer u0 with VRJ should be converted to Float64 (ODEProblem requirement).
+    u0 = [:X => 10]
+    ps = [:k => 5.0, :d => 0.1]
+    jprob = JumpProblem(rn, u0, (0.0, 1.0), ps)
+    @test eltype(jprob.prob.u0) == Float64
+end
+
+# Tests that explicitly tagged VariableRateJump also does not preserve integers.
+let
+    rn = @reaction_network begin
+        k, 0 --> X, [physical_scale = PhysicalScale.VariableRateJump]
+        d, X --> 0
+    end
+
+    u0 = [:X => 10]
+    ps = [:k => 5.0, :d => 0.1]
+    jprob = JumpProblem(rn, u0, (0.0, 1.0), ps)
+    @test eltype(jprob.prob.u0) == Float64
 end
