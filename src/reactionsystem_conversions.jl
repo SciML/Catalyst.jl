@@ -814,7 +814,7 @@ Keyword args and default values:
   with their rational function representation when converting to another system type. Set to
   `false`` to disable.
 """
-function make_rre_algeqs(rs::ReactionSystem; name = nameof(rs),
+function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, conseqs_remake_warn = true, checks = false,
         initial_conditions = Dict(),
@@ -1137,7 +1137,7 @@ function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         remove_conserved = false, conseqs_remake_warn = true, checks = false,
         check_length = false, expand_catalyst_funs = true,
         structural_simplify = false, all_differentials_permitted = false, kwargs...)
-    nlsys = make_rre_algeqs(rs; name, combinatoric_ratelaws, checks,
+    nlsys = ss_ode_model(rs; name, combinatoric_ratelaws, checks,
         all_differentials_permitted, remove_conserved, conseqs_remake_warn,
         expand_catalyst_funs)
     nlsys = structural_simplify ? MT.mtkcompile(nlsys) : complete(nlsys)

@@ -63,8 +63,9 @@ end
         @time @safetestset "ReactionSystem Hybrid Solvers" begin include("simulation_and_solving/hybrid_models.jl") end
     end
 
-    if GROUP == "All" || GROUP == "IO"
+    if GROUP == "All" || GROUP == "Misc"
         @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
+        @time @safetestset "Explicit Imports" begin include("miscellaneous_tests/explicit_imports.jl") end
         # BROKEN
         #@time @safetestset "Latexify" begin include("visualisation/latexify.jl") end # https://github.com/SciML/Catalyst.jl/issues/1352
     end

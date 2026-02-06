@@ -125,7 +125,7 @@ let
 
     let # SteadyStateProblem issue from MTK #4177 is now fixed.
         # Checks that steady states found using nonlinear solving and steady state simulations are identical.
-        nsys = make_rre_algeqs(rn; remove_conserved = true, conseqs_remake_warn = false)
+        nsys = ss_ode_model(rn; remove_conserved = true, conseqs_remake_warn = false)
         nsys_ss = mtkcompile(nsys)
         nsys = complete(nsys)
         nprob1 = NonlinearProblem{true}(nsys, u0, p)
@@ -511,8 +511,8 @@ end
     ps = [:k1 => 0.1, :k2 => 0.2, :k3 => 0.3, :k4 => 0.4]
 
     # Checks that the warning si given and can be suppressed for the variosu cases.
-    @test_nowarn make_rre_algeqs(rn; remove_conserved = true, conseqs_remake_warn = false)
-    @test_logs (:warn, r"Note, when constructing*") make_rre_algeqs(rn; remove_conserved = true, conseqs_remake_warn = true)
+    @test_nowarn ss_ode_model(rn; remove_conserved = true, conseqs_remake_warn = false)
+    @test_logs (:warn, r"Note, when constructing*") ss_ode_model(rn; remove_conserved = true, conseqs_remake_warn = true)
     @test_nowarn NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = false)
     @test_logs (:warn, Catalyst.NONLIN_PROB_REMAKE_WARNING) NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = true)
 
@@ -529,7 +529,7 @@ end
 
 
     # WITHOUT structural_simplify
-    nlsys = make_rre_algeqs(rn; remove_conserved = true,
+    nlsys = ss_ode_model(rn; remove_conserved = true,
         conseqs_remake_warn = false)
     nlsys1 = complete(nlsys)
     nlprob1 = NonlinearProblem(nlsys1, [u0; ps])

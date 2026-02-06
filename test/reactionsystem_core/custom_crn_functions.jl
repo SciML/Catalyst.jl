@@ -254,7 +254,7 @@ let
         @test _iszero(simplify(eqs2[eqidx].rhs - osyseqs2[osysidx].rhs))
     end
 
-    nlsys = complete(make_rre_algeqs(rn; expand_catalyst_funs = false))
+    nlsys = complete(ss_ode_model(rn; expand_catalyst_funs = false))
     nlsyseqs = equations(nlsys)
     eqs = [0 ~ -hill(X, v, K, n)*X*Y - mm(X,v,K)*X*Y - hillr(X,v,K,n)*X*Y - mmr(X,v,K)*X*Y,
            0 ~ -hill(X, v, K, n)*X*Y - mm(X,v,K)*X*Y - hillr(X,v,K,n)*X*Y - mmr(X,v,K)*X*Y,
@@ -263,7 +263,7 @@ let
         @test _iszero(simplify(eq.rhs - nlsyseqs[i].rhs))
     end
 
-    nlsys2 = complete(make_rre_algeqs(rn))
+    nlsys2 = complete(ss_ode_model(rn))
     nlsyseqs2 = equations(nlsys2)
     eqs2 = [0 ~ -hill2(X, v, K, n)*X*Y - mm2(X,v,K)*X*Y - hillr2(X,v,K,n)*X*Y - mmr2(X,v,K)*X*Y,
             0 ~ -hill2(X, v, K, n)*X*Y - mm2(X,v,K)*X*Y - hillr2(X,v,K,n)*X*Y - mmr2(X,v,K)*X*Y,

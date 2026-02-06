@@ -23,22 +23,29 @@ using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
 import Symbolics: SymbolicT
-using Symbolics: iscall, sorted_arguments, unwrap, value
+using Symbolics: iscall, sorted_arguments, value
 using ModelingToolkitBase: get_unknowns, get_ps, get_iv, get_systems,
                        get_eqs, toparam, get_var_to_name, get_observed,
                        getvar, has_iv, JumpType
 
-import ModelingToolkitBase: get_variables, namespace_expr, namespace_equation, get_variables!,
+import ModelingToolkitBase: get_variables, namespace_expr, namespace_equation,
                         modified_unknowns!, validate, namespace_variables,
-                        namespace_parameters, rename, renamespace, getname, flatten,
+                        namespace_parameters, renamespace, flatten,
                         is_alg_equation, is_diff_equation, collect_vars!,
                         eqtype_supports_collect_vars
+
+# Import from owner modules (not re-exporters) per ExplicitImports.jl audit
+import Symbolics: get_variables!, rename
+import SymbolicIndexingInterface: getname
 import ModelingToolkitBase: SymmapT
 
 # internal but needed ModelingToolkit functions
 import ModelingToolkitBase: check_variables,
-                        check_parameters, _iszero, check_units,
+                        check_parameters, check_units,
                         get_unit, check_equations, iscomplete
+
+# Import from owner module (SymbolicUtils) per ExplicitImports.jl audit
+import SymbolicUtils: _iszero, unwrap
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
@@ -46,7 +53,8 @@ using MacroTools: striplines
 import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
-import Symbolics: occursin, wrap
+# Note: occursin is from Base (not Symbolics), so we don't import it
+import Symbolics: wrap
 import Symbolics.RewriteHelpers: hasnode, replacenode
 import SymbolicUtils: getmetadata, hasmetadata, setmetadata
 
@@ -94,7 +102,7 @@ export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export isautonomous
 export reactionrates
 export set_default_noise_scaling
-export ode_model, sde_model, jump_model, make_rre_algeqs, hybrid_model
+export ode_model, sde_model, jump_model, ss_ode_model, hybrid_model
 
 # depreciated functions to remove in future releases
 export params, numparams

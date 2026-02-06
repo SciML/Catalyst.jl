@@ -30,7 +30,7 @@ jobs:
           - Modeling
           - Simulation
           - Hybrid
-          - IO
+          - Misc
           - Spatial
     uses: "SciML/.github/.github/workflows/tests.yml@v1"
     with:
