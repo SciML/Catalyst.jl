@@ -138,8 +138,7 @@ conversion and problem-creation API.
 
 - **`==` no longer performs structural comparison on `ReactionSystem`s.** It now
   falls back to object identity (`===`), consistent with ModelingToolkitBase's
-  `System`. Use `Catalyst.isequivalent(rn1, rn2)` for structural comparison
-  (note: `isequivalent` is no longer exported, see below).
+  `System`. 
 
 #### BREAKING: Several functions no longer exported
 The following are now considered internal and no longer exported:
