@@ -117,7 +117,7 @@ Let's now use our `ReactionSystem` to generate and solve a corresponding mass
 action ODE model. We first convert the system to a `ModelingToolkit.ODESystem`
 by
 ```@example tut1
-odesys = make_rre_ode(rn)
+odesys = ode_model(rn)
 ```
 (Here Latexify is used automatically to display `odesys` in Latex within Markdown
 documents or notebook environments like Pluto.jl.)
@@ -155,7 +155,7 @@ oprob = ODEProblem(rn, u₀map, tspan, pmap)
 nothing   # hide
 ```
 By passing `rn` directly to the `ODEProblem`, Catalyst has to
-(internally) call `make_rre_ode(rn)` again to generate the
+(internally) call `ode_model(rn)` again to generate the
 symbolic ODEs. We could instead pass `odesys` directly like
 ```@example tut1
 odesys = complete(odesys)
@@ -339,7 +339,7 @@ conversion of a [`ReactionSystem`](@ref) to another system via
 argument, i.e.
 ```julia
 rn = @reaction_network ...
-make_rre_ode(rn; combinatoric_ratelaws=false)
+ode_model(rn; combinatoric_ratelaws=false)
 ```
 
 For the previous example using this keyword argument would give the rate law

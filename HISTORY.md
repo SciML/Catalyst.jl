@@ -2,15 +2,15 @@
 
 ## Catalyst unreleased (master branch)
 
-#### New: `make_hybrid_model` unified conversion function
+#### New: `hybrid_model` unified conversion function
 
-- **New `make_hybrid_model(rs::ReactionSystem; ...)` function** that converts a
+- **New `hybrid_model(rs::ReactionSystem; ...)` function** that converts a
   `ReactionSystem` to a unified `ModelingToolkitBase.System` containing ODE equations,
   Brownian noise terms (SDE), and/or jump processes, based on each reaction's
   `PhysicalScale` metadata.
 
-  The existing `make_rre_ode`, `make_cle_sde`, and `make_sck_jump` are now thin wrappers
-  around `make_hybrid_model`. This enables true hybrid models mixing ODE, SDE, and Jump
+  The existing `ode_model`, `sde_model`, and `jump_model` are now thin wrappers
+  around `hybrid_model`. This enables true hybrid models mixing ODE, SDE, and Jump
   reactions in a single system.
 
   ```julia
@@ -20,19 +20,19 @@
       k2, P --> S, [physical_scale = PhysicalScale.SDE]
       k3, S --> 0, [physical_scale = PhysicalScale.Jump]
   end
-  sys = make_hybrid_model(rn)
+  sys = hybrid_model(rn)
   ```
 
   Users can also override scales via keyword arguments:
   ```julia
-  sys = make_hybrid_model(rn; default_scale = PhysicalScale.ODE)
-  sys = make_hybrid_model(rn; physical_scales = [1 => PhysicalScale.ODE, 2 => PhysicalScale.Jump])
+  sys = hybrid_model(rn; default_scale = PhysicalScale.ODE)
+  sys = hybrid_model(rn; physical_scales = [1 => PhysicalScale.ODE, 2 => PhysicalScale.Jump])
   ```
 
 #### New: `HybridProblem` with scale-dependent return types
 
 - **New `HybridProblem(rs, u0, tspan, p; physical_scales, default_scale, ...)` function** creates
-  problems for systems with per-reaction scale control. Uses `make_hybrid_model` internally and
+  problems for systems with per-reaction scale control. Uses `hybrid_model` internally and
   respects per-reaction `PhysicalScale` metadata.
 
   **The return type depends on which reaction scales are present:**
@@ -82,18 +82,18 @@
 - **`JumpProblem` simplified** — now produces pure jump systems only (symmetric with
   `ODEProblem` and `SDEProblem`). Use `HybridProblem` for hybrid ODE+Jump systems.
 
-- **`make_sck_jump` no longer respects ODE/SDE metadata** — it forces all reactions to Jump,
+- **`jump_model` no longer respects ODE/SDE metadata** — it forces all reactions to Jump,
   only preserving `VariableRateJump` metadata if explicitly set.
 
 #### New: `use_legacy_noise` kwarg for SDE systems
 
-- **`make_cle_sde` and `SDEProblem` now accept `use_legacy_noise = true` (default)** which
+- **`sde_model` and `SDEProblem` now accept `use_legacy_noise = true` (default)** which
   uses the traditional `noise_eqs` matrix approach for simple SDE systems without constraints,
   avoiding the overhead of `mtkcompile`. Set to `false` to use the new Brownian-based approach.
 
 #### SDE noise representation: Brownian variables available (opt-in)
 
-- **`make_cle_sde` can use Brownian variables** instead of a `noise_eqs` matrix when
+- **`sde_model` can use Brownian variables** instead of a `noise_eqs` matrix when
   `use_legacy_noise = false`. SDE noise terms are embedded directly in the equation RHS as
   `stoich * sqrt(|ratelaw|) * B_j`. The `mtkcompile` function automatically extracts the noise
   matrix during simplification.
@@ -138,12 +138,12 @@
   ```
 
 - **User-provided brownians/jumps are merged** with reaction-generated ones at conversion time
-  in `make_hybrid_model`, `make_cle_sde`, and `HybridProblem`.
+  in `hybrid_model`, `sde_model`, and `HybridProblem`.
 
 - **Conversion functions enforce scale constraints:**
-  - `make_rre_ode`: Errors if brownians OR jumps are present (pure ODE only)
-  - `make_cle_sde`: Errors if jumps are present (ODE + SDE constraints allowed)
-  - `make_sck_jump`: Errors if brownians OR non-reaction equations are present (pure Jump only)
+  - `ode_model`: Errors if brownians OR jumps are present (pure ODE only)
+  - `sde_model`: Errors if jumps are present (ODE + SDE constraints allowed)
+  - `jump_model`: Errors if brownians OR non-reaction equations are present (pure Jump only)
   - Use `HybridProblem` for mixed systems with ODE+SDE, ODE+Jump, or brownian+reaction combinations
 
 #### BREAKING: ReactionSystem composition restricted to ReactionSystems only
@@ -184,9 +184,9 @@
   jprob = JumpProblem(rs, u0, tspan, p)
   ```
 
-  For advanced usage where you need to reuse a converted system with different aggregators or customize the JumpSystem, use `make_sck_jump(rs; ...)` to get the System, then call `JumpProblem(sys, op, tspan; ...)` from MTK:
+  For advanced usage where you need to reuse a converted system with different aggregators or customize the JumpSystem, use `jump_model(rs; ...)` to get the System, then call `JumpProblem(sys, op, tspan; ...)` from MTK:
   ```julia
-  jsys = make_sck_jump(rs; combinatoric_ratelaws = true)
+  jsys = jump_model(rs; combinatoric_ratelaws = true)
   op = merge(Dict(u0), Dict(p))
   jprob = JumpProblem(jsys, op, tspan; aggregator = SortingDirect())
   ```

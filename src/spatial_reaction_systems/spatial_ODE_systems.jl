@@ -96,7 +96,7 @@ end
 # the vertex parameter values during the simulations).
 function make_mtk_ps_structs(ps, lrs, heterogeneous_vert_p_idxs)
     p_dict = Dict(ps)
-    nonspatial_osys = complete(make_rre_ode(reactionsystem(lrs)))
+    nonspatial_osys = complete(ode_model(reactionsystem(lrs)))
     p_init = [p => p_dict[p][1] for p in parameters(nonspatial_osys)]
     mtk_ps = MT.MTKParameters(nonspatial_osys, p_init)
     p_setters = [MT.setp(nonspatial_osys, p)
@@ -222,7 +222,7 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{R, V
     end
 
     # Prepares the inputs to the `LatticeTransportODEFunction` functor.
-    osys = complete(make_rre_ode(reactionsystem(lrs);
+    osys = complete(ode_model(reactionsystem(lrs);
         name, combinatoric_ratelaws, include_zero_odes, checks))
     ofunc_dense = ODEFunction(osys; jac = true, sparse = false)
     ofunc_sparse = ODEFunction(osys; jac = true, sparse = true)

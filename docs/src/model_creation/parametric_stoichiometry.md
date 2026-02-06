@@ -63,7 +63,7 @@ stoichiometries `(F,2*H,2)`.
 
 Let's now convert `revsys` to ODEs and look at the resulting equations:
 ```@example s1
-osys = make_rre_ode(revsys)
+osys = ode_model(revsys)
 osys = complete(osys)
 equations(osys)
 show(stdout, MIME"text/plain"(), equations(osys)) # hide
@@ -94,7 +94,7 @@ revsys = @reaction_network revsys begin
     k₊, m*A --> (m*n)*B
     k₋, B --> A
 end
-osys = make_rre_ode(revsys; combinatoric_ratelaws = false)
+osys = ode_model(revsys; combinatoric_ratelaws = false)
 osys = complete(osys)
 equations(osys)
 show(stdout, MIME"text/plain"(), equations(osys)) # hide
@@ -149,7 +149,7 @@ The parameter `b` does not need to be explicitly declared in the
 We next convert our network to a jump process representation
 ```@example s1
 using JumpProcesses
-jsys = make_sck_jump(burstyrn; combinatoric_ratelaws = false)
+jsys = jump_model(burstyrn; combinatoric_ratelaws = false)
 jsys = complete(jsys)
 jumps(jsys)
 show(stdout, MIME"text/plain"(), jumps(jsys)) # hide

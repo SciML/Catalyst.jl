@@ -456,7 +456,7 @@ function rebuild_lat_internals!(lt_ofun::LatticeTransportODEFunction, ps_new,
 
     # Updating the `MTKParameters` structure is a bit more complicated.
     p_dict = Dict(ps_new)
-    osys = complete(make_rre_ode(reactionsystem(lrs)))
+    osys = complete(ode_model(reactionsystem(lrs)))
     for p in parameters(osys)
         MT.setp(osys, p)(lt_ofun.mtk_ps, (p_dict[p] isa Number) ? p_dict[p] : p_dict[p][1])
     end

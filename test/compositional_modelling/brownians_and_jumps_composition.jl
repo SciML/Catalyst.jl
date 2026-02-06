@@ -275,7 +275,7 @@ end
 
 ### Test Conversion Error Checks ###
 
-# Tests that make_rre_ode errors on systems with brownians.
+# Tests that ode_model errors on systems with brownians.
 let
     @brownians B
     @variables V(t)
@@ -287,10 +287,10 @@ let
     )
     rn = complete(rn)
 
-    @test_throws ErrorException Catalyst.make_rre_ode(rn)
+    @test_throws ErrorException Catalyst.ode_model(rn)
 end
 
-# Tests that make_rre_ode errors on systems with user jumps.
+# Tests that ode_model errors on systems with user jumps.
 let
     @species S(t)
     @parameters k
@@ -303,10 +303,10 @@ let
     )
     rn = complete(rn)
 
-    @test_throws ErrorException Catalyst.make_rre_ode(rn)
+    @test_throws ErrorException Catalyst.ode_model(rn)
 end
 
-# Tests that make_cle_sde errors on systems with user jumps.
+# Tests that sde_model errors on systems with user jumps.
 let
     @species S(t)
     @parameters k d
@@ -320,10 +320,10 @@ let
     )
     rn = complete(rn)
 
-    @test_throws ErrorException Catalyst.make_cle_sde(rn)
+    @test_throws ErrorException Catalyst.sde_model(rn)
 end
 
-# Tests that make_sck_jump errors on systems with non-reaction equations.
+# Tests that jump_model errors on systems with non-reaction equations.
 let
     @variables V(t)
     @species S(t)
@@ -335,7 +335,7 @@ let
     )
     rn = complete(rn)
 
-    @test_throws ErrorException Catalyst.make_sck_jump(rn)
+    @test_throws ErrorException Catalyst.jump_model(rn)
 end
 
 ### Test Conversion Success with Merged Brownians/Jumps ###
@@ -396,7 +396,7 @@ let
     @test sol.retcode == ReturnCode.Success
 end
 
-# Tests that make_hybrid_model merges user brownians with reaction brownians.
+# Tests that hybrid_model merges user brownians with reaction brownians.
 let
     @brownians B_user
     @variables V(t)
@@ -410,8 +410,8 @@ let
     )
     rn = complete(rn)
 
-    # Use make_hybrid_model with SDE scale for the reaction (index 1).
-    sys = Catalyst.make_hybrid_model(rn;
+    # Use hybrid_model with SDE scale for the reaction (index 1).
+    sys = Catalyst.hybrid_model(rn;
         physical_scales = [1 => PhysicalScale.SDE],
         name = :test_sys
     )
@@ -422,7 +422,7 @@ let
     @test any(isequal(B_user), get_brownians(sys))
 end
 
-# Tests that make_hybrid_model merges user jumps with reaction jumps.
+# Tests that hybrid_model merges user jumps with reaction jumps.
 let
     @species S(t) P(t)
     @parameters k1 k2
@@ -437,8 +437,8 @@ let
     )
     rn = complete(rn)
 
-    # Use make_hybrid_model with Jump scale for the reaction (index 1).
-    sys = Catalyst.make_hybrid_model(rn;
+    # Use hybrid_model with Jump scale for the reaction (index 1).
+    sys = Catalyst.hybrid_model(rn;
         physical_scales = [1 => PhysicalScale.Jump],
         name = :test_sys
     )

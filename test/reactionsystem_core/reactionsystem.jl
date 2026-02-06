@@ -43,8 +43,8 @@ rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
 ]
 @named rs = ReactionSystem(rxs, t, [A, B, C, D], [k])
 rs = complete(rs)
-odesys = complete(make_rre_ode(rs))
-sdesys = complete(make_cle_sde(rs))
+odesys = complete(ode_model(rs))
+sdesys = complete(sde_model(rs))
 
 # Hard coded ODE rhs.
 function oderhs(u, kv, t)
@@ -124,9 +124,9 @@ let
 
     @named rs = ReactionSystem(rxs, t, [A, B, C, D], [k]; initial_conditions = defs)
     rs = complete(rs)
-    odesys = complete(make_rre_ode(rs))
-    sdesys = complete(make_cle_sde(rs))
-    js = complete(make_sck_jump(rs))
+    odesys = complete(ode_model(rs))
+    sdesys = complete(sde_model(rs))
+    js = complete(jump_model(rs))
 
     @test isequal(MT.get_initial_conditions(rs), MT.get_initial_conditions(js))
     @test isequal(MT.get_initial_conditions(rs), defs_typed)
@@ -152,7 +152,7 @@ let
     p = rnd_ps(rs, rng)
     du = oderhs(last.(u), last.(p), 0.0)
     G = sdenoise(last.(u), last.(p), 0.0)
-    sdesys = complete(make_cle_sde(rs))
+    sdesys = complete(sde_model(rs))
     sf = SDEFunction{false}(sdesys)
     sprob = SDEProblem(rs, u, (0.0, 0.0), p)
     du2 = sf.f(sprob.u0, sprob.p, 0.0)
@@ -189,7 +189,7 @@ let
     ]
     @named rs = ReactionSystem(rxs, t, [A, B, C, D, E, F], [k])
     rs = complete(rs)
-    js = complete(make_sck_jump(rs))
+    js = complete(jump_model(rs))
 
     midxs = 1:14
     cidxs = 15:18
@@ -468,7 +468,7 @@ let
     @named rs = ReactionSystem(eqs, t)
     rs = complete(rs)
     @test all(eq -> eq isa Reaction, MT.get_eqs(rs)[1:4])
-    osys = complete(make_rre_ode(rs))
+    osys = complete(ode_model(rs))
     @test issetequal(MT.get_unknowns(osys), [B, C, D, E])
     _ps = filter(!isinitial, MT.get_ps(osys))
     @test issetequal(_ps, [k1, k2, A])
@@ -503,7 +503,7 @@ let
             Dt(C) ~ 0]  # Constraint equation for BC species (constant in time)
         @named rs = ReactionSystem(eqs, t)
         rs = complete(rs)
-        ssys = complete(make_cle_sde(rs))
+        ssys = complete(sde_model(rs))
         ssys = MT.mtkcompile(ssys)  # Required for Brownian-based SDE systems with constraints
         @test issetequal(MT.get_unknowns(ssys), [B, C, D, E])
         _ps = filter(!isinitial, MT.get_ps(ssys))
@@ -531,7 +531,7 @@ let
             (@reaction k1 * B, 2 * $A + $C --> $C + B)]
         @named rs = ReactionSystem(rxs, t)
         rs = complete(rs)
-        jsys = complete(make_sck_jump(rs))
+        jsys = complete(jump_model(rs))
         @test issetequal(unknowns(jsys), [B, C, D, E])
         @test issetequal(parameters(jsys), [k1, k2, A])
         majrates = [k1 * A, k1, k2]
@@ -647,9 +647,9 @@ let
     nc = @network_component begin
         (p,d), 0 <--> X
     end
-    @test_throws Exception make_rre_ode(nc)
-    @test_throws Exception make_cle_sde(nc)
-    @test_throws Exception make_sck_jump(nc)
+    @test_throws Exception ode_model(nc)
+    @test_throws Exception sde_model(nc)
+    @test_throws Exception jump_model(nc)
     @test_throws Exception make_rre_algeqs(nc)
 end
 
@@ -684,7 +684,7 @@ let
     rxs = [Reaction(1, [S], [I]), Reaction(1.1, [S], [I])]
     @named rs = ReactionSystem(rxs, t, [S, I], [])
     rs = complete(rs)
-    js = complete(make_sck_jump(rs))
+    js = complete(jump_model(rs))
     jprob = JumpProblem(js, [S => 1, I => 1], (0.0, 10.0); rng)
     sol = solve(jprob, SSAStepper())
 
@@ -721,24 +721,24 @@ let
     rs2 = complete(rs2)
 
     # Test ODE scaling:
-    os = complete(make_rre_ode(rs))
+    os = complete(ode_model(rs))
     @test isequal2(equations(os)[1].rhs, -2 * k1 * S * S^2 * I^3 / 12)
-    os = make_rre_ode(rs; combinatoric_ratelaws = false)
+    os = ode_model(rs; combinatoric_ratelaws = false)
     @test isequal2(equations(os)[1].rhs, -2 * k1 * S * S^2 * I^3)
-    os2 = complete(make_rre_ode(rs2))
+    os2 = complete(ode_model(rs2))
     @test isequal2(equations(os2)[1].rhs, -2 * k1 * S * S^2 * I^3)
-    os3 = complete(make_rre_ode(rs2; combinatoric_ratelaws = true))
+    os3 = complete(ode_model(rs2; combinatoric_ratelaws = true))
     @test isequal2(equations(os3)[1].rhs, -2 * k1 * S * S^2 * I^3 / 12)
 
     # Test ConstantRateJump rate scaling.
-    js = complete(make_sck_jump(rs))
+    js = complete(jump_model(rs))
     @test isequal2(MT.jumps(js)[1].rate,
                     k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
-    js = complete(make_sck_jump(rs; combinatoric_ratelaws = false))
+    js = complete(jump_model(rs; combinatoric_ratelaws = false))
     @test isequal2(MT.jumps(js)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
-    js2 = complete(make_sck_jump(rs2))
+    js2 = complete(jump_model(rs2))
     @test isequal2(MT.jumps(js2)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
-    js3 = complete(make_sck_jump(rs2; combinatoric_ratelaws = true))
+    js3 = complete(jump_model(rs2; combinatoric_ratelaws = true))
     @test isequal2(MT.jumps(js3)[1].rate,
                     k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
 
@@ -747,9 +747,9 @@ let
         Reaction(k2, [I], [R])]
     @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
     rs = complete(rs)
-    js = complete(make_sck_jump(rs))
+    js = complete(jump_model(rs))
     @test isequal2(MT.jumps(js)[1].scaled_rates, k1 / 12)
-    js = complete(make_sck_jump(rs; combinatoric_ratelaws = false))
+    js = complete(jump_model(rs; combinatoric_ratelaws = false))
     @test isequal2(MT.jumps(js)[1].scaled_rates, k1)
 
     # test building directly from rxs
@@ -776,7 +776,7 @@ let
     rx3 = Reaction(2 * k, [B], [D], [2.5], [2])
     @named mixedsys = ReactionSystem([rx1, rx2, rx3], t, [A, B, C, D], [k, b])
     mixedsys = complete(mixedsys)
-    osys = make_rre_ode(mixedsys; combinatoric_ratelaws = false)
+    osys = ode_model(mixedsys; combinatoric_ratelaws = false)
 end
 
 # Test balanced_bc_check.
@@ -798,7 +798,7 @@ let
     rs = complete(rs)
     @test issetequal(unknowns(rs), [S1, S3])
     @test issetequal(parameters(rs), [S2, k1, k2])
-    osys = make_rre_ode(rs)
+    osys = ode_model(rs)
     @test issetequal(unknowns(osys), [S1, S3])
     @test issetequal(parameters(osys), [S2, k1, k2])
     osys2 = mtkcompile(osys)
@@ -817,7 +817,7 @@ let
     rs = complete(rs)
     @test issetequal(unknowns(rs), [S1, S3])
     @test issetequal(parameters(rs), [S2, k1, k2])
-    osys = make_rre_ode(rs)
+    osys = ode_model(rs)
     @test issetequal(unknowns(osys), [S1, S3])
     @test issetequal(parameters(osys), [S2, k1, k2])
     osys2 = mtkcompile(osys)
@@ -861,7 +861,7 @@ let
         k2, G --> H         # maj
         k2, G --> A + B     # maj
     end
-    jsys = make_sck_jump(rn)
+    jsys = jump_model(rn)
     jumps = Catalyst.assemble_jumps(rn)
     @test count(j -> j isa VariableRateJump, jumps) == 4
     @test count(j -> j isa ConstantRateJump, jumps) == 1
@@ -899,7 +899,7 @@ let
     @test all(typeof.(MT.get_eqs(rs)) .<: (Reaction, Equation))
     @test length(Catalyst.get_rxs(rs)) == 1
     @test reactions(rs)[1] == rx
-    osys = make_rre_ode(rs)
+    osys = ode_model(rs)
     @test issetequal(unknowns(osys), [A, B, V])
     @test issetequal(parameters(osys), [k1, k2])
     @test length(equations(osys)) == 3
@@ -956,18 +956,18 @@ let
     @test ModelingToolkitBase.getmetadata(complete(rs2), MiscSystemData, nothing) == π
 
     # Check metadata for converted `ReactionSystem`s.
-    @test ModelingToolkitBase.getmetadata(make_rre_ode(complete(rs1)), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(make_rre_ode(complete(rs2)), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(complete(make_rre_ode(complete(rs1))), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(complete(make_rre_ode(complete(rs2))), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(make_cle_sde(complete(rs1)), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(make_cle_sde(complete(rs2)), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(complete(make_cle_sde(complete(rs1))), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(complete(make_cle_sde(complete(rs2))), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(make_sck_jump(complete(rs1)), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(make_sck_jump(complete(rs2)), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(complete(make_sck_jump(complete(rs1))), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(complete(make_sck_jump(complete(rs2))), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(ode_model(complete(rs1)), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(ode_model(complete(rs2)), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(ode_model(complete(rs1))), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(ode_model(complete(rs2))), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(sde_model(complete(rs1)), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(sde_model(complete(rs2)), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(sde_model(complete(rs1))), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(sde_model(complete(rs2))), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(jump_model(complete(rs1)), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(jump_model(complete(rs2)), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(jump_model(complete(rs1))), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(jump_model(complete(rs2))), MiscSystemData, nothing) == π
     @test ModelingToolkitBase.getmetadata(make_rre_algeqs(complete(rs1)), MiscSystemData, nothing) == nothing
     @test ModelingToolkitBase.getmetadata(make_rre_algeqs(complete(rs2)), MiscSystemData, nothing) == π
     @test ModelingToolkitBase.getmetadata(complete(make_rre_algeqs(complete(rs1))), MiscSystemData, nothing) == nothing
@@ -1056,7 +1056,7 @@ let
     variableratejumps(js) = filter(j -> j isa VariableRateJump, MT.jumps(js))
     odeeqs(js) = equations(js)
 
-    # Test that make_sck_jump errors when given ODE equations (use make_hybrid_model instead)
+    # Test that jump_model errors when given ODE equations (use hybrid_model instead)
     let
         t = default_t()
         D = default_time_deriv()
@@ -1069,7 +1069,7 @@ let
         cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
         @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
         rs = complete(rs)
-        @test_throws ErrorException make_sck_jump(rs)
+        @test_throws ErrorException jump_model(rs)
     end
 
     let
@@ -1085,7 +1085,7 @@ let
         cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
         @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
         rs = complete(rs)
-        sys = complete(make_hybrid_model(rs; default_scale = PhysicalScale.Jump))
+        sys = complete(hybrid_model(rs; default_scale = PhysicalScale.Jump))
         @test sys isa MT.System
         @test MT.has_equations(sys)
         @test length(massactionjumps(sys)) == 1
@@ -1111,7 +1111,7 @@ let
         cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
         @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
         rs = complete(rs)
-        sys = complete(make_hybrid_model(rs; default_scale = PhysicalScale.Jump))
+        sys = complete(hybrid_model(rs; default_scale = PhysicalScale.Jump))
         @test sys isa MT.System
         @test MT.has_equations(sys)
         @test isempty(massactionjumps(sys))

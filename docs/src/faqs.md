@@ -14,7 +14,7 @@ nothing    # hide
 Let's convert it to a system of ODEs, using the conservation laws of the system
 to eliminate two of the species:
 ```@example faq1
-osys = make_rre_ode(rn; remove_conserved = true)
+osys = ode_model(rn; remove_conserved = true)
 osys = complete(osys)
 ```
 Notice the resulting ODE system has just one ODE, while algebraic observables
@@ -66,7 +66,7 @@ of `k*X*(X-1)` for jumps. This can be disabled when directly `convert`ing a
 [`ReactionSystem`](@ref). If `rn` is a generated [`ReactionSystem`](@ref), we can
 do
 ```@example faq1
-osys = make_rre_ode(rn; combinatoric_ratelaws=false)
+osys = ode_model(rn; combinatoric_ratelaws=false)
 ```
 Disabling these rescalings should work for all conversions of `ReactionSystem`s
 to other `ModelingToolkit.AbstractSystem`s.
@@ -98,10 +98,10 @@ rx2 = Reaction(2*k, [B], [D], [1], [2.5])
 rx3 = Reaction(2*k, [B], [D], [2.5], [2])
 @named mixedsys = ReactionSystem([rx1, rx2, rx3], t, [A, B, C, D], [k, b])
 mixedsys = complete(mixedsys)
-osys = make_rre_ode(mixedsys; combinatoric_ratelaws = false)
+osys = ode_model(mixedsys; combinatoric_ratelaws = false)
 osys = complete(osys)
 ```
-Note, when using `make_rre_ode(mixedsys; combinatoric_ratelaws=false)` the
+Note, when using `ode_model(mixedsys; combinatoric_ratelaws=false)` the
 `combinatoric_ratelaws=false` parameter must be passed. This is also true when
 calling `ODEProblem(mixedsys,...; combinatoric_ratelaws=false)`. As described
 above, this disables Catalyst's standard rescaling of reaction rates when
@@ -198,7 +198,7 @@ rx2 = @reaction $f, 0 --> A
 eq = f ~ (1 + sin(t))
 @named rs = ReactionSystem([rx1, rx2, eq], t)
 rs = complete(rs)
-osys = make_rre_ode(rs)
+osys = ode_model(rs)
 ```
 In the final ODE model, `f` can be eliminated by using
 `ModelingToolkitBase.mtkcompile`
@@ -218,7 +218,7 @@ using Catalyst
 rn = @reaction_network begin
     k, A --> 0
 end
-osys = make_rre_ode(rn)
+osys = ode_model(rn)
 dAdteq = equations(osys)[1]
 t      = ModelingToolkitBase.get_iv(osys)
 dAdteq = Equation(dAdteq.lhs, dAdteq.rhs + 1 + sin(t))
@@ -235,7 +235,7 @@ using Catalyst
 rn = @reaction_network begin
     k, X --> ∅
 end
-make_rre_ode(rn)
+ode_model(rn)
 ```
 occurs at the (ODE) rate ``d[X]/dt = -k[X]``, it is possible to override this by
 using any of the following non-filled arrows when declaring the reaction: `<=`,
@@ -244,7 +244,7 @@ using any of the following non-filled arrows when declaring the reaction: `<=`,
 rn = @reaction_network begin
     k, X => ∅
 end
-make_rre_ode(rn)
+ode_model(rn)
 ```
 will occur at rate ``d[X]/dt = -k`` (which might become a problem since ``[X]``
 will be degraded at a constant rate even when very small or equal to 0).
@@ -254,7 +254,7 @@ Note, stoichiometric coefficients are still included, i.e. the reaction
 rn = @reaction_network begin
     k, 2*X ⇒ ∅
 end
-make_rre_ode(rn)
+ode_model(rn)
 ```
 has rate ``d[X]/dt = -2 k``.
 

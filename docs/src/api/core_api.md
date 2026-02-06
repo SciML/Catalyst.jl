@@ -50,21 +50,21 @@ parammap = [β => 1/10000, γ => 0.01]
 tspan    = (0.0, 250.0)
 
 # solve as ODEs
-odesys = make_rre_ode(rs)
+odesys = ode_model(rs)
 odesys = complete(odesys)
 oprob = ODEProblem(odesys, u₀map, tspan, parammap)
 sol = solve(oprob, Tsit5())
 p1 = plot(sol, title = "ODE")
 
 # solve as SDEs
-sdesys = make_cle_sde(rs)
+sdesys = sde_model(rs)
 sdesys = complete(sdesys)
 sprob = SDEProblem(sdesys, u₀map, tspan, parammap)
 sol = solve(sprob, EM(), dt=.01, saveat = 2.0)
 p2 = plot(sol, title = "SDE")
 
 # solve as jump process
-jumpsys = make_sck_jump(rs)
+jumpsys = jump_model(rs)
 jumpsys = complete(jumpsys)
 u₀map    = [S => 999, I => 1, R => 0]
 jprob = JumpProblem(jumpsys, [u₀map; parammap], tspan)

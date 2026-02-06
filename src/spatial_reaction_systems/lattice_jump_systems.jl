@@ -134,7 +134,7 @@ end
 # Creates the (non-spatial) mass action jumps from a (non-spatial) DiscreteProblem (and its Reaction System of origin).
 # function make_majumps(non_spat_dprob, rs::ReactionSystem)
 #     # Computes various required inputs for assembling the mass action jumps.
-#     js = make_sck_jump(rs)
+#     js = jump_model(rs)
 #     statetoid = Dict(value(state) => i for (i, state) in enumerate(unknowns(rs)))
 #     eqs = equations(js)
 #     invttype = non_spat_dprob.tspan[1] === nothing ? Float64 : typeof(1 / non_spat_dprob.tspan[2])

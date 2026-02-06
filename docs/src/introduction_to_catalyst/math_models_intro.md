@@ -58,7 +58,7 @@ the implicit rescaling of rate constants can be disabled through use of the
 Problem is being generated, i.e.
 ```julia
 rn = @reaction_network ...
-osys = make_rre_ode(rn; combinatoric_ratelaws = false)
+osys = ode_model(rn; combinatoric_ratelaws = false)
 oprob = ODEProblem(osys, ...)
 
 # or
@@ -80,7 +80,7 @@ rn = @reaction_network begin
     @combinatoric_ratelaws false
     k, 3A + 2B --> A + 3D
 end
-osys = make_rre_ode(rn)
+osys = ode_model(rn)
 ```
 
 ## [Reaction Rate Equation (RRE) ODE Models](@id math_models_in_catalyst_rre_odes)
@@ -103,11 +103,11 @@ rn = @reaction_network begin
     k₂, A --> 0
     k₃, 0 --> A
 end
-osys = make_rre_ode(rn)
+osys = ode_model(rn)
 ```
 Likewise, the following drops the combinatoric scaling factors, giving unscaled ODEs
 ```@example math_examples
-osys = make_rre_ode(rn; combinatoric_ratelaws = false)
+osys = ode_model(rn; combinatoric_ratelaws = false)
 ```
 
 ## [Chemical Langevin Equation (CLE) SDE Models](@id math_models_in_catalyst_cle_sdes)

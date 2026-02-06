@@ -175,7 +175,7 @@ end
 let
     for rn in reaction_networks_standard
         @test latexify(rn)==latexify(rn; form=:reactions)
-        #@test_broken latexify(make_rre_ode(rn)) == latexify(rn; form=:ode) # Slight difference due to some latexify weirdly. Both displays fine though
+        #@test_broken latexify(ode_model(rn)) == latexify(rn; form=:ode) # Slight difference due to some latexify weirdly. Both displays fine though
     end
 end
 

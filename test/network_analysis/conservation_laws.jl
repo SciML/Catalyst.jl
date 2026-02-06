@@ -114,7 +114,7 @@ let
     tspan = (0.0, 20.0)
 
     # Simulates model using ODEs and checks that simulations are identical.
-    osys = complete(make_rre_ode(rn; remove_conserved = true))
+    osys = complete(ode_model(rn; remove_conserved = true))
     oprob1 = ODEProblem(osys, [u0; p], tspan)
     oprob2 = ODEProblem(rn, u0, tspan, p)
     oprob3 = ODEProblem(rn, u0, tspan, p; remove_conserved = true)
@@ -156,7 +156,7 @@ let
     # Creates SDEProblems using various approaches.
     u0_sde = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
         F3 => 20.0]
-    ssys = complete(make_cle_sde(rn; remove_conserved = true))
+    ssys = complete(sde_model(rn; remove_conserved = true))
     sprob1 = SDEProblem(ssys, [u0_sde; p], tspan)
     sprob2 = SDEProblem(rn, u0_sde, tspan, p)
     sprob3 = SDEProblem(rn, u0_sde, tspan, p; remove_conserved = true)
@@ -227,7 +227,7 @@ let
     rn = @reaction_network begin
         (k1,k2), X1 <--> X2
     end
-    osys = complete(make_rre_ode(rn; remove_conserved = true))
+    osys = complete(ode_model(rn; remove_conserved = true))
     u0_1 = [osys.X1 => 1.0, osys.X2 => 1.0]
     u0_2 = [osys.X1 => 1.0]
     ps_1 = [osys.k1 => 2.0, osys.k2 => 3.0]
@@ -256,7 +256,7 @@ let
         Reaction(k2, [X2], [X1])
     ]
     @named rs = ReactionSystem(rxs, t)
-    osys = complete(make_rre_ode(complete(rs); remove_conserved = true))
+    osys = complete(ode_model(complete(rs); remove_conserved = true))
     @unpack Γ = osys
 
     # Creates the various problem types.
@@ -456,7 +456,7 @@ let
     rn = @reaction_network begin
         (k1,k2), X1 <--> X2
     end
-    @test_throws ArgumentError make_sck_jump(rn; remove_conserved = true)
+    @test_throws ArgumentError jump_model(rn; remove_conserved = true)
 end
 
 # Checks that `conserved` metadata is added correctly to parameters.
@@ -467,7 +467,7 @@ let
         (k1,k2), X1 <--> X2
         (k1,k2), Y1 <--> Y2
     end
-    osys = make_rre_ode(rs; remove_conserved = true)
+    osys = ode_model(rs; remove_conserved = true)
 
     # Checks that the correct parameters have the `conserved` metadata.
     @test Catalyst.isconserved(osys.Γ[1])

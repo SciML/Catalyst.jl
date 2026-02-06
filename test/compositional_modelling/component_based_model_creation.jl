@@ -31,9 +31,9 @@ let
     rs = complete(rs)
 
     # Using ODESystem components.
-    @named sys₁ = make_rre_ode(rs; include_zero_odes = false)
-    @named sys₂ = make_rre_ode(rs; include_zero_odes = false)
-    @named sys₃ = make_rre_ode(rs; include_zero_odes = false)
+    @named sys₁ = ode_model(rs; include_zero_odes = false)
+    @named sys₂ = ode_model(rs; include_zero_odes = false)
+    @named sys₃ = ode_model(rs; include_zero_odes = false)
     connections = [sys₁.R ~ sys₃.P,
         sys₂.R ~ sys₁.P,
         sys₃.R ~ sys₂.P]
@@ -88,7 +88,7 @@ let
     @named csys = ReactionSystem(connections, t)
     @named repressilator = ReactionSystem(t; systems = [csys, sys₁, sys₂, sys₃])
     repressilator = complete(repressilator)
-    @named oderepressilator2 = make_rre_ode(repressilator, include_zero_odes = false)
+    @named oderepressilator2 = ode_model(repressilator, include_zero_odes = false)
     sys2 = mtkcompile(oderepressilator2)  # FAILS currently
     oprob = ODEProblem(sys2, [u₀; pvals], tspan)
     sol = solve(oprob, Tsit5())
@@ -212,7 +212,7 @@ let
     @test isequal(extended.a, MT.namespace_expr(a, extended))
     @test isequal(extended.x, MT.namespace_expr(x, extended))
     extended = complete(extended)
-    odesystem = complete(make_rre_ode(extended))
+    odesystem = complete(ode_model(extended))
     nlsystem = complete(make_rre_algeqs(extended))
 
     obs = Set([MT.observed(constraints);
@@ -228,7 +228,7 @@ let
     @test isequal(extended.a, MT.namespace_expr(a, extended))
     @test isequal(extended.x, MT.namespace_expr(x, extended))
     extended = complete(extended)
-    odesystem = complete(make_rre_ode(extended))
+    odesystem = complete(ode_model(extended))
     nlsystem = complete(make_rre_algeqs(extended))
 
     obs = Set([MT.observed(constraints);
@@ -239,7 +239,7 @@ let
     @test Set(MT.observed(nlsystem)) == obs
 
     # Test can make ODESystem.
-    @named oderepressilator = make_rre_ode(repressilator2, include_zero_odes = false)
+    @named oderepressilator = ode_model(repressilator2, include_zero_odes = false)
     sys2 = mtkcompile(oderepressilator)  # FAILS currently
     oprob = ODEProblem(sys2, [u₀; pvals], tspan)
     sol = solve(oprob, Tsit5())
@@ -282,7 +282,7 @@ let
     @named ns = ReactionSystem(nseqs, t)
     rs = compose(rs, [ns])
     rs = complete(rs)
-    osys = make_rre_ode(rs; include_zero_odes = false)
+    osys = ode_model(rs; include_zero_odes = false)
     p = [r₊ => 1.0, r₋ => 2.0, ns.β => 3.0]
     u₀ = [A => 1.0, B => 2.0, C => 0.0]
     oprob = ODEProblem(mtkcompile(osys), u₀, (0.0, 10.0), p)
@@ -359,7 +359,7 @@ let
     eqs = [D(C) ~ -b * C + a * A]
     @named osys = ReactionSystem(eqs, t)
     rn2 = extend(osys, rn)
-    rnodes = make_rre_ode(complete(rn2))
+    rnodes = ode_model(complete(rn2))
 
     # Ensure right number of equations are generated.
     @variables G(t)
@@ -373,7 +373,7 @@ let
     eqs = [0 ~ -a * A + C, 0 ~ -b * C + a * A]
     @named nlsys = ReactionSystem(eqs, t)
     rn2 = complete(extend(nlsys, rn))
-    rnodes = make_rre_ode(rn2)
+    rnodes = ode_model(rn2)
     rnnlsys = make_rre_algeqs(rn2)
 end
 
@@ -387,7 +387,7 @@ let
     @named rs2 = ReactionSystem(rxs2, t)
     rsc = compose(rs1, [rs2])
     rsc = complete(rsc)
-    orsc = make_rre_ode(rsc)
+    orsc = ode_model(rsc)
     @test length(equations(orsc)) == 1
 end
 
@@ -462,7 +462,7 @@ let
     end
     composed_reaction_system = compose(rn1, [rn2])
     composed_reaction_system = complete(composed_reaction_system)
-    osys = make_rre_ode(composed_reaction_system)
+    osys = ode_model(composed_reaction_system)
     parameters(osys)[1].metadata
 
     defs = MT.initial_conditions(osys)

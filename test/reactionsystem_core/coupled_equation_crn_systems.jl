@@ -287,8 +287,8 @@ let
     coupled_rs = complete(coupled_rs)
 
     # Checks that systems created from coupled reaction systems contain the correct content
-    osys = make_rre_ode(coupled_rs)
-    ssys = make_cle_sde(coupled_rs)
+    osys = ode_model(coupled_rs)
+    ssys = sde_model(coupled_rs)
     nlsys = make_rre_algeqs(coupled_rs)
     initps = Initial.((X, X2, A, B))
     fullps = union(initps, [k1, k2, k, b1, b2])

@@ -282,7 +282,7 @@ let
     times = 0.0:1.0:10.0
 
     # Verify the system creates ConstantRateJumps (not MassActionJumps).
-    jsys = Catalyst.make_sck_jump(rn)
+    jsys = Catalyst.jump_model(rn)
     jumps = ModelingToolkitBase.get_jumps(jsys)
     @test any(j -> j isa JumpProcesses.ConstantRateJump, jumps)
 

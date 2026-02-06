@@ -22,8 +22,7 @@ pmap  = symmap_to_varmap(rs,p)   # convert Symbol map to symbolic variable map
 tspan = (0.,4.)
 u0    = [:X => 5.]   
 u0map = symmap_to_varmap(rs,u0)  # convert Symbol map to symbolic variable map
-osys  = make_rre_ode(rs)
+osys  = ode_model(rs)
 oprob = ODEProblem(osys, u0map, tspan, pmap)
 sol   = solve(oprob, Tsit5())
 ```
-
