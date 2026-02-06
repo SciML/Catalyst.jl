@@ -2,6 +2,18 @@
 
 ## Unreleased (on master)
 
+#### New: Poissonian support in ReactionSystem
+- Added `poissonians` field to `ReactionSystem` for storing Poissonian variables
+  (symbolic Poisson counting processes with associated rates, created via
+  `@poissonians` from ModelingToolkitBase).
+- Poissonians are auto-discovered from equations and properly handled through
+  composition (`flatten`, `extend`, `compose`) and equivalence checking
+  (`isequivalent`).
+- `HybridProblem` automatically converts poissonians to `ConstantRateJump` or
+  `VariableRateJump` objects via `mtkcompile`.
+- `ode_model`, `sde_model`, and `jump_model` now error with informative messages
+  when called on systems containing poissonians (use `HybridProblem` instead).
+
 ## Catalyst 16.0
 
 Catalyst 16 is a major release that transitions from ModelingToolkit v9 to

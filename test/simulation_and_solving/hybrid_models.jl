@@ -1202,3 +1202,138 @@ let
     @test eltype(prob2.prob.u0) == Int64
     @test prob2[:X] == 50
 end
+
+### Poissonian Tests ###
+
+# Tests that a simple Poisson counter via HybridProblem gives correct mean (E[X(T)] ≈ λ*T).
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ
+    @variables X(t)
+    @poissonians dN(λ)
+
+    @named rn = ReactionSystem(
+        [D(X) ~ dN],
+        t, [X], [λ];
+        poissonians = [dN]
+    )
+    rn = complete(rn)
+
+    λ_val = 5.0
+    T = 10.0
+    n_trials = 500
+    final_vals = Float64[]
+
+    for i in 1:n_trials
+        prob = HybridProblem(rn, [:X => 0.0], (0.0, T), [:λ => λ_val];
+            rng = StableRNG(i))
+        # Pure poissonian system: D(X) ~ dN becomes D(X) ~ 0 after extraction,
+        # mtkcompile reduces to DiscreteProblem → use SSAStepper.
+        sol = solve(prob, SSAStepper())
+        push!(final_vals, sol[X, end])
+    end
+
+    # Mean should be λ*T = 50.0 (with some tolerance for stochastic variation).
+    @test isapprox(mean(final_vals), λ_val * T; rtol = 0.1)
+end
+
+# Tests that a Poissonian + Catalyst reaction hybrid works via HybridProblem.
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ k d
+    @species S(t)
+    @variables X(t)
+    @poissonians dN(λ)
+
+    @named rn = ReactionSystem(
+        [Reaction(k, nothing, [S]), Reaction(d, [S], nothing), D(X) ~ dN],
+        t, [S, X], [λ, k, d];
+        poissonians = [dN]
+    )
+    rn = complete(rn)
+
+    prob = HybridProblem(rn, [:S => 10.0, :X => 0.0], (0.0, 10.0),
+        [:λ => 1.0, :k => 1.0, :d => 0.1]; rng = StableRNG(42))
+    @test prob isa JumpProblem
+
+    # Has ODE equations (reactions + D(X) ~ 0 after extraction), so needs ODE solver.
+    sol = solve(prob, Tsit5())
+    @test sol.retcode == ReturnCode.Success
+
+    # X should have increased (Poisson counter).
+    @test sol[X, end] > 0
+end
+
+# Tests that a Poissonian + Brownian (jump-diffusion) hybrid works via HybridProblem.
+# Both noise sources appear in the same equation: dX = σ*dW + dN(λ).
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ σ
+    @variables X(t)
+    @brownians dW
+    @poissonians dN(λ)
+
+    @named rn = ReactionSystem(
+        [D(X) ~ σ * dW + dN],
+        t, [X], [λ, σ], [dW];
+        poissonians = [dN]
+    )
+    rn = complete(rn)
+
+    prob = HybridProblem(rn, [:X => 0.0], (0.0, 1.0),
+        [:λ => 2.0, :σ => 0.3]; rng = StableRNG(42))
+    @test prob isa JumpProblem
+
+    sol = solve(prob, SRIW1())
+    @test sol.retcode == ReturnCode.Success
+end
+
+# Tests that a state-dependent rate poissonian works (produces VariableRateJump).
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters k
+    @variables X(t)
+    @poissonians dN(k * X)
+
+    @named rn = ReactionSystem(
+        [D(X) ~ dN],
+        t, [X], [k];
+        poissonians = [dN]
+    )
+    rn = complete(rn)
+
+    # State-dependent rate → VariableRateJump → needs ODE solver.
+    prob = HybridProblem(rn, [:X => 1.0], (0.0, 1.0), [:k => 0.5]; rng = StableRNG(42))
+    @test prob isa JumpProblem
+
+    sol = solve(prob, Tsit5())
+    @test sol.retcode == ReturnCode.Success
+end
+
+# Tests a constant-rate poissonian produces a ConstantRateJump (parameter-only rate).
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ
+    @variables X(t)
+    @poissonians dN(λ)
+
+    @named rn = ReactionSystem(
+        [D(X) ~ dN],
+        t, [X], [λ];
+        poissonians = [dN]
+    )
+    rn = complete(rn)
+
+    prob = HybridProblem(rn, [:X => 0.0], (0.0, 10.0), [:λ => 3.0]; rng = StableRNG(42))
+    @test prob isa JumpProblem
+
+    # Pure poissonian: D(X) ~ dN becomes D(X) ~ 0 → DiscreteProblem → SSAStepper.
+    sol = solve(prob, SSAStepper())
+    @test sol.retcode == ReturnCode.Success
+    @test sol[X, end] >= 0
+end
