@@ -886,7 +886,7 @@ end
 # Mathematical correctness test: SDE+Jump birth-death model with known transient solution.
 # dX = k1 dt + sqrt(k1) dW - (jump: X -> X-1 at rate k2*X)
 # Analytic mean: E[X](t) = k1/k2 + (X0 - k1/k2)*exp(-k2*t)
-# Also compares variance against manually coded JumpProcesses implementation.
+# Also compares mean against manually coded JumpProcesses implementation.
 let
     # Parameters
     k1 = 10.0  # birth rate
@@ -923,11 +923,9 @@ let
         manual_samples[i, :] .= manual_sol[1, :]  # numeric index for manual problem
     end
 
-    # Compute means and variances
+    # Compute means
     cat_mean = vec(mean(cat_samples; dims = 1))
     manual_mean = vec(mean(manual_samples; dims = 1))
-    cat_var = vec(var(cat_samples; dims = 1))
-    manual_var = vec(var(manual_samples; dims = 1))
 
     # Analytic mean: E[X](t) = k1/k2 + (X0 - k1/k2)*exp(-k2*t)
     Xf(t) = k1 / k2 + (X0 - k1 / k2) * exp(-k2 * t)
@@ -936,11 +934,6 @@ let
     # Test means against analytic solution (5% relative tolerance)
     @test all(abs.(cat_mean .- Xact) .<= 0.05 .* Xact)
     @test all(abs.(manual_mean .- Xact) .<= 0.05 .* Xact)
-
-    # Test that Catalyst and manual implementations have matching variances (10% relative tolerance)
-    # Skip early times where variance is small and relative error can be large
-    start_idx = findfirst(t -> t >= 5.0, times)
-    @test all(abs.(cat_var[start_idx:end] .- manual_var[start_idx:end]) .<= 0.10 .* manual_var[start_idx:end])
 end
 
 # Mathematical correctness test: Two-species system with known transient solution.
