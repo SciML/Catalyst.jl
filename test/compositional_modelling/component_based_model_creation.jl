@@ -100,7 +100,7 @@ let
     @named nsys = ReactionSystem(connections, t)
     @named ssrepressilator = ReactionSystem(t; systems = [nsys, sys₁, sys₂, sys₃])
     ssrepressilator = complete(ssrepressilator)
-    @named nlrepressilator = make_rre_algeqs(ssrepressilator)
+    @named nlrepressilator = ss_ode_model(ssrepressilator)
     sys2 = mtkcompile(nlrepressilator)
     @test_broken length(equations(sys2)) <= 6  # BUG in MTK: mtkcompile does not eliminate these like it does for ODEs
     nlprob = NonlinearProblem(sys2, [u₀_nl; pvals])
@@ -113,7 +113,7 @@ let
     # Flattening.
     fsys = Catalyst.flatten(ssrepressilator)
     fsys = complete(fsys)
-    @named nlrepressilator = make_rre_algeqs(fsys)
+    @named nlrepressilator = ss_ode_model(fsys)
     sys2 = mtkcompile(nlrepressilator)
 @test_broken length(equations(sys2)) <= 6  # BUG in MTK: mtkcompile does not eliminate these like it does for ODEs
     nlprob = NonlinearProblem(sys2, [u₀_nl; pvals])
@@ -130,7 +130,7 @@ let
     @named csys = ReactionSystem(connections, t)
     @named repressilator2 = ReactionSystem(connections, t; systems = [sys₁, sys₂, sys₃])
     repressilator2 = complete(repressilator2)
-    @named nlrepressilator = make_rre_algeqs(repressilator2)
+    @named nlrepressilator = ss_ode_model(repressilator2)
     sys2 = mtkcompile(nlrepressilator)
     @test_broken length(equations(sys2)) <= 6  # BUG in MTK: mtkcompile does not eliminate these like it does for ODEs
     nlprob = NonlinearProblem(sys2, [u₀_nl; pvals])
@@ -151,7 +151,7 @@ let
     @test isequal(extended.x, MT.namespace_expr(x, extended))
     # and after conversion to an AbstractSystem
     extended = complete(extended)
-    system = make_rre_algeqs(extended)
+    system = ss_ode_model(extended)
     @test isequal(system.a, MT.namespace_expr(a, system))
     @test isequal(system.x, MT.namespace_expr(x, system; ivs = independent_variables(extended)))
     @test length(equations(system)) == 1
@@ -165,7 +165,7 @@ let
     @test isequal(extended.x, MT.namespace_expr(x, extended))
     # and after conversion to an AbstractSystem.
     extended = complete(extended)
-    system = make_rre_algeqs(extended)
+    system = ss_ode_model(extended)
     @test isequal(system.a, MT.namespace_expr(a, system))
     @test isequal(system.x, MT.namespace_expr(x, system; ivs = independent_variables(extended)))
     @test length(equations(system)) == 1
@@ -213,7 +213,7 @@ let
     @test isequal(extended.x, MT.namespace_expr(x, extended))
     extended = complete(extended)
     odesystem = complete(ode_model(extended))
-    nlsystem = complete(make_rre_algeqs(extended))
+    nlsystem = complete(ss_ode_model(extended))
 
     obs = Set([MT.observed(constraints);
             [MT.namespace_equation(o, subextended)
@@ -229,7 +229,7 @@ let
     @test isequal(extended.x, MT.namespace_expr(x, extended))
     extended = complete(extended)
     odesystem = complete(ode_model(extended))
-    nlsystem = complete(make_rre_algeqs(extended))
+    nlsystem = complete(ss_ode_model(extended))
 
     obs = Set([MT.observed(constraints);
             [MT.namespace_equation(o, subextended)
@@ -250,7 +250,7 @@ let
     repressilator2 = Catalyst.flatten(repressilator2)
     repressilator2 = extend(csys, repressilator2)
     repressilator2 = complete(repressilator2)
-    @named nlrepressilator = make_rre_algeqs(repressilator2)
+    @named nlrepressilator = ss_ode_model(repressilator2)
     sys2 = mtkcompile(nlrepressilator)
     @test_broken length(equations(sys2)) <= 6  # BUG in MTK: mtkcompile does not eliminate these like it does for ODEs
     nlprob = NonlinearProblem(sys2, [u₀_nl; pvals])
@@ -374,7 +374,7 @@ let
     @named nlsys = ReactionSystem(eqs, t)
     rn2 = complete(extend(nlsys, rn))
     rnodes = ode_model(rn2)
-    rnnlsys = make_rre_algeqs(rn2)
+    rnnlsys = ss_ode_model(rn2)
 end
 
 # https://github.com/SciML/ModelingToolkit.jl/issues/1274

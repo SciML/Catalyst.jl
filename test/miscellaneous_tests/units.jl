@@ -33,7 +33,7 @@ let
     @test_nowarn ode_model(rs)
     @test_nowarn sde_model(rs)
     @test_nowarn jump_model(rs)
-    @test_nowarn make_rre_algeqs(rs)
+    @test_nowarn ss_ode_model(rs)
 
     # Tests that creating `Reaction`s with non-matching units yields warnings.
     @species B(t) [unit=u"mol"] D(t) [unit=u"kg"]

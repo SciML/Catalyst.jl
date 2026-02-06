@@ -1,177 +1,62 @@
 # Breaking updates and feature summaries across releases
 
-## Catalyst unreleased (master branch)
+## Unreleased (on master)
 
-#### New: `hybrid_model` unified conversion function
+## Catalyst 16.0
 
-- **New `hybrid_model(rs::ReactionSystem; ...)` function** that converts a
-  `ReactionSystem` to a unified `ModelingToolkitBase.System` containing ODE equations,
-  Brownian noise terms (SDE), and/or jump processes, based on each reaction's
-  `PhysicalScale` metadata.
+Catalyst 16 is a major release that transitions from ModelingToolkit v9 to
+ModelingToolkitBase (the base for ModelingToolkit v11), introduces unified
+hybrid model support for mixed ODE/SDE/Jump systems, and modernizes the
+conversion and problem-creation API.
 
-  The existing `ode_model`, `sde_model`, and `jump_model` are now thin wrappers
-  around `hybrid_model`. This enables true hybrid models mixing ODE, SDE, and Jump
-  reactions in a single system.
+#### BREAKING: ModelingToolkitBase replaces ModelingToolkit
 
-  ```julia
-  # Tag reactions with different physical scales
-  rn = @reaction_network begin
-      k1, S --> P, [physical_scale = PhysicalScale.ODE]
-      k2, P --> S, [physical_scale = PhysicalScale.SDE]
-      k3, S --> 0, [physical_scale = PhysicalScale.Jump]
-  end
-  sys = hybrid_model(rn)
-  ```
+- **Catalyst now depends on and re-exports `ModelingToolkitBase` instead of
+  `ModelingToolkit`.** This ensures Catalyst remains fully MIT-licensed after
+  the library split that occurred in ModelingToolkit v11. ModelingToolkitBase
+  provides the core symbolic system infrastructure (types, accessors, problem
+  construction) that Catalyst needs.
 
-  Users can also override scales via keyword arguments:
-  ```julia
-  sys = hybrid_model(rn; default_scale = PhysicalScale.ODE)
-  sys = hybrid_model(rn; physical_scales = [1 => PhysicalScale.ODE, 2 => PhysicalScale.Jump])
-  ```
-
-#### New: `HybridProblem` with scale-dependent return types
-
-- **New `HybridProblem(rs, u0, tspan, p; physical_scales, default_scale, ...)` function** creates
-  problems for systems with per-reaction scale control. Uses `hybrid_model` internally and
-  respects per-reaction `PhysicalScale` metadata.
-
-  **The return type depends on which reaction scales are present:**
-  - Pure ODE (only ODE-scale reactions) → `ODEProblem`
-  - Pure SDE or ODE+SDE (no jumps) → `SDEProblem`
-  - Any jumps present (ODE+Jump, SDE+Jump, ODE+SDE+Jump) → `JumpProblem`
-
-  For SDE+Jump combinations, the returned `JumpProblem` wraps an `SDEProblem` internally,
-  allowing simulation of hybrid systems with both diffusive noise and discrete jumps.
-
-  ```julia
-  rn = @reaction_network begin
-      k1, S --> P
-      k2, P --> S
-  end
-
-  # Pure ODE via HybridProblem
-  prob_ode = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5];
-      default_scale = PhysicalScale.ODE)
-  prob_ode isa ODEProblem  # true
-
-  # Pure SDE via HybridProblem
-  prob_sde = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5];
-      default_scale = PhysicalScale.SDE)
-  prob_sde isa SDEProblem  # true
-
-  # Hybrid ODE+Jump
-  rn2 = @reaction_network begin
-      k1, S --> P, [physical_scale = PhysicalScale.ODE]
-      k2, P --> S, [physical_scale = PhysicalScale.Jump]
-  end
-  prob_hybrid = HybridProblem(rn2, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5])
-  prob_hybrid isa JumpProblem  # true
-  sol = solve(prob_hybrid, Tsit5())
-
-  # Hybrid SDE+Jump (JumpProblem wrapping SDEProblem, requires SDE solver)
-  rn3 = @reaction_network begin
-      k1, S --> P, [physical_scale = PhysicalScale.SDE]
-      k2, P --> S, [physical_scale = PhysicalScale.Jump]
-  end
-  prob_sde_jump = HybridProblem(rn3, [:S => 100.0, :P => 0.0], (0.0, 10.0), [:k1 => 1.0, :k2 => 0.5])
-  prob_sde_jump isa JumpProblem  # true
-  prob_sde_jump.prob isa SDEProblem  # true - the underlying problem is an SDE
-  sol = solve(prob_sde_jump, SRIW1())  # use SDE solver from StochasticDiffEq
-  ```
-
-- **`JumpProblem` simplified** — now produces pure jump systems only (symmetric with
-  `ODEProblem` and `SDEProblem`). Use `HybridProblem` for hybrid ODE+Jump systems.
-
-- **`jump_model` no longer respects ODE/SDE metadata** — it forces all reactions to Jump,
-  only preserving `VariableRateJump` metadata if explicitly set.
-
-#### New: `use_legacy_noise` kwarg for SDE systems
-
-- **`sde_model` and `SDEProblem` now accept `use_legacy_noise = true` (default)** which
-  uses the traditional `noise_eqs` matrix approach for simple SDE systems without constraints,
-  avoiding the overhead of `mtkcompile`. Set to `false` to use the new Brownian-based approach.
-
-#### SDE noise representation: Brownian variables available (opt-in)
-
-- **`sde_model` can use Brownian variables** instead of a `noise_eqs` matrix when
-  `use_legacy_noise = false`. SDE noise terms are embedded directly in the equation RHS as
-  `stoich * sqrt(|ratelaw|) * B_j`. The `mtkcompile` function automatically extracts the noise
-  matrix during simplification.
-
-- **By default (`use_legacy_noise = true`), the traditional `noise_eqs` matrix approach** is
-  used for simple SDE systems without constraints. This avoids the overhead of `mtkcompile`.
-
-- **`SDEProblem(rs::ReactionSystem, ...)` calls `mtkcompile` only when necessary** (when using
-  Brownian-based noise or when the system has constraints/algebraic equations).
-
-#### New: `brownians` and `jumps` fields in ReactionSystem
-
-- **`ReactionSystem` now has `brownians` and `jumps` fields** to support non-reaction coupled
-  Brownian motion and jump processes. This mirrors the capability in ModelingToolkitBase's
-  `System` struct and enables modeling hybrid stochastic systems where reactions couple with
-  other noise/jump sources.
-
+  Most commonly used functions (`unknowns`, `parameters`, `equations`,
+  `@mtkcompile`, etc.) are available through ModelingToolkitBase. However, if
+  you relied on `structural_simplify`, now handled via `mtkcompile`, for reducing models with algebraic equations, you may need to explicitly load ModelingToolkit:
   ```julia
   using Catalyst
-  import ModelingToolkitBase as MT
-  t = default_t()
-  D = default_time_deriv()
-  @brownians B
-  @variables V(t)
-  @species S(t) P(t)
-  @parameters k λ
-
-  # brownians is the 5th positional argument (after unknowns/ps), jumps is a keyword arg
-  @named sys = ReactionSystem([Reaction(k, [S], [P]), D(V) ~ -V + B], t, [V, S, P], [k, λ], [B];
-                               jumps = JumpType[])
+  using ModelingToolkit  # only if you need MTK-specific features not in MTKBase
   ```
+  The version of `mtkcompile` in ModelingToolkitBase is less feature filled than in ModelingToolkit, but please be aware that the latter version now loads AGPL-licensed libraries that may impose additional restrictions on your code.
 
-  The two-argument constructor auto-discovers brownians from equations, just like
-  ModelingToolkitBase's `System`:
+#### BREAKING: Conversion functions renamed
 
+- **`convert(ODESystem, rs)` is replaced by `ode_model(rs)`.**
+- **`convert(SDESystem, rs)` is replaced by `sde_model(rs)`.**
+- **`convert(JumpSystem, rs)` is replaced by `jump_model(rs)`.**
+- **`convert(NonlinearSystem, rs)` is replaced by `ss_ode_model(rs)`.**
+
+  The old `Base.convert` methods have been removed. The new functions accept the
+  same keyword arguments as before.
+
+  **Before:**
   ```julia
-  @brownians B
-  @variables V(t)
-  @parameters λ
-  # B is automatically extracted as a brownian from the equation
-  @named sys = ReactionSystem([D(V) ~ λ*V + B], t)
+  osys = convert(ODESystem, rn; remove_conserved = true)
   ```
 
-- **User-provided brownians/jumps are merged** with reaction-generated ones at conversion time
-  in `hybrid_model`, `sde_model`, and `HybridProblem`.
-
-- **Conversion functions enforce scale constraints:**
-  - `ode_model`: Errors if brownians OR jumps are present (pure ODE only)
-  - `sde_model`: Errors if jumps are present (ODE + SDE constraints allowed)
-  - `jump_model`: Errors if brownians OR non-reaction equations are present (pure Jump only)
-  - Use `HybridProblem` for mixed systems with ODE+SDE, ODE+Jump, or brownian+reaction combinations
-
-#### BREAKING: ReactionSystem composition restricted to ReactionSystems only
-
-- **`compose`, `extend`, and `flatten` now only accept `ReactionSystem` subsystems.**
-  Composing a `ReactionSystem` with a generic `System` (ODESystem, NonlinearSystem, etc.)
-  is no longer supported.
-
-  This is a simplification that avoids edge cases with incompatible fields between
-  `ReactionSystem` and generic `System` types (e.g., `costs`, `constraints`, `consolidate`,
-  `initialization_eqs`, `guesses`, `bindings`, `noise_eqs`).
-
-  **Migration:** Convert your `System` to a `ReactionSystem` with algebraic/ODE equations:
+  **After:**
   ```julia
-  # Before (no longer works):
-  @named constraints = System([x ~ a], t, [x], [a])
-  extended = extend(constraints, rn)
-
-  # After:
-  @named constraints = ReactionSystem([x ~ a], t; observed = Equation[])
-  extended = extend(constraints, rn)
+  osys = ode_model(rn; remove_conserved = true)
   ```
 
-#### BREAKING: Jump API Changes
+  Problem constructors (`ODEProblem`, `SDEProblem`, `NonlinearProblem`, etc.)
+  still accept a `ReactionSystem` directly and continue to work as before.
 
-- **`JumpInputs` has been removed.** Use `JumpProblem(rs::ReactionSystem, u0, tspan, p; ...)` directly instead.
+#### BREAKING: Jump API changes
 
-- **`DiscreteProblem(rs::ReactionSystem, ...)` has been removed.** Use `JumpProblem(rs::ReactionSystem, u0, tspan, p; ...)` directly instead.
+- **`JumpInputs` has been removed.** Use `JumpProblem(rs, u0, tspan, p; ...)`
+  directly instead.
+
+- **`DiscreteProblem(rs::ReactionSystem, ...)` has been removed.** Use
+  `JumpProblem(rs, u0, tspan, p; ...)` directly instead. `DiscreteProblem` is
+  also no longer exported by Catalyst.
 
   **Before (old API):**
   ```julia
@@ -184,11 +69,246 @@
   jprob = JumpProblem(rs, u0, tspan, p)
   ```
 
-  For advanced usage where you need to reuse a converted system with different aggregators or customize the JumpSystem, use `jump_model(rs; ...)` to get the System, then call `JumpProblem(sys, op, tspan; ...)` from MTK:
+  For advanced usage where you need to reuse a converted system or customize the
+  JumpSystem, use `jump_model(rs; ...)` to get the System, then call
+  `JumpProblem(sys, op, tspan; ...)` from ModelingToolkitBase.
+
+- **`JumpProblem(rs, ...)` now produces pure jump systems only** (symmetric with
+  `ODEProblem` and `SDEProblem`). For hybrid ODE+Jump or SDE+Jump systems, use
+  the new `HybridProblem` instead.
+
+- **`jump_model` no longer respects ODE/SDE metadata** — it forces all reactions
+  to Jump scale, only preserving `VariableRateJump` metadata if explicitly set.
+  Use `hybrid_model` or `HybridProblem` for mixed-scale systems.
+
+#### BREAKING: ReactionSystem composition restricted to ReactionSystems only
+
+- **`compose`, `extend`, and `flatten` now only accept `ReactionSystem`
+  subsystems.** Composing a `ReactionSystem` with a generic `System`
+  (ODESystem, NonlinearSystem, etc.) is no longer supported.
+
+  **Migration:** Convert your `System` to a `ReactionSystem` with
+  algebraic/ODE equations:
   ```julia
-  jsys = jump_model(rs; combinatoric_ratelaws = true)
-  op = merge(Dict(u0), Dict(p))
-  jprob = JumpProblem(jsys, op, tspan; aggregator = SortingDirect())
+  # Before (no longer works):
+  @named constraints = System([x ~ a], t)
+  extended = extend(constraints, rn)
+
+  # After:
+  @named constraints = ReactionSystem([x ~ a], t)
+  extended = extend(constraints, rn)
+  ```
+
+#### BREAKING: `defaults` replaced by `initial_conditions`
+
+- **The `defaults` field and keyword argument have been renamed to
+  `initial_conditions`** throughout Catalyst, following the same change in
+  ModelingToolkitBase. This affects:
+  - The `ReactionSystem` struct field (`defaults` → `initial_conditions`)
+  - The keyword argument in conversion functions (`ode_model`, `sde_model`,
+    `jump_model`, `ss_ode_model`, `hybrid_model`)
+  - The accessor function (`MT.defaults(rs)` → `MT.initial_conditions(rs)`)
+
+- **`setdefaults!` has been removed.** Use default values in `@species` and
+  `@parameters` declarations, or pass `initial_conditions` to the
+  `ReactionSystem` constructor:
+  ```julia
+  # Setting initial conditions via the constructor
+  rn = @reaction_network begin
+      @species A(t) = 1.0
+      @parameters k = 0.5
+      k, A --> B
+  end
+
+  # Or via the keyword argument
+  @named rn = ReactionSystem(rxs, t; initial_conditions = [A => 1.0, k => 0.5])
+  ```
+
+- **`default_u0` and `default_p` keyword arguments have been removed** from
+  conversion functions. Use `initial_conditions` instead:
+  ```julia
+  # Before:
+  osys = convert(ODESystem, rn; default_u0 = [A => 1.0], default_p = [k => 0.5])
+
+  # After:
+  osys = ode_model(rn; initial_conditions = Dict(A => 1.0, k => 0.5))
+  ```
+
+#### BREAKING: Several functions no longer exported
+The following are now considered internal and no longer exported:
+- **`isequivalent`** 
+- **`symmap_to_varmap`** 
+
+#### New: `hybrid_model` unified conversion function
+
+- **New `hybrid_model(rs::ReactionSystem; ...)` function** that converts a
+  `ReactionSystem` to a unified `ModelingToolkitBase.System` containing ODE
+  equations, Brownian noise terms (SDE), and/or jump processes, based on each
+  reaction's `PhysicalScale` metadata.
+
+  The existing `ode_model`, `sde_model`, and `jump_model` are now thin wrappers
+  around `hybrid_model`. This enables true hybrid models mixing ODE, SDE, and
+  Jump reactions in a single system.
+
+  ```julia
+  # Tag reactions with different physical scales
+  rn = @reaction_network begin
+      k1, S --> P, [physical_scale = PhysicalScale.ODE]
+      k2, P --> S, [physical_scale = PhysicalScale.SDE]
+      k3, S --> 0, [physical_scale = PhysicalScale.Jump]
+  end
+  sys = hybrid_model(rn)
+  ```
+
+  When building reactions programmatically, set the scale via the `metadata`
+  keyword:
+  ```julia
+  @species S(t) P(t)
+  @parameters k1 k2
+  rx1 = Reaction(k1, [S], [P]; metadata = [:physical_scale => PhysicalScale.ODE])
+  rx2 = Reaction(k2, [P], [S]; metadata = [:physical_scale => PhysicalScale.Jump])
+  ```
+
+  Users can also override scales via keyword arguments:
+  ```julia
+  sys = hybrid_model(rn; default_scale = PhysicalScale.ODE)
+  ```
+
+#### New: `HybridProblem` with scale-dependent return types
+
+- **New `HybridProblem(rs, u0, tspan, p; ...)` function** creates problems for
+  systems with per-reaction scale control. Uses `hybrid_model` internally and
+  respects per-reaction `PhysicalScale` metadata.
+
+  **The return type depends on which reaction scales are present:**
+  - Pure ODE (only ODE-scale reactions) → `ODEProblem`
+  - Pure SDE or ODE+SDE (no jumps) → `SDEProblem`
+  - Any jumps present (ODE+Jump, SDE+Jump, ODE+SDE+Jump) → `JumpProblem`
+
+  For SDE+Jump combinations, the returned `JumpProblem` wraps an `SDEProblem`
+  internally, allowing simulation of hybrid systems with both diffusive noise
+  and discrete jumps.
+
+  ```julia
+  rn = @reaction_network begin
+      k1, S --> P
+      k2, P --> S
+  end
+
+  # Pure ODE via HybridProblem
+  prob_ode = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 10.0),
+      [:k1 => 1.0, :k2 => 0.5]; default_scale = PhysicalScale.ODE)
+  prob_ode isa ODEProblem  # true
+
+  # Hybrid ODE+Jump
+  rn2 = @reaction_network begin
+      k1, S --> P, [physical_scale = PhysicalScale.ODE]
+      k2, P --> S, [physical_scale = PhysicalScale.Jump]
+  end
+  prob = HybridProblem(rn2, [:S => 100.0, :P => 0.0], (0.0, 10.0),
+      [:k1 => 1.0, :k2 => 0.5])
+  prob isa JumpProblem  # true
+  sol = solve(prob, Tsit5())
+
+  # Hybrid SDE+Jump (requires SDE solver)
+  rn3 = @reaction_network begin
+      k1, S --> P, [physical_scale = PhysicalScale.SDE]
+      k2, P --> S, [physical_scale = PhysicalScale.Jump]
+  end
+  prob = HybridProblem(rn3, [:S => 100.0, :P => 0.0], (0.0, 10.0),
+      [:k1 => 1.0, :k2 => 0.5])
+  prob isa JumpProblem  # true
+  prob.prob isa SDEProblem  # true - underlying problem is SDE
+  sol = solve(prob, SRIW1())  # use SDE solver from StochasticDiffEq
+  ```
+
+#### New: `brownians` and `jumps` fields in ReactionSystem
+
+- **`ReactionSystem` now has `brownians` and `jumps` fields** to support
+  non-reaction coupled Brownian motion and jump processes. This mirrors the
+  capability in ModelingToolkitBase's `System` struct and enables modeling hybrid
+  stochastic systems where reactions couple with other noise/jump sources.
+
+  ```julia
+  using Catalyst
+  t = default_t()
+  D = default_time_deriv()
+  @brownians B
+  @variables V(t)
+  @species S(t) P(t)
+  @parameters k λ
+
+  # brownians is the 5th positional argument, jumps is a keyword arg
+  @named sys = ReactionSystem([Reaction(k, [S], [P]), D(V) ~ -V + B],
+      t, [V, S, P], [k, λ], [B]; jumps = JumpType[])
+  ```
+
+  The two-argument constructor auto-discovers brownians from equations:
+  ```julia
+  @brownians B
+  @variables V(t)
+  @parameters λ
+  @named sys = ReactionSystem([D(V) ~ λ*V + B], t)
+  ```
+
+- **User-provided brownians/jumps are merged** with reaction-generated ones at
+  conversion time in `hybrid_model`, `sde_model`, and `HybridProblem`.
+
+- **Conversion functions enforce scale constraints:**
+  - `ode_model`: Errors if brownians OR jumps are present (pure ODE only)
+  - `sde_model`: Errors if jumps are present (ODE + SDE constraints allowed)
+  - `jump_model`: Errors if brownians OR non-reaction equations are present
+  - Use `hybrid_model` for mixed systems
+
+#### New: `@brownians` DSL option
+
+- **A new `@brownians` option** can be used within the `@reaction_network` and
+  `@network_component` macros to declare Brownian variables:
+
+  ```julia
+  rn = @reaction_network begin
+      @species S(t) P(t)
+      @parameters k
+      @brownians B W
+      k, S --> P
+  end
+  ```
+
+  Brownian variables declared via `@brownians` are automatically included in
+  the `ReactionSystem`'s `brownians` field.
+
+#### New: `use_legacy_noise` kwarg for SDE systems
+
+- **`sde_model` and `SDEProblem` now accept `use_legacy_noise = true`
+  (default)** which uses the traditional `noise_eqs` matrix approach for
+  simple SDE systems without constraints, avoiding the overhead of
+  `mtkcompile`. Set to `false` to use the new Brownian-variable-based approach
+  where SDE noise terms are embedded directly in the equation RHS as
+  `stoich * sqrt(|ratelaw|) * B_j`.
+
+- **`SDEProblem(rs::ReactionSystem, ...)` calls `mtkcompile` only when
+  necessary** (when using Brownian-based noise or when the system has
+  constraints/algebraic equations).
+
+#### New: Stoichiometric parameters automatically typed as `Int64` in DSL
+
+- **Parameters that appear in stoichiometric positions** within the
+  `@reaction_network` DSL are now automatically designated as `Int64`. There
+  is no need to manually declare them with a type annotation:
+  ```julia
+  rn = @reaction_network begin
+      k, n*A --> B    # n is inferred as a parameter and typed as Int64
+  end
+  ```
+
+  If you need a non-integer type for a stoichiometric parameter (e.g., for
+  fractional stoichiometry), explicitly declare it with the desired type —
+  this overrides the automatic `Int64` designation:
+  ```julia
+  rn = @reaction_network begin
+      @parameters n::Float64
+      k, n*A --> B    # n is Float64 because of the explicit declaration
+  end
   ```
 
 ## Catalyst 15.0

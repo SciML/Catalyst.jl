@@ -641,7 +641,7 @@ let
     rs = @reaction_network begin
         (p/(1+t),d), 0 <--> X
     end
-    @test_throws Exception make_rre_algeqs(rs)
+    @test_throws Exception ss_ode_model(rs)
 
     # Conversion of non-complete system to various system types.
     nc = @network_component begin
@@ -650,7 +650,7 @@ let
     @test_throws Exception ode_model(nc)
     @test_throws Exception sde_model(nc)
     @test_throws Exception jump_model(nc)
-    @test_throws Exception make_rre_algeqs(nc)
+    @test_throws Exception ss_ode_model(nc)
 end
 
 # Checks that the same name cannot be used for two different of parameters/species/variables.
@@ -968,10 +968,10 @@ let
     @test ModelingToolkitBase.getmetadata(jump_model(complete(rs2)), MiscSystemData, nothing) == π
     @test ModelingToolkitBase.getmetadata(complete(jump_model(complete(rs1))), MiscSystemData, nothing) == nothing
     @test ModelingToolkitBase.getmetadata(complete(jump_model(complete(rs2))), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(make_rre_algeqs(complete(rs1)), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(make_rre_algeqs(complete(rs2)), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(complete(make_rre_algeqs(complete(rs1))), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(complete(make_rre_algeqs(complete(rs2))), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(ss_ode_model(complete(rs1)), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(ss_ode_model(complete(rs2)), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs1))), MiscSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs2))), MiscSystemData, nothing) == π
 
     # Check metadata for `ReactionSystem`s where metadata has been udpated
     rs1 = ModelingToolkitBase.setmetadata(rs1, MiscSystemData, "Metadata")

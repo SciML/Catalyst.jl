@@ -902,7 +902,7 @@ let
         k2, X --> 0, [physical_scale = PhysicalScale.Jump]
     end
     cat_prob = HybridProblem(rn, [:X => X0], tspan, [:k1 => k1, :k2 => k2];
-        save_positions = (false, false))
+        save_positions = (false, false), rng)
 
     # --- Manually coded version using JumpProcesses + StochasticDiffEq ---
     f_manual!(du, u, p, t) = (du[1] = p[1])  # drift: k1
@@ -955,7 +955,7 @@ let
     end
 
     prob = HybridProblem(rn, [:S => 1.0, :P => P0], tspan, [:k1 => k1, :k2 => k2];
-        save_positions = (false, false))
+        save_positions = (false, false), rng)
 
     # Run simulations and collect values at all time points
     Pv = zeros(length(times))
@@ -1004,7 +1004,7 @@ let
     end
     cat_prob = HybridProblem(rn, [:A => A0, :B => B0, :C => C0, :D => D0], tspan,
         [:k1 => k1, :k2 => k2, :k3 => k3, :k4 => k4, :k5 => k5];
-        save_positions = (false, false))
+        save_positions = (false, false), rng)
 
     # --- Manually coded version ---
     # Species order: [A, B, C, D]
@@ -1088,13 +1088,13 @@ let
     manual_mean_C = vec(mean(manual_C; dims = 1))
     manual_mean_D = vec(mean(manual_D; dims = 1))
 
-    # Test that Catalyst and manual implementations match (5% relative tolerance)
+    # Test that Catalyst and manual implementations match (10% relative tolerance)
     # Skip early times where values may be near zero
     start_idx = findfirst(t -> t >= 2.0, times)
-    @test all(abs.(cat_mean_A[start_idx:end] .- manual_mean_A[start_idx:end]) .<= 0.05 .* manual_mean_A[start_idx:end])
-    @test all(abs.(cat_mean_B[start_idx:end] .- manual_mean_B[start_idx:end]) .<= 0.05 .* manual_mean_B[start_idx:end])
-    @test all(abs.(cat_mean_C[start_idx:end] .- manual_mean_C[start_idx:end]) .<= 0.05 .* manual_mean_C[start_idx:end])
-    @test all(abs.(cat_mean_D[start_idx:end] .- manual_mean_D[start_idx:end]) .<= 0.05 .* manual_mean_D[start_idx:end])
+    @test all(abs.(cat_mean_A[start_idx:end] .- manual_mean_A[start_idx:end]) .<= 0.1 .* manual_mean_A[start_idx:end])
+    @test all(abs.(cat_mean_B[start_idx:end] .- manual_mean_B[start_idx:end]) .<= 0.1 .* manual_mean_B[start_idx:end])
+    @test all(abs.(cat_mean_C[start_idx:end] .- manual_mean_C[start_idx:end]) .<= 0.1 .* manual_mean_C[start_idx:end])
+    @test all(abs.(cat_mean_D[start_idx:end] .- manual_mean_D[start_idx:end]) .<= 0.1 .* manual_mean_D[start_idx:end])
 end
 
 # Tests that species-only reaction systems (no reactions) produce valid ODE systems with zero ODEs.

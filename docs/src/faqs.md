@@ -349,7 +349,7 @@ end
 When constructing `NonlinearSystem`s or `NonlinearProblem`s with `remove_conserved = true`, i.e.
 ```julia
 # for rn a ReactionSystem
-nsys = make_rre_algeqs(rn; remove_conserved = true)
+nsys = ss_ode_model(rn; remove_conserved = true)
 
 # or 
 nprob = NonlinearProblem(rn, u0, p; remove_conserved = true)
@@ -364,7 +364,7 @@ rn = @reaction_network begin
 end
 u0 = [:X₁ => 1.0, :X₂ => 2.0, :X₃ => 3.0]
 ps = [:k₁ => 0.1, :k₂ => 0.2, :k₃ => 0.3, :k₄ => 0.4]
-nlsys = make_rre_algeqs(rn; remove_conserved = true, conseqs_remake_warn = false)
+nlsys = ss_ode_model(rn; remove_conserved = true, conseqs_remake_warn = false)
 nlsys = complete(nlsys)
 equations(nlsys)
 ```

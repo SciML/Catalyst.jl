@@ -102,7 +102,7 @@ export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export isautonomous
 export reactionrates
 export set_default_noise_scaling
-export ode_model, sde_model, jump_model, make_rre_algeqs, hybrid_model
+export ode_model, sde_model, jump_model, ss_ode_model, hybrid_model
 
 # depreciated functions to remove in future releases
 export params, numparams

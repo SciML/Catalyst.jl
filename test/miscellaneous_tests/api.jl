@@ -393,7 +393,7 @@ let
         (p,d), 0 <--> X
         (kB,kD), 2X <--> X2
     end
-    ns = make_rre_algeqs(rn)
+    ns = ss_ode_model(rn)
     neweqs = getfield.(equations(ns), :rhs)
     poly = Catalyst.to_multivariate_poly(neweqs)
     @test length(poly) == 2
@@ -404,7 +404,7 @@ let
     rn = @reaction_network begin
         (p/X,d), 0 <--> X
     end
-    ns = make_rre_algeqs(rn)
+    ns = ss_ode_model(rn)
     neweqs = getfield.(equations(ns), :rhs)
     poly = Catalyst.to_multivariate_poly(neweqs)
     @test length(poly) == 1
@@ -413,7 +413,7 @@ end
 # Test empty network.
 let
     rn = @reaction_network
-    ns = make_rre_algeqs(rn)
+    ns = ss_ode_model(rn)
     neweqs = getfield.(equations(ns), :rhs)
     @test_throws AssertionError Catalyst.to_multivariate_poly(neweqs)
 end
