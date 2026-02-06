@@ -227,7 +227,7 @@ let
         hillr(X, v, K, n), X + Y --> Z
         mmr(X, v, K), X + Y --> Z
     end
-    osys = complete(make_rre_ode(rn; expand_catalyst_funs = false))
+    osys = complete(ode_model(rn; expand_catalyst_funs = false))
     t = default_t()
     D = default_time_deriv()
     @unpack X, v, K, n, Y, Z = rn
@@ -240,7 +240,7 @@ let
         @test _iszero(simplify(eqs[eqidx].rhs - osyseqs[osysidx].rhs))
     end
 
-    osys2 = complete(make_rre_ode(rn))
+    osys2 = complete(ode_model(rn))
     hill2(x, v, k, n) = v * x^n / (k^n + x^n)
     mm2(X,v,K) = v*X / (X + K)
     mmr2(X,v,K) = v*K / (X + K)
@@ -272,7 +272,7 @@ let
         @test _iszero(simplify(eq.rhs - nlsyseqs2[i].rhs))
     end
 
-    sdesys = complete(make_cle_sde(rn; expand_catalyst_funs = false))
+    sdesys = complete(sde_model(rn; expand_catalyst_funs = false))
     sdesyseqs = equations(sdesys)
     eqs = [D(X) ~ -hill(X, v, K, n)*X*Y - mm(X,v,K)*X*Y - hillr(X,v,K,n)*X*Y - mmr(X,v,K)*X*Y,
            D(Y) ~ -hill(X, v, K, n)*X*Y - mm(X,v,K)*X*Y - hillr(X,v,K,n)*X*Y - mmr(X,v,K)*X*Y,
@@ -287,7 +287,7 @@ let
     neqmat *= neqvec
     @test all(_iszero, simplify.(sdesysnoiseeqs .- neqmat))
 
-    sdesys = complete(make_cle_sde(rn))
+    sdesys = complete(sde_model(rn))
     sdesyseqs = equations(sdesys)
     eqs = [D(X) ~ -hill2(X, v, K, n)*X*Y - mm2(X,v,K)*X*Y - hillr2(X,v,K,n)*X*Y - mmr2(X,v,K)*X*Y,
            D(Y) ~ -hill2(X, v, K, n)*X*Y - mm2(X,v,K)*X*Y - hillr2(X,v,K,n)*X*Y - mmr2(X,v,K)*X*Y,
@@ -303,7 +303,7 @@ let
     @test all(_iszero, simplify.(sdesysnoiseeqs .- neqmat))
 
     # Test with expand_catalyst_funs = false
-    jsys = make_sck_jump(rn; expand_catalyst_funs = false)
+    jsys = jump_model(rn; expand_catalyst_funs = false)
     jsysjumps = MT.jumps(jsys)
     rates = getfield.(jsysjumps, :rate)
     affects = getfield.(jsysjumps, :affect!)
@@ -313,7 +313,7 @@ let
     @test all(aff -> issetequal(aff, affeqs), affects)
 
     # Test with expand_catalyst_funs = true (default)
-    jsys = make_sck_jump(rn)
+    jsys = jump_model(rn)
     jsysjumps = MT.jumps(jsys)
     rates = getfield.(jsysjumps, :rate)
     affects = getfield.(jsysjumps, :affect!)

@@ -574,9 +574,9 @@ let
     @test cc_default.save_positions == [true, true]
 end
 
-### make_hybrid_model Tests ###
+### hybrid_model Tests ###
 
-# Tests that make_hybrid_model produces correct structure for pure ODE, SDE, and Jump cases.
+# Tests that hybrid_model produces correct structure for pure ODE, SDE, and Jump cases.
 let
     rn = @reaction_network begin
         k1, S --> P
@@ -584,56 +584,56 @@ let
     end
 
     # Pure ODE: should have ODE equations, no brownians, no jumps.
-    sys_ode = make_hybrid_model(rn; default_scale = PhysicalScale.ODE)
+    sys_ode = hybrid_model(rn; default_scale = PhysicalScale.ODE)
     @test length(equations(sys_ode)) == 2
     @test isempty(ModelingToolkitBase.get_brownians(sys_ode))
     @test isempty(ModelingToolkitBase.get_jumps(sys_ode))
 
     # Pure SDE: should have ODE+noise equations with brownians, no jumps.
-    sys_sde = make_hybrid_model(rn; default_scale = PhysicalScale.SDE)
+    sys_sde = hybrid_model(rn; default_scale = PhysicalScale.SDE)
     @test length(equations(sys_sde)) == 2
     @test length(ModelingToolkitBase.get_brownians(sys_sde)) == 2
     @test isempty(ModelingToolkitBase.get_jumps(sys_sde))
 
     # Pure Jump: should have no ODE equations, no brownians, only jumps.
-    sys_jump = make_hybrid_model(rn; default_scale = PhysicalScale.Jump)
+    sys_jump = hybrid_model(rn; default_scale = PhysicalScale.Jump)
     @test isempty(equations(sys_jump))
     @test isempty(ModelingToolkitBase.get_brownians(sys_jump))
     @test length(ModelingToolkitBase.get_jumps(sys_jump)) == 2
 end
 
-# Tests that make_rre_ode and make_cle_sde thin wrappers produce equivalent results
-# to direct make_hybrid_model calls.
+# Tests that ode_model and sde_model thin wrappers produce equivalent results
+# to direct hybrid_model calls.
 let
     rn = @reaction_network begin
         k1, S --> P
         k2, P --> S
     end
 
-    # make_rre_ode should produce same equations as make_hybrid_model with ODE override.
-    sys_ode = make_rre_ode(rn)
-    sys_hybrid_ode = make_hybrid_model(rn; default_scale = PhysicalScale.ODE)
+    # ode_model should produce same equations as hybrid_model with ODE override.
+    sys_ode = ode_model(rn)
+    sys_hybrid_ode = hybrid_model(rn; default_scale = PhysicalScale.ODE)
     @test length(equations(sys_ode)) == length(equations(sys_hybrid_ode))
     for (eq1, eq2) in zip(equations(sys_ode), equations(sys_hybrid_ode))
         @test isequal(eq1.lhs, eq2.lhs)
         @test isequal(eq1.rhs, eq2.rhs)
     end
 
-    # make_cle_sde with use_legacy_noise=false should produce same structure as make_hybrid_model with SDE override.
-    sys_sde = make_cle_sde(rn; use_legacy_noise = false)
-    sys_hybrid_sde = make_hybrid_model(rn; default_scale = PhysicalScale.SDE)
+    # sde_model with use_legacy_noise=false should produce same structure as hybrid_model with SDE override.
+    sys_sde = sde_model(rn; use_legacy_noise = false)
+    sys_hybrid_sde = hybrid_model(rn; default_scale = PhysicalScale.SDE)
     @test length(equations(sys_sde)) == length(equations(sys_hybrid_sde))
     @test length(ModelingToolkitBase.get_brownians(sys_sde)) ==
           length(ModelingToolkitBase.get_brownians(sys_hybrid_sde))
 
-    # make_cle_sde with use_legacy_noise=true (default) should use noise_eqs matrix, not brownians.
-    sys_sde_legacy = make_cle_sde(rn; use_legacy_noise = true)
+    # sde_model with use_legacy_noise=true (default) should use noise_eqs matrix, not brownians.
+    sys_sde_legacy = sde_model(rn; use_legacy_noise = true)
     @test ModelingToolkitBase.get_noise_eqs(sys_sde_legacy) !== nothing
     @test isempty(ModelingToolkitBase.get_brownians(sys_sde_legacy))
 
-    # make_sck_jump should produce same number of jumps as make_hybrid_model with Jump override.
-    sys_jump = make_sck_jump(rn)
-    sys_hybrid_jump = make_hybrid_model(rn; default_scale = PhysicalScale.Jump)
+    # jump_model should produce same number of jumps as hybrid_model with Jump override.
+    sys_jump = jump_model(rn)
+    sys_hybrid_jump = hybrid_model(rn; default_scale = PhysicalScale.Jump)
     @test length(ModelingToolkitBase.get_jumps(sys_jump)) ==
           length(ModelingToolkitBase.get_jumps(sys_hybrid_jump))
 end
@@ -645,8 +645,8 @@ let
         k2, P --> S
     end
 
-    # Build via make_cle_sde (Brownian-based, use_legacy_noise=false) and compile.
-    sys_sde = make_cle_sde(rn; use_legacy_noise = false)
+    # Build via sde_model (Brownian-based, use_legacy_noise=false) and compile.
+    sys_sde = sde_model(rn; use_legacy_noise = false)
     compiled = ModelingToolkitBase.mtkcompile(sys_sde)
     noise_matrix_brownian = ModelingToolkitBase.get_noise_eqs(compiled)
 
@@ -663,7 +663,7 @@ let
     end
 end
 
-# Tests make_hybrid_model with per-reaction physical_scales override.
+# Tests hybrid_model with per-reaction physical_scales override.
 let
     rn = @reaction_network begin
         k1, S --> P
@@ -671,7 +671,7 @@ let
     end
 
     # Override reaction 1 to ODE, reaction 2 to Jump.
-    sys = make_hybrid_model(rn; physical_scales = [1 => PhysicalScale.ODE, 2 => PhysicalScale.Jump])
+    sys = hybrid_model(rn; physical_scales = [1 => PhysicalScale.ODE, 2 => PhysicalScale.Jump])
     @test length(equations(sys)) == 2  # ODE equations present (for the ODE species)
     @test isempty(ModelingToolkitBase.get_brownians(sys))
     @test length(ModelingToolkitBase.get_jumps(sys)) == 1  # One jump (reaction 2)
@@ -684,7 +684,7 @@ let
         k2, P --> S
     end
 
-    @test_throws ErrorException make_hybrid_model(rn; default_scale = PhysicalScale.Auto)
+    @test_throws ErrorException hybrid_model(rn; default_scale = PhysicalScale.Auto)
 end
 
 # Tests that remove_conserved with jump-scale reactions throws an error.
@@ -694,7 +694,7 @@ let
         k2, P --> S
     end
 
-    @test_throws ArgumentError make_hybrid_model(rn;
+    @test_throws ArgumentError hybrid_model(rn;
         default_scale = PhysicalScale.Jump, remove_conserved = true)
 end
 
@@ -709,12 +709,12 @@ let
         k2, P --> S
     end
 
-    sys = make_hybrid_model(rn; default_scale = PhysicalScale.ODE)
+    sys = hybrid_model(rn; default_scale = PhysicalScale.ODE)
     @test length(ModelingToolkitBase.get_continuous_events(sys)) == 1
     @test length(ModelingToolkitBase.get_discrete_events(sys)) == 1
 end
 
-# Tests that make_hybrid_model works for a mixed ODE+SDE+Jump hybrid system.
+# Tests that hybrid_model works for a mixed ODE+SDE+Jump hybrid system.
 let
     rn = @reaction_network begin
         k1, S --> P, [physical_scale = PhysicalScale.ODE]
@@ -722,7 +722,7 @@ let
         k3, S --> 0, [physical_scale = PhysicalScale.Jump]
     end
 
-    sys = make_hybrid_model(rn)
+    sys = hybrid_model(rn)
     @test length(equations(sys)) == 2  # ODE+SDE contribute drift equations
     @test length(ModelingToolkitBase.get_brownians(sys)) == 1  # One SDE reaction → one Brownian
     @test length(ModelingToolkitBase.get_jumps(sys)) == 1  # One jump reaction
@@ -740,7 +740,7 @@ let
     @test prob.tspan == (0.0, 1.0)
 end
 
-# Tests that make_sck_jump preserves VariableRateJump metadata.
+# Tests that jump_model preserves VariableRateJump metadata.
 # Uses independent species so VRJ classification doesn't propagate via dependency graph.
 let
     rn = @reaction_network begin
@@ -748,24 +748,24 @@ let
         k2, S --> P
     end
 
-    sys = make_sck_jump(rn)
+    sys = jump_model(rn)
     jumps = ModelingToolkitBase.get_jumps(sys)
     # Reaction 1 should be a VariableRateJump (from metadata).
-    # Reaction 2 should be a MassActionJump (independent species, default for make_sck_jump).
+    # Reaction 2 should be a MassActionJump (independent species, default for jump_model).
     has_vrj = any(j -> j isa JumpProcesses.VariableRateJump, jumps)
     has_maj = any(j -> j isa JumpProcesses.MassActionJump, jumps)
     @test has_vrj
     @test has_maj
 end
 
-# Tests that make_sck_jump does NOT respect ODE metadata - all reactions become jumps.
+# Tests that jump_model does NOT respect ODE metadata - all reactions become jumps.
 let
     rn = @reaction_network begin
         k1, S --> P, [physical_scale = PhysicalScale.ODE]
         k2, P --> S
     end
 
-    sys = make_sck_jump(rn)
+    sys = jump_model(rn)
     # Both reactions should be jumps (ODE metadata is ignored).
     @test isempty(equations(sys))
     @test length(ModelingToolkitBase.get_jumps(sys)) == 2
@@ -1105,8 +1105,8 @@ let
         @species X(t) Y(t)
     end
 
-    # make_rre_ode should produce D(X) ~ 0 and D(Y) ~ 0 equations.
-    sys = make_rre_ode(rn)
+    # ode_model should produce D(X) ~ 0 and D(Y) ~ 0 equations.
+    sys = ode_model(rn)
     @test length(equations(sys)) == 2
     for eq in equations(sys)
         @test Symbolics._iszero(eq.rhs)

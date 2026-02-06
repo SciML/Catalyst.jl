@@ -31,7 +31,7 @@ let
     @test length(ModelingToolkitBase.discrete_events(rs)) == 1
 
     # Tests in simulation.
-    osys = complete(make_rre_ode(complete(rs)))
+    osys = complete(ode_model(complete(rs)))
     @test length(ModelingToolkitBase.continuous_events(osys)) == 0
     @test length(ModelingToolkitBase.discrete_events(osys)) == 1
     oprob = ODEProblem(osys, [osys.A => 0.0], (0.0, 20.0))
@@ -54,7 +54,7 @@ let
     @test length(ModelingToolkitBase.discrete_events(rs)) == 0
 
     # Tests in simulation.
-    osys = complete(make_rre_ode(complete(rs)))
+    osys = complete(ode_model(complete(rs)))
     @test length(ModelingToolkitBase.continuous_events(osys)) == 1
     @test length(ModelingToolkitBase.discrete_events(osys)) == 0
     oprob = ODEProblem(osys, [], (0.0, 20.0))

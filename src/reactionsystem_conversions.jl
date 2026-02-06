@@ -572,7 +572,7 @@ COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be convert
 ### System Conversions ###
 
 """
-    make_hybrid_model(rs::ReactionSystem; kwargs...)
+    hybrid_model(rs::ReactionSystem; kwargs...)
 
 Convert a [`ReactionSystem`](@ref) to a unified `ModelingToolkitBase.System` that can
 contain ODE equations, Brownian noise terms, and/or jump processes depending on each
@@ -603,7 +603,7 @@ reaction's assigned [`PhysicalScale`](@ref).
 3. `default_scale` kwarg (fallback for `Auto`)
 4. If still `Auto` after all three → error
 """
-function make_hybrid_model(rs::ReactionSystem;
+function hybrid_model(rs::ReactionSystem;
         name = nameof(rs),
         physical_scales = nothing,
         default_scale = PhysicalScale.Auto,
@@ -748,7 +748,7 @@ Keyword args and default values:
   with their rational function representation when converting to another system type. Set to
   `false`` to disable.
 """
-function make_rre_ode(rs::ReactionSystem; name = nameof(rs),
+function ode_model(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
         initial_conditions = Dict(), expand_catalyst_funs = true,
@@ -766,7 +766,7 @@ function make_rre_ode(rs::ReactionSystem; name = nameof(rs),
         Use `JumpProblem` or `HybridProblem` instead.""")
     end
 
-    make_hybrid_model(rs;
+    hybrid_model(rs;
         _override_all_scales = PhysicalScale.ODE,
         name, combinatoric_ratelaws, include_zero_odes,
         remove_conserved, checks, initial_conditions,
@@ -900,7 +900,7 @@ Notes:
   equations, no BC species), use the traditional `noise_eqs` matrix approach which avoids
   the need for `mtkcompile`. Set to `false` to use the Brownian-based approach.
 """
-function make_cle_sde(rs::ReactionSystem;
+function sde_model(rs::ReactionSystem;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, checks = false, remove_conserved = false,
         initial_conditions = Dict(), expand_catalyst_funs = true,
@@ -951,8 +951,8 @@ function make_cle_sde(rs::ReactionSystem;
             metadata = MT.get_metadata(rs),
             kwargs...)
     else
-        # New path: Brownians via make_hybrid_model (requires mtkcompile for SDEProblem).
-        return make_hybrid_model(flatrs;
+        # New path: Brownians via hybrid_model (requires mtkcompile for SDEProblem).
+        return hybrid_model(flatrs;
             _override_all_scales = PhysicalScale.SDE,
             name, combinatoric_ratelaws, include_zero_odes,
             remove_conserved, checks, initial_conditions,
@@ -1034,7 +1034,7 @@ Notes:
   `VariableRateJump` to save the solution before and/or after the jump occurs. Defaults to
   true for both.
 """
-function make_sck_jump(rs::ReactionSystem; name = nameof(rs),
+function jump_model(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = nothing, checks = false, initial_conditions = Dict(),
         expand_catalyst_funs = true, save_positions = (true, true),
@@ -1067,7 +1067,7 @@ function make_sck_jump(rs::ReactionSystem; name = nameof(rs),
         end
     end
 
-    make_hybrid_model(flatrs;
+    hybrid_model(flatrs;
         physical_scales = jump_scales,
         default_scale = PhysicalScale.Jump,
         name, combinatoric_ratelaws, checks, initial_conditions,
@@ -1083,7 +1083,7 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
         expand_catalyst_funs = true, structural_simplify = false, kwargs...)
-    osys = make_rre_ode(rs; name, combinatoric_ratelaws, include_zero_odes, checks,
+    osys = ode_model(rs; name, combinatoric_ratelaws, include_zero_odes, checks,
         remove_conserved, expand_catalyst_funs)
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
@@ -1154,9 +1154,9 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         remove_conserved = false, structural_simplify = false,
         expand_catalyst_funs = true, use_legacy_noise = true, kwargs...)
 
-    # Flatten once upfront and pass to make_cle_sde.
+    # Flatten once upfront and pass to sde_model.
     flatrs = Catalyst.flatten(rs)
-    sde_sys = make_cle_sde(flatrs; name, combinatoric_ratelaws, expand_catalyst_funs,
+    sde_sys = sde_model(flatrs; name, combinatoric_ratelaws, expand_catalyst_funs,
         include_zero_odes, checks, remove_conserved, use_legacy_noise)
 
     # Determine if we need mtkcompile:
@@ -1228,7 +1228,7 @@ function JumpProcesses.JumpProblem(rs::ReactionSystem, u0, tspan,
         checks = false,
         kwargs...)
     # Pure jump system - use HybridProblem for hybrid ODE+SDE+Jump systems.
-    jsys = complete(make_sck_jump(rs; name, combinatoric_ratelaws, checks,
+    jsys = complete(jump_model(rs; name, combinatoric_ratelaws, checks,
         expand_catalyst_funs, save_positions))
 
     # Use Dict{Any,Any} to prevent type promotion during merge (MTK converts to this anyway).
@@ -1251,7 +1251,7 @@ end
 
 Create a problem from a [`ReactionSystem`](@ref) with per-reaction scale control.
 
-This function uses `make_hybrid_model` internally and respects per-reaction
+This function uses `hybrid_model` internally and respects per-reaction
 `PhysicalScale` metadata as well as `physical_scales` kwarg overrides.
 
 The return type depends on which reaction scales are present:
@@ -1333,7 +1333,7 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
     has_jump = has_jump || user_has_jump
 
     # Build the unified System from the flattened ReactionSystem.
-    sys = make_hybrid_model(flatrs; name, physical_scales, default_scale,
+    sys = hybrid_model(flatrs; name, physical_scales, default_scale,
         combinatoric_ratelaws, expand_catalyst_funs, save_positions, checks)
 
     # Build problem conditions (u0 + p merged).
@@ -1382,7 +1382,7 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, include_zero_odes = true, checks = false,
         expand_catalyst_funs = true, structural_simplify = false, kwargs...)
-    osys = make_rre_ode(rs; name, combinatoric_ratelaws, include_zero_odes, checks,
+    osys = ode_model(rs; name, combinatoric_ratelaws, include_zero_odes, checks,
         remove_conserved, expand_catalyst_funs)
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).

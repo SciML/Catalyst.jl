@@ -30,9 +30,9 @@ let
     end
 
     # Tests that the system can be converted to MTK systems without warnings.
-    @test_nowarn make_rre_ode(rs)
-    @test_nowarn make_cle_sde(rs)
-    @test_nowarn make_sck_jump(rs)
+    @test_nowarn ode_model(rs)
+    @test_nowarn sde_model(rs)
+    @test_nowarn jump_model(rs)
     @test_nowarn make_rre_algeqs(rs)
 
     # Tests that creating `Reaction`s with non-matching units yields warnings.

@@ -190,7 +190,7 @@ let
     # Checks that the Catalyst-generated functions are equal to the manually declared ones.
     # Note: MTKBase's generated affect functions use SymbolicIndexingInterface, requiring a
     # proper integrator type (TestIntegrator defined at top of file).
-    catalyst_jsys = make_sck_jump(rs)
+    catalyst_jsys = jump_model(rs)
     unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(catalyst_jsys)))
     for i in 1:2
         catalyst_vrj = ModelingToolkitBase.assemble_vrj(catalyst_jsys, ModelingToolkitBase.jumps(catalyst_jsys)[i], unknownoid)
@@ -222,7 +222,7 @@ let
     end
 
     # The JumpSystem should have explicit affects (no equations after mtkcompile)
-    jsys = make_sck_jump(rs)
+    jsys = jump_model(rs)
     js = ModelingToolkitBase.jumps(jsys)
     @test length(js) == 1
 

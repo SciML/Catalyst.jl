@@ -350,7 +350,7 @@ let
     rx3 = Reaction(2*k, [B], [D], [2.5], [2])
     @named mixedsys = ReactionSystem([rx1,rx2,rx3],t,[B,C,D],[k])
     mixedsys = complete(mixedsys)
-    osys = make_rre_ode(mixedsys; combinatoric_ratelaws=false)
+    osys = ode_model(mixedsys; combinatoric_ratelaws=false)
     rn = @reaction_network mixedsys begin
         @parameters k
         k, 2.5*B + C --> 3.5*B + 2.5*D
@@ -397,7 +397,7 @@ let
     @test all(isspecies, species(rn))
     @test Catalyst.isbc(ModelingToolkitBase.value(B))
     @test Catalyst.isbc(ModelingToolkitBase.value(A)) == false
-    osys2 = complete(make_rre_ode(rn2))
+    osys2 = complete(ode_model(rn2))
     @test issetequal(unknowns(osys2), unknowns(rn2))
     @test length(equations(osys2)) == 2
 end

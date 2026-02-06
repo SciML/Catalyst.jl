@@ -19,10 +19,10 @@ const LATEX_DEFS = CatalystLatexParams()
         return rs
     elseif form == :ode      # Returns ODE system code.
         mult_symbol --> ""
-        return make_rre_ode(rs)
+        return ode_model(rs)
     elseif form == :sde      # Returns SDE system code.
         mult_symbol --> ""
-        return make_cle_sde(rs)
+        return sde_model(rs)
     end
     error("Unrecognised form argument given: $form. This should be either reactions (default), :ode, or :sde.")
 end

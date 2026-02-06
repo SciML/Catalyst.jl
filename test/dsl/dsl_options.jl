@@ -1076,8 +1076,8 @@ let
     end
 
     # Checks that the models generates the same equations.
-    ssys_catalyst = make_cle_sde(cle_catalyst, use_legacy_noise = false)
-    ssys_manual = make_cle_sde(cle_manual)
+    ssys_catalyst = sde_model(cle_catalyst, use_legacy_noise = false)
+    ssys_manual = sde_model(cle_manual)
     @test isequal(equations(ssys_catalyst), equations(ssys_manual))
 
     # Simulate the two CELs using identical conditions.
