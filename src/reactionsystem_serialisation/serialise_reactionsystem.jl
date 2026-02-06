@@ -74,15 +74,13 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     file_text, has_equations = push_field(file_text, rn, annotate, top_level, EQUATIONS_FS)
     file_text, has_observed = push_field(file_text, rn, annotate, top_level, OBSERVED_FS)
     file_text, has_defaults = push_field(file_text, rn, annotate, top_level, DEFAULTS_FS)
-    file_text,
-    has_continuous_events = push_field(file_text, rn, annotate,
+    file_text, has_continuous_events = push_field(file_text, rn, annotate,
         top_level, CONTINUOUS_EVENTS_FS)
-    file_text,
-    has_discrete_events = push_field(file_text, rn, annotate,
+    file_text, has_discrete_events = push_field(file_text, rn, annotate,
         top_level, DISCRETE_EVENTS_FS)
-    has_brownians = push_field(file_text, rn, annotate,
+    file_text, has_brownians = push_field(file_text, rn, annotate,
         top_level, BROWNIAN_TYPE_FS)
-    has_jumps = push_field(file_text, rn, annotate,
+    file_text,  has_jumps = push_field(file_text, rn, annotate,
         top_level, JUMP_TYPE_FS)
     file_text, has_systems = push_systems_field(file_text, rn, annotate, top_level)
 
