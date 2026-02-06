@@ -104,7 +104,6 @@ include("reactionsystem_conversions.jl")
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem,
        SteadyStateProblem, HybridProblem
 export ismassaction, oderatelaw, jumpratelaw
-export symmap_to_varmap
 
 # reaction_network macro
 include("expression_utils.jl")

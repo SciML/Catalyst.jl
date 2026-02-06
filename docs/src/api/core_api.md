@@ -306,11 +306,6 @@ validate(rx::Reaction; info::String = "")
 validate(rs::ReactionSystem, info::String="")
 ```
 
-## Utility functions
-```@docs
-symmap_to_varmap
-```
-
 ## [Spatial modelling](@id api_lattice_simulations)
 The first step of spatial modelling is to create a so-called `LatticeReactionSystem`:
 ```@docs

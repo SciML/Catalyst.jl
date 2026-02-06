@@ -11,13 +11,13 @@ function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
     (bif_par isa Symbol) && (bif_par = ModelingToolkitBase.get_var_to_name(rs)[bif_par])
     (plot_var isa Symbol) && (plot_var = ModelingToolkitBase.get_var_to_name(rs)[plot_var])
     if (u0_bif isa Vector{<:Pair{Symbol, <:Any}}) || (u0_bif isa Dict{Symbol, <:Any})
-        u0_bif = symmap_to_varmap(rs, u0_bif)
+        u0_bif = Catalyst.symmap_to_varmap(rs, u0_bif)
     end
     if (ps isa Vector{<:Pair{Symbol, <:Any}}) || (ps isa Dict{Symbol, <:Any})
-        ps = symmap_to_varmap(rs, ps)
+        ps = Catalyst.symmap_to_varmap(rs, ps)
     end
     if (u0 isa Vector{<:Pair{Symbol, <:Any}}) || (u0 isa Dict{Symbol, <:Any})
-        u0 = symmap_to_varmap(rs, u0)
+        u0 = Catalyst.symmap_to_varmap(rs, u0)
     end
 
     # Creates NonlinearSystem.
