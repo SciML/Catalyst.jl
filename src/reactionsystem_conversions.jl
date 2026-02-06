@@ -1076,23 +1076,6 @@ end
 
 ### Problems ###
 
-# Detect if all u0 values are integers (for JumpProblem integer preservation).
-# Returns the integer type if all values are integers, or `nothing` if any are non-integer.
-# Symbolic values are skipped (they will be resolved by MTK).
-function _u0_integer_eltype(u0)
-    T = nothing
-    for pair in u0
-        val = pair isa Pair ? pair[2] : last(pair)
-        # Skip symbolic values - MTK will handle these
-        (val isa Symbolics.Num || val isa SymbolicT) && continue
-        # If any non-integer numeric value, return nothing
-        !(val isa Integer) && return nothing
-        # Track the integer type (promote if mixed integer types)
-        T = (T === nothing) ? typeof(val) : promote_type(T, typeof(val))
-    end
-    return T
-end
-
 # ODEProblem from AbstractReactionNetwork
 function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
         p = DiffEqBase.NullParameters(), args...;
@@ -1203,6 +1186,37 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
     end
 end
 
+# Detect if all u0 values are integers (for JumpProblem integer preservation).
+# Returns the integer type if all values are integers, or `nothing` if any are non-integer.
+# Symbolic values are skipped (they will be resolved by MTK).
+function _u0_integer_eltype(u0)
+    T = nothing
+    for pair in u0
+        val = last(pair)
+        # Skip symbolic values - MTK will handle these
+        (val isa Symbolics.Num || val isa SymbolicT) && continue
+        # If any non-integer numeric value, return nothing
+        !(val isa Integer) && return nothing
+        # Track the integer type (promote if mixed integer types)
+        T = (T === nothing) ? typeof(val) : promote_type(T, typeof(val))
+    end
+    return T
+end
+
+# Determine if integer element type should be used for JumpProblem u0.
+# Returns (use_int_eltype, int_eltype) where use_int_eltype is true if integer types
+# should be preserved, and int_eltype is the promoted integer type (or nothing).
+# VariableRateJumps require ODEProblem underneath, which needs floats.
+function _should_use_int_eltype(sys, u0)
+    has_vrj = any(j -> j isa VariableRateJump, MT.jumps(sys))
+    has_vrj && return (false, nothing)
+
+    int_eltype = _u0_integer_eltype(u0)
+    int_eltype === nothing && return (false, nothing)
+
+    return (true, int_eltype)
+end
+
 # JumpProblem from ReactionSystem
 # Note: For hybrid ODE+Jump systems, use HybridProblem instead.
 function JumpProcesses.JumpProblem(rs::ReactionSystem, u0, tspan,
@@ -1221,15 +1235,10 @@ function JumpProcesses.JumpProblem(rs::ReactionSystem, u0, tspan,
     op = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any,Any}(u0), Dict{Any,Any}(p))
 
     # Auto-detect integer u0 and set u0_eltype if not already provided.
-    # Only applies when MTK builds over DiscreteProblem (no VariableRateJumps).
-    # VariableRateJumps require ODEProblem underneath, which needs floats.
     if !haskey(kwargs, :u0_eltype)
-        has_vrj = any(j -> j isa VariableRateJump, MT.jumps(jsys))
-        if !has_vrj
-            int_eltype = _u0_integer_eltype(u0)
-            if int_eltype !== nothing
-                return JumpProblem(jsys, op, tspan; save_positions, u0_eltype = int_eltype, kwargs...)
-            end
+        use_int, int_eltype = _should_use_int_eltype(jsys, u0)
+        if use_int
+            return JumpProblem(jsys, op, tspan; save_positions, u0_eltype = int_eltype, kwargs...)
         end
     end
 
@@ -1338,14 +1347,10 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
         sys = has_sde ? MT.mtkcompile(sys) : complete(sys)
 
         # For pure jump over DiscreteProblem, preserve integer u0 types.
-        # VariableRateJumps require ODEProblem underneath, which needs floats.
         if !has_ode && !has_sde && !haskey(kwargs, :u0_eltype)
-            has_vrj = any(j -> j isa VariableRateJump, MT.jumps(sys))
-            if !has_vrj
-                int_eltype = _u0_integer_eltype(u0)
-                if int_eltype !== nothing
-                    return JumpProblem(sys, prob_cond, tspan; save_positions, u0_eltype = int_eltype, kwargs...)
-                end
+            use_int, int_eltype = _should_use_int_eltype(sys, u0)
+            if use_int
+                return JumpProblem(sys, prob_cond, tspan; save_positions, u0_eltype = int_eltype, kwargs...)
             end
         end
 
