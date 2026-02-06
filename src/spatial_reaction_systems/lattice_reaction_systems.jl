@@ -120,7 +120,7 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractSystem
         if !isnothing(MT.get_parent(rs)) && !isempty(MT.get_systems(MT.get_parent(rs)))
             @warn "The `ReactionSystem` used as input to `LatticeReactionSystem` was originally created as a hierarchical model. While this won't necessarily result in errors, it has not been well-tested, and is not recommended."
         end
-        if !isempty(observed(rs))
+        if !isempty(MT.observed(rs))
             @warn "The `ReactionSystem` used as input to `LatticeReactionSystem` contain observables. It will not be possible to access these from the created `LatticeReactionSystem`."
         end
 

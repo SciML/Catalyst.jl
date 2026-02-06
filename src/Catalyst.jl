@@ -18,13 +18,12 @@ using DynamicQuantities #, Unitful # Having Unitful here as well currently gives
 
 @reexport using ModelingToolkitBase
 using Symbolics
-using SymbolicIndexingInterface
 using LinearAlgebra
 using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
 import Symbolics: SymbolicT
-using Symbolics: iscall, sorted_arguments, unwrap, value
+using Symbolics: iscall, sorted_arguments, value
 using ModelingToolkitBase: get_unknowns, get_ps, get_iv, get_systems,
                        get_eqs, toparam, get_var_to_name, get_observed,
                        getvar, has_iv, JumpType
@@ -45,8 +44,8 @@ import ModelingToolkitBase: check_variables,
                         check_parameters, check_units,
                         get_unit, check_equations, iscomplete
 
-# Import _iszero from owner module (SymbolicUtils) per ExplicitImports.jl audit
-import SymbolicUtils: _iszero
+# Import from owner module (SymbolicUtils) per ExplicitImports.jl audit
+import SymbolicUtils: _iszero, unwrap
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
