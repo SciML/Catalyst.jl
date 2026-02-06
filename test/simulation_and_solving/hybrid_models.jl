@@ -1119,3 +1119,86 @@ let
     @test sol[:X][end] ≈ 5.0
     @test sol[:Y][end] ≈ 3.0
 end
+
+### HybridProblem Integer Type Preservation Tests ###
+
+# Tests that pure-jump HybridProblem preserves integer types.
+let
+    rn = @reaction_network begin
+        k1, 0 --> X
+        k2, X --> 0
+    end
+
+    # Pure jump (default_scale = Jump) with integer u0 should preserve Int64.
+    u0 = [:X => 10]
+    ps = [:k1 => 5.0, :k2 => 0.1]
+    prob = HybridProblem(rn, u0, (0.0, 1.0), ps)
+    @test prob isa JumpProcesses.JumpProblem
+    @test eltype(prob.prob.u0) == Int64
+    @test typeof(prob[:X]) == Int64
+    sol = solve(prob, SSAStepper())
+    @test eltype(sol[:X]) == Int64
+end
+
+# Tests that pure-jump HybridProblem with Int32 preserves Int32.
+let
+    rn = @reaction_network begin
+        k1, 0 --> X
+        k2, X --> 0
+    end
+
+    u0 = [:X => Int32(10)]
+    ps = [:k1 => 5.0, :k2 => 0.1]
+    prob = HybridProblem(rn, u0, (0.0, 1.0), ps)
+    @test eltype(prob.prob.u0) == Int32
+    sol = solve(prob, SSAStepper())
+    @test eltype(sol[:X]) == Int32
+end
+
+# Tests that ODE+Jump hybrid does NOT preserve integers (ODEProblem requires floats).
+let
+    rn = @reaction_network begin
+        k1, 0 --> X, [physical_scale = PhysicalScale.ODE]
+        k2, X --> 0  # Jump by default
+    end
+
+    u0 = [:X => 10]
+    ps = [:k1 => 5.0, :k2 => 0.1]
+    prob = HybridProblem(rn, u0, (0.0, 1.0), ps)
+    @test prob isa JumpProcesses.JumpProblem
+    # With ODE component, underlying problem should use Float64
+    @test eltype(prob.prob.u0) == Float64
+end
+
+# Tests that pure-jump HybridProblem with VariableRateJump does NOT preserve integers.
+let
+    rn = @reaction_network begin
+        k * (1 + sin(t)), 0 --> X  # Time-dependent → VariableRateJump
+        d, X --> 0
+    end
+
+    u0 = [:X => 10]
+    ps = [:k => 5.0, :d => 0.1]
+    prob = HybridProblem(rn, u0, (0.0, 1.0), ps)
+    @test prob isa JumpProcesses.JumpProblem
+    # VRJ requires ODEProblem, so floats required
+    @test eltype(prob.prob.u0) == Float64
+end
+
+# Tests remake with pure-jump HybridProblem preserves integer types.
+let
+    rn = @reaction_network begin
+        k1, 0 --> X
+        k2, X --> 0
+    end
+
+    u0 = [:X => 10]
+    ps = [:k1 => 5.0, :k2 => 0.1]
+    prob = HybridProblem(rn, u0, (0.0, 1.0), ps)
+    @test eltype(prob.prob.u0) == Int64
+
+    # Remake with integer u0 should preserve Int64
+    prob2 = remake(prob; u0 = [:X => 50])
+    @test eltype(prob2.prob.u0) == Int64
+    @test prob2[:X] == 50
+end
