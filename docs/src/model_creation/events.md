@@ -1,5 +1,5 @@
 # [Modelling Events](@id events)
-In many applications one need to model events that can occur when a set
+In many applications one needs to model events that can occur when a set
 condition is reached, such as providing a drug treatment at a specified time, or
 turning off production of cells once the population reaches a given level.
 Catalyst supports the event representation provided by ModelingToolkit, see
