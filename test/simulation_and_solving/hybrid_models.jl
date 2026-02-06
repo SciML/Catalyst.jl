@@ -1,5 +1,6 @@
 # Fetch packages.
 using Catalyst, JumpProcesses, ModelingToolkitBase, OrdinaryDiffEqTsit5, Statistics, Test, Random
+using StochasticDiffEq: SRIW1  # For SDE+Jump hybrid problems
 import DiffEqNoiseProcess  # Required for SDEProblem via mtkcompile
 
 # Sets stable rng number.
@@ -159,7 +160,6 @@ end
 
 # Checks that the full pipeline of symbolic accessing/updating problems/integrators/solutions
 # of hybrid models work.
-# CURRENTLY NOT WORKING DUE TO `remake` ISSUE WITH HYBRID MODELS.
 let
     # Creates model and initial problem (with defaults for one species and one parameter).
     rn_hybrid = @reaction_network begin
@@ -175,7 +175,7 @@ let
     ps = [:kB => 2.0, :kD => 0.4, :k => 1.0, :d => 0.5]
     prob = HybridProblem(rn_hybrid, u0, (0.0, 5.0), ps)
 
-    # Check problem content, updates problem with remake, checks again.
+    # Check problem content.
     @test prob[:X] == 1.0
     @test prob[:X2] == 0.0
     @test prob[:Y] == 0.0
@@ -186,57 +186,56 @@ let
     @test prob.ps[:k] == 1.0
     @test prob.ps[:d] == 0.5
 
-    # AS OF MTK 9.72 THESE ARE BROKEN AND GIVE ERRORS
-    # prob = remake(prob; u0 = [:X => 3.0, :X2 => 2.0, :Y => 1.0], p = [:p => 5.0, :dD => 0.8, :k => 2.0])
-    # @test prob[:X] == 3.0
-    # @test prob[:X2] == 2.0
-    # @test prob[:Y] == 1.0
-    # @test prob[:Y2] == 0.0
-    # @test prob.ps[:p] == 5.0
-    # @test prob.ps[:kB] == 2.0
-    # @test prob.ps[:kD] == 0.8
-    # @test prob.ps[:k] == 2.0
-    # @test prob.ps[:d] == 0.5
+    # Solves and checks values of solution (do this before integrator mutation test
+    # since integrator mutation affects shared parameter state).
+    sol = solve(prob, Tsit5(); maxiters = 10, verbose = false)
+    @test sol[:X][1] == 1.0
+    @test sol[:X2][1] == 0.0
+    @test sol[:Y][1] == 0.0
+    @test sol[:Y2][1] == 0.0
+    @test sol.ps[:p] == 1.0
+    @test sol.ps[:kB] == 2.0
+    @test sol.ps[:kD] == 0.4
+    @test sol.ps[:k] == 1.0
+    @test sol.ps[:d] == 0.5
 
-    # # Creates, checks, updates, and checks an integrator.
-    # int = init(prob, Tsit5())
-    # @test int[:X] == 3.0
-    # @test int[:X2] == 2.0
-    # @test int[:Y] == 1.0
-    # @test int[:Y2] == 0.0
-    # @test int.ps[:p] == 5.0
-    # @test int.ps[:kB] == 2.0
-    # @test int.ps[:kD] == 0.8
-    # @test int.ps[:k] == 2.0
-    # @test int.ps[:d] == 0.5
-    # @test int[:X] = 4.0
-    # @test int[:X2] = 3.0
-    # @test int[:Y] = 2.0
-    # @test int.ps[:p] = 6.0
-    # @test int.ps[:kB] = 3.0
-    # @test int.ps[:kD] = 0.6
-    # @test int.ps[:k] = 3.0
-    # @test int[:X] == 4.0
-    # @test int[:X2] == 3.0
-    # @test int[:Y] == 2.0
-    # @test int[:Y2] == 0.0
-    # @test int.ps[:p] == 6.0
-    # @test int.ps[:kB] == 3.0
-    # @test int.ps[:kD] == 0.5
-    # @test int.ps[:k] == 3.0
-    # @test int.ps[:d] == 0.5
+    # Creates, checks, updates, and checks an integrator.
+    int = init(prob, Tsit5())
+    @test int[:X] == 1.0
+    @test int[:X2] == 0.0
+    @test int[:Y] == 0.0
+    @test int[:Y2] == 0.0
+    @test int.ps[:p] == 1.0
+    @test int.ps[:kB] == 2.0
+    @test int.ps[:kD] == 0.4
+    @test int.ps[:k] == 1.0
+    @test int.ps[:d] == 0.5
 
-    # # Solves and checks values of solution.
-    # sol = solve(prob, Tsit5(); maxiters = 1, verbose = false)
-    # @test sol[:X][1] == 3.0
-    # @test sol[:X2][1] == 2.0
-    # @test sol[:Y][1] == 1.0
-    # @test sol[:Y2][1] == 0.0
-    # @test sol.ps[:p] == 5.0
-    # @test sol.ps[:kB] == 2.0
-    # @test sol.ps[:kD] == 0.8
-    # @test sol.ps[:k] == 2.0
-    # @test sol.ps[:d] == 0.5
+    # Mutate integrator state and parameters.
+    int[:X] = 4.0
+    int[:X2] = 3.0
+    int[:Y] = 2.0
+    int.ps[:p] = 6.0
+    int.ps[:kB] = 3.0
+    int.ps[:kD] = 0.6
+    int.ps[:k] = 3.0
+
+    # Check mutated values.
+    @test int[:X] == 4.0
+    @test int[:X2] == 3.0
+    @test int[:Y] == 2.0
+    @test int[:Y2] == 0.0
+    @test int.ps[:p] == 6.0
+    @test int.ps[:kB] == 3.0
+    @test int.ps[:kD] == 0.6
+    @test int.ps[:k] == 3.0
+    @test int.ps[:d] == 0.5
+
+    # REMAKE WITH SYMBOL/DICT u0 IS BROKEN (MTKBase issue with JumpProblem remake).
+    # Error: "Passed in u0 is incompatible with current u0 which has type: Vector{Float64}."
+    # Workaround: remake with numeric array works, or remake with only parameters works.
+    # Upstream issue needed in ModelingToolkit/JumpProcesses.
+    # prob = remake(prob; u0 = [:X => 3.0, :X2 => 2.0, :Y => 1.0], p = [:p => 5.0, :kD => 0.8, :k => 2.0])
 end
 
 # Checks that various model options (observables, events, defaults and metadata, differential equations,
@@ -409,9 +408,9 @@ let
     prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
     sol = solve(prob, Tsit5(); saveat = times)
 
-    # Should get approximately the expected number of times (may have small variations
-    # due to event handling, but shouldn't have a point for every jump).
-    @test length(sol.t) <= length(times) + 5  # Allow small tolerance for events
+    # With save_positions=(false, false), saveat should give exactly the specified times.
+    @test length(sol.t) == length(times)
+    @test sol.t ≈ collect(times)
 
     # Verify the ContinuousCallback for VRJ has correct save_positions.
     cc = prob.jump_callback.continuous_callbacks[1]
@@ -441,8 +440,9 @@ let
     prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
     sol = solve(prob, Tsit5(); saveat = times)
 
-    # Should get approximately the expected number of times.
-    @test length(sol.t) <= length(times) + 5
+    # With save_positions=(false, false), saveat should give exactly the specified times.
+    @test length(sol.t) == length(times)
+    @test sol.t ≈ collect(times)
 
     # Verify both aggregator and ContinuousCallback have correct save_positions.
     disc_agg = prob.discrete_jump_aggregation
@@ -477,6 +477,68 @@ let
     # Just verify the values are reasonable.
     @test sol_saveat[:X][1] == 10.0
     @test sol_saveat[:X][end] < 10.0  # Should have decayed
+end
+
+# Tests that save_positions keyword is correctly forwarded for SDE+Jump hybrid systems
+# (SDEProblem with jumps overlaid).
+let
+    # Hybrid model with SDE noise and mass action jumps.
+    rn = @reaction_network begin
+        k1, S --> P, [physical_scale = PhysicalScale.SDE]
+        (p, d), 0 <--> A
+    end
+    u0 = [:S => 50.0, :P => 0.0, :A => 10]
+    ps = [:k1 => 0.1, :p => 1.0, :d => 0.1]
+    tspan = (0.0, 10.0)
+    times = 0.0:1.0:10.0
+
+    # With save_positions=(false, false), saveat should control output times.
+    prob = HybridProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
+    sol = solve(prob, SRIW1(); saveat = times)
+    @test length(sol.t) == length(times)
+    @test sol.t ≈ collect(times)
+
+    # With default save_positions (true, true), there will be extra points from jump times.
+    prob_default = HybridProblem(rn, u0, tspan, ps; rng)
+    sol_default = solve(prob_default, SRIW1(); saveat = times)
+    @test length(sol_default.t) > length(times)
+
+    # Verify the aggregator has correct save_positions setting.
+    disc_agg = prob.discrete_jump_aggregation
+    @test disc_agg.save_positions == (false, false)
+    disc_agg_default = prob_default.discrete_jump_aggregation
+    @test disc_agg_default.save_positions == (true, true)
+end
+
+# Tests that save_positions keyword works for SDE+VariableRateJump hybrid systems.
+let
+    # Hybrid model with SDE noise and variable rate jump (time-dependent rate).
+    rn = @reaction_network begin
+        k1, S --> P, [physical_scale = PhysicalScale.SDE]
+        k2 * (1 + sin(t)), 0 --> A
+        d, A --> 0
+    end
+    u0 = [:S => 50.0, :P => 0.0, :A => 0]
+    ps = [:k1 => 0.1, :k2 => 0.5, :d => 0.1]
+    tspan = (0.0, 10.0)
+    times = 0.0:1.0:10.0
+
+    # With save_positions=(false, false), both SDE and VRJ should not save at event times.
+    prob = HybridProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
+    sol = solve(prob, SRIW1(); saveat = times)
+
+    # With save_positions=(false, false), saveat should give exactly the specified times.
+    @test length(sol.t) == length(times)
+    @test sol.t ≈ collect(times)
+
+    # Verify the ContinuousCallback for VRJ has correct save_positions.
+    cc = prob.jump_callback.continuous_callbacks[1]
+    @test cc.save_positions == [false, false]
+
+    # With default save_positions, ContinuousCallback should save.
+    prob_default = HybridProblem(rn, u0, tspan, ps; rng)
+    cc_default = prob_default.jump_callback.continuous_callbacks[1]
+    @test cc_default.save_positions == [true, true]
 end
 
 ### make_hybrid_model Tests ###
@@ -754,17 +816,23 @@ let
     @test prob isa SDEProblem
 end
 
-# Tests SDE+Jump hybrid throws an error (not yet supported).
+# Tests SDE+Jump hybrid returns JumpProblem wrapping SDEProblem.
 let
     rn = @reaction_network begin
         k1, S --> P, [physical_scale = PhysicalScale.SDE]
         k2, P --> S, [physical_scale = PhysicalScale.Jump]
     end
 
-    @test_throws ArgumentError HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5])
+    prob = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5])
+    @test prob isa JumpProcesses.JumpProblem
+    @test prob.prob isa SciMLBase.SDEProblem
+
+    # Test that we can solve it (use SDE solver since underlying problem is SDEProblem)
+    sol = solve(prob, SRIW1())
+    @test SciMLBase.successful_retcode(sol)
 end
 
-# Tests ODE+SDE+Jump full hybrid throws an error (SDE+Jump not yet supported).
+# Tests ODE+SDE+Jump full hybrid system.
 let
     rn = @reaction_network begin
         k1, S --> P, [physical_scale = PhysicalScale.ODE]
@@ -772,7 +840,235 @@ let
         k3, S --> 0, [physical_scale = PhysicalScale.Jump]
     end
 
-    @test_throws ArgumentError HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5, :k3 => 0.1])
+    prob = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0),
+        [:k1 => 1.0, :k2 => 0.5, :k3 => 0.1])
+    @test prob isa JumpProcesses.JumpProblem
+    @test prob.prob isa SciMLBase.SDEProblem
+
+    # Use SDE solver since underlying problem is SDEProblem
+    sol = solve(prob, SRIW1())
+    @test SciMLBase.successful_retcode(sol)
+end
+
+# Mathematical correctness test: SDE+Jump birth-death model with known transient solution.
+# dX = k1 dt + sqrt(k1) dW - (jump: X -> X-1 at rate k2*X)
+# Analytic mean: E[X](t) = k1/k2 + (X0 - k1/k2)*exp(-k2*t)
+# Also compares variance against manually coded JumpProcesses implementation.
+let
+    # Parameters
+    k1 = 10.0  # birth rate
+    k2 = 0.1   # death rate per molecule
+    X0 = 50.0
+    tspan = (0.0, 50.0)
+    N = 4000  # number of trajectories
+    times = range(tspan[1], tspan[2], length = 100)
+
+    # --- Catalyst version ---
+    rn = @reaction_network begin
+        k1, 0 --> X, [physical_scale = PhysicalScale.SDE]
+        k2, X --> 0, [physical_scale = PhysicalScale.Jump]
+    end
+    cat_prob = HybridProblem(rn, [:X => X0], tspan, [:k1 => k1, :k2 => k2];
+        save_positions = (false, false))
+
+    # --- Manually coded version using JumpProcesses + StochasticDiffEq ---
+    f_manual!(du, u, p, t) = (du[1] = p[1])  # drift: k1
+    g_manual!(du, u, p, t) = (du[1] = sqrt(p[1]))  # diffusion: sqrt(k1)
+    rate_manual(u, p, t) = p[2] * u[1]  # k2 * X
+    affect_manual!(integrator) = (integrator.u[1] -= 1)
+    jump_manual = VariableRateJump(rate_manual, affect_manual!; save_positions = (false, false))
+    sde_prob = SciMLBase.SDEProblem(f_manual!, g_manual!, [X0], tspan, [k1, k2])
+    manual_prob = JumpProblem(sde_prob, Direct(), jump_manual; rng, save_positions = (false, false))
+
+    # Run simulations and collect values at all time points
+    cat_samples = zeros(N, length(times))
+    manual_samples = zeros(N, length(times))
+    for i in 1:N
+        cat_sol = solve(cat_prob, SRIW1(); saveat = times)
+        manual_sol = solve(manual_prob, SRIW1(); saveat = times)
+        cat_samples[i, :] .= cat_sol[:X]
+        manual_samples[i, :] .= manual_sol[1, :]  # numeric index for manual problem
+    end
+
+    # Compute means and variances
+    cat_mean = vec(mean(cat_samples; dims = 1))
+    manual_mean = vec(mean(manual_samples; dims = 1))
+    cat_var = vec(var(cat_samples; dims = 1))
+    manual_var = vec(var(manual_samples; dims = 1))
+
+    # Analytic mean: E[X](t) = k1/k2 + (X0 - k1/k2)*exp(-k2*t)
+    Xf(t) = k1 / k2 + (X0 - k1 / k2) * exp(-k2 * t)
+    Xact = [Xf(t) for t in times]
+
+    # Test means against analytic solution (5% relative tolerance)
+    @test all(abs.(cat_mean .- Xact) .<= 0.05 .* Xact)
+    @test all(abs.(manual_mean .- Xact) .<= 0.05 .* Xact)
+
+    # Test that Catalyst and manual implementations have matching variances (10% relative tolerance)
+    # Skip early times where variance is small and relative error can be large
+    start_idx = findfirst(t -> t >= 5.0, times)
+    @test all(abs.(cat_var[start_idx:end] .- manual_var[start_idx:end]) .<= 0.10 .* manual_var[start_idx:end])
+end
+
+# Mathematical correctness test: Two-species system with known transient solution.
+# Production with CLE noise, degradation as jump.
+# Analytic mean (with P(0)=0): E[P](t) = k1/k2 * (1 - exp(-k2*t))
+let
+    # S --k1--> S + P (SDE, CLE approximation)
+    # P --k2--> 0 (Jump)
+    k1 = 5.0
+    k2 = 0.5
+    P0 = 0.0
+    tspan = (0.0, 20.0)  # Shorter tspan since steady-state reached quickly (τ = 1/k2 = 2)
+    N = 4000
+    times = range(tspan[1], tspan[2], length = 100)
+
+    rn = @reaction_network begin
+        k1, S --> S + P, [physical_scale = PhysicalScale.SDE]
+        k2, P --> 0, [physical_scale = PhysicalScale.Jump]
+    end
+
+    prob = HybridProblem(rn, [:S => 1.0, :P => P0], tspan, [:k1 => k1, :k2 => k2];
+        save_positions = (false, false))
+
+    # Run simulations and collect values at all time points
+    Pv = zeros(length(times))
+    for i in 1:N
+        sol = solve(prob, SRIW1(); saveat = times)
+        Pv .+= sol[:P]
+    end
+    Pv ./= N
+
+    # Analytic mean: E[P](t) = k1/k2 + (P0 - k1/k2)*exp(-k2*t)
+    # With P0 = 0: E[P](t) = k1/k2 * (1 - exp(-k2*t))
+    Pf(t) = k1 / k2 + (P0 - k1 / k2) * exp(-k2 * t)
+    Pact = [Pf(t) for t in times]
+
+    # Skip t=0 where Pact=0 (would give division issues in relative tolerance)
+    @test all(abs.(Pv[2:end] .- Pact[2:end]) .<= 0.05 .* Pact[2:end])
+end
+
+# Mathematical correctness test: Complex non-linear multi-species system.
+# Compares Catalyst HybridProblem against manually coded JumpProcesses implementation.
+# System:
+#   0 -> A (SDE, production with CLE noise)
+#   A + B -> C (Jump, bimolecular)
+#   C -> B + D (Jump, conversion)
+#   A -> 0 (Jump, degradation)
+#   D -> 0 (Jump, degradation)
+let
+    # Parameters
+    k1 = 2.0   # A production rate
+    k2 = 0.05  # A + B -> C rate
+    k3 = 0.5   # C -> B + D rate
+    k4 = 0.1   # A degradation rate
+    k5 = 0.2   # D degradation rate
+    A0, B0, C0, D0 = 10.0, 20.0, 0.0, 0.0
+    tspan = (0.0, 30.0)
+    N = 4000
+    times = range(tspan[1], tspan[2], length = 100)
+
+    # --- Catalyst version ---
+    rn = @reaction_network begin
+        k1, 0 --> A, [physical_scale = PhysicalScale.SDE]
+        k2, A + B --> C, [physical_scale = PhysicalScale.Jump]
+        k3, C --> B + D, [physical_scale = PhysicalScale.Jump]
+        k4, A --> 0, [physical_scale = PhysicalScale.Jump]
+        k5, D --> 0, [physical_scale = PhysicalScale.Jump]
+    end
+    cat_prob = HybridProblem(rn, [:A => A0, :B => B0, :C => C0, :D => D0], tspan,
+        [:k1 => k1, :k2 => k2, :k3 => k3, :k4 => k4, :k5 => k5];
+        save_positions = (false, false))
+
+    # --- Manually coded version ---
+    # Species order: [A, B, C, D]
+    # SDE: dA = k1 dt + sqrt(k1) dW (production with CLE noise)
+    function f_manual!(du, u, p, t)
+        du[1] = p[1]  # k1 (A production drift)
+        du[2] = 0.0
+        du[3] = 0.0
+        du[4] = 0.0
+    end
+    function g_manual!(du, u, p, t)
+        du[1] = sqrt(p[1])  # sqrt(k1) (A production diffusion)
+        du[2] = 0.0
+        du[3] = 0.0
+        du[4] = 0.0
+    end
+
+    # Jump 1: A + B -> C at rate k2*A*B
+    rate1(u, p, t) = p[2] * u[1] * u[2]
+    function affect1!(integrator)
+        integrator.u[1] -= 1  # A -= 1
+        integrator.u[2] -= 1  # B -= 1
+        integrator.u[3] += 1  # C += 1
+    end
+    jump1 = VariableRateJump(rate1, affect1!; save_positions = (false, false))
+
+    # Jump 2: C -> B + D at rate k3*C
+    rate2(u, p, t) = p[3] * u[3]
+    function affect2!(integrator)
+        integrator.u[3] -= 1  # C -= 1
+        integrator.u[2] += 1  # B += 1
+        integrator.u[4] += 1  # D += 1
+    end
+    jump2 = VariableRateJump(rate2, affect2!; save_positions = (false, false))
+
+    # Jump 3: A -> 0 at rate k4*A
+    rate3(u, p, t) = p[4] * u[1]
+    affect3!(integrator) = (integrator.u[1] -= 1)
+    jump3 = VariableRateJump(rate3, affect3!; save_positions = (false, false))
+
+    # Jump 4: D -> 0 at rate k5*D
+    rate4(u, p, t) = p[5] * u[4]
+    affect4!(integrator) = (integrator.u[4] -= 1)
+    jump4 = VariableRateJump(rate4, affect4!; save_positions = (false, false))
+
+    sde_prob = SciMLBase.SDEProblem(f_manual!, g_manual!, [A0, B0, C0, D0], tspan,
+        [k1, k2, k3, k4, k5])
+    manual_prob = JumpProblem(sde_prob, Direct(), jump1, jump2, jump3, jump4; rng,
+        save_positions = (false, false))
+
+    # Run simulations and collect values
+    cat_A = zeros(N, length(times))
+    cat_B = zeros(N, length(times))
+    cat_C = zeros(N, length(times))
+    cat_D = zeros(N, length(times))
+    manual_A = zeros(N, length(times))
+    manual_B = zeros(N, length(times))
+    manual_C = zeros(N, length(times))
+    manual_D = zeros(N, length(times))
+
+    for i in 1:N
+        cat_sol = solve(cat_prob, SRIW1(); saveat = times)
+        manual_sol = solve(manual_prob, SRIW1(); saveat = times)
+        cat_A[i, :] .= cat_sol[:A]
+        cat_B[i, :] .= cat_sol[:B]
+        cat_C[i, :] .= cat_sol[:C]
+        cat_D[i, :] .= cat_sol[:D]
+        manual_A[i, :] .= manual_sol[1, :]
+        manual_B[i, :] .= manual_sol[2, :]
+        manual_C[i, :] .= manual_sol[3, :]
+        manual_D[i, :] .= manual_sol[4, :]
+    end
+
+    # Compute means
+    cat_mean_A = vec(mean(cat_A; dims = 1))
+    cat_mean_B = vec(mean(cat_B; dims = 1))
+    cat_mean_C = vec(mean(cat_C; dims = 1))
+    cat_mean_D = vec(mean(cat_D; dims = 1))
+    manual_mean_A = vec(mean(manual_A; dims = 1))
+    manual_mean_B = vec(mean(manual_B; dims = 1))
+    manual_mean_C = vec(mean(manual_C; dims = 1))
+    manual_mean_D = vec(mean(manual_D; dims = 1))
+
+    # Test that Catalyst and manual implementations match (5% relative tolerance)
+    # Skip early times where values may be near zero
+    start_idx = findfirst(t -> t >= 2.0, times)
+    @test all(abs.(cat_mean_A[start_idx:end] .- manual_mean_A[start_idx:end]) .<= 0.05 .* manual_mean_A[start_idx:end])
+    @test all(abs.(cat_mean_B[start_idx:end] .- manual_mean_B[start_idx:end]) .<= 0.05 .* manual_mean_B[start_idx:end])
+    @test all(abs.(cat_mean_C[start_idx:end] .- manual_mean_C[start_idx:end]) .<= 0.05 .* manual_mean_C[start_idx:end])
+    @test all(abs.(cat_mean_D[start_idx:end] .- manual_mean_D[start_idx:end]) .<= 0.05 .* manual_mean_D[start_idx:end])
 end
 
 # Tests that species-only reaction systems (no reactions) produce valid ODE systems with zero ODEs.

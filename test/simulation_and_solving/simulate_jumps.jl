@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, JumpProcesses, OrdinaryDiffEqTsit5, Statistics, Test
+using Catalyst, JumpProcesses, ModelingToolkitBase, OrdinaryDiffEqTsit5, Statistics, Test
 
 # Sets stable rng number.
 using StableRNGs
@@ -195,7 +195,7 @@ let
     jprobrssa = JumpProblem(rn, u0map, tspan, pmap; aggregator = RSSA(), save_positions = (false, false), rng)
     @test issetequal(jprobrssa.discrete_jump_aggregation.vartojumps_map, [[],[],[],[1],[2],[]])
     @test issetequal(jprobrssa.discrete_jump_aggregation.jumptovars_map, [[5],[5,6]])
-    N = 1000  # number of simulations to run
+    N = 4000  # number of simulations to run
     function getmean(N, prob)
         m1 = 0.0
         m2 = 0.0
@@ -264,4 +264,42 @@ let
     jsol = solve(jprob)
     @test_broken eltype(jsol[:X1]) == eltype(jsol[:X2]) == typeof(jprob[:X1]) == typeof(jprob[:X2]) == Int32 # Jump species do not preserve integer type: https://github.com/SciML/ModelingToolkit.jl/issues/4170.
     @test eltype(jsol.t) == typeof(jprob.prob.tspan[1]) == typeof(jprob.prob.tspan[2]) == Float64
+end
+
+### save_positions Tests ###
+
+# Tests that save_positions keyword is correctly forwarded for ConstantRateJumps
+# (non-mass-action reactions with constant rates, e.g., Hill/Michaelis-Menten kinetics).
+let
+    # Network with Hill function creates ConstantRateJumps (not MassActionJumps).
+    rn = @reaction_network begin
+        hill(A, v, K, n), 0 --> A
+        d, A --> 0
+    end
+    u0 = [:A => 5]
+    ps = [:v => 5.0, :K => 2.0, :n => 2, :d => 0.1]
+    tspan = (0.0, 10.0)
+    times = 0.0:1.0:10.0
+
+    # Verify the system creates ConstantRateJumps (not MassActionJumps).
+    jsys = Catalyst.make_sck_jump(rn)
+    jumps = ModelingToolkitBase.get_jumps(jsys)
+    @test any(j -> j isa JumpProcesses.ConstantRateJump, jumps)
+
+    # With save_positions=(false, false), saveat should give exactly the specified times.
+    prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
+    sol = solve(prob, SSAStepper(); saveat = times)
+    @test length(sol.t) == length(times)
+    @test sol.t ≈ collect(times)
+
+    # With default save_positions (true, true), there will be extra points from jump times.
+    prob_default = JumpProblem(rn, u0, tspan, ps; rng)
+    sol_default = solve(prob_default, SSAStepper(); saveat = times)
+    @test length(sol_default.t) > length(times)
+
+    # Verify the aggregator has correct save_positions setting.
+    disc_agg = prob.discrete_jump_aggregation
+    @test disc_agg.save_positions == (false, false)
+    disc_agg_default = prob_default.discrete_jump_aggregation
+    @test disc_agg_default.save_positions == (true, true)
 end

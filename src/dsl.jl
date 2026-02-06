@@ -10,7 +10,7 @@ const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔
 # Declares the keys used for various options.
 const option_keys = (:species, :parameters, :variables, :discretes, :ivs, :compounds, :observables,
     :default_noise_scaling, :differentials, :equations, :continuous_events, :discrete_events,
-    :combinatoric_ratelaws, :require_declaration)
+    :brownians, :combinatoric_ratelaws, :require_declaration)
 
 ### `@species` Macro ###
 
@@ -261,8 +261,9 @@ function make_reaction_system(ex::Expr, name)
     tiv, sivs, ivs, ivsexpr = read_ivs_option(options)
     cmpexpr_init, cmps_declared = read_compounds_option(options)
     diffsexpr, diffs_declared = read_differentials_option(options)
+    brownsexpr_init, browns_declared = read_brownians_option(options)
     syms_declared = collect(Iterators.flatten((cmps_declared, sps_declared, ps_declared,
-        vs_declared, discs_declared, ivs, diffs_declared)))
+        vs_declared, discs_declared, ivs, diffs_declared, browns_declared)))
     if !allunique(syms_declared)
         nonunique_syms = [s for s in syms_declared if count(x -> x == s, syms_declared) > 1]
         error("The following symbols $(unique(nonunique_syms)) have explicitly been declared as multiple types of components (e.g. occur in at least two of the `@species`, `@parameters`, `@variables`, `@ivs`, `@compounds`, `@differentials`). This is not allowed.")
@@ -297,6 +298,7 @@ function make_reaction_system(ex::Expr, name)
     vsexpr, vsvar = assign_var_to_symvar_declaration(vsexpr_init, "vars")
     discsexpr, discsvar = assign_var_to_symvar_declaration(discsexpr_init, "discs")
     cmpsexpr, cmpsvar = assign_var_to_symvar_declaration(cmpexpr_init, "comps")
+    brownsexpr, brownsvar = assign_var_to_symvar_declaration(brownsexpr_init, "brownians", scalarize = false)
     rxsexprs = get_rxexprs(reactions, equations, all_syms)
 
     # Assemblies the full expression that declares all required symbolic variables, and
@@ -311,6 +313,7 @@ function make_reaction_system(ex::Expr, name)
         $obsexpr
         $cmpsexpr
         $diffsexpr
+        $brownsexpr
 
         # Stores each kwarg in a variable. Not necessary, but useful when debugging generated code.
         name = $name
@@ -325,7 +328,7 @@ function make_reaction_system(ex::Expr, name)
         _default_reaction_metadata = $default_reaction_metadata
 
         remake_ReactionSystem_internal(
-            make_ReactionSystem_internal(rx_eq_vec, $tiv, us, ps; name, spatial_ivs,
+            make_ReactionSystem_internal(rx_eq_vec, $tiv, us, ps, $brownsvar; name, spatial_ivs,
                 observed = _observed, continuous_events = _continuous_events,
                 discrete_events = _discrete_events, combinatoric_ratelaws = _combinatoric_ratelaws);
             default_reaction_metadata = _default_reaction_metadata)
@@ -671,6 +674,14 @@ function read_differentials_option(options)
     end
 
     return diffsexpr, diffs_declared
+end
+
+# Creates the initial expression for declaring brownians. Also extracts any symbols 
+# declared as brownians by the `@brownian` option.
+function read_brownians_option(options)
+    browns_declared = extract_syms(options, :brownians)    
+    brownsexpr_init = haskey(options, :brownians) ? options[:brownians] : :()
+    return brownsexpr_init, browns_declared
 end
 
 # Reads the variables options. Outputs a list of the variables inferred from the equations,

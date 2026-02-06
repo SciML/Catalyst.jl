@@ -437,3 +437,33 @@ let
     sol_events = solve(jprob_events, SSAStepper(); seed)
     @test_broken sol == sol_events  # Plotting the solutions, they seem similar but are not identical. Potentially the test should be redesigned anyway. Also, periodic events are to general work here.
 end
+
+# Tests that event variable discovery works correctly via programmatic API.
+# Specifically tests that MT.collect_vars! correctly extracts parameters from events.
+let
+    # Continuous events - parameter in condition, species in affect
+    @parameters p d α
+    @species X(t) A(t) a(t)
+    rxs = [
+        Reaction(p, nothing, [X]),
+        Reaction(d, [X], nothing)
+    ]
+    continuous_events = [α ~ t] => [A ~ A + a]
+    @named rs = ReactionSystem(rxs, t; continuous_events)
+    rs = complete(rs)
+
+    # α should be discovered from event condition, A and a from affects
+    @test issetequal(species(rs), [X, A, a])
+    @test issetequal(parameters(rs), [p, d, α])
+
+    # Discrete events - parameter in affect
+    @parameters k injection_amount
+    @species B(t) C(t)
+    rxs2 = [Reaction(k, [B], [C])]
+    discrete_events = [1.0 => [B ~ B + injection_amount]]
+    @named rs2 = ReactionSystem(rxs2, t; discrete_events)
+    rs2 = complete(rs2)
+
+    @test issetequal(species(rs2), [B, C])
+    @test issetequal(parameters(rs2), [k, injection_amount])
+end

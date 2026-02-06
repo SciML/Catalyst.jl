@@ -519,12 +519,3 @@ let
     rm(testpath("test_serialisation.jl"))
 end
 
-# Test connection field.
-# Not really used for `ReactionSystem`s right now, so tests the direct function and its warning.
-let
-    rs = @reaction_network begin
-        d, X --> 0
-    end
-    @test (@test_logs (:warn, ) match_mode=:any Catalyst.get_connection_type_string(rs)) == ""
-    @test Catalyst.get_connection_type_annotation(rs) == "Connection types:: (OBS: Currently not supported, and hence empty)"
-end

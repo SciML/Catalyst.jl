@@ -9,9 +9,9 @@ Arguments:
 - `rn`: The `ReactionSystem` which should be saved to a file.
 - `annotate = true`: Whether annotation should be added to the file.
 - `safety_check = true`: After serialisation, Catalyst will automatically load the serialised
-  `ReactionSystem` and check that it is equal to `rn`. If it is not, an error will be thrown. For
-  models without the `connection_type` field, this should not happen. If performance is required
-  (i.e. when saving a large number of models), this can be disabled by setting `safety_check = false`.
+  `ReactionSystem` and check that it is equal to `rn`. If it is not, an error will be thrown. If
+  performance is required (i.e. when saving a large number of models), this can be disabled by
+  setting `safety_check = false`.
 
 Example:
 ```julia
@@ -26,8 +26,6 @@ rn = include("rn.jls")
 ```
 
 Notes:
-- `ReactionSystem`s with the `connection_type` field has this ignored (saving of this field has not
-  been implemented yet).
 - `ReactionSystem`s with non-`ReactionSystem` sub-systems (e.g. `ODESystem`s) cannot be saved.
 - Reaction systems with components that have units cannot currently be saved.
 - The `ReactionSystem` is saved using *programmatic* (not DSL) format for model creation.
@@ -87,9 +85,6 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     has_jumps = push_field(file_text, rn, annotate,
         top_level, JUMP_TYPE_FS)
     file_text, has_systems = push_systems_field(file_text, rn, annotate, top_level)
-    file_text,
-    has_connection_type = push_field(file_text, rn, annotate,
-        top_level, CONNECTION_TYPE_FS)
 
     # Finalise the system. Creates the final `ReactionSystem` call.
     # Enclose everything in a `let ... end` block. Potentially add Catalyst version number.
@@ -170,7 +165,6 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
     has_brownians && (@string_append! reaction_system_string ", brownians")
     has_jumps && (@string_append! reaction_system_string ", jumps")
     has_systems && (@string_append! reaction_system_string ", systems")
-    has_connection_type && (@string_append! reaction_system_string ", connection_type")
 
     # Potentially appends a combinatoric_ratelaws statement.
     if !unwrap(combinatoric_ratelaws(rs))
