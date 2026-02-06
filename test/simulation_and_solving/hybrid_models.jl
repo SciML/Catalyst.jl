@@ -1205,7 +1205,8 @@ end
 
 ### Poissonian Tests ###
 
-# Tests that a simple Poisson counter via HybridProblem gives correct mean (E[X(T)] ≈ λ*T).
+# Tests that a simple Poisson counter via HybridProblem gives correct mean and variance.
+# For a Poisson process with rate λ over time T: E[X(T)] = λ*T, Var[X(T)] = λ*T.
 let
     t = default_t()
     D = default_time_deriv()
@@ -1223,22 +1224,22 @@ let
     λ_val = 5.0
     T = 10.0
     n_trials = 500
-    final_vals = Float64[]
 
-    for i in 1:n_trials
-        prob = HybridProblem(rn, [:X => 0.0], (0.0, T), [:λ => λ_val];
-            save_positions = (false, false), rng = StableRNG(i))
-        # Pure poissonian system: D(X) ~ dN becomes D(X) ~ 0 after extraction,
-        # mtkcompile reduces to DiscreteProblem → use SSAStepper.
-        sol = solve(prob, SSAStepper(); saveat = T)
-        push!(final_vals, sol[X, end])
-    end
+    # Create problem once; the RNG state advances across solves giving different trajectories.
+    prob = HybridProblem(rn, [:X => 0.0], (0.0, T), [:λ => λ_val];
+        save_positions = (false, false), rng = StableRNG(12345))
+    # Pure poissonian system: D(X) ~ dN becomes D(X) ~ 0 after extraction,
+    # mtkcompile reduces to DiscreteProblem → use SSAStepper.
+    final_vals = [solve(prob, SSAStepper(); saveat = T)[X, end] for _ in 1:n_trials]
 
-    # Mean should be λ*T = 50.0 (with some tolerance for stochastic variation).
+    # E[X(T)] = λ*T = 50.0, Var[X(T)] = λ*T = 50.0.
     @test isapprox(mean(final_vals), λ_val * T; rtol = 0.1)
+    @test isapprox(var(final_vals), λ_val * T; rtol = 0.15)
 end
 
 # Tests that a Poissonian + Catalyst reaction hybrid works via HybridProblem.
+# Reactions (ODE-scale birth-death for S) combined with a Poisson counter X.
+# The Poisson counter X is independent: E[X(T)] = λ*T, Var[X(T)] = λ*T.
 let
     t = default_t()
     D = default_time_deriv()
@@ -1254,21 +1255,27 @@ let
     )
     rn = complete(rn)
 
-    prob = HybridProblem(rn, [:S => 10.0, :X => 0.0], (0.0, 10.0),
-        [:λ => 1.0, :k => 1.0, :d => 0.1];
-        save_positions = (false, false), rng = StableRNG(42))
+    λ_val = 2.0
+    T = 10.0
+    n_trials = 500
+
+    # Create problem once; the RNG state advances across solves.
+    prob = HybridProblem(rn, [:S => 10.0, :X => 0.0], (0.0, T),
+        [:λ => λ_val, :k => 1.0, :d => 0.1];
+        save_positions = (false, false), rng = StableRNG(12345))
     @test prob isa JumpProblem
 
     # Has ODE equations (reactions + D(X) ~ 0 after extraction), so needs ODE solver.
-    sol = solve(prob, Tsit5(); saveat = 10.0)
-    @test sol.retcode == ReturnCode.Success
+    final_X = [solve(prob, Tsit5(); saveat = T)[X, end] for _ in 1:n_trials]
 
-    # X should have increased (Poisson counter).
-    @test sol[X, end] > 0
+    # E[X(T)] = λ*T = 20.0, Var[X(T)] = λ*T = 20.0.
+    @test isapprox(mean(final_X), λ_val * T; rtol = 0.1)
+    @test isapprox(var(final_X), λ_val * T; rtol = 0.15)
 end
 
 # Tests that a Poissonian + Brownian (jump-diffusion) hybrid works via HybridProblem.
 # Both noise sources appear in the same equation: dX = σ*dW + dN(λ).
+# E[X(T)] = λ*T (brownian has zero mean), Var[X(T)] = σ²*T + λ*T.
 let
     t = default_t()
     D = default_time_deriv()
@@ -1284,16 +1291,26 @@ let
     )
     rn = complete(rn)
 
-    prob = HybridProblem(rn, [:X => 0.0], (0.0, 1.0),
-        [:λ => 2.0, :σ => 0.3];
-        save_positions = (false, false), rng = StableRNG(42))
+    λ_val = 3.0
+    σ_val = 1.0
+    T = 10.0
+    n_trials = 500
+
+    # Create problem once; the RNG state advances across solves.
+    prob = HybridProblem(rn, [:X => 0.0], (0.0, T),
+        [:λ => λ_val, :σ => σ_val];
+        save_positions = (false, false), rng = StableRNG(12345))
     @test prob isa JumpProblem
 
-    sol = solve(prob, SRIW1(); saveat = 1.0)
-    @test sol.retcode == ReturnCode.Success
+    final_vals = [solve(prob, SRIW1(); saveat = T)[X, end] for _ in 1:n_trials]
+
+    # E[X(T)] = λ*T = 30.0, Var[X(T)] = σ²*T + λ*T = 10 + 30 = 40.0.
+    @test isapprox(mean(final_vals), λ_val * T; rtol = 0.1)
+    @test isapprox(var(final_vals), σ_val^2 * T + λ_val * T; rtol = 0.15)
 end
 
 # Tests that a state-dependent rate poissonian works (produces VariableRateJump).
+# dX = dN(k*X) with X(0)=1 is a Yule (pure-birth) process: E[X(T)] = X₀*exp(k*T).
 let
     t = default_t()
     D = default_time_deriv()
@@ -1308,16 +1325,25 @@ let
     )
     rn = complete(rn)
 
+    k_val = 0.5
+    T = 4.0
+    X0 = 1.0
+    n_trials = 500
+
     # State-dependent rate → VariableRateJump → needs ODE solver.
-    prob = HybridProblem(rn, [:X => 1.0], (0.0, 1.0), [:k => 0.5];
-        save_positions = (false, false), rng = StableRNG(42))
+    # Create problem once; the RNG state advances across solves.
+    prob = HybridProblem(rn, [:X => X0], (0.0, T), [:k => k_val];
+        save_positions = (false, false), rng = StableRNG(12345))
     @test prob isa JumpProblem
 
-    sol = solve(prob, Tsit5(); saveat = 1.0)
-    @test sol.retcode == ReturnCode.Success
+    final_vals = [solve(prob, Tsit5(); saveat = T)[X, end] for _ in 1:n_trials]
+
+    # For a Yule process: E[X(T)] = X₀*exp(k*T) = exp(2) ≈ 7.389.
+    @test isapprox(mean(final_vals), X0 * exp(k_val * T); rtol = 0.1)
 end
 
 # Tests a constant-rate poissonian produces a ConstantRateJump (parameter-only rate).
+# Same Poisson statistics: E[X(T)] = λ*T, Var[X(T)] = λ*T.
 let
     t = default_t()
     D = default_time_deriv()
@@ -1332,12 +1358,19 @@ let
     )
     rn = complete(rn)
 
-    prob = HybridProblem(rn, [:X => 0.0], (0.0, 10.0), [:λ => 3.0];
-        save_positions = (false, false), rng = StableRNG(42))
+    λ_val = 3.0
+    T = 10.0
+    n_trials = 500
+
+    # Create problem once; the RNG state advances across solves.
+    prob = HybridProblem(rn, [:X => 0.0], (0.0, T), [:λ => λ_val];
+        save_positions = (false, false), rng = StableRNG(12345))
     @test prob isa JumpProblem
 
     # Pure poissonian: D(X) ~ dN becomes D(X) ~ 0 → DiscreteProblem → SSAStepper.
-    sol = solve(prob, SSAStepper(); saveat = 10.0)
-    @test sol.retcode == ReturnCode.Success
-    @test sol[X, end] >= 0
+    final_vals = [solve(prob, SSAStepper(); saveat = T)[X, end] for _ in 1:n_trials]
+
+    # E[X(T)] = λ*T = 30.0, Var[X(T)] = λ*T = 30.0.
+    @test isapprox(mean(final_vals), λ_val * T; rtol = 0.1)
+    @test isapprox(var(final_vals), λ_val * T; rtol = 0.15)
 end
