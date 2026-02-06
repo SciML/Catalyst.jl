@@ -134,10 +134,79 @@ conversion and problem-creation API.
   osys = ode_model(rn; initial_conditions = Dict(A => 1.0, k => 0.5))
   ```
 
+#### BREAKING: `==` removed for `ReactionSystem`
+
+- **`==` no longer performs structural comparison on `ReactionSystem`s.** It now
+  falls back to object identity (`===`), consistent with ModelingToolkitBase's
+  `System`. Use `Catalyst.isequivalent(rn1, rn2)` for structural comparison
+  (note: `isequivalent` is no longer exported, see below).
+
 #### BREAKING: Several functions no longer exported
 The following are now considered internal and no longer exported:
-- **`isequivalent`** 
-- **`symmap_to_varmap`** 
+- **`isequivalent`** — use `Catalyst.isequivalent` if needed for structural
+  comparison of `ReactionSystem`s.
+- **`symmap_to_varmap`**
+
+#### New: MTK v11 event and callback features
+
+Catalyst now supports several ModelingToolkit v11 features for events and
+callbacks. See the
+[ModelingToolkit documentation](https://docs.sciml.ai/ModelingToolkit/stable/)
+for full details on these features.
+
+- **`Pre(x)` for pre-event values.** Event affects that reference the
+  current value of a variable or parameter must now use `Pre(x)` to access
+  the value before the event fires. In the DSL (`@continuous_events`,
+  `@discrete_events`), `Pre` is **automatically wrapped** — no user action
+  needed. When constructing callbacks programmatically via
+  `SymbolicContinuousCallback` or `SymbolicDiscreteCallback`, you must
+  explicitly write `Pre(x)`:
+  ```julia
+  # DSL (auto-wrapped, works as before):
+  rn = @reaction_network begin
+      @discrete_events 2.0 => [p ~ p + 0.1]   # becomes p ~ Pre(p + 0.1)
+      (p, d), 0 <--> X
+  end
+
+  # Programmatic (explicit Pre required):
+  continuous_events = [X ~ 1.0] => [X ~ Pre(X) - 0.5]
+  ```
+
+- **`@discretes` for event-modified parameters.** Parameters that are changed by
+  events must now be declared as discrete variables using `@discretes` in the
+  DSL (or `@discretes` from ModelingToolkitBase programmatically). In the DSL,
+  parameters that appear on the LHS of event affects are **automatically
+  inferred as discretes** — no explicit `@discretes` declaration is needed
+  unless you want to set default values. Note that discretes should be created
+  as time-dependent parameters. When constructing callbacks programmatically,
+  you must pass the `discrete_parameters` keyword:
+  ```julia
+  # DSL (p auto-inferred as discrete):
+  rn = @reaction_network begin
+      @discrete_events 12 => [p ~ (p + 1) % 2]
+      (p, d), 0 <--> X
+  end
+
+  # Programmatic (must declare and pass discrete_parameters):
+  @discretes p(t) = 1.0
+  discrete_events = SymbolicDiscreteCallback(
+      12 => [p ~ Pre(p + 1) % 2];
+      discrete_parameters = [p]
+  )
+  ```
+
+- **`@discretes` DSL option.** A new `@discretes` option can be used in
+  `@reaction_network` and `@network_component` to explicitly declare discrete
+  variables with default values:
+  ```julia
+  rn = @reaction_network begin
+      @discretes α(t)=5.0 β(t)=1.0
+      @species V(t) = 0.0
+      @continuous_events [V ~ 2.5] => [α ~ 0, β ~ 0]
+      α, 0 --> V
+      β, V --> 0
+  end
+  ```
 
 #### New: `hybrid_model` unified conversion function
 
