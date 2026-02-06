@@ -1227,10 +1227,10 @@ let
 
     for i in 1:n_trials
         prob = HybridProblem(rn, [:X => 0.0], (0.0, T), [:λ => λ_val];
-            rng = StableRNG(i))
+            save_positions = (false, false), rng = StableRNG(i))
         # Pure poissonian system: D(X) ~ dN becomes D(X) ~ 0 after extraction,
         # mtkcompile reduces to DiscreteProblem → use SSAStepper.
-        sol = solve(prob, SSAStepper())
+        sol = solve(prob, SSAStepper(); saveat = T)
         push!(final_vals, sol[X, end])
     end
 
@@ -1255,11 +1255,12 @@ let
     rn = complete(rn)
 
     prob = HybridProblem(rn, [:S => 10.0, :X => 0.0], (0.0, 10.0),
-        [:λ => 1.0, :k => 1.0, :d => 0.1]; rng = StableRNG(42))
+        [:λ => 1.0, :k => 1.0, :d => 0.1];
+        save_positions = (false, false), rng = StableRNG(42))
     @test prob isa JumpProblem
 
     # Has ODE equations (reactions + D(X) ~ 0 after extraction), so needs ODE solver.
-    sol = solve(prob, Tsit5())
+    sol = solve(prob, Tsit5(); saveat = 10.0)
     @test sol.retcode == ReturnCode.Success
 
     # X should have increased (Poisson counter).
@@ -1284,10 +1285,11 @@ let
     rn = complete(rn)
 
     prob = HybridProblem(rn, [:X => 0.0], (0.0, 1.0),
-        [:λ => 2.0, :σ => 0.3]; rng = StableRNG(42))
+        [:λ => 2.0, :σ => 0.3];
+        save_positions = (false, false), rng = StableRNG(42))
     @test prob isa JumpProblem
 
-    sol = solve(prob, SRIW1())
+    sol = solve(prob, SRIW1(); saveat = 1.0)
     @test sol.retcode == ReturnCode.Success
 end
 
@@ -1307,10 +1309,11 @@ let
     rn = complete(rn)
 
     # State-dependent rate → VariableRateJump → needs ODE solver.
-    prob = HybridProblem(rn, [:X => 1.0], (0.0, 1.0), [:k => 0.5]; rng = StableRNG(42))
+    prob = HybridProblem(rn, [:X => 1.0], (0.0, 1.0), [:k => 0.5];
+        save_positions = (false, false), rng = StableRNG(42))
     @test prob isa JumpProblem
 
-    sol = solve(prob, Tsit5())
+    sol = solve(prob, Tsit5(); saveat = 1.0)
     @test sol.retcode == ReturnCode.Success
 end
 
@@ -1329,11 +1332,12 @@ let
     )
     rn = complete(rn)
 
-    prob = HybridProblem(rn, [:X => 0.0], (0.0, 10.0), [:λ => 3.0]; rng = StableRNG(42))
+    prob = HybridProblem(rn, [:X => 0.0], (0.0, 10.0), [:λ => 3.0];
+        save_positions = (false, false), rng = StableRNG(42))
     @test prob isa JumpProblem
 
     # Pure poissonian: D(X) ~ dN becomes D(X) ~ 0 → DiscreteProblem → SSAStepper.
-    sol = solve(prob, SSAStepper())
+    sol = solve(prob, SSAStepper(); saveat = 10.0)
     @test sol.retcode == ReturnCode.Success
     @test sol[X, end] >= 0
 end
