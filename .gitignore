@@ -16,3 +16,5 @@ LocalPreferences.toml
 # claude
 .claude
 .claude/*
+.planning
+.planning/*

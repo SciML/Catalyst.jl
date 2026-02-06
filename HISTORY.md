@@ -85,34 +85,6 @@
 - **`make_sck_jump` no longer respects ODE/SDE metadata** — it forces all reactions to Jump,
   only preserving `VariableRateJump` metadata if explicitly set.
 
-#### Fix: Integer type preservation in `JumpProblem` and `HybridProblem`
-
-- **Integer initial conditions are now preserved** in `JumpProblem` and pure-jump `HybridProblem`.
-  Previously, integer `u0` values were promoted to floats during problem construction due to
-  type promotion in dictionary merging and MTK's default `tofloat=true` behavior.
-
-  Now, when creating a `JumpProblem` or pure-jump `HybridProblem` with integer `u0`:
-  - The integer type (`Int64`, `Int32`, etc.) is automatically detected
-  - The `u0_eltype` parameter is passed to MTK to preserve the type
-  - Solutions retain integer species counts as expected for stochastic simulations
-
-  ```julia
-  rn = @reaction_network begin
-      k1, 0 --> X
-      k2, X --> 0
-  end
-
-  # Integer u0 is now preserved
-  jprob = JumpProblem(rn, [:X => 10], (0.0, 1.0), [:k1 => 5.0, :k2 => 0.1])
-  eltype(jprob.prob.u0) == Int64  # true (was Float64 before)
-  sol = solve(jprob, SSAStepper())
-  eltype(sol[:X]) == Int64  # true
-  ```
-
-  **Note:** Integer preservation only applies to pure jump systems built over `DiscreteProblem`.
-  Systems with `VariableRateJump`s or ODE/SDE components require an `ODEProblem`/`SDEProblem`
-  underneath, which use floating-point arithmetic.
-
 #### New: `use_legacy_noise` kwarg for SDE systems
 
 - **`make_cle_sde` and `SDEProblem` now accept `use_legacy_noise = true` (default)** which
