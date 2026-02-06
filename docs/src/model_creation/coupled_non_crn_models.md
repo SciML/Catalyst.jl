@@ -2,7 +2,7 @@
 In many applications one has additional algebraic or differential equations for
 non-chemical species that can be coupled to a chemical reaction network model.
 Catalyst supports coupled differential and algebraic equations, and currently
-allows conversion of such coupled systems to ModelingToolkit `ODESystem`s and
+allows conversion of such coupled systems to ModelingToolkit `ODESystem`s, `SDESystem`s, and
 `NonlinearSystem`s. 
 
 In this tutorial we'll illustrate how to make use of coupled (i.e.
