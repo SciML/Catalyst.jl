@@ -94,6 +94,7 @@ of all options currently available.
 - [`discrete_events`](@ref events): Allows the creation of discrete events.
 - `brownians`: Allows the creation of brownian processes that can be used to add noise to non-species variables.
 - `poissonians`: Allows the creation of poissonian processes that can be used to add jump events to non-species variables.
+- `discretes`: Creates *discrete parameters*, i.e. time-dependent parameters.
 - [`combinatoric_ratelaws`](@ref faq_combinatoric_ratelaws): Takes a single option (`true` or `false`), which sets whether to use combinatorial rate laws.
 
 ## [ModelingToolkitBase and Catalyst accessor functions](@id api_accessor_functions)
