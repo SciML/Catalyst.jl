@@ -1198,6 +1198,22 @@ let
     @test Catalyst.isequivalent(rs_interp, rs_prog)
 end
 
+# Checks that undeclared symbols in poissonian rates produce a useful error message.
+let
+    import Catalyst: UndeclaredSymbolicError
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @poissonians dN(λ)
+        @equations D(X) ~ dN
+        (k, d), 0 <--> X
+    end
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @parameters k
+        @poissonians dN(k * undeclared_var)
+        @equations D(X) ~ dN
+        (k, d), 0 <--> X
+    end
+end
+
 ### Test `@equations` Option for Coupled CRN/Equations Models ###
 
 # Checks creation of basic network.

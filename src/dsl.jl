@@ -279,6 +279,9 @@ function make_reaction_system(ex::Expr, name)
     ps_inferred = setdiff(ps_pre_inferred, vs_inferred, diffs_inferred)
     syms_inferred = union(sps_inferred, ps_inferred, vs_inferred, diffs_inferred)
     all_syms = union(syms_declared, syms_inferred)
+
+    validate_poissonian_rate_syms(options, all_syms)
+
     obsexpr, obs_eqs, obs_syms = read_observables_option(options, ivs,
         union(sps_declared, vs_declared), all_syms; requiredec)
 
@@ -713,6 +716,57 @@ function extract_poissonian_names(options)
         end
     end
     return names
+end
+
+# Extract bare symbols from poissonian rate expressions, skipping escaped (interpolated) subtrees.
+# Used to validate that all symbols in rates are pre-declared.
+function extract_poissonian_rate_syms(options)
+    !haskey(options, :poissonians) && return Symbol[]
+    rate_exprs = Any[]
+    ex = options[:poissonians]
+    for arg in ex.args[3:end]
+        arg isa LineNumberNode && continue
+        if arg isa Expr && arg.head == :block
+            for inner in arg.args
+                inner isa LineNumberNode && continue
+                if inner isa Expr && inner.head == :call && length(inner.args) >= 2
+                    push!(rate_exprs, inner.args[2])
+                end
+            end
+        elseif arg isa Expr && arg.head == :call && length(arg.args) >= 2
+            push!(rate_exprs, arg.args[2])
+        end
+    end
+    syms = Symbol[]
+    for rexpr in rate_exprs
+        _collect_symbols!(syms, rexpr)
+    end
+    return syms
+end
+
+# Recursively collect bare Symbol names from an expression, skipping escaped nodes.
+function _collect_symbols!(syms::Vector{Symbol}, ex)
+    if ex isa Symbol
+        push!(syms, ex)
+    elseif ex isa Expr
+        is_escaped_expr(ex) && return
+        for arg in ex.args
+            _collect_symbols!(syms, arg)
+        end
+    end
+end
+
+# Validates that all non-interpolated symbols in @poissonians rate expressions are declared
+# or inferred. Throws an `UndeclaredSymbolicError` for any unrecognized symbols.
+function validate_poissonian_rate_syms(options, all_syms)
+    poiss_rate_syms = extract_poissonian_rate_syms(options)
+    undeclared = setdiff(poiss_rate_syms, all_syms)
+    if !isempty(undeclared)
+        throw(UndeclaredSymbolicError(
+            "Unrecognized symbol(s) $(join(undeclared, ", ")) in a `@poissonians` rate " *
+            "expression. Symbols in poissonian rates must be pre-declared (e.g. via " *
+            "`@parameters`, `@species`, or `@variables`) or interpolated."))
+    end
 end
 
 # Reads the variables options. Outputs a list of the variables inferred from the equations,
