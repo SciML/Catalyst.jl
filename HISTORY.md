@@ -2,6 +2,36 @@
 
 ## Catalyst 16.0
 
+#### Bug fix: `validate` now handles `only_use_rate` and non-SI units correctly
+
+- **`validate` now correctly handles non-SI units (M, μM) in rate
+  expressions.** Previously, unit validation could produce spurious failures
+  with non-SI units due to floating-point precision loss during unit
+  expansion. Note that units should be specified using **symbolic units**
+  (`us"..."`) rather than concrete units (`u"..."`), as symbolic units use
+  exact arithmetic and avoid precision issues. For example, you can now use
+  μM concentrations:
+  ```julia
+  using DynamicQuantities
+  @independent_variables t [unit=us"s"]
+  @species X(t) [unit=us"μM"]
+  @parameters k [unit=us"μM/s"]
+  ```
+
+- **`validate(rs::ReactionSystem)` no longer multiplies substrate units into
+  the rate for `only_use_rate=true` reactions.** Previously, custom rate laws
+  (e.g., Michaelis-Menten rates passed via the `=>` arrow) would fail
+  validation because substrate units were erroneously included.
+
+- **`validate(rs::ReactionSystem)` now also validates non-reaction equations**
+  (e.g., those involving brownian and poissonian noise terms), checking that
+  left- and right-hand side units match.
+
+#### Removed: Unitful dependency
+
+- **The `Unitful` dependency has been removed.** It was unused — all unit
+  support in Catalyst uses `DynamicQuantities`.
+
 Catalyst 16 is a major release that transitions from ModelingToolkit v9 to
 ModelingToolkitBase (the base for ModelingToolkit v11), introduces unified
 hybrid model support for mixed ODE/SDE/Jump systems, and modernizes the

@@ -336,14 +336,6 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
             !isempty(cevs) && check_equations(equations(cevs), iv)
         end
 
-        if isempty(sivs) && (checks == true || (checks & MT.CheckUnits) > 0)
-            if !all(unitless_symvar(sym) for sym in [unknowns; ps; iv])
-                for eq in eqs
-                    (eq isa Equation) && check_units(eq)
-                end
-            end
-        end
-
         # Checks that no (non-reaction) equation contains a differential w.r.t. a species.
         for eq in eqs
             (eq isa Reaction) && continue
@@ -1584,64 +1576,81 @@ end
 
 Check that all species in the [`ReactionSystem`](@ref) have the same units, and
 that the rate laws of all reactions reduce to units of (species units) / (time
-units).
+units). Also validates unit consistency of non-reaction equations.
+
+Uses [`catalyst_get_unit`](@ref) for SymbolicDimensions-preserving unit inference,
+avoiding the floating-point precision loss that occurs with MTKBase's `get_unit`
+when using non-SI units like M or μM.
 
 Notes:
-- Does not check subsystems, constraint equations, or non-species variables.
+- Correctly handles `only_use_rate=true` reactions (does not multiply substrate
+  units into the rate).
+- Does not check subsystems or non-species variables.
 """
 function validate(rs::ReactionSystem, info::String = "")
+    # Unit checks are not yet supported for spatial systems (multiple IVs).
+    if !isempty(get_sivs(rs))
+        @warn "Unit validation is not currently supported for spatial ReactionSystems (multiple independent variables). Skipping unit checks."
+        return true
+    end
+
     specs = get_species(rs)
 
     # if there are no species we don't check units on the system
     isempty(specs) && return true
 
-    specunits = get_unit(specs[1])
+    specunits = catalyst_get_unit(specs[1])
     validated = true
     for spec in specs
-        if get_unit(spec) != specunits
+        su = catalyst_get_unit(spec)
+        if su != specunits
             validated = false
             @warn(string("Species are expected to have units of ", specunits,
-                " however, species ", spec, " has units ", get_unit(spec), "."))
+                " however, species ", spec, " has units ", su, "."))
         end
     end
-    timeunits = get_unit(get_iv(rs))
+    timeunits = catalyst_get_unit(get_iv(rs))
 
-    # no units for species, time or parameters then assume validated
-    unitless = Base.get_extension(ModelingToolkitBase, :MTKDynamicQuantitiesExt).unitless
-    if (specunits in (unitless, nothing)) && (timeunits in (unitless, nothing))
-        all(unitless_symvar(p) for p in get_ps(rs)) && return true
+    # no units for species, time, or parameters → assume validated
+    if specunits == SYM_UNITLESS && timeunits == SYM_UNITLESS
+        all(_unitless_symvar(p) for p in get_ps(rs)) && return true
     end
 
     rateunits = specunits / timeunits
-    for rx in get_rxs(rs)
-        rxunits = get_unit(rx.rate)
-        for (i, sub) in enumerate(rx.substrates)
-            rxunits *= get_unit(sub)^rx.substoich[i]
-        end
 
-        # Checks that the reaction's combined units is correct, if not, throws a warning.
-        # Needs additional checks because for cases: (1.0^n) and (1.0^n1)*(1.0^n2).
-        # These are not considered (be default) considered equal to `1.0` for unitless reactions.
-        isequal(rxunits, rateunits) && continue
-        if iscall(rxunits)
-            unitless_exp(rxunits) && continue
-            (operation(rxunits) == *) &&
-                all(unitless_exp(arg) for arg in arguments(rxunits)) && continue
+    # Check reaction rate units
+    for rx in get_rxs(rs)
+        rxunits = catalyst_get_unit(rx.rate)
+        if !rx.only_use_rate
+            for (i, sub) in enumerate(rx.substrates)
+                rxunits *= catalyst_get_unit(sub)^rx.substoich[i]
+            end
         end
-        validated = false
-        @warn(string(
-            "Reaction rate laws are expected to have units of ", rateunits, " however, ",
-            rx, " has units of ", rxunits, "."))
+        if rxunits != rateunits
+            validated = false
+            @warn(string(
+                "Reaction rate laws are expected to have units of ", rateunits,
+                " however, ", rx, " has units of ", rxunits, "."))
+        end
+    end
+
+    # Check non-reaction equation units. Noise variables (brownians/poissonians)
+    # get effective units via _build_noise_units: brownians → time^(-1/2),
+    # poissonians → rate parameter units.
+    noise_units = _build_noise_units(rs)
+    for eq in get_eqs(rs)
+        (eq isa Reaction) && continue
+        validated &= _validate_equation(eq; noise_units)
     end
 
     validated
 end
 
-# Checks if a unit consist of exponents with base 1 (and is this unitless).
-unitless_exp(u) = iscall(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
-
-# Checks if a symbolic variable is unitless. Also accounts for callable parameters (for
-# which `get_unit`'s` intended behaviour (or whether it should generate an error) is undefined: https://github.com/SciML/ModelingToolkit.jl/issues/3420).
-function unitless_symvar(sym)
-    return (sym isa Symbolics.CallAndWrap) || (MT.get_unit(sym) == 1)
+# Checks if a symbolic variable is unitless. Uses catalyst_get_unit to preserve
+# SymbolicDimensions. Also accounts for callable parameters.
+function _unitless_symvar(sym)
+    return (sym isa Symbolics.CallAndWrap) || (catalyst_get_unit(sym) == SYM_UNITLESS)
 end
+
+# Backwards-compatible wrapper (deprecated name).
+unitless_symvar(sym) = _unitless_symvar(sym)

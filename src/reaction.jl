@@ -740,19 +740,19 @@ the same units).
 
 """
 function validate(rx::Reaction; info::String = "")
-    validated = MT._validate([rx.rate], [string(rx, ": rate")], info = info)
+    validated = _validate_unit_expr(rx.rate, string(info, rx, ": rate"))
 
-    subunits = isempty(rx.substrates) ? nothing : get_unit(rx.substrates[1])
+    subunits = isempty(rx.substrates) ? nothing : catalyst_get_unit(rx.substrates[1])
     for i in 2:length(rx.substrates)
-        if get_unit(rx.substrates[i]) != subunits
+        if catalyst_get_unit(rx.substrates[i]) != subunits
             validated = false
             @warn(string("In ", rx, " the substrates have differing units."))
         end
     end
 
-    produnits = isempty(rx.products) ? nothing : get_unit(rx.products[1])
+    produnits = isempty(rx.products) ? nothing : catalyst_get_unit(rx.products[1])
     for i in 2:length(rx.products)
-        if get_unit(rx.products[i]) != produnits
+        if catalyst_get_unit(rx.products[i]) != produnits
             validated = false
             @warn(string("In ", rx, " the products have differing units."))
         end

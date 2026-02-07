@@ -14,7 +14,7 @@ using JumpProcesses: JumpProcesses, JumpProblem,
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkitBase
 const MT = ModelingToolkitBase
-using DynamicQuantities #, Unitful # Having Unitful here as well currently gives an error.
+using DynamicQuantities
 
 @reexport using ModelingToolkitBase
 using Symbolics
@@ -29,7 +29,7 @@ using ModelingToolkitBase: get_unknowns, get_ps, get_iv, get_systems,
                        getvar, has_iv, JumpType
 
 import ModelingToolkitBase: get_variables, namespace_expr, namespace_equation,
-                        modified_unknowns!, validate, namespace_variables,
+                        modified_unknowns!, namespace_variables,
                         namespace_parameters, renamespace, flatten,
                         is_alg_equation, is_diff_equation, collect_vars!,
                         eqtype_supports_collect_vars
@@ -40,9 +40,8 @@ import SymbolicIndexingInterface: getname
 import ModelingToolkitBase: SymmapT
 
 # internal but needed ModelingToolkit functions
-import ModelingToolkitBase: check_variables,
-                        check_parameters, check_units,
-                        get_unit, check_equations, iscomplete
+import ModelingToolkitBase: check_variables, check_parameters,
+                        check_equations, iscomplete
 
 # Import from owner module (SymbolicUtils) per ExplicitImports.jl audit
 import SymbolicUtils: _iszero, unwrap
@@ -81,6 +80,11 @@ const CONSERVED_CONSTANT_SYMBOL = :Γ
 const forbidden_symbols_skip = Set([:ℯ, :pi, :π, :t, :∅, :Ø])
 const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
     forbidden_symbols_skip)
+
+### Unit Helpers ###
+
+# SymbolicDimensions-preserving unit inference (replaces MTKBase's `get_unit` for validation).
+include("unit_helpers.jl")
 
 ### Package Main ###
 
