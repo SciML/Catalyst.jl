@@ -1212,6 +1212,40 @@ let
         @equations D(X) ~ dN
         (k, d), 0 <--> X
     end
+
+    # Error in the second poissonian of multiple.
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @parameters λ₁
+        @poissonians begin
+            dN₁(λ₁)
+            dN₂(undeclared_rate)
+        end
+        @equations begin
+            D(V) ~ dN₁
+            D(W) ~ dN₂
+        end
+        (p, d), 0 <--> X
+    end
+
+    # Multiple undeclared symbols across multiple poissonians are all reported.
+    try
+        @macroexpand @reaction_network begin
+            @poissonians begin
+                dN₁(bad_sym1)
+                dN₂(bad_sym2)
+            end
+            @equations begin
+                D(V) ~ dN₁
+                D(W) ~ dN₂
+            end
+            (p, d), 0 <--> X
+        end
+        @test false  # should not reach here
+    catch e
+        @test e isa UndeclaredSymbolicError
+        @test occursin("bad_sym1", e.msg)
+        @test occursin("bad_sym2", e.msg)
+    end
 end
 
 ### Test `@equations` Option for Coupled CRN/Equations Models ###
