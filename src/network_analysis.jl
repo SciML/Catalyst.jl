@@ -1,5 +1,26 @@
 ### Reaction Complex Handling ###
 
+# Checks if a reaction has integer stoichiometry. Used to detect and error on 
+# non-integer stoichiometry in network analysis functions.
+function has_integer_stoichiometry(rx::Reaction)
+    (eltype(rx.substoich) <: Integer) && (eltype(rx.prodstoich) <: Integer)
+end
+
+# Helper function to check all reactions for integer stoichiometry and throw an informative error.
+function check_integer_stoichiometry(rn::ReactionSystem, calling_function::String)
+    rxs = reactions(rn)
+    nonint_rxs = filter(!has_integer_stoichiometry, rxs)
+    if !isempty(nonint_rxs)
+        rx_strs = ["  $rx" for rx in nonint_rxs]
+        error("The `$calling_function` function requires integer stoichiometric coefficients, " *
+              "but the following reaction(s) have non-integer stoichiometry:\n" *
+              join(rx_strs, "\n") *
+              "\n\nNetwork analysis functions require integer stoichiometry. " *
+              "Non-integer stoichiometry is only supported for ODE generation.")
+    end
+    nothing
+end
+
 # get the species indices and stoichiometry while filtering out constant species.
 function filter_constspecs(specs, stoich::AbstractVector{V}, smap) where {V <: Integer}
     isempty(specs) && (return Vector{Int}(), Vector{V}())
@@ -38,6 +59,9 @@ Notes:
 function reactioncomplexmap(rn::ReactionSystem)
     isempty(get_systems(rn)) ||
         error("reactioncomplexmap does not currently support subsystems.")
+
+    # Check for non-integer stoichiometry.
+    check_integer_stoichiometry(rn, "reactioncomplexmap")
 
     # check if previously calculated and hence cached
     nps = get_networkproperties(rn)
