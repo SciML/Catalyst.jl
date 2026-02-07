@@ -124,9 +124,9 @@ let
     masked_oprob = ODEProblem(masked_lrs, u0_masked, (0.0, 100.0), [pV_masked; pE])
     graph_oprob = ODEProblem(graph_lrs, u0_graph, (0.0, 100.0), [pV_graph; pE])
 
-    cartesian_sol = solve(cartesian_oprob, QNDF(); saveat=0.1)
-    masked_sol = solve(masked_oprob, QNDF(); saveat=0.1)
-    graph_sol = solve(graph_oprob, QNDF(); saveat=0.1)
+    cartesian_sol = solve(cartesian_oprob, FBDF(); saveat=0.1)
+    masked_sol = solve(masked_oprob, FBDF(); saveat=0.1)
+    graph_sol = solve(graph_oprob, FBDF(); saveat=0.1)
 
     @test cartesian_sol.u == masked_sol.u == graph_sol.u
 end
