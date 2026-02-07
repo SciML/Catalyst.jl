@@ -216,7 +216,7 @@ const reactionsystem_fields = (
     :eqs, :rxs, :iv, :sivs, :unknowns, :species, :ps, :var_to_name,
     :observed, :name, :systems, :initial_conditions,
     :networkproperties, :combinatoric_ratelaws, :continuous_events,
-    :discrete_events, :brownians, :jumps, :metadata, :complete, :parent)
+    :discrete_events, :brownians, :poissonians, :jumps, :metadata, :complete, :parent)
 
 """
 $(TYPEDEF)
@@ -303,6 +303,8 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     discrete_events::Vector{MT.SymbolicDiscreteCallback}
     """Brownian variables for non-reaction noise, created via @brownians."""
     brownians::Vector{SymbolicT}
+    """Poissonian variables for Poisson jump noise, created via @poissonians."""
+    poissonians::Vector{SymbolicT}
     """Non-reaction jumps (VariableRateJump, ConstantRateJump, MassActionJump)."""
     jumps::Vector{JumpType}
     """
@@ -322,7 +324,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, nps, cls, cevs, devs,
-            brownians, jumps, metadata, complete = false, parent = nothing; checks::Bool = true)
+            brownians, poissonians, jumps, metadata, complete = false, parent = nothing; checks::Bool = true)
 
         # unit checks are for ODEs and Reactions only currently
         nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
@@ -351,7 +353,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
         rs = new{typeof(nps)}(
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, nps, cls, cevs,
-            devs, brownians, jumps, metadata, complete, parent)
+            devs, brownians, poissonians, jumps, metadata, complete, parent)
         checks && validate(rs)
         rs
     end
@@ -366,9 +368,10 @@ end
 
 # Five-argument constructor. Permits additional inputs as optional arguments.
 # Calls the full constructor.
-# Note: brownians is explicit (not auto-discovered) in this constructor; use the
-# two-argument constructor for auto-discovery of brownians from equations.
+# Note: brownians and poissonians are explicit (not auto-discovered) in this constructor;
+# use the two-argument constructor for auto-discovery from equations.
 function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
+        poissonians = SymbolicT[],
         jumps = JumpType[],
         observed = Equation[],
         systems = [],
@@ -466,14 +469,16 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
     # handles system metadata.
     metadata = make_metadata(metadata)
 
-    # Process brownians and jumps (unwrap brownians to be consistent with other symbolic vars).
+    # Process brownians, poissonians, and jumps (unwrap to be consistent with other symbolic vars).
     brownians′ = isempty(brownians) ? SymbolicT[] : unwrap.(brownians)
+    poissonians′ = isempty(poissonians) ? SymbolicT[] : unwrap.(poissonians)
     jumps′ = isempty(jumps) ? JumpType[] : collect(jumps)
 
     ReactionSystem(
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
         systems, initial_conditions, nps, combinatoric_ratelaws,
-        continuous_events, discrete_events, brownians′, jumps′, metadata; checks = checks)
+        continuous_events, discrete_events, brownians′, poissonians′, jumps′, metadata;
+        checks = checks)
 end
 
 # Handles that events can be a single event or a vector.
@@ -520,8 +525,8 @@ end
 # While species are ordered before variables in the unknowns vector, this ordering is not imposed here,
 # but carried out at a later stage.
 function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in, brownians = SymbolicT[];
-        spatial_ivs = nothing, continuous_events = [], discrete_events = [],
-        observed = [], jumps = JumpType[], kwargs...)
+        poissonians = SymbolicT[], spatial_ivs = nothing, continuous_events = [],
+        discrete_events = [], observed = [], jumps = JumpType[], kwargs...)
 
     # Error if any observables have been declared a species or variable
     obs_vars = Set(obs_eq.lhs for obs_eq in observed)
@@ -561,6 +566,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in, bro
         union!(us, unknowns(sys))
         union!(ps, parameters(sys))
         union!(brownians, MT.brownians(sys))
+        union!(poissonians, MT.poissonians(sys))
     else
         fulleqs = rxs
     end
@@ -604,8 +610,8 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in, bro
 
     # Passes the processed input into the next `ReactionSystem` call.
     # Note: brownians are passed as the 5th positional argument.
-    ReactionSystem(fulleqs, t, usv, psv, brownians; spatial_ivs, continuous_events,
-        discrete_events, observed, jumps, kwargs...)
+    ReactionSystem(fulleqs, t, usv, psv, brownians; poissonians, spatial_ivs,
+        continuous_events, discrete_events, observed, jumps, kwargs...)
 end
 
 ### Base Function Dispatches ###
@@ -709,8 +715,10 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
     debug_comparer(discrete_events_equal, MT.get_discrete_events(rn1),
         MT.get_discrete_events(rn2), "devents"; debug) || return false
 
-    # brownians and jumps
+    # brownians, poissonians, and jumps
     debug_comparer(issetequal, MT.get_brownians(rn1), MT.get_brownians(rn2), "brownians"; debug) ||
+        return false
+    debug_comparer(issetequal, MT.get_poissonians(rn1), MT.get_poissonians(rn2), "poissonians"; debug) ||
         return false
     debug_comparer(issetequal, MT.get_jumps(rn1), MT.get_jumps(rn2), "jumps"; debug) ||
         return false
@@ -1446,9 +1454,11 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
     isnothing(get_systems(rs)) || all(is_allowed_subsystem, get_systems(rs)) ||
         error("flattening is only supported for ReactionSystem subsystems. Use `extend` or `compose` only with other ReactionSystems.")
 
-    # Note: brownians and jumps are 5th positional arg and kwarg respectively.
-    # MT.brownians(rs) and MT.jumps(rs) are recursive accessors that collect from all subsystems.
+    # Note: brownians are 5th positional arg; poissonians and jumps are kwargs.
+    # MT.brownians(rs), MT.poissonians(rs), and MT.jumps(rs) are recursive accessors
+    # that collect from all subsystems.
     ReactionSystem(equations(rs), get_iv(rs), unknowns(rs), parameters(rs), MT.brownians(rs);
+        poissonians = MT.poissonians(rs),
         jumps = MT.jumps(rs),
         observed = MT.observed(rs),
         name,
@@ -1547,11 +1557,13 @@ function MT.extend(sys::ReactionSystem, rs::ReactionSystem;
                             Catalyst.get_combinatoric_ratelaws(rs)
     sivs = union(get_sivs(sys), get_sivs(rs))
 
-    # Union brownians and jumps from both systems
+    # Union brownians, poissonians, and jumps from both systems
     new_brownians = union(MT.get_brownians(rs), MT.get_brownians(sys))
+    new_poissonians = union(MT.get_poissonians(rs), MT.get_poissonians(sys))
     new_jumps = union(MT.get_jumps(rs), MT.get_jumps(sys))
 
     ReactionSystem(eqs, t, sts, ps, collect(new_brownians);
+        poissonians = collect(new_poissonians),
         jumps = collect(new_jumps),
         observed = obs,
         systems = syss,

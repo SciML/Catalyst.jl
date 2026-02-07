@@ -1202,3 +1202,175 @@ let
     @test eltype(prob2.prob.u0) == Int64
     @test prob2[:X] == 50
 end
+
+### Poissonian Tests ###
+
+# Tests that a simple Poisson counter via HybridProblem gives correct mean and variance.
+# For a Poisson process with rate λ over time T: E[X(T)] = λ*T, Var[X(T)] = λ*T.
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ
+    @variables X(t)
+    @poissonians dN(λ)
+
+    @named rn = ReactionSystem(
+        [D(X) ~ dN],
+        t, [X], [λ];
+        poissonians = [dN]
+    )
+    rn = complete(rn)
+
+    λ_val = 5.0
+    T = 10.0
+    n_trials = 500
+
+    # Create problem once; the RNG state advances across solves giving different trajectories.
+    prob = HybridProblem(rn, [:X => 0.0], (0.0, T), [:λ => λ_val];
+        save_positions = (false, false), rng = StableRNG(12345))
+    # Pure poissonian system: D(X) ~ dN becomes D(X) ~ 0 after extraction,
+    # mtkcompile reduces to DiscreteProblem → use SSAStepper.
+    final_vals = [solve(prob, SSAStepper(); saveat = T)[X, end] for _ in 1:n_trials]
+
+    # E[X(T)] = λ*T = 50.0, Var[X(T)] = λ*T = 50.0.
+    @test isapprox(mean(final_vals), λ_val * T; rtol = 0.1)
+    @test isapprox(var(final_vals), λ_val * T; rtol = 0.15)
+end
+
+# Tests that a Poissonian + Catalyst reaction hybrid works via HybridProblem.
+# Reactions (ODE-scale birth-death for S) combined with a Poisson counter X.
+# The Poisson counter X is independent: E[X(T)] = λ*T, Var[X(T)] = λ*T.
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ k d
+    @species S(t)
+    @variables X(t)
+    @poissonians dN(λ)
+
+    @named rn = ReactionSystem(
+        [Reaction(k, nothing, [S]), Reaction(d, [S], nothing), D(X) ~ dN],
+        t, [S, X], [λ, k, d];
+        poissonians = [dN]
+    )
+    rn = complete(rn)
+
+    λ_val = 2.0
+    T = 10.0
+    n_trials = 500
+
+    # Create problem once; the RNG state advances across solves.
+    prob = HybridProblem(rn, [:S => 10.0, :X => 0.0], (0.0, T),
+        [:λ => λ_val, :k => 1.0, :d => 0.1];
+        save_positions = (false, false), rng = StableRNG(12345))
+    @test prob isa JumpProblem
+
+    # Has ODE equations (reactions + D(X) ~ 0 after extraction), so needs ODE solver.
+    final_X = [solve(prob, Tsit5(); saveat = T)[X, end] for _ in 1:n_trials]
+
+    # E[X(T)] = λ*T = 20.0, Var[X(T)] = λ*T = 20.0.
+    @test isapprox(mean(final_X), λ_val * T; rtol = 0.1)
+    @test isapprox(var(final_X), λ_val * T; rtol = 0.15)
+end
+
+# Tests that a Poissonian + Brownian (jump-diffusion) hybrid works via HybridProblem.
+# Both noise sources appear in the same equation: dX = σ*dW + dN(λ).
+# E[X(T)] = λ*T (brownian has zero mean), Var[X(T)] = σ²*T + λ*T.
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ σ
+    @variables X(t)
+    @brownians dW
+    @poissonians dN(λ)
+
+    @named rn = ReactionSystem(
+        [D(X) ~ σ * dW + dN],
+        t, [X], [λ, σ], [dW];
+        poissonians = [dN]
+    )
+    rn = complete(rn)
+
+    λ_val = 3.0
+    σ_val = 1.0
+    T = 10.0
+    n_trials = 500
+
+    # Create problem once; the RNG state advances across solves.
+    prob = HybridProblem(rn, [:X => 0.0], (0.0, T),
+        [:λ => λ_val, :σ => σ_val];
+        save_positions = (false, false), rng = StableRNG(12345))
+    @test prob isa JumpProblem
+
+    final_vals = [solve(prob, SRIW1(); saveat = T)[X, end] for _ in 1:n_trials]
+
+    # E[X(T)] = λ*T = 30.0, Var[X(T)] = σ²*T + λ*T = 10 + 30 = 40.0.
+    @test isapprox(mean(final_vals), λ_val * T; rtol = 0.1)
+    @test isapprox(var(final_vals), σ_val^2 * T + λ_val * T; rtol = 0.15)
+end
+
+# Tests that a state-dependent rate poissonian works (produces VariableRateJump).
+# dX = dN(k*X) with X(0)=1 is a Yule (pure-birth) process: E[X(T)] = X₀*exp(k*T).
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters k
+    @variables X(t)
+    @poissonians dN(k * X)
+
+    @named rn = ReactionSystem(
+        [D(X) ~ dN],
+        t, [X], [k];
+        poissonians = [dN]
+    )
+    rn = complete(rn)
+
+    k_val = 0.5
+    T = 4.0
+    X0 = 1.0
+    n_trials = 500
+
+    # State-dependent rate → VariableRateJump → needs ODE solver.
+    # Create problem once; the RNG state advances across solves.
+    prob = HybridProblem(rn, [:X => X0], (0.0, T), [:k => k_val];
+        save_positions = (false, false), rng = StableRNG(12345))
+    @test prob isa JumpProblem
+
+    final_vals = [solve(prob, Tsit5(); saveat = T)[X, end] for _ in 1:n_trials]
+
+    # For a Yule process: E[X(T)] = X₀*exp(k*T) = exp(2) ≈ 7.389.
+    @test isapprox(mean(final_vals), X0 * exp(k_val * T); rtol = 0.1)
+end
+
+# Tests a constant-rate poissonian produces a ConstantRateJump (parameter-only rate).
+# Same Poisson statistics: E[X(T)] = λ*T, Var[X(T)] = λ*T.
+let
+    t = default_t()
+    D = default_time_deriv()
+    @parameters λ
+    @variables X(t)
+    @poissonians dN(λ)
+
+    @named rn = ReactionSystem(
+        [D(X) ~ dN],
+        t, [X], [λ];
+        poissonians = [dN]
+    )
+    rn = complete(rn)
+
+    λ_val = 3.0
+    T = 10.0
+    n_trials = 500
+
+    # Create problem once; the RNG state advances across solves.
+    prob = HybridProblem(rn, [:X => 0.0], (0.0, T), [:λ => λ_val];
+        save_positions = (false, false), rng = StableRNG(12345))
+    @test prob isa JumpProblem
+
+    # Pure poissonian: D(X) ~ dN becomes D(X) ~ 0 → DiscreteProblem → SSAStepper.
+    final_vals = [solve(prob, SSAStepper(); saveat = T)[X, end] for _ in 1:n_trials]
+
+    # E[X(T)] = λ*T = 30.0, Var[X(T)] = λ*T = 30.0.
+    @test isapprox(mean(final_vals), λ_val * T; rtol = 0.1)
+    @test isapprox(var(final_vals), λ_val * T; rtol = 0.15)
+end

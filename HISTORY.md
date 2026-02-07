@@ -1,7 +1,5 @@
 # Breaking updates and feature summaries across releases
 
-## Unreleased (on master)
-
 ## Catalyst 16.0
 
 Catalyst 16 is a major release that transitions from ModelingToolkit v9 to
@@ -344,6 +342,76 @@ for full details on these features.
 
   Brownian variables declared via `@brownians` are automatically included in
   the `ReactionSystem`'s `brownians` field.
+
+#### New: `poissonians` field in ReactionSystem
+
+- **`ReactionSystem` now has a `poissonians` field** for storing Poissonian
+  variables — symbolic Poisson counting processes with associated rates,
+  created via `@poissonians` from ModelingToolkitBase. Poissonians represent
+  discrete jump noise and are the jump-process analogue of Brownians (which
+  represent continuous diffusion noise).
+
+  **Programmatic construction:**
+  ```julia
+  using Catalyst, JumpProcesses
+  t = default_t()
+  D = default_time_deriv()
+  @parameters λ k d
+  @species S(t)
+  @variables X(t)
+  @poissonians dN(λ)   # Poisson process with rate λ
+
+  # Pass poissonians via keyword argument
+  @named rn = ReactionSystem(
+      [Reaction(k, nothing, [S]), Reaction(d, [S], nothing), D(X) ~ dN],
+      t, [S, X], [λ, k, d];
+      poissonians = [dN]
+  )
+  rn = complete(rn)
+  ```
+
+  The two-argument constructor auto-discovers poissonians from equations (like
+  brownians):
+  ```julia
+  @poissonians dN(λ)
+  @variables X(t)
+  @named rn = ReactionSystem([D(X) ~ dN], t)
+  # dN is auto-discovered as a poissonian, λ as a parameter
+  ```
+
+- **Poissonians are handled through composition** (`flatten`, `extend`,
+  `compose`) with union semantics and through equivalence checking
+  (`isequivalent`), following the same patterns as brownians.
+
+- **`HybridProblem` automatically converts poissonians** to `ConstantRateJump`
+  (when the rate depends only on parameters) or `VariableRateJump` (when the
+  rate depends on state variables) via `mtkcompile`:
+  ```julia
+  # Simple Poisson counter: X increases by 1 at rate λ
+  prob = HybridProblem(rn, [:S => 10.0, :X => 0.0], (0.0, 10.0),
+      [:λ => 5.0, :k => 1.0, :d => 0.1])
+  sol = solve(prob, Tsit5())
+
+  # Jump-diffusion: combine Brownian noise and Poisson jumps
+  @brownians dW
+  @poissonians dN(λ)
+  @parameters σ
+  @named jd = ReactionSystem(
+      [D(X) ~ σ * dW + dN],
+      t, [X], [λ, σ], [dW];
+      poissonians = [dN]
+  )
+  jd = complete(jd)
+  prob = HybridProblem(jd, [:X => 0.0], (0.0, 10.0), [:λ => 3.0, :σ => 1.0])
+  sol = solve(prob, SRIW1())  # SDE solver for the diffusion component
+
+  # State-dependent rate → VariableRateJump (e.g. pure-birth / Yule process)
+  @poissonians dN_birth(k * X)  # rate depends on state X
+  ```
+
+- **`ode_model`, `sde_model`, and `jump_model` error with informative messages**
+  when called on systems containing poissonians. Use `HybridProblem` instead,
+  which handles the poissonian-to-jump conversion automatically.
 
 #### New: `use_legacy_noise` kwarg for SDE systems
 

@@ -5,7 +5,7 @@
 # Fetch packages.
 using Catalyst, JumpProcesses, OrdinaryDiffEqTsit5, StochasticDiffEq, Test
 using Catalyst: isequivalent
-using ModelingToolkitBase: get_brownians, get_jumps, Pre
+using ModelingToolkitBase: get_brownians, get_poissonians, get_jumps, Pre
 import ModelingToolkitBase as MT
 
 # Sets stable rng number.
@@ -503,4 +503,206 @@ let
         systems = [non_rs],
         name = :parent
     )
+end
+
+### Test Poissonians in ReactionSystem ###
+
+# Tests creating a ReactionSystem with user-provided poissonians via keyword argument.
+let
+    @parameters λ k
+    @variables X(t)
+    @species S(t) P(t)
+    @poissonians dN(λ)
+
+    @named rn = ReactionSystem(
+        [Reaction(k, [S], [P]), D(X) ~ dN],
+        t, [S, P, X], [λ, k];
+        poissonians = [dN]
+    )
+
+    # Test that poissonians are stored correctly.
+    @test length(get_poissonians(rn)) == 1
+    @test issetequal(get_poissonians(rn), [dN])
+
+    # Test recursive accessor (no subsystems, so same as get_poissonians).
+    @test length(MT.poissonians(rn)) == 1
+end
+
+# Tests auto-discovery of poissonians via the two-argument constructor when equations are provided.
+let
+    @parameters λ
+    @variables X(t)
+    @poissonians dN(λ)
+
+    # Two-argument constructor with equations containing a poissonian.
+    # The poissonian should be auto-discovered via MT.System.
+    rn = ReactionSystem([D(X) ~ dN], t; name = :rn)
+
+    # Poissonians should be auto-discovered from equations.
+    @test length(get_poissonians(rn)) == 1
+    @test issetequal(get_poissonians(rn), [dN])
+
+    # X should be an unknown, not a poissonian.
+    @test any(isequal(X), unknowns(rn))
+    @test !any(isequal(X), get_poissonians(rn))
+
+    # λ should be discovered as a parameter (from the poissonian rate).
+    @test any(isequal(λ), parameters(rn))
+end
+
+# Tests that poissonians are collected from subsystems during flatten.
+let
+    @parameters λ1 λ2 k
+    @variables X1(t) X2(t)
+    @species S(t)
+    @poissonians dN1(λ1) dN2(λ2)
+
+    # Create two subsystems, each with a poissonian.
+    @named sub1 = ReactionSystem(
+        [D(X1) ~ dN1],
+        t, [X1], [λ1];
+        poissonians = [dN1]
+    )
+    @named sub2 = ReactionSystem(
+        [D(X2) ~ dN2],
+        t, [X2], [λ2];
+        poissonians = [dN2]
+    )
+
+    # Compose them under a parent system.
+    @named parent = ReactionSystem(
+        [Reaction(k, nothing, [S])],
+        t, [S], [k];
+        systems = [sub1, sub2]
+    )
+
+    # Before flattening, recursive accessor should collect all poissonians.
+    @test length(MT.poissonians(parent)) == 2
+
+    # After flattening, poissonians should be merged.
+    flat = Catalyst.flatten(parent)
+    @test length(get_poissonians(flat)) == 2
+end
+
+# Tests extend with poissonians (union semantics).
+let
+    @parameters λ1 λ2
+    @variables X1(t) X2(t)
+    @poissonians dN1(λ1) dN2(λ2)
+
+    @named sys1 = ReactionSystem(
+        [D(X1) ~ dN1],
+        t, [X1], [λ1];
+        poissonians = [dN1]
+    )
+    @named sys2 = ReactionSystem(
+        [D(X2) ~ dN2],
+        t, [X2], [λ2];
+        poissonians = [dN2]
+    )
+
+    # Extend sys1 with sys2.
+    extended = MT.extend(sys2, sys1; name = :extended)
+
+    # Both poissonians should be present.
+    @test length(get_poissonians(extended)) == 2
+    @test issetequal(get_poissonians(extended), [dN1, dN2])
+end
+
+# Tests compose (subsystem poissonians accessible after flatten).
+let
+    @parameters λ k
+    @variables X(t)
+    @species S(t) P(t)
+    @poissonians dN(λ)
+
+    @named sub = ReactionSystem(
+        [D(X) ~ dN],
+        t, [X], [λ];
+        poissonians = [dN]
+    )
+
+    @named main = ReactionSystem(
+        [Reaction(k, [S], [P])],
+        t, [S, P], [k]
+    )
+
+    # Compose main with sub.
+    composed = MT.compose(main, [sub]; name = :composed)
+
+    # Recursive accessor should find poissonians in subsystem.
+    @test length(MT.poissonians(composed)) == 1
+
+    # After flatten, they should be in the top-level system.
+    flat = Catalyst.flatten(composed)
+    @test length(get_poissonians(flat)) == 1
+end
+
+### Test Poissonian Conversion Error Checks ###
+
+# Tests that ode_model errors on systems with poissonians.
+let
+    @parameters λ
+    @variables X(t)
+    @poissonians dN(λ)
+
+    @named rn = ReactionSystem(
+        [D(X) ~ dN],
+        t, [X], [λ];
+        poissonians = [dN]
+    )
+    rn = complete(rn)
+
+    @test_throws ErrorException Catalyst.ode_model(rn)
+end
+
+# Tests that sde_model errors on systems with poissonians.
+let
+    @parameters λ
+    @variables X(t)
+    @poissonians dN(λ)
+
+    @named rn = ReactionSystem(
+        [D(X) ~ dN],
+        t, [X], [λ];
+        poissonians = [dN]
+    )
+    rn = complete(rn)
+
+    @test_throws ErrorException Catalyst.sde_model(rn)
+end
+
+# Tests that jump_model errors on systems with unprocessed poissonians.
+let
+    @parameters λ
+    @variables X(t)
+    @poissonians dN(λ)
+
+    @named rn = ReactionSystem(
+        [D(X) ~ dN],
+        t, [X], [λ];
+        poissonians = [dN]
+    )
+    rn = complete(rn)
+
+    @test_throws ErrorException Catalyst.jump_model(rn)
+end
+
+### Test isequivalent with Poissonians ###
+
+# Tests isequivalent correctly compares poissonians.
+let
+    @parameters λ1 λ2
+    @variables X(t)
+    @poissonians dN1(λ1) dN2(λ2)
+
+    @named rn1 = ReactionSystem([D(X) ~ dN1], t, [X], [λ1]; poissonians = [dN1])
+    @named rn2 = ReactionSystem([D(X) ~ dN1], t, [X], [λ1]; poissonians = [dN1])
+    @named rn3 = ReactionSystem([D(X) ~ dN2], t, [X], [λ2]; poissonians = [dN2])
+
+    # Same poissonians → equivalent.
+    @test isequivalent(rn1, rn2)
+
+    # Different poissonians → not equivalent.
+    @test !isequivalent(rn1, rn3)
 end

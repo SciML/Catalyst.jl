@@ -632,8 +632,9 @@ function hybrid_model(rs::ReactionSystem;
     any(==(PhysicalScale.Auto), scales) &&
         error("Unresolved PhysicalScale.Auto scales remain. Provide `default_scale` or per-reaction `physical_scales`.")
 
-    # Get user-provided brownians and jumps from the flattened ReactionSystem.
+    # Get user-provided brownians, poissonians, and jumps from the flattened ReactionSystem.
     user_brownians = MT.brownians(flatrs)
+    user_poissonians = MT.poissonians(flatrs)
     user_jumps = MT.jumps(flatrs)
 
     # Layer 1: Reaction-based scale detection.
@@ -642,14 +643,15 @@ function hybrid_model(rs::ReactionSystem;
     has_rxn_sde = any(==(PhysicalScale.SDE), scales) || (_override_all_scales == PhysicalScale.SDE)
     has_rxn_jump = any(in(JUMP_SCALES), scales)
 
-    # Layer 2: User-provided elements (from ReactionSystem brownians/jumps fields).
+    # Layer 2: User-provided elements (from ReactionSystem brownians/poissonians/jumps fields).
     has_user_sde = !isempty(user_brownians)
+    has_user_poissonian = !isempty(user_poissonians)
     has_user_jump = !isempty(user_jumps)
 
     # Layer 3: Combined totals.
     has_ode = has_rxn_ode
     has_sde = has_rxn_sde || has_user_sde
-    has_jump = has_rxn_jump || has_user_jump
+    has_jump = has_rxn_jump || has_user_jump || has_user_poissonian
     has_continuous = has_ode || has_sde || has_nonreactions(flatrs)
 
     # Conservation law elimination is not compatible with jump reactions.
@@ -718,6 +720,7 @@ function hybrid_model(rs::ReactionSystem;
     # --- Construct unified System ---
     # Note: brownians is a positional arg (5th) in the System constructor.
     MT.System(eqs, get_iv(flatrs), us, ps, brownian_vars;
+        poissonians = user_poissonians,
         jumps,
         observed = obs,
         name,
@@ -763,6 +766,11 @@ function ode_model(rs::ReactionSystem; name = nameof(rs),
     if !isempty(MT.jumps(flatrs))
         error("""Cannot convert ReactionSystem with coupled jumps to a pure ODE system.
         Found $(length(MT.jumps(flatrs))) jump(s).
+        Use `JumpProblem` or `HybridProblem` instead.""")
+    end
+    if !isempty(MT.poissonians(flatrs))
+        error("""Cannot convert ReactionSystem with poissonians to a pure ODE system.
+        Found poissonians: $(MT.poissonians(flatrs))
         Use `JumpProblem` or `HybridProblem` instead.""")
     end
 
@@ -910,11 +918,16 @@ function sde_model(rs::ReactionSystem;
     # Flatten once upfront and check for constraints.
     flatrs = Catalyst.flatten(rs)
 
-    # Error if ReactionSystem has coupled jumps (SDE + jumps hybrid not supported yet).
+    # Error if ReactionSystem has coupled jumps or poissonians (SDE + jumps hybrid not supported yet).
     if !isempty(MT.jumps(flatrs))
         error("""Cannot convert ReactionSystem with coupled jumps to a pure SDE system.
         Found $(length(MT.jumps(flatrs))) jump(s).
         Use `HybridProblem` instead. Note: SDE+Jump hybrids require special handling.""")
+    end
+    if !isempty(MT.poissonians(flatrs))
+        error("""Cannot convert ReactionSystem with poissonians to a pure SDE system.
+        Found $(length(MT.poissonians(flatrs))) poissonian(s).
+        Use `HybridProblem` instead.""")
     end
 
     has_constraints = has_alg_equations(flatrs) || any(isbc, get_unknowns(flatrs))
@@ -1045,6 +1058,12 @@ function jump_model(rs::ReactionSystem; name = nameof(rs),
     # Force all reactions to Jump, only preserving VariableRateJump metadata.
     # ODE/SDE metadata is ignored - use HybridProblem for hybrid systems.
     flatrs = Catalyst.flatten(rs)
+
+    # Error if ReactionSystem has unprocessed poissonians (jump_model cannot handle them).
+    if !isempty(MT.poissonians(flatrs))
+        error("""Cannot convert ReactionSystem with unprocessed poissonians to a pure Jump system via jump_model.
+        Use `HybridProblem` instead, which will process poissonians via mtkcompile.""")
+    end
 
     # Error on non-reaction ODE/algebraic/SDE equations (pure Jump only supports reactions).
     # This also catches brownians since they appear in SDE equations.
@@ -1324,13 +1343,14 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
     resolved_scales = merge_physical_scales(reactions(flatrs), physical_scales, default_scale)
     has_ode, has_sde, has_jump = detect_scale_types(resolved_scales)
 
-    # Also check for user-provided brownians/jumps in the ReactionSystem.
+    # Also check for user-provided brownians/poissonians/jumps in the ReactionSystem.
     user_has_sde = !isempty(MT.brownians(flatrs))
+    user_has_poissonian = !isempty(MT.poissonians(flatrs))
     user_has_jump = !isempty(MT.jumps(flatrs))
 
     # Combine with reaction-detected scales
     has_sde = has_sde || user_has_sde
-    has_jump = has_jump || user_has_jump
+    has_jump = has_jump || user_has_jump || user_has_poissonian
 
     # Build the unified System from the flattened ReactionSystem.
     sys = hybrid_model(flatrs; name, physical_scales, default_scale,
@@ -1343,8 +1363,9 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
     if has_jump
         # Any jumps present → JumpProblem (wrapping ODEProblem or SDEProblem as needed)
         # For SDE+Jump: mtkcompile converts brownians → noise_eqs via extract_brownians_to_noise_eqs
+        # For poissonians: mtkcompile converts poissonians → ConstantRateJump/VariableRateJump
         # For pure Jump: complete is sufficient (avoids unnecessary mtkcompile overhead)
-        sys = has_sde ? MT.mtkcompile(sys) : complete(sys)
+        sys = (has_sde || user_has_poissonian) ? MT.mtkcompile(sys) : complete(sys)
 
         # For pure jump over DiscreteProblem, preserve integer u0 types.
         if !has_ode && !has_sde && !haskey(kwargs, :u0_eltype)
