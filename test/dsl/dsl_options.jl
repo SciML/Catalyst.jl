@@ -1125,6 +1125,79 @@ let
     @test Catalyst.isequivalent(rs2, rs3)
 end
 
+### Poissonians ###
+
+# Checks equivalence of a poissonian model created using the DSL and programmatically.
+let
+    rs_dsl = @reaction_network rs begin
+        @parameters λ k d
+        @variables X(t)
+        @poissonians dN(λ)
+        @equations D(X) ~ dN
+        (k, d), 0 <--> S
+    end
+    @parameters λ k d
+    @species S(t)
+    @variables X(t)
+    @poissonians dN(λ)
+    eqs = [
+        Reaction(k, [], [S]),
+        Reaction(d, [S], []),
+        D(X) ~ dN
+    ]
+    rs_prog = complete(ReactionSystem(eqs, t; poissonians = [dN], name = :rs))
+    @test Catalyst.isequivalent(rs_dsl, rs_prog)
+end
+
+# Checks that poissonians are correctly stored (single and multiple).
+let
+    rs1 = @reaction_network rs begin
+        @parameters λ
+        @poissonians dN(λ)
+        @equations D(V) ~ dN
+        (p, d), 0 <--> X
+    end
+    rs2 = @reaction_network rs begin
+        @parameters λ₁ λ₂
+        @poissonians begin
+            dN₁(λ₁)
+            dN₂(λ₂)
+        end
+        @equations begin
+            D(V) ~ dN₁
+            D(W) ~ dN₂
+        end
+        (p, d), 0 <--> X
+    end
+
+    @test length(ModelingToolkitBase.get_poissonians(rs1)) == 1
+    @test length(ModelingToolkitBase.get_poissonians(rs2)) == 2
+end
+
+# Checks that poissonians with interpolated rate expressions work correctly.
+let
+    @parameters k
+    @variables V(t)
+    rate_expr = k * V
+    rs_interp = @reaction_network rs begin
+        @parameters k d
+        @variables V(t)
+        @poissonians dN($(rate_expr))
+        @equations D(V) ~ dN - V
+        (k, d), 0 <--> S
+    end
+    @parameters d
+    @species S(t)
+    @poissonians dN(k * V)
+    eqs = [
+        Reaction(k, [], [S]),
+        Reaction(d, [S], []),
+        D(V) ~ dN - V
+    ]
+    rs_prog = complete(ReactionSystem(eqs, t; poissonians = [dN], name = :rs))
+    @test Catalyst.isequivalent(rs_interp, rs_prog)
+end
+
 ### Test `@equations` Option for Coupled CRN/Equations Models ###
 
 # Checks creation of basic network.
