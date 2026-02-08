@@ -50,7 +50,7 @@ let
     u₀ = [sys₁.m => 0.0, sys₁.P => 20.0, sys₂.m => 0.0, sys₂.P => 0.0,
         sys₃.m => 0.0, sys₃.P => 0.0]
     tspan = (0.0, 100000.0)
-    oprob = ODEProblem(oderepressilator, u₀, tspan, pvals)
+    oprob = ODEProblem(oderepressilator, merge(Dict(u₀), Dict(pvals)), tspan)
     sol = solve(oprob, Tsit5())
 
     # Hardcoded network.
@@ -285,7 +285,7 @@ let
     osys = ode_model(rs; include_zero_odes = false)
     p = [r₊ => 1.0, r₋ => 2.0, ns.β => 3.0]
     u₀ = [A => 1.0, B => 2.0, C => 0.0]
-    oprob = ODEProblem(mtkcompile(osys), u₀, (0.0, 10.0), p)
+    oprob = ODEProblem(mtkcompile(osys), merge(Dict(u₀), Dict(p)), (0.0, 10.0))
     sol = solve(oprob, Tsit5())
     @test isapprox(0, norm(sol[ns.D] .- 2 * sol[A] - 3 * sol[B]), atol = (100 * eps()))
     psyms = [:r₊ => 1.0, :r₋ => 2.0, :ns₊β => 3.0]
