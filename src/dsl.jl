@@ -279,9 +279,7 @@ function make_reaction_system(ex::Expr, name)
     ps_inferred = setdiff(ps_pre_inferred, vs_inferred, diffs_inferred)
     syms_inferred = union(sps_inferred, ps_inferred, vs_inferred, diffs_inferred)
     all_syms = union(syms_declared, syms_inferred)
-
     validate_poissonian_rate_syms(options, all_syms)
-
     obsexpr, obs_eqs, obs_syms = read_observables_option(options, ivs,
         union(sps_declared, vs_declared), all_syms; requiredec)
 
@@ -750,7 +748,10 @@ function _collect_symbols!(syms::Vector{Symbol}, ex)
         push!(syms, ex)
     elseif ex isa Expr
         is_escaped_expr(ex) && return
-        for arg in ex.args
+        # For function/operator calls, skip the call head (e.g. `*`, `sin`) and
+        # only inspect argument expressions for user-declared symbols.
+        args = (ex.head == :call) ? ex.args[2:end] : ex.args
+        for arg in args
             _collect_symbols!(syms, arg)
         end
     end
