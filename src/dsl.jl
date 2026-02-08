@@ -10,7 +10,7 @@ const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔
 # Declares the keys used for various options.
 const option_keys = (:species, :parameters, :variables, :discretes, :ivs, :compounds, :observables,
     :default_noise_scaling, :differentials, :equations, :continuous_events, :discrete_events,
-    :brownians, :combinatoric_ratelaws, :require_declaration)
+    :brownians, :poissonians, :combinatoric_ratelaws, :require_declaration)
 
 ### `@species` Macro ###
 
@@ -262,8 +262,9 @@ function make_reaction_system(ex::Expr, name)
     cmpexpr_init, cmps_declared = read_compounds_option(options)
     diffsexpr, diffs_declared = read_differentials_option(options)
     brownsexpr_init, browns_declared = read_brownians_option(options)
+    poissexpr_init, poiss_declared = read_poissonians_option(options)
     syms_declared = collect(Iterators.flatten((cmps_declared, sps_declared, ps_declared,
-        vs_declared, discs_declared, ivs, diffs_declared, browns_declared)))
+        vs_declared, discs_declared, ivs, diffs_declared, browns_declared, poiss_declared)))
     if !allunique(syms_declared)
         nonunique_syms = [s for s in syms_declared if count(x -> x == s, syms_declared) > 1]
         error("The following symbols $(unique(nonunique_syms)) have explicitly been declared as multiple types of components (e.g. occur in at least two of the `@species`, `@parameters`, `@variables`, `@ivs`, `@compounds`, `@differentials`). This is not allowed.")
@@ -278,6 +279,7 @@ function make_reaction_system(ex::Expr, name)
     ps_inferred = setdiff(ps_pre_inferred, vs_inferred, diffs_inferred)
     syms_inferred = union(sps_inferred, ps_inferred, vs_inferred, diffs_inferred)
     all_syms = union(syms_declared, syms_inferred)
+    validate_poissonian_rate_syms(options, all_syms)
     obsexpr, obs_eqs, obs_syms = read_observables_option(options, ivs,
         union(sps_declared, vs_declared), all_syms; requiredec)
 
@@ -299,6 +301,7 @@ function make_reaction_system(ex::Expr, name)
     discsexpr, discsvar = assign_var_to_symvar_declaration(discsexpr_init, "discs")
     cmpsexpr, cmpsvar = assign_var_to_symvar_declaration(cmpexpr_init, "comps")
     brownsexpr, brownsvar = assign_var_to_symvar_declaration(brownsexpr_init, "brownians", scalarize = false)
+    poissexpr, poissvar = assign_var_to_symvar_declaration(poissexpr_init, "poissonians", scalarize = false)
     rxsexprs = get_rxexprs(reactions, equations, all_syms)
 
     # Assemblies the full expression that declares all required symbolic variables, and
@@ -314,6 +317,7 @@ function make_reaction_system(ex::Expr, name)
         $cmpsexpr
         $diffsexpr
         $brownsexpr
+        $poissexpr
 
         # Stores each kwarg in a variable. Not necessary, but useful when debugging generated code.
         name = $name
@@ -328,8 +332,8 @@ function make_reaction_system(ex::Expr, name)
         _default_reaction_metadata = $default_reaction_metadata
 
         remake_ReactionSystem_internal(
-            make_ReactionSystem_internal(rx_eq_vec, $tiv, us, ps, $brownsvar; name, spatial_ivs,
-                observed = _observed, continuous_events = _continuous_events,
+            make_ReactionSystem_internal(rx_eq_vec, $tiv, us, ps, $brownsvar; poissonians = $poissvar,
+                name, spatial_ivs, observed = _observed, continuous_events = _continuous_events,
                 discrete_events = _discrete_events, combinatoric_ratelaws = _combinatoric_ratelaws);
             default_reaction_metadata = _default_reaction_metadata)
     end))
@@ -682,6 +686,88 @@ function read_brownians_option(options)
     browns_declared = extract_syms(options, :brownians)    
     brownsexpr_init = haskey(options, :brownians) ? options[:brownians] : :()
     return brownsexpr_init, browns_declared
+end
+
+# Creates the initial expression for declaring poissonians. Also extracts any symbols
+# declared as poissonians by the `@poissonians` option. Unlike brownians (plain symbols),
+# poissonians use call-expression syntax (e.g. `dN(λ)`), so custom name extraction is needed.
+function read_poissonians_option(options)
+    poiss_declared = extract_poissonian_names(options)
+    poissexpr_init = haskey(options, :poissonians) ? options[:poissonians] : :()
+    return poissexpr_init, poiss_declared
+end
+
+# Extract symbol names from @poissonians call expressions (e.g., dN(λ) → :dN).
+function extract_poissonian_names(options)
+    !haskey(options, :poissonians) && return Union{Symbol, Expr}[]
+    ex = options[:poissonians]
+    names = Union{Symbol, Expr}[]
+    for arg in ex.args[3:end]  # Skip macrocall head and LineNumberNode
+        arg isa LineNumberNode && continue
+        if arg isa Expr && arg.head == :block
+            for inner in arg.args
+                inner isa LineNumberNode && continue
+                (inner isa Expr && inner.head == :call) && push!(names, inner.args[1])
+            end
+        elseif arg isa Expr && arg.head == :call
+            push!(names, arg.args[1])
+        end
+    end
+    return names
+end
+
+# Extract bare symbols from poissonian rate expressions, skipping escaped (interpolated) subtrees.
+# Used to validate that all symbols in rates are pre-declared.
+function extract_poissonian_rate_syms(options)
+    !haskey(options, :poissonians) && return Symbol[]
+    rate_exprs = Any[]
+    ex = options[:poissonians]
+    for arg in ex.args[3:end]
+        arg isa LineNumberNode && continue
+        if arg isa Expr && arg.head == :block
+            for inner in arg.args
+                inner isa LineNumberNode && continue
+                if inner isa Expr && inner.head == :call && length(inner.args) >= 2
+                    push!(rate_exprs, inner.args[2])
+                end
+            end
+        elseif arg isa Expr && arg.head == :call && length(arg.args) >= 2
+            push!(rate_exprs, arg.args[2])
+        end
+    end
+    syms = Symbol[]
+    for rexpr in rate_exprs
+        _collect_symbols!(syms, rexpr)
+    end
+    return syms
+end
+
+# Recursively collect bare Symbol names from an expression, skipping escaped nodes.
+function _collect_symbols!(syms::Vector{Symbol}, ex)
+    if ex isa Symbol
+        push!(syms, ex)
+    elseif ex isa Expr
+        is_escaped_expr(ex) && return
+        # For function/operator calls, skip the call head (e.g. `*`, `sin`) and
+        # only inspect argument expressions for user-declared symbols.
+        args = (ex.head == :call) ? ex.args[2:end] : ex.args
+        for arg in args
+            _collect_symbols!(syms, arg)
+        end
+    end
+end
+
+# Validates that all non-interpolated symbols in @poissonians rate expressions are declared
+# or inferred. Throws an `UndeclaredSymbolicError` for any unrecognized symbols.
+function validate_poissonian_rate_syms(options, all_syms)
+    poiss_rate_syms = extract_poissonian_rate_syms(options)
+    undeclared = setdiff(poiss_rate_syms, all_syms)
+    if !isempty(undeclared)
+        throw(UndeclaredSymbolicError(
+            "Unrecognized symbol(s) $(join(undeclared, ", ")) in a `@poissonians` rate " *
+            "expression. Symbols in poissonian rates must be pre-declared (e.g. via " *
+            "`@parameters`, `@species`, or `@variables`) or interpolated."))
+    end
 end
 
 # Reads the variables options. Outputs a list of the variables inferred from the equations,

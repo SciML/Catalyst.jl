@@ -409,6 +409,39 @@ for full details on these features.
   @poissonians dN_birth(k * X)  # rate depends on state X
   ```
 
+- **`@poissonians` DSL option.** A new `@poissonians` option can be used in
+  `@reaction_network` and `@network_component` to declare Poissonian variables
+  inline, following the same pattern as `@brownians`:
+  ```julia
+  rn = @reaction_network begin
+      @parameters λ k d
+      @variables X(t)
+      @poissonians dN(λ)
+      @equations D(X) ~ dN
+      (k, d), 0 <--> S
+  end
+  ```
+
+  Multiple poissonians and begin/end block syntax are supported:
+  ```julia
+  rn = @reaction_network begin
+      @parameters λ₁ λ₂
+      @poissonians begin
+          dN₁(λ₁)
+          dN₂(λ₂)
+      end
+      @equations begin
+          D(V) ~ dN₁
+          D(W) ~ dN₂
+      end
+      (p, d), 0 <--> X
+  end
+  ```
+
+  Symbols appearing in poissonian rates must be pre-declared (via
+  `@parameters`, `@species`, etc.) or interpolated — they are not
+  auto-inferred from the rate expression.
+
 - **`ode_model`, `sde_model`, and `jump_model` error with informative messages**
   when called on systems containing poissonians. Use `HybridProblem` instead,
   which handles the poissonian-to-jump conversion automatically.
