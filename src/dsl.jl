@@ -279,7 +279,6 @@ function make_reaction_system(ex::Expr, name)
     ps_inferred = setdiff(ps_pre_inferred, vs_inferred, diffs_inferred)
     syms_inferred = union(sps_inferred, ps_inferred, vs_inferred, diffs_inferred)
     all_syms = union(syms_declared, syms_inferred)
-
     validate_poissonian_rate_syms(options, all_syms)
 
     obsexpr, obs_eqs, obs_syms = read_observables_option(options, ivs,
