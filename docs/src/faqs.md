@@ -64,7 +64,7 @@ plot(sol; idxs = [A, B])
 As explained in the [Reaction rate laws used in simulations](@ref introduction_to_catalyst_ratelaws) section, for
 a reaction such as `k, 2X --> 0`, the generated rate law will rescale the rate
 constant, giving `k*X^2/2` instead of `k*X^2` for ODEs and `k*X*(X-1)/2` instead
-of `k*X*(X-1)` for jumps. This can be disabled when directly `convert`ing a
+of `k*X*(X-1)` for jumps. This can be disabled when directly converting a
 [`ReactionSystem`](@ref). If `rn` is a generated [`ReactionSystem`](@ref), we can
 do
 ```@example faq1
