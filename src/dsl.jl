@@ -750,7 +750,10 @@ function _collect_symbols!(syms::Vector{Symbol}, ex)
         push!(syms, ex)
     elseif ex isa Expr
         is_escaped_expr(ex) && return
-        for arg in ex.args
+        # For function/operator calls, skip the call head (e.g. `*`, `sin`) and
+        # only inspect argument expressions for user-declared symbols.
+        args = (ex.head == :call) ? ex.args[2:end] : ex.args
+        for arg in args
             _collect_symbols!(syms, arg)
         end
     end
