@@ -5,7 +5,8 @@ module Catalyst
 
 using DocStringExtensions
 using SparseArrays, DiffEqBase, Reexport, Setfield, EnumX
-using LaTeXStrings, Latexify, Requires
+import SciMLBase
+using LaTeXStrings, Latexify
 using LinearAlgebra, Combinatorics
 using JumpProcesses: JumpProcesses, JumpProblem,
                      MassActionJump, ConstantRateJump, VariableRateJump,
