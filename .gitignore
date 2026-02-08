@@ -18,3 +18,5 @@ LocalPreferences.toml
 .claude/*
 .planning
 .planning/*
+CLAUDE.md
+AGENTS.md
