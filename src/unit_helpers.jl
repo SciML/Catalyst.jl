@@ -24,9 +24,10 @@ struct UnitValidationIssue
     """
     Machine-readable issue category.
     Current values include: `:species_unit_mismatch`,
-    `:reaction_rate_unit_mismatch`, `:additive_term_unit_mismatch`,
-    `:equation_unit_mismatch`, `:reaction_side_unit_mismatch`,
-    `:comparison_unit_mismatch`, `:conditional_condition_unit_mismatch`,
+    `:reaction_species_unit_mismatch`, `:reaction_rate_unit_mismatch`,
+    `:additive_term_unit_mismatch`, `:equation_unit_mismatch`,
+    `:reaction_side_unit_mismatch`, `:comparison_unit_mismatch`,
+    `:conditional_condition_unit_mismatch`,
     `:conditional_branch_unit_mismatch`, and `:exponent_unit_mismatch`.
     """
     kind::Symbol
@@ -77,6 +78,44 @@ function Base.showerror(io::IO, err::UnitValidationError)
         (issue.lhs_unit === nothing) || print(io, "\nlhs unit: ", issue.lhs_unit)
         (issue.rhs_unit === nothing) || print(io, "\nrhs unit: ", issue.rhs_unit)
         isempty(issue.detail) || print(io, "\ndetail: ", issue.detail)
+    end
+end
+
+# Emit @warn messages for a vector of UnitValidationIssues.
+# Used by both validate_units(::Reaction) and validate_units(::ReactionSystem).
+function _warn_unit_issues(issues::Vector{UnitValidationIssue})
+    for issue in issues
+        if issue.kind == :species_unit_mismatch
+            @warn(string("Species are expected to have units of ", issue.lhs_unit,
+                " however, species ", issue.context, " has units ", issue.rhs_unit, "."))
+        elseif issue.kind == :reaction_species_unit_mismatch
+            @warn(string("In ", issue.context, " the ", issue.detail, "."))
+        elseif issue.kind == :reaction_rate_unit_mismatch
+            @warn(string(
+                "Reaction rate laws are expected to have units of ", issue.lhs_unit,
+                " however, ", issue.context, " has units of ", issue.rhs_unit, "."))
+        elseif issue.kind == :reaction_side_unit_mismatch
+            @warn(string("in ", issue.context,
+                " the substrate units are not consistent with the product units."))
+        elseif issue.kind == :additive_term_unit_mismatch
+            @warn(string(issue.context, ": additive terms have mismatched units [",
+                issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
+        elseif issue.kind == :equation_unit_mismatch
+            @warn(string("Equation unit mismatch in ", issue.context,
+                ": lhs has units ", issue.lhs_unit, ", rhs has units ", issue.rhs_unit, "."))
+        elseif issue.kind == :comparison_unit_mismatch
+            @warn(string(issue.context, ": comparison operands have mismatched units [",
+                issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
+        elseif issue.kind == :conditional_condition_unit_mismatch
+            @warn(string(issue.context, ": ifelse condition must be unitless, got [",
+                issue.rhs_unit, "]."))
+        elseif issue.kind == :conditional_branch_unit_mismatch
+            @warn(string(issue.context, ": ifelse branches have mismatched units [",
+                issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
+        elseif issue.kind == :exponent_unit_mismatch
+            @warn(string(issue.context, ": exponent must be unitless, got [",
+                issue.rhs_unit, "]."))
+        end
     end
 end
 

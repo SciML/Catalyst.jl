@@ -747,31 +747,7 @@ the same units).
 """
 function validate_units(rx::Reaction; info::String = "", warn::Bool = true)
     report = unit_validation_report(rx; info)
-    if warn
-        for issue in report.issues
-            if issue.kind == :additive_term_unit_mismatch
-                @warn(string(issue.context, ": additive terms have mismatched units [",
-                    issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
-            elseif issue.kind == :reaction_side_unit_mismatch
-                @warn(string("in ", issue.context,
-                    " the substrate units are not consistent with the product units."))
-            elseif issue.kind == :species_unit_mismatch
-                @warn(string("In ", issue.context, " the ", issue.detail, "."))
-            elseif issue.kind == :comparison_unit_mismatch
-                @warn(string(issue.context, ": comparison operands have mismatched units [",
-                    issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
-            elseif issue.kind == :conditional_condition_unit_mismatch
-                @warn(string(issue.context, ": ifelse condition must be unitless, got [",
-                    issue.rhs_unit, "]."))
-            elseif issue.kind == :conditional_branch_unit_mismatch
-                @warn(string(issue.context, ": ifelse branches have mismatched units [",
-                    issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
-            elseif issue.kind == :exponent_unit_mismatch
-                @warn(string(issue.context, ": exponent must be unitless, got [",
-                    issue.rhs_unit, "]."))
-            end
-        end
-    end
+    warn && _warn_unit_issues(report.issues)
     return report.valid
 end
 
@@ -789,7 +765,7 @@ function unit_validation_report(rx::Reaction; info::String = "")
     for i in 2:length(rx.substrates)
         if !_units_match(catalyst_get_unit(rx.substrates[i]), subunits)
             valid = false
-            push!(issues, UnitValidationIssue(:species_unit_mismatch, string(rx), subunits,
+            push!(issues, UnitValidationIssue(:reaction_species_unit_mismatch, string(rx), subunits,
                 catalyst_get_unit(rx.substrates[i]), "substrates have differing units"))
         end
     end
@@ -798,7 +774,7 @@ function unit_validation_report(rx::Reaction; info::String = "")
     for i in 2:length(rx.products)
         if !_units_match(catalyst_get_unit(rx.products[i]), produnits)
             valid = false
-            push!(issues, UnitValidationIssue(:species_unit_mismatch, string(rx), produnits,
+            push!(issues, UnitValidationIssue(:reaction_species_unit_mismatch, string(rx), produnits,
                 catalyst_get_unit(rx.products[i]), "products have differing units"))
         end
     end

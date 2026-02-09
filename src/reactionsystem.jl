@@ -1591,36 +1591,7 @@ Notes:
 """
 function validate_units(rs::ReactionSystem; info::String = "", warn::Bool = true)
     report = unit_validation_report(rs; info)
-    if warn
-        for issue in report.issues
-            if issue.kind == :species_unit_mismatch
-                @warn(string("Species are expected to have units of ", issue.lhs_unit,
-                    " however, species ", issue.context, " has units ", issue.rhs_unit, "."))
-            elseif issue.kind == :reaction_rate_unit_mismatch
-                @warn(string(
-                    "Reaction rate laws are expected to have units of ", issue.lhs_unit,
-                    " however, ", issue.context, " has units of ", issue.rhs_unit, "."))
-            elseif issue.kind == :additive_term_unit_mismatch
-                @warn(string(issue.context, ": additive terms have mismatched units [",
-                    issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
-            elseif issue.kind == :equation_unit_mismatch
-                @warn(string("Equation unit mismatch in ", issue.context,
-                    ": lhs has units ", issue.lhs_unit, ", rhs has units ", issue.rhs_unit, "."))
-            elseif issue.kind == :comparison_unit_mismatch
-                @warn(string(issue.context, ": comparison operands have mismatched units [",
-                    issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
-            elseif issue.kind == :conditional_condition_unit_mismatch
-                @warn(string(issue.context, ": ifelse condition must be unitless, got [",
-                    issue.rhs_unit, "]."))
-            elseif issue.kind == :conditional_branch_unit_mismatch
-                @warn(string(issue.context, ": ifelse branches have mismatched units [",
-                    issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
-            elseif issue.kind == :exponent_unit_mismatch
-                @warn(string(issue.context, ": exponent must be unitless, got [",
-                    issue.rhs_unit, "]."))
-            end
-        end
-    end
+    warn && _warn_unit_issues(report.issues)
     return report.valid
 end
 

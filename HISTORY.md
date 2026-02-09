@@ -2,10 +2,13 @@
 
 ## Catalyst 16.0
 
-#### BREAKING and Bug fix: Units handling rewritten with new API
+#### BREAKING and Bug fix: Units handling rewritten with new API supporting non-SI units
 
-- The new `validate_units`/`assert_valid_units` now handle `only_use_rate` and
-  **non-SI** units like Molar correctly.
+- New `validate_units`/`assert_valid_units` functions defined on `Reaction`s and
+  `ReactionSystem`s for checking units. For `Reaction`s, consistency of terms
+  within the rate expression are checked (i.e. if the rate is a sum of terms),
+  and consistency of substrate and product species units are checked. All other
+  checks are handled by the `ReactionSystem`. 
 - **`validate_units` now correctly handles non-SI units (M, μM) in rate
   expressions.** Previously, unit validation could produce spurious failures
   with non-SI units due to floating-point precision loss during unit
@@ -34,20 +37,24 @@
   operand compatibility checks, `ifelse` branches must agree in units, and
   exponents are required to be unitless.
 
-- **Catalyst now provides explicit unit validation APIs**
-  `validate_units` (non-throwing) and `assert_valid_units` (throwing), rather
-  than overloading `validate`.
-  These APIs and their report/error types are public APIs, but are no longer
-  exported; call them as `Catalyst.validate_units(...)`,
-  `Catalyst.assert_valid_units(...)`, etc. (on Julia 1.11+, this is marked
-  via `public`).
+- **Catalyst now provides explicit unit validation APIs** `validate_units`
+  (non-throwing) and `assert_valid_units` (throwing), rather than overloading
+  `ModelingToolkitBase.validate`. These APIs and their report/error types are
+  public APIs, but are no longer exported; call them as
+  `Catalyst.validate_units(...)`, `Catalyst.assert_valid_units(...)`, etc. (on
+  Julia 1.11+, this is marked via `public`).
 
 - **New DSL option: `@unit_checks true|false`.** This controls constructor-time
   unit validation for `@reaction_network` and `@network_component` generated
   systems, matching the `unit_checks` keyword in programmatic
   `ReactionSystem(...)` and `Reaction(...)` construction (`false` by default).
-  Unit checking is opt-in: users with units should pass `unit_checks = true`
-  or `@unit_checks true` to enable validation at construction time.
+- **In all interfaces unit checking is opt-in:** users with units should pass
+  `unit_checks = true` to `ReactionSystem` and `Reaction` constructors, or use
+  the `@unit_checks true` option within the DSL to enable validation at
+  construction time. 
+- **Note** that `ReactionSystem`s assume `Reaction`s have already performed
+  their associated checks, so for full unit checking pass `unit_check = true` to
+  both (or use the DSL `@unit_checks = true` option).
 
 #### Removed: Unitful dependency
 
