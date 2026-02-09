@@ -165,7 +165,7 @@ function _cgu_symbolic(x, noise_units)
     # 2. Literal unit metadata on this node
     raw = getmetadata(x, MT.VariableUnit, nothing)
     if raw isa DQ.AbstractQuantity
-        return _ensure_sym(raw)
+        return raw
     end
 
     # 3. Bare symbol without unit metadata
@@ -209,21 +209,14 @@ function _cgu_symbolic(x, noise_units)
         args = SymbolicUtils.arguments(x)
 
         # Dependent variable calls like A(t) — look up metadata on the term
-        if SymbolicUtils.issym(op) ||
-           (iscall(op) && iscall(SymbolicUtils.operation(op)))
+        if SymbolicUtils.issym(op)
             raw2 = getmetadata(x, MT.VariableUnit, nothing)
-            return raw2 isa DQ.AbstractQuantity ? _ensure_sym(raw2) : SYM_UNITLESS
+            return raw2 isa DQ.AbstractQuantity ? raw2 : SYM_UNITLESS
         end
 
         # Indexed access: getindex(array_var, i...) — unit comes from the array.
-        # Handles both plain getindex (op === getindex) and nested call forms.
         if op === getindex
             return catalyst_get_unit(args[1], noise_units)
-        end
-        if iscall(op) && SymbolicUtils.operation(op) === Base.getindex
-            gp = SymbolicUtils.arguments(op)[1]
-            raw3 = getmetadata(gp, MT.VariableUnit, nothing)
-            return raw3 isa DQ.AbstractQuantity ? _ensure_sym(raw3) : SYM_UNITLESS
         end
 
         # Actual operations (*, /, +, -, Differential, registered functions, etc.)
@@ -288,13 +281,6 @@ function _cgu_op(op, args, noise_units)
         @warn "Cannot infer unit for $op with units $unit_args: $e"
         return SYM_UNITLESS
     end
-end
-
-# Ensure we have SymbolicDimensions form. If user used u"..." instead of us"...",
-# we keep it as-is (concrete Dimensions) — this won't break arithmetic but
-# won't benefit from exact comparison.
-function _ensure_sym(u::DQ.AbstractQuantity)
-    return u
 end
 
 """
