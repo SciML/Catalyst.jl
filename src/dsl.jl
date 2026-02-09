@@ -10,7 +10,7 @@ const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔
 # Declares the keys used for various options.
 const option_keys = (:species, :parameters, :variables, :discretes, :ivs, :compounds, :observables,
     :default_noise_scaling, :differentials, :equations, :continuous_events, :discrete_events,
-    :brownians, :poissonians, :combinatoric_ratelaws, :require_declaration)
+    :brownians, :poissonians, :combinatoric_ratelaws, :require_declaration, :checks)
 
 ### `@species` Macro ###
 
@@ -289,6 +289,7 @@ function make_reaction_system(ex::Expr, name)
     discrete_events_expr = read_events_option!(options, discs_inferred, ps_inferred, discs_declared, :discrete_events)
     default_reaction_metadata = read_default_noise_scaling_option(options)
     combinatoric_ratelaws = read_combinatoric_ratelaws_option(options)
+    checks = read_checks_option(options)
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     psexpr_init = get_psexpr(ps_inferred, stoich_ps, options)
@@ -329,12 +330,14 @@ function make_reaction_system(ex::Expr, name)
         _continuous_events = $continuous_events_expr
         _discrete_events = $discrete_events_expr
         _combinatoric_ratelaws = $combinatoric_ratelaws
+        _checks = $checks
         _default_reaction_metadata = $default_reaction_metadata
 
         remake_ReactionSystem_internal(
             make_ReactionSystem_internal(rx_eq_vec, $tiv, us, ps, $brownsvar; poissonians = $poissvar,
                 name, spatial_ivs, observed = _observed, continuous_events = _continuous_events,
-                discrete_events = _discrete_events, combinatoric_ratelaws = _combinatoric_ratelaws);
+                discrete_events = _discrete_events, combinatoric_ratelaws = _combinatoric_ratelaws,
+                checks = _checks);
             default_reaction_metadata = _default_reaction_metadata)
     end))
 end
@@ -1012,6 +1015,18 @@ end
 function read_combinatoric_ratelaws_option(options)
     return haskey(options, :combinatoric_ratelaws) ?
            get_block_option(options[:combinatoric_ratelaws]) : true
+end
+
+# Reads checks option, which determines if model construction checks should be run or not.
+# If not provided, use the default (true).
+function read_checks_option(options)
+    !haskey(options, :checks) && return true
+    checks_expr = get_block_option(options[:checks])
+    return quote
+        local checks_val = $checks_expr
+        (checks_val isa Bool) || error("@checks must evaluate to `true` or `false`, got $(checks_val) of type $(typeof(checks_val)).")
+        checks_val
+    end
 end
 
 ### `@reaction` Macro & its Internals ###

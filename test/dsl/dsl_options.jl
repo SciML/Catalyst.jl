@@ -1629,6 +1629,33 @@ let
     @test_broken isequal(rn61, rn62) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
 end
 
+# test checks DSL option
+let
+    # `@checks false` and `@checks true` should both parse and construct systems.
+    @reaction_network begin
+        @checks false
+        d, 3X --> 0
+    end
+    @reaction_network begin
+        @checks true
+        d, 3X --> 0
+    end
+
+    # Test erroneous inputs (to few, to many, wrong type).
+    @test_throws Exception @eval @reaction_network begin
+        @checks
+        d, 3X --> 0
+    end
+    @test_throws Exception @eval @reaction_network begin
+        @checks true false
+        d, 3X --> 0
+    end
+    @test_throws Exception @eval @reaction_network begin
+        @checks 1
+        d, 3X --> 0
+    end
+end
+
 # test combinatoric_ratelaws DSL option
 let
     # Test for `@combinatoric_ratelaws false`.

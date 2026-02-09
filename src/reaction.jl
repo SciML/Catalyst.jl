@@ -731,7 +731,7 @@ end
 ### Units Handling ###
 
 """
-    validate(rx::Reaction; info::String = "")
+    validate_units(rx::Reaction; info::String = "", warn::Bool = true)
 
 Check that all substrates and products within the given [`Reaction`](@ref) have
 the same units, and that the units of the reaction's rate expression are
@@ -739,30 +739,81 @@ internally consistent (i.e. if the rate involves sums, each term in the sum has
 the same units).
 
 """
-function validate(rx::Reaction; info::String = "")
-    validated = MT._validate([rx.rate], [string(rx, ": rate")], info = info)
+function validate_units(rx::Reaction; info::String = "", warn::Bool = true)
+    report = unit_validation_report(rx; info)
+    if warn
+        for issue in report.issues
+            if issue.kind == :additive_term_unit_mismatch
+                @warn(string(issue.context, ": additive terms have mismatched units [",
+                    issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
+            elseif issue.kind == :reaction_side_unit_mismatch
+                @warn(string("in ", issue.context,
+                    " the substrate units are not consistent with the product units."))
+            elseif issue.kind == :species_unit_mismatch
+                @warn(string("In ", issue.context, " the ", issue.detail, "."))
+            elseif issue.kind == :comparison_unit_mismatch
+                @warn(string(issue.context, ": comparison operands have mismatched units [",
+                    issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
+            elseif issue.kind == :conditional_condition_unit_mismatch
+                @warn(string(issue.context, ": ifelse condition must be unitless, got [",
+                    issue.rhs_unit, "]."))
+            elseif issue.kind == :conditional_branch_unit_mismatch
+                @warn(string(issue.context, ": ifelse branches have mismatched units [",
+                    issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
+            elseif issue.kind == :exponent_unit_mismatch
+                @warn(string(issue.context, ": exponent must be unitless, got [",
+                    issue.rhs_unit, "]."))
+            end
+        end
+    end
+    return report.valid
+end
 
-    subunits = isempty(rx.substrates) ? nothing : get_unit(rx.substrates[1])
+"""
+    unit_validation_report(rx::Reaction; info::String = "")
+
+Run unit validation on a [`Reaction`](@ref) and return a [`UnitValidationReport`](@ref)
+containing both overall validity and structured issue diagnostics.
+"""
+function unit_validation_report(rx::Reaction; info::String = "")
+    issues = UnitValidationIssue[]
+    valid = _validate_unit_expr(rx.rate, string(info, rx, ": rate"); issues, warn = false)
+
+    subunits = isempty(rx.substrates) ? nothing : catalyst_get_unit(rx.substrates[1])
     for i in 2:length(rx.substrates)
-        if get_unit(rx.substrates[i]) != subunits
-            validated = false
-            @warn(string("In ", rx, " the substrates have differing units."))
+        if !_units_match(catalyst_get_unit(rx.substrates[i]), subunits)
+            valid = false
+            push!(issues, UnitValidationIssue(:species_unit_mismatch, string(rx), subunits,
+                catalyst_get_unit(rx.substrates[i]), "substrates have differing units"))
         end
     end
 
-    produnits = isempty(rx.products) ? nothing : get_unit(rx.products[1])
+    produnits = isempty(rx.products) ? nothing : catalyst_get_unit(rx.products[1])
     for i in 2:length(rx.products)
-        if get_unit(rx.products[i]) != produnits
-            validated = false
-            @warn(string("In ", rx, " the products have differing units."))
+        if !_units_match(catalyst_get_unit(rx.products[i]), produnits)
+            valid = false
+            push!(issues, UnitValidationIssue(:species_unit_mismatch, string(rx), produnits,
+                catalyst_get_unit(rx.products[i]), "products have differing units"))
         end
     end
 
-    if (subunits !== nothing) && (produnits !== nothing) && (subunits != produnits)
-        validated = false
-        @warn(string("in ", rx,
-            " the substrate units are not consistent with the product units."))
+    if (subunits !== nothing) && (produnits !== nothing) && !_units_match(subunits, produnits)
+        valid = false
+        push!(issues, UnitValidationIssue(:reaction_side_unit_mismatch, string(rx), subunits,
+            produnits, "Substrate units are not consistent with product units."))
     end
 
-    validated
+    UnitValidationReport(valid, issues)
+end
+
+"""
+    assert_valid_units(rx::Reaction; info::String = "")
+
+Run strict unit validation on a [`Reaction`](@ref). Throws
+[`UnitValidationError`](@ref) if any unit inconsistency is detected.
+"""
+function assert_valid_units(rx::Reaction; info::String = "")
+    report = unit_validation_report(rx; info)
+    report.valid || throw(UnitValidationError(report, info))
+    return nothing
 end

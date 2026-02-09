@@ -335,14 +335,6 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
             !isempty(cevs) && check_equations(equations(cevs), iv)
         end
 
-        if isempty(sivs) && (checks == true || (checks & MT.CheckUnits) > 0)
-            if !all(unitless_symvar(sym) for sym in [unknowns; ps; iv])
-                for eq in eqs
-                    (eq isa Equation) && check_units(eq)
-                end
-            end
-        end
-
         # Checks that no (non-reaction) equation contains a differential w.r.t. a species.
         for eq in eqs
             (eq isa Reaction) && continue
@@ -353,7 +345,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, nps, cls, cevs,
             devs, brownians, poissonians, jumps, metadata, complete, parent)
-        checks && validate(rs)
+        checks && assert_valid_units(rs; info = string("ReactionSystem constructor for ", name))
         rs
     end
 end
@@ -1579,68 +1571,147 @@ end
 ### Units Handling ###
 
 """
-    validate(rs::ReactionSystem, info::String="")
+    validate_units(rs::ReactionSystem; info::String="", warn::Bool = true)
 
 Check that all species in the [`ReactionSystem`](@ref) have the same units, and
 that the rate laws of all reactions reduce to units of (species units) / (time
-units).
+units). Also validates unit consistency of non-reaction equations.
+
+Uses [`catalyst_get_unit`](@ref) for SymbolicDimensions-preserving unit inference,
+avoiding the floating-point precision loss that occurs with MTKBase's `get_unit`
+when using non-SI units like M or μM.
 
 Notes:
-- Does not check subsystems, constraint equations, or non-species variables.
+- Correctly handles `only_use_rate=true` reactions (does not multiply substrate
+  units into the rate).
+- Does not check subsystems or non-species variables.
 """
-function validate(rs::ReactionSystem, info::String = "")
-    specs = get_species(rs)
-
-    # if there are no species we don't check units on the system
-    isempty(specs) && return true
-
-    specunits = get_unit(specs[1])
-    validated = true
-    for spec in specs
-        if get_unit(spec) != specunits
-            validated = false
-            @warn(string("Species are expected to have units of ", specunits,
-                " however, species ", spec, " has units ", get_unit(spec), "."))
+function validate_units(rs::ReactionSystem; info::String = "", warn::Bool = true)
+    report = unit_validation_report(rs; info)
+    if warn
+        for issue in report.issues
+            if issue.kind == :species_unit_mismatch
+                @warn(string("Species are expected to have units of ", issue.lhs_unit,
+                    " however, species ", issue.context, " has units ", issue.rhs_unit, "."))
+            elseif issue.kind == :reaction_rate_unit_mismatch
+                @warn(string(
+                    "Reaction rate laws are expected to have units of ", issue.lhs_unit,
+                    " however, ", issue.context, " has units of ", issue.rhs_unit, "."))
+            elseif issue.kind == :additive_term_unit_mismatch
+                @warn(string(issue.context, ": additive terms have mismatched units [",
+                    issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
+            elseif issue.kind == :equation_unit_mismatch
+                @warn(string("Equation unit mismatch in ", issue.context,
+                    ": lhs has units ", issue.lhs_unit, ", rhs has units ", issue.rhs_unit, "."))
+            elseif issue.kind == :comparison_unit_mismatch
+                @warn(string(issue.context, ": comparison operands have mismatched units [",
+                    issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
+            elseif issue.kind == :conditional_condition_unit_mismatch
+                @warn(string(issue.context, ": ifelse condition must be unitless, got [",
+                    issue.rhs_unit, "]."))
+            elseif issue.kind == :conditional_branch_unit_mismatch
+                @warn(string(issue.context, ": ifelse branches have mismatched units [",
+                    issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
+            elseif issue.kind == :exponent_unit_mismatch
+                @warn(string(issue.context, ": exponent must be unitless, got [",
+                    issue.rhs_unit, "]."))
+            end
         end
     end
-    timeunits = get_unit(get_iv(rs))
-
-    # no units for species, time or parameters then assume validated
-    unitless = Base.get_extension(ModelingToolkitBase, :MTKDynamicQuantitiesExt).unitless
-    if (specunits in (unitless, nothing)) && (timeunits in (unitless, nothing))
-        all(unitless_symvar(p) for p in get_ps(rs)) && return true
-    end
-
-    rateunits = specunits / timeunits
-    for rx in get_rxs(rs)
-        rxunits = get_unit(rx.rate)
-        for (i, sub) in enumerate(rx.substrates)
-            rxunits *= get_unit(sub)^rx.substoich[i]
-        end
-
-        # Checks that the reaction's combined units is correct, if not, throws a warning.
-        # Needs additional checks because for cases: (1.0^n) and (1.0^n1)*(1.0^n2).
-        # These are not considered (be default) considered equal to `1.0` for unitless reactions.
-        isequal(rxunits, rateunits) && continue
-        if iscall(rxunits)
-            unitless_exp(rxunits) && continue
-            (operation(rxunits) == *) &&
-                all(unitless_exp(arg) for arg in arguments(rxunits)) && continue
-        end
-        validated = false
-        @warn(string(
-            "Reaction rate laws are expected to have units of ", rateunits, " however, ",
-            rx, " has units of ", rxunits, "."))
-    end
-
-    validated
+    return report.valid
 end
 
-# Checks if a unit consist of exponents with base 1 (and is this unitless).
-unitless_exp(u) = iscall(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
+"""
+    unit_validation_report(rs::ReactionSystem; info::String = "")
 
-# Checks if a symbolic variable is unitless. Also accounts for callable parameters (for
-# which `get_unit`'s` intended behaviour (or whether it should generate an error) is undefined: https://github.com/SciML/ModelingToolkit.jl/issues/3420).
-function unitless_symvar(sym)
-    return (sym isa Symbolics.CallAndWrap) || (MT.get_unit(sym) == 1)
+Run unit validation on a [`ReactionSystem`](@ref) and return a
+[`UnitValidationReport`](@ref) containing both overall validity and structured
+issue diagnostics.
+"""
+function unit_validation_report(rs::ReactionSystem; info::String = "")
+    # Unit checks are not yet supported for spatial systems (multiple IVs).
+    if !isempty(get_sivs(rs))
+        return UnitValidationReport(true, UnitValidationIssue[])
+    end
+
+    specs = get_species(rs)
+    issues = UnitValidationIssue[]
+    validated = true
+
+    # Checks species and reaction rates if species are present.
+    if !isempty(specs)
+        specunits = catalyst_get_unit(specs[1])
+        for spec in specs
+            su = catalyst_get_unit(spec)
+            if !_units_match(su, specunits)
+                validated = false
+                push!(issues, UnitValidationIssue(
+                    :species_unit_mismatch,
+                    string(spec),
+                    specunits,
+                    su,
+                    "Species unit mismatch"))
+            end
+        end
+        timeunits = catalyst_get_unit(get_iv(rs))
+
+        # no units for species, time, or parameters → skip reaction-rate validation
+        # but continue to check explicit equations.
+        check_reaction_rates = true
+        if _is_unitless(specunits) && _is_unitless(timeunits)
+            check_reaction_rates = !all(_unitless_symvar(p) for p in get_ps(rs))
+        end
+
+        if check_reaction_rates
+            rateunits = specunits / timeunits
+
+            # Check reaction rate units
+            for rx in get_rxs(rs)
+                rxunits = catalyst_get_unit(rx.rate)
+                if !rx.only_use_rate
+                    for (i, sub) in enumerate(rx.substrates)
+                        rxunits *= catalyst_get_unit(sub)^rx.substoich[i]
+                    end
+                end
+                if !_units_match(rxunits, rateunits)
+                    validated = false
+                    push!(issues, UnitValidationIssue(
+                        :reaction_rate_unit_mismatch,
+                        string(rx),
+                        rateunits,
+                        rxunits,
+                        "Reaction rate unit mismatch"))
+                end
+            end
+        end
+    end
+
+    # Check non-reaction equation units. Noise variables (brownians/poissonians)
+    # get effective units via _build_noise_units: brownians → time^(-1/2),
+    # poissonians → rate parameter units.
+    noise_units = _build_noise_units(rs)
+    for eq in get_eqs(rs)
+        (eq isa Reaction) && continue
+        validated &= _validate_equation(eq; noise_units, issues, warn = false)
+    end
+
+    UnitValidationReport(validated, issues)
+end
+
+"""
+    assert_valid_units(rs::ReactionSystem; info::String = "")
+
+Run strict unit validation on a [`ReactionSystem`](@ref). Throws
+[`UnitValidationError`](@ref) if any unit inconsistency is detected.
+"""
+function assert_valid_units(rs::ReactionSystem; info::String = "")
+    report = unit_validation_report(rs; info)
+    report.valid || throw(UnitValidationError(report, info))
+    return nothing
+end
+
+# Checks if a symbolic variable is unitless. Uses catalyst_get_unit to preserve
+# SymbolicDimensions. Also accounts for callable parameters.
+function _unitless_symvar(sym)
+    return (sym isa Symbolics.CallAndWrap) || _is_unitless(catalyst_get_unit(sym))
 end
