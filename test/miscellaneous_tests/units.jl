@@ -655,13 +655,15 @@ let
     @test catalyst_get_unit(k[1] * X[2]) == us"M/s"
 end
 
-# Tests validation of a system with array species.
+# Tests validation of a system with array species and array parameters.
 let
     @independent_variables t [unit=us"s"]
-    @species (X(t))[1:2] [unit=us"M"]
-    @parameters k [unit=us"s^(-1)"]
+    @species (X(t))[1:3] [unit=us"M"]
+    @parameters (k)[1:3] [unit=us"s^(-1)"] k2 [unit=us"M^(-1)*s^(-1)"]
     rxs = [
-        Reaction(k, [X[1]], [X[2]])
+        Reaction(k[1], [X[1]], [X[2]]),
+        Reaction(k[2], [X[2]], [X[3]]),
+        Reaction(k2, [X[1], X[3]], [X[2]], [1, 1], [2])
     ]
     @named rs = ReactionSystem(rxs, t)
     rs = complete(rs)
