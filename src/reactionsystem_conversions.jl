@@ -540,7 +540,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
                   conservation laws. Catalyst does not check that the conserved equations
                   still hold for the final coupled system of equations. Consider using
                   `remove_conserved = false` and instead calling
-                  ModelingToolkitBase.structural_simplify to simplify any generated system.
+                  ModelingToolkitBase.mtkcompile to simplify any generated system.
                   """
         end
         append!(eqs, ceqs)
@@ -828,7 +828,7 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
         all_differentials_permitted = false, expand_catalyst_funs = true, kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
-    spatial_convert_err(rs::ReactionSystem, MT.System)
+    spatial_convert_err(rs::ReactionSystem, System)
     remove_conserved && conseqs_remake_warn && (@warn NONLIN_PROB_REMAKE_WARNING)
     isautonomous(rs) || error(is_autonomous_error(get_iv(rs)))
 
@@ -846,7 +846,7 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
     all_differentials_permitted || nonlinear_convert_differentials_check(rs)
     eqs = [remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
 
-    MT.System(eqs, us, ps;
+    System(eqs, us, ps;
         name,
         observed = obs, initialization_eqs = initeqs,
         initial_conditions = merge(initial_conditions, defs),
