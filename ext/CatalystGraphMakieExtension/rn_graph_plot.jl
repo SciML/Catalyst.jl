@@ -140,6 +140,19 @@ function gen_distances(g::MultiGraphWrap; inc = 0.2)
     distances
 end
 
+# Convert a species to a string label, handling array species properly.
+# For regular species X(t), returns "X". For array species S(t)[1], returns "S[1]".
+function species_label(s)
+    name = string(getname(s))
+    args = sorted_arguments(Symbolics.unwrap(s))
+    if length(args) <= 1
+        return name
+    else
+        idxs = join(args[2:end], ",")
+        return string(name, "[", idxs, "]")
+    end
+end
+
 """
     plot_network(rn::ReactionSystem; kwargs...)
 
@@ -164,7 +177,7 @@ function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
     ns = length(species(rn))
     nodecolors = vcat([:skyblue3 for i in 1:ns],
         [:green for i in (ns + 1):nv(srg)])
-    ilabels = vcat(map(s -> String(tosymbol(s, escape = false)), species(rn)),
+    ilabels = vcat(map(species_label, species(rn)),
         ["R$i" for i in 1:(nv(srg) - ns)])
 
     ssm = substoichmat(rn)
@@ -283,7 +296,7 @@ end
 function complexlabels(rn::ReactionSystem)
     labels = String[]
 
-    specstrs = map(s -> String(tosymbol(s, escape = false)), species(rn))
+    specstrs = map(species_label, species(rn))
     complexes, B = reactioncomplexes(rn)
 
     for complex in complexes
