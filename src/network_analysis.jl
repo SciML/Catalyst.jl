@@ -117,6 +117,10 @@ B_{i j} = \begin{cases}
 function reactioncomplexes(rn::ReactionSystem; sparse = false)
     isempty(get_systems(rn)) ||
         error("reactioncomplexes does not currently support subsystems.")
+    
+    # Check for non-integer stoichiometry.
+    check_integer_stoichiometry(rn, "reactioncomplexes")
+    
     nps = get_networkproperties(rn)
     if isempty(nps.complexes) || (sparse != issparse(nps.complexes))
         complextorxsmap = reactioncomplexmap(rn)
@@ -182,6 +186,10 @@ Notes:
 function complexstoichmat(rn::ReactionSystem; sparse = false)
     isempty(get_systems(rn)) ||
         error("complexstoichmat does not currently support subsystems.")
+    
+    # Check for non-integer stoichiometry.
+    check_integer_stoichiometry(rn, "complexstoichmat")
+    
     nps = get_networkproperties(rn)
     if isempty(nps.complexstoichmat) || (sparse != issparse(nps.complexstoichmat))
         nps.complexstoichmat = if sparse
@@ -553,6 +561,9 @@ gives
 ```
 """
 function linkageclasses(rn::ReactionSystem)
+    # Check for non-integer stoichiometry.
+    check_integer_stoichiometry(rn, "linkageclasses")
+    
     nps = get_networkproperties(rn)
     if isempty(nps.linkageclasses)
         nps.linkageclasses = linkageclasses(incidencematgraph(rn))
@@ -647,6 +658,9 @@ end
 ```
 """
 function deficiency(rn::ReactionSystem)
+    # Check for non-integer stoichiometry.
+    check_integer_stoichiometry(rn, "deficiency")
+    
     nps = get_networkproperties(rn)
 
     # Check if deficiency has been computed already (initialized to -1)

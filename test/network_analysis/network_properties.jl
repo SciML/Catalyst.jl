@@ -534,7 +534,7 @@ let
         reactioncomplexes(rn)
     catch e
         @test occursin("non-integer stoichiometry", e.msg)
-        @test occursin("reactioncomplexmap", e.msg)
+        @test occursin("reactioncomplexes", e.msg)
     end
     
     # Confirm that integer stoichiometry works fine.
