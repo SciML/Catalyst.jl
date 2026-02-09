@@ -40,9 +40,7 @@ makedocs(sitename = "Catalyst.jl",
         assets = ["assets/favicon.ico"],
         canonical = "https://docs.sciml.ai/Catalyst/stable/"),
     modules = [Catalyst, ModelingToolkitBase,
-        isdefined(Base, :get_extension) ?
-        Base.get_extension(Catalyst, :CatalystGraphMakieExtension) :
-        Catalyst.CatalystGraphMakieExtension],
+        Base.get_extension(Catalyst, :CatalystGraphMakieExtension)],
     doctest = false,
     clean = true,
     pages = pages,
