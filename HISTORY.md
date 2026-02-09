@@ -53,8 +53,8 @@
   the `@unit_checks true` option within the DSL to enable validation at
   construction time. 
 - **Note** that `ReactionSystem`s assume `Reaction`s have already performed
-  their associated checks, so for full unit checking pass `unit_check = true` to
-  both (or use the DSL `@unit_checks = true` option).
+  their associated checks, so for full unit checking pass `unit_checks = true` to
+  both (or use the DSL `@unit_checks true` option).
 
 #### Removed: Unitful dependency
 

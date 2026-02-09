@@ -1587,6 +1587,12 @@ units like M or μM.
 Notes:
 - Correctly handles `only_use_rate=true` reactions (does not multiply substrate units into
   the rate).
+- Assumes reaction-local rate-expression checks (e.g. additive-term consistency) were already
+  performed on each `Reaction` (for example via `unit_checks = true` at `Reaction`
+  construction time, or by calling `validate_units(rx)` separately).
+- If all species/time/parameters are unitless, reaction-rate dimensional checks are skipped.
+  This mode assumes rate/equation expressions do not include literal dimensional quantities
+  (for example `us"..."` constants), which are currently unsupported model inputs.
 - Does not check subsystems, use `flatten(rs)` and then manually call validate if you want
   to check the full composed system.
 - Does not require that non-species variables have consistent units (outside of the

@@ -99,7 +99,7 @@ of all options currently available.
 - [`continuous_events`](@ref events): Allows the creation of continuous events.
 - [`discrete_events`](@ref events): Allows the creation of discrete events.
 - [`combinatoric_ratelaws`](@ref faq_combinatoric_ratelaws): Takes a single option (`true` or `false`), which sets whether to use combinatorial rate laws.
-- `checks`: Takes a single option (`true` or `false`) controlling whether constructor checks run when the DSL builds the `ReactionSystem` (`true` by default).
+- `unit_checks`: Takes a single option (`true` or `false`) controlling whether unit validation runs during DSL construction (`false` by default).
 
 ## [ModelingToolkit and Catalyst accessor functions](@id api_accessor_functions)
 A [`ReactionSystem`](@ref) is an instance of a
