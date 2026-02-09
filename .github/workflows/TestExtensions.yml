@@ -26,7 +26,7 @@ jobs:
           - "pre"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: "Setup Julia ${{ matrix.version }}"
         uses: julia-actions/setup-julia@v2
