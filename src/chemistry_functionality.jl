@@ -42,7 +42,7 @@ end
 """
     component_coefficients(s)
 
-Returns a Vector{Pari{Symbol,Int64}}, listing a compounds species (created using e.g. the @compound macro) all the coefficients and their stoichiometric coefficients.
+Returns a `Vector{Pair{Symbol,Int64}}` listing, for a compound species (created using e.g. the `@compound` macro), all the components and their stoichiometric coefficients.
 """
 component_coefficients(s::Num) = component_coefficients(value(s))
 function component_coefficients(s)
@@ -155,7 +155,7 @@ end
 """
     @compounds
 
-Macro that creates several compound species, which each is composed of smaller component species. Uses the same syntax as `@compound`, but with one compound species one each line.
+Macro that creates several compound species, which each is composed of smaller component species. Uses the same syntax as `@compound`, but with one compound species per line.
 
 Example:
 ```julia

@@ -70,7 +70,7 @@ const registered_funcs = (mm, mmr, hill, hillr, hillar)
 expand_registered_functions(in)
 
 Takes an expression, and expands registered function expressions. E.g. `mm(X,v,K)` is replaced
-with v*X/(X+K). Currently supported functions: `mm`, `mmr`, `hill`, `hillr`, and `hill`. Can
+with v*X/(X+K). Currently supported functions: `mm`, `mmr`, `hill`, `hillr`, and `hillar`. Can
 be applied to a reaction system, a reaction, an equation, or a symbolic expression. The input
 is not modified, while an output with any functions expanded is returned. If applied to a 
 reaction system model, any cached network properties are reset.
