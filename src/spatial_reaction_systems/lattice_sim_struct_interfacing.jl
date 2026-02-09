@@ -46,13 +46,13 @@ function lat_setp!(sim_struct, p, lrs::LatticeReactionSystem, p_vals)
 
     # Reshapes the values to a vector of the correct form, and calls lat_setp! on the input structure.
     p_vals_reshaped = vertex_value_form(p_vals, lrs, p)
-    lat_setp!(sim_struct, p_idx, p_vals_reshaped, num_verts(lrs))
+    return lat_setp!(sim_struct, p_idx, p_vals_reshaped, num_verts(lrs))
 end
 
 # Note: currently, `lat_setp!(oprob::ODEProblem, ...`) and `lat_setp!(SciMLBase.AbstractODEIntegrator, ...`)
 # are identical and could be merged to a single function.
 function lat_setp!(oprob::ODEProblem, p_idx::Int64, p_vals, num_verts)
-    if length(p_vals) == 1
+    return if length(p_vals) == 1
         foreach(idx -> (oprob.p[p_idx][idx] = p_vals[1]), 1:num_verts)
     elseif length(p_vals) == length(oprob.p[p_idx])
         foreach(idx -> (oprob.p[p_idx][idx] = p_vals[idx]), 1:num_verts)
@@ -65,7 +65,7 @@ function lat_setp!(jprob::JumpProblem, p_idx::Int64, p_vals, num_verts)
     error("The `lat_setp!` function is currently not supported for `JumpProblem`s.")
 end
 function lat_setp!(oint::SciMLBase.AbstractODEIntegrator, p_idx::Int64, p_vals, num_verts)
-    if length(p_vals) == 1
+    return if length(p_vals) == 1
         foreach(idx -> (oint.p[p_idx][idx] = p_vals[1]), 1:num_verts)
     elseif length(p_vals) == length(oint.p[p_idx])
         foreach(idx -> (oint.p[p_idx][idx] = p_vals[idx]), 1:num_verts)
@@ -120,7 +120,7 @@ lat_getp(oprob, :k1, lrs) # Retrieves the value of `k1`.
 function lat_getp(sim_struct, p, lrs::LatticeReactionSystem)
     edge_param_check(p, lrs)
     p_idx, _ = get_p_idxs(p, lrs)
-    lat_getp(sim_struct, p_idx, extract_lattice(lrs), num_verts(lrs))
+    return lat_getp(sim_struct, p_idx, extract_lattice(lrs), num_verts(lrs))
 end
 
 # Retrieves the lattice values for problem or integrator structures.
@@ -186,34 +186,38 @@ function lat_setu!(sim_struct, sp, lrs::LatticeReactionSystem, u)
 
     # Reshapes the values to a vector of the correct form, and calls lat_setu! on the input structure.
     u_reshaped = vertex_value_form(u, lrs, sp)
-    lat_setu!(sim_struct, sp_idx, sp_tot, u_reshaped, num_verts(lrs))
+    return lat_setu!(sim_struct, sp_idx, sp_tot, u_reshaped, num_verts(lrs))
 end
 
 function lat_setu!(oprob::ODEProblem, sp_idx::Int64, sp_tot::Int64, u, num_verts)
-    if length(u) == 1
+    return if length(u) == 1
         foreach(idx -> (oprob.u0[sp_idx + (idx - 1) * sp_tot] = u[1]), 1:num_verts)
     else
         foreach(idx -> (oprob.u0[sp_idx + (idx - 1) * sp_tot] = u[idx]), 1:num_verts)
     end
 end
 function lat_setu!(jprob::JumpProblem, sp_idx::Int64, sp_tot::Int64, u, num_verts)
-    if length(u) == 1
+    return if length(u) == 1
         foreach(idx -> (jprob.prob.u0[sp_idx, idx] = u[1]), 1:num_verts)
     else
         foreach(idx -> (jprob.prob.u0[sp_idx, idx] = u[idx]), 1:num_verts)
     end
 end
-function lat_setu!(oint::SciMLBase.AbstractODEIntegrator, sp_idx::Int64, sp_tot::Int64,
-        u, num_verts)
-    if length(u) == 1
+function lat_setu!(
+        oint::SciMLBase.AbstractODEIntegrator, sp_idx::Int64, sp_tot::Int64,
+        u, num_verts
+    )
+    return if length(u) == 1
         foreach(idx -> (oint.u[sp_idx + (idx - 1) * sp_tot] = u[1]), 1:num_verts)
     else
         foreach(idx -> (oint.u[sp_idx + (idx - 1) * sp_tot] = u[idx]), 1:num_verts)
     end
 end
-function lat_setu!(jint::JumpProcesses.SSAIntegrator, sp_idx::Int64, sp_tot::Int64,
-        u, num_verts)
-    if length(u) == 1
+function lat_setu!(
+        jint::JumpProcesses.SSAIntegrator, sp_idx::Int64, sp_tot::Int64,
+        u, num_verts
+    )
+    return if length(u) == 1
         foreach(idx -> (jint.u[sp_idx, idx] = u[1]), 1:num_verts)
     else
         foreach(idx -> (jint.u[sp_idx, idx] = u[idx]), 1:num_verts)
@@ -260,7 +264,7 @@ lat_getu(oprob, :X1, lrs) # Retrieves the value of `X1`.
 """
 function lat_getu(sim_struct, sp, lrs::LatticeReactionSystem)
     sp_idx, sp_tot = get_sp_idxs(sp, lrs)
-    lat_getu(sim_struct, sp_idx, sp_tot, extract_lattice(lrs))
+    return lat_getu(sim_struct, sp_idx, sp_tot, extract_lattice(lrs))
 end
 
 # Retrieves the lattice values for problem or integrator structures.
@@ -330,7 +334,7 @@ lat_getu(osol, :X1, lrs; t = 0.0:10.0) # Returns the value of X1 at times 0.0, 1
 function lat_getu(sol::ODESolution, sp, lrs::LatticeReactionSystem; t = nothing)
     (t isa Number) && error("The input `t` to `lat_getu` must be a `AbstractVector`.")
     sp_idx, sp_tot = get_sp_idxs(sp, lrs)
-    lat_getu(sol, extract_lattice(lrs), t, sp_idx, sp_tot)
+    return lat_getu(sol, extract_lattice(lrs), t, sp_idx, sp_tot)
 end
 
 # Function which handles the input in the case where `t` is `nothing` (i.e. return `sp`s value
@@ -350,8 +354,10 @@ end
 
 # Function which handles the input in the case where `t` is a range of values (i.e. return `sp`s
 # value at all designated time points.
-function lat_getu(sol::ODESolution, lattice, t::AbstractVector{T}, sp_idx::Int64,
-        sp_tot::Int64) where {T <: Number}
+function lat_getu(
+        sol::ODESolution, lattice, t::AbstractVector{T}, sp_idx::Int64,
+        sp_tot::Int64
+    ) where {T <: Number}
     # Checks that an appropriate `t` is provided (however, DiffEq does permit out-of-range `t`s).
     if (minimum(t) < sol.t[1]) || (maximum(t) > sol.t[end])
         error("The range of the t values provided for sampling, ($(minimum(t)),$(maximum(t))) is not fully within the range of the simulation time span ($(sol.t[1]),$(sol.t[end])).")
@@ -412,17 +418,19 @@ rebuild_lat_internals!(oprob)
 ```
 """
 function rebuild_lat_internals!(oprob::ODEProblem)
-    rebuild_lat_internals!(oprob.f.f, oprob.p, oprob.f.f.lrs)
+    return rebuild_lat_internals!(oprob.f.f, oprob.p, oprob.f.f.lrs)
 end
 
 # Function for rebuilding a `LatticeReactionSystem` integrator after it has been updated.
 function rebuild_lat_internals!(integrator::SciMLBase.AbstractODEIntegrator)
-    rebuild_lat_internals!(integrator.f.f, integrator.p, integrator.f.f.lrs)
+    return rebuild_lat_internals!(integrator.f.f, integrator.p, integrator.f.f.lrs)
 end
 
 # Function which rebuilds a `LatticeTransportODEFunction` functor for a new parameter set.
-function rebuild_lat_internals!(lt_ofun::LatticeTransportODEFunction, ps_new,
-        lrs::LatticeReactionSystem)
+function rebuild_lat_internals!(
+        lt_ofun::LatticeTransportODEFunction, ps_new,
+        lrs::LatticeReactionSystem
+    )
     # Computes Jacobian properties.
     jac = !isnothing(lt_ofun.jac_transport)
     sparse = lt_ofun.sparse
@@ -431,8 +439,10 @@ function rebuild_lat_internals!(lt_ofun::LatticeTransportODEFunction, ps_new,
     ps_new = [(length(p) == 1) ? p[1] : p for p in deepcopy(ps_new)]
     ps_new = [p => p_val for (p, p_val) in zip(parameters(lrs), deepcopy(ps_new))]
     vert_ps,
-    edge_ps = lattice_process_p(ps_new, vertex_parameters(lrs),
-        edge_parameters(lrs), lrs)
+        edge_ps = lattice_process_p(
+        ps_new, vertex_parameters(lrs),
+        edge_parameters(lrs), lrs
+    )
     ps_new = [vert_ps; edge_ps]
 
     # Creates the new transport rates and transport Jacobian part.
@@ -475,7 +485,7 @@ function replace_vec!(vec1, vec2)
         vec1[i] = v
     end
     foreach(idx -> deleteat!(vec1, idx), l1:-1:(l2 + 1))
-    foreach(val -> push!(vec1, val), vec2[(l1 + 1):l2])
+    return foreach(val -> push!(vec1, val), vec2[(l1 + 1):l2])
 end
 
 # Currently not implemented.
@@ -539,26 +549,26 @@ end
 function check_lattice_format(lattice::CartesianGridRej, u)
     (u isa AbstractArray) ||
         error("The input u should be an AbstractArray. It is a $(typeof(u)).")
-    (size(u) == lattice.dims) ||
+    return (size(u) == lattice.dims) ||
         error("The input u should have size $(lattice.dims), but has size $(size(u)).")
 end
 function check_lattice_format(lattice::AbstractSparseArray, u)
     (u isa AbstractArray) ||
         error("The input u should be an AbstractArray. It is a $(typeof(u)).")
-    (size(u) == size(lattice)) ||
+    return (size(u) == size(lattice)) ||
         error("The input u should have size $(size(lattice)), but has size $(size(u)).")
 end
 function check_lattice_format(lattice::DiGraph, u)
     (u isa AbstractArray) ||
         error("The input u should be an AbstractVector. It is a $(typeof(u)).")
-    (length(u) == nv(lattice)) ||
+    return (length(u) == nv(lattice)) ||
         error("The input u should have length $(nv(lattice)), but has length $(length(u)).")
 end
 
 # Throws an error when interfacing with an edge parameter.
 function edge_param_check(p, lrs)
     (p isa Symbol) && (p = _symbol_to_var(lrs, p))
-    if isedgeparameter(p)
+    return if isedgeparameter(p)
         throw(ArgumentError("The `lat_getp` and `lat_setp!` functions currently does not support edge parameter updating. If you require this functionality, please raise an issue on the Catalyst GitHub page and we can add this feature."))
     end
 end

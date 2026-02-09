@@ -57,8 +57,10 @@ hillar(X, Y, v, K, n) = v * (X^n) / (X^n + Y^n + K^n)
 @register_derivative hillar(X, Y, v, K, n) 2 -v * n * (Y^(n - 1)) * (X^n) / (X^n + Y^n + K^n)^2
 @register_derivative hillar(X, Y, v, K, n) 3 (X^n) / (X^n + Y^n + K^n)
 @register_derivative hillar(X, Y, v, K, n) 4 -v * n * (K^(n - 1)) * (X^n) / (X^n + Y^n + K^n)^2
-@register_derivative hillar(X, Y, v, K, n) 5 v * (X^n) * (log(X) * (Y^n + K^n) - (Y^n) * log(Y) - 
-    (K^n) * log(K)) / (X^n + Y^n + K^n)^2
+@register_derivative hillar(X, Y, v, K, n) 5 v * (X^n) * (
+    log(X) * (Y^n + K^n) - (Y^n) * log(Y) -
+        (K^n) * log(K)
+) / (X^n + Y^n + K^n)^2
 
 
 # Tuple storing all registered function (for use in various functionalities).
@@ -103,14 +105,16 @@ function expand_catalyst_function(expr)
         return args[2] * (args[3]^args[4]) / ((args[1])^args[4] + (args[3])^args[4])
     elseif operation(expr) == Catalyst.hillar
         return args[3] * (args[1]^args[5]) /
-               ((args[1])^args[5] + (args[2])^args[5] + (args[4])^args[5])
+            ((args[1])^args[5] + (args[2])^args[5] + (args[4])^args[5])
     end
 end
 
 # If applied to a Reaction, return a reaction with its rate modified.
 function expand_registered_functions(rx::Reaction)
-    Reaction(expand_registered_functions(rx.rate), rx.substrates, rx.products,
-        rx.substoich, rx.prodstoich, rx.netstoich, rx.only_use_rate, rx.metadata)
+    return Reaction(
+        expand_registered_functions(rx.rate), rx.substrates, rx.products,
+        rx.substoich, rx.prodstoich, rx.netstoich, rx.only_use_rate, rx.metadata
+    )
 end
 
 # If applied to a Equation, returns it with it applied to lhs and rhs.

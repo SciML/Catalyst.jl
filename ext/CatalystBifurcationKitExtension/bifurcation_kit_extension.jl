@@ -1,8 +1,10 @@
 ### Dispatch for BifurcationKit BifurcationProblems ###
 
 # Creates a BifurcationProblem, using a ReactionSystem as an input.
-function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
-        plot_var = nothing, record_from_solution = BK.record_sol_default, jac = true, u0 = [], kwargs...)
+function BK.BifurcationProblem(
+        rs::ReactionSystem, u0_bif, ps, bif_par, args...;
+        plot_var = nothing, record_from_solution = BK.record_sol_default, jac = true, u0 = [], kwargs...
+    )
     if !isautonomous(rs)
         error("Attempting to create a `BifurcationProblem` for a non-autonomous system (e.g. where some rate depend on $(get_iv(rs))). This is not possible.")
     end
@@ -25,8 +27,10 @@ function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
     nsys = bkext_make_nsys(rs, u0)
 
     # Makes BifurcationProblem (this call goes through the ModelingToolkit-based BifurcationKit extension).
-    return BK.BifurcationProblem(nsys, u0_bif, ps, bif_par, args...; plot_var,
-        record_from_solution, jac, kwargs...)
+    return BK.BifurcationProblem(
+        nsys, u0_bif, ps, bif_par, args...; plot_var,
+        record_from_solution, jac, kwargs...
+    )
 end
 
 # Creates the NonlinearSystem for the bifurcation problem. Used to be straightforward, but MTK

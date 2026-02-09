@@ -44,8 +44,10 @@ these. Furthermore, Catalyst uses a tolerance `tol = 10*sqrt(eps())` to determin
 computed eigenvalue is far away enough from 0 to be reliably used. This selected threshold can be changed through the `tol` argument.
 ```
 """
-function steady_state_stability(u::Vector, rs::ReactionSystem, ps;
-        tol = 10 * sqrt(eps(ss_val_type(u))), ss_jac = steady_state_jac(rs; u0 = u))
+function steady_state_stability(
+        u::Vector, rs::ReactionSystem, ps;
+        tol = 10 * sqrt(eps(ss_val_type(u))), ss_jac = steady_state_jac(rs; u0 = u)
+    )
     # Warning checks.
     if !isautonomous(rs)
         error("Attempting to compute stability for a non-autonomous system (e.g. where some rate depend on $(get_iv(rs))). This is not possible.")
@@ -107,8 +109,10 @@ Notes:
     such a way that it can be used by the `steady_state_stability` function.
 ```
 """
-function steady_state_jac(rs::ReactionSystem; u0 = [sp => 0.0 for sp in unknowns(rs)],
-        combinatoric_ratelaws = get_combinatoric_ratelaws(rs))
+function steady_state_jac(
+        rs::ReactionSystem; u0 = [sp => 0.0 for sp in unknowns(rs)],
+        combinatoric_ratelaws = get_combinatoric_ratelaws(rs)
+    )
     # If u0 is a vector of values, must be converted to something MTK understands.
 
     # Converts u0 to values MTK understands, and checks that potential conservation laws are accounted for.
@@ -117,8 +121,10 @@ function steady_state_jac(rs::ReactionSystem; u0 = [sp => 0.0 for sp in unknowns
 
     # Creates an `ODEProblem` with a Jacobian. Dummy values for `u0` and `ps` must be provided.
     ps = [p => 0.0 for p in parameters(rs)]
-    return ODEProblem(rs, u0, 0, ps; jac = true, combinatoric_ratelaws,
-        remove_conserved = true)
+    return ODEProblem(
+        rs, u0, 0, ps; jac = true, combinatoric_ratelaws,
+        remove_conserved = true
+    )
 end
 
 # Converts a `u` vector from a vector of values to a map.

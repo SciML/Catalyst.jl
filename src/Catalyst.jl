@@ -9,8 +9,8 @@ import SciMLBase
 using LaTeXStrings, Latexify
 using LinearAlgebra, Combinatorics
 using JumpProcesses: JumpProcesses, JumpProblem,
-                     MassActionJump, ConstantRateJump, VariableRateJump,
-                     SpatialMassActionJump, CartesianGrid, CartesianGridRej
+    MassActionJump, ConstantRateJump, VariableRateJump,
+    SpatialMassActionJump, CartesianGrid, CartesianGridRej
 
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkitBase
@@ -26,14 +26,14 @@ RuntimeGeneratedFunctions.init(@__MODULE__)
 import Symbolics: SymbolicT
 using Symbolics: iscall, sorted_arguments, value
 using ModelingToolkitBase: get_unknowns, get_ps, get_iv, get_systems,
-                       get_eqs, toparam, get_var_to_name, get_observed,
-                       getvar, has_iv, JumpType
+    get_eqs, toparam, get_var_to_name, get_observed,
+    getvar, has_iv, JumpType
 
 import ModelingToolkitBase: get_variables, namespace_expr, namespace_equation,
-                        modified_unknowns!, validate, namespace_variables,
-                        namespace_parameters, renamespace, flatten,
-                        is_alg_equation, is_diff_equation, collect_vars!,
-                        eqtype_supports_collect_vars
+    modified_unknowns!, validate, namespace_variables,
+    namespace_parameters, renamespace, flatten,
+    is_alg_equation, is_diff_equation, collect_vars!,
+    eqtype_supports_collect_vars
 
 # Import from owner modules (not re-exporters) per ExplicitImports.jl audit
 import Symbolics: get_variables!, rename
@@ -42,8 +42,8 @@ import ModelingToolkitBase: SymmapT
 
 # internal but needed ModelingToolkit functions
 import ModelingToolkitBase: check_variables,
-                        check_parameters, check_units,
-                        get_unit, check_equations, iscomplete
+    check_parameters, check_units,
+    get_unit, check_equations, iscomplete
 
 # Import from owner module (SymbolicUtils) per ExplicitImports.jl audit
 import SymbolicUtils: _iszero, unwrap
@@ -80,8 +80,10 @@ const CONSERVED_CONSTANT_SYMBOL = :Γ
 
 # Declares symbols which may neither be used as parameters nor unknowns.
 const forbidden_symbols_skip = Set([:ℯ, :pi, :π, :t, :∅, :Ø])
-const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
-    forbidden_symbols_skip)
+const forbidden_symbols_error = union(
+    Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
+    forbidden_symbols_skip
+)
 
 ### Package Main ###
 
@@ -111,7 +113,7 @@ export params, numparams
 # Conversions of the `ReactionSystem` structure.
 include("reactionsystem_conversions.jl")
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem,
-       SteadyStateProblem, HybridProblem
+    SteadyStateProblem, HybridProblem
 export ismassaction, oderatelaw, jumpratelaw
 
 # reaction_network macro
@@ -123,9 +125,9 @@ export @reaction_network, @network_component, @reaction, @species
 include("network_analysis.jl")
 export reactioncomplexmap, reactioncomplexes, incidencemat
 export complexstoichmat, laplacianmat, fluxmat, massactionvector, complexoutgoingmat,
-       adjacencymat
+    adjacencymat
 export incidencematgraph, linkageclasses, stronglinkageclasses,
-       terminallinkageclasses, deficiency, subnetworks
+    terminallinkageclasses, deficiency, subnetworks
 export linkagedeficiencies, isreversible, isweaklyreversible
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
 export satisfiesdeficiencyone, satisfiesdeficiencyzero
@@ -184,7 +186,7 @@ export LatticeReactionSystem
 export spatial_species, vertex_parameters, edge_parameters
 export CartesianGrid, CartesianGridReJ # (Implemented in JumpProcesses)
 export has_cartesian_lattice, has_masked_lattice, has_grid_lattice, has_graph_lattice,
-       grid_dims, grid_size
+    grid_dims, grid_size
 export make_edge_p_values, make_directed_edge_values
 
 # Specific spatial problem types.

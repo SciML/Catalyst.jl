@@ -31,8 +31,10 @@ get_substring_end(str, idx1, offset) = String(collect(str)[idx1:(end + offset)])
 ### Field Serialisation Support Functions ###
 
 # Function which handles the addition of a single component to the file string.
-function push_field(file_text::String, rn::ReactionSystem,
-        annotate::Bool, top_level::Bool, comp_funcs::Tuple)
+function push_field(
+        file_text::String, rn::ReactionSystem,
+        annotate::Bool, top_level::Bool, comp_funcs::Tuple
+    )
     has_component, get_comp_string, get_comp_annotation = comp_funcs
     has_component(rn) || (return (file_text, false))
 
@@ -69,13 +71,15 @@ end
 
 # Converts a numeric expression (e.g. p*X + 2Y) to a string (e.g. "p*X + 2Y"). Also ensures that for
 # any variables (e.g. X(t)) the call part is stripped, and only variable name (e.g. X) is written.
-function expression_2_string(expr;
-        strip_call_dict = make_strip_call_dict(Symbolics.get_variables(expr)))
+function expression_2_string(
+        expr;
+        strip_call_dict = make_strip_call_dict(Symbolics.get_variables(expr))
+    )
     strip_called_expr = substitute(expr, strip_call_dict; filterer = sub_inside_filter)
     return repr(strip_called_expr)
 end
 function sub_inside_filter(ex)
-    return if operation(ex) isa Union{Differential,Pre}
+    return if operation(ex) isa Union{Differential, Pre}
         true
     else
         SymbolicUtils.default_substitute_filter(ex)
@@ -97,8 +101,10 @@ function syms_2_declaration_string(syms; multiline_format = false)
     decs_string = (multiline_format ? " begin" : "")
     for sym in syms
         delimiter = (multiline_format ? "\n\t" : " ")
-        @string_append! decs_string delimiter sym_2_declaration_string(sym;
-            multiline_format)
+        @string_append! decs_string delimiter sym_2_declaration_string(
+            sym;
+            multiline_format
+        )
     end
     multiline_format && (@string_append! decs_string "\nend")
     return decs_string
@@ -218,24 +224,28 @@ end
 
 # List of all recognised metadata (we should add as many as possible), and th keyword used to declare
 # them in code.
-const RECOGNISED_METADATA = Dict([Catalyst.ParameterConstantSpecies => "isconstantspecies"
-                                  Catalyst.VariableBCSpecies => "isbcspecies"
-                                  Catalyst.VariableSpecies => "isspecies"
-                                  Catalyst.EdgeParameter => "edgeparameter"
-                                  Catalyst.CompoundSpecies => "iscompound"
-                                  Catalyst.CompoundComponents => "components"
-                                  Catalyst.CompoundCoefficients => "coefficients"
-                                  MT.VariableDescription => "description"
-                                  MT.VariableBounds => "bounds"
-                                  MT.VariableUnit => "unit"
-                                  MT.VariableConnectType => "connect"
-                                  #MT.VariableNoiseType => "noise"
-                                  MT.VariableInput => "input"
-                                  MT.VariableOutput => "output"
-                                  MT.VariableIrreducible => "irreducible"
-                                  MT.VariableStatePriority => "state_priority"
-                                  MT.VariableMisc => "misc"
-                                  MT.TimeDomain => "timedomain"])
+const RECOGNISED_METADATA = Dict(
+    [
+        Catalyst.ParameterConstantSpecies => "isconstantspecies"
+        Catalyst.VariableBCSpecies => "isbcspecies"
+        Catalyst.VariableSpecies => "isspecies"
+        Catalyst.EdgeParameter => "edgeparameter"
+        Catalyst.CompoundSpecies => "iscompound"
+        Catalyst.CompoundComponents => "components"
+        Catalyst.CompoundCoefficients => "coefficients"
+        MT.VariableDescription => "description"
+        MT.VariableBounds => "bounds"
+        MT.VariableUnit => "unit"
+        MT.VariableConnectType => "connect"
+        #MT.VariableNoiseType => "noise"
+        MT.VariableInput => "input"
+        MT.VariableOutput => "output"
+        MT.VariableIrreducible => "irreducible"
+        MT.VariableStatePriority => "state_priority"
+        MT.VariableMisc => "misc"
+        MT.TimeDomain => "timedomain"
+    ]
+)
 
 # List of metadata that does not need to be explicitly declared to be added (or which is handled separately).
 const SKIPPED_METADATA = [
@@ -243,7 +253,8 @@ const SKIPPED_METADATA = [
     MT.MTKVariableTypeCtx,
     MT.SymScope,
     Symbolics.VariableDefaultValue,
-    Symbolics.VariableSource]
+    Symbolics.VariableSource,
+]
 
 ### Generic Expression Handling ###
 
