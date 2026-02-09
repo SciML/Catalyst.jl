@@ -29,7 +29,7 @@ struct UnitValidationIssue
     `:reaction_side_unit_mismatch`, `:comparison_unit_mismatch`,
     `:conditional_condition_unit_mismatch`,
     `:conditional_branch_unit_mismatch`, `:exponent_unit_mismatch`,
-    and `:symbolic_stoichiometry`.
+    `:symbolic_stoichiometry`, and `:symbolic_exponent`.
     """
     kind::Symbol
     """Human-readable location/context where the issue was found."""
@@ -118,6 +118,8 @@ function _warn_unit_issues(issues::Vector{UnitValidationIssue})
                 issue.rhs_unit, "]."))
         elseif issue.kind == :symbolic_stoichiometry
             @warn(string(issue.context, ": ", issue.detail, "."))
+        elseif issue.kind == :symbolic_exponent
+            @warn(string(issue.context, ": ", issue.detail, "."))
         end
     end
 end
@@ -194,7 +196,10 @@ function _cgu_symbolic(x, noise_units)
         if SymbolicUtils.isconst(exp_val)
             return base_u ^ value(exp_val)
         else
-            return (1 * base_u) ^ exp_val
+            # Symbolic exponent on unitful base — unit is indeterminate.
+            # Validation code pre-checks via _has_symbolic_unitful_pow before
+            # reaching here, so this is a safe fallback.
+            return SYM_UNITLESS
         end
     end
 
@@ -290,6 +295,32 @@ end
 # won't benefit from exact comparison.
 function _ensure_sym(u::DQ.AbstractQuantity)
     return u
+end
+
+"""
+    _has_symbolic_unitful_pow(x) -> Bool
+
+Check whether a symbolic expression contains any power node `base^exp` where the
+base has units and the exponent is symbolic (not a constant). Such expressions have
+indeterminate units at analysis time.
+"""
+function _has_symbolic_unitful_pow(x)
+    x = Symbolics.unwrap(x)
+    x isa SymbolicT || return false
+    if SymbolicUtils.ispow(x)
+        args = SymbolicUtils.arguments(x)
+        # Only match unitful base with unitless symbolic exponent (e.g. A^n).
+        # Unitful exponents (e.g. V^t) are separately caught as :exponent_unit_mismatch.
+        if !_is_unitless(catalyst_get_unit(args[1])) &&
+           !SymbolicUtils.isconst(args[2]) &&
+           _is_unitless(catalyst_get_unit(args[2]))
+            return true
+        end
+    end
+    if iscall(x) || SymbolicUtils.isadd(x)
+        return any(_has_symbolic_unitful_pow, SymbolicUtils.arguments(x))
+    end
+    return false
 end
 
 """
@@ -403,6 +434,15 @@ to their effective units (built by `_build_noise_units` during system validation
 function _validate_equation(eq::Equation; noise_units=nothing, issues=nothing, warn::Bool = true)
     valid = true
     eq_str = string(eq)
+    if _has_symbolic_unitful_pow(eq.lhs) || _has_symbolic_unitful_pow(eq.rhs)
+        valid = false
+        issue = UnitValidationIssue(:symbolic_exponent, eq_str, nothing, nothing,
+            "Symbolic exponent on unitful base is not supported for unit validation")
+        _validation_push!(issues, issue)
+        warn && @warn(string(eq_str, ": symbolic exponent on unitful base, ",
+            "cannot validate units."))
+        return valid
+    end
     valid &= _validate_unit_expr(eq.lhs, string(eq_str, ": lhs"), noise_units; issues, warn)
     valid &= _validate_unit_expr(eq.rhs, string(eq_str, ": rhs"), noise_units; issues, warn)
     lhs_unit = catalyst_get_unit(eq.lhs, noise_units)

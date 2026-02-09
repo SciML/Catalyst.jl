@@ -759,6 +759,16 @@ containing both overall validity and structured issue diagnostics.
 """
 function unit_validation_report(rx::Reaction; info::String = "")
     issues = UnitValidationIssue[]
+    valid = true
+
+    # Symbolic exponents on unitful bases have indeterminate units.
+    if _has_symbolic_unitful_pow(rx.rate)
+        push!(issues, UnitValidationIssue(:symbolic_exponent,
+            string(rx), nothing, nothing,
+            "Symbolic exponent on unitful base is not supported for unit validation"))
+        return UnitValidationReport(false, issues)
+    end
+
     valid = _validate_unit_expr(rx.rate, string(info, rx, ": rate"); issues, warn = false)
 
     subunits = isempty(rx.substrates) ? nothing : catalyst_get_unit(rx.substrates[1])

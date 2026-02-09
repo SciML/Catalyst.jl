@@ -979,6 +979,54 @@ let
 end
 
 
+### Symbolic Exponents ###
+
+# Tests that symbolic exponents on unitful bases produce :symbolic_exponent issues
+# rather than returning broken (non-Quantity) types from catalyst_get_unit.
+let
+    @independent_variables t [unit=us"s"]
+    @species A(t) [unit=us"M"] B(t) [unit=us"M"]
+    @parameters v [unit=us"M/s"] K [unit=us"M"] n k [unit=us"s^(-1)"]
+
+    # Raw symbolic exponent in rate (full rate law, only_use_rate=true):
+    # v * A^n / (K^n + A^n) should produce a :symbolic_exponent issue.
+    rx_hill = Reaction(v * A^n / (K^n + A^n), [A], [B]; only_use_rate = true)
+    @named rs_hill = ReactionSystem([rx_hill], t, [A, B], [v, K, n])
+    report = Catalyst.unit_validation_report(rs_hill)
+    @test !report.valid
+    @test any(issue -> issue.kind == :symbolic_exponent, report.issues)
+
+    # With unit_checks=true, the ReactionSystem constructor should throw.
+    @test_throws UnitValidationError ReactionSystem(
+        [rx_hill], t, [A, B], [v, K, n];
+        name = :sym_exp, unit_checks = true
+    )
+
+    # Reaction-level validation also catches symbolic exponents in rate.
+    rx_report = Catalyst.unit_validation_report(rx_hill)
+    @test !rx_report.valid
+    @test any(issue -> issue.kind == :symbolic_exponent, rx_report.issues)
+
+    # Numeric exponents still work fine (full rate law, only_use_rate=true).
+    rx_num = Reaction(v * A^2 / (K^2 + A^2), [A], [B]; only_use_rate = true)
+    @named rs_num = ReactionSystem([rx_num], t, [A, B], [v, K, n])
+    @test Catalyst.unit_validation_report(rs_num).valid
+
+    # Registered hill function bypasses ispow and works correctly.
+    # Note: uses only_use_rate=false (default) — the rate constant hill(A,v,K,n) has
+    # units M^(-1)*s^(-1) here, so rate_const * A has correct units M/s.
+    @parameters v2 [unit=us"s^(-1)"]
+    rx_reg = Reaction(hill(A, v2, K, n), [A], [B])
+    @named rs_reg = ReactionSystem([rx_reg], t, [A, B], [v2, K, n])
+    @test Catalyst.unit_validation_report(rs_reg).valid
+
+    # Symbolic exponent on unitless base is fine (no units to break).
+    rx_unitless_base = Reaction(k * 2^n, [A], [B])
+    @named rs_unitless = ReactionSystem([rx_unitless_base], t, [A, B], [k, n])
+    @test Catalyst.unit_validation_report(rs_unitless).valid
+end
+
+
 ### Reaction-Level unit_checks Tests ###
 
 # Tests that Reaction constructor with unit_checks=true validates correctly.

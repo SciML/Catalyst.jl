@@ -1649,6 +1649,14 @@ function unit_validation_report(rs::ReactionSystem; info::String = "")
                         "Symbolic stoichiometry is not supported for unit validation"))
                     continue
                 end
+                # Symbolic exponents on unitful bases have indeterminate units.
+                if _has_symbolic_unitful_pow(rx.rate)
+                    validated = false
+                    push!(issues, UnitValidationIssue(:symbolic_exponent,
+                        string(rx), nothing, nothing,
+                        "Symbolic exponent on unitful base is not supported for unit validation"))
+                    continue
+                end
                 rxunits = catalyst_get_unit(rx.rate)
                 if !rx.only_use_rate
                     for (i, sub) in enumerate(rx.substrates)
