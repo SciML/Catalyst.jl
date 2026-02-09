@@ -12,7 +12,7 @@ const DQ = DynamicQuantities
 # We construct a Quantity{Float64, SymbolicDimensions} with all-zero exponents.
 const SYM_UNITLESS = DQ.Quantity(1.0, DQ.SymbolicDimensions())
 const Conditional = Union{typeof(ifelse)}
-const Comparison = Union{typeof.([==, !=, ≠, <, <=, ≤, >, >=, ≥])...}
+const Comparison = Union{typeof.([==, !=, <, <=, >, >=])...}
 const UnitValidationValue = Union{DQ.AbstractQuantity, SymbolicT}
 
 """
