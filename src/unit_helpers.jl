@@ -207,12 +207,7 @@ function _cgu_op(::Union{typeof(+), typeof(-)}, args, noise_units)
 end
 
 # Comparison operators are dimensionless.
-function _cgu_op(::Comparison, args, noise_units)
-    (length(args) >= 2) || return SYM_UNITLESS
-    catalyst_get_unit(args[1], noise_units)
-    catalyst_get_unit(args[2], noise_units)
-    return SYM_UNITLESS
-end
+_cgu_op(::Comparison, args, noise_units) = SYM_UNITLESS
 
 # ifelse(condition, x, y): condition must be unitless and branch units must match.
 function _cgu_op(::Conditional, args, noise_units)

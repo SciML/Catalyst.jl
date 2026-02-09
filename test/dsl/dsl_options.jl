@@ -1629,29 +1629,29 @@ let
     @test_broken isequal(rn61, rn62) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
 end
 
-# test checks DSL option
+# test unit_checks DSL option
 let
-    # `@checks false` and `@checks true` should both parse and construct systems.
+    # `@unit_checks false` and `@unit_checks true` should both parse and construct systems.
     @reaction_network begin
-        @checks false
+        @unit_checks false
         d, 3X --> 0
     end
     @reaction_network begin
-        @checks true
+        @unit_checks true
         d, 3X --> 0
     end
 
-    # Test erroneous inputs (to few, to many, wrong type).
+    # Test erroneous inputs (too few, too many, wrong type).
     @test_throws Exception @eval @reaction_network begin
-        @checks
+        @unit_checks
         d, 3X --> 0
     end
     @test_throws Exception @eval @reaction_network begin
-        @checks true false
+        @unit_checks true false
         d, 3X --> 0
     end
     @test_throws Exception @eval @reaction_network begin
-        @checks 1
+        @unit_checks 1
         d, 3X --> 0
     end
 end

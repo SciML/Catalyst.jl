@@ -323,10 +323,10 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, nps, cls, cevs, devs,
-            brownians, poissonians, jumps, metadata, complete = false, parent = nothing; checks::Bool = true)
+            brownians, poissonians, jumps, metadata, complete = false, parent = nothing;
+            checks::Bool = true, unit_checks::Bool = false)
 
-        # unit checks are for ODEs and Reactions only currently
-        nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
+        # Structural checks (fast, always on by default).
         if checks && isempty(sivs)
             check_variables(unknowns, iv)
             check_parameters(ps, iv)
@@ -345,7 +345,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, nps, cls, cevs,
             devs, brownians, poissonians, jumps, metadata, complete, parent)
-        checks && assert_valid_units(rs; info = string("ReactionSystem constructor for ", name))
+        unit_checks && assert_valid_units(rs; info = string("ReactionSystem constructor for ", name))
         rs
     end
 end
@@ -361,6 +361,8 @@ end
 # Calls the full constructor.
 # Note: brownians and poissonians are explicit (not auto-discovered) in this constructor;
 # use the two-argument constructor for auto-discovery from equations.
+# `unit_checks = true` validates species unit consistency, reaction rate units, and
+# equation unit balance at construction time. Default is `false`.
 function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
         poissonians = SymbolicT[],
         jumps = JumpType[],
@@ -369,6 +371,7 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
         name = nothing,
         initial_conditions = SymmapT(),
         checks = true,
+        unit_checks = false,
         networkproperties = nothing,
         combinatoric_ratelaws = true,
         balanced_bc_check = true,
@@ -469,7 +472,7 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
         systems, initial_conditions, nps, combinatoric_ratelaws,
         continuous_events, discrete_events, brownians′, poissonians′, jumps′, metadata;
-        checks = checks)
+        checks, unit_checks)
 end
 
 # Handles that events can be a single event or a vector.
@@ -1659,7 +1662,7 @@ function unit_validation_report(rs::ReactionSystem; info::String = "")
         # but continue to check explicit equations.
         check_reaction_rates = true
         if _is_unitless(specunits) && _is_unitless(timeunits)
-            check_reaction_rates = !all(_unitless_symvar(p) for p in get_ps(rs))
+            check_reaction_rates = !all(_is_unitless(catalyst_get_unit(p)) for p in get_ps(rs))
         end
 
         if check_reaction_rates
@@ -1710,8 +1713,3 @@ function assert_valid_units(rs::ReactionSystem; info::String = "")
     return nothing
 end
 
-# Checks if a symbolic variable is unitless. Uses catalyst_get_unit to preserve
-# SymbolicDimensions. Also accounts for callable parameters.
-function _unitless_symvar(sym)
-    return (sym isa Symbolics.CallAndWrap) || _is_unitless(catalyst_get_unit(sym))
-end

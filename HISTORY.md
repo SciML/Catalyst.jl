@@ -2,8 +2,10 @@
 
 ## Catalyst 16.0
 
-#### Bug fix: `validate_units`/`assert_valid_units` now handle `only_use_rate` and non-SI units correctly
+#### BREAKING and Bug fix: Units handling rewritten with new API
 
+- The new `validate_units`/`assert_valid_units` now handle `only_use_rate` and
+  **non-SI** units like Molar correctly.
 - **`validate_units` now correctly handles non-SI units (M, μM) in rate
   expressions.** Previously, unit validation could produce spurious failures
   with non-SI units due to floating-point precision loss during unit
@@ -40,10 +42,12 @@
   `Catalyst.assert_valid_units(...)`, etc. (on Julia 1.11+, this is marked
   via `public`).
 
-- **New DSL option: `@checks true|false`.** This controls constructor-time
-  checking for `@reaction_network` and `@network_component` generated systems,
-  matching the `checks` keyword in programmatic `ReactionSystem(...)`
-  construction (`true` by default).
+- **New DSL option: `@unit_checks true|false`.** This controls constructor-time
+  unit validation for `@reaction_network` and `@network_component` generated
+  systems, matching the `unit_checks` keyword in programmatic
+  `ReactionSystem(...)` and `Reaction(...)` construction (`false` by default).
+  Unit checking is opt-in: users with units should pass `unit_checks = true`
+  or `@unit_checks true` to enable validation at construction time.
 
 #### Removed: Unitful dependency
 

@@ -158,8 +158,8 @@ let
         Reaction(k_bad, [A], [B]),
         Reaction(k3, [A, B], [B], [1, 1], [2])
     ]
-    @test_throws UnitValidationError ReactionSystem(bad_rxs, t, [A, B, C], [k1, k_bad, k3]; name = :bad_rs)
-    @named bad_rs = ReactionSystem(bad_rxs, t, [A, B, C], [k1, k_bad, k3]; checks = false)
+    @test_throws UnitValidationError ReactionSystem(bad_rxs, t, [A, B, C], [k1, k_bad, k3]; name = :bad_rs, unit_checks = true)
+    @named bad_rs = ReactionSystem(bad_rxs, t, [A, B, C], [k1, k_bad, k3])
     @test (@test_logs (:warn, ) match_mode=:any validate_units(bad_rs)) == false
     @test_throws UnitValidationError assert_valid_units(bad_rs)
 end
@@ -196,8 +196,9 @@ begin
         @test catalyst_get_unit(oderatelaw(rx)) == us"M/s"
     end
 
-    # Checks that system declarations with erroneous units throw when checks are enabled.
+    # Checks that system declarations with erroneous units throw when unit_checks are enabled.
     @test_throws UnitValidationError @reaction_network begin
+        @unit_checks true
         @ivs t [unit=us"1/s"] # Here, t's unit is wrong.
         @species begin
             A(t), [unit=us"M"]
@@ -214,6 +215,7 @@ begin
         k3, A + B --> 2B
     end
     @test_throws UnitValidationError @reaction_network begin
+        @unit_checks true
         @ivs t [unit=us"s"]
         @species begin
             A(t), [unit=us"M"]
@@ -230,6 +232,7 @@ begin
         k3, A + B --> 2B
     end
     @test_throws UnitValidationError @reaction_network begin
+        @unit_checks true
         @ivs t [unit=us"s"]
         @species begin
             A(t), [unit=us"M/s"] # Here, A's unit got an extra "/s".
@@ -248,29 +251,29 @@ begin
 
 end
 
-# Tests for the @checks DSL option.
+# Tests for the @unit_checks DSL option.
 let
-    # Checks that default (no @checks) throws on bad units, same as @checks true.
-    @test_throws UnitValidationError @reaction_network begin
+    # Checks that default (no @unit_checks) does NOT throw on bad units.
+    @test_nowarn @reaction_network begin
         @ivs t [unit=us"s"]
         @species A(t) [unit=us"M"] B(t) [unit=us"M"]
         @parameters k_bad [unit=us"kg"]
         k_bad, A --> B
     end
 
-    # Checks that @checks true throws on bad units at construction time.
+    # Checks that @unit_checks true throws on bad units at construction time.
     @test_throws UnitValidationError @reaction_network begin
-        @checks true
+        @unit_checks true
         @ivs t [unit=us"s"]
         @species A(t) [unit=us"M"] B(t) [unit=us"M"]
         @parameters k_bad [unit=us"kg"]
         k_bad, A --> B
     end
 
-    # Checks that @checks false allows constructing a system with incompatible units,
+    # Checks that @unit_checks false allows constructing a system with incompatible units,
     # and that the resulting system matches an equivalent programmatic construction.
     rs_dsl = @reaction_network begin
-        @checks false
+        @unit_checks false
         @ivs t [unit=us"s"]
         @species begin
             A(t), [unit=us"M"]
@@ -286,7 +289,7 @@ let
     @species A(t) [unit=us"M"] B(t) [unit=us"M"]
     @parameters k_bad [unit=us"kg"]
     rs_prog = complete(ReactionSystem(
-        [Reaction(k_bad, [A], [B])], t; name=:rs, checks=false
+        [Reaction(k_bad, [A], [B])], t; name=:rs
     ))
     @test Catalyst.isequivalent(rs_dsl, rs_prog)
 
@@ -294,7 +297,7 @@ let
     @test validate_units(rs_dsl; warn=false) == false
     @test_throws UnitValidationError assert_valid_units(rs_dsl)
 
-    # Checks that @checks false with bad units still allows ODE problem creation.
+    # Checks that @unit_checks false with bad units still allows ODE problem creation.
     @unpack A, B, k_bad = rs_dsl
     u0 = [A => 1.0, B => 0.0]
     tspan = (0.0, 1.0)
@@ -302,9 +305,9 @@ let
     oprob = ODEProblem(rs_dsl, u0, tspan, ps)
     @test oprob isa ODEProblem
 
-    # Checks that @checks false works with @network_component (incomplete systems).
+    # Checks that @unit_checks false works with @network_component (incomplete systems).
     rs_comp = @network_component begin
-        @checks false
+        @unit_checks false
         @ivs t [unit=us"s"]
         @species X(t) [unit=us"mol"]
         @parameters d [unit=us"m"]
@@ -314,10 +317,10 @@ let
     @test length(species(rs_comp)) == 1
     @test length(reactions(rs_comp)) == 1
 
-    # Checks @checks false with a multi-reaction system where some reactions have
+    # Checks @unit_checks false with a multi-reaction system where some reactions have
     # correct units and others don't, and verifies equivalence with programmatic construction.
     rs_mixed_dsl = @reaction_network begin
-        @checks false
+        @unit_checks false
         @ivs t [unit=us"s"]
         @species begin
             A(t), [unit=us"M"]
@@ -336,7 +339,7 @@ let
     @species A(t) [unit=us"M"] B(t) [unit=us"M"] C(t) [unit=us"M"]
     @parameters k_good [unit=us"s^(-1)"] k_bad [unit=us"kg"]
     rs_mixed_prog = complete(ReactionSystem(
-        [Reaction(k_good, [A], [B]), Reaction(k_bad, [B], [C])], t; name=:rs, checks=false
+        [Reaction(k_good, [A], [B]), Reaction(k_bad, [B], [C])], t; name=:rs
     ))
     @test Catalyst.isequivalent(rs_mixed_dsl, rs_mixed_prog)
     @test validate_units(rs_mixed_dsl; warn=false) == false
@@ -805,12 +808,11 @@ let
     @test_throws UnitValidationError ReactionSystem(
         [Reaction(k, [S], nothing), D(V) ~ p],
         t, [S, V], [k, p];
-        name = :rn_bad_lhs_rhs
+        name = :rn_bad_lhs_rhs, unit_checks = true
     )
     @named rn = ReactionSystem(
         [Reaction(k, [S], nothing), D(V) ~ p],
-        t, [S, V], [k, p];
-        checks = false
+        t, [S, V], [k, p]
     )
     rn = complete(rn)
     @test (@test_logs (:warn,) match_mode=:any validate_units(rn)) == false
@@ -829,12 +831,11 @@ let
     @test_throws UnitValidationError ReactionSystem(
         [Reaction(k, [S], nothing), D(V) ~ -k * V + p],
         t, [S, V], [k, p];
-        name = :rn_bad_add_terms
+        name = :rn_bad_add_terms, unit_checks = true
     )
     @named rn = ReactionSystem(
         [Reaction(k, [S], nothing), D(V) ~ -k * V + p],
-        t, [S, V], [k, p];
-        checks = false
+        t, [S, V], [k, p]
     )
     rn = complete(rn)
     @test (@test_logs (:warn,) match_mode=:any validate_units(rn)) == false
@@ -848,8 +849,8 @@ let
     @parameters p [unit=us"kg"]
     D = Differential(t)
 
-    @test_throws UnitValidationError ReactionSystem([D(V) ~ p], t, [V], [p]; name = :eq_only_bad)
-    @named eq_only_bad = ReactionSystem([D(V) ~ p], t, [V], [p]; checks = false)
+    @test_throws UnitValidationError ReactionSystem([D(V) ~ p], t, [V], [p]; name = :eq_only_bad, unit_checks = true)
+    @named eq_only_bad = ReactionSystem([D(V) ~ p], t, [V], [p])
     @test (@test_logs (:warn,) match_mode=:any validate_units(eq_only_bad)) == false
 end
 
@@ -897,12 +898,11 @@ let
     @test_throws UnitValidationError ReactionSystem(
         [D(V) ~ ifelse(X > τ, v, v / 2)],
         t, [X, V], [v, K, τ];
-        name = :ifelse_bad_comparison
+        name = :ifelse_bad_comparison, unit_checks = true
     )
     @named rs_bad_comparison = ReactionSystem(
         [D(V) ~ ifelse(X > τ, v, v / 2)],
-        t, [X, V], [v, K, τ];
-        checks = false
+        t, [X, V], [v, K, τ]
     )
     report_bad_comparison = Catalyst.unit_validation_report(rs_bad_comparison)
     @test !report_bad_comparison.valid
@@ -912,12 +912,11 @@ let
     @test_throws UnitValidationError ReactionSystem(
         [D(V) ~ ifelse(X > K, v, X)],
         t, [X, V], [v, K, τ];
-        name = :ifelse_bad_branches
+        name = :ifelse_bad_branches, unit_checks = true
     )
     @named rs_bad_branches = ReactionSystem(
         [D(V) ~ ifelse(X > K, v, X)],
-        t, [X, V], [v, K, τ];
-        checks = false
+        t, [X, V], [v, K, τ]
     )
     report_bad_branches = Catalyst.unit_validation_report(rs_bad_branches)
     @test !report_bad_branches.valid
@@ -933,8 +932,8 @@ let
     @variables V(t) [unit=us"M"]
     D = Differential(t)
 
-    @test_throws UnitValidationError ReactionSystem([D(V) ~ V^t], t, [V], []; name = :bad_exponent_units)
-    @named rs_bad_exponent = ReactionSystem([D(V) ~ V^t], t, [V], []; checks = false)
+    @test_throws UnitValidationError ReactionSystem([D(V) ~ V^t], t, [V], []; name = :bad_exponent_units, unit_checks = true)
+    @named rs_bad_exponent = ReactionSystem([D(V) ~ V^t], t, [V], [])
     report_bad_exponent = Catalyst.unit_validation_report(rs_bad_exponent)
     @test !report_bad_exponent.valid
     @test any(issue -> issue.kind == :exponent_unit_mismatch, report_bad_exponent.issues)
@@ -951,4 +950,58 @@ let
 
     # D(D(X)) should have units M/s^2.
     @test catalyst_get_unit(D(D(X))) == us"M/s^2"
+end
+
+
+### Reaction-Level unit_checks Tests ###
+
+# Tests that Reaction constructor with unit_checks=true validates correctly.
+let
+    @independent_variables t [unit=us"s"]
+    @species A(t) [unit=us"M"] B(t) [unit=us"M"] C(t) [unit=us"M"]
+    @parameters k1 [unit=us"M/s"] k2 [unit=us"s^(-1)"] k3 [unit=us"M^(-1)*s^(-1)"]
+
+    # Valid reactions pass with unit_checks=true.
+    @test_nowarn Reaction(k1, nothing, [A]; unit_checks = true)
+    @test_nowarn Reaction(k2, [A], [B]; unit_checks = true)
+    @test_nowarn Reaction(k3, [A, B], [C]; unit_checks = true)
+
+    # Valid reaction with non-trivial stoichiometries.
+    @test_nowarn Reaction(k3, [A, B], [B], [1, 1], [2]; unit_checks = true)
+
+    # Bad-unit Reaction does NOT throw with default (unit_checks=false).
+    @parameters k_bad [unit=us"kg"]
+    @test_nowarn Reaction(k_bad, [A], [B])
+
+    # Bad-unit Reaction throws with unit_checks=true (species unit mismatch).
+    @species D_kg(t) [unit=us"kg"]
+    @test_throws UnitValidationError Reaction(k2, [A], [D_kg]; unit_checks = true)
+
+    # Rate with internally inconsistent additive terms caught at Reaction construction.
+    @parameters a [unit=us"M/s"] z [unit=us"kg/s"]
+    @test_throws UnitValidationError Reaction(a + z, nothing, [A]; unit_checks = true)
+
+    # Same inconsistent rate does NOT throw without unit_checks.
+    @test_nowarn Reaction(a + z, nothing, [A])
+end
+
+# Tests Reaction unit_checks via DSL with @unit_checks true.
+let
+    # Valid DSL reaction network with unit_checks.
+    @test_nowarn @reaction_network begin
+        @unit_checks true
+        @ivs t [unit=us"s"]
+        @species A(t) [unit=us"M"] B(t) [unit=us"M"]
+        @parameters k [unit=us"s^(-1)"]
+        k, A --> B
+    end
+
+    # DSL with @unit_checks true catches bad rate units at Reaction construction.
+    @test_throws UnitValidationError @reaction_network begin
+        @unit_checks true
+        @ivs t [unit=us"s"]
+        @species A(t) [unit=us"M"] B(t) [unit=us"M"]
+        @parameters k_bad [unit=us"kg"]
+        k_bad, A --> B
+    end
 end

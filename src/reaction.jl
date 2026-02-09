@@ -140,6 +140,9 @@ Notes:
   In this case the corresponding stoichiometry vector should also be set to `nothing`.
 - The three-argument form assumes all reactant and product stoichiometric coefficients
   are one.
+- Pass `unit_checks = true` to validate unit consistency at construction time. When
+  enabled, checks that all substrates and products share the same units, and that the
+  rate expression has internally consistent additive terms. Default is `false`.
 """
 struct Reaction{S, T}
     """The rate function (excluding mass action terms)."""
@@ -169,7 +172,8 @@ end
 # Five-argument constructor accepting rate, substrates, and products, and their stoichiometries.
 function Reaction(rate, subs, prods, substoich, prodstoich;
         netstoich = nothing, metadata = Pair{Symbol, Any}[],
-        only_use_rate = metadata_only_use_rate_check(metadata), kwargs...)
+        only_use_rate = metadata_only_use_rate_check(metadata),
+        unit_checks::Bool = false, kwargs...)
     # Handles empty/nothing vectors.
     isnothing(subs) || isempty(subs) && (subs = nothing)
     isnothing(prods) || isempty(prods) && (prods = nothing)
@@ -242,7 +246,9 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     # Ensures metadata have the correct type.
     metadata = convert(Vector{Pair{Symbol, Any}}, metadata)
 
-    Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate, metadata)
+    rx = Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate, metadata)
+    unit_checks && assert_valid_units(rx)
+    rx
 end
 
 # Three argument constructor assumes stoichiometric coefs are one and integers.
