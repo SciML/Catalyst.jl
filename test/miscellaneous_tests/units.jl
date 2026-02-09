@@ -953,6 +953,32 @@ let
 end
 
 
+### Symbolic Stoichiometry ###
+
+# Tests that symbolic stoichiometry produces a validation issue rather than crashing.
+let
+    @independent_variables t [unit=us"s"]
+    @species A(t) [unit=us"M"] B(t) [unit=us"M"]
+    @parameters k [unit=us"s^(-1)"] n
+
+    # Symbolic stoichiometry should produce a :symbolic_stoichiometry issue.
+    @test_throws UnitValidationError ReactionSystem(
+        [Reaction(k, [A], [B], [n], [1])], t, [A, B], [k, n];
+        name = :sym_stoich, unit_checks = true
+    )
+    @named rs_sym = ReactionSystem([Reaction(k, [A], [B], [n], [1])], t, [A, B], [k, n])
+    report = Catalyst.unit_validation_report(rs_sym)
+    @test !report.valid
+    @test any(issue -> issue.kind == :symbolic_stoichiometry, report.issues)
+
+    # Non-symbolic (numeric) stoichiometry still works fine.
+    @test_nowarn ReactionSystem(
+        [Reaction(k, [A], [B])], t, [A, B], [k, n];
+        name = :num_stoich, unit_checks = true
+    )
+end
+
+
 ### Reaction-Level unit_checks Tests ###
 
 # Tests that Reaction constructor with unit_checks=true validates correctly.

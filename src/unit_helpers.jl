@@ -28,7 +28,8 @@ struct UnitValidationIssue
     `:additive_term_unit_mismatch`, `:equation_unit_mismatch`,
     `:reaction_side_unit_mismatch`, `:comparison_unit_mismatch`,
     `:conditional_condition_unit_mismatch`,
-    `:conditional_branch_unit_mismatch`, and `:exponent_unit_mismatch`.
+    `:conditional_branch_unit_mismatch`, `:exponent_unit_mismatch`,
+    and `:symbolic_stoichiometry`.
     """
     kind::Symbol
     """Human-readable location/context where the issue was found."""
@@ -115,6 +116,8 @@ function _warn_unit_issues(issues::Vector{UnitValidationIssue})
         elseif issue.kind == :exponent_unit_mismatch
             @warn(string(issue.context, ": exponent must be unitless, got [",
                 issue.rhs_unit, "]."))
+        elseif issue.kind == :symbolic_stoichiometry
+            @warn(string(issue.context, ": ", issue.detail, "."))
         end
     end
 end

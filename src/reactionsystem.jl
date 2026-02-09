@@ -1576,18 +1576,22 @@ end
 """
     validate_units(rs::ReactionSystem; info::String="", warn::Bool = true)
 
-Check that all species in the [`ReactionSystem`](@ref) have the same units, and
-that the rate laws of all reactions reduce to units of (species units) / (time
-units). Also validates unit consistency of non-reaction equations.
+Check that all species in the [`ReactionSystem`](@ref) have the same units, and that the
+rate laws of all reactions reduce to units of (species units) / (time units). Also validates
+unit consistency of non-reaction equations. 
 
-Uses [`catalyst_get_unit`](@ref) for SymbolicDimensions-preserving unit inference,
-avoiding the floating-point precision loss that occurs with MTKBase's `get_unit`
-when using non-SI units like M or μM.
+Uses [`catalyst_get_unit`](@ref) for SymbolicDimensions-preserving unit inference, avoiding
+the floating-point precision loss that occurs with MTKBase's `get_unit` when using non-SI
+units like M or μM.
 
 Notes:
-- Correctly handles `only_use_rate=true` reactions (does not multiply substrate
-  units into the rate).
-- Does not check subsystems or non-species variables.
+- Correctly handles `only_use_rate=true` reactions (does not multiply substrate units into
+  the rate).
+- Does not check subsystems, use `flatten(rs)` and then manually call validate if you want
+  to check the full composed system.
+- Does not require that non-species variables have consistent units (outside of the
+  equations in which they appear).
+- Does not handle events or user-provided jumps.
 """
 function validate_units(rs::ReactionSystem; info::String = "", warn::Bool = true)
     report = unit_validation_report(rs; info)
@@ -1619,12 +1623,8 @@ function unit_validation_report(rs::ReactionSystem; info::String = "")
             su = catalyst_get_unit(spec)
             if !_units_match(su, specunits)
                 validated = false
-                push!(issues, UnitValidationIssue(
-                    :species_unit_mismatch,
-                    string(spec),
-                    specunits,
-                    su,
-                    "Species unit mismatch"))
+                push!(issues, UnitValidationIssue(:species_unit_mismatch, string(spec),
+                    specunits, su, "Species unit mismatch"))
             end
         end
         timeunits = catalyst_get_unit(get_iv(rs))
@@ -1641,6 +1641,14 @@ function unit_validation_report(rs::ReactionSystem; info::String = "")
 
             # Check reaction rate units
             for rx in get_rxs(rs)
+                # Symbolic stoichiometry cannot be used in dimensional analysis.
+                if !rx.only_use_rate && any(s -> !(s isa Number), rx.substoich)
+                    validated = false
+                    push!(issues, UnitValidationIssue(:symbolic_stoichiometry,
+                        string(rx), nothing, nothing,
+                        "Symbolic stoichiometry is not supported for unit validation"))
+                    continue
+                end
                 rxunits = catalyst_get_unit(rx.rate)
                 if !rx.only_use_rate
                     for (i, sub) in enumerate(rx.substrates)
@@ -1649,12 +1657,8 @@ function unit_validation_report(rs::ReactionSystem; info::String = "")
                 end
                 if !_units_match(rxunits, rateunits)
                     validated = false
-                    push!(issues, UnitValidationIssue(
-                        :reaction_rate_unit_mismatch,
-                        string(rx),
-                        rateunits,
-                        rxunits,
-                        "Reaction rate unit mismatch"))
+                    push!(issues, UnitValidationIssue(:reaction_rate_unit_mismatch,
+                        string(rx), rateunits, rxunits, "Reaction rate unit mismatch"))
                 end
             end
         end
@@ -1683,4 +1687,3 @@ function assert_valid_units(rs::ReactionSystem; info::String = "")
     report.valid || throw(UnitValidationError(report, info))
     return nothing
 end
-
