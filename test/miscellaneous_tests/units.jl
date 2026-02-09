@@ -51,6 +51,13 @@ let
     @test catalyst_get_unit(42) == SYM_UNITLESS
 end
 
+# Tests that concrete Dimensions (u"...") are rejected in favor of SymbolicDimensions (us"...").
+let
+    @independent_variables t [unit=us"s"]
+    @species A(t) [unit=u"M"]
+    @test_throws ArgumentError catalyst_get_unit(A)
+end
+
 # Tests catalyst_get_unit on expression types.
 let
     @independent_variables t [unit=us"s"]

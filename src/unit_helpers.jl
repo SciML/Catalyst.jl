@@ -155,6 +155,18 @@ function catalyst_get_unit(x, noise_units=nothing)
     end
 end
 
+# Validate that unit metadata uses SymbolicDimensions (from us"..."), not concrete
+# Dimensions (from u"..."). Concrete Dimensions use floating-point exponents which
+# lose precision in compound arithmetic, leading to silent unit-check failures.
+function _check_symbolic_dims(u::DQ.AbstractQuantity, x)
+    if !(DQ.dimension(u) isa DQ.SymbolicDimensions)
+        throw(ArgumentError(
+            "Unit metadata on $x uses concrete Dimensions (from u\"...\"). " *
+            "Catalyst requires SymbolicDimensions — use us\"...\" instead."))
+    end
+    return u
+end
+
 # Main symbolic dispatch
 function _cgu_symbolic(x, noise_units)
     # 1. Constant (numeric wrapped in symbolic)
@@ -165,7 +177,7 @@ function _cgu_symbolic(x, noise_units)
     # 2. Literal unit metadata on this node
     raw = getmetadata(x, MT.VariableUnit, nothing)
     if raw isa DQ.AbstractQuantity
-        return raw
+        return _check_symbolic_dims(raw, x)
     end
 
     # 3. Bare symbol without unit metadata
@@ -211,7 +223,7 @@ function _cgu_symbolic(x, noise_units)
         # Dependent variable calls like A(t) — look up metadata on the term
         if SymbolicUtils.issym(op)
             raw2 = getmetadata(x, MT.VariableUnit, nothing)
-            return raw2 isa DQ.AbstractQuantity ? raw2 : SYM_UNITLESS
+            return raw2 isa DQ.AbstractQuantity ? _check_symbolic_dims(raw2, x) : SYM_UNITLESS
         end
 
         # Indexed access: getindex(array_var, i...) — unit comes from the array.
