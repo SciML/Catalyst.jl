@@ -489,7 +489,7 @@ end
 # Function looping through all reactions, to find undeclared symbols (species or
 # parameters) and assign them to the right category.
 # `stoich_ps` records parameters used in stoichiometries (if these are not declare separately,
-# these are infered to be integers)..
+# these are inferred to be integers)..
 function extract_sps_and_ps(reactions, excluded_syms; requiredec = false)
     # Loops through all reactants and extract undeclared ones as species.
     species = OrderedSet{Union{Symbol, Expr}}()
@@ -995,7 +995,7 @@ function expr_contains_pre(expr)
 end
 
 # Read the events (continuous or discrete) provided as options to the DSL. Returns an expression which evaluates to these.
-# Infered parameters that are updated byu the event should be declared using e.g. `@discretes p(t)`.
+# Inferred parameters that are updated by the event should be declared using e.g. `@discretes p(t)`.
 # `read_events_option!` moves these from `ps_inferred` to `discs_inferred`
 function read_events_option!(options, discs_inferred::Vector, ps_inferred::Vector, discs_declared::Vector, event_type::Symbol)
     # Prepares the events, if required to, converts them to block form.

@@ -946,10 +946,10 @@ function conservationlaw_errorcheck(rs, pre_varmap)
     vars_with_vals = Set(p[1] for p in pre_varmap)
     missing_cl_vals = filter(sp -> (sp ∉ vars_with_vals) && !MT.hasdefault(sp), conslaw_species(rs))
     isempty(missing_cl_vals) && return
-    error("The system has conservation laws but initial conditions were not provided for these conservation law-invovled species: $(missing_cl_vals).")
+    error("The system has conservation laws but initial conditions were not provided for these conservation law-involved species: $(missing_cl_vals).")
 end
 
-# Returns a vector with all species that are invovled in conservation laws.
+# Returns a vector with all species that are involved in conservation laws.
 function conslaw_species(rs::ReactionSystem)
     conservationlaws(rs)
     nps = get_networkproperties(rs)

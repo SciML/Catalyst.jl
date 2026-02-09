@@ -973,7 +973,7 @@ let
     @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs1))), MiscSystemData, nothing) == nothing
     @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs2))), MiscSystemData, nothing) == π
 
-    # Check metadata for `ReactionSystem`s where metadata has been udpated
+    # Check metadata for `ReactionSystem`s where metadata has been updated
     rs1 = ModelingToolkitBase.setmetadata(rs1, MiscSystemData, "Metadata")
     rs2 = ModelingToolkitBase.setmetadata(rs2, MiscSystemData, ones(2, 3))
     @test ModelingToolkitBase.getmetadata(rs1, MiscSystemData, nothing) == "Metadata"
@@ -1004,7 +1004,7 @@ end
 # there are several places in the code where the `reactionsystem_uptodate` function is called, here
 # the code might need adaptation to take the updated reaction system into account.
 let
-    @test_nowarn Catalyst.reactionsystem_uptodate_check() # Will fix this once most things are actually workin.
+    @test_nowarn Catalyst.reactionsystem_uptodate_check() # Will fix this once most things are actually working.
 end
 
 # Test that functions using the incidence matrix properly cache it

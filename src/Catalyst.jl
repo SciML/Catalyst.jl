@@ -133,7 +133,7 @@ export conservationlaws, conservedquantities, conservedequations, conservationla
 export satisfiesdeficiencyone, satisfiesdeficiencyzero
 export iscomplexbalanced, isdetailedbalanced, robustspecies
 
-# Containes the `nullspace` function required for conservation law elimination.
+# Contains the `nullspace` function required for conservation law elimination.
 include("mtk_nullspace_function.jl")
 
 # registers CRN specific functions using Symbolics.jl

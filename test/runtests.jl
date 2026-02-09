@@ -37,7 +37,7 @@ end
 
         # Tests various miscellaneous features.
         @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
-        @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end # `_validate` currently no longer avaiable, awaiting advice.
+        @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end # `_validate` currently no longer available, awaiting advice.
         @time @safetestset "Compound Species" begin include("miscellaneous_tests/compound_macro.jl") end
         @time @safetestset "Reaction Balancing" begin include("miscellaneous_tests/reaction_balancing.jl") end
 

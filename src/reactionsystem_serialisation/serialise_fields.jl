@@ -180,7 +180,7 @@ end
 function seri_has_discretes(rn::ReactionSystem)
     return any(_is_discrete(p) for p in get_ps(rn))
 end
-# Temporary function, repalce with better after reply from Aayush.
+# Temporary function, replace with better after reply from Aayush.
 _is_discrete(param) = occursin('(', "$(param)")
 
 # Extract a string which declares the system's discretes. Uses multiline declaration (a
