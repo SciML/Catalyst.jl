@@ -1,6 +1,11 @@
 name: Spell Check
 
-on: [pull_request]
+on:
+  push:
+    branches:
+      - 'master'
+      - 'main'
+  pull_request:
 
 jobs:
   typos-check:
@@ -10,4 +15,4 @@ jobs:
       - name: Checkout Actions Repository
         uses: actions/checkout@v6
       - name: Check spelling
-        uses: crate-ci/typos@v1.18.0
+        uses: crate-ci/typos@v1.43.4
