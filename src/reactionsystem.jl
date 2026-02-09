@@ -239,7 +239,6 @@ Continuing from the example in the [`Reaction`](@ref) definition:
 Keyword Arguments:
 - `observed::Vector{Equation}`, equations specifying observed variables.
 - `systems::Vector{ReactionSystems}`, vector of sub-`ReactionSystem`s. 
-  `ODESystem`s, or `System`s.
 - `name::Symbol`, the name of the system (must be provided, or `@named` must be used).
 - `initial_conditions::SymmapT`, a dictionary mapping parameters and species to their initial
   values.
