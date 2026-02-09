@@ -54,7 +54,7 @@ a(\mathbf{X}(t)) = \frac{k}{2} A (A-1) B.
 
 Note, if the combinatoric factors are already included in one's rate constants,
 the implicit rescaling of rate constants can be disabled through use of the
-`combinatoric_ratelaws = false` argument to [`Base.convert`](@ref) or whatever
+`combinatoric_ratelaws = false` argument to `ode_model` (or similar) or whatever
 Problem is being generated, i.e.
 ```julia
 rn = @reaction_network ...
