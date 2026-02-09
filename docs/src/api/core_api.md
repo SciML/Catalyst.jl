@@ -99,6 +99,7 @@ of all options currently available.
 - [`continuous_events`](@ref events): Allows the creation of continuous events.
 - [`discrete_events`](@ref events): Allows the creation of discrete events.
 - [`combinatoric_ratelaws`](@ref faq_combinatoric_ratelaws): Takes a single option (`true` or `false`), which sets whether to use combinatorial rate laws.
+- `unit_checks`: Takes a single option (`true` or `false`) controlling whether unit validation runs during DSL construction (`false` by default).
 
 ## [ModelingToolkit and Catalyst accessor functions](@id api_accessor_functions)
 A [`ReactionSystem`](@ref) is an instance of a
@@ -302,8 +303,15 @@ component_coefficients
 
 ## Unit validation
 ```@docs
-validate(rx::Reaction; info::String = "")
-validate(rs::ReactionSystem, info::String="")
+Catalyst.validate_units(rx::Reaction; info::String = "", warn::Bool = true)
+Catalyst.validate_units(rs::ReactionSystem; info::String = "", warn::Bool = true)
+Catalyst.assert_valid_units(rx::Reaction; info::String = "")
+Catalyst.assert_valid_units(rs::ReactionSystem; info::String = "")
+Catalyst.unit_validation_report(rx::Reaction; info::String = "")
+Catalyst.unit_validation_report(rs::ReactionSystem; info::String = "")
+Catalyst.UnitValidationIssue
+Catalyst.UnitValidationReport
+Catalyst.UnitValidationError
 ```
 
 ## [Spatial modelling](@id api_lattice_simulations)

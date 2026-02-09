@@ -10,7 +10,7 @@ const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔
 # Declares the keys used for various options.
 const option_keys = (:species, :parameters, :variables, :discretes, :ivs, :compounds, :observables,
     :default_noise_scaling, :differentials, :equations, :continuous_events, :discrete_events,
-    :brownians, :poissonians, :combinatoric_ratelaws, :require_declaration)
+    :brownians, :poissonians, :combinatoric_ratelaws, :require_declaration, :unit_checks)
 
 ### `@species` Macro ###
 
@@ -289,6 +289,7 @@ function make_reaction_system(ex::Expr, name)
     discrete_events_expr = read_events_option!(options, discs_inferred, ps_inferred, discs_declared, :discrete_events)
     default_reaction_metadata = read_default_noise_scaling_option(options)
     combinatoric_ratelaws = read_combinatoric_ratelaws_option(options)
+    unit_checks = read_unit_checks_option(options)
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     psexpr_init = get_psexpr(ps_inferred, stoich_ps, options)
@@ -322,6 +323,7 @@ function make_reaction_system(ex::Expr, name)
         # Stores each kwarg in a variable. Not necessary, but useful when debugging generated code.
         name = $name
         spatial_ivs = $sivs
+        _unit_checks = $unit_checks
         rx_eq_vec = $rxsexprs
         us = setdiff(union($spsvar, $vsvar, $cmpsvar), $obs_syms)
         ps = union($psvar, $discsvar)
@@ -334,7 +336,8 @@ function make_reaction_system(ex::Expr, name)
         remake_ReactionSystem_internal(
             make_ReactionSystem_internal(rx_eq_vec, $tiv, us, ps, $brownsvar; poissonians = $poissvar,
                 name, spatial_ivs, observed = _observed, continuous_events = _continuous_events,
-                discrete_events = _discrete_events, combinatoric_ratelaws = _combinatoric_ratelaws);
+                discrete_events = _discrete_events, combinatoric_ratelaws = _combinatoric_ratelaws,
+                unit_checks = _unit_checks);
             default_reaction_metadata = _default_reaction_metadata)
     end))
 end
@@ -560,7 +563,7 @@ function get_rxexpr(rx::DSLReaction)
     prod_init = isempty(rx.products) ? nothing : :([])
     prod_stoich_init = deepcopy(prod_init)
     rx_constructor = :(Reaction($rate, $subs_init, $prod_init, $subs_stoich_init,
-        $prod_stoich_init; metadata = $(rx.metadata)))
+        $prod_stoich_init; metadata = $(rx.metadata), unit_checks = _unit_checks))
 
     # Loops through all products and substrates, and adds them (and their stoichiometries)
     # to the `Reaction` expression.
@@ -1014,6 +1017,18 @@ function read_combinatoric_ratelaws_option(options)
            get_block_option(options[:combinatoric_ratelaws]) : true
 end
 
+# Reads unit_checks option, which determines if unit validation should be run or not.
+# If not provided, use the default (false).
+function read_unit_checks_option(options)
+    !haskey(options, :unit_checks) && return false
+    unit_checks_expr = get_block_option(options[:unit_checks])
+    return quote
+        local unit_checks_val = $unit_checks_expr
+        (unit_checks_val isa Bool) || error("@unit_checks must evaluate to `true` or `false`, got $(unit_checks_val) of type $(typeof(unit_checks_val)).")
+        unit_checks_val
+    end
+end
+
 ### `@reaction` Macro & its Internals ###
 
 """
@@ -1092,10 +1107,12 @@ function make_reaction(ex::Expr)
     iv = :($(DEFAULT_IV_SYM) = default_t())
 
     # Returns a rephrased expression which generates the `Reaction`.
+    # _unit_checks is defined here so that get_rxexpr's generated code can reference it.
     quote
         $pexprs
         $iv
         $spexprs
+        _unit_checks = false
         $rxexpr
     end
 end
