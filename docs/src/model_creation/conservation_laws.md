@@ -27,7 +27,7 @@ we note that it essentially generates the same equation twice (i.e. $\frac{dX₁
 \frac{dX₁(t)}{dt} = - k₁X₁(t) + k₂(-X₁(t) + Γ) \\
 X₂(t) = -X₁(t) + Γ
 ```
-Using Catalyst, it is possible to detect any such conserved quantities and eliminate them from the system. Here, when we convert our `ReactionSystem` to an `ODESystem`, we provide the `remove_conserved = true` argument to instruct Catalyst to perform this elimination:
+Using Catalyst, it is possible to detect any such conserved quantities and eliminate them from the system. Here, when we convert our `ReactionSystem` to an ODE model, we provide the `remove_conserved = true` argument to instruct Catalyst to perform this elimination:
 ```@example conservation_laws
 osys = ode_model(rs; remove_conserved = true)
 ```
@@ -53,7 +53,7 @@ ps = [:k₁ => 10.0, :k₂ => 2.0]
 oprob = ODEProblem(rs, u0, (0.0, 1.0), ps; remove_conserved = true)
 nothing # hide
 ```
-Here, while `Γ` becomes a parameter of the new system, it has a [default value](@ref dsl_advanced_options_default_vals) equal to the corresponding conservation law. Hence, its value is computed from the initial condition `[:X₁ => 80.0, :X₂ => 20.0]`, and does not need to be provided in the parameter vector. Next, we can simulate and plot our model using normal syntax:
+Here, while `Γ` becomes a parameter of the new system, it has a default value equal to the corresponding conservation law. Hence, its value is computed from the initial condition `[:X₁ => 80.0, :X₂ => 20.0]`, and does not need to be provided in the parameter vector. Next, we can simulate and plot our model using normal syntax:
 ```@example conservation_laws
 sol = solve(oprob)
 plot(sol)
@@ -72,7 +72,7 @@ sol[:X₂]
     The `remove_conserved = true` option is available when creating `SDEProblem`s, `NonlinearProblem`s, and `SteadyStateProblem`s (and their corresponding systems). However, it cannot be used when creating `JumpProblem`s.
 
 !!! warn
-    Users of the [ModelingToolkit.jl](https://github.com/SciML/ModelingToolkit.jl) package might be familiar with the `structural_simplify` function. While it can be applied to Catalyst models as well, generally, this should be avoided (as `remove_conserved` performs a similar role, but is better adapted to these models). Furthermore, applying `structural_simplify` will interfere with conservation law removal, preventing users from accessing eliminated quantities.
+    Users of the [ModelingToolkitBase.jl](https://github.com/SciML/ModelingToolkit.jl) package might be familiar with the `mtkcompile` function. While it can be applied to Catalyst models as well, generally, this should be avoided (as `remove_conserved` performs a similar role, but is better adapted to these models). Furthermore, applying `mtkcompile` will interfere with conservation law removal, preventing users from accessing eliminated quantities.
 
 ## [Conservation law accessor functions](@id conservation_laws_accessors)
 
@@ -120,9 +120,9 @@ oprob.ps[:Γ][1]
 oprob = remake(oprob; u0 = [:X₁ => 16.0])
 oprob.ps[:Γ][1]
 ```
-It is also possible to update the value of $Γ$. Here, as $X₂$ is the species eliminated by the conservation law (which can be checked using `conservedequations`), $X₂$'s value will be modified to ensure that $Γ$'s new value is correct:
+It is also possible to update the value of $Γ$. Here, as $X₂$ is the species eliminated by the conservation law (which can be checked using `conservedequations`), $X₂$'s value will be modified to ensure that $Γ$'s new value is correct. This, however, also requires designating `X₂ = missing`
 ```@example conservation_laws
-oprob = remake(oprob; p = [:Γ => [30.0]])
+oprob = remake(oprob; u0 = [:X₂ => missing], p = [:Γ => [30.0]] )
 oprob[:X₂]
 ```
 

@@ -336,6 +336,9 @@ oprob = ODEProblem(rn, u0, (0.0, 1.0), ps)
 nothing # hide
 ```
 
+!!! note
+    Using non-integer stoichiometric coefficients is possible. However, this requires both using the `combinatoric_ratelaw = false` option, and also explicitly designating the stoichiometric parameter as a `Float64` using the approach described [here](@ref dsl_advanced_options_parameter_types).
+
 ## [Using special symbols](@id dsl_description_symbols)
 Julia permits any Unicode characters to be used in variable names, thus Catalyst can use these as well. Below we describe some cases where this can be useful. No functionality is, however, tied to this.
 

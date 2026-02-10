@@ -2,8 +2,7 @@
 In many applications one has additional algebraic or differential equations for
 non-chemical species that can be coupled to a chemical reaction network model.
 Catalyst supports coupled differential and algebraic equations, and currently
-allows conversion of such coupled systems to ModelingToolkit `ODESystem`s, `SDESystem`s, and
-`NonlinearSystem`s. 
+allows conversion of such coupled systems to to all non-jump model types.
 
 In this tutorial we'll illustrate how to make use of coupled (i.e.
 ODE/algebraic) equations. Let's consider a model of a cell with
@@ -114,7 +113,7 @@ systems together Catalyst requires that the systems have not been marked as
 `complete` (which indicates to Catalyst that a system is finalized).
 
 We can now merge the two systems into one complete `ReactionSystem` model using
-[`ModelingToolkit.extend`](@ref):
+[`ModelingToolkitBase.extend`](@ref):
 ```@example ceq2b
 @named growing_cell = extend(osys, rn)
 growing_cell = complete(growing_cell)
