@@ -46,7 +46,7 @@ As described [in our tutorial on parameter fitting using Optimization.jl](@ref o
 
 Just like for [parameter fitting](@ref optimization_parameter_fitting_basics), we create an `OptimizationProblem` using our objective function, and some initial guess of the parameter values. We also [set upper and lower bounds](@ref optimization_parameter_fitting_constraints) for each parameter using the `lb` and `ub` optional arguments (in this case limiting each parameter's value to the interval $(0.1,10.0)$).
 ```@example behaviour_optimization
-using Optimization
+using OptimizationBase
 initial_guess = [1.0, 1.0, 1.0]
 opt_prob = OptimizationProblem(pulse_amplitude, initial_guess; lb = [1e-1, 1e-1, 1e-1], ub = [1e1, 1e1, 1e1])
 nothing # hide
