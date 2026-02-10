@@ -191,3 +191,126 @@ let
         hill(X3, v3, K3, n3), X3 + Y3--> Z3
     end
 end
+
+
+### Jumps Unit Validation Tests ###
+
+# Tests that user-provided jumps with correct units pass validation.
+let
+    using ModelingToolkitBase: ConstantRateJump, VariableRateJump, MassActionJump, Pre
+
+    t = default_t()
+    @independent_variables t [unit=u"s"]
+    @species S(t) [unit=u"mol/m^3"]
+    @parameters k [unit=u"mol/(m^3*s)"]
+
+    # ConstantRateJump with correct rate units (species/time).
+    rate = k
+    affect = [S ~ Pre(S) + 1]
+    user_jump = ConstantRateJump(rate, affect)
+
+    rxs = [Reaction(k, nothing, [S])]
+    @named rs = ReactionSystem(rxs, t, [S], [k]; jumps = [user_jump])
+
+    # Should validate without warnings.
+    @test validate(rs) == true
+end
+
+# Tests that ConstantRateJump with incorrect rate units issues a warning.
+let
+    using ModelingToolkitBase: ConstantRateJump, Pre
+
+    @independent_variables t [unit=u"s"]
+    @species S(t) [unit=u"mol/m^3"]
+    @parameters k_bad [unit=u"mol/m^3"] k_good [unit=u"mol/(m^3*s)"]
+
+    # ConstantRateJump with wrong rate units (missing /s).
+    rate = k_bad
+    affect = [S ~ Pre(S) + 1]
+    user_jump = ConstantRateJump(rate, affect)
+
+    rxs = [Reaction(k_good, nothing, [S])]
+    @named rs = ReactionSystem(rxs, t, [S], [k_bad, k_good]; jumps = [user_jump])
+
+    # Should issue warning and return false.
+    @test (@test_logs (:warn, ) match_mode=:any validate(rs)) == false
+end
+
+# Tests that VariableRateJump with correct units passes validation.
+let
+    using ModelingToolkitBase: VariableRateJump, Pre
+
+    @independent_variables t [unit=u"s"]
+    @species S(t) [unit=u"mol/m^3"]
+    @parameters k [unit=u"mol/(m^3*s)"]
+
+    # VariableRateJump with correct rate units.
+    rate = k * S / S  # Still has mol/(m^3*s) units
+    affect = [S ~ Pre(S) + 1]
+    user_jump = VariableRateJump(rate, affect)
+
+    rxs = [Reaction(k, nothing, [S])]
+    @named rs = ReactionSystem(rxs, t, [S], [k]; jumps = [user_jump])
+
+    # Should validate without warnings.
+    @test validate(rs) == true
+end
+
+# Tests that VariableRateJump with incorrect rate units issues a warning.
+let
+    using ModelingToolkitBase: VariableRateJump, Pre
+
+    @independent_variables t [unit=u"s"]
+    @species S(t) [unit=u"mol/m^3"]
+    @parameters k_bad [unit=u"kg"] k_good [unit=u"mol/(m^3*s)"]
+
+    # VariableRateJump with wrong rate units.
+    rate = k_bad
+    affect = [S ~ Pre(S) + 1]
+    user_jump = VariableRateJump(rate, affect)
+
+    rxs = [Reaction(k_good, nothing, [S])]
+    @named rs = ReactionSystem(rxs, t, [S], [k_bad, k_good]; jumps = [user_jump])
+
+    # Should issue warning and return false.
+    @test (@test_logs (:warn, ) match_mode=:any validate(rs)) == false
+end
+
+
+### Events Unit Validation Tests ###
+
+# Tests that discrete events with consistent units pass validation.
+let
+    using ModelingToolkitBase: SymbolicDiscreteCallback
+
+    @independent_variables t [unit=u"s"]
+    @species S(t) [unit=u"mol/m^3"]
+    @parameters k [unit=u"mol/(m^3*s)"]
+
+    # Discrete event: reset S every 1 second.
+    discrete_events = [1.0 => [S ~ 0.0u"mol/m^3"]]
+
+    rxs = [Reaction(k, nothing, [S])]
+    @named rs = ReactionSystem(rxs, t; discrete_events)
+
+    # Should validate without warnings (unitless time trigger is fine).
+    @test validate(rs) == true
+end
+
+# Tests that continuous events with consistent units pass validation.
+let
+    using ModelingToolkitBase: SymbolicContinuousCallback
+
+    @independent_variables t [unit=u"s"]
+    @species S(t) [unit=u"mol/m^3"]
+    @parameters k [unit=u"mol/(m^3*s)"] S_threshold [unit=u"mol/m^3"]
+
+    # Continuous event: when S reaches threshold, reset to 0.
+    continuous_events = SymbolicContinuousCallback([S ~ S_threshold] => [S ~ 0.0u"mol/m^3"])
+
+    rxs = [Reaction(k, nothing, [S])]
+    @named rs = ReactionSystem(rxs, t; continuous_events)
+
+    # Should validate without warnings.
+    @test validate(rs) == true
+end
