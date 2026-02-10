@@ -205,18 +205,66 @@ let
     # Checks that the new system is expanded.
     @unpack v0, X, Y, v, K, n = rs
     continuous_events = [
-        [v*X/(X + K) ~ 1.0] => [X ~ X]
+        [v*X/(X + K) ~ 1.0] => [X ~ Pre(X)]
     ]
     discrete_events = [
-        [1.0] => [X ~ v*K/(X + K) + Y*(v + K)]
-        1.0 => [X ~ X]
-        (v * (X^n) / (X^n + K^n) > 1000.0) => [X ~ v * (K^n) / (X^n + K^n) + 2]
+        [1.0] => [X ~ v*K/(Pre(X) + K) + Pre(Y)*(v + K)]
+        1.0 => [X ~ Pre(X)]
+        (v * (X^n) / (X^n + K^n) > 1000.0) => [X ~ v * (K^n) / (Pre(X)^n + K^n) + 2]
     ]
     continuous_events = ModelingToolkitBase.SymbolicContinuousCallback.(continuous_events)
     discrete_events = ModelingToolkitBase.SymbolicDiscreteCallback.(discrete_events)
     @test isequal(only(Catalyst.get_rxs(rs_expanded)).rate, v0 + v * (X^n) / (X^n + Y^n + K^n))
-    @test_broken Catalyst.continuous_events_equal(get_continuous_events(rs_expanded), continuous_events) # expand_registered_functions corrupts event affects (sets them to nothing)
-    @test_broken Catalyst.discrete_events_equal(get_discrete_events(rs_expanded), discrete_events) # expand_registered_functions corrupts event affects (sets them to nothing)
+    @test Catalyst.continuous_events_equal(get_continuous_events(rs_expanded), continuous_events)
+    @test Catalyst.discrete_events_equal(get_discrete_events(rs_expanded), discrete_events)
+end
+
+# Tests that expand_registered_functions correctly handles affect_neg and discrete_parameters.
+let
+    @parameters v K n
+    @species X(t) Y(t)
+
+    # 1. Continuous event with distinct affect_neg containing registered functions.
+    ce = MT.SymbolicContinuousCallback(
+        [mm(X, v, K) ~ 1.0],       # condition uses registered fn
+        [X ~ mm(X, v, K)];         # affect uses registered fn
+        affect_neg = [X ~ hill(X, v, K, n)]  # affect_neg uses DIFFERENT registered fn
+    )
+    rs = ReactionSystem([Reaction(mm(X, v, K), [X], [Y])], t;
+        continuous_events = [ce], name = :test_affect_neg)
+    rs_exp = Catalyst.expand_registered_functions(rs)
+    ce_exp = get_continuous_events(rs_exp)[1]
+    # Verify conditions expanded
+    @test isequal(ce_exp.conditions, [v*X/(X + K) ~ 1.0])
+    # Verify affect expanded (mm → v*X/(X+K))
+    @test isequal(ce_exp.affect.affect, [X ~ v*X/(X + K)])
+    # Verify affect_neg expanded (hill → v*X^n/(X^n+K^n))
+    @test isequal(ce_exp.affect_neg.affect, [X ~ v*(X^n)/(X^n + K^n)])
+
+    # 2. Continuous event with discrete_parameters preserved after expansion.
+    @discretes α(t) = 1.0
+    ce_dp = MT.SymbolicContinuousCallback(
+        [mm(X, v, K) ~ 1.0] => [α ~ 0];
+        discrete_parameters = [α]
+    )
+    rs_dp = ReactionSystem([Reaction(v, [X], [Y])], t;
+        continuous_events = [ce_dp], name = :test_disc_ps_cont)
+    rs_dp_exp = Catalyst.expand_registered_functions(rs_dp)
+    ce_dp_exp = get_continuous_events(rs_dp_exp)[1]
+    @test isequal(ce_dp_exp.conditions, [v*X/(X + K) ~ 1.0])
+    @test issetequal(ce_dp_exp.affect.discrete_parameters, [α])
+
+    # 3. Discrete event with discrete_parameters preserved and affect expanded.
+    de_dp = MT.SymbolicDiscreteCallback(
+        2.0 => [α ~ mm(X, v, K)];
+        discrete_parameters = [α]
+    )
+    rs_de = ReactionSystem([Reaction(v, [X], [Y])], t;
+        discrete_events = [de_dp], name = :test_disc_ps_disc)
+    rs_de_exp = Catalyst.expand_registered_functions(rs_de)
+    de_dp_exp = get_discrete_events(rs_de_exp)[1]
+    @test isequal(de_dp_exp.affect.affect, [α ~ v*X/(X + K)])
+    @test issetequal(de_dp_exp.affect.discrete_parameters, [α])
 end
 
 # test for hill function expansion

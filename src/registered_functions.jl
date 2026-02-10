@@ -118,18 +118,22 @@ function expand_registered_functions(eq::Equation)
     return expand_registered_functions(eq.lhs) ~ expand_registered_functions(eq.rhs)
 end
 
-# If applied to a continuous event, returns it applied to eqs and affect.
+# If applied to a continuous event, returns it applied to conditions, affect, and affect_neg.
 function expand_registered_functions(ce::MT.SymbolicContinuousCallback)
     conditions = expand_registered_functions(ce.conditions)
-    affect = expand_registered_functions(ce.affect.affect)
-    return MT.SymbolicContinuousCallback(conditions, affect = ce.affect.discrete_parameters)
+    affect_eqs = isnothing(ce.affect) ? nothing : expand_registered_functions(ce.affect.affect)
+    affect_neg_eqs = isnothing(ce.affect_neg) ? nothing : expand_registered_functions(ce.affect_neg.affect)
+    disc_ps = isnothing(ce.affect) ? MT.SymbolicT[] : ce.affect.discrete_parameters
+    return MT.SymbolicContinuousCallback(conditions, affect_eqs;
+        affect_neg = affect_neg_eqs, discrete_parameters = disc_ps)
 end
 
-# If applied to a discrete event, returns it applied to condition and affects.
+# If applied to a discrete event, returns it applied to condition and affect.
 function expand_registered_functions(de::MT.SymbolicDiscreteCallback)
     conditions = expand_registered_functions(de.conditions)
-    affect = expand_registered_functions(de.affect.affect)
-    return MT.SymbolicDiscreteCallback(conditions, affect = de.affect.discrete_parameters)
+    affect_eqs = isnothing(de.affect) ? nothing : expand_registered_functions(de.affect.affect)
+    disc_ps = isnothing(de.affect) ? MT.SymbolicT[] : de.affect.discrete_parameters
+    return MT.SymbolicDiscreteCallback(conditions, affect_eqs; discrete_parameters = disc_ps)
 end
 
 # If applied to a vector, applies it to every element in the vector.
