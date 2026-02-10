@@ -197,10 +197,10 @@ let
     rs_saved = deepcopy(rs)
     rs_expanded = Catalyst.expand_registered_functions(rs)
 
-    # Checks that the original model is unchanged (equality currently does not consider events).
-    @test_broken rs == rs_saved # Cannot test events equality: https://github.com/SciML/ModelingToolkit.jl/issues/3907
-    @test_broken get_continuous_events(rs) == get_continuous_events(rs_saved) # Cannot test events equality: https://github.com/SciML/ModelingToolkit.jl/issues/3907
-    @test_broken get_discrete_events(rs) == get_discrete_events(rs_saved) # Cannot test events equality: https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    # Checks that the original model is unchanged.
+    @test Catalyst.isequivalent(rs, rs_saved)
+    @test Catalyst.continuous_events_equal(get_continuous_events(rs), get_continuous_events(rs_saved))
+    @test Catalyst.discrete_events_equal(get_discrete_events(rs), get_discrete_events(rs_saved))
 
     # Checks that the new system is expanded.
     @unpack v0, X, Y, v, K, n = rs
@@ -215,8 +215,8 @@ let
     continuous_events = ModelingToolkitBase.SymbolicContinuousCallback.(continuous_events)
     discrete_events = ModelingToolkitBase.SymbolicDiscreteCallback.(discrete_events)
     @test isequal(only(Catalyst.get_rxs(rs_expanded)).rate, v0 + v * (X^n) / (X^n + Y^n + K^n))
-    @test_broken isequal(get_continuous_events(rs_expanded), continuous_events) # Cannot test events equality: https://github.com/SciML/ModelingToolkit.jl/issues/3907
-    @test_broken isequal(get_discrete_events(rs_expanded), discrete_events) # Cannot test events equality: https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @test_broken Catalyst.continuous_events_equal(get_continuous_events(rs_expanded), continuous_events) # expand_registered_functions corrupts event affects (sets them to nothing)
+    @test_broken Catalyst.discrete_events_equal(get_discrete_events(rs_expanded), discrete_events) # expand_registered_functions corrupts event affects (sets them to nothing)
 end
 
 # test for hill function expansion

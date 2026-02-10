@@ -630,8 +630,10 @@ function events_equal(evts1, evts2, match_fn)
     return true
 end
 
-# Compare two SymbolicAffects by their content.
+# Compare two SymbolicAffects by their content. Handles `nothing` (e.g. for affect_neg).
 function symbolic_affect_matches(aff1, aff2)
+    (isnothing(aff1) && isnothing(aff2)) && return true
+    (isnothing(aff1) || isnothing(aff2)) && return false
     issetequal(aff1.affect, aff2.affect) && issetequal(aff1.discrete_parameters, aff2.discrete_parameters)
 end
 
