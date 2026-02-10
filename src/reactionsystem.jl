@@ -238,22 +238,27 @@ Continuing from the example in the [`Reaction`](@ref) definition:
 
 Keyword Arguments:
 - `observed::Vector{Equation}`, equations specifying observed variables.
-- `systems::Vector{ReactionSystems}`, vector of sub-`ReactionSystem`s. 
+- `systems::Vector{ReactionSystem}`, vector of sub-`ReactionSystem`s.
 - `name::Symbol`, the name of the system (must be provided, or `@named` must be used).
 - `initial_conditions::SymmapT`, a dictionary mapping parameters and species to their initial
   values.
-- `checks = true`, boolean for whether to check units.
+- `checks = true`, boolean for whether to run structural checks at construction time.
+- `unit_checks = false`, boolean for whether to perform unit validation at construction time.
+  Uses [`Catalyst.validate_units`](@ref) / [`Catalyst.assert_valid_units`](@ref). Units should
+  be specified with symbolic units (`us"..."`) from DynamicQuantities.
 - `networkproperties = NetworkProperties()`, cache for network properties calculated via API
   functions.
 - `combinatoric_ratelaws = true`, sets the default value of `combinatoric_ratelaws` used in
-  calls to `convert` or calling various problem types with the `ReactionSystem`.
+  conversion functions ([`ode_model`](@ref), [`sde_model`](@ref), [`jump_model`](@ref),
+  [`ss_ode_model`](@ref), [`hybrid_model`](@ref)) or when calling problem constructors with
+  the `ReactionSystem`.
 - `balanced_bc_check = true`, sets whether to check that BC species appearing in reactions
   are balanced (i.e appear as both a substrate and a product with the same stoichiometry).
-
-Notes:
-- ReactionSystems currently do rudimentary unit checking, requiring that all species have
-  the same units, and all reactions have rate laws with units of (species units) / (time
-  units). Unit checking can be disabled by passing the keyword argument `checks=false`.
+- `brownians`, vector of Brownian variables for non-reaction SDE noise (created via
+  `@brownians`). Auto-discovered from equations in the two-argument constructor.
+- `poissonians`, vector of Poissonian variables for Poisson jump noise (created via
+  `@poissonians`). Auto-discovered from equations in the two-argument constructor.
+- `jumps`, vector of non-reaction jump processes.
 """
 struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """The equations (reactions and algebraic/differential) defining the system."""
@@ -281,7 +286,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     systems::Vector{ReactionSystem}
     """
     The initial values to use when initial conditions and/or
-    parameters are not supplied in `ODEProblem`.
+    parameters are not supplied to problem constructors.
     """
     initial_conditions::SymmapT
     """`NetworkProperties` object that can be filled in by API functions. INTERNAL -- not
@@ -1593,8 +1598,8 @@ Notes:
 - If all species/time/parameters are unitless, reaction-rate dimensional checks are skipped.
   This mode assumes rate/equation expressions do not include literal dimensional quantities
   (for example `us"..."` constants), which are currently unsupported model inputs.
-- Does not check subsystems, use `flatten(rs)` and then manually call validate if you want
-  to check the full composed system.
+- Does not check subsystems, use `flatten(rs)` and then call `validate_units` on the
+  flattened system if you want to check the full composed system.
 - Does not require that non-species variables have consistent units (outside of the
   equations in which they appear).
 - Does not handle events or user-provided jumps.

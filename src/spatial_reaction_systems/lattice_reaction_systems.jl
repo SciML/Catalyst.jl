@@ -358,7 +358,7 @@ num_species(lrs::LatticeReactionSystem) = getfield(lrs, :num_species)
 """
     spatial_species(lrs::LatticeReactionSystem)
 
-Returns the number of species that can move spatially that a `LatticeReactionSystem` contains.
+Returns the species that can move spatially in a `LatticeReactionSystem`.
 """
 spatial_species(lrs::LatticeReactionSystem) = getfield(lrs, :spatial_species)
 
@@ -461,7 +461,7 @@ end
 """
     get_lattice_graph(lrs::LatticeReactionSystem)
 
-Returns lrs's lattice, but in as a graph. Currently does not work for Cartesian lattices.
+Returns lrs's lattice as a graph. Currently does not work for Cartesian lattices.
 """
 function get_lattice_graph(lrs::LatticeReactionSystem)
     has_graph_lattice(lrs) && return lattice(lrs)
@@ -516,12 +516,12 @@ end
 """
     make_edge_p_values(lrs::LatticeReactionSystem, make_edge_p_value::Function)
 
-Generates edge parameter values for a lattice reaction system. Only work for (Cartesian or masked)
+Generates edge parameter values for a lattice reaction system. Only works for (Cartesian or masked)
 grid lattices (without diagonal adjacencies).
 
 Input:
 - `lrs`: The lattice reaction system for which values should be generated.
-    - `make_edge_p_value`: a function describing a rule for generating the edge parameter values.
+- `make_edge_p_value`: a function describing a rule for generating the edge parameter values.
 
 Output:
     - `ep_vals`: A sparse matrix of size (num_verts,num_verts) (where num_verts is the number of
@@ -581,7 +581,7 @@ end
     make_directed_edge_values(lrs::LatticeReactionSystem, x_vals::Tuple{T,T}, y_vals::Tuple{T,T} = (undef,undef),
                      z_vals::Tuple{T,T} = (undef,undef)) where {T}
 
-Generates edge parameter values for a lattice reaction system. Only work for (Cartesian or masked)
+Generates edge parameter values for a lattice reaction system. Only works for (Cartesian or masked)
 grid lattices (without diagonal adjacencies). Each dimension (x, and possibly y and z), and
 direction has assigned its own constant edge parameter value.
 

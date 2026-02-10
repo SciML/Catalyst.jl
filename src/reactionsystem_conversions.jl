@@ -732,10 +732,11 @@ function hybrid_model(rs::ReactionSystem;
 end
 
 """
-```julia
-Base.convert(::Type{<:ODESystem},rs::ReactionSystem)
-```
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.ODESystem`.
+    ode_model(rs::ReactionSystem; kwargs...)
+
+Convert a [`ReactionSystem`](@ref) to a `ModelingToolkitBase.System` representing an ODE
+model. Errors if the system contains coupled brownians, jumps, or poissonians; use
+[`hybrid_model`](@ref) or [`HybridProblem`](@ref) for mixed-scale systems.
 
 Keyword args and default values:
 - `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,
@@ -748,7 +749,7 @@ Keyword args and default values:
   the number of equations.
 - `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
   with their rational function representation when converting to another system type. Set to
-  `false`` to disable.
+  `false` to disable.
 """
 function ode_model(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
@@ -801,7 +802,7 @@ end
 ss_ode_model(rs::ReactionSystem)
 ```
 
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.System` (nonlinear/steady-state).
+Convert a [`ReactionSystem`](@ref) to a `ModelingToolkitBase.System` (nonlinear/steady-state).
 
 Keyword args and default values:
 - `combinatoric_ratelaws = true` uses factorial scaling factors in calculating the rate law,
@@ -819,7 +820,7 @@ Keyword args and default values:
   details.
 - `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
   with their rational function representation when converting to another system type. Set to
-  `false`` to disable.
+  `false` to disable.
 """
 function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
@@ -885,13 +886,13 @@ function nonlinear_convert_differentials_check(rs::ReactionSystem)
 end
 
 """
-```julia
-Base.convert(::Type{<:SDESystem},rs::ReactionSystem)
-```
+    sde_model(rs::ReactionSystem; kwargs...)
 
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.SDESystem`.
+Convert a [`ReactionSystem`](@ref) to a `ModelingToolkitBase.System` representing an SDE
+model (chemical Langevin equation). Errors if the system contains coupled jumps or
+poissonians; use [`hybrid_model`](@ref) or [`HybridProblem`](@ref) for mixed-scale systems.
 
-Notes:
+Keyword args and default values:
 - `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,
   i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. Set
   `combinatoric_ratelaws=false` for a ratelaw of `k*S^2`, i.e. the scaling factor is
@@ -902,7 +903,7 @@ Notes:
   the number of equations.
 - `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
   with their rational function representation when converting to another system type. Set to
-  `false`` to disable.
+  `false` to disable.
 - `use_legacy_noise = true`, for simple SDE systems without constraints (no algebraic
   equations, no BC species), use the traditional `noise_eqs` matrix approach which avoids
   the need for `mtkcompile`. Set to `false` to use the Brownian-based approach.
@@ -1023,13 +1024,15 @@ function detect_scale_types(scales)
 end
 
 """
-```julia
-Base.convert(::Type{<:JumpSystem},rs::ReactionSystem; combinatoric_ratelaws=true)
-```
+    jump_model(rs::ReactionSystem; kwargs...)
 
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.JumpSystem`.
+Convert a [`ReactionSystem`](@ref) to a `ModelingToolkitBase.System` representing a pure
+jump model. Forces all reactions to Jump scale (only preserving `VariableRateJump` metadata
+if explicitly set). Errors if the system contains coupled brownians, poissonians, or
+non-reaction equations; use [`hybrid_model`](@ref) or [`HybridProblem`](@ref) for
+mixed-scale systems.
 
-Notes:
+Keyword args and default values:
 - `combinatoric_ratelaws=true` uses binomials in calculating the rate law, i.e. for `2S ->
   0` at rate `k` the ratelaw would be `k*S*(S-1)/2`. If `combinatoric_ratelaws=false` then
   the ratelaw is `k*S*(S-1)`, i.e. the rate law is not normalized by the scaling factor.
@@ -1037,11 +1040,9 @@ Notes:
   defaults to true).
 - Does not currently support `ReactionSystem`s that include coupled algebraic or
   differential equations.
-- Does not currently support continuous events as these are not supported by
-  `ModelingToolkitBase.JumpSystems`.
 - `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
   with their rational function representation when converting to another system type. Set to
-  `false`` to disable.
+  `false` to disable.
 - `save_positions = (true, true)`, indicates whether for any reaction classified as a
   `VariableRateJump` to save the solution before and/or after the jump occurs. Defaults to
   true for both.
