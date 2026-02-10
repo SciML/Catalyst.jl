@@ -1584,7 +1584,8 @@ end
 
 Check that all species in the [`ReactionSystem`](@ref) have the same units, and
 that the rate laws of all reactions reduce to units of (species units) / (time
-units).
+units). Also validates units for user-provided jumps (ConstantRateJump, 
+VariableRateJump, MassActionJump) and events (continuous and discrete).
 
 Notes:
 - Does not check subsystems, constraint equations, or non-species variables.
@@ -1634,6 +1635,19 @@ function validate(rs::ReactionSystem, info::String = "")
             rx, " has units of ", rxunits, "."))
     end
 
+    # Validate jumps.
+    for jump in MT.get_jumps(rs)
+        validated &= validate_jump_units(jump, rateunits)
+    end
+
+    # Validate events.
+    for event in MT.get_continuous_events(rs)
+        validated &= validate_event_units(event)
+    end
+    for event in MT.get_discrete_events(rs)
+        validated &= validate_event_units(event)
+    end
+
     validated
 end
 
@@ -1645,3 +1659,155 @@ unitless_exp(u) = iscall(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
 function unitless_symvar(sym)
     return (sym isa Symbolics.CallAndWrap) || (MT.get_unit(sym) == 1)
 end
+
+# Helper function to check if a unit is compatible with another unit (handles unitless cases).
+function units_compatible(unit1, unit2)
+    isequal(unit1, unit2) && return true
+    # Handle unitless cases.
+    if iscall(unit1)
+        unitless_exp(unit1) && return isequal(unit2, 1)
+        (operation(unit1) == *) &&
+            all(unitless_exp(arg) for arg in arguments(unit1)) && return isequal(unit2, 1)
+    end
+    return false
+end
+
+"""
+    validate_jump_units(jump, rateunits)
+
+Check that a user-provided jump has correct units.
+For ConstantRateJump/VariableRateJump: rate should have units of `1/time`.
+For MassActionJump: scaled_rates should have units of `species/time` (accounting for reactants).
+"""
+function validate_jump_units(jump::MT.ConstantRateJump, rateunits)
+    validated = true
+    # For ConstantRateJump, the rate should have units of species/time.
+    jumprate_units = get_unit(jump.rate)
+    if !units_compatible(jumprate_units, rateunits)
+        validated = false
+        @warn(string("ConstantRateJump rate is expected to have units of ", rateunits,
+            " however, it has units of ", jumprate_units, "."))
+    end
+    # Validate affect equations.
+    for eq in jump.affect!
+        if eq isa Equation
+            try
+                MT.check_units(eq)
+            catch e
+                validated = false
+                @warn(string("ConstantRateJump affect equation has unit inconsistency: ", eq))
+            end
+        end
+    end
+    validated
+end
+
+function validate_jump_units(jump::MT.VariableRateJump, rateunits)
+    validated = true
+    # For VariableRateJump, the rate should have units of species/time.
+    jumprate_units = get_unit(jump.rate)
+    if !units_compatible(jumprate_units, rateunits)
+        validated = false
+        @warn(string("VariableRateJump rate is expected to have units of ", rateunits,
+            " however, it has units of ", jumprate_units, "."))
+    end
+    # Validate affect equations.
+    for eq in jump.affect!
+        if eq isa Equation
+            try
+                MT.check_units(eq)
+            catch e
+                validated = false
+                @warn(string("VariableRateJump affect equation has unit inconsistency: ", eq))
+            end
+        end
+    end
+    validated
+end
+
+function validate_jump_units(jump::MT.MassActionJump, rateunits)
+    validated = true
+    # For MassActionJump, scaled_rates should account for reactant stoichiometry.
+    # The MassActionJump constructor already scales the rate, so we check the scaled rate.
+    jumprate_units = get_unit(jump.scaled_rates)
+    # Account for reactant stoichiometry in expected units.
+    expected_units = rateunits
+    for (spec, stoich) in jump.reactant_stoch
+        expected_units *= get_unit(spec)^(-stoich)
+    end
+    if !units_compatible(jumprate_units, expected_units)
+        validated = false
+        @warn(string("MassActionJump scaled_rates is expected to have units of ", expected_units,
+            " however, it has units of ", jumprate_units, "."))
+    end
+    validated
+end
+
+# Fallback for unknown jump types.
+validate_jump_units(jump, rateunits) = true
+
+"""
+    validate_event_units(event)
+
+Check that an event's condition and affect equations have consistent units.
+"""
+function validate_event_units(event::MT.SymbolicContinuousCallback)
+    validated = true
+    # Validate condition equations (for continuous events, conditions should compare to zero).
+    for cond in event.conditions
+        if cond isa Equation
+            try
+                MT.check_units(cond)
+            catch e
+                validated = false
+                @warn(string("Continuous event condition has unit inconsistency: ", cond))
+            end
+        end
+    end
+    # Validate affect equations.
+    if hasproperty(event.affect, :affect)
+        for eq in event.affect.affect
+            if eq isa Equation
+                try
+                    MT.check_units(eq)
+                catch e
+                    validated = false
+                    @warn(string("Continuous event affect equation has unit inconsistency: ", eq))
+                end
+            end
+        end
+    end
+    validated
+end
+
+function validate_event_units(event::MT.SymbolicDiscreteCallback)
+    validated = true
+    # Discrete events have different condition types (time-based or boolean).
+    # Check condition if it's an equation.
+    cond = event.condition
+    if cond isa Equation
+        try
+            MT.check_units(cond)
+        catch e
+            validated = false
+            @warn(string("Discrete event condition has unit inconsistency: ", cond))
+        end
+    end
+    # Validate affect equations.
+    if hasproperty(event.affect, :affect)
+        for eq in event.affect.affect
+            if eq isa Equation
+                try
+                    MT.check_units(eq)
+                catch e
+                    validated = false
+                    @warn(string("Discrete event affect equation has unit inconsistency: ", eq))
+                end
+            end
+        end
+    end
+    validated
+end
+
+# Fallback for unknown event types.
+validate_event_units(event) = true
