@@ -114,19 +114,19 @@ Note that, unlike for nonlinear system solving, `u0` is not just an initial gues
 Generally, `SteadyStateProblem`s can be solved using the [same options that are available for ODE simulations](@ref simulation_intro_solver_options). E.g. here we designate a specific `dt` step size:
 ```@example steady_state_solving_simulation
 solve(ssprob, DynamicSS(Rodas5P()); dt = 0.01)
-nothing # hide
+nothing # hide
 ```
 
 It is possible to use solve `SteadyStateProblem`s using a nonlinear solver, and `NonlinearProblem`s using forward ODE simulation solvers:
 ```@example steady_state_solving_simulation
-using NonlinearSolve
+using NonlinearSolve
 solve(ssprob, TrustRegion())
-nothing # hide
+nothing # hide
 ```
 ```@example steady_state_solving_simulation
 nlprob = NonlinearProblem(dimer_production, u0, p)
 solve(nlprob, DynamicSS(Rodas5P()))
-nothing # hide
+nothing # hide
 ```
 However, especially when the forward ODE simulation approach is used, it is recommended to use the problem type which corresponds to the intended solver.
 
