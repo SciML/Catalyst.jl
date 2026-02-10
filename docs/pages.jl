@@ -10,7 +10,8 @@ pages = Any[
     # "model_creation/dsl_advanced.md", Problem due to `collect_vars!` bug in MTK. Awaiting reply from Aayush on how to fix.
     "model_creation/programmatic_CRN_construction.md",
     "model_creation/compositional_modeling.md",
-    "model_creation/constraint_equations.md",
+    "model_creation/coupled_non_crn_models.md",
+    "model_creation/events.md",
     "model_creation/conservation_laws.md",
     "model_creation/parametric_stoichiometry.md",
     "model_creation/functional_parameters.md",

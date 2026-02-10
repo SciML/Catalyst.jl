@@ -540,8 +540,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
                   conservation laws. Catalyst does not check that the conserved equations
                   still hold for the final coupled system of equations. Consider using
                   `remove_conserved = false` and instead calling
-                  ModelingToolkitBase.structural_simplify to simplify any generated ODESystem or
-                  NonlinearSystem.
+                  ModelingToolkitBase.mtkcompile to simplify any generated system.
                   """
         end
         append!(eqs, ceqs)
@@ -782,7 +781,7 @@ function ode_model(rs::ReactionSystem; name = nameof(rs),
 end
 
 const NONLIN_PROB_REMAKE_WARNING = """
-    Note, when constructing `NonlinearSystem`s with `remove_conserved = true`, possibly via \
+    Note, when constructing nonlinear systems with `remove_conserved = true`, possibly via \
     calling `NonlinearProblem`, `remake(::NonlinearProblem)` has some \
     limitations. If in `remake` the value of the conserved constant is \
     explicitly updated, it is not possible to have one variable's `u0` value \
@@ -793,16 +792,16 @@ const NONLIN_PROB_REMAKE_WARNING = """
 function is_autonomous_error(iv)
     return """
     Attempting to convert a non-autonomous `ReactionSystem` (e.g. where some rate depends \
-    on $(iv)) to a `NonlinearSystem`. This is not possible. if you are intending to \
+    on $(iv)) to a nonlinear system. This is not possible. if you are intending to \
     compute system steady states, consider creating and solving a `SteadyStateProblem."""
 end
 
 """
 ```julia
-Base.convert(::Type{<:NonlinearSystem},rs::ReactionSystem)
+ss_ode_model(rs::ReactionSystem)
 ```
 
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.NonlinearSystem`.
+Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.System` (nonlinear/steady-state).
 
 Keyword args and default values:
 - `combinatoric_ratelaws = true` uses factorial scaling factors in calculating the rate law,
@@ -829,7 +828,7 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
         all_differentials_permitted = false, expand_catalyst_funs = true, kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
-    spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
+    spatial_convert_err(rs::ReactionSystem, System)
     remove_conserved && conseqs_remake_warn && (@warn NONLIN_PROB_REMAKE_WARNING)
     isautonomous(rs) || error(is_autonomous_error(get_iv(rs)))
 
@@ -847,7 +846,7 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
     all_differentials_permitted || nonlinear_convert_differentials_check(rs)
     eqs = [remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
 
-    NonlinearSystem(eqs, us, ps;
+    System(eqs, us, ps;
         name,
         observed = obs, initialization_eqs = initeqs,
         initial_conditions = merge(initial_conditions, defs),
@@ -856,7 +855,7 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
         kwargs...)
 end
 
-# Ideally, when `ReactionSystem`s are converted to `NonlinearSystem`s, any coupled ODEs should be
+# Ideally, when `ReactionSystem`s are converted to nonlinear systems, any coupled ODEs should be
 # on the form D(X) ~ ..., where lhs is the time derivative w.r.t. a single variable, and the rhs
 # does not contain any differentials. If this is not the case, we throw a warning to let the user
 # know that they should be careful.
@@ -873,7 +872,7 @@ function nonlinear_convert_differentials_check(rs::ReactionSystem)
            !isequal(Symbolics.operation(eq.lhs), Differential(get_iv(rs))) ||
            (length(arguments(eq.lhs)) != 1) ||
            !any(isequal(arguments(eq.lhs)[1]), nonspecies(rs))
-            error("You are attempting to convert a `ReactionSystem` coupled with differential equations to a `NonlinearSystem`. However, some of these differentials are not of the form `D(x) ~ ...` where:
+            error("You are attempting to convert a `ReactionSystem` coupled with differential equations to a nonlinear system. However, some of these differentials are not of the form `D(x) ~ ...` where:
                     (1) The left-hand side is a differential of a single variable with respect to the time independent variable, and
                     (2) The right-hand side does not contain any differentials.
                 This is generally not permitted.
@@ -1128,7 +1127,8 @@ DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         kwargs...)
 ```
 
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.NonlinearSystem`.
+Convert a [`ReactionSystem`](@ref) to a `ModelingToolkitBase.System` (nonlinear/steady-state)
+and then construct a `NonlinearProblem`.
 
 Keyword args and default values:
 - `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,

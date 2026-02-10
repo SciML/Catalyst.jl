@@ -2,6 +2,65 @@
 
 ## Catalyst 16.0
 
+#### BREAKING and Bug fix: Units handling rewritten with new API supporting non-SI units
+
+- New `validate_units`/`assert_valid_units` functions defined on `Reaction`s and
+  `ReactionSystem`s for checking units. For `Reaction`s, consistency of terms
+  within the rate expression are checked (i.e. if the rate is a sum of terms),
+  and consistency of substrate and product species units are checked. All other
+  checks are handled by the `ReactionSystem`. 
+- **`validate_units` now correctly handles non-SI units (M, μM) in rate
+  expressions.** Previously, unit validation could produce spurious failures
+  with non-SI units due to floating-point precision loss during unit
+  expansion. Note that units should be specified using **symbolic units**
+  (`us"..."`) rather than concrete units (`u"..."`), as symbolic units use
+  exact arithmetic and avoid precision issues. For example, you can now use
+  μM concentrations:
+  ```julia
+  using DynamicQuantities
+  @independent_variables t [unit=us"s"]
+  @species X(t) [unit=us"μM"]
+  @parameters k [unit=us"μM/s"]
+  ```
+
+- **`validate_units(rs::ReactionSystem)` no longer multiplies substrate units into
+  the rate for `only_use_rate=true` reactions.** Previously, custom rate laws
+  (e.g., Michaelis-Menten rates passed via the `=>` arrow) would fail
+  validation because substrate units were erroneously included.
+
+- **`validate_units(rs::ReactionSystem)` now also validates non-reaction equations**
+  (e.g., those involving brownian and poissonian noise terms), checking that
+  left- and right-hand side units match.
+
+- **Unit checks now validate comparison/conditional expressions and exponent units**
+  in equations and rates. Comparisons are treated as unitless predicates with
+  operand compatibility checks, `ifelse` branches must agree in units, and
+  exponents are required to be unitless.
+
+- **Catalyst now provides explicit unit validation APIs** `validate_units`
+  (non-throwing) and `assert_valid_units` (throwing), rather than overloading
+  `ModelingToolkitBase.validate`. These APIs and their report/error types are
+  public APIs, but are no longer exported; call them as
+  `Catalyst.validate_units(...)`, `Catalyst.assert_valid_units(...)`, etc. (on
+  Julia 1.11+, this is marked via `public`).
+
+- **New DSL option: `@unit_checks true|false`.** This controls constructor-time
+  unit validation for `@reaction_network` and `@network_component` generated
+  systems, matching the `unit_checks` keyword in programmatic
+  `ReactionSystem(...)` and `Reaction(...)` construction (`false` by default).
+- **In all interfaces unit checking is opt-in:** users with units should pass
+  `unit_checks = true` to `ReactionSystem` and `Reaction` constructors, or use
+  the `@unit_checks true` option within the DSL to enable validation at
+  construction time. 
+- **Note** that `ReactionSystem`s assume `Reaction`s have already performed
+  their associated checks, so for full unit checking pass `unit_checks = true` to
+  both (or use the DSL `@unit_checks true` option).
+
+#### Removed: Unitful dependency
+
+- **The `Unitful` dependency has been removed.** It was unused — all unit
+  support in Catalyst uses `DynamicQuantities`.
+
 Catalyst 16 is a major release that transitions from ModelingToolkit v9 to
 ModelingToolkitBase (the base for ModelingToolkit v11), introduces unified
 hybrid model support for mixed ODE/SDE/Jump systems, and modernizes the
@@ -408,6 +467,39 @@ for full details on these features.
   # State-dependent rate → VariableRateJump (e.g. pure-birth / Yule process)
   @poissonians dN_birth(k * X)  # rate depends on state X
   ```
+
+- **`@poissonians` DSL option.** A new `@poissonians` option can be used in
+  `@reaction_network` and `@network_component` to declare Poissonian variables
+  inline, following the same pattern as `@brownians`:
+  ```julia
+  rn = @reaction_network begin
+      @parameters λ k d
+      @variables X(t)
+      @poissonians dN(λ)
+      @equations D(X) ~ dN
+      (k, d), 0 <--> S
+  end
+  ```
+
+  Multiple poissonians and begin/end block syntax are supported:
+  ```julia
+  rn = @reaction_network begin
+      @parameters λ₁ λ₂
+      @poissonians begin
+          dN₁(λ₁)
+          dN₂(λ₂)
+      end
+      @equations begin
+          D(V) ~ dN₁
+          D(W) ~ dN₂
+      end
+      (p, d), 0 <--> X
+  end
+  ```
+
+  Symbols appearing in poissonian rates must be pre-declared (via
+  `@parameters`, `@species`, etc.) or interpolated — they are not
+  auto-inferred from the rate expression.
 
 - **`ode_model`, `sde_model`, and `jump_model` error with informative messages**
   when called on systems containing poissonians. Use `HybridProblem` instead,

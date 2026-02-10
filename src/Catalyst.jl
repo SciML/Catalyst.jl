@@ -5,7 +5,8 @@ module Catalyst
 
 using DocStringExtensions
 using SparseArrays, DiffEqBase, Reexport, Setfield, EnumX
-using LaTeXStrings, Latexify, Requires
+import SciMLBase
+using LaTeXStrings, Latexify
 using LinearAlgebra, Combinatorics
 using JumpProcesses: JumpProcesses, JumpProblem,
                      MassActionJump, ConstantRateJump, VariableRateJump,
@@ -14,7 +15,7 @@ using JumpProcesses: JumpProcesses, JumpProblem,
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkitBase
 const MT = ModelingToolkitBase
-using DynamicQuantities #, Unitful # Having Unitful here as well currently gives an error.
+using DynamicQuantities
 
 @reexport using ModelingToolkitBase
 using Symbolics
@@ -29,7 +30,7 @@ using ModelingToolkitBase: get_unknowns, get_ps, get_iv, get_systems,
                        getvar, has_iv, JumpType
 
 import ModelingToolkitBase: get_variables, namespace_expr, namespace_equation,
-                        modified_unknowns!, validate, namespace_variables,
+                        modified_unknowns!, namespace_variables,
                         namespace_parameters, renamespace, flatten,
                         is_alg_equation, is_diff_equation, collect_vars!,
                         eqtype_supports_collect_vars
@@ -40,9 +41,8 @@ import SymbolicIndexingInterface: getname
 import ModelingToolkitBase: SymmapT
 
 # internal but needed ModelingToolkit functions
-import ModelingToolkitBase: check_variables,
-                        check_parameters, check_units,
-                        get_unit, check_equations, iscomplete
+import ModelingToolkitBase: check_variables, check_parameters,
+                        check_equations, iscomplete
 
 # Import from owner module (SymbolicUtils) per ExplicitImports.jl audit
 import SymbolicUtils: _iszero, unwrap
@@ -57,6 +57,7 @@ import Parameters: @with_kw_noshow
 import Symbolics: wrap
 import Symbolics.RewriteHelpers: hasnode, replacenode
 import SymbolicUtils: getmetadata, hasmetadata, setmetadata
+import SciMLPublic: @public
 
 # globals for the modulate
 function default_time_deriv()
@@ -82,6 +83,11 @@ const forbidden_symbols_skip = Set([:ℯ, :pi, :π, :t, :∅, :Ø])
 const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
     forbidden_symbols_skip)
 
+### Unit Helpers ###
+
+# SymbolicDimensions-preserving unit inference (replaces MTKBase's `get_unit` for validation).
+include("unit_helpers.jl")
+
 ### Package Main ###
 
 # The `Reaction` structure and its functions.
@@ -96,7 +102,7 @@ const CatalystEqType = Union{Reaction, Equation}
 include("reactionsystem.jl")
 export ReactionSystem, isspatial
 export species, nonspecies, reactions, nonreactions, speciesmap, paramsmap
-export numspecies, numreactions
+export numspecies, numreactions, numparams
 export make_empty_network
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export isautonomous
@@ -104,8 +110,9 @@ export reactionrates
 export set_default_noise_scaling
 export ode_model, sde_model, jump_model, ss_ode_model, hybrid_model
 
-# depreciated functions to remove in future releases
-export params, numparams
+# Mark unit validation APIs as public without exporting them.
+@public validate_units, assert_valid_units, unit_validation_report
+@public UnitValidationError, UnitValidationIssue, UnitValidationReport
 
 # Conversions of the `ReactionSystem` structure.
 include("reactionsystem_conversions.jl")
