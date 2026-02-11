@@ -186,16 +186,13 @@ let
         (kB,kD), 2X <--> X2
     end
 
+    # Note: The two trailing spaces on the last equation line are significant (from chemical_arrows).
     # Latexify.@generate_test latexify(rn; form=:ode)
-    @test_broken latexify(rn; form = :ode) == replace(
-raw"$\begin{align}
-\frac{\mathrm{d} X\left( t \right)}{\mathrm{d}t} =& p - d X\left( t \right) + 2 kD \mathrm{X2}\left( t \right) - \left( X\left( t \right) \right)^{2} kB \\
-\frac{\mathrm{d} \mathrm{X2}\left( t \right)}{\mathrm{d}t} =&  - kD \mathrm{X2}\left( t \right) + \frac{1}{2} \left( X\left( t \right) \right)^{2} kB
-\end{align}
-$", "\r\n"=>"\n")
+    ode_expected = "\\begin{align*}\n\\frac{\\mathrm{d} X\\left( t \\right)}{\\mathrm{d}t} &= p - d X\\left( t \\right) + 2 kD \\mathrm{X2}\\left( t \\right) - \\left( X\\left( t \\right) \\right)^{2} kB \\\\\n\\frac{\\mathrm{d} \\mathrm{X2}\\left( t \\right)}{\\mathrm{d}t} &=  - kD \\mathrm{X2}\\left( t \\right) + \\frac{1}{2} \\left( X\\left( t \\right) \\right)^{2} kB  \n \\end{align*}\n"
+    @test latexify(rn; form = :ode) == replace(ode_expected, "\r\n"=>"\n")
 
-    # Currently latexify doesn't handle SDE systems properly, and they look identical to ode systems (https://github.com/SciML/ModelingToolkit.jl/issues/2782).
-    @test_broken false
+    # SDE form currently renders identically to ODE form (noise terms not yet shown).
+    @test latexify(rn; form = :sde) == latexify(rn; form = :ode)
 
     # Tests that erroneous form gives error.
     @test_throws ErrorException latexify(rn; form=:xxx)

@@ -17,12 +17,14 @@ const LATEX_DEFS = CatalystLatexParams()
         mult_symbol --> ""
         env --> :chem
         return rs
-    elseif form == :ode      # Returns ODE system code.
+    elseif form == :ode      # Returns ODE system code (rendered via chemical_arrows).
         mult_symbol --> ""
-        return ode_model(rs)
-    elseif form == :sde      # Returns SDE system code.
+        env --> :chem
+        return system_to_reactionsystem(ode_model(rs))
+    elseif form == :sde      # Returns SDE system code (rendered via chemical_arrows).
         mult_symbol --> ""
-        return sde_model(rs)
+        env --> :chem
+        return system_to_reactionsystem(sde_model(rs))
     end
     error("Unrecognised form argument given: $form. This should be either reactions (default), :ode, or :sde.")
 end
@@ -76,7 +78,12 @@ function chemical_arrows(rn::ReactionSystem;
         str *= "\\require{mhchem} \n"
     end
 
-    subber = SymbolicUtils.Substituter{true}([s => processsym(s) for s in species(rn)], SymbolicUtils.default_substitute_filter)
+    spcs = species(rn)
+    if isempty(spcs)
+        subber = identity
+    else
+        subber = SymbolicUtils.Substituter{true}([s => processsym(s) for s in spcs], SymbolicUtils.default_substitute_filter)
+    end
 
     lastidx = length(rxs)
     for (i, r) in enumerate(rxs)

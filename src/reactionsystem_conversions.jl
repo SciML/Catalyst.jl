@@ -798,6 +798,59 @@ function is_autonomous_error(iv)
 end
 
 """
+    system_to_reactionsystem(sys::MT.AbstractSystem; kwargs...)
+
+Convert a `ModelingToolkitBase.System` to a [`ReactionSystem`](@ref) by mapping analogous
+fields. The resulting system has no reactions — all equations are stored as non-reaction
+`Equation` objects.
+
+Keyword arguments override the defaults extracted from `sys`:
+- `name`: defaults to `nameof(sys)`
+- `combinatoric_ratelaws`: defaults to `true`
+- `checks`: defaults to `false`
+"""
+function system_to_reactionsystem(sys::MT.AbstractSystem;
+        name = nameof(sys),
+        combinatoric_ratelaws = true,
+        checks = false)
+    eqs = equations(sys)
+    iv = get_iv(sys)
+    us = unknowns(sys)
+    ps = MT.parameters(sys)
+    obs = MT.observed(sys)
+    browns = MT.brownians(sys)
+    poiss = MT.poissonians(sys)
+    jmps = MT.jumps(sys)
+    cevs = MT.get_continuous_events(sys)
+    devs = MT.get_discrete_events(sys)
+    meta = MT.get_metadata(sys)
+    ics = MT.initial_conditions(sys)
+
+    # Strip VariableSpecies metadata from unknowns and equations. ODE/SDE equations contain
+    # D(species) which the ReactionSystem constructor rejects (no differential of species
+    # in equations). We strip the metadata from both the unknowns vector and inside equations.
+    _strip_varspecies = node -> begin
+        ((node isa SymbolicT) && isspecies(node) && !isbc(node)) || return nothing
+        MT.setmetadata(node, VariableSpecies, false)
+    end
+    us = [isspecies(u) ? MT.setmetadata(u, VariableSpecies, false) : u for u in us]
+    eqs = [replacenode(eq.lhs, _strip_varspecies) ~ replacenode(eq.rhs, _strip_varspecies)
+           for eq in eqs]
+
+    ReactionSystem(eqs, iv, us, ps, browns;
+        poissonians = poiss,
+        jumps = jmps,
+        observed = obs,
+        name,
+        combinatoric_ratelaws,
+        initial_conditions = ics,
+        continuous_events = cevs,
+        discrete_events = devs,
+        metadata = meta,
+        checks)
+end
+
+"""
 ```julia
 ss_ode_model(rs::ReactionSystem)
 ```
