@@ -88,6 +88,11 @@ const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYM
 # SymbolicDimensions-preserving unit inference (replaces MTKBase's `get_unit` for validation).
 include("unit_helpers.jl")
 
+### LaTeX Utilities ###
+
+# Accessor functions for Symbolics' SymLatexWrapper metadata.
+include("latex_utils.jl")
+
 ### Package Main ###
 
 # The `Reaction` structure and its functions.

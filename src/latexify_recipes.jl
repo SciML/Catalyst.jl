@@ -44,6 +44,7 @@ function processsym(s)
         idxs = args[2:end]
         var = value(Symbolics.variable(MT.getname(s), idxs...))
     end
+    _has_latex_wrapper(var) || (var = _set_latex_wrapper(var, string))
     var
 end
 
@@ -126,7 +127,7 @@ function chemical_arrows(rn::ReactionSystem;
     end
 
     if !isempty(nonrxs)
-        eqstrs = latexraw.(nonrxs)
+        eqstrs = [latexraw(eq; kwargs...) for eq in nonrxs]
         eqstr_list = replace.(eqstrs, "=" => "&=")
         newstr = join(eqstr_list, " $eol")
         str *= newstr
@@ -134,6 +135,9 @@ function chemical_arrows(rn::ReactionSystem;
     end
 
     str *= starred ? "\\end{align*}\n" : "\\end{align}\n"
+
+    # Strip \mathtt{} wrapping so multi-character names render as plain math italic.
+    str = replace(str, r"\\mathtt\{([^}]*)\}" => s"\1")
 
     latexstr = Latexify.LaTeXString(str)
     Latexify.COPY_TO_CLIPBOARD && clipboard(latexstr)
