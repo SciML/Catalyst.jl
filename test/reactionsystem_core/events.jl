@@ -142,7 +142,7 @@ let
     rs2 = ReactionSystem(rxs, t; continuous_events = [ce], discrete_events = de, name = :rs)
     rs3 = ReactionSystem(rxs, t; continuous_events = ce, discrete_events = [de], name = :rs)
     rs4 = ReactionSystem(rxs, t; continuous_events = [ce], discrete_events = [de], name = :rs)
-    @test_broken rs1 == rs2 == rs3 == rs4 # https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @test Catalyst.isequivalent(rs1, rs2) && Catalyst.isequivalent(rs2, rs3) && Catalyst.isequivalent(rs3, rs4)
 end
 
 # Checks that various various erroneous forms yield errors.
@@ -233,7 +233,7 @@ let
     rn_prog = complete(rn_prog)
 
     # Tests that approaches yield identical results.
-    @test_broken isequal(rn_dsl, rn_prog)  # https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @test Catalyst.isequivalent(rn_dsl, rn_prog)
 
     u0 = [X => 6.0, Y => 4.5, Z => 5.5]
     tspan = (0.0, 20.0)
