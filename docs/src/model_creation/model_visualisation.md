@@ -26,10 +26,7 @@ latexify(brusselator; form = :ode)
 latexify(brusselator; form = :ode, math_delimiters = true) # hide
 ```
 !!! note
-    Internally, `latexify(brusselator; form = :ode)` calls `latexify(ode_model(brusselator))`. Hence, if you have already generated the `ODESystem` corresponding to your model, it can be used directly as input to `latexify`.
-
-!!! note 
-    It should be possible to also generate SDEs through the `form = :sde` input. This feature is, however, currently broken.
+    Internally, `latexify(brusselator; form = :ode)` generates the corresponding ODE equations from the model and renders them through Catalyst's LaTeX display pipeline. The same can be done for SDEs using `form = :sde`.
 
 If you wish to copy the output to your [clipboard](https://en.wikipedia.org/wiki/Clipboard_(computing)) (e.g. so that you can paste it into a LaTeX document), run `copy_to_clipboard(true)` before you run `latexify`. A more throughout description of Latexify's features can be found in [its documentation](https://korsbo.github.io/Latexify.jl/stable/).
 
