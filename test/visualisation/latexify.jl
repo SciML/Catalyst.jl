@@ -188,11 +188,16 @@ let
 
     # Note: The two trailing spaces on the last equation line are significant (from chemical_arrows).
     # Latexify.@generate_test latexify(rn; form=:ode)
-    ode_expected = "\\begin{align*}\n\\frac{\\mathrm{d} X\\left( t \\right)}{\\mathrm{d}t} &= p - d X\\left( t \\right) + 2 kD \\mathrm{X2}\\left( t \\right) - \\left( X\\left( t \\right) \\right)^{2} kB \\\\\n\\frac{\\mathrm{d} \\mathrm{X2}\\left( t \\right)}{\\mathrm{d}t} &=  - kD \\mathrm{X2}\\left( t \\right) + \\frac{1}{2} \\left( X\\left( t \\right) \\right)^{2} kB  \n \\end{align*}\n"
+    ode_expected = "\\begin{align*}\n\\frac{\\mathrm{d} X}{\\mathrm{d}t} &= p - d X + 2 kD \\mathrm{X2} - \\left( X \\right)^{2} kB \\\\\n\\frac{\\mathrm{d} \\mathrm{X2}}{\\mathrm{d}t} &=  - kD \\mathrm{X2} + \\frac{1}{2} \\left( X \\right)^{2} kB  \n \\end{align*}\n"
     @test latexify(rn; form = :ode) == replace(ode_expected, "\r\n"=>"\n")
 
     # SDE form currently renders identically to ODE form (noise terms not yet shown).
     @test latexify(rn; form = :sde) == latexify(rn; form = :ode)
+
+    # Tests that `show_time_arg = true` preserves (t) in equation/rate output.
+    @test occursin("\\left( t \\right)", string(latexify(rn; form = :ode, show_time_arg = true)))
+    # Tests that default (show_time_arg = false) strips (t) from equation/rate output.
+    @test !occursin("\\left( t \\right)", string(latexify(rn; form = :ode)))
 
     # Tests that `math_delimiters = true` wraps output in $$ delimiters.
     ode_delimited = latexify(rn; form = :ode, math_delimiters = true)
@@ -261,8 +266,8 @@ let
 # Latexify.@generate_test latexify(rn)
 @test latexify(rn) == replace(
 raw"\begin{align*}
-\varnothing &\xrightleftharpoons[\frac{d}{V\left( t \right)}]{\frac{p}{V\left( t \right)}} \mathrm{X} \\
-\frac{\mathrm{d} V\left( t \right)}{\mathrm{d}t} &=  - V\left( t \right) + X\left( t \right)  
+\varnothing &\xrightleftharpoons[\frac{d}{V}]{\frac{p}{V}} \mathrm{X} \\
+\frac{\mathrm{d} V}{\mathrm{d}t} &=  - V + X  
  \end{align*}
 ", "\r\n"=>"\n")
 end

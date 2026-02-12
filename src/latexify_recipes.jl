@@ -53,7 +53,8 @@ end
 function chemical_arrows(rn::ReactionSystem;
         double_linebreak = LATEX_DEFS.double_linebreak,
         starred = LATEX_DEFS.starred, mathrm = true,
-        mathjax = LATEX_DEFS.mathjax, math_delimiters = false, kwargs...)
+        mathjax = LATEX_DEFS.mathjax, math_delimiters = false,
+        show_time_arg = false, kwargs...)
     any_nonrx_subsys(rn) &&
         (@warn "Latexify currently ignores non-ReactionSystem subsystems. Please call `flatsys = flatten(sys)` to obtain a flattened version of your system before trying to Latexify it.")
 
@@ -78,11 +79,11 @@ function chemical_arrows(rn::ReactionSystem;
         str *= "\\require{mhchem} \n"
     end
 
-    spcs = species(rn)
-    if isempty(spcs)
+    syms = unknowns(rn)
+    if isempty(syms)
         subber = identity
     else
-        subber = SymbolicUtils.Substituter{true}([s => processsym(s) for s in spcs], SymbolicUtils.default_substitute_filter)
+        subber = SymbolicUtils.Substituter{true}([s => processsym(s) for s in syms], SymbolicUtils.default_substitute_filter)
     end
 
     lastidx = length(rxs)
@@ -93,7 +94,7 @@ function chemical_arrows(rn::ReactionSystem;
         end
 
         ### Expand functions to maths expressions
-        rate = r.rate isa SymbolicT ? subber(r.rate) : r.rate
+        rate = (r.rate isa SymbolicT && !show_time_arg) ? subber(r.rate) : r.rate
 
         ### Generate formatted string of substrates
         substrates = [make_stoich_str(substrate[1], substrate[2], subber; mathrm,
@@ -107,7 +108,7 @@ function chemical_arrows(rn::ReactionSystem;
         if i + 1 <= length(rxs) && issetequal(r.products, rxs[i + 1].substrates) &&
            issetequal(r.substrates, rxs[i + 1].products)
             ### Bi-directional arrows
-            rate_backwards = rxs[i + 1].rate isa SymbolicT ? subber(rxs[i + 1].rate) :
+            rate_backwards = (rxs[i + 1].rate isa SymbolicT && !show_time_arg) ? subber(rxs[i + 1].rate) :
                              rxs[i + 1].rate
             str *= " &" * rev_arrow
             str *= "[" * latexraw(rate_backwards; kwargs...) * "]"
@@ -135,6 +136,10 @@ function chemical_arrows(rn::ReactionSystem;
 
     if !isempty(nonrxs)
         eqstrs = [latexraw(eq; kwargs...) for eq in nonrxs]
+        if !show_time_arg
+            iv_latex = latexraw(get_iv(rn))
+            eqstrs = [replace(s, "\\left( $iv_latex \\right)" => "") for s in eqstrs]
+        end
         eqstr_list = replace.(eqstrs, "=" => "&=")
         newstr = join(eqstr_list, " $eol")
         str *= newstr
