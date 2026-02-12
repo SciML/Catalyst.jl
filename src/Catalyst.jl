@@ -114,6 +114,12 @@ export ode_model, sde_model, jump_model, ss_ode_model, hybrid_model
 @public validate_units, assert_valid_units, unit_validation_report
 @public UnitValidationError, UnitValidationIssue, UnitValidationReport
 
+# System-level metadata key types and accessors.
+include("reactionsystem_metadata.jl")
+@public U0Map, ParameterMap
+@public has_u0_map, get_u0_map, set_u0_map
+@public has_parameter_map, get_parameter_map, set_parameter_map
+
 # Conversions of the `ReactionSystem` structure.
 include("reactionsystem_conversions.jl")
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem,

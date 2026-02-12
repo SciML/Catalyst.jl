@@ -2,6 +2,10 @@
 
 ## Catalyst 16.0
 
+#### New: `U0Map` and `ParameterMap` system-level metadata
+
+New metadata keys `U0Map` and `ParameterMap` with convenience accessors (`has_u0_map`/`get_u0_map`/`set_u0_map` and `has_parameter_map`/`get_parameter_map`/`set_parameter_map`) allow file parsers to store species/variable and parameter value mappings on a `ReactionSystem` in formats distinct from `initial_conditions`. These are set via the `metadata` keyword or `set_*` functions and are preserved through `flatten`, `complete`, and model conversions.
+
 #### BREAKING and Bug fix: Units handling rewritten with new API supporting non-SI units
 
 - New `validate_units`/`assert_valid_units` functions defined on `Reaction`s and
