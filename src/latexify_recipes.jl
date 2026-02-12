@@ -53,7 +53,7 @@ end
 function chemical_arrows(rn::ReactionSystem;
         double_linebreak = LATEX_DEFS.double_linebreak,
         starred = LATEX_DEFS.starred, mathrm = true,
-        mathjax = LATEX_DEFS.mathjax, kwargs...)
+        mathjax = LATEX_DEFS.mathjax, math_delimiters = false, kwargs...)
     any_nonrx_subsys(rn) &&
         (@warn "Latexify currently ignores non-ReactionSystem subsystems. Please call `flatsys = flatten(sys)` to obtain a flattened version of your system before trying to Latexify it.")
 
@@ -145,6 +145,12 @@ function chemical_arrows(rn::ReactionSystem;
 
     # Strip \mathtt{} wrapping so multi-character names render as plain math italic.
     str = replace(str, r"\\mathtt\{([^}]*)\}" => s"\1")
+
+    # Optionally wrap in $$ delimiters for renderers (Documenter, MathJax) that require
+    # explicit math delimiters. Not valid standard LaTeX, but needed for web rendering.
+    if math_delimiters
+        str = "\$\$\n" * str * "\$\$"
+    end
 
     latexstr = Latexify.LaTeXString(str)
     Latexify.COPY_TO_CLIPBOARD && clipboard(latexstr)

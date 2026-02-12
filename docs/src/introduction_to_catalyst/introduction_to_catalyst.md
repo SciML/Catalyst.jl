@@ -117,6 +117,7 @@ Let's now use our `ReactionSystem` to generate and solve a corresponding mass
 action ODE model. We first convert it to a pure ODE model
 ```@example tut1
 odesys = ode_model(rn)
+latexify(rn; form = :ode, math_delimiters = true) # hide
 ```
 (Here Latexify is used automatically to display `odesys` in Latex within Markdown
 documents or notebook environments like Pluto.jl.)

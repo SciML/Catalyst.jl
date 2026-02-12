@@ -797,6 +797,13 @@ function is_autonomous_error(iv)
     compute system steady states, consider creating and solving a `SteadyStateProblem."""
 end
 
+# Used by `system_to_reactionsystem` to mark non-BC species as BC species inside equations.
+# Returns `nothing` for non-species or already-BC nodes (no replacement by `replacenode`).
+function _mark_species_bc(node)
+    ((node isa SymbolicT) && isspecies(node) && !isbc(node)) || return nothing
+    MT.setmetadata(node, VariableBCSpecies, true)
+end
+
 """
     system_to_reactionsystem(sys::MT.AbstractSystem; kwargs...)
 
@@ -826,15 +833,13 @@ function system_to_reactionsystem(sys::MT.AbstractSystem;
     meta = MT.get_metadata(sys)
     ics = MT.initial_conditions(sys)
 
-    # Strip VariableSpecies metadata from unknowns and equations. ODE/SDE equations contain
-    # D(species) which the ReactionSystem constructor rejects (no differential of species
-    # in equations). We strip the metadata from both the unknowns vector and inside equations.
-    _strip_varspecies = node -> begin
-        ((node isa SymbolicT) && isspecies(node) && !isbc(node)) || return nothing
-        MT.setmetadata(node, VariableSpecies, false)
-    end
-    us = [isspecies(u) ? MT.setmetadata(u, VariableSpecies, false) : u for u in us]
-    eqs = [replacenode(eq.lhs, _strip_varspecies) ~ replacenode(eq.rhs, _strip_varspecies)
+    # Mark non-BC species as BC species so D(species) is allowed in equations.
+    # The ReactionSystem constructor rejects differentials of non-BC species, but ODE/SDE
+    # equations naturally contain D(species). BC metadata is added to both the unknowns
+    # vector and inside equation expressions (which hold separate symbolic references).
+    us = [isspecies(u) && !isbc(u) ? MT.setmetadata(u, VariableBCSpecies, true) : u
+          for u in us]
+    eqs = [replacenode(eq.lhs, _mark_species_bc) ~ replacenode(eq.rhs, _mark_species_bc)
            for eq in eqs]
 
     ReactionSystem(eqs, iv, us, ps, browns;

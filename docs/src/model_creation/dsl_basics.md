@@ -211,6 +211,7 @@ Here, `P`'s production rate will be reduced as `A` decays. We can [print the ODE
 ```@example dsl_basics
 using Latexify
 latexify(rn_ap; form = :ode)
+latexify(rn_ap; form = :ode, math_delimiters = true) # hide
 ```
 
 In this case, we can generate an equivalent model by instead adding `A` as both a substrate and a product to `P`'s production reaction:
@@ -223,6 +224,7 @@ end
 We can confirm that this generates the same ODE:
 ```@example dsl_basics
 latexify(rn_ap_alt; form = :ode)
+latexify(rn_ap_alt; form = :ode, math_delimiters = true) # hide
 ```
 Here, while these models will generate identical ODE, SDE, and jump simulations, the chemical reaction network models themselves are not equivalent. Generally, as pointed out in the two notes below, using the second form is preferable.
 !!! warning

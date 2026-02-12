@@ -23,6 +23,7 @@ brusselator # hide
 Here, we note that the output of `latexify(brusselator)` is identical to how a model is displayed by default. Indeed, the reason is that Catalyst internally uses Latexify's `latexify` function to display its models. It is also possible to display the ODE equations a model would generate by adding the `form = :ode` argument:
 ```@example visualisation_latex
 latexify(brusselator; form = :ode)
+latexify(brusselator; form = :ode, math_delimiters = true) # hide
 ```
 !!! note
     Internally, `latexify(brusselator; form = :ode)` calls `latexify(ode_model(brusselator))`. Hence, if you have already generated the `ODESystem` corresponding to your model, it can be used directly as input to `latexify`.

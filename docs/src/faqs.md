@@ -231,11 +231,12 @@ dAdteq = Equation(dAdteq.lhs, dAdteq.rhs + 1 + sin(t))
 While generally one wants the reaction rate law to use the law of mass action,
 so the reaction
 ```@example faq7
-using Catalyst
+using Catalyst, Latexify
 rn = @reaction_network begin
     k, X --> ∅
 end
 ode_model(rn)
+latexify(rn; form = :ode, math_delimiters = true) # hide
 ```
 occurs at the (ODE) rate ``d[X]/dt = -k[X]``, it is possible to override this by
 using any of the following non-filled arrows when declaring the reaction: `<=`,
@@ -245,6 +246,7 @@ rn = @reaction_network begin
     k, X => ∅
 end
 ode_model(rn)
+latexify(rn; form = :ode, math_delimiters = true) # hide
 ```
 will occur at rate ``d[X]/dt = -k`` (which might become a problem since ``[X]``
 will be degraded at a constant rate even when very small or equal to 0).
@@ -255,6 +257,7 @@ rn = @reaction_network begin
     k, 2*X ⇒ ∅
 end
 ode_model(rn)
+latexify(rn; form = :ode, math_delimiters = true) # hide
 ```
 has rate ``d[X]/dt = -2 k``.
 

@@ -21,6 +21,7 @@ This makes sense, as while $X$ is converted between two different forms ($X₁$ 
 ```@example conservation_laws
 using Latexify
 latexify(rs; form = :ode)
+latexify(rs; form = :ode, math_delimiters = true) # hide
 ```
 we note that it essentially generates the same equation twice (i.e. $\frac{dX₁(t)}{dt} = -\frac{dX₂(t)}{dt}$). By designating our conserved quantity $X₁ + X₂ = Γ$, we can rewrite our differential equation model as a [differential-algebraic equation](https://en.wikipedia.org/wiki/Differential-algebraic_system_of_equations) (with a single differential equation and a single algebraic equation):
 ```math
