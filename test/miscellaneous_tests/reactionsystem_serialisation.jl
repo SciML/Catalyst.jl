@@ -355,9 +355,9 @@ let
 
     # Checks that the correct system is saved (both complete and incomplete ones).
     save_reactionsystem(testpath("serialised_rs_incomplete.jl"), rs_1; safety_check = false)
-    @test_broken isequal(rs_1, include(testpath("serialised_rs_incomplete.jl"))) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @test Catalyst.isequivalent(rs_1, include(testpath("serialised_rs_incomplete.jl")))
     save_reactionsystem(testpath("serialised_rs_complete.jl"), rs; safety_check = false)
-    @test_broken isequal(rs, include(testpath("serialised_rs_complete.jl"))) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @test Catalyst.isequivalent(rs, include(testpath("serialised_rs_complete.jl")))
     rm(testpath("serialised_rs_incomplete.jl"))
     rm(testpath("serialised_rs_complete.jl"))
 end

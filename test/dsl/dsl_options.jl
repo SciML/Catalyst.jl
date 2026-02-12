@@ -1606,7 +1606,7 @@ let
             [X ~ 3.0] => [X ~ Pre(X - 1)]
         end
     end
-    @test_broken isequal(rn51, rn52) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @test Catalyst.isequivalent(rn51, rn52)
     @reaction_network begin
         @species X(t)
         @continuous_events begin
@@ -1626,7 +1626,7 @@ let
             (X > 3.0) => [X ~ X - 1]
         end
     end
-    @test_broken isequal(rn61, rn62) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @test Catalyst.isequivalent(rn61, rn62)
 end
 
 # test unit_checks DSL option
