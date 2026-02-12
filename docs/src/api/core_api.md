@@ -227,6 +227,19 @@ Catalyst.hasmisc
 Catalyst.getmisc
 ```
 
+## [System-level metadata](@id api_system_metadata)
+The following types and functions allow storing and retrieving system-level metadata on a [`ReactionSystem`](@ref). These are primarily intended for use by file parsers that need to attach extra mapping data (e.g., initial condition or parameter value maps) to a system.
+```@docs
+Catalyst.U0Map
+Catalyst.ParameterMap
+Catalyst.has_u0_map
+Catalyst.get_u0_map
+Catalyst.set_u0_map
+Catalyst.has_parameter_map
+Catalyst.get_parameter_map
+Catalyst.set_parameter_map
+```
+
 ## [Functions to extend or modify a network](@id api_network_extension_and_modification)
 `ReactionSystem`s can be programmatically extended using [`ModelingToolkitBase.extend`](@ref) and
 [`ModelingToolkitBase.compose`](@ref).
