@@ -815,11 +815,13 @@ Keyword arguments override the defaults extracted from `sys`:
 - `name`: defaults to `nameof(sys)`
 - `combinatoric_ratelaws`: defaults to `true`
 - `checks`: defaults to `false`
+- `disable_forbidden_symbol_check`: defaults to `false`
 """
 function system_to_reactionsystem(sys::MT.AbstractSystem;
         name = nameof(sys),
         combinatoric_ratelaws = true,
-        checks = false)
+        checks = false,
+        disable_forbidden_symbol_check = false)
     eqs = equations(sys)
     iv = get_iv(sys)
     us = unknowns(sys)
@@ -853,7 +855,7 @@ function system_to_reactionsystem(sys::MT.AbstractSystem;
         discrete_events = devs,
         metadata = meta,
         checks,
-        disable_forbidden_symbol_check = true)
+        disable_forbidden_symbol_check)
 end
 
 """

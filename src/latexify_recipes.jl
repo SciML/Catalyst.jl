@@ -20,11 +20,11 @@ const LATEX_DEFS = CatalystLatexParams()
     elseif form == :ode      # Returns ODE system code (rendered via chemical_arrows).
         mult_symbol --> ""
         env --> :chem
-        return system_to_reactionsystem(ode_model(rs))
+        return system_to_reactionsystem(ode_model(rs); disable_forbidden_symbol_check = true)
     elseif form == :sde      # Returns SDE system code (rendered via chemical_arrows).
         mult_symbol --> ""
         env --> :chem
-        return system_to_reactionsystem(sde_model(rs))
+        return system_to_reactionsystem(sde_model(rs); disable_forbidden_symbol_check = true)
     end
     error("Unrecognised form argument given: $form. This should be either reactions (default), :ode, or :sde.")
 end
