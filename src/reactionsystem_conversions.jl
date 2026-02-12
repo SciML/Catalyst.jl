@@ -852,7 +852,8 @@ function system_to_reactionsystem(sys::MT.AbstractSystem;
         continuous_events = cevs,
         discrete_events = devs,
         metadata = meta,
-        checks)
+        checks,
+        disable_forbidden_symbol_check = true)
 end
 
 """

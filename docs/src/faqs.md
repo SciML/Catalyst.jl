@@ -231,7 +231,8 @@ dAdteq = Equation(dAdteq.lhs, dAdteq.rhs + 1 + sin(t))
 While generally one wants the reaction rate law to use the law of mass action,
 so the reaction
 ```@example faq7
-using Catalyst, Latexify
+using Catalyst
+using Latexify # hide
 rn = @reaction_network begin
     k, X --> ∅
 end

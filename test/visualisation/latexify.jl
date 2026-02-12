@@ -54,7 +54,7 @@ let
 # Latexify.@generate_test latexify(rn; expand_functions = false)
 @test latexify(rn; expand_functions = false) == replace(
 raw"\begin{align*}
-\varnothing &\xrightarrow{\mathrm{hill}\left( X4, v1, K1, n1 \right) \mathrm{hillr}\left( X2, v1, K1, n1 \right)} \mathrm{X1} \\
+\varnothing &\xrightarrow{\mathrm{hillr}\left( X2, v1, K1, n1 \right) \mathrm{hill}\left( X4, v1, K1, n1 \right)} \mathrm{X1} \\
 \varnothing &\xrightarrow{\mathrm{hill}\left( X5, v2, K2, n2 \right)} \mathrm{X2} \\
 \varnothing &\xrightarrow{\mathrm{hill}\left( X3, v3, K3, n3 \right)} \mathrm{X3} \\
 \varnothing &\xrightarrow{\mathrm{hillr}\left( X1, v4, K4, n4 \right)} \mathrm{X4} \\

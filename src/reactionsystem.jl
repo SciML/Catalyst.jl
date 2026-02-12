@@ -383,7 +383,8 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
         spatial_ivs = nothing,
         continuous_events = nothing,
         discrete_events = nothing,
-        metadata = MT.MetadataT())
+        metadata = MT.MetadataT(),
+        disable_forbidden_symbol_check = false)
 
     # Error checks
     name === nothing &&
@@ -419,9 +420,11 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
     ps′ = isempty(ps) ? SymbolicT[] : unwrap.(ps)
 
     # Checks that no (by Catalyst) forbidden symbols are used.
-    allsyms = Iterators.flatten((ps′, unknowns′))
-    if !all(sym -> getname(sym) ∉ forbidden_symbols_error, allsyms)
-        error("Catalyst reserves the symbols $forbidden_symbols_error for internal use. Please do not use these symbols as parameters or unknowns/species.")
+    if !disable_forbidden_symbol_check
+        allsyms = Iterators.flatten((ps′, unknowns′))
+        if !all(sym -> getname(sym) ∉ forbidden_symbols_error, allsyms)
+            error("Catalyst reserves the symbols $forbidden_symbols_error for internal use. Please do not use these symbols as parameters or unknowns/species.")
+        end
     end
 
     # Handles reactions and equations. Sorts so that reactions are before equations in the equations vector.

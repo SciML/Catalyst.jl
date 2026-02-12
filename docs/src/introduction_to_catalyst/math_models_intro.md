@@ -75,7 +75,8 @@ a(\mathbf{X}(t)) = k A (A-1) B.
 One can also specify during system construction that by default combinatoric
 scalings should be disabled, i.e.
 ```@example math_examples
-using Catalyst, Latexify
+using Catalyst
+using Latexify # hide
 rn = @reaction_network begin
     @combinatoric_ratelaws false
     k, 3A + 2B --> A + 3D
