@@ -25,7 +25,7 @@ Here, we note that the output of `latexify(brusselator)` is identical to how a m
 latexify(brusselator; form = :ode)
 ```
 !!! note
-    Internally, `latexify(brusselator; form = :ode)` calls `latexify(ode_model(brusselator))`. Hence, if you have already generated the `ODESystem` corresponding to your model, it can be used directly as input to `latexify`.
+    Internally, `latexify(brusselator; form = :ode)` calls `latexify(ode_model(brusselator))`. Hence, if you have already generated the ODE `System` corresponding to your model, it can be used directly as input to `latexify`.
 
 !!! note 
     It should be possible to also generate SDEs through the `form = :sde` input. This feature is, however, currently broken.

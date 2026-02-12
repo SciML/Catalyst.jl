@@ -88,7 +88,7 @@ Note, as [`oderatelaw`](@ref) takes just one reaction as input we use
 broadcasting to apply it to each element of `rxs`.
 
 Let's check that this really gives the same ODEs as Catalyst. Here is what Catalyst
-generates by converting to an `ODESystem`
+generates by converting to an ODE `System`
 ```@example s1
 osys = ode_model(repressilator)
 

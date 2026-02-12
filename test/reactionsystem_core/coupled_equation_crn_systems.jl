@@ -448,7 +448,7 @@ let
 end
 
 
-### Coupled SDESystem Tests ###
+### Coupled SDE System Tests ###
 
 # Checks that a coupled SDE + differential equations works.
 # Checks that CLE noise does not affect ODE part that should be deterministic.
@@ -510,7 +510,7 @@ let
 end
 
 
-### Coupled NonlinearSystems Tests ###
+### Coupled Nonlinear System Tests ###
 
 # Checks that systems with weird differential equations yield errors.
 let

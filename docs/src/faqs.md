@@ -223,8 +223,8 @@ dAdteq = equations(osys)[1]
 t      = ModelingToolkitBase.get_iv(osys)
 dAdteq = Equation(dAdteq.lhs, dAdteq.rhs + 1 + sin(t))
 
-# create a new ODESystem with the modified equation
-@named osys2  = ODESystem([dAdteq], t)
+# create a new ODE System with the modified equation
+@named osys2  = System([dAdteq], t)
 ```
 
 ## How to override mass action kinetics rate laws?
@@ -346,7 +346,7 @@ end
 
 ## [What to be aware of when using `remake` with conservation law elimination and NonlinearProblems?](@id faq_remake_nonlinprob)
 
-When constructing `NonlinearSystem`s or `NonlinearProblem`s with `remove_conserved = true`, i.e.
+When constructing nonlinear `System`s or `NonlinearProblem`s with `remove_conserved = true`, i.e.
 ```julia
 # for rn a ReactionSystem
 nsys = ss_ode_model(rn; remove_conserved = true)

@@ -255,7 +255,7 @@ end
 #     ks = getfield.(bif_dia.γ.branch, :param)
 #     @test_broken @. 8 * (ks / (ks + ks^2)) ≈ xs
 
-#     # Test that parameter updating happens correctly in ODESystem
+#     # Test that parameter updating happens correctly in ODE System
 #     t = default_t()
 #     kval = 4.
 #     @parameters k ksq = k^2 tratechange = 10.

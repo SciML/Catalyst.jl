@@ -163,7 +163,7 @@ let
     @test norm(G - G2) < 100 * eps()
 end
 
-# Test with JumpSystem.
+# Test with jump System.
 let
     @species A(t) B(t) C(t) D(t) E(t) F(t)
     rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
@@ -494,7 +494,7 @@ let
     end
 
     # Test sde systems.
-    # BC species require a constraint equation to define their dynamics in SDESystems.
+    # BC species require a constraint equation to define their dynamics in SDE Systems.
     let
         eqs = [(@reaction k1, $A --> B),
             (@reaction k2, B --> $A),
@@ -637,7 +637,7 @@ end
 
 # Tests various erroneous `convert` calls.
 let
-    # Conversion of non-autonomous `ReactionSystem` to `NonlinearSystem`.
+    # Conversion of non-autonomous `ReactionSystem` to nonlinear `System`.
     rs = @reaction_network begin
         (p/(1+t),d), 0 <--> X
     end
@@ -1049,7 +1049,7 @@ end
 ########## tests related to hybrid systems ##########
 
 let
-    # Helper functions to access JumpSystem equation types in MTK 11
+    # Helper functions to access jump System equation types in MTK 11
     # Jumps are now stored in a flat vector, filter by type
     massactionjumps(js) = filter(j -> j isa MassActionJump, MT.jumps(js))
     constantratejumps(js) = filter(j -> j isa ConstantRateJump, MT.jumps(js))
