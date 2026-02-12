@@ -109,20 +109,19 @@ Generally, for each conservation law, one can omit specifying either the conserv
 !!! warn
     If you specify the value of a conservation law parameter, you *must not* specify the value of all species of that conservation law (this can result in an error). Instead, the value of exactly one species must be left unspecified.
 
-Just like when we create a problem, if we [update the species (or conservation law parameter) values of `oprob`](@ref simulation_structure_interfacing_problems), the remaining ones will be recomputed to generate an accurate conservation law. E.g. here we create an `ODEProblem`, check the value of the conservation law, and then confirm that its value is updated with $X₁$.
+Just like when we create a problem, if we [update the species (or conservation law parameter) values of `oprob`](@ref simulation_structure_interfacing_problems), the remaining ones will be recomputed to generate an accurate conservation law.
 ```@example conservation_laws
 u0 = [:X₁ => 6.0, :X₂ => 4.0]
 ps = [:k₁ => 1.0, :k₂ => 2.0]
 oprob = ODEProblem(rs, u0, 10.0, ps; remove_conserved = true)
-oprob.ps[:Γ][1]
-```
-```@example conservation_laws
 oprob = remake(oprob; u0 = [:X₁ => 16.0])
-oprob.ps[:Γ][1]
 ```
-It is also possible to update the value of $Γ$. Here, as $X₂$ is the species eliminated by the conservation law (which can be checked using `conservedequations`), $X₂$'s value will be modified to ensure that $Γ$'s new value is correct. This, however, also requires designating `X₂ = missing`
+!!! warn
+    If a problem with conservation laws have had values related to that conservation law updated using `remake`, the values stored within the problem will no longer appear correct. I.e. `oprob[:X₂]` will not necessarily yield the correct value. The correct values are, however, computed correctly during `solve`, and it is only when checking teh content of the problem that errnoneous values appears.
+
+It is also possible to update the value of $Γ$. Here, as $X₂$ is the species eliminated by the conservation law (which can be checked using `conservedequations`), $X₂$'s value will be modified to ensure that $Γ$'s new value is correct. This, however, also requires designating `X₂ = nothing`
 ```@example conservation_laws
-oprob = remake(oprob; u0 = [:X₂ => missing], p = [:Γ => [30.0]] )
+oprob = remake(oprob; u0 = [:X₂ => nothing], p = [:Γ => [30.0]] )
 oprob[:X₂]
 ```
 
