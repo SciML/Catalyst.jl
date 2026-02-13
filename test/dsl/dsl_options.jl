@@ -1125,6 +1125,234 @@ let
     @test Catalyst.isequivalent(rs2, rs3)
 end
 
+### Poissonians ###
+
+# Checks equivalence of a poissonian model created using the DSL and programmatically.
+let
+    rs_dsl = @reaction_network rs begin
+        @parameters λ k d
+        @variables X(t)
+        @poissonians dN(λ)
+        @equations D(X) ~ dN
+        (k, d), 0 <--> S
+    end
+    @parameters λ k d
+    @species S(t)
+    @variables X(t)
+    @poissonians dN(λ)
+    eqs = [
+        Reaction(k, [], [S]),
+        Reaction(d, [S], []),
+        D(X) ~ dN
+    ]
+    rs_prog = complete(ReactionSystem(eqs, t; poissonians = [dN], name = :rs))
+    @test Catalyst.isequivalent(rs_dsl, rs_prog)
+end
+
+# Checks that poissonians are correctly stored (single and multiple).
+let
+    rs1 = @reaction_network rs begin
+        @parameters λ
+        @poissonians dN(λ)
+        @equations D(V) ~ dN
+        (p, d), 0 <--> X
+    end
+    rs2 = @reaction_network rs begin
+        @parameters λ₁ λ₂
+        @poissonians begin
+            dN₁(λ₁)
+            dN₂(λ₂)
+        end
+        @equations begin
+            D(V) ~ dN₁
+            D(W) ~ dN₂
+        end
+        (p, d), 0 <--> X
+    end
+
+    @test length(ModelingToolkitBase.get_poissonians(rs1)) == 1
+    @test length(ModelingToolkitBase.get_poissonians(rs2)) == 2
+end
+
+# Checks that poissonians with interpolated rate expressions work correctly.
+let
+    @parameters k
+    @variables V(t)
+    rate_expr = k * V
+    rs_interp = @reaction_network rs begin
+        @parameters k d
+        @variables V(t)
+        @poissonians dN($(rate_expr))
+        @equations D(V) ~ dN - V
+        (k, d), 0 <--> S
+    end
+    @parameters d
+    @species S(t)
+    @poissonians dN(k * V)
+    eqs = [
+        Reaction(k, [], [S]),
+        Reaction(d, [S], []),
+        D(V) ~ dN - V
+    ]
+    rs_prog = complete(ReactionSystem(eqs, t; poissonians = [dN], name = :rs))
+    @test Catalyst.isequivalent(rs_interp, rs_prog)
+end
+
+# Checks that non-interpolated, non-trivial rate expressions are handled correctly.
+let
+    rs_multi = @reaction_network rs begin
+        @parameters k1 k2 d
+        @variables V(t)
+        @poissonians begin
+            dN₁(k1 * V)
+            dN₂(k2 + V)
+        end
+        @equations D(V) ~ dN₁ - dN₂ - d*V
+        d, 0 --> S
+    end
+    @parameters k1 k2 d
+    @species S(t)
+    @variables V(t)
+    @poissonians dN₁(k1 * V) dN₂(k2 + V)
+    eqs_multi = [
+        Reaction(d, [], [S]),
+        D(V) ~ dN₁ - dN₂ - d*V
+    ]
+    rs_multi_prog = complete(ReactionSystem(eqs_multi, t; poissonians = [dN₁, dN₂], name = :rs))
+    @test Catalyst.isequivalent(rs_multi, rs_multi_prog)
+    @test issetequal(ModelingToolkitBase.get_poissonians(rs_multi), [dN₁, dN₂])
+
+    rs_sum = @reaction_network rs begin
+        @parameters k1 k2 d
+        @variables V(t)
+        @poissonians dN_sum(k1 + k2)
+        @equations D(V) ~ dN_sum - d*V
+    end
+    @parameters k1 k2 d
+    @variables V(t)
+    @poissonians dN_sum(k1 + k2)
+    eqs_sum = [D(V) ~ dN_sum - d*V]
+    rs_sum_prog = complete(ReactionSystem(eqs_sum, t; poissonians = [dN_sum], name = :rs))
+    @test Catalyst.isequivalent(rs_sum, rs_sum_prog)
+
+    rs_fun = @reaction_network rs begin
+        @parameters k d
+        @variables V(t)
+        @poissonians dN_fun(sin(k))
+        @equations D(V) ~ dN_fun - d*V
+    end
+    @parameters k d
+    @variables V(t)
+    @poissonians dN_fun(sin(k))
+    eqs_fun = [D(V) ~ dN_fun - d*V]
+    rs_fun_prog = complete(ReactionSystem(eqs_fun, t; poissonians = [dN_fun], name = :rs))
+    @test Catalyst.isequivalent(rs_fun, rs_fun_prog)
+    
+    rs_indexed = @reaction_network rs begin
+        @species (A(t))[1:3]
+        @parameters k[1:5]
+        @variables V(t)
+        @poissonians dN(k[2] * A[3]^2)
+        @equations D(V) ~ dN - V
+    end
+    @species (A(t))[1:3]
+    @parameters k[1:5]
+    @variables V(t)
+    @poissonians dN(k[2] * A[3]^2)
+    eqs_indexed = [D(V) ~ dN - V]
+    rs_indexed_prog = complete(ReactionSystem(eqs_indexed, t, [A..., V], [k, k[2]];
+        poissonians = [dN], name = :rs))
+    @test Catalyst.isequivalent(rs_indexed, rs_indexed_prog)
+    @test issetequal(ModelingToolkitBase.get_poissonians(rs_indexed), [dN])
+
+    rs_component = @network_component rs begin
+        @parameters k
+        @variables V(t)
+        @poissonians dN_comp(k * V)
+        @equations D(V) ~ dN_comp - V
+    end
+    @test length(ModelingToolkitBase.get_poissonians(rs_component)) == 1
+end
+
+# Checks that undeclared symbols in poissonian rates produce a useful error message.
+let
+    import Catalyst: UndeclaredSymbolicError
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @poissonians dN(λ)
+        @equations D(X) ~ dN
+        (k, d), 0 <--> X
+    end
+    try
+        @macroexpand @reaction_network begin
+            @parameters k
+            @poissonians dN(k * undeclared_var)
+            @equations D(X) ~ dN
+            (k, d), 0 <--> X
+        end
+        @test false
+    catch e
+        @test e isa UndeclaredSymbolicError
+        @test occursin("undeclared_var", e.msg)
+        @test !occursin("*", e.msg)
+    end
+
+    # Error in the second poissonian of multiple with non-trivial rates.
+    try
+        @macroexpand @reaction_network begin
+            @parameters k1
+            @variables V(t)
+            @poissonians begin
+                dN₁(k1 + V)
+                dN₂(k1 * undeclared_rate)
+            end
+            @equations begin
+                D(V) ~ dN₁ - dN₂
+            end
+            (p, d), 0 <--> X
+        end
+        @test false
+    catch e
+        @test e isa UndeclaredSymbolicError
+        @test occursin("undeclared_rate", e.msg)
+        @test !occursin("*", e.msg)
+        @test !occursin("+", e.msg)
+    end
+
+    # Sum rates report undeclared symbols without including the `+` operator.
+    try
+        @macroexpand @reaction_network begin
+            @parameters k
+            @poissonians dN(k + missing_k)
+            @equations D(V) ~ dN
+        end
+        @test false
+    catch e
+        @test e isa UndeclaredSymbolicError
+        @test occursin("missing_k", e.msg)
+        @test !occursin("+", e.msg)
+    end
+
+    # Multiple undeclared symbols across multiple poissonians are all reported.
+    try
+        @macroexpand @reaction_network begin
+            @poissonians begin
+                dN₁(bad_sym1)
+                dN₂(bad_sym2)
+            end
+            @equations begin
+                D(V) ~ dN₁
+                D(W) ~ dN₂
+            end
+            (p, d), 0 <--> X
+        end
+        @test false  # should not reach here
+    catch e
+        @test e isa UndeclaredSymbolicError
+        @test occursin("bad_sym1", e.msg)
+        @test occursin("bad_sym2", e.msg)
+    end
+end
+
 ### Test `@equations` Option for Coupled CRN/Equations Models ###
 
 # Checks creation of basic network.
@@ -1378,7 +1606,7 @@ let
             [X ~ 3.0] => [X ~ Pre(X - 1)]
         end
     end
-    @test_broken isequal(rn51, rn52) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @test Catalyst.isequivalent(rn51, rn52)
     @reaction_network begin
         @species X(t)
         @continuous_events begin
@@ -1398,7 +1626,34 @@ let
             (X > 3.0) => [X ~ X - 1]
         end
     end
-    @test_broken isequal(rn61, rn62) # https://github.com/SciML/ModelingToolkit.jl/issues/3907
+    @test Catalyst.isequivalent(rn61, rn62)
+end
+
+# test unit_checks DSL option
+let
+    # `@unit_checks false` and `@unit_checks true` should both parse and construct systems.
+    @reaction_network begin
+        @unit_checks false
+        d, 3X --> 0
+    end
+    @reaction_network begin
+        @unit_checks true
+        d, 3X --> 0
+    end
+
+    # Test erroneous inputs (too few, too many, wrong type).
+    @test_throws Exception @eval @reaction_network begin
+        @unit_checks
+        d, 3X --> 0
+    end
+    @test_throws Exception @eval @reaction_network begin
+        @unit_checks true false
+        d, 3X --> 0
+    end
+    @test_throws Exception @eval @reaction_network begin
+        @unit_checks 1
+        d, 3X --> 0
+    end
 end
 
 # test combinatoric_ratelaws DSL option

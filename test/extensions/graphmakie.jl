@@ -175,3 +175,20 @@ let
     edgelabels = [repr(rx.rate) for rx in reactions(rn)]
     @test edgelabels[rxorder][1:3] == ["k1", "k6", "k10"]
 end
+
+# Test that array species are labeled correctly in plots.
+let
+    rn = @reaction_network begin
+        @species (S(t))[1:3]
+        k1, S[1] --> S[2]
+        k2, S[2] --> S[3]
+    end
+    f = plot_network(rn)
+    save("fig.png", f)
+    @test isfile("fig.png")
+    rm("fig.png")
+    f = plot_complexes(rn)
+    save("fig.png", f)
+    @test isfile("fig.png")
+    rm("fig.png")
+end

@@ -5,9 +5,9 @@ First, we fetch the required packages.
 ```@example pe_osc_example
 using Catalyst
 using OrdinaryDiffEqRosenbrock
-using Optimization
+using OptimizationBase
 using OptimizationOptimisers # Required for the ADAM optimizer.
-using SciMLSensitivity # Required for `Optimization.AutoZygote()` automatic differentiation option.
+using SciMLSensitivity # Required for the `AutoZygote()` automatic differentiation option.
 ```
 
 Next, we declare our model, the Brusselator oscillator.
@@ -65,7 +65,7 @@ function optimize_p(pinit, tend,
     end
 
     # optimize for the parameters that minimize the loss
-    optf = OptimizationFunction(loss, Optimization.AutoZygote())
+    optf = OptimizationFunction(loss, AutoZygote())
     optprob = OptimizationProblem(optf, pinit, (set_p, prob, sample_times, sample_vals))
     sol = solve(optprob, ADAM(0.1); maxiters = 100)
 

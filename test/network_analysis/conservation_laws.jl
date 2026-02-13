@@ -128,8 +128,8 @@ let
         nsys = ss_ode_model(rn; remove_conserved = true, conseqs_remake_warn = false)
         nsys_ss = mtkcompile(nsys)
         nsys = complete(nsys)
-        nprob1 = NonlinearProblem{true}(nsys, u0, p)
-        nprob1b = NonlinearProblem{true}(nsys_ss, u0, p)
+        nprob1 = NonlinearProblem{true}(nsys, merge(Dict(u0), Dict(p)))
+        nprob1b = NonlinearProblem{true}(nsys_ss, merge(Dict(u0), Dict(p)))
         nprob2 = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false)
         nprob2b = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false,
             structural_simplify = true)
@@ -139,7 +139,7 @@ let
         nsol2b = solve(nprob2b, NewtonRaphson(); abstol = 1e-8)
         # Nonlinear problems cannot find steady states properly without removing conserved species.
 
-        ssprob1 = SteadyStateProblem{true}(osys, u0, p)
+        ssprob1 = SteadyStateProblem{true}(osys, merge(Dict(u0), Dict(p)))
         ssprob2 = SteadyStateProblem(rn, u0, p)
         ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true)
         sssol1 = solve(ssprob1, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)

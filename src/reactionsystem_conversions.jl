@@ -540,8 +540,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
                   conservation laws. Catalyst does not check that the conserved equations
                   still hold for the final coupled system of equations. Consider using
                   `remove_conserved = false` and instead calling
-                  ModelingToolkitBase.structural_simplify to simplify any generated ODESystem or
-                  NonlinearSystem.
+                  ModelingToolkitBase.mtkcompile to simplify any generated system.
                   """
         end
         append!(eqs, ceqs)
@@ -733,10 +732,11 @@ function hybrid_model(rs::ReactionSystem;
 end
 
 """
-```julia
-Base.convert(::Type{<:ODESystem},rs::ReactionSystem)
-```
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.ODESystem`.
+    ode_model(rs::ReactionSystem; kwargs...)
+
+Convert a [`ReactionSystem`](@ref) to a `ModelingToolkitBase.System` representing an ODE
+model. Errors if the system contains coupled brownians, jumps, or poissonians; use
+[`hybrid_model`](@ref) or [`HybridProblem`](@ref) for mixed-scale systems.
 
 Keyword args and default values:
 - `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,
@@ -749,7 +749,7 @@ Keyword args and default values:
   the number of equations.
 - `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
   with their rational function representation when converting to another system type. Set to
-  `false`` to disable.
+  `false` to disable.
 """
 function ode_model(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
@@ -782,7 +782,7 @@ function ode_model(rs::ReactionSystem; name = nameof(rs),
 end
 
 const NONLIN_PROB_REMAKE_WARNING = """
-    Note, when constructing `NonlinearSystem`s with `remove_conserved = true`, possibly via \
+    Note, when constructing nonlinear systems with `remove_conserved = true`, possibly via \
     calling `NonlinearProblem`, `remake(::NonlinearProblem)` has some \
     limitations. If in `remake` the value of the conserved constant is \
     explicitly updated, it is not possible to have one variable's `u0` value \
@@ -793,16 +793,16 @@ const NONLIN_PROB_REMAKE_WARNING = """
 function is_autonomous_error(iv)
     return """
     Attempting to convert a non-autonomous `ReactionSystem` (e.g. where some rate depends \
-    on $(iv)) to a `NonlinearSystem`. This is not possible. if you are intending to \
+    on $(iv)) to a nonlinear system. This is not possible. if you are intending to \
     compute system steady states, consider creating and solving a `SteadyStateProblem."""
 end
 
 """
 ```julia
-Base.convert(::Type{<:NonlinearSystem},rs::ReactionSystem)
+ss_ode_model(rs::ReactionSystem)
 ```
 
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.NonlinearSystem`.
+Convert a [`ReactionSystem`](@ref) to a `ModelingToolkitBase.System` (nonlinear/steady-state).
 
 Keyword args and default values:
 - `combinatoric_ratelaws = true` uses factorial scaling factors in calculating the rate law,
@@ -820,7 +820,7 @@ Keyword args and default values:
   details.
 - `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
   with their rational function representation when converting to another system type. Set to
-  `false`` to disable.
+  `false` to disable.
 """
 function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
@@ -829,7 +829,7 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
         all_differentials_permitted = false, expand_catalyst_funs = true, kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
-    spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
+    spatial_convert_err(rs::ReactionSystem, System)
     remove_conserved && conseqs_remake_warn && (@warn NONLIN_PROB_REMAKE_WARNING)
     isautonomous(rs) || error(is_autonomous_error(get_iv(rs)))
 
@@ -845,9 +845,9 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.
     all_differentials_permitted || nonlinear_convert_differentials_check(rs)
-    eqs = [remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
+    eqs = Equation[remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
 
-    NonlinearSystem(eqs, us, ps;
+    System(eqs, us, ps;
         name,
         observed = obs, initialization_eqs = initeqs,
         initial_conditions = merge(initial_conditions, defs),
@@ -856,7 +856,7 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
         kwargs...)
 end
 
-# Ideally, when `ReactionSystem`s are converted to `NonlinearSystem`s, any coupled ODEs should be
+# Ideally, when `ReactionSystem`s are converted to nonlinear systems, any coupled ODEs should be
 # on the form D(X) ~ ..., where lhs is the time derivative w.r.t. a single variable, and the rhs
 # does not contain any differentials. If this is not the case, we throw a warning to let the user
 # know that they should be careful.
@@ -873,7 +873,7 @@ function nonlinear_convert_differentials_check(rs::ReactionSystem)
            !isequal(Symbolics.operation(eq.lhs), Differential(get_iv(rs))) ||
            (length(arguments(eq.lhs)) != 1) ||
            !any(isequal(arguments(eq.lhs)[1]), nonspecies(rs))
-            error("You are attempting to convert a `ReactionSystem` coupled with differential equations to a `NonlinearSystem`. However, some of these differentials are not of the form `D(x) ~ ...` where:
+            error("You are attempting to convert a `ReactionSystem` coupled with differential equations to a nonlinear system. However, some of these differentials are not of the form `D(x) ~ ...` where:
                     (1) The left-hand side is a differential of a single variable with respect to the time independent variable, and
                     (2) The right-hand side does not contain any differentials.
                 This is generally not permitted.
@@ -886,13 +886,13 @@ function nonlinear_convert_differentials_check(rs::ReactionSystem)
 end
 
 """
-```julia
-Base.convert(::Type{<:SDESystem},rs::ReactionSystem)
-```
+    sde_model(rs::ReactionSystem; kwargs...)
 
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.SDESystem`.
+Convert a [`ReactionSystem`](@ref) to a `ModelingToolkitBase.System` representing an SDE
+model (chemical Langevin equation). Errors if the system contains coupled jumps or
+poissonians; use [`hybrid_model`](@ref) or [`HybridProblem`](@ref) for mixed-scale systems.
 
-Notes:
+Keyword args and default values:
 - `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,
   i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. Set
   `combinatoric_ratelaws=false` for a ratelaw of `k*S^2`, i.e. the scaling factor is
@@ -903,7 +903,7 @@ Notes:
   the number of equations.
 - `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
   with their rational function representation when converting to another system type. Set to
-  `false`` to disable.
+  `false` to disable.
 - `use_legacy_noise = true`, for simple SDE systems without constraints (no algebraic
   equations, no BC species), use the traditional `noise_eqs` matrix approach which avoids
   the need for `mtkcompile`. Set to `false` to use the Brownian-based approach.
@@ -1024,13 +1024,15 @@ function detect_scale_types(scales)
 end
 
 """
-```julia
-Base.convert(::Type{<:JumpSystem},rs::ReactionSystem; combinatoric_ratelaws=true)
-```
+    jump_model(rs::ReactionSystem; kwargs...)
 
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.JumpSystem`.
+Convert a [`ReactionSystem`](@ref) to a `ModelingToolkitBase.System` representing a pure
+jump model. Forces all reactions to Jump scale (only preserving `VariableRateJump` metadata
+if explicitly set). Errors if the system contains coupled brownians, poissonians, or
+non-reaction equations; use [`hybrid_model`](@ref) or [`HybridProblem`](@ref) for
+mixed-scale systems.
 
-Notes:
+Keyword args and default values:
 - `combinatoric_ratelaws=true` uses binomials in calculating the rate law, i.e. for `2S ->
   0` at rate `k` the ratelaw would be `k*S*(S-1)/2`. If `combinatoric_ratelaws=false` then
   the ratelaw is `k*S*(S-1)`, i.e. the rate law is not normalized by the scaling factor.
@@ -1038,11 +1040,9 @@ Notes:
   defaults to true).
 - Does not currently support `ReactionSystem`s that include coupled algebraic or
   differential equations.
-- Does not currently support continuous events as these are not supported by
-  `ModelingToolkitBase.JumpSystems`.
 - `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
   with their rational function representation when converting to another system type. Set to
-  `false`` to disable.
+  `false` to disable.
 - `save_positions = (true, true)`, indicates whether for any reaction classified as a
   `VariableRateJump` to save the solution before and/or after the jump occurs. Defaults to
   true for both.
@@ -1128,7 +1128,8 @@ DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         kwargs...)
 ```
 
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkitBase.NonlinearSystem`.
+Convert a [`ReactionSystem`](@ref) to a `ModelingToolkitBase.System` (nonlinear/steady-state)
+and then construct a `NonlinearProblem`.
 
 Keyword args and default values:
 - `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,

@@ -62,7 +62,7 @@ To improve optimisation performance, rather than creating a new `ODEProblem` in 
 
 We can now create an `OptimizationProblem` using our `objective_function` and some initial guess of parameter values from which the optimiser will start:
 ```@example optimization_paramfit_1
-using Optimization
+using OptimizationBase
 p_guess = [1.0, 1.0, 1.0]
 optprob = OptimizationProblem(objective_function, p_guess)
 nothing # hide

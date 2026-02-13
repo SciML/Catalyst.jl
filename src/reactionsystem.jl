@@ -238,23 +238,27 @@ Continuing from the example in the [`Reaction`](@ref) definition:
 
 Keyword Arguments:
 - `observed::Vector{Equation}`, equations specifying observed variables.
-- `systems::Vector{AbstractSystems}`, vector of sub-systems. Can be `ReactionSystem`s,
-  `ODESystem`s, or `NonlinearSystem`s.
+- `systems::Vector{ReactionSystem}`, vector of sub-`ReactionSystem`s.
 - `name::Symbol`, the name of the system (must be provided, or `@named` must be used).
 - `initial_conditions::SymmapT`, a dictionary mapping parameters and species to their initial
   values.
-- `checks = true`, boolean for whether to check units.
+- `checks = true`, boolean for whether to run structural checks at construction time.
+- `unit_checks = false`, boolean for whether to perform unit validation at construction time.
+  Uses [`Catalyst.validate_units`](@ref) / [`Catalyst.assert_valid_units`](@ref). Units should
+  be specified with symbolic units (`us"..."`) from DynamicQuantities.
 - `networkproperties = NetworkProperties()`, cache for network properties calculated via API
   functions.
 - `combinatoric_ratelaws = true`, sets the default value of `combinatoric_ratelaws` used in
-  calls to `convert` or calling various problem types with the `ReactionSystem`.
+  conversion functions ([`ode_model`](@ref), [`sde_model`](@ref), [`jump_model`](@ref),
+  [`ss_ode_model`](@ref), [`hybrid_model`](@ref)) or when calling problem constructors with
+  the `ReactionSystem`.
 - `balanced_bc_check = true`, sets whether to check that BC species appearing in reactions
   are balanced (i.e appear as both a substrate and a product with the same stoichiometry).
-
-Notes:
-- ReactionSystems currently do rudimentary unit checking, requiring that all species have
-  the same units, and all reactions have rate laws with units of (species units) / (time
-  units). Unit checking can be disabled by passing the keyword argument `checks=false`.
+- `brownians`, vector of Brownian variables for non-reaction SDE noise (created via
+  `@brownians`). Auto-discovered from equations in the two-argument constructor.
+- `poissonians`, vector of Poissonian variables for Poisson jump noise (created via
+  `@poissonians`). Auto-discovered from equations in the two-argument constructor.
+- `jumps`, vector of non-reaction jump processes.
 """
 struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """The equations (reactions and algebraic/differential) defining the system."""
@@ -282,7 +286,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     systems::Vector{ReactionSystem}
     """
     The initial values to use when initial conditions and/or
-    parameters are not supplied in `ODEProblem`.
+    parameters are not supplied to problem constructors.
     """
     initial_conditions::SymmapT
     """`NetworkProperties` object that can be filled in by API functions. INTERNAL -- not
@@ -324,24 +328,16 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, nps, cls, cevs, devs,
-            brownians, poissonians, jumps, metadata, complete = false, parent = nothing; checks::Bool = true)
+            brownians, poissonians, jumps, metadata, complete = false, parent = nothing;
+            checks::Bool = true, unit_checks::Bool = false)
 
-        # unit checks are for ODEs and Reactions only currently
-        nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
+        # Structural checks (fast, always on by default).
         if checks && isempty(sivs)
             check_variables(unknowns, iv)
             check_parameters(ps, iv)
             nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
             !isempty(nonrx_eqs) && check_equations(nonrx_eqs, iv)
             !isempty(cevs) && check_equations(equations(cevs), iv)
-        end
-
-        if isempty(sivs) && (checks == true || (checks & MT.CheckUnits) > 0)
-            if !all(unitless_symvar(sym) for sym in [unknowns; ps; iv])
-                for eq in eqs
-                    (eq isa Equation) && check_units(eq)
-                end
-            end
         end
 
         # Checks that no (non-reaction) equation contains a differential w.r.t. a species.
@@ -354,7 +350,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, nps, cls, cevs,
             devs, brownians, poissonians, jumps, metadata, complete, parent)
-        checks && validate(rs)
+        unit_checks && assert_valid_units(rs; info = string("ReactionSystem constructor for ", name))
         rs
     end
 end
@@ -370,6 +366,8 @@ end
 # Calls the full constructor.
 # Note: brownians and poissonians are explicit (not auto-discovered) in this constructor;
 # use the two-argument constructor for auto-discovery from equations.
+# `unit_checks = true` validates species unit consistency, reaction rate units, and
+# equation unit balance at construction time. Default is `false`.
 function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
         poissonians = SymbolicT[],
         jumps = JumpType[],
@@ -378,6 +376,7 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
         name = nothing,
         initial_conditions = SymmapT(),
         checks = true,
+        unit_checks = false,
         networkproperties = nothing,
         combinatoric_ratelaws = true,
         balanced_bc_check = true,
@@ -478,7 +477,7 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
         systems, initial_conditions, nps, combinatoric_ratelaws,
         continuous_events, discrete_events, brownians′, poissonians′, jumps′, metadata;
-        checks = checks)
+        checks, unit_checks)
 end
 
 # Handles that events can be a single event or a vector.
@@ -631,8 +630,10 @@ function events_equal(evts1, evts2, match_fn)
     return true
 end
 
-# Compare two SymbolicAffects by their content.
+# Compare two SymbolicAffects by their content. Handles `nothing` (e.g. for affect_neg).
 function symbolic_affect_matches(aff1, aff2)
+    (isnothing(aff1) && isnothing(aff2)) && return true
+    (isnothing(aff1) || isnothing(aff2)) && return false
     issetequal(aff1.affect, aff2.affect) && issetequal(aff1.discrete_parameters, aff2.discrete_parameters)
 end
 
@@ -1580,68 +1581,130 @@ end
 ### Units Handling ###
 
 """
-    validate(rs::ReactionSystem, info::String="")
+    validate_units(rs::ReactionSystem; info::String="", warn::Bool = true)
 
-Check that all species in the [`ReactionSystem`](@ref) have the same units, and
-that the rate laws of all reactions reduce to units of (species units) / (time
-units).
+Check that all species in the [`ReactionSystem`](@ref) have the same units, and that the
+rate laws of all reactions reduce to units of (species units) / (time units). Also validates
+unit consistency of non-reaction equations. 
+
+Uses [`catalyst_get_unit`](@ref) for SymbolicDimensions-preserving unit inference, avoiding
+the floating-point precision loss that occurs with MTKBase's `get_unit` when using non-SI
+units like M or μM.
 
 Notes:
-- Does not check subsystems, constraint equations, or non-species variables.
+- Correctly handles `only_use_rate=true` reactions (does not multiply substrate units into
+  the rate).
+- Assumes reaction-local rate-expression checks (e.g. additive-term consistency) were already
+  performed on each `Reaction` (for example via `unit_checks = true` at `Reaction`
+  construction time, or by calling `validate_units(rx)` separately).
+- If all species/time/parameters are unitless, reaction-rate dimensional checks are skipped.
+  This mode assumes rate/equation expressions do not include literal dimensional quantities
+  (for example `us"..."` constants), which are currently unsupported model inputs.
+- Does not check subsystems, use `flatten(rs)` and then call `validate_units` on the
+  flattened system if you want to check the full composed system.
+- Does not require that non-species variables have consistent units (outside of the
+  equations in which they appear).
+- Does not handle events or user-provided jumps.
 """
-function validate(rs::ReactionSystem, info::String = "")
-    specs = get_species(rs)
-
-    # if there are no species we don't check units on the system
-    isempty(specs) && return true
-
-    specunits = get_unit(specs[1])
-    validated = true
-    for spec in specs
-        if get_unit(spec) != specunits
-            validated = false
-            @warn(string("Species are expected to have units of ", specunits,
-                " however, species ", spec, " has units ", get_unit(spec), "."))
-        end
-    end
-    timeunits = get_unit(get_iv(rs))
-
-    # no units for species, time or parameters then assume validated
-    unitless = Base.get_extension(ModelingToolkitBase, :MTKDynamicQuantitiesExt).unitless
-    if (specunits in (unitless, nothing)) && (timeunits in (unitless, nothing))
-        all(unitless_symvar(p) for p in get_ps(rs)) && return true
-    end
-
-    rateunits = specunits / timeunits
-    for rx in get_rxs(rs)
-        rxunits = get_unit(rx.rate)
-        for (i, sub) in enumerate(rx.substrates)
-            rxunits *= get_unit(sub)^rx.substoich[i]
-        end
-
-        # Checks that the reaction's combined units is correct, if not, throws a warning.
-        # Needs additional checks because for cases: (1.0^n) and (1.0^n1)*(1.0^n2).
-        # These are not considered (be default) considered equal to `1.0` for unitless reactions.
-        isequal(rxunits, rateunits) && continue
-        if iscall(rxunits)
-            unitless_exp(rxunits) && continue
-            (operation(rxunits) == *) &&
-                all(unitless_exp(arg) for arg in arguments(rxunits)) && continue
-        end
-        validated = false
-        @warn(string(
-            "Reaction rate laws are expected to have units of ", rateunits, " however, ",
-            rx, " has units of ", rxunits, "."))
-    end
-
-    validated
+function validate_units(rs::ReactionSystem; info::String = "", warn::Bool = true)
+    report = unit_validation_report(rs; info)
+    warn && _warn_unit_issues(report.issues)
+    return report.valid
 end
 
-# Checks if a unit consist of exponents with base 1 (and is this unitless).
-unitless_exp(u) = iscall(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
+"""
+    unit_validation_report(rs::ReactionSystem; info::String = "")
 
-# Checks if a symbolic variable is unitless. Also accounts for callable parameters (for
-# which `get_unit`'s` intended behaviour (or whether it should generate an error) is undefined: https://github.com/SciML/ModelingToolkit.jl/issues/3420).
-function unitless_symvar(sym)
-    return (sym isa Symbolics.CallAndWrap) || (MT.get_unit(sym) == 1)
+Run unit validation on a [`ReactionSystem`](@ref) and return a
+[`UnitValidationReport`](@ref) containing both overall validity and structured
+issue diagnostics.
+"""
+function unit_validation_report(rs::ReactionSystem; info::String = "")
+    # Unit checks are not yet supported for spatial systems (multiple IVs).
+    if !isempty(get_sivs(rs))
+        return UnitValidationReport(true, UnitValidationIssue[])
+    end
+
+    specs = get_species(rs)
+    issues = UnitValidationIssue[]
+    validated = true
+
+    # Checks species and reaction rates if species are present.
+    if !isempty(specs)
+        specunits = catalyst_get_unit(specs[1])
+        for spec in specs
+            su = catalyst_get_unit(spec)
+            if !_units_match(su, specunits)
+                validated = false
+                push!(issues, UnitValidationIssue(:species_unit_mismatch, string(spec),
+                    specunits, su, "Species unit mismatch"))
+            end
+        end
+        timeunits = catalyst_get_unit(get_iv(rs))
+
+        # no units for species, time, or parameters → skip reaction-rate validation
+        # but continue to check explicit equations.
+        check_reaction_rates = true
+        if _is_unitless(specunits) && _is_unitless(timeunits)
+            check_reaction_rates = !all(_is_unitless(catalyst_get_unit(p)) for p in get_ps(rs))
+        end
+
+        if check_reaction_rates
+            rateunits = specunits / timeunits
+
+            # Check reaction rate units
+            for rx in get_rxs(rs)
+                # Symbolic stoichiometry cannot be used in dimensional analysis.
+                if !rx.only_use_rate && any(s -> !(s isa Number), rx.substoich)
+                    validated = false
+                    push!(issues, UnitValidationIssue(:symbolic_stoichiometry,
+                        string(rx), nothing, nothing,
+                        "Symbolic stoichiometry is not supported for unit validation"))
+                    continue
+                end
+                # Symbolic exponents on unitful bases have indeterminate units.
+                if _has_symbolic_unitful_pow(rx.rate)
+                    validated = false
+                    push!(issues, UnitValidationIssue(:symbolic_exponent,
+                        string(rx), nothing, nothing,
+                        "Symbolic exponent on unitful base is not supported for unit validation"))
+                    continue
+                end
+                rxunits = catalyst_get_unit(rx.rate)
+                if !rx.only_use_rate
+                    for (i, sub) in enumerate(rx.substrates)
+                        rxunits *= catalyst_get_unit(sub)^rx.substoich[i]
+                    end
+                end
+                if !_units_match(rxunits, rateunits)
+                    validated = false
+                    push!(issues, UnitValidationIssue(:reaction_rate_unit_mismatch,
+                        string(rx), rateunits, rxunits, "Reaction rate unit mismatch"))
+                end
+            end
+        end
+    end
+
+    # Check non-reaction equation units. Noise variables (brownians/poissonians)
+    # get effective units via _build_noise_units: brownians → time^(-1/2),
+    # poissonians → rate parameter units.
+    noise_units = _build_noise_units(rs)
+    for eq in get_eqs(rs)
+        (eq isa Reaction) && continue
+        validated &= _validate_equation(eq; noise_units, issues, warn = false)
+    end
+
+    UnitValidationReport(validated, issues)
+end
+
+"""
+    assert_valid_units(rs::ReactionSystem; info::String = "")
+
+Run strict unit validation on a [`ReactionSystem`](@ref). Throws
+[`UnitValidationError`](@ref) if any unit inconsistency is detected.
+"""
+function assert_valid_units(rs::ReactionSystem; info::String = "")
+    report = unit_validation_report(rs; info)
+    report.valid || throw(UnitValidationError(report, info))
+    return nothing
 end

@@ -360,7 +360,7 @@ nprob = NonlinearProblem(rn, u0, p; remove_conserved = true)
 `remake` is currently unable to correctly update all `u0` values when the
 conserved constant(s), `Γ`, are updated. As an example consider the following
 ```@example faq_remake
-using Catalyst, NonlinearSolve
+using Catalyst, NonlinearSolveFirstOrder
 rn = @reaction_network begin
     (k₁,k₂), X₁ <--> X₂
     (k₃,k₄), X₁ + X₂ <--> 2X₃

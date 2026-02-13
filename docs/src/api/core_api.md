@@ -96,6 +96,7 @@ of all options currently available.
 - `poissonians`: Allows the creation of poissonian processes that can be used to add jump events to non-species variables.
 - `discretes`: Creates *discrete parameters*, i.e. time-dependent parameters.
 - [`combinatoric_ratelaws`](@ref faq_combinatoric_ratelaws): Takes a single option (`true` or `false`), which sets whether to use combinatorial rate laws.
+- `unit_checks`: Takes a single option (`true` or `false`) controlling whether unit validation runs during DSL construction (`false` by default).
 
 ## [ModelingToolkitBase and Catalyst accessor functions](@id api_accessor_functions)
 A [`ReactionSystem`](@ref) is an instance of a
@@ -223,6 +224,19 @@ Catalyst.hasmisc
 Catalyst.getmisc
 ```
 
+## [System-level metadata](@id api_system_metadata)
+The following types and functions allow storing and retrieving system-level metadata on a [`ReactionSystem`](@ref). These are primarily intended for use by file parsers that need to attach extra mapping data (e.g., initial condition or parameter value maps) to a system.
+```@docs
+Catalyst.U0Map
+Catalyst.ParameterMap
+Catalyst.has_u0_map
+Catalyst.get_u0_map
+Catalyst.set_u0_map
+Catalyst.has_parameter_map
+Catalyst.get_parameter_map
+Catalyst.set_parameter_map
+```
+
 ## [Functions to extend or modify a network](@id api_network_extension_and_modification)
 `ReactionSystem`s can be programmatically extended using [`ModelingToolkitBase.extend`](@ref) and
 [`ModelingToolkitBase.compose`](@ref).
@@ -293,8 +307,15 @@ component_coefficients
 
 ## Unit validation
 ```@docs
-validate(rx::Reaction; info::String = "")
-validate(rs::ReactionSystem, info::String="")
+Catalyst.validate_units(rx::Reaction; info::String = "", warn::Bool = true)
+Catalyst.validate_units(rs::ReactionSystem; info::String = "", warn::Bool = true)
+Catalyst.assert_valid_units(rx::Reaction; info::String = "")
+Catalyst.assert_valid_units(rs::ReactionSystem; info::String = "")
+Catalyst.unit_validation_report(rx::Reaction; info::String = "")
+Catalyst.unit_validation_report(rs::ReactionSystem; info::String = "")
+Catalyst.UnitValidationIssue
+Catalyst.UnitValidationReport
+Catalyst.UnitValidationError
 ```
 
 ## [Spatial modelling](@id api_lattice_simulations)
