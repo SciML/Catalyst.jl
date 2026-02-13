@@ -526,15 +526,18 @@ let
     @test_throws ErrorException reactioncomplexmap(rn)
     @test_throws ErrorException incidencemat(rn)
     @test_throws ErrorException complexstoichmat(rn)
+    @test_throws ErrorException complexoutgoingmat(rn)
     @test_throws ErrorException linkageclasses(rn)
+    @test_throws ErrorException stronglinkageclasses(rn)
+    @test_throws ErrorException terminallinkageclasses(rn)
     @test_throws ErrorException deficiency(rn)
-    
+
     # Confirm the error message is informative.
     try
         reactioncomplexes(rn)
     catch e
         @test occursin("non-integer stoichiometry", e.msg)
-        @test occursin("reactioncomplexes", e.msg)
+        @test occursin("Network analysis functions", e.msg)
     end
     
     # Confirm that integer stoichiometry works fine.
