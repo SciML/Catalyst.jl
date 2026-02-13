@@ -27,7 +27,7 @@ Let's solve the system and see how to index the solution using our symbolic
 variables
 ```@example faq1
 sim_cond = [
-    osys.A => 1.0, osys.B => 2.0, osys.C => 0.0
+    osys.A => 1.0, osys.B => 2.0, osys.C => 0.0,
     osys.k₊ => 1.0, osys.k₋ => 1.0    
 ]
 oprob = ODEProblem(osys, sim_cond, (0.0, 10.0))
