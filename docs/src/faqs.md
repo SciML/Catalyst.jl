@@ -26,9 +26,11 @@ observed(osys)
 Let's solve the system and see how to index the solution using our symbolic
 variables
 ```@example faq1
-u0 = [osys.A => 1.0, osys.B => 2.0, osys.C => 0.0]
-ps = [osys.k₊ => 1.0, osys.k₋ => 1.0]
-oprob = ODEProblem(osys, u0, (0.0, 10.0), ps)
+sim_cond = [
+    osys.A => 1.0, osys.B => 2.0, osys.C => 0.0,
+    osys.k₊ => 1.0, osys.k₋ => 1.0    
+]
+oprob = ODEProblem(osys, sim_cond, (0.0, 10.0))
 sol = solve(oprob, Tsit5())
 ```
 Suppose we want to plot just species `C`, without having to know its integer
@@ -62,14 +64,14 @@ plot(sol; idxs = [A, B])
 As explained in the [Reaction rate laws used in simulations](@ref introduction_to_catalyst_ratelaws) section, for
 a reaction such as `k, 2X --> 0`, the generated rate law will rescale the rate
 constant, giving `k*X^2/2` instead of `k*X^2` for ODEs and `k*X*(X-1)/2` instead
-of `k*X*(X-1)` for jumps. This can be disabled when directly `convert`ing a
+of `k*X*(X-1)` for jumps. This can be disabled when directly converting a
 [`ReactionSystem`](@ref). If `rn` is a generated [`ReactionSystem`](@ref), we can
 do
 ```@example faq1
-osys = ode_model(rn; combinatoric_ratelaws=false)
+osys = ode_model(rn; combinatoric_ratelaws = false)
 ```
 Disabling these rescalings should work for all conversions of `ReactionSystem`s
-to other `ModelingToolkit.AbstractSystem`s.
+to other `ModelingToolkitBase.AbstractSystem`s.
 
 When creating a [`ReactionSystem`](@ref) using the DSL, combinatoric rate laws can be disabled (for 
 the created system, and all systems derived from it) using the `@combinatoric_ratelaws` option (providing `false` as its only input):
@@ -93,7 +95,7 @@ or directly via
 t = default_t()
 @parameters k b
 @species A(t) B(t) C(t) D(t)
-rx1 = Reaction(k,[B,C],[B,D], [2.5,1],[3.5, 2.5])
+rx1 = Reaction(k, [B,C], [B,D], [2.5,1], [3.5, 2.5])
 rx2 = Reaction(2*k, [B], [D], [1], [2.5])
 rx3 = Reaction(2*k, [B], [D], [2.5], [2])
 @named mixedsys = ReactionSystem([rx1, rx2, rx3], t, [A, B, C, D], [k, b])
@@ -161,7 +163,7 @@ nothing # hide
 ## How to specify initial conditions and parameters values for `ODEProblem` and other problem types?
 To explicitly pass initial conditions and parameters we can use mappings from
 Julia `Symbol`s corresponding to each variable/parameter to their values, or
-from ModelingToolkit symbolic variables/parameters to their values. Using
+from ModelingToolkitBase symbolic variables/parameters to their values. Using
 `Symbol`s we have
 ```@example faq4
 using Catalyst, OrdinaryDiffEqTsit5
@@ -208,7 +210,7 @@ full_equations(osyss)
 ```
 
 ## How to modify generated ODEs?
-Conversion to other `ModelingToolkit.AbstractSystem`s allows the possibility to
+Conversion to `ModelingToolkitBase.System` allows the possibility to
 modify the system with further terms that are difficult to encode as a chemical
 reaction or a constraint equation. For example, an alternative method to the
 previous question for adding a forcing function, $1 + \sin(t)$, to the ODE for
@@ -232,10 +234,12 @@ While generally one wants the reaction rate law to use the law of mass action,
 so the reaction
 ```@example faq7
 using Catalyst
+using Latexify # hide
 rn = @reaction_network begin
     k, X --> ∅
 end
 ode_model(rn)
+latexify(rn; form = :ode, math_delimiters = true) # hide
 ```
 occurs at the (ODE) rate ``d[X]/dt = -k[X]``, it is possible to override this by
 using any of the following non-filled arrows when declaring the reaction: `<=`,
@@ -245,6 +249,7 @@ rn = @reaction_network begin
     k, X => ∅
 end
 ode_model(rn)
+latexify(rn; form = :ode, math_delimiters = true) # hide
 ```
 will occur at rate ``d[X]/dt = -k`` (which might become a problem since ``[X]``
 will be degraded at a constant rate even when very small or equal to 0).
@@ -255,12 +260,13 @@ rn = @reaction_network begin
     k, 2*X ⇒ ∅
 end
 ode_model(rn)
+latexify(rn; form = :ode, math_delimiters = true) # hide
 ```
 has rate ``d[X]/dt = -2 k``.
 
 ## [How to specify user-defined functions as reaction rates?](@id user_functions)
 The reaction network DSL can "see" user-defined functions that work with
-ModelingToolkit. e.g., this is should work
+ModelingToolkitBase. e.g., this is should work
 ```@example faq8
 using Catalyst
 myHill(x) = 2*x^3/(x^3+1.5^3)
@@ -289,10 +295,11 @@ Catalyst can automatically infer that `X` is a species and `p` and `d` are param
 - Compound species (from the [`@compounds` option](@ref chemistry_functionality_compounds_DSL)).
 
 Inference of species, variables, and parameters follows the following steps:
-1. Every symbol [explicitly declared](@ref dsl_advanced_options_declaring_species_and_parameters) using the `@species`, `@variables`, and `@parameters` options are assigned to the corresponding category.
+1. Every symbol [explicitly declared](@ref dsl_advanced_options_declaring_species_and_parameters) using some option (typically `@species`, `@variables`, and `@parameters`, although other options such as `@brownian` also are possible) are assigned to the corresponding category.
 2. Every symbol not declared in (1) that occurs as a reaction reactant is inferred as a species.
 3. Every symbol not declared in (1) or (2) that occurs in an expression provided after `@equations` is inferred as a variable.
 4. Every symbol not declared in (1), (2), or (3) that occurs either as a reaction rate or stoichiometric coefficient is inferred to be a parameter.
+5. If the symbol `D` is not declared in (1), (2), (3), or (4), and occurs on the form `D(...)` within the `@equations` option, `D` is inferred to be the differential with respect to the default independent variable (typically `t`).
 
 Here, in 
 ```@example faq_dsl_inference
@@ -305,7 +312,7 @@ end
 ```
 `p` is first set as a parameter (as it is explicitly declared as such). Next, `X` is inferred as a species. Next, `V` is inferred as a variable. Finally, `p2` is inferred as a parameter.
 
-Next, if any expression `D(...)` (where `...` can be anything) is encountered within the `@equations` option, `D` is inferred to be the differential with respect to the default independent variable (typically `t`). Note that using  `D` in this way, while also using it in another form (e.g. in a reaction rate) will produce an error.
+Next, if any expression `D(...)` (where `...` can be anything) is encountered within the `@equations` option, `D` is inferred to be the differential with respect to the default independent variable (typically `t`). Note that using `D` in this way, while also using it in another form (e.g. in a reaction rate) will produce an error.
 
 Any symbol used as the left-hand side within the `@observables` option is inferred to be an observable. These are by default assumed to be *variables*. It is possible to simultaneously explicitly declare an observable using the `@species` or `@variables` options (in the former case, the observable will be treated as a species instead). Using observables within most other expressions (e.g. as a reactant) will produce an error.
 
@@ -329,7 +336,7 @@ rn = @reaction_network begin
 end
 ```
 
-It is possible to turn off all inference (requiring all symbols to be declared using `@parameters`, `@species`, and `@variables`) through the [`@require_declaration` option](@ref faq_require_declaration).
+It is possible to turn off all inference (requiring all symbols to be declared using `@parameters`, `@species`, `@variables`, or some other option) through the [`@require_declaration` option](@ref faq_require_declaration).
 
 ## [How can I turn off automatic inferring of species and parameters when using the DSL?](@id faq_require_declaration)
 This option can be set using the `@require_declaration` option inside `@reaction_network`. In this case all the species, parameters, and variables in the system must be pre-declared using one of the `@species`, `@parameters`, or `@variables` macros. For more information about what is inferred automatically and not, please see the section on [`@require_declaration`](@ref dsl_advanced_options_require_dec).

@@ -50,24 +50,18 @@ parammap = [β => 1/10000, γ => 0.01]
 tspan    = (0.0, 250.0)
 
 # solve as ODEs
-odesys = ode_model(rs)
-odesys = complete(odesys)
-oprob = ODEProblem(odesys, u₀map, tspan, parammap)
+oprob = ODEProblem(rs, u₀map, tspan, parammap)
 sol = solve(oprob, Tsit5())
 p1 = plot(sol, title = "ODE")
 
 # solve as SDEs
-sdesys = sde_model(rs)
-sdesys = complete(sdesys)
-sprob = SDEProblem(sdesys, u₀map, tspan, parammap)
+sprob = SDEProblem(rs, u₀map, tspan, parammap)
 sol = solve(sprob, EM(), dt=.01, saveat = 2.0)
 p2 = plot(sol, title = "SDE")
 
 # solve as jump process
-jumpsys = jump_model(rs)
-jumpsys = complete(jumpsys)
 u₀map    = [S => 999, I => 1, R => 0]
-jprob = JumpProblem(jumpsys, [u₀map; parammap], tspan)
+jprob = JumpProblem(rs, u₀map, tspan, parammap)
 sol = solve(jprob)
 sol = solve(jprob; seed = 1234) # hide
 p3 = plot(sol, title = "jump")
@@ -98,12 +92,15 @@ of all options currently available.
 - [`equations`](@ref constraint_equations_coupling_constraints): Allows the creation of algebraic and/or differential equations.
 - [`continuous_events`](@ref events): Allows the creation of continuous events.
 - [`discrete_events`](@ref events): Allows the creation of discrete events.
+- `brownians`: Allows the creation of brownian processes that can be used to add noise to non-species variables.
+- `poissonians`: Allows the creation of poissonian processes that can be used to add jump events to non-species variables.
+- `discretes`: Creates *discrete parameters*, i.e. time-dependent parameters.
 - [`combinatoric_ratelaws`](@ref faq_combinatoric_ratelaws): Takes a single option (`true` or `false`), which sets whether to use combinatorial rate laws.
 - `unit_checks`: Takes a single option (`true` or `false`) controlling whether unit validation runs during DSL construction (`false` by default).
 
-## [ModelingToolkit and Catalyst accessor functions](@id api_accessor_functions)
+## [ModelingToolkitBase and Catalyst accessor functions](@id api_accessor_functions)
 A [`ReactionSystem`](@ref) is an instance of a
-`ModelingToolkitBase.AbstractTimeDependentSystem`, and has a number of fields that
+`ModelingToolkitBase.AbstractSystem`, and has a number of fields that
 can be accessed using the Catalyst API and the [ModelingToolkitBase.jl Abstract
 System
 Interface](https://docs.sciml.ai/ModelingToolkit/stable/basics/AbstractSystem/).
@@ -143,16 +140,16 @@ To retrieve information from the full reaction network represented by a system
 can call:
 
 * `ModelingToolkitBase.unknowns(rn)` returns all species *and variables* across the
-  system, *all sub-systems*, and all constraint systems. Species are ordered
+  system, *all sub-systems*. Species are ordered
   before non-species variables in `unknowns(rn)`, with the first `numspecies(rn)`
   entries in `unknowns(rn)` being the same as `species(rn)`.
 * [`species(rn)`](@ref) is a vector collecting all the chemical species within
   the system and any sub-systems that are also `ReactionSystems`.
 * `ModelingToolkitBase.parameters(rn)` returns all parameters across the
-  system, *all sub-systems*, and all constraint systems.
+  system, *all sub-systems*.
 * `ModelingToolkitBase.equations(rn)` returns all [`Reaction`](@ref)s and all
-  `Symbolics.Equations` defined across the system, *all sub-systems*, and all
-  constraint systems. `Reaction`s are ordered ahead of `Equation`s with the
+  `Symbolics.Equations` defined across the system, *all sub-systems*. `Reaction`s 
+  are ordered ahead of `Equation`s with the
   first `numreactions(rn)` entries in `equations(rn)` being the same as
   `reactions(rn)`.
 * [`reactions(rn)`](@ref) is a vector of all the `Reaction`s within the system
@@ -167,7 +164,7 @@ above.
 
 ## Basic system properties
 See [Programmatic Construction of Symbolic Reaction Systems](@ref
-programmatic_CRN_construction) for examples and [ModelingToolkit and Catalyst
+programmatic_CRN_construction) for examples and [ModelingToolkitBase and Catalyst
 Accessor Functions](@ref api_accessor_functions) for more details on the basic
 accessor functions.
 
@@ -227,6 +224,19 @@ Catalyst.hasmisc
 Catalyst.getmisc
 ```
 
+## [System-level metadata](@id api_system_metadata)
+The following types and functions allow storing and retrieving system-level metadata on a [`ReactionSystem`](@ref). These are primarily intended for use by file parsers that need to attach extra mapping data (e.g., initial condition or parameter value maps) to a system.
+```@docs
+Catalyst.U0Map
+Catalyst.ParameterMap
+Catalyst.has_u0_map
+Catalyst.get_u0_map
+Catalyst.set_u0_map
+Catalyst.has_parameter_map
+Catalyst.get_parameter_map
+Catalyst.set_parameter_map
+```
+
 ## [Functions to extend or modify a network](@id api_network_extension_and_modification)
 `ReactionSystem`s can be programmatically extended using [`ModelingToolkitBase.extend`](@ref) and
 [`ModelingToolkitBase.compose`](@ref).
@@ -235,12 +245,6 @@ Catalyst.getmisc
 ModelingToolkitBase.extend
 ModelingToolkitBase.compose
 Catalyst.flatten
-```
-
-## Network comparison
-```@docs
-==(rn1::Reaction, rn2::Reaction)
-isequivalent
 ```
 
 ## [Network visualization](@id network_visualization)
@@ -271,9 +275,9 @@ plot_complexes(::ReactionSystem)
 ```
 
 ## [Rate laws](@id api_rate_laws)
-As the underlying [`ReactionSystem`](@ref) is comprised of `ModelingToolkit`
+As the underlying [`ReactionSystem`](@ref) is comprised of `ModelingToolkitBase`
 expressions, one can directly access the generated rate laws, and using
-`ModelingToolkit` tooling generate functions or Julia `Expr`s from them.
+`ModelingToolkitBase` tooling generate functions or Julia `Expr`s from them.
 ```@docs
 oderatelaw
 jumpratelaw

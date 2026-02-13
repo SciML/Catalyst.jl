@@ -103,7 +103,7 @@ function generate_lp(n)
 end
 nothing # hide
 ```
-Next, we create a function that generates an `ODEProblem` (with appropriate initial conditions and parameter values) for arbitrarily lengthed linear pathway models.
+Next, we create a function that generates an `ODEProblem` (with appropriate initial conditions and parameter values) for arbitrarily length linear pathway models.
 ```@example programmatic_generative_linear_pathway_generative
 function generate_oprob(n)
     lp = generate_lp(n)

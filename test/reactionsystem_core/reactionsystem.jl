@@ -982,6 +982,63 @@ let
     @test_broken ModelingToolkitBase.getmetadata(complete(rs2), MiscSystemData, nothing) == ones(2, 3) # Weird and obscure Catalyst bug: https://github.com/SciML/Catalyst.jl/issues/1353.
 end
 
+# Tests u0_map and parameter_map system-level metadata.
+let
+    @species X(t) Y(t)
+    @parameters k1 k2
+
+    u0map = [X => 1.0, Y => 2.0]
+    pmap = [k1 => 0.1, k2 => 0.2]
+
+    # System without metadata has no u0_map or parameter_map.
+    @named rs_plain = ReactionSystem([Reaction(k1, [X], [Y])], t)
+    @test !Catalyst.has_u0_map(rs_plain)
+    @test !Catalyst.has_parameter_map(rs_plain)
+    @test Catalyst.get_u0_map(rs_plain) === nothing
+    @test Catalyst.get_parameter_map(rs_plain) === nothing
+
+    # System with metadata via constructor.
+    @named rs = ReactionSystem([Reaction(k1, [X], [Y])], t;
+        metadata = [Catalyst.U0Map => u0map, Catalyst.ParameterMap => pmap])
+    @test Catalyst.has_u0_map(rs)
+    @test Catalyst.has_parameter_map(rs)
+    @test isequal(Catalyst.get_u0_map(rs), u0map)
+    @test isequal(Catalyst.get_parameter_map(rs), pmap)
+
+    # Setting via set_* functions (out-of-place).
+    rs2 = Catalyst.set_u0_map(rs_plain, u0map)
+    rs3 = Catalyst.set_parameter_map(rs_plain, pmap)
+    @test Catalyst.has_u0_map(rs2)
+    @test !Catalyst.has_u0_map(rs_plain)  # original unchanged
+    @test isequal(Catalyst.get_u0_map(rs2), u0map)
+    @test Catalyst.has_parameter_map(rs3)
+    @test !Catalyst.has_parameter_map(rs_plain)  # original unchanged
+    @test isequal(Catalyst.get_parameter_map(rs3), pmap)
+
+    # Preservation through complete.
+    rs_c = complete(rs)
+    @test Catalyst.has_u0_map(rs_c)
+    @test Catalyst.has_parameter_map(rs_c)
+    @test isequal(Catalyst.get_u0_map(rs_c), u0map)
+    @test isequal(Catalyst.get_parameter_map(rs_c), pmap)
+
+    # Preservation through flatten (hierarchical system).
+    @named sub = ReactionSystem([Reaction(k2, [Y], [X])], t)
+    @named parent_rs = ReactionSystem([Reaction(k1, [X], [Y])], t;
+        systems = [sub], metadata = [Catalyst.U0Map => u0map, Catalyst.ParameterMap => pmap])
+    flat = Catalyst.flatten(parent_rs)
+    @test isequal(Catalyst.get_u0_map(flat), u0map)
+    @test isequal(Catalyst.get_parameter_map(flat), pmap)
+
+    # Preservation through model conversions.
+    rs_comp = complete(rs)
+    for model_fn in [ode_model, sde_model, jump_model, ss_ode_model]
+        sys = model_fn(rs_comp)
+        @test isequal(ModelingToolkitBase.getmetadata(sys, Catalyst.U0Map, nothing), u0map)
+        @test isequal(ModelingToolkitBase.getmetadata(sys, Catalyst.ParameterMap, nothing), pmap)
+    end
+end
+
 # Tests construction of empty reaction networks.
 let
     # Using DSL.

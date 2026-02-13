@@ -114,7 +114,7 @@ systems together Catalyst requires that the systems have not been marked as
 `complete` (which indicates to Catalyst that a system is finalized).
 
 We can now merge the two systems into one complete `ReactionSystem` model using
-[`ModelingToolkit.extend`](@ref):
+[`ModelingToolkitBase.extend`](@ref):
 ```@example ceq2b
 @named growing_cell = extend(osys, rn)
 growing_cell = complete(growing_cell)

@@ -149,7 +149,8 @@ oprob = ODEProblem(rn, u0, tspan, p)
 sol = solve(oprob, Tsit5())
 plot(sol)
 ```
-Please note that `X₀` is still a parameter of the system, and as such its value must still be designated to simulate the model (even if it is not actually used).
+
+When setting parametric default values these are called [*bindings*](https://docs.sciml.ai/ModelingToolkit/dev/tutorials/initialization/#bindings_and_ics). Bindings act similar to defaults, however, they cannot be override. E.g. in the example above, `X`'s initial condition must be specified through the `X₀` paraemter, and can no longer be provided through the `u0` vector.
 
 ### [Designating metadata for species and parameters](@id dsl_advanced_options_species_and_parameters_metadata)
 Catalyst permits the user to define *metadata* for species and parameters. This permits the user to assign additional information to these, which can be used for a variety of purposes. Some Catalyst features depend on using metadata (with each such case describing specifically how this is done). Here we will introduce how to set metadata, and describe some common metadata types. 
@@ -315,32 +316,6 @@ end
 nameof(rn)
 ```
 
-A consequence of generic names being used by default is that networks, even if seemingly identical, by default are not. E.g.
-```@example dsl_advanced_names
-rn1 = @reaction_network begin
-    (p,d), 0 <--> X
-end
-rn2 = @reaction_network begin
-    (p,d), 0 <--> X
-end
-rn1 == rn2
-```
-The reason can be confirmed by checking that their respective (randomly generated) names are different:
-```@example dsl_advanced_names
-nameof(rn1) == nameof(rn2)
-```
-By designating the networks to have the same name, however, identity is achieved.
-```@example dsl_advanced_names
-rn1 = @reaction_network my_network begin
-    (p,d), 0 <--> X
-end
-rn2 = @reaction_network my_network begin
-    (p,d), 0 <--> X
-end
-rn1 == rn2
-```
-If you wish to check for identity, and wish that models that have different names but are otherwise identical, should be considered equal, you can use the [`isequivalent`](@ref) function.
-
 Setting model names is primarily useful for [hierarchical modelling](@ref compositional_modeling), where network names are appended to the display names of subnetworks' species and parameters.
 
 ## [Creating observables](@id dsl_advanced_options_observables)
@@ -433,17 +408,7 @@ We can confirm that `Xᵢ` and `Xₐ` depend on `τ` (and not `t`):
 species(rn)
 ```
 
-It is possible to designate several independent variables using `@ivs`. If so, the first one is considered the default (time) independent variable, while the following one(s) are considered spatial independent variable(s). If we want some species to depend on a non-default independent variable, this has to be explicitly declared:
-```@example dsl_advanced_ivs
-rn = @reaction_network begin
-    @ivs τ x
-    @species X(τ) Y(x)
-    (p1,d1), 0 <--> X
-    (p2,d2), 0 <--> Y
-end
-species(rn)
-```
-It is also possible to have species which depends on several independent variables:
+It is possible to designate several independent variables using `@ivs`. If so, the first one is considered the default (time) independent variable, while the following one(s) are considered spatial independent variable(s). If we want some species to depend on a non-default independent variable, this has to be explicitly declared. In the following example, both `Xᵢ` and `Xₐ` depends both on the `t` and `x` independent variables.
 ```@example dsl_advanced_ivs
 rn = @reaction_network begin
     @ivs t x

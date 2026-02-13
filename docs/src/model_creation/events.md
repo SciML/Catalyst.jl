@@ -11,13 +11,13 @@ of a cell with volume $V(t)$ that grows at a rate $\lambda$ that was considered 
 [coupled equations tutorial](@ref coupled_models).
 
 ## [Adding events](@id events_base_example)
-Our current model is unrealistic in assuming the cell will grow exponentially
+In the model presented there, it is unrealistic in assuming the cell will grow exponentially
 forever. Let's modify it such that the cell divides in half every time its
 volume reaches a size of `2`. We also assume we lose half of the protein upon
 division. Note, we will only keep track of one cell, and hence follow a specific
  lineage of the system. To do this we can create a continuous event using the
-ModelingToolkit symbolic event interface and attach it to our system. Please see
-the associated [ModelingToolkit
+ModelingToolkitBase symbolic event interface and attach it to our system. Please see
+the associated [ModelingToolkitBase
 tutorial](https://docs.sciml.ai/ModelingToolkit/stable/basics/Events/) for more
 details on the types of events that can be represented symbolically. A
 lower-level approach for creating events via the DifferentialEquations.jl

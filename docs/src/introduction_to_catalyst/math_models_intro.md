@@ -76,11 +76,13 @@ One can also specify during system construction that by default combinatoric
 scalings should be disabled, i.e.
 ```@example math_examples
 using Catalyst
+using Latexify # hide
 rn = @reaction_network begin
     @combinatoric_ratelaws false
     k, 3A + 2B --> A + 3D
 end
 osys = ode_model(rn)
+latexify(rn; form = :ode, math_delimiters = true) # hide
 ```
 
 ## [Reaction Rate Equation (RRE) ODE Models](@id math_models_in_catalyst_rre_odes)
@@ -104,10 +106,12 @@ rn = @reaction_network begin
     k₃, 0 --> A
 end
 osys = ode_model(rn)
+latexify(rn; form = :ode, math_delimiters = true) # hide
 ```
 Likewise, the following drops the combinatoric scaling factors, giving unscaled ODEs
 ```@example math_examples
 osys = ode_model(rn; combinatoric_ratelaws = false)
+latexify(Catalyst.system_to_reactionsystem(osys); math_delimiters = true) # hide
 ```
 
 ## [Chemical Langevin Equation (CLE) SDE Models](@id math_models_in_catalyst_cle_sdes)
