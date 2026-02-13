@@ -202,6 +202,15 @@ Catalyst.isbc
 Catalyst.isvalidreactant
 ```
 
+## Symbolic variable properties
+The following function from
+[SymbolicIndexingInterface.jl](https://github.com/SciML/SymbolicIndexingInterface.jl) is
+useful for getting the name of individual symbolic variables (species, parameters, or
+non-species variables).
+```@docs
+SymbolicIndexingInterface.getname
+```
+
 ## Basic reaction properties
 ```@docs
 ismassaction
