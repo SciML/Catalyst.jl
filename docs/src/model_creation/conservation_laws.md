@@ -21,6 +21,7 @@ This makes sense, as while $X$ is converted between two different forms ($X₁$ 
 ```@example conservation_laws
 using Latexify
 latexify(rs; form = :ode)
+latexify(rs; form = :ode, math_delimiters = true) # hide
 ```
 we note that it essentially generates the same equation twice (i.e. $\frac{dX₁(t)}{dt} = -\frac{dX₂(t)}{dt}$). By designating our conserved quantity $X₁ + X₂ = Γ$, we can rewrite our differential equation model as a [differential-algebraic equation](https://en.wikipedia.org/wiki/Differential-algebraic_system_of_equations) (with a single differential equation and a single algebraic equation):
 ```math
@@ -30,6 +31,7 @@ X₂(t) = -X₁(t) + Γ
 Using Catalyst, it is possible to detect any such conserved quantities and eliminate them from the system. Here, when we convert our `ReactionSystem` to an `ODESystem`, we provide the `remove_conserved = true` argument to instruct Catalyst to perform this elimination:
 ```@example conservation_laws
 osys = ode_model(rs; remove_conserved = true)
+latexify(Catalyst.system_to_reactionsystem(osys; disable_forbidden_symbol_check = true); math_delimiters = true) # hide
 ```
 We note that the output system only contains a single (differential) equation and can hence be solved with an ODE solver. The second (algebraic) equation is stored as an [*observable*](@ref dsl_advanced_options_observables), and can be retrieved using the `observed` function:
 ```@example conservation_laws

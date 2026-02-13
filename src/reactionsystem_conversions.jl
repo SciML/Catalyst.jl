@@ -797,6 +797,67 @@ function is_autonomous_error(iv)
     compute system steady states, consider creating and solving a `SteadyStateProblem."""
 end
 
+# Used by `system_to_reactionsystem` to mark non-BC species as BC species inside equations.
+# Returns `nothing` for non-species or already-BC nodes (no replacement by `replacenode`).
+function _mark_species_bc(node)
+    ((node isa SymbolicT) && isspecies(node) && !isbc(node)) || return nothing
+    MT.setmetadata(node, VariableBCSpecies, true)
+end
+
+"""
+    system_to_reactionsystem(sys::MT.AbstractSystem; kwargs...)
+
+Convert a `ModelingToolkitBase.System` to a [`ReactionSystem`](@ref) by mapping analogous
+fields. The resulting system has no reactions — all equations are stored as non-reaction
+`Equation` objects.
+
+Keyword arguments override the defaults extracted from `sys`:
+- `name`: defaults to `nameof(sys)`
+- `combinatoric_ratelaws`: defaults to `true`
+- `checks`: defaults to `false`
+- `disable_forbidden_symbol_check`: defaults to `false`
+"""
+function system_to_reactionsystem(sys::MT.AbstractSystem;
+        name = nameof(sys),
+        combinatoric_ratelaws = true,
+        checks = false,
+        disable_forbidden_symbol_check = false)
+    eqs = equations(sys)
+    iv = get_iv(sys)
+    us = unknowns(sys)
+    ps = MT.parameters(sys)
+    obs = MT.observed(sys)
+    browns = MT.brownians(sys)
+    poiss = MT.poissonians(sys)
+    jmps = MT.jumps(sys)
+    cevs = MT.get_continuous_events(sys)
+    devs = MT.get_discrete_events(sys)
+    meta = MT.get_metadata(sys)
+    ics = MT.initial_conditions(sys)
+
+    # Mark non-BC species as BC species so D(species) is allowed in equations.
+    # The ReactionSystem constructor rejects differentials of non-BC species, but ODE/SDE
+    # equations naturally contain D(species). BC metadata is added to both the unknowns
+    # vector and inside equation expressions (which hold separate symbolic references).
+    us = [isspecies(u) && !isbc(u) ? MT.setmetadata(u, VariableBCSpecies, true) : u
+          for u in us]
+    eqs = [replacenode(eq.lhs, _mark_species_bc) ~ replacenode(eq.rhs, _mark_species_bc)
+           for eq in eqs]
+
+    ReactionSystem(eqs, iv, us, ps, browns;
+        poissonians = poiss,
+        jumps = jmps,
+        observed = obs,
+        name,
+        combinatoric_ratelaws,
+        initial_conditions = ics,
+        continuous_events = cevs,
+        discrete_events = devs,
+        metadata = meta,
+        checks,
+        disable_forbidden_symbol_check)
+end
+
 """
 ```julia
 ss_ode_model(rs::ReactionSystem)
