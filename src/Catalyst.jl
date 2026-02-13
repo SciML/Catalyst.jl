@@ -37,6 +37,7 @@ import ModelingToolkitBase: get_variables, namespace_expr, namespace_equation,
 
 # Import from owner modules (not re-exporters) per ExplicitImports.jl audit
 import Symbolics: get_variables!, rename
+import SymbolicIndexingInterface
 import SymbolicIndexingInterface: getname
 import ModelingToolkitBase: SymmapT
 
