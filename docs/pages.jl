@@ -7,7 +7,7 @@ pages = Any[
 ],
 "Model creation and properties" => Any[
     "model_creation/dsl_basics.md",
-    # "model_creation/dsl_advanced.md", Problem due to `collect_vars!` bug in MTK. Awaiting reply from Aayush on how to fix.
+    "model_creation/dsl_advanced.md",
     "model_creation/programmatic_CRN_construction.md",
     "model_creation/compositional_modeling.md",
     "model_creation/coupled_non_crn_models.md",

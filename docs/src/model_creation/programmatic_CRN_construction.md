@@ -12,7 +12,7 @@ We first load Catalyst
 using Catalyst
 ```
 and then define symbolic variables for each parameter and species in the system
-(the latter corresponding to a `variable` or `unknown` in ModelingToolkit
+(the latter corresponding to a `variable` or `unknown` in ModelingToolkitBase
 terminology)
 ```@example ex
 t = default_t()
@@ -23,8 +23,8 @@ nothing    # hide
 Note: each species is declared as a function of time. Here, we first import the *time independent variable*, and stores it in `t`, using `t = default_t()`, and then use it to declare out species.
 
 !!! note
-       For users familiar with ModelingToolkit, chemical species must be declared
-       via the `@species` macro, and not the `ModelingToolkit.@variables` macro.
+       For users familiar with ModelingToolkitBase, chemical species must be declared
+       via the `@species` macro, and not the `ModelingToolkitBase.@variables` macro.
        `@species` wraps `@variables`, adding additional metadata to the symbolic
        variables that represent species which is used internally in Catalyst.
 
@@ -63,28 +63,7 @@ Alternatively, one can use the `name = :repressilator` keyword argument to the
 `ReactionSystem` constructor.
 
 !!! warning
-       All `ReactionSystem`s created via the symbolic interface (i.e. by calling `ReactionSystem` with some input, rather than using `@reaction_network`) are not marked as complete. To simulate them, they must first be marked as *complete*, indicating to Catalyst and ModelingToolkit that they represent finalized models. This can be done using the `complete` function, as above. An expanded description on *completeness* can be found [here](@ref completeness_note).
-
-We can check that this is the same model as the one we defined via the DSL as
-follows (this requires that we use the same names for rates, species and the
-system)
-```@example ex
-repressilator2 = @reaction_network repressilator begin
-    hillr(P₃,α,K,n), ∅ --> m₁
-    hillr(P₁,α,K,n), ∅ --> m₂
-    hillr(P₂,α,K,n), ∅ --> m₃
-    (δ,γ), m₁ <--> ∅
-    (δ,γ), m₂ <--> ∅
-    (δ,γ), m₃ <--> ∅
-    β, m₁ --> m₁ + P₁
-    β, m₂ --> m₂ + P₂
-    β, m₃ --> m₃ + P₃
-    μ, P₁ --> ∅
-    μ, P₂ --> ∅
-    μ, P₃ --> ∅
-end
-repressilator == repressilator2
-```
+       All `ReactionSystem`s created via the symbolic interface (i.e. by calling `ReactionSystem` with some input, rather than using `@reaction_network`) are not marked as complete. To simulate them, they must first be marked as *complete*, indicating to Catalyst and ModelingToolkitBase that they represent finalized models. This can be done using the `complete` function, as above. An expanded description on *completeness* can be found [here](@ref completeness_note).
 
 For more options in building `ReactionSystem`s, see the [`ReactionSystem`](@ref)
 API docs. For a more extensive example of how to programmatically create a
