@@ -143,6 +143,17 @@ The `ModelingToolkitBase.get_iv` function can be used to retrieve a [model's ind
 ModelingToolkitBase.get_iv(sir)
 ```
 
+### [Extracting names from symbolic variables](@id model_accessing_basics_getname)
+When working with symbolic variables, it can be useful to extract their names as `Symbol`s (e.g. for labelling or building dictionaries). The `SymbolicIndexingInterface.getname` function does this:
+```@example model_accessing_basics
+using SymbolicIndexingInterface: getname
+getname(sir.S)
+```
+This can be broadcast to extract names from a collection of symbolic variables:
+```@example model_accessing_basics
+getname.(species(sir))
+```
+
 ## [Accessing properties of hierarchical models](@id model_accessing_hierarchical)
 Previously, we have described how [compositional modelling can be used to create hierarchical models](@ref compositional_modeling). There are some special considerations when accessing the content of hierarchical models, which we will describe here.
 

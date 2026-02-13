@@ -1,5 +1,5 @@
 using Documenter
-using Catalyst, ModelingToolkitBase
+using Catalyst, ModelingToolkitBase, SymbolicIndexingInterface
 # Add packages for plotting
 using GraphMakie, CairoMakie
 
@@ -39,7 +39,7 @@ makedocs(sitename = "Catalyst.jl",
         collapselevel = 1,
         assets = ["assets/favicon.ico"],
         canonical = "https://docs.sciml.ai/Catalyst/stable/"),
-    modules = [Catalyst, ModelingToolkitBase,
+    modules = [Catalyst, ModelingToolkitBase, SymbolicIndexingInterface,
         Base.get_extension(Catalyst, :CatalystGraphMakieExtension)],
     doctest = false,
     clean = true,
