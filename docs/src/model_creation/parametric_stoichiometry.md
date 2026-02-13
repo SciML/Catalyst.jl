@@ -86,7 +86,7 @@ integer variables is to disable the rescaling of rate laws as described in
 [Reaction rate laws used in simulations](@ref introduction_to_catalyst_ratelaws)
 section. This requires passing the `combinatoric_ratelaws=false` keyword to
 `convert` or to `ODEProblem` (if directly building the problem from a
-`ReactionSystem` instead of first converting to an `ODESystem`). For the
+`ReactionSystem` instead of first converting to an ODE `System`). For the
 previous example this gives the following (different) system of ODEs where we
 now let `m` and `n` be floating point valued parameters (the default):
 ```@example s1
@@ -166,7 +166,7 @@ show(stdout, MIME"text/plain"(), jumps(jsys)[4].rate) # hide
 jumps(jsys)[4].affect!
 show(stdout, MIME"text/plain"(), jumps(jsys)[4].affect!) # hide
 ```
-Finally, we can now simulate our `JumpSystem`
+Finally, we can now simulate our jump `System`
 ```@example s1
 pmean = 200
 bval = 70

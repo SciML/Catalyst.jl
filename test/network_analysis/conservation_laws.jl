@@ -343,7 +343,7 @@ end
 # value updated to accommodate new Γ/species values (however, we have to manually designate this by setting it to `nothing`).
 # Also checks that quantities are correctly updated in integrators and solutions derived from problems.
 @test_broken let
-    return false # Cases of `remake` does not work for `NonlinearSystem`s with `remove_conserved = true`.
+    return false # Cases of `remake` does not work for nonlinear `System`s with `remove_conserved = true`.
     # Prepares the problem inputs and computes the conservation equation.
     rn = @reaction_network begin
         (k1,k2), 2X1 <--> X2
@@ -451,7 +451,7 @@ end
 
 ### Other Tests ###
 
-# Checks that `JumpSystem`s with conservation laws cannot be generated.
+# Checks that jump `System`s with conservation laws cannot be generated.
 let
     rn = @reaction_network begin
         (k1,k2), X1 <--> X2
@@ -462,7 +462,7 @@ end
 # Checks that `conserved` metadata is added correctly to parameters.
 # Checks that the `isconserved` getter function works correctly.
 let
-    # Creates ODESystem with conserved quantities.
+    # Creates ODE System with conserved quantities.
     rs = @reaction_network begin
         (k1,k2), X1 <--> X2
         (k1,k2), Y1 <--> Y2
@@ -498,7 +498,7 @@ let
     @test sol[X[2]][end] ≈ 4.0
 end
 
-# Check conservation law elimination warnings (and the disabling of these) for `NonlinearSystem`s
+# Check conservation law elimination warnings (and the disabling of these) for nonlinear `System`s
 # and `NonlinearProblem`s.
 @test_broken let
     return false
@@ -524,7 +524,7 @@ end
     #     0 ~ -X1 - X2 - X3 + Γ[1]
     # ]
     # initeqs = [Γ[1] ~ Initial(X1) + Initial(X3) + Initial(X2)]
-    # @named nlsys = NonlinearSystem(eqs, [X1, X2, X3], [k1, k2, k3, k4, Γ];
+    # @named nlsys = System(eqs, [X1, X2, X3], [k1, k2, k3, k4, Γ];
     #     initialization_eqs = initeqs)
 
 

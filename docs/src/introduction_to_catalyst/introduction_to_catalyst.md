@@ -374,9 +374,9 @@ A more detailed summary of the precise mathematical equations Catalyst can gener
    SDEs, including options to build functions for evaluating Jacobians and/or
    multithreaded versions of derivative evaluation functions. See the options
    for
-   [`ODEProblem`s](https://mtk.sciml.ai/dev/systems/ODESystem/#DiffEqBase.ODEProblem)
+   [`ODEProblem`s](https://docs.sciml.ai/ModelingToolkit/stable/)
    and
-   [`SDEProblem`s](https://mtk.sciml.ai/dev/systems/SDESystem/#DiffEqBase.SDEProblem).
+   [`SDEProblem`s](https://docs.sciml.ai/ModelingToolkit/stable/).
 
 ---
 ## References

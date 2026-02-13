@@ -457,7 +457,7 @@ function assemble_jumps(rs; combinatoric_ratelaws = true, physical_scales = noth
     end
 
     (isempty(get_rxs(rs)) || !any(in(JUMP_SCALES), physcales)) &&
-        error("Must have at least one reaction that will be represented as a jump when constructing a JumpSystem.")
+        error("Must have at least one reaction that will be represented as a jump when constructing a jump System.")
 
     # note isvrjvec indicates which reactions are not constant rate jumps
     # it may be that a given jump has isvrjvec[i] = true but has a physical
@@ -1010,10 +1010,6 @@ function sde_model(rs::ReactionSystem;
             remove_conserved, expand_catalyst_funs)
         eqs, us, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
 
-        if any(isbc, get_unknowns(flatrs))
-            @info "Boundary condition species detected. As constraint equations are not currently supported when converting to SDESystems, the resulting system will be undetermined. Consider using constant species instead."
-        end
-
         return MT.System(eqs, get_iv(flatrs), us, ps;
             noise_eqs = noiseeqs,
             observed = obs,
@@ -1114,7 +1110,7 @@ function jump_model(rs::ReactionSystem; name = nameof(rs),
         expand_catalyst_funs = true, save_positions = (true, true),
         physical_scales = nothing, kwargs...)
     (remove_conserved !== nothing) &&
-        throw(ArgumentError("Catalyst does not support removing conserved species when converting to JumpSystems."))
+        throw(ArgumentError("Catalyst does not support removing conserved species when converting to jump Systems."))
 
     # Force all reactions to Jump, only preserving VariableRateJump metadata.
     # ODE/SDE metadata is ignored - use HybridProblem for hybrid systems.
