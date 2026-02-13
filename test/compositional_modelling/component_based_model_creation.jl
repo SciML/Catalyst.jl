@@ -30,7 +30,7 @@ let
     @named rs = ReactionSystem(rxs, t, specs, pars)
     rs = complete(rs)
 
-    # Using ODESystem components.
+    # Using ODE System components.
     @named sys₁ = ode_model(rs; include_zero_odes = false)
     @named sys₂ = ode_model(rs; include_zero_odes = false)
     @named sys₃ = ode_model(rs; include_zero_odes = false)
@@ -238,14 +238,14 @@ let
     @test Set(MT.observed(odesystem)) == obs
     @test Set(MT.observed(nlsystem)) == obs
 
-    # Test can make ODESystem.
+    # Test can make ODE System.
     @named oderepressilator = ode_model(repressilator2, include_zero_odes = false)
     sys2 = mtkcompile(oderepressilator)  # FAILS currently
     oprob = ODEProblem(sys2, [u₀; pvals], tspan)
     sol = solve(oprob, Tsit5())
     @test all(isapprox.(sol(tvs, idxs = sys₁.P), sol2(tvs, idxs = 4), atol = 1e-4))
 
-    # Test extending with NonlinearSystem.
+    # Test extending with nonlinear System.
     @named repressilator2 = ReactionSystem(t; systems = [sys₁, sys₂, sys₃])
     repressilator2 = Catalyst.flatten(repressilator2)
     repressilator2 = extend(csys, repressilator2)
@@ -261,7 +261,7 @@ let
     @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
 end
 
-# TODO add conversion to SDE and JumpSystems once supported.
+# TODO add conversion to SDE and jump Systems once supported.
 
 # Adding algebraic constraints.
 let

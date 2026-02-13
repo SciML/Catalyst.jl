@@ -92,7 +92,7 @@ be found in its corresponding research paper, [Catalyst: Fast and flexible model
 
 #### Features of packages built upon Catalyst
 - Catalyst [`ReactionSystem`](@ref)s can be [imported from SBML files](https://docs.sciml.ai/Catalyst/stable/model_creation/model_file_loading_and_export/#Loading-SBML-files-using-SBMLImporter.jl-and-SBMLToolkit.jl) via [SBMLImporter.jl](https://github.com/sebapersson/SBMLImporter.jl) and [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), and [from BioNetGen .net files](https://docs.sciml.ai/Catalyst/stable/model_creation/model_file_loading_and_export/#file_loading_rni_net) and various stoichiometric matrix network representations using [ReactionNetworkImporters.jl](https://github.com/SciML/ReactionNetworkImporters.jl).
-- [MomentClosure.jl](https://github.com/augustinas1/MomentClosure.jl) allows generation of symbolic ModelingToolkitBase `System`s that represent ODE moment closure approximations to moments of the Chemical Master Equation, from reaction networks defined in Catalyst.
+- [MomentClosure.jl](https://github.com/augustinas1/MomentClosure.jl) allows generation of symbolic ModelingToolkitBase ODE `System`s that represent moment closure approximations to moments of the Chemical Master Equation, from reaction networks defined in Catalyst.
 - [FiniteStateProjection.jl](https://github.com/kaandocal/FiniteStateProjection.jl) allows the construction and numerical solution of Chemical Master Equation models from reaction networks defined in Catalyst.
 - [DelaySSAToolkit.jl](https://github.com/palmtree2013/DelaySSAToolkit.jl) can augment Catalyst reaction network models with delays, and can simulate the resulting stochastic chemical kinetics with delays models.
 

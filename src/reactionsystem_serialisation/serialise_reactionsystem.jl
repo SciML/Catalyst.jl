@@ -26,7 +26,7 @@ rn = include("rn.jls")
 ```
 
 Notes:
-- `ReactionSystem`s with non-`ReactionSystem` sub-systems (e.g. `ODESystem`s) cannot be saved.
+- `ReactionSystem`s with non-`ReactionSystem` sub-systems (e.g. non-reaction `System`s) cannot be saved.
 - Reaction systems with components that have units cannot currently be saved.
 - The `ReactionSystem` is saved using *programmatic* (not DSL) format for model creation.
 """

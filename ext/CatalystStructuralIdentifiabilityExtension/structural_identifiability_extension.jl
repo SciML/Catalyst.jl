@@ -28,7 +28,7 @@ Notes:
 """
 function Catalyst.make_si_ode(rs::ReactionSystem; measured_quantities = [], known_p = [],
         ignore_no_measured_warn = false, remove_conserved = true)
-    # Creates a MTK ODESystem, and a list of measured quantities (there are equations).
+    # Creates a MTK ODE System, and a list of measured quantities (there are equations).
     # Gives these to SI to create an SI ode model of its preferred form.
     osys, conseqs, _, _ = make_osys(rs; remove_conserved)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
@@ -41,7 +41,7 @@ end
 """
 assess_local_identifiability(rs::ReactionSystem, args...; measured_quantities = [], known_p = [], remove_conserved = true, ignore_no_measured_warn=false, kwargs...)
 
-Applies StructuralIdentifiability.jl's `assess_local_identifiability` function to the reaction rate equation ODE model for the given Catalyst `ReactionSystem`. Automatically converts the `ReactionSystem` to an appropriate `ODESystem` and computes structural identifiability,
+Applies StructuralIdentifiability.jl's `assess_local_identifiability` function to the reaction rate equation ODE model for the given Catalyst `ReactionSystem`. Automatically converts the `ReactionSystem` to an appropriate ODE `System` and computes structural identifiability,
 
 Arguments:
 - `rs::ReactionSystem`; The reaction system for which we wish to compute structural identifiability of the associated reaction rate equation ODE model.
@@ -66,7 +66,7 @@ Notes:
 function SI.assess_local_identifiability(rs::ReactionSystem, args...;
         measured_quantities = [], known_p = [], funcs_to_check = Vector(),
         remove_conserved = true, ignore_no_measured_warn = false, kwargs...)
-    # Creates a ODESystem, list of measured quantities, and functions to check, of SI's preferred form.
+    # Creates an ODE System, list of measured quantities, and functions to check, of SI's preferred form.
     osys, conseqs, consconsts, vars = make_osys(rs; remove_conserved)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
         conseqs; ignore_no_measured_warn)
@@ -81,7 +81,7 @@ end
 """
 assess_identifiability(rs::ReactionSystem, args...; measured_quantities = [], known_p = [], remove_conserved = true, ignore_no_measured_warn=false, kwargs...)
 
-Applies StructuralIdentifiability.jl's `assess_identifiability` function to a Catalyst `ReactionSystem`. Internally it is converted to a `ODESystem`, for which structural identifiability is computed.
+Applies StructuralIdentifiability.jl's `assess_identifiability` function to a Catalyst `ReactionSystem`. Internally it is converted to an ODE `System`, for which structural identifiability is computed.
 
 Arguments:
 - `rs::ReactionSystem`; The reaction system we wish to compute structural identifiability for.
@@ -106,16 +106,16 @@ Notes:
 function SI.assess_identifiability(rs::ReactionSystem, args...;
         measured_quantities = [], known_p = [], funcs_to_check = Vector(),
         remove_conserved = true, ignore_no_measured_warn = false, kwargs...)
-    # Creates a ODESystem, list of measured quantities, and functions to check, of SI's preferred form.
+    # Creates an ODE System, list of measured quantities, and functions to check, of SI's preferred form.
     osys, conseqs, consconsts, vars = make_osys(rs; remove_conserved)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
         conseqs; ignore_no_measured_warn)
     funcs_to_check = make_ftc(funcs_to_check, conseqs, vars)
 
     # Computes identifiability and converts it to a easy to read form.
-    # The `::ODESystem` designation fixes: https://github.com/SciML/StructuralIdentifiability.jl/issues/360,
+    # The `::System` designation fixes: https://github.com/SciML/StructuralIdentifiability.jl/issues/360,
     # however, the exact mechanisms of this is still not fully clear.
-    out = SI.assess_identifiability(osys::ODESystem, args...; measured_quantities,
+    out = SI.assess_identifiability(osys::System, args...; measured_quantities,
         funcs_to_check, kwargs...)
     return make_output(out, funcs_to_check, consconsts)
 end
@@ -123,7 +123,7 @@ end
 """
 find_identifiable_functions(rs::ReactionSystem, args...; measured_quantities = [], known_p = [], remove_conserved = true, ignore_no_measured_warn=false, kwargs...)
 
-Applies StructuralIdentifiability.jl's `find_identifiable_functions` function to a Catalyst `ReactionSystem`. Internally it is converted to a `ODESystem`, for which structurally identifiable functions are computed.
+Applies StructuralIdentifiability.jl's `find_identifiable_functions` function to a Catalyst `ReactionSystem`. Internally it is converted to an ODE `System`, for which structurally identifiable functions are computed.
 
 Arguments:
 - `rs::ReactionSystem`; The reaction system we wish to compute structural identifiability for.
@@ -148,7 +148,7 @@ Notes:
 function SI.find_identifiable_functions(rs::ReactionSystem, args...;
         measured_quantities = [], known_p = [], remove_conserved = true,
         ignore_no_measured_warn = false, kwargs...)
-    # Creates a ODESystem, and list of measured quantities, of SI's preferred form.
+    # Creates an ODE System, and list of measured quantities, of SI's preferred form.
     osys, conseqs, consconsts, _ = make_osys(rs; remove_conserved)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
         conseqs; ignore_no_measured_warn)
@@ -160,10 +160,10 @@ end
 
 ### Helper Functions ###
 
-# From a reaction system, creates the corresponding MTK-style ODESystem for SI application
+# From a reaction system, creates the corresponding MTK-style ODE System for SI application
 # Also compute the, later needed, conservation law equations and list of system symbols (unknowns and parameters).
 function make_osys(rs::ReactionSystem; remove_conserved = true)
-    # Creates the ODESystem corresponding to the ReactionSystem (expanding functions and flattening it).
+    # Creates the ODE System corresponding to the ReactionSystem (expanding functions and flattening it).
     # Creates a list of the systems all symbols (unknowns and parameters).
     if !ModelingToolkitBase.iscomplete(rs)
         error("Identifiability should only be computed for complete systems. A ReactionSystem can be marked as complete using the `complete` function.")

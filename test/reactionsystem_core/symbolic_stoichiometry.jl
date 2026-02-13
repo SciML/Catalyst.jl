@@ -221,7 +221,7 @@ let
         k, X --> V*Y
     end
 
-    # The JumpSystem should have explicit affects (no equations after mtkcompile)
+    # The jump System should have explicit affects (no equations after mtkcompile)
     jsys = jump_model(rs)
     js = ModelingToolkitBase.jumps(jsys)
     @test length(js) == 1

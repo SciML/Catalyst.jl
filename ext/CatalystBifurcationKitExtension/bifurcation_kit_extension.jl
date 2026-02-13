@@ -20,7 +20,7 @@ function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
         u0 = Catalyst.symmap_to_varmap(rs, u0)
     end
 
-    # Creates NonlinearSystem.
+    # Creates nonlinear System.
     Catalyst.conservationlaw_errorcheck(rs, vcat(ps, u0))
     nsys = bkext_make_nsys(rs, u0)
 
@@ -29,7 +29,7 @@ function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
         record_from_solution, jac, kwargs...)
 end
 
-# Creates the NonlinearSystem for the bifurcation problem. Used to be straightforward, but MTK
+# Creates the nonlinear System for the bifurcation problem. Used to be straightforward, but MTK
 # updates have made handling of conservation laws more complicated, so we now have to do
 # more things here.
 function bkext_make_nsys(rs, u0)

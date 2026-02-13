@@ -7,8 +7,8 @@ CurrentModule = Catalyst
 Catalyst provides the [`@reaction_network`](@ref) macro for generating a
 complete network, stored as a [`ReactionSystem`](@ref), which in turn is
 composed of [`Reaction`](@ref)s. `ReactionSystem`s can be converted to other
-`ModelingToolkitBase.AbstractSystem`s, including a `ModelingToolkitBase.ODESystem`,
-`ModelingToolkitBase.SDESystem`, or `ModelingToolkitBase.JumpSystem`.
+`ModelingToolkitBase.AbstractSystem`s, specifically a `ModelingToolkitBase.System`
+representing an ODE, SDE, or jump model.
 
 When using the [`@reaction_network`](@ref) macro, Catalyst will automatically
 attempt to detect what is a species and what is a parameter. Everything that
