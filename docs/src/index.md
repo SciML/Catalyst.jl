@@ -4,7 +4,7 @@ Catalyst.jl is a symbolic modeling package for analysis and high-performance
 simulation of chemical reaction networks. Catalyst defines symbolic
 [`ReactionSystem`](@ref)s, which can be created programmatically or easily
 specified using Catalyst's domain-specific language (DSL). Leveraging
-[ModelingToolkit.jl](https://github.com/SciML/ModelingToolkit.jl) and
+[ModelingToolkitBase.jl](https://github.com/SciML/ModelingToolkit.jl) and
 [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl), Catalyst enables
 large-scale simulations through auto-vectorization and parallelism. Symbolic
 `ReactionSystem`s can be used to generate ModelingToolkit-based models, allowing
@@ -19,9 +19,9 @@ etc).
 
 #### [Features of Catalyst](@id doc_index_features_catalyst)
 - [The Catalyst DSL](@ref dsl_description) provides a simple and readable format for manually specifying reaction network models using chemical reaction notation.
-- Catalyst `ReactionSystem`s provides a symbolic representation of reaction networks, built on [ModelingToolkit.jl](https://docs.sciml.ai/ModelingToolkit/stable/) and [Symbolics.jl](https://docs.sciml.ai/Symbolics/stable/).
+- Catalyst `ReactionSystem`s provides a symbolic representation of reaction networks, built on [ModelingToolkitBase.jl](https://docs.sciml.ai/ModelingToolkit/stable/) and [Symbolics.jl](https://docs.sciml.ai/Symbolics/stable/).
 - The [Catalyst.jl API](@ref api) provides functionality for building networks programmatically and for composing multiple networks together.
-- Leveraging ModelingToolkit, generated models can be converted to symbolic reaction rate equation ODE models, symbolic Chemical Langevin Equation models, and symbolic stochastic chemical kinetics (jump process) models. These can be simulated using any [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/) [ODE/SDE/jump solver](@ref simulation_intro), and can be used within `EnsembleProblem`s for carrying out [parallelized parameter sweeps and statistical sampling](@ref ensemble_simulations). Plot recipes are available for [visualization of all solutions](@ref simulation_plotting).
+- Leveraging ModelingToolkitBase, generated models can be converted to symbolic reaction rate equation ODE models, symbolic Chemical Langevin Equation models, and symbolic stochastic chemical kinetics (jump process) models. These can be simulated using any [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/) [ODE/SDE/jump solver](@ref simulation_intro), and can be used within `EnsembleProblem`s for carrying out [parallelized parameter sweeps and statistical sampling](@ref ensemble_simulations). Plot recipes are available for [visualization of all solutions](@ref simulation_plotting).
 - Non-integer (e.g. `Float64`) stoichiometric coefficients [are supported](@ref dsl_description_stoichiometries_decimal) for generating ODE models, and symbolic expressions for stoichiometric coefficients [are supported](@ref parametric_stoichiometry) for all system types.
 - A [network analysis suite](@ref network_analysis_structural_aspects) permits the computation of linkage classes, deficiencies, reversibility, and other network properties.
 - [Conservation laws can be detected and utilized](@ref conservation_laws) to reduce system sizes, and to generate non-singular Jacobians (e.g. during conversion to ODEs, SDEs, and steady state equations).
@@ -48,7 +48,7 @@ etc).
 
 #### [Features of packages built upon Catalyst](@id doc_index_features_other_packages)
 - Catalyst [`ReactionSystem`](@ref)s can be [imported from SBML files](@ref model_file_import_export_sbml) via [SBMLImporter.jl](https://github.com/sebapersson/SBMLImporter.jl) and [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), and [from BioNetGen .net files](@ref model_file_import_export_sbml_rni_net) and various stoichiometric matrix network representations using [ReactionNetworkImporters.jl](https://github.com/SciML/ReactionNetworkImporters.jl).
-- [MomentClosure.jl](https://github.com/augustinas1/MomentClosure.jl) allows generation of symbolic ModelingToolkit `ODESystem`s that represent moment closure approximations to moments of the Chemical Master Equation, from reaction networks defined in Catalyst.
+- [MomentClosure.jl](https://github.com/augustinas1/MomentClosure.jl) allows generation of symbolic ModelingToolkit `System`s that represent ODE moment closure approximations to moments of the Chemical Master Equation, from reaction networks defined in Catalyst.
 - [FiniteStateProjection.jl](https://github.com/kaandocal/FiniteStateProjection.jl) allows the construction and numerical solution of Chemical Master Equation models from reaction networks defined in Catalyst.
 - [DelaySSAToolkit.jl](https://github.com/palmtree2013/DelaySSAToolkit.jl) can augment Catalyst reaction network models with delays, and can simulate the resulting stochastic chemical kinetics with delays models.
 
