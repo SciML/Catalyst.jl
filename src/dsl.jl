@@ -967,6 +967,8 @@ function read_events_option!(options, discs_inferred::Vector, ps_inferred::Vecto
                 error("Event affects must be assignments (e.g. `X ~ X + 1`). This is not the case for: $(affect).")
             (affect.args[2] isa Symbol) ||
                 error("The Catalyst DSL currently only supports assignment events where the LHS is a single symbol. This is not the case for: $(affect).")
+            (affect.args[1] != :(=>)) &&
+                error("The Catalyst DSL currently only supports assignment affects. For these the affect's left and right-hand sides are separated by a `=>` (here, a $(affect.args[1]) was encountered).")
 
             # If the event updates an inferred parameter, this should be moved to an inferred discrete.
             if affect.args[2] in ps_inferred

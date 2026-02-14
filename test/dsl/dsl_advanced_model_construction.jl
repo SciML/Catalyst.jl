@@ -449,7 +449,7 @@ let
         k*V, 0 --> A
         @equations D(V) ~ λ*V
         @continuous_events begin
-            [V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]
+            [V ~ 2.0] => [V => V/2, A => A/2]
         end
     end
     @test Catalyst.isequivalent(hybrid, rn)
@@ -466,7 +466,7 @@ let
         λ, C --> A, [physical_scale = PhysicalScale.ODE]
         @equations D(V) ~ λ*V*C
         @continuous_events begin
-            [V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]
+            [V ~ 2.0] => [V => V/2, A => A/2]
         end
     end
     t = default_t()
@@ -495,7 +495,7 @@ let
         λ, C --> A, [physical_scale = PhysicalScale.VariableRateJump]
         @equations D(V) ~ λ*V*C
         @continuous_events begin
-            [V ~ 2.0] => [V ~ Pre(V)/2, A ~ Pre(A)/2]
+            [V ~ 2.0] => [V => V/2, A => A/2]
         end
     end
     t = default_t()

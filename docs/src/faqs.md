@@ -322,7 +322,7 @@ Symbols occurring within other expressions will not be inferred as anything. The
 ```julia
 using Catalyst
 rn_error = @reaction_network begin
-    @discrete_events 1.0 => [X ~ X + Xadd] 
+    @discrete_events 1.0 => [X => X + Xadd] 
  d, X --> 0
 end
 ```
@@ -331,7 +331,7 @@ is not permitted. E.g. here `Xadd` must be explicitly declared as a parameter us
 using Catalyst
 rn = @reaction_network begin
     @parameters Xadd
-    @discrete_events 1.0 => [X ~ X + Xadd] 
+    @discrete_events 1.0 => [X => X + Xadd] 
  d, X --> 0
 end
 ```

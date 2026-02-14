@@ -47,7 +47,7 @@ rn = @reaction_network growing_cell begin
 
     # every 1.0 time unit we half the volume of the cell and the number of proteins
     @continuous_events begin 
-        [V ~ 2.0] => [V ~ V/2, P ~ P/2]
+        [V ~ 2.0] => [V => V/2, P => P/2]
     end
 end
 ```
@@ -67,7 +67,7 @@ rn = @reaction_network param_off_ex begin
     k_off, B --> A
     
     @discrete_events begin
-        (t == switch_time) => [k_on ~ 0.0]
+        (t == switch_time) => [k_on => 0.0]
     end
 end
 
