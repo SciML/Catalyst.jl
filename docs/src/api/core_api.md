@@ -327,17 +327,17 @@ Catalyst.UnitValidationReport
 Catalyst.UnitValidationError
 ```
 
-## [Spatial modelling](@id api_lattice_simulations)
-The first step of spatial modelling is to create a so-called `LatticeReactionSystem`:
+## [Spatial modelling](@id api_dspace_simulations)
+The first step of spatial modelling is to create a so-called `DiscreteSpaceReactionSystem`:
 ```@docs
-LatticeReactionSystem
+DiscreteSpaceReactionSystem
 ```
 
-The following functions can be used to querying the properties of `LatticeReactionSystem`s:
+The following functions can be used to querying the properties of `DiscreteSpaceReactionSystem`s:
 ```@docs
 reactionsystem
 Catalyst.spatial_reactions
-Catalyst.lattice
+Catalyst.dspace
 Catalyst.num_verts
 Catalyst.num_edges
 Catalyst.num_species
@@ -346,14 +346,14 @@ Catalyst.vertex_parameters
 Catalyst.edge_parameters
 Catalyst.edge_iterator
 Catalyst.is_transport_system
-has_cartesian_lattice
-has_masked_lattice
-has_grid_lattice
-has_graph_lattice
+has_cartesian_dspace
+has_masked_dspace
+has_grid_dspace
+has_graph_dspace
 grid_size
 grid_dims
 ```
-In addition, most accessor functions for normal `ReactionSystem`s (such as `species` and `parameters`) works when applied to `LatticeReactionSystem`s as well.
+In addition, most accessor functions for normal `ReactionSystem`s (such as `species` and `parameters`) works when applied to `DiscreteSpaceReactionSystem`s as well.
 
 The following two helper functions can be used to create non-uniform parameter values.
 ```@docs
@@ -361,18 +361,18 @@ make_edge_p_values
 make_directed_edge_values
 ```
 
-The following functions can be used to access, or change, species or parameter values stored in problems, integrators, and solutions that are based on `LatticeReactionSystem`s.
+The following functions can be used to access, or change, species or parameter values stored in problems, integrators, and solutions that are based on `DiscreteSpaceReactionSystem`s.
 ```@docs
-lat_getu
-lat_setu!
-lat_getp
-lat_setp!
-rebuild_lat_internals!
+spat_getu
+spat_setu!
+spat_getp
+spat_setp!
+rebuild_spat_internals!
 ```
 
-Finally, we provide the following helper functions to plot and animate spatial lattice simulations.
+Finally, we provide the following helper functions to plot and animate spatial discrete space simulations.
 ```@docs
-lattice_plot
-lattice_animation
-lattice_kymograph
+dspace_plot
+dspace_animation
+dspace_kymograph
 ```

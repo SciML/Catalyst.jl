@@ -13,28 +13,27 @@ include("../spatial_test_networks.jl")
 let
     for grid in [small_2d_graph_grid, small_2d_cartesian_grid, small_2d_masked_grid]
         for srs in [Vector{TransportReaction}(), SIR_srs_1, SIR_srs_2]
-            lrs = LatticeReactionSystem(SIR_system, srs, grid)
+            dsrs = DiscreteSpaceReactionSystem(SIR_system, srs, grid)
             u0_1 = [:S => 999, :I => 1, :R => 0]
-            u0_2 = [:S => round.(Int64, 500 .+ 500 * rand_v_vals(lrs)), :I => 1, :R => 0]
+            u0_2 = [:S => round.(Int64, 500 .+ 500 * rand_v_vals(dsrs)), :I => 1, :R => 0]
             u0_3 = [
-                :S => round.(Int64, 500 .+ 500 * rand_v_vals(lrs)),
-                :I => round.(Int64, 50 * rand_v_vals(lrs)),
-                :R => round.(Int64, 50 * rand_v_vals(lrs)),
+                :S => round.(Int64, 500 .+ 500 * rand_v_vals(dsrs)),
+                :I => round.(Int64, 50 * rand_v_vals(dsrs)),
+                :R => round.(Int64, 50 * rand_v_vals(dsrs)),
             ]
             for u0 in [u0_1, u0_2, u0_3]
                 pV_1 = [:α => 0.1 / 1000, :β => 0.01]
-                pV_2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lrs)]
+                pV_2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(dsrs)]
                 pV_3 = [
-                    :α => 0.1 / 2000 * rand_v_vals(lrs),
-                    :β => 0.02 * rand_v_vals(lrs),
+                    :α => 0.1 / 2000 * rand_v_vals(dsrs),
+                    :β => 0.02 * rand_v_vals(dsrs),
                 ]
                 for pV in [pV_1, pV_2, pV_3]
-                    pE_1 = [sp => 0.01 for sp in spatial_param_syms(lrs)]
-                    pE_2 = [sp => rand_e_vals(lrs)/50.0 for sp in spatial_param_syms(lrs)]
+                    pE_1 = [sp => 0.01 for sp in spatial_param_syms(dsrs)]
+                    pE_2 = [sp => rand_e_vals(dsrs)/50.0 for sp in spatial_param_syms(dsrs)]
                     for pE in [pE_1, pE_2]
-                        isempty(spatial_param_syms(lrs)) && (pE = Vector{Pair{Symbol, Float64}}())
-                        dprob = DiscreteProblem(lrs, u0, (0.0, 1.0), [pV; pE])
-                        jprob = JumpProblem(lrs, dprob, NSM())
+                        isempty(spatial_param_syms(dsrs)) && (pE = Vector{Pair{Symbol, Float64}}())
+                        jprob = JumpProblem(dsrs, u0, (0.0, 1.0), [pV; pE])
                         @test SciMLBase.successful_retcode(solve(jprob, SSAStepper()))
                     end
                 end
@@ -51,7 +50,7 @@ end
 let
     # Prepares the system.
     grid = small_2d_graph_grid
-    lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, grid)
+    dsrs = DiscreteSpaceReactionSystem(SIR_system, SIR_srs_2, grid)
 
     # Prepares various u0 input types.
     u0_1 = [:I => 2.0, :S => 1.0, :R => 3.0]
@@ -63,8 +62,8 @@ let
 
     # Prepare various (diffusion) parameter input types.
     pE_1 = [:dI => 0.02, :dS => 0.01, :dR => 0.03]
-    dS_vals = spzeros(num_verts(lrs), num_verts(lrs))
-    foreach(e -> (dS_vals[e[1], e[2]] = 0.01), edge_iterator(lrs))
+    dS_vals = spzeros(num_verts(dsrs), num_verts(dsrs))
+    foreach(e -> (dS_vals[e[1], e[2]] = 0.01), edge_iterator(dsrs))
     pE_2 = [:dI => 0.02, :dS => dS_vals, :dR => 0.03]
 
     # Checks hopping rates and u0 are correct.
@@ -75,8 +74,7 @@ let
     true_maj_net_stoch = [[1 => -1, 2 => 1], [2 => -1, 3 => 1]]
     for u0 in [u0_1, u0_2]
         for pV in [pV_1, pV_2], pE in [pE_1, pE_2]
-            dprob = DiscreteProblem(lrs, u0, (0.0, 100.0), [pE; pV])
-            jprob = JumpProblem(lrs, dprob, NSM())
+            jprob = JumpProblem(dsrs, u0, (0.0, 100.0), [pE; pV])
             @test jprob.prob.u0 == true_u0
             @test jprob.discrete_jump_aggregation.hop_rates.hop_const_cumulative_sums == true_hopping_rates
             @test jprob.massaction_jump.reactant_stoch  == true_maj_reactant_stoch
@@ -96,22 +94,21 @@ let
     # B, X → Y
     # 1, X → ∅
     # srs = [@transport_reaction dX X]
-    # Create LatticeReactionSystem
-    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, small_3d_graph_grid)
+    # Create DiscreteSpaceReactionSystem
+    dsrs = DiscreteSpaceReactionSystem(brusselator_system, brusselator_srs_1, small_3d_graph_grid)
 
     # Create JumpProblem
-    u0 = [:X => 1, :Y => rand(1:10, num_verts(lrs))]
+    u0 = [:X => 1, :Y => rand(1:10, num_verts(dsrs))]
     tspan = (0.0, 100.0)
-    ps = [:A => 1.0, :B => 5.0 .+ rand_v_vals(lrs), :dX => rand_e_vals(lrs)]
-    dprob = DiscreteProblem(lrs, u0, tspan, ps)
-    jprob = JumpProblem(lrs, dprob, NSM())
+    ps = [:A => 1.0, :B => 5.0 .+ rand_v_vals(dsrs), :dX => rand_e_vals(dsrs)]
+    jprob = JumpProblem(dsrs, u0, tspan, ps)
 
     # Checks internal structures.
     jprob.massaction_jump.uniform_rates == [1.0, 0.5 ,10.] # 0.5 is due to combinatoric /2! in (2X + Y).
     jprob.massaction_jump.spatial_rates[1,:] == ps[2][2]
     # Test when new SII functions are ready, or we implement them in Catalyst.
-    # @test isequal(to_int(getfield.(reactions(reactionsystem(lrs)), :netstoich)), jprob.massaction_jump.net_stoch)
-    # @test isequal(to_int(Pair.(getfield.(reactions(reactionsystem(lrs)), :substrates),getfield.(reactions(reactionsystem(lrs)), :substoich))), jprob.massaction_jump.net_stoch)
+    # @test isequal(to_int(getfield.(reactions(reactionsystem(dsrs)), :netstoich)), jprob.massaction_jump.net_stoch)
+    # @test isequal(to_int(Pair.(getfield.(reactions(reactionsystem(dsrs)), :substrates),getfield.(reactions(reactionsystem(dsrs)), :substoich))), jprob.massaction_jump.net_stoch)
 
     # Checks that problems can be simulated.
     @test SciMLBase.successful_retcode(solve(jprob, SSAStepper()))
@@ -125,14 +122,13 @@ let
         (p,d), 0 <--> X
     end
     srs = [(@transport_reaction D X)]
-    lrs = LatticeReactionSystem(birth_death_network, srs, very_small_2d_graph_grid)
+    dsrs = DiscreteSpaceReactionSystem(birth_death_network, srs, very_small_2d_graph_grid)
     
     # Create JumpProblem.
     u0 = [:X => 1]
     tspan = (0.0, 100.0)
     ps = [:p => [0.1, 1.0, 10.0, 100.0], :d => 1.0, :D => 0.0]    
-    dprob = DiscreteProblem(lrs, u0, tspan, ps)
-    jprob = JumpProblem(lrs, dprob, NSM())
+    jprob = JumpProblem(dsrs, u0, tspan, ps)
 
     # Simulate model (a few repeats to ensure things don't succeed by change for uniform rates).
     # Check that higher p gives higher mean.
@@ -168,17 +164,17 @@ let
     tr_1 = @transport_reaction D A
     tr_2 = @transport_reaction D B
     tr_3 = @transport_reaction D C
-    lattice = Graphs.grid(dims)
-    lrs = LatticeReactionSystem(rn, [tr_1, tr_2, tr_3], lattice)
+    space = Graphs.grid(dims)
+    dsrs = DiscreteSpaceReactionSystem(rn, [tr_1, tr_2, tr_3], space)
 
     # Set simulation parameters and create problems.
     u0 = [:A => [0,0,500,0,0], :B => [0,0,500,0,0], :C => 0]
     tspan = (0.0, 10.0)
     pV = [:kB => rates[1], :kD => rates[2]]
     pE = [:D => diffusivity]
-    dprob = DiscreteProblem(lrs, u0, tspan, [pV; pE])
     # NRM could be added, but doesn't work. Might need Cartesian grid.
-    jump_problems = [JumpProblem(lrs, dprob, alg(); save_positions = (false, false)) for alg in [NSM, DirectCRDirect]] 
+    jump_problems = [JumpProblem(dsrs, u0, tspan, [pV; pE]; aggregator = alg(), 
+        save_positions = (false, false)) for alg in [NSM, DirectCRDirect]] 
 
     # Run tests.
     function get_mean_end_state(jump_prob, Nsims)
@@ -198,14 +194,4 @@ let
             @test abs(d) < reltol * non_spatial_mean[i]
         end
     end
-end
-
-
-### Other Tests ###
-
-# Checks that providing a non-spatial `DiscreteProblem` to a `JumpProblem` gives an error.
-let
-    lrs = LatticeReactionSystem(binding_system, binding_srs, very_small_2d_masked_grid)
-    @test_throws Exception dprob = DiscreteProblem(binding_system, binding_u0, (0.0, 10.0), binding_p[1:2])
-    #@test_throws ArgumentError JumpProblem(lrs, dprob, NSM()) # Previously the first step worked, and error only appeared here.
 end
