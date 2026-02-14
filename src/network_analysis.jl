@@ -1,5 +1,26 @@
 ### Reaction Complex Handling ###
 
+# Checks if a reaction has integer stoichiometry. Used to detect and error on 
+# non-integer stoichiometry in network analysis functions.
+function has_integer_stoichiometry(rx::Reaction)
+    (eltype(rx.substoich) <: Integer) && (eltype(rx.prodstoich) <: Integer)
+end
+
+# Helper function to check all reactions for integer stoichiometry and throw an informative error.
+function check_integer_stoichiometry(rn::ReactionSystem)
+    rxs = reactions(rn)
+    nonint_rxs = filter(!has_integer_stoichiometry, rxs)
+    if !isempty(nonint_rxs)
+        rx_strs = ["  $rx" for rx in nonint_rxs]
+        error("Network analysis functions require integer stoichiometric coefficients, " *
+              "but the following reaction(s) have non-integer stoichiometry:\n" *
+              join(rx_strs, "\n") *
+              "\n\nNon-integer stoichiometry is not currently supported for " *
+              "network analysis functions.")
+    end
+    nothing
+end
+
 # get the species indices and stoichiometry while filtering out constant species.
 function filter_constspecs(specs, stoich::AbstractVector{V}, smap) where {V <: Integer}
     isempty(specs) && (return Vector{Int}(), Vector{V}())
@@ -43,6 +64,9 @@ function reactioncomplexmap(rn::ReactionSystem)
     nps = get_networkproperties(rn)
     !isempty(nps.complextorxsmap) && return nps.complextorxsmap
     complextorxsmap = nps.complextorxsmap
+
+    # Check for non-integer stoichiometry.
+    check_integer_stoichiometry(rn)
 
     rxs = reactions(rn)
     smap = speciesmap(rn)
@@ -627,10 +651,10 @@ function deficiency(rn::ReactionSystem)
 
     # Check if deficiency has been computed already (initialized to -1)
     if nps.deficiency == -1
-        conservationlaws(rn)
-        r = nps.rank
         ig = incidencematgraph(rn)
         lc = linkageclasses(rn)
+        conservationlaws(rn)
+        r = nps.rank
         nps.deficiency = Graphs.nv(ig) - length(lc) - r
     end
     nps.deficiency

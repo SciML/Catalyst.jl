@@ -510,3 +510,40 @@ let
         @test SymbolicUtils.unwrap_const(v1) ≈ SymbolicUtils.unwrap_const(ModelingToolkitBase.unwrap(v3))
     end
 end
+
+### Error Handling Tests ###
+
+# Tests that non-integer stoichiometry throws a helpful error in network analysis functions.
+let 
+    # Create a network with non-integer stoichiometry.
+    rn = @reaction_network begin
+        k1, 2.5*A --> B
+        k2, B --> C
+    end
+    
+    # Test that network analysis functions that require integer stoichiometry error appropriately.
+    @test_throws ErrorException reactioncomplexes(rn)
+    @test_throws ErrorException reactioncomplexmap(rn)
+    @test_throws ErrorException incidencemat(rn)
+    @test_throws ErrorException complexstoichmat(rn)
+    @test_throws ErrorException complexoutgoingmat(rn)
+    @test_throws ErrorException linkageclasses(rn)
+    @test_throws ErrorException stronglinkageclasses(rn)
+    @test_throws ErrorException terminallinkageclasses(rn)
+    @test_throws ErrorException deficiency(rn)
+
+    # Confirm the error message is informative.
+    try
+        reactioncomplexes(rn)
+    catch e
+        @test occursin("non-integer stoichiometry", e.msg)
+        @test occursin("Network analysis functions", e.msg)
+    end
+    
+    # Confirm that integer stoichiometry works fine.
+    rn_int = @reaction_network begin
+        k1, 2*A --> B
+        k2, B --> C
+    end
+    @test length(reactioncomplexes(rn_int)[1]) == 3
+end
