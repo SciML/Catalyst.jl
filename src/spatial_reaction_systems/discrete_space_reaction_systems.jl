@@ -98,9 +98,13 @@ struct DiscreteSpaceReactionSystem{Q, R, S, T} <: MT.AbstractSystem
     """
     edge_iterator::T
 
+    # Other values.
+    "The name of the discrete space reaction system. Typically taken directly from the base `ReactionSystem`."
+    name::Symbol
+
     function DiscreteSpaceReactionSystem(rs::ReactionSystem{Q}, spatial_reactions::Vector{R},
-            dspace::S, num_verts::Int64, num_edges::Int64,
-            edge_iterator::T) where {Q, R, S, T}
+            dspace::S, num_verts::Int64, num_edges::Int64, edge_iterator::T;
+            name::Symbol = MT.nameof(rs)) where {Q, R, S, T}
         # Error checks.
         if !(R <: AbstractSpatialReaction)
             throw(ArgumentError("The second argument must be a vector of AbstractSpatialReaction subtypes."))
@@ -168,21 +172,21 @@ end
 is_array_symvar(sym) = SymbolicUtils.is_array_shape(SymbolicUtils.shape(sym)) || (iscall(sym) && operation(sym) === getindex)
 
 # Creates a DiscreteSpaceReactionSystem from a (directed) Graph dspace (graph grid).
-function DiscreteSpaceReactionSystem(rs, srs, dspace::DiGraph)
+function DiscreteSpaceReactionSystem(rs, srs, dspace::DiGraph; kwargs...)
     num_verts = nv(dspace)
     num_edges = ne(dspace)
     edge_iterator = [e.src => e.dst for e in edges(dspace)]
-    return DiscreteSpaceReactionSystem(rs, srs, dspace, num_verts, num_edges, edge_iterator)
+    return DiscreteSpaceReactionSystem(rs, srs, dspace, num_verts, num_edges, edge_iterator; kwargs...)
 end
 # Creates a DiscreteSpaceReactionSystem from a (undirected) Graph dspace (graph grid).
-function DiscreteSpaceReactionSystem(rs, srs, dspace::SimpleGraph)
-    DiscreteSpaceReactionSystem(rs, srs, DiGraph(dspace))
+function DiscreteSpaceReactionSystem(rs, srs, dspace::SimpleGraph; kwargs...)
+    DiscreteSpaceReactionSystem(rs, srs, DiGraph(dspace); kwargs...)
 end
 
 # Creates a DiscreteSpaceReactionSystem from a CartesianGrid dspace (cartesian grid) or a Boolean Array
 # dspace (masked grid). These two are quite similar, so much code can be reused in a single interface.
 function DiscreteSpaceReactionSystem(rs, srs, dspace::GridLattice{N, T};
-        diagonal_connections = false) where {N, T}
+        diagonal_connections = false, kwargs...) where {N, T}
     # Error checks.
     (N > 3) && error("Grids of higher dimension than 3 is currently not supported.")
 
@@ -210,7 +214,7 @@ function DiscreteSpaceReactionSystem(rs, srs, dspace::GridLattice{N, T};
         end
     end
 
-    return DiscreteSpaceReactionSystem(rs, srs, dspace, num_verts, num_edges, edge_iterator)
+    return DiscreteSpaceReactionSystem(rs, srs, dspace, num_verts, num_edges, edge_iterator; kwargs...)
 end
 
 ### DiscreteSpaceReactionSystem Helper Functions ###
@@ -482,7 +486,6 @@ reactions(dsrs::DiscreteSpaceReactionSystem) = reactions(reactionsystem(dsrs))
 
 # Generic ones (simply forwards call to the non-spatial system)
 # The `parameters` MTK getter have a specialised accessor for DiscreteSpaceReactionSystems.
-MT.nameof(dsrs::DiscreteSpaceReactionSystem) = MT.nameof(reactionsystem(dsrs))
 MT.get_iv(dsrs::DiscreteSpaceReactionSystem) = MT.get_iv(reactionsystem(dsrs))
 MT.equations(dsrs::DiscreteSpaceReactionSystem) = MT.equations(reactionsystem(dsrs))
 MT.unknowns(dsrs::DiscreteSpaceReactionSystem) = MT.unknowns(reactionsystem(dsrs))
