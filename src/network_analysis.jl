@@ -651,10 +651,10 @@ function deficiency(rn::ReactionSystem)
 
     # Check if deficiency has been computed already (initialized to -1)
     if nps.deficiency == -1
-        conservationlaws(rn)
-        r = nps.rank
         ig = incidencematgraph(rn)
         lc = linkageclasses(rn)
+        conservationlaws(rn)
+        r = nps.rank
         nps.deficiency = Graphs.nv(ig) - length(lc) - r
     end
     nps.deficiency
