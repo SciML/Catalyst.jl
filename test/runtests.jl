@@ -76,7 +76,7 @@ end
         @time @safetestset "PDE Systems Simulations" begin include("spatial_modelling/simulate_PDEs.jl") end
         @time @safetestset "Spatial Reactions" begin include("spatial_modelling/spatial_reactions.jl") end
         @time @safetestset "Discrete Space Reaction Systems" begin include("spatial_modelling/dspace_reaction_systems.jl") end
-        @time @safetestset "Spatial Discrete Space Variants" begin include("spatial_modelling/dspace_reaction_systems_lattice_types.jl") end
+        @time @safetestset "Spatial Discrete Space Variants" begin include("spatial_modelling/dspace_reaction_systems_space_types.jl") end
         @time @safetestset "ODE Discrete Space Systems Simulations" begin include("spatial_modelling/dspace_reaction_systems_ODEs.jl") end
         @time @safetestset "Jump Discrete Space Systems Simulations" begin include("spatial_modelling/dspace_reaction_systems_jumps.jl") end
         @time @safetestset "Discrete Space Simulation Structure Interfacing" begin include("spatial_modelling/dspace_simulation_struct_interfacing.jl") end
