@@ -486,6 +486,7 @@ reactions(dsrs::DiscreteSpaceReactionSystem) = reactions(reactionsystem(dsrs))
 
 # Generic ones (simply forwards call to the non-spatial system)
 # The `parameters` MTK getter have a specialised accessor for DiscreteSpaceReactionSystems.
+MT.nameof(lrs::LatticeReactionSystem) = MT.nameof(reactionsystem(lrs))
 MT.get_iv(dsrs::DiscreteSpaceReactionSystem) = MT.get_iv(reactionsystem(dsrs))
 MT.equations(dsrs::DiscreteSpaceReactionSystem) = MT.equations(reactionsystem(dsrs))
 MT.unknowns(dsrs::DiscreteSpaceReactionSystem) = MT.unknowns(reactionsystem(dsrs))

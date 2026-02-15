@@ -70,7 +70,7 @@ pages = Any[
 ],
 "Spatial modelling" => Any[
     "spatial_modelling/discrete_space_reaction_systems.md",
-    "spatial_modelling/discrete_space_simulation_structure_ interaction.md",
+    "spatial_modelling/discrete_space_simulation_structure_interaction.md",
     "spatial_modelling/discrete_space_simulation_plotting.md",
     "spatial_modelling/spatial_ode_simulations.md",
     "spatial_modelling/spatial_jump_simulations.md"
