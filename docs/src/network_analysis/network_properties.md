@@ -1,4 +1,18 @@
 # [Caching of Network Properties in `ReactionSystems`](@id network_analysis_caching_properties)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+```
+```@raw html
+</details>
+```
+  \
+
 When calling many of the network API functions, Catalyst calculates and caches
 in `rn` a variety of information. For example the first call to
 ```julia

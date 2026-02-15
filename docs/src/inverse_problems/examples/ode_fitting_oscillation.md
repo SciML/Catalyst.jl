@@ -1,4 +1,23 @@
 # [Fitting Parameters for an Oscillatory System](@id parameter_estimation)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("OptimizationBase")
+Pkg.add("OptimizationOptimisers")
+Pkg.add("OrdinaryDiffEqRosenbrock")
+Pkg.add("Plots")
+Pkg.add("SciMLSensitivity")
+```
+```@raw html
+</details>
+```
+  \
+  
 In this example we will use [Optimization.jl](https://github.com/SciML/Optimization.jl) to fit the parameters of an oscillatory system (the [Brusselator](@ref basic_CRN_library_brusselator)) to data. Here, special consideration is taken to avoid reaching a local minimum. Instead of fitting the entire time series directly, we will start with fitting parameter values for the first period, and then use those as an initial guess for fitting the next (and then these to find the next one, and so on). Using this procedure is advantageous for oscillatory systems, and enables us to reach the global optimum. For more information on fitting ODE parameters to data, please see [the main documentation page](@ref optimization_parameter_fitting) on this topic.
 
 First, we fetch the required packages.

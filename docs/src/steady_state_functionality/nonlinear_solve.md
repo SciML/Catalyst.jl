@@ -1,4 +1,38 @@
 # [Finding Steady States using NonlinearSolve.jl and SteadyStateDiffEq.jl](@id steady_state_solving)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("NonlinearSolve")
+Pkg.add("OrdinaryDiffEqRosenbrock")
+Pkg.add("SteadyStateDiffEq")
+```
+```@raw html
+</details>
+```
+```@raw html
+<details><summary><strong>Quick-start example</strong></summary>
+```
+The following code provides a brief example of how a system steady state can be found using the [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl) package.
+```julia
+using Catalyst
+rn = @reaction_network begin 
+    (p,d), 0 <--> X
+end
+ps = [:p => 2.0, :d => 0.5] # The parameter set for which we want to find a steady state.
+u_guess = [:X => 1.0] # For single steady state models, this value have little impact on the result.
+nlprob = NonlinearProblem(rn, u_guess, ps)
+steady_state = solve(nlprob)
+```
+```@raw html
+</details>
+```
+  \
+  
 
 Catalyst `ReactionSystem` models can be converted to ODEs (through [the reaction rate equation](@ref introduction_to_catalyst_ratelaws)). We have previously described how these ODEs' steady states can be found through [homotopy continuation](@ref homotopy_continuation). Generally, homotopy continuation (due to its ability to find *all* of a system's steady states) is the preferred approach. However, Catalyst supports two additional approaches for finding steady states:
 - Through solving the nonlinear system produced by setting all ODE differentials to 0[^1].

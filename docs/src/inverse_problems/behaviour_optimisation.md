@@ -1,4 +1,22 @@
 # [Optimization for Non-data Fitting Purposes](@id behaviour_optimisation)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("OptimizationBase")
+Pkg.add("OptimizationBBO")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+  \
+  
 In previous tutorials we have described how to use [PEtab.jl](https://github.com/sebapersson/PEtab.jl) and [Optimization.jl](@ref optimization_parameter_fitting) for parameter fitting. This involves solving an optimisation problem (to find the parameter set yielding the best model-to-data fit). There are, however, other situations that require solving optimisation problems. Typically, these involve the creation of a custom objective function, which minimizer can then be found using Optimization.jl. In this tutorial we will describe this process, demonstrating how parameter space can be searched to find values that achieve a desired system behaviour. Many options used here are described in more detail in [the tutorial on using Optimization.jl for parameter fitting](@ref optimization_parameter_fitting). A more throughout description of how to solve these problems is provided by [Optimization.jl's documentation](https://docs.sciml.ai/Optimization/stable/) and the literature[^1].
 
 ## [Maximising the pulse amplitude of an incoherent feed forward loop](@id behaviour_optimisation_IFFL_example)

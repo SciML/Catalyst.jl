@@ -1,4 +1,19 @@
 # [Tracking Bifurcation Point w.r.t. Secondary Parameters using BifurcationKit.jl](@id bifurcationkit_codim2)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("BifurcationKit")
+Pkg.add("Catalyst")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+```
+  \
+  
+
 Previously, we have shown how to [compute bifurcation diagrams](@ref bifurcation_diagrams) using [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl). In this example, we will show how, after computing the initial diagram, we can track how the position of a bifurcation point moves as a secondary parameter is changed (so-called codimensional 2 bifurcation analysis). More information on how to track bifurcation points along secondary parameters can be found in the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/tutorials/ode/tutorialCO/#CO-oxidation-(codim-2)).
 
 ## [Computing the bifurcation diagram for the Repressilator](@id bifurcationkit_codim2_bifdia)

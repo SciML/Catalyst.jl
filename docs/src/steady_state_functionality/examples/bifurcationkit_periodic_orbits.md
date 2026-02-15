@@ -1,4 +1,18 @@
 # [Computing Periodic Orbits (Oscillations) Using BifurcationKit.jl](@id bifurcationkit_periodic_orbits)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("BifurcationKit")
+Pkg.add("Catalyst")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+```
+  \
+
 Previously, we have shown how to [compute bifurcation diagrams](@ref bifurcation_diagrams) using [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl). In this example we will consider a system which exhibits an oscillation and show how to use BifurcationKit to track not just the system's (potentially unstable) steady state, but also the periodic orbit itself. More information on how to track periodic orbits can be found in the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/tutorials/tutorials/#Periodic-orbits).
 
 ## [Computing the bifurcation diagram for the Repressilator](@id bifurcationkit_periodic_orbits_bifdia)
