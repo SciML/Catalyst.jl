@@ -9,14 +9,14 @@ Pkg.add("Plots")
 ```@raw html
 </details>
 ```
-Non-reaction model components can be inserted directly in a Catalyst model. Here we will briefly describe the simplest case: adding an ODE to a model declared through the `@reaction_network` DSL. The equation is added using the `@equation` option, after which the equation is written (with `D(V)` denoting differential with respect to time).
+Non-reaction model components can be inserted directly in a Catalyst model. Here we will briefly describe the simplest case: adding an ODE to a model declared through the `@reaction_network` DSL. The equation is added using the `@equations` option, after which the equation is written (with `D(V)` denoting differential with respect to time).
 ```julia
 using Catalyst, OrdinaryDiffEqDefault, Plots
 
 # Create model with a ODE for the variable `V` (e.g. denoting Volume).
 rn = @reaction_network begin
     @parameters Vmax # Parameters appearing in equations must be explicitly declared as such.
-    @equations D(V) ~ X * (Vmax - V) # `~` denotes equality (=) in an equation.
+    @equations D(V) ~ X * (Vmax - V) # `~` (not `=`!) separates equation left and right-hand sides.
     (p,d), 0 <--> X
 end
 

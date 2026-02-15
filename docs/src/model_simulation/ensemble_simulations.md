@@ -13,7 +13,7 @@ Pkg.add("StochasticDiffEq")
 ```@raw html
 <details><summary><strong>Quick-start example</strong></summary>
 ```
-The following code provides a brief example of how to run an ensemble simulation (here using multiple jump SDE simulations).
+The following code provides a brief example of how to run an ensemble simulation (here we perform multiple SDE simulations).
 ```julia
 using Catalyst, StochasticDiffEq
 

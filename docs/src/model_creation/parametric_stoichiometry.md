@@ -23,7 +23,7 @@ rn = @reaction_network begin
     (kB,kD), n*X <--> Xn
 end
 u0 = [:X => 10.0, :Xn => 1.0]
-ps = [:kB => 0.2, :kD => 1.0, :n => 3]
+ps = (:kB => 0.2, :kD => 1.0, :n => 3)
 oprob = ODEProblem(rn, u0, 10.0, ps)
 sol = solve(oprob)
 plot(sol)

@@ -16,7 +16,7 @@ Variable and species values stored in e.g. `ODEProblem`s and solution objects ca
 ```julia
 using Catalyst, OrdinaryDiffEqDefault
 
-# First we create a `ODEProblem` and its solution.
+# First we create a `ODEProblem` and find its solution.
 rs = @reaction_network begin
     (p,d), 0 <--> X
 end

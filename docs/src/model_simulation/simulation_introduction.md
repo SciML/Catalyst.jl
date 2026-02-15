@@ -24,7 +24,7 @@ using Catalyst, JumpProcesses, OrdinaryDiffEqDefault, StochasticDiffEq
 rn = @reaction_network begin
     (p,d), 0 <--> X
 end
-u0 = [:X => 2.0]
+u0 = [:X => 2]
 tspan = (0.0, 10.0)
 ps = [:p => 5.0, :d => 0.25]
 # Now, for each simulation type, we first bundle these into a `XProblem`. 

@@ -12,7 +12,7 @@ Pkg.add("Plots")
 ```@raw html
 <details><summary><strong>Quick-start example</strong></summary>
 ```
-In this quick-start example we show how to add a "continuous event" directly to a model declared through the DSL. In addition to continuous events, three different types of "discrete events" also exists. Furthermore, events can be added to programmatically created models through a slightly different syntax. Finally, callbacks (which are similar to events) can be added at the time of simulation.
+In this quick-start example we show how to add a "continuous event" directly to a model declared through the DSL.
 ```julia
 using Catalyst, OrdinaryDiffEqDefault, Plots
 
@@ -31,6 +31,7 @@ oprob = ODEProblem(rn, u0, 10.0, ps)
 sol = solve(oprob)
 plot(sol)
 ```
+In addition to continuous events, three different types of "discrete events" also exists. Furthermore, events can be added to programmatically created models through a slightly different syntax. Finally, callbacks (which are similar to events) can be added at the time of simulation.
 ```@raw html
 </details>
 ```
