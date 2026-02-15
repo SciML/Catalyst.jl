@@ -1,4 +1,19 @@
 # [Model Visualisation](@id visualisation)
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.add("CairoMakie")
+Pkg.add("Catalyst")
+Pkg.add("GLMakie")
+Pkg.add("GraphMakie")
+Pkg.add("Latexify")
+Pkg.add("NetworkLayout")
+```
+```@raw html
+</details>
+```
+  \
+  
 Catalyst-created `ReactionSystem` models can be visualised either as LaTeX code (of either the model reactions or its equations) or as a network graph. This section describes both functionalities.
 
 ## [Displaying models using LaTeX](@id visualisation_latex)

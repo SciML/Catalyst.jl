@@ -1,4 +1,16 @@
 # [Simulation Plotting](@id simulation_plotting)
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.add("Catalyst")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+  \
+  
 Catalyst uses the [Plots.jl](https://github.com/JuliaPlots/Plots.jl) package for performing all plots. This section provides a brief summary of some useful plotting options, while [Plots.jl's documentation](https://docs.juliaplots.org/stable/) provides a more throughout description of how to tune your plots.
 
 !!! note

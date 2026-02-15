@@ -1,4 +1,46 @@
 # [Interfacing Problems, Integrators, and Solutions](@id simulation_structure_interfacing)
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.add("Catalyst")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("SymbolicIndexingInterface")
+```
+```@raw html
+</details>
+```
+```@raw html
+<details><summary><strong>Quick-start example</strong></summary>
+```
+Variable and species values stored in e.g. `ODEProblem`s and solution objects can be easily accessed, e.g. as in the following simple example:
+```julia
+using Catalyst, OrdinaryDiffEqDefault
+
+# First we create a `ODEProblem` and its solution.
+rs = @reaction_network begin
+    (p,d), 0 <--> X
+end
+oprob = ODEProblem(bd_model, [:X => 0.5], 5.0, [:p => 1.0, :d => 0.2])
+sol = solve(oprob)
+
+# Accessing species values:
+oprob[:X] # Returns initial condition value of `X`.
+sol[:X] # Returns `X`'s value across the simulation.
+sol(0:5; idxs = :X) # Returns `X`'s value sampled at time points 0, 1, 2, 3, 4, 5.
+
+# Accessing parameter values requires adding `.ps` to the call:
+oprob.ps[:p]
+sol.ps[:p]
+
+# Problems can have their values updated using the `remake` function:
+oprob_new = remake(oprob; u0 = [:X => 0.1], p = [:d => 2.0])
+# Undesignated values uses the values of input problem.
+```
+```@raw html
+</details>
+```
+  \
+  
 When simulating a model, one begins with creating a [problem](https://docs.sciml.ai/DiffEqDocs/stable/basics/problem/). Next, a simulation is performed on the problem, during which the simulation's state is recorded through an [integrator](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/). Finally, the simulation output is returned as a [solution](https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/). This tutorial describes how to access (or modify) the state (or parameter) values of problem, integrator, and solution structures.
 
 Generally, when we have a structure `simulation_struct` and want to interface with the unknown (or parameter) `x`, we use `simulation_struct[:x]` to access the value. For situations where a value is accessed (or changed) a large number of times, it can *improve performance* to first create a [specialised getter/setter function](@ref simulation_structure_interfacing_functions).

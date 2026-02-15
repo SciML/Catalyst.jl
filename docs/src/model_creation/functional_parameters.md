@@ -1,4 +1,47 @@
 # [Inputs and time-dependent (or functional) parameters](@id time_dependent_parameters)
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.add("Catalyst")
+Pkg.add("DataInterpolations")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+```@raw html
+<details><summary><strong>Quick-start example</strong></summary>
+```
+So called *functional parameters* have many uses. A primary one (shown in this example) is to interpolate some data points and uses as a functional value.
+```julia
+using Catalyst, DataInterpolations, OrdinaryDiffEqDefault, Plots
+
+# Here we create an interpolated function from some values and plots it.
+tend = 10.0
+ts = collect(0.0:0.05:tend)
+spline = LinearInterpolation((2 .+ ts) ./ (1 .+ ts), ts)
+@parameters (pIn::typeof(spline))(..)
+plot(spline)
+
+# Next, we use this as a time dependent function describing the production rate of `X`.
+bd_model = @reaction_network begin
+    $pIn(t), 0 --> X
+    d, X --> 0
+end
+
+# Finally we simualte the model normally, but using `spline` as the `pIn` parameter's value.
+u0 = [:X => 0.5]
+ps = [:d => 2.0, :pIn => spline]
+oprob = ODEProblem(bd_model, u0, tend, ps)
+sol = solve(oprob)
+plot(sol)
+```
+```@raw html
+</details>
+```
+  \
+  
 Catalyst supports the usage of "functional parameters". In practice, these are parameters that are given by (typically) time-dependent functions (they can also depend on e.g. species values, as discussed [here](@ref functional_parameters_sir)). They are a way to inject custom functions into models. Functional parameters can be used when rates depend on real data, or to represent complicated functions (which use e.g. `for` loops or random number generation). Here, the function's values are declared as a data interpolation (which interpolates discrete samples to a continuous function). This is then used as the functional parameter's value in the simulation. This tutorial first shows how to create time-dependent functional parameters, and then gives an example where the functional parameter depends on a species value.
 
 An alternative approach for representing complicated functions is by [using `@register_symbolic`](@ref dsl_description_nonconstant_rates_function_registration).

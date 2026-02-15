@@ -1,4 +1,13 @@
 # [Chemistry-related Functionality](@id chemistry_functionality)
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.add("Catalyst")
+```
+```@raw html
+</details>
+```
+  \
 
 While Catalyst has primarily been designed around the modelling of biological systems, reaction network models are also common in chemistry. This section describes two types of functionality, that while of general interest, should be especially useful in the modelling of chemical systems.
 - The `@compound` option, which enables the user to designate that a specific species is composed of certain subspecies.

@@ -1,4 +1,16 @@
 # [Measuring the Distribution of System Activation Times](@id activation_time_distribution_measurement)
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.add("Catalyst")
+Pkg.add("Plots")
+Pkg.add("StochasticDiffEq")
+```
+```@raw html
+</details>
+```
+  \
+  
 In this example we will consider a model which, while initially inactive, activates in response to an input. The model is *stochastic*, causing the activation times to be *random*. By combining events, callbacks, and stochastic ensemble simulations, we will measure the probability distribution of the activation times (so-called [*first passage times*](https://en.wikipedia.org/wiki/First-hitting-time_model)).
 
 Our model will be a version of the [simple self-activation loop](@ref basic_CRN_library_self_activation) (the ensemble simulations of which we have [considered previously](@ref ensemble_simulations_monte_carlo)). Here, we will consider the activation threshold parameter ($K$) to be activated by an input (at an input time $t = 0$). Before the input, $K$ is very large (essentially keeping the system inactive). After the input, it is reduced to a lower value (which permits the system to activate). We will model this using two an additional parameter, $Kₐ$, which represents the active value of $K$. At the input time ($t = 0$), an event will change $K$'s value to $Kₐ$.

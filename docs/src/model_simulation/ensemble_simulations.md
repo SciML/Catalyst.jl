@@ -1,4 +1,40 @@
 # [Ensemble/Monte Carlo Simulations](@id ensemble_simulations)
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.add("Catalyst")
+Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("Plots")
+Pkg.add("StochasticDiffEq")
+```
+```@raw html
+</details>
+```
+```@raw html
+<details><summary><strong>Quick-start example</strong></summary>
+```
+The following code provides a brief example of how to run an ensemble simulation (here using multiple jump SDE simulations).
+```julia
+using Catalyst, StochasticDiffEq
+
+# First we create the normal problem we wish to run an ensemble simulation of.
+rn = @reaction_network begin
+    (p,d), 0 <--> X
+end
+u0 = [:X => 100.0]
+ps = [:p => 50.0, :d => 0.25]
+sprob = SDEProblem(rn, u0, 10.0, ps)
+
+# Next we create an `EnsembleProblem`. When simulate it the `trajectories` argument designate the number of simulations.
+eprob = EnsembleProblem(sprob)
+esol = solve(eprob, trajectories = 20)
+plot(esol) # By default, `plot` shows all trajectories.
+```
+```@raw html
+</details>
+```
+  \
+  
 In many contexts, a single model is re-simulated under similar conditions. Examples include:
 - Performing Monte Carlo simulations of a stochastic model to gain insight in its behaviour.
 - Scanning a model's behaviour for different parameter values and/or initial conditions.

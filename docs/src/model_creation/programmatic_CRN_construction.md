@@ -1,4 +1,14 @@
 # [Programmatic Construction of Symbolic Reaction Systems](@id programmatic_CRN_construction)
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.add("Catalyst")
+```
+```@raw html
+</details>
+```
+  \
+  
 While the DSL provides a simple interface for creating `ReactionSystem`s, it can
 often be convenient to build or augment a [`ReactionSystem`](@ref)
 programmatically. In this tutorial we show how to build the repressilator model

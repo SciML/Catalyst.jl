@@ -1,4 +1,16 @@
 # [Interactive Simulation and Plotting](@id interactive_brusselator)
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.add("CairoMakie")
+Pkg.add("Catalyst")
+Pkg.add("GLMakie")
+Pkg.add("OrdinaryDiffEqTsit5")
+```
+```@raw html
+</details>
+```
+  \
 
 Catalyst can utilize the [GLMakie.jl](https://github.com/JuliaPlots/GLMakie.jl) package for creating interactive visualizations of your reaction network dynamics. This tutorial provides a step-by-step guide to creating an interactive visualization of the Brusselator model, building upon the basic [Brusselator](@ref basic_CRN_library_brusselator) example.
 

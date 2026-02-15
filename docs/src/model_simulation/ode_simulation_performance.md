@@ -1,4 +1,24 @@
 # [Advice for Performant ODE Simulations](@id ode_simulation_performance)
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.add("BenchmarkTools")
+Pkg.add("Catalyst")
+Pkg.add("CUDA")
+Pkg.add("DiffEqGPU")
+Pkg.add("IncompleteLU")
+Pkg.add("OrdinaryDiffEqBDF")
+Pkg.add("OrdinaryDiffEqRosenbrock")
+Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("OrdinaryDiffEqVerner")
+Pkg.add("Plots")
+Pkg.add("StaticArrays")
+```
+```@raw html
+</details>
+```
+  \
+  
 We have previously described how to perform ODE simulations of *chemical reaction network* (CRN) models. These simulations are typically fast and require little additional consideration. However, when a model is simulated many times (e.g. as a part of solving an inverse problem), or is very large, simulation run
 times may become noticeable. Here we will give some advice on how to improve performance for these cases [^1].
 

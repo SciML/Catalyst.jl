@@ -1,4 +1,19 @@
 # [Approaches for modelling system noise](@id noise_modelling_approaches)
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.add("Catalyst")
+Pkg.add("DataInterpolations")
+Pkg.add("Distributions")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+Pkg.add("StochasticDiffEq")
+```
+```@raw html
+</details>
+```
+  \
+  
 Catalyst's primary tools for modelling stochasticity include the creation of `SDEProblem`s or `JumpProblem`s from reaction network models. However, other approaches for incorporating model noise exist, some of which will be discussed here. We will first consider *intrinsic* and *extrinsic* noise. These are well-established terms, both of which we will describe below (however, to our knowledge, no generally agreed-upon definition of these terms exists)[^1]. Finally, we will demonstrate a third approach, the utilisation of a noisy input process to an otherwise deterministic system. This approach is infrequently used, however, as it is encountered in the literature, we will demonstrate it here as well. 
 
 We note that these approaches can all be combined. E.g. an intrinsic noise model (using an SDE) can be combined with extrinsic noise (using randomised parameter values), while also feeding a noisy input process into the system.

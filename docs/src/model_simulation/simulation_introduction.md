@@ -1,4 +1,55 @@
 # [Model Simulation Introduction](@id simulation_intro)
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.add("Catalyst")
+Pkg.add("JumpProcesses")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("OrdinaryDiffEqRosenbrock")
+Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("Plots")
+Pkg.add("StochasticDiffEq")
+```
+```@raw html
+</details>
+```
+```@raw html
+<details><summary><strong>Quick-start example</strong></summary>
+```
+The following code provides brief examples of the three main types of simulation.
+```julia
+using Catalyst, JumpProcesses, OrdinaryDiffEqDefault, StochasticDiffEq
+
+# First we designate our model, initial condition, time span, and parameter values.
+rn = @reaction_network begin
+    (p,d), 0 <--> X
+end
+u0 = [:X => 2.0]
+tspan = (0.0, 10.0)
+ps = [:p => 5.0, :d => 0.25]
+# Now, for each simulation type, we first bundle these into a `XProblem`. 
+# This can be simulated using `solve` and the solution plotted using `plot`.
+
+# ODE simulation.
+oprob = ODEProblem(rn, u0, tspan, ps)
+osol = solve(oprob)
+plot(osol)
+
+# SDE simulation.
+sprob = SDEProblem(rn, u0, tspan, ps)
+ssol = solve(sprob)
+plot(ssol)
+
+# Jump simulation.
+jprob = JumpProblem(rn, u0, tspan, ps)
+jsol = solve(jprob)
+plot(jsol)
+```
+```@raw html
+</details>
+```
+  \
+  
 Catalyst's core functionality is the creation of *chemical reaction network* (CRN) models that can be simulated using ODE, SDE, and jump simulations. How such simulations are carried out has already been described in [Catalyst's introduction](@ref introduction_to_catalyst). This page provides a deeper introduction, giving some additional background and introducing various simulation-related options.
 
 Here we will focus on the basics, with other sections of the simulation documentation describing various specialised features, or giving advice on performance. Anyone who plans on using Catalyst's simulation functionality extensively is recommended to also read the documentation on [solution plotting](@ref simulation_plotting), and on how to [interact with simulation problems, integrators, and solutions](@ref simulation_structure_interfacing). Anyone with an application for which performance is critical should consider reading the corresponding page on performance advice for [ODEs](@ref ode_simulation_performance) or [SDEs](@ref sde_simulation_performance).

@@ -1,4 +1,18 @@
 # [Loading Chemical Reaction Network Models from Files](@id model_file_import_export)
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.add("Catalyst")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+Pkg.add("ReactionNetworkImporters")
+Pkg.add("SBMLImporter")
+```
+```@raw html
+</details>
+```
+  \
+  
 Catalyst stores chemical reaction network (CRN) models in `ReactionSystem` structures. This tutorial describes how to load such `ReactionSystem`s from, and save them to, files. This can be used to save models between Julia sessions, or transfer them from one session to another. Furthermore, to facilitate the computation modelling of CRNs, several standardised file formats have been created to represent CRN models (e.g. [SBML](https://sbml.org/)). This enables CRN models to be shared between different software and programming languages. While Catalyst itself does not have the functionality for loading such files, we will here (briefly) introduce a few packages that can load different file types to Catalyst `ReactionSystem`s.
 
 ## [Saving Catalyst models to, and loading them from, Julia files](@id model_file_import_export_crn_serialization)
