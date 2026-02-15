@@ -17,7 +17,7 @@ Pkg.add("SteadyStateDiffEq")
 ```@raw html
 <details><summary><strong>Quick-start example</strong></summary>
 ```
-The following code provides a brief example of how a system steady state can be found using the [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl) package.
+The following code provides a brief example of how *a single* system steady state can be found using the [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl) package.
 ```julia
 using Catalyst
 rn = @reaction_network begin 

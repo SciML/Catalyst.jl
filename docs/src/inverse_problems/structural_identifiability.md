@@ -15,7 +15,7 @@ Pkg.add("StructuralIdentifiability")
 ```@raw html
 <details><summary><strong>Quick-start example</strong></summary>
 ```
-The following code provides a brief example of how *structural identifiability* can be determined for a reaction network model using the [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) package.
+The following code provides a brief example of how [*structural identifiability*](https://en.wikipedia.org/wiki/Structural_identifiability) can be determined for a reaction network model using the [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) package.
 ```julia
 using Catalyst, StructuralIdentifiability
 gwo = @reaction_network begin

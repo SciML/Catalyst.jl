@@ -14,6 +14,41 @@ Pkg.add("OrdinaryDiffEqDefault")
 ```@raw html
 </details>
 ```
+```@raw html
+<details><summary><strong>Quick-start example</strong></summary>
+```
+The following code provides a brief example of how to perform global sensitivity analysis using the [GlobalSensitivity.jl](https://github.com/SciML/GlobalSensitivity.jl) package.
+```julia
+using Catalyst, GlobalSensitivity, OrdinaryDiffEqDefault, SymbolicIndexingInterface
+
+# Designates a model, parameter set, and set of initial conditions.
+# For this infectious disease model we will determine the peak number of cases's sensitivity to the parameters.
+sir = @reaction_network begin
+    β, S + I --> 2I
+    γ, I --> R
+end
+u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
+
+# Declare required structures (a base ODEProblem and a "p_setter" which updates the parameter sets in a performant manner).
+oprob_base = ODEProblem(sir, u0, (0.0, 10000.0), [:β => 1.0, :γ => 1.0]) # Parameter valued do not matter here.
+p_setter = setp_oop(oprob_base, [:β, :γ])
+
+# Creates a function that simulates the model an returns the peak number of cases.
+function peak_cases(p)
+    # Updates the ODEProblem with teh proposed parameter set.
+    p = p_setter(oprob_base, p)
+    oprob = remake(oprob_base; p)
+    sol = solve(oprob; maxiters = 100000, verbose = false)
+    return maximum(sol[:I])
+end
+
+# Performs a Morris sensitivity analysis on the designated domain.
+global_sens = gsa(peak_cases, Morris(), [(0.001, 10.0), (0.001, 10.0)])
+```
+```@raw html
+</details>
+```
+  \
   \
   
 *Global sensitivity analysis* (GSA) is used to study the sensitivity of a function's outputs with respect to its input[^1]. Within the context of chemical reaction network modelling it is primarily used for two purposes:

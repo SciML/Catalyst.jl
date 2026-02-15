@@ -20,7 +20,7 @@ Pkg.add("Plots")
 ```@raw html
 <details><summary><strong>Quick-start example</strong></summary>
 ```
-The following code provides a brief example of how to find *all* of a reaction network model's steady states using [HomotopyContinuation.jl](https://github.com/JuliaHomotopyContinuation/HomotopyContinuation.jl) package.
+The following code provides a brief example of how to perform parameter fitting using the [Optimization.jl](https://github.com/SciML/Optimization.jl) package.
 ```julia
 using Catalyst, OrdinaryDiffEqDefault, OptimizationBase, OptimizationNLopt, SymbolicIndexingInterface
 
@@ -35,7 +35,6 @@ X_samples = [1.6, 2.5, 3.1, 3.5, 3.7]
 # Declare required structures (a base ODEProblem and a "p_setter" which updates the parameter sets in a performant manner).
 oprob_base = ODEProblem(rn, u0, (0.0, 5.0), [:p => 1.0, :d => 1.0]) # Parameter valued do not matter here.
 p_setter = setp_oop(oprob_base, [:p, :d])
-p_setter(oprob_base, [2.0, 0.5])
 
 # A loss function measuring the sum-of-square distance between a simulation and the data.
 function loss(p, (oprob_base, p_setter, t_samples, X_samples))
