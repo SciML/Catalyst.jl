@@ -289,6 +289,32 @@ The following are now considered internal, no longer exported, and could be remo
   sol = solve(prob, SRIW1())  # use SDE solver from StochasticDiffEq
   ```
 
+#### BREAKING: New syntax for events in DSL.
+
+The affect part of events in the DSL (and only in the DSL) now uses `=>` instead of `~`. I.e.
+```julia
+@reaction_network begin
+    @discrete_events begin
+        [1.0] => [X => X + 10]
+        [X ~ 1.0] => [X => X + 1]
+    end
+    (p,d), 0 <--> X
+end
+```
+instead of 
+```julia
+@reaction_network begin
+    @discrete_events begin
+        [1.0] => [X ~ X + 10]
+        [X ~ 1.0] => [X ~=>~ X + 1]
+    end
+    (p,d), 0 <--> X
+end
+```
+This is to align with a future expected ModelingToolkit update creating so-called "Assignment affects". 
+
+Other aspects of events within teh DSL remains unchanged (see next section regarding more general event updates).
+
 #### New: MTK v11 event and callback features
 
 Catalyst now supports several ModelingToolkit v11 features for events and
@@ -306,7 +332,7 @@ for full details on these features.
   ```julia
   # DSL (auto-wrapped, works as before):
   rn = @reaction_network begin
-      @discrete_events 2.0 => [p ~ p + 0.1]   # becomes p ~ Pre(p + 0.1)
+      @discrete_events 2.0 => [p => p + 0.1]   # becomes p ~ Pre(p + 0.1)
       (p, d), 0 <--> X
   end
 
@@ -325,7 +351,7 @@ for full details on these features.
   ```julia
   # DSL (p auto-inferred as discrete):
   rn = @reaction_network begin
-      @discrete_events 12 => [p ~ (p + 1) % 2]
+      @discrete_events 12 => [p => (p + 1) % 2]
       (p, d), 0 <--> X
   end
 
@@ -344,7 +370,7 @@ for full details on these features.
   rn = @reaction_network begin
       @discretes α(t)=5.0 β(t)=1.0
       @species V(t) = 0.0
-      @continuous_events [V ~ 2.5] => [α ~ 0, β ~ 0]
+      @continuous_events [V ~ 2.5] => [α => 0, β => 0]
       α, 0 --> V
       β, V --> 0
   end

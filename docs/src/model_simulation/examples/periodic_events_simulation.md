@@ -7,7 +7,7 @@ We will consider a simple circadian model, consisting of a single protein ($X$),
 using Catalyst
 circadian_model = @reaction_network begin
     @discrete_events begin
-        12 => [l ~ (l + 1)%2]
+        12 => [l => (l + 1)%2]
     end
  (kₚ*l,kᵢ), X <--> Xᴾ
 end
@@ -44,7 +44,7 @@ general discrete callback as follows
 ```@example periodic_event_example
 circadian_model = @reaction_network begin
     @discrete_events begin
-        ((t % 12 == 0) & (t > 12)) => [l ~ (l + 1)%2]
+        ((t % 12 == 0) & (t > 12)) => [l => (l + 1)%2]
     end
     (kₚ*l,kᵢ), X <--> Xᴾ
 end
@@ -84,7 +84,7 @@ Parameters which values change throughout the simulation can be plotted directly
 ```@example periodic_event_example
 circadian_model = @reaction_network begin
     @discrete_events begin
-        12 => [l ~ (l + 1)%2]
+        12 => [l => (l + 1)%2]
     end
  (kₚ*l,kᵢ), X <--> Xᴾ
 end
