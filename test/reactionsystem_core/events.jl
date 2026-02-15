@@ -194,13 +194,13 @@ let
     rn_dsl = @reaction_network rn begin
         @parameters thres=7.0 dY_up
         @continuous_events begin
-            [t ~ 2.5] => [p ~ p + 0.2]
-            [X ~ thres, Y ~ X] => [X ~ X - 0.5, Z ~ Z + 0.1]
+            [t ~ 2.5] => [p => p + 0.2]
+            [X ~ thres, Y ~ X] => [X => X - 0.5, Z => Z + 0.1]
         end
         @discrete_events begin
-            2.0 => [dX ~ dX + 0.01, dY ~ dY + dY_up]
-            [1.0, 5.0] => [p ~ p - 0.1]
-            (Z > Y) => [Z ~ Z - 0.1]
+            2.0 => [dX => dX + 0.01, dY => dY + dY_up]
+            [1.0, 5.0] => [p => p - 0.1]
+            (Z > Y) => [Z => Z - 0.1]
         end
 
         (p, dX), 0 <--> X
@@ -246,62 +246,72 @@ end
 
 # Checks that misformatted events yields errors in the DSL.
 let
+    # Non-assignment affect.
+    @test_throws Exception @eval @reaction_network begin
+        @species X(t)
+        @continuous_events [X ~ 2.0] => [X ~ X + 1]
+    end
+    @test_throws Exception @eval @reaction_network begin
+        @species X(t)
+        @discrete_events [1.0] => [X ~ X + 1]
+    end
+
     # Quantity in event not declared elsewhere (continuous events).
     @test_throws Exception @eval @reaction_network begin
-        @continuous_events X ~ 2.0 => [X ~ Pre(X + 1)]
+        @continuous_events X ~ 2.0 => [X => X + 1]
     end
 
     # Scalar condition (continuous events).
     @test_throws Exception @eval @reaction_network begin
         @species X(t)
-        @continuous_events X ~ 2.0 => [X ~ Pre(X + 1)]
+        @continuous_events X ~ 2.0 => [X => X + 1]
     end
 
     # Scalar affect (continuous events).
     @test_throws Exception @eval @reaction_network begin
         @species X(t)
-        @continuous_events [X ~ 2.0] => X ~ Pre(X + 1)
+        @continuous_events [X ~ 2.0] => X => X + 1
     end
 
     # Tuple condition (continuous events).
     @test_throws Exception @eval @reaction_network begin
         @species X(t)
-        @continuous_events (X ~ 2.0,) => [X ~ Pre(X + 1)]
+        @continuous_events (X ~ 2.0,) => [X => X + 1]
     end
 
     # Tuple affect (continuous events).
     @test_throws Exception @eval @reaction_network begin
         @species X(t)
-        @continuous_events [X ~ 2.0] => (X ~ Pre(X + 1),)
+        @continuous_events [X ~ 2.0] => (X => X + 1,)
     end
 
     # Non-equation condition (continuous events).
     @test_throws Exception @eval @reaction_network begin
         @species X(t)
-        @continuous_events [X - 2.0] => [X ~ Pre(X + 1)]
+        @continuous_events [X - 2.0] => [X => X + 1]
     end
 
     # Quantity in event not declared elsewhere (discrete events).
     @test_throws Exception @eval @reaction_network begin
-        @discrete_events X ~ 2.0 => [X ~ Pre(X + 1)]
+        @discrete_events X ~ 2.0 => [X => X + 1]
     end
 
     # Scalar affect (discrete events).
     @test_throws Exception @eval @reaction_network begin
         @species X(t)
-        @discrete_events 1.0 => X ~ Pre(X + 1)
+        @discrete_events 1.0 => X => X + 1
     end
 
     # Tuple affect (discrete events).
     @test_throws Exception @eval @reaction_network begin
         @species X(t)
-        @discrete_events 1.0 => (X ~ Pre(X + 1), )
+        @discrete_events 1.0 => (X => X + 1, )
     end
 
     # Equation condition (discrete events).
     @test_throws Exception @eval @reaction_network begin
         @species X(t)
-        @discrete_events X ~ 1.0 => [X ~ Pre(X + 1)]
+        @discrete_events X ~ 1.0 => [X => X + 1]
     end
 end
 
@@ -315,12 +325,12 @@ let
     rn = @reaction_network begin
         @discretes e1(t)=0 e2(t)=0 e3(t)=0 e4(t)=0
         @continuous_events begin
-            [X ~ 1000.0] => [e1 ~ 1]
+            [X ~ 1000.0] => [e1 => 1]
         end
         @discrete_events begin
-            [1.0] => [e2 ~ 1]
-            1.0 => [e3 ~ 1]
-            (Y > 1000.0) & (e4==0) => [e4 ~ 1]
+            [1.0] => [e2 => 1]
+            1.0 => [e3 => 1]
+            (Y > 1000.0) & (e4==0) => [e4 => 1]
         end
         (p,d), 0 <--> X
         (p,d), 0 <--> Y
@@ -346,9 +356,9 @@ let
     rn = @reaction_network begin
         @discretes e1(t)=0 e2(t)=0 e3(t)=0
         @discrete_events begin
-            [1.0] => [e1 ~ 1]
-            1.0 => [e2 ~ 1]
-            (X > 1000.0) & (e3==0) => [e3 ~ 1]
+            [1.0] => [e1 => 1]
+            1.0 => [e2 => 1]
+            (X > 1000.0) & (e3==0) => [e3 => 1]
         end
         (p,d), 0 <--> X
     end
@@ -381,12 +391,12 @@ let
         @default_noise_scaling 0.0
         @parameters add::Int64
         @continuous_events begin
-            [X ~ 90.0] => [X ~ X + 10.0]
+            [X ~ 90.0] => [X => X + 10.0]
         end
         @discrete_events begin
-            [5.0, 10.0] => [X ~ X + add, Y ~ Y + add]
-            20.0 => [X ~ X + add]
-            (Y < X) => [Y ~ Y + add]
+            [5.0, 10.0] => [X => X + add, Y => Y + add]
+            20.0 => [X => X + add]
+            (Y < X) => [Y => Y + add]
         end
         (p,d), 0 <--> X
         (p,d), 0 <--> Y
@@ -394,9 +404,9 @@ let
     rn_dics_events = @reaction_network begin
         @parameters add::Int64
         @discrete_events begin
-            [5.0, 10.0] => [X ~ X + add, Y ~ Y + add]
-            20.0 => [X ~ X + add]
-            (Y < X) => [Y ~ Y + add]
+            [5.0, 10.0] => [X => X + add, Y => Y + add]
+            20.0 => [X => X + add]
+            (Y < X) => [Y => Y + add]
         end
         (p,d), 0 <--> X
         (p,d), 0 <--> Y

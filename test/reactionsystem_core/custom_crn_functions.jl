@@ -185,12 +185,12 @@ let
     # Creates a model, saves it, and creates an expanded version.
     rs = @reaction_network begin
         @continuous_events begin
-            [mm(X,v,K) ~ 1.0] => [X ~ X]
+            [mm(X,v,K) ~ 1.0] => [X => X]
         end
         @discrete_events begin
-            [1.0] => [X ~ mmr(X,v,K) + Y*(v + K)]
-            1.0 => [X ~ X]
-            (hill(X,v,K,n) > 1000.0) => [X ~ hillr(X,v,K,n) + 2]
+            [1.0] => [X => mmr(X,v,K) + Y*(v + K)]
+            1.0 => [X => X]
+            (hill(X,v,K,n) > 1000.0) => [X => hillr(X,v,K,n) + 2]
         end
         v0 + hillar(X,Y,v,K,n), X --> Y
     end

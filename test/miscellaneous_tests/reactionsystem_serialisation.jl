@@ -371,10 +371,10 @@ let
     rs = @reaction_network begin
         @equations D(V) ~ 1 - V
         @continuous_events begin
-            [X ~ 5.0] => [X ~ X + 1.0]
-            [X ~ 20.0] => [X ~ X - 1.0]
+            [X ~ 5.0] => [X => X + 1.0]
+            [X ~ 20.0] => [X => X - 1.0]
         end
-        @discrete_events 5.0 => [d ~ d/2]
+        @discrete_events 5.0 => [d => d/2]
         d, X --> 0
     end
 
