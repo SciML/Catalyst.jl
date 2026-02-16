@@ -5,7 +5,7 @@
 The following code sets up an environment for running the code on this page.
 ```julia
 using Pkg
-Pkg.activate(".")
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("Catalyst")
 Pkg.add("ModelingToolkitBase")
 Pkg.add("NonlinearSolveFirstOrder")
