@@ -44,7 +44,7 @@ used for any other purpose or exported.
 # ]
 
 # currently we only use PNG conversion, but others can be added from above as needed
-_showables = [(:PNG, "image/png")]
+const _showables = [(:PNG, "image/png")]
 
 struct Showable{mime <: MIME}
     content::Any
