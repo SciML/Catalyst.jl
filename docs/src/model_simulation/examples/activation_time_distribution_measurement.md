@@ -6,7 +6,7 @@ Our model will be a version of the [simple self-activation loop](@ref basic_CRN_
 using Catalyst
 sa_model = @reaction_network begin
     @parameters Kₐ
-    @discrete_events [0.0] => [K ~ Kₐ]
+    @discrete_events [0.0] => [K => Kₐ]
     v0 + hill(X,v,K,n), 0 --> X
     deg, X --> 0
 end

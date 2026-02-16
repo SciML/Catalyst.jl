@@ -32,7 +32,7 @@ let
         k*V, 0 --> A
         @equations D(V) ~ λ*V
         @continuous_events begin
-            [V ~ 2.0] => [V ~ V/2, A ~ A/2]
+            [V ~ 2.0] => [V => V/2, A => A/2]
         end
     end
     # JumpProblem no longer supports ODE equations - use HybridProblem instead
@@ -283,8 +283,8 @@ let
         @species X(τ) = X0 [description = "A jump only species"] Y(τ) = Y0 [description = "An ODE only species"]
         @variables Ztot(τ) = 0.0  # Default needed for MTK v10+ callback compilation
         @observables Ztot ~ Z1 + Z2
-        @discrete_events [1.0] => [Z1 ~ Pre(Z1) + 1.0]
-        @continuous_events [Y ~ 1.0] => [Y ~ 5.0]
+        @discrete_events [1.0] => [Z1 => Z1 + 1.0]
+        @continuous_events [Y ~ 1.0] => [Y => 5.0]
         @equations Δ(V) ~ Z1 + X^2 - V
         (p,d), 0 <--> X
         d, Y --> 0, [physical_scale = PhysicalScale.ODE]
@@ -702,9 +702,9 @@ end
 let
     rn = @reaction_network begin
         @continuous_events begin
-            [S ~ 50.0] => [S ~ 25.0]
+            [S ~ 50.0] => [S => 25.0]
         end
-        @discrete_events [1.0] => [P ~ Pre(P) + 1.0]
+        @discrete_events [1.0] => [P => P + 1.0]
         k1, S --> P
         k2, P --> S
     end

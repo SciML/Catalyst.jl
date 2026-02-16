@@ -185,7 +185,7 @@ cell_model = @reaction_network begin
         D(V) ~ g*Gᴾ
     end
     @continuous_events begin
-        [V ~ Vₘ] => [V ~ V/2]
+        [V ~ Vₘ] => [V => V/2]
     end
     kₚ*(sin(t)+1)/V, G --> Gᴾ
     kᵢ/V, Gᴾ --> G
