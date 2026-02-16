@@ -566,7 +566,7 @@ function remove_diffs(expr)
 end
 diff_2_zero(expr) = (Symbolics.is_derivative(expr) ? 0 : expr)
 
-COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be converted to other system types. A ReactionSystem can be marked as complete using the `complete` function."
+const COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be converted to other system types. A ReactionSystem can be marked as complete using the `complete` function."
 
 ### System Conversions ###
 

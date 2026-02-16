@@ -17,7 +17,7 @@ function get_iv_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 independent variable-related functions in a constant tuple.
-IV_FS = (seri_has_iv, get_iv_string, get_iv_annotation)
+const IV_FS = (seri_has_iv, get_iv_string, get_iv_annotation)
 
 ### Handles Spatial Independent Variables ###
 
@@ -37,7 +37,7 @@ function get_sivs_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 independent variables-related functions in a constant tuple.
-SIVS_FS = (seri_has_sivs, get_sivs_string, get_sivs_annotation)
+const SIVS_FS = (seri_has_sivs, get_sivs_string, get_sivs_annotation)
 
 ### Handles Species, Variables, and Parameters ###
 
@@ -239,7 +239,7 @@ function get_variables_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 variables-related functions in a constant tuple.
-VARIABLES_FS = (seri_has_variables, get_variables_string, get_variables_annotation)
+const VARIABLES_FS = (seri_has_variables, get_variables_string, get_variables_annotation)
 
 ### Handles Reactions ###
 
@@ -303,7 +303,7 @@ function get_reactions_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 reaction-related functions in a constant tuple.
-REACTIONS_FS = (seri_has_reactions, get_reactions_string, get_reactions_annotation)
+const REACTIONS_FS = (seri_has_reactions, get_reactions_string, get_reactions_annotation)
 
 ### Handles Equations ###
 
@@ -338,7 +338,7 @@ function get_equations_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 equations-related functions in a constant tuple.
-EQUATIONS_FS = (seri_has_equations, get_equations_string, get_equations_annotation)
+const EQUATIONS_FS = (seri_has_equations, get_equations_string, get_equations_annotation)
 
 ### Handles Observables ###
 
@@ -388,7 +388,7 @@ function get_observed_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 -related functions in a constant tuple.
-OBSERVED_FS = (seri_has_observed, get_observed_string, get_observed_annotation)
+const OBSERVED_FS = (seri_has_observed, get_observed_string, get_observed_annotation)
 
 ### Handles Observables ###
 
@@ -409,7 +409,7 @@ function get_defaults_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 defaults-related functions in a constant tuple.
-DEFAULTS_FS = (seri_has_defaults, get_defaults_string, get_defaults_annotation)
+const DEFAULTS_FS = (seri_has_defaults, get_defaults_string, get_defaults_annotation)
 
 ### Handles Continuous Events ###
 
@@ -473,7 +473,7 @@ function get_continuous_events_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 -related functions in a constant tuple.
-CONTINUOUS_EVENTS_FS = (seri_has_continuous_events, get_continuous_events_string, get_continuous_events_annotation)
+const CONTINUOUS_EVENTS_FS = (seri_has_continuous_events, get_continuous_events_string, get_continuous_events_annotation)
 
 ### Handles Discrete Events ###
 
@@ -536,7 +536,7 @@ function get_discrete_events_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 -related functions in a constant tuple.
-DISCRETE_EVENTS_FS = (seri_has_discrete_events, get_discrete_events_string, get_discrete_events_annotation)
+const DISCRETE_EVENTS_FS = (seri_has_discrete_events, get_discrete_events_string, get_discrete_events_annotation)
 
 ### Handles Brownian Types ###
 
@@ -556,7 +556,7 @@ function get_brownian_type_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 brownian types-related functions in a constant tuple.
-BROWNIAN_TYPE_FS = (seri_has_brownian_type, get_brownian_type_string, get_brownian_type_annotation)
+const BROWNIAN_TYPE_FS = (seri_has_brownian_type, get_brownian_type_string, get_brownian_type_annotation)
 
 ### Handles Jump Types ###
 
@@ -576,7 +576,7 @@ function get_jump_type_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 jump types-related functions in a constant tuple.
-JUMP_TYPE_FS = (seri_has_jump_type, get_jump_type_string, get_jump_type_annotation)
+const JUMP_TYPE_FS = (seri_has_jump_type, get_jump_type_string, get_jump_type_annotation)
 
 ### Handles Systems ###
 
@@ -631,5 +631,5 @@ function get_systems_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 systems-related functions in a constant tuple.
-SYSTEMS_FS = (seri_has_systems, get_systems_string, get_systems_annotation)
+const SYSTEMS_FS = (seri_has_systems, get_systems_string, get_systems_annotation)
 
