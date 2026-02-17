@@ -518,7 +518,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
         obs = copy(obs)
         append!(obs, conservedequations(rs))
 
-        # create initialization equations (only used for nonlinear systemts)        
+        # create initialization equations (only used for nonlinear systems)        
         if compute_cl_initeqs
             initialmap = Dict(u => Initial(u) for u in species(rs))
             conseqs = conservationlaw_constants(rs)
