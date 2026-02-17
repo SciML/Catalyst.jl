@@ -630,8 +630,31 @@ end
 let
     @parameters k
     @species X(t)
+    @variables V(t)
     rxs = [Reaction(k, nothing, [X])]
+    D = Catalyst.default_time_deriv()
+
+    # Species in tstops (5-arg constructor).
     @test_throws ArgumentError ReactionSystem(rxs, t, [X], [k]; tstops = [X], name = :rs)
+    # Variable in tstops (5-arg constructor).
+    @test_throws ArgumentError ReactionSystem([rxs; D(V) ~ -V], t, [X, V], [k];
+        tstops = [V], name = :rs)
+    # Species in tstops (short-form constructor).
+    @test_throws ArgumentError ReactionSystem(rxs, t; tstops = [X], name = :rs)
+    # Variable in tstops (short-form constructor).
+    @test_throws ArgumentError ReactionSystem([rxs; D(V) ~ -V], t;
+        tstops = [V], name = :rs)
+    # Species/variable in tstops via the DSL.
+    @test_throws ArgumentError @eval @reaction_network begin
+        @tstops X
+        k, 0 --> X
+    end
+    @test_throws ArgumentError @eval @reaction_network begin
+        @variables V(t)
+        @tstops V
+        @equations D(V) ~ -V
+        k, 0 --> X
+    end
 end
 
 # Tests that tstops containing the independent variable `t` are rejected.
@@ -639,6 +662,15 @@ let
     @parameters k
     @species X(t)
     rxs = [Reaction(k, nothing, [X])]
+
+    # 5-arg constructor.
     @test_throws ArgumentError ReactionSystem(rxs, t, [X], [k]; tstops = [t + 1], name = :rs)
     @test_throws ArgumentError ReactionSystem(rxs, t, [X], [k]; tstops = [t], name = :rs)
+    # Short-form constructor.
+    @test_throws ArgumentError ReactionSystem(rxs, t; tstops = [t + 1], name = :rs)
+    # DSL.
+    @test_throws ArgumentError @eval @reaction_network begin
+        @tstops t
+        k, 0 --> X
+    end
 end

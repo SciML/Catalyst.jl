@@ -1904,28 +1904,36 @@ let
     @test issetequal(ModelingToolkitBase.get_tstops(rn), [5.0])
 end
 
-# Tests that @tstops with a symbolic parameter auto-discovers it as a parameter.
+# Tests that @tstops with a symbolic parameter auto-discovers it and is isequivalent.
 let
-    rn = @reaction_network begin
+    rn_dsl = @reaction_network rn begin
         @tstops t_switch
         d, X --> 0
     end
-    @test length(ModelingToolkitBase.get_tstops(rn)) == 1
-    @test any(isequal(:t_switch), [ModelingToolkitBase.getname(p) for p in parameters(rn)])
+
+    @parameters d t_switch
+    @species X(t)
+    rxs = [Reaction(d, [X], nothing)]
+    rn_prog = complete(ReactionSystem(rxs, t; name = :rn, tstops = [t_switch]))
+    @test Catalyst.isequivalent(rn_dsl, rn_prog)
 end
 
-# Tests that @tstops with symbolic expressions auto-discovers parameters.
+# Tests that @tstops with symbolic expressions auto-discovers parameters and is isequivalent.
 let
-    rn = @reaction_network begin
+    rn_dsl = @reaction_network rn begin
         @tstops begin
             0.5 * t_switch
             t_switch + 1.0
         end
         d, X --> 0
     end
-    tstops = ModelingToolkitBase.get_tstops(rn)
-    @test length(tstops) == 2
-    @test any(isequal(:t_switch), [ModelingToolkitBase.getname(p) for p in parameters(rn)])
+
+    @parameters d t_switch
+    @species X(t)
+    rxs = [Reaction(d, [X], nothing)]
+    rn_prog = complete(ReactionSystem(rxs, t; name = :rn,
+        tstops = Any[0.5 * t_switch, t_switch + 1.0]))
+    @test Catalyst.isequivalent(rn_dsl, rn_prog)
 end
 
 # Tests that DSL-created system with @tstops is isequivalent to programmatic construction.

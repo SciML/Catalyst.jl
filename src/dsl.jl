@@ -1007,19 +1007,17 @@ function read_tstops_option(options, ps_inferred, all_syms; requiredec = false)
     tstops_input = get_block_option(options[:tstops])
 
     # Collect individual tstop arguments into a vector.
-    local tstop_args
-    if !(tstops_input isa Expr)
+    tstop_args = if !(tstops_input isa Expr)
         # Single literal value (e.g. `@tstops 1.0`) — get_block_option returns non-Expr.
-        tstop_args = [tstops_input]
+        [tstops_input]
     else
-        tstops_input = option_block_form(tstops_input)
-        tstop_args = tstops_input.args
+        option_block_form(tstops_input).args
     end
 
     # Extract unknown symbols from tstop expressions and infer them as parameters.
     new_ps = OrderedSet{Union{Symbol, Expr}}()
     for arg in tstop_args
-        add_syms_from_expr!(new_ps, arg, union(all_syms, ps_inferred))
+        add_syms_from_expr!(new_ps, arg, all_syms)
     end
     if requiredec && !isempty(new_ps)
         throw(UndeclaredSymbolicError("Unrecognized symbol(s) $(join(new_ps, ", ")) detected in @tstops expression. Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters option."))
