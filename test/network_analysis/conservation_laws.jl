@@ -288,6 +288,27 @@ let
     @test integrator.ps[k2] == 0.6
 end
 
+# Additional test checking that correct values are stored in systems of various types after conservation law removal.
+    let
+        rn = @reaction_network begin
+        (kB,kD), 2X <--> X2
+    end
+    u0 = [:X => 2.0, :X2 => 3.0]
+    ps = [:kB => 0.1, :kD => 0.2]
+    oprob = ODEProblem(rn, u0, 1.0, ps; remove_conserved = true)
+    sprob = SDEProblem(rn, u0, 1.0, ps; remove_conserved = true)
+    nprob = NonlinearProblem(rn, u0, ps; remove_conserved = true)
+    osol = solve(oprob)
+    ssol = solve(sprob)
+    nsol = solve(nprob)
+    @test oprob[:X] == sprob[:X] == nprob[:X] == 2.0
+    @test osol[:X][1] == ssol[:X][1] == 2.0
+    @test oprob[:X2] == sprob[:X2] == nprob[:X2] == 3.0
+    @test osol[:X2][1] == ssol[:X2][1] == 3.0
+    @test oprob.ps[:Γ][1] == sprob.ps[:Γ][1] == nprob.ps[:Γ][1] == 4.0
+    @test osol.ps[:Γ][1] == ssol.ps[:Γ][1] == nsol.ps[:Γ][1] == 4.0
+end
+
 ### Jacobian Tests ###
 
 # Checks that conservation law elimination generates a system with a non-singular Jacobian.
