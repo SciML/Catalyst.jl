@@ -206,6 +206,25 @@ The following are now considered internal, no longer exported, and could be remo
 - **`isequivalent`**.
 - **`symmap_to_varmap`**
 
+#### BREAKING: Update spatial modelling conventions
+Previously, Catalyst supported so-called `LatticeReactionSystem` spatial models. These have been renamed `DiscreteSpaceReactionSystem`s. Several corresponding name changes are also affected by this. E.g.
+- `Catalyst.has_cartesian_lattice` is now `Catalyst.has_cartesian_dspace`.
+- `Catalyst.lat_getp` is not `Catalyst.spat_getp`.
+- `Catalyst.lattice_animation` is now `Catalyst.dspace_animation`.
+
+Furthermore, instead of creating spatial `JumpProblem`s through spatial `DiscreteProblem`s:
+```julia
+dprob = DiscreteProblem(lrs, u0, tspan, ps)
+jprob = JumpProblem(lrs, dprob, NSM())
+```
+these are now created directly:
+```julia
+dprob = DiscreteProblem(lrs, u0, tspan, ps)
+jprob = JumpProblem(lrs, u0, tspan, ps)
+```
+An aggregator can be designated through the `aggregator` key word argument (with `NSM()` being the default).
+
+
 #### New: `hybrid_model` unified conversion function
 
 - **New `hybrid_model(rs::ReactionSystem; ...)` function** that converts a
@@ -808,10 +827,10 @@ oprob = ODEProblem(lrs, u0, tspan, ps)
 
 # Simulate the ODE and plot the results.
 sol = solve(oprob, FBDF())
-lattice_animation(sol, :X, lrs, "brusselator.mp4")
+dspace_animation(sol, :X, lrs, "brusselator.mp4")
 ```
 The addition of spatial modelling in Catalyst contains a large number of new features, all of which are
-described in the [corresponding documentation](https://docs.sciml.ai/Catalyst/stable/spatial_modelling/lattice_reaction_systems/).
+described in the [corresponding documentation](https://docs.sciml.ai/Catalyst/stable/spatial_modelling/dspace_reaction_systems/).
 
 ## Catalyst 14.0.1
 Bug fix to address that independent variables, like time, should now be `@parameters`

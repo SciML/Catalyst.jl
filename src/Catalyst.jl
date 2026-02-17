@@ -197,28 +197,28 @@ export TransportReaction, @transport_reaction
 export isedgeparameter
 
 # Lattice reaction systems.
-include("spatial_reaction_systems/lattice_reaction_systems.jl")
-export LatticeReactionSystem
+include("spatial_reaction_systems/discrete_space_reaction_systems.jl")
+export DiscreteSpaceReactionSystem
 export spatial_species, vertex_parameters, edge_parameters
 export CartesianGrid, CartesianGridReJ # (Implemented in JumpProcesses)
-export has_cartesian_lattice, has_masked_lattice, has_grid_lattice, has_graph_lattice,
+export has_cartesian_dspace, has_masked_dspace, has_grid_dspace, has_graph_dspace,
        grid_dims, grid_size
 export make_edge_p_values, make_directed_edge_values
 
 # Specific spatial problem types.
 include("spatial_reaction_systems/spatial_ODE_systems.jl")
-include("spatial_reaction_systems/lattice_jump_systems.jl")
+include("spatial_reaction_systems/discrete_space_jump_systems.jl")
 
 # General spatial modelling utility functions.
 include("spatial_reaction_systems/utility.jl")
 
-# Methods for interfacing with from LatticeReactionSystem derived problems, integrators, and solutions.
-include("spatial_reaction_systems/lattice_sim_struct_interfacing.jl")
-export lat_getp, lat_setp!, lat_getu, lat_setu!, rebuild_lat_internals!
+# Methods for interfacing with from DiscreteSpaceReactionSystem derived problems, integrators, and solutions.
+include("spatial_reaction_systems/discrete_space_sim_struct_interfacing.jl")
+export spat_getp, spat_setp!, spat_getu, spat_setu!, rebuild_spat_internals!
 
-# Functions for plotting of lattice simulations (most of the code is in extensions, not here).
-include("spatial_reaction_systems/lattice_simulation_plotting.jl")
-export lattice_plot, lattice_animation, lattice_kymograph
+# Functions for plotting of discrete space simulations (most of the code is in extensions, not here).
+include("spatial_reaction_systems/discrete_space_simulation_plotting.jl")
+export dspace_plot, dspace_animation, dspace_kymograph
 
 ### ReactionSystem Serialisation ###
 # Has to be at the end (because it uses records of all metadata declared by Catalyst).

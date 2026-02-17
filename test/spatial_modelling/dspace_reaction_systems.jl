@@ -10,7 +10,7 @@ include("../spatial_test_networks.jl")
 grids = [very_small_2d_cartesian_grid, very_small_2d_masked_grid, very_small_2d_graph_grid]
 
 
-### Tests LatticeReactionSystem Getters Correctness ###
+### Tests DiscreteSpaceReactionSystem Getters Correctness ###
 
 # Test case 1.
 let
@@ -19,15 +19,15 @@ let
     end
     tr = @transport_reaction d X
     for grid in grids
-        lrs = LatticeReactionSystem(rs, [tr], grid)
+        dsrs = DiscreteSpaceReactionSystem(rs, [tr], grid)
 
         @unpack X, p = rs
-        d = edge_parameters(lrs)[1]
-        @test issetequal(species(lrs), [X])
-        @test issetequal(spatial_species(lrs), [X])
-        @test issetequal(parameters(lrs), [p, d])
-        @test issetequal(vertex_parameters(lrs), [p])
-        @test issetequal(edge_parameters(lrs), [d])
+        d = edge_parameters(dsrs)[1]
+        @test issetequal(species(dsrs), [X])
+        @test issetequal(spatial_species(dsrs), [X])
+        @test issetequal(parameters(dsrs), [p, d])
+        @test issetequal(vertex_parameters(dsrs), [p])
+        @test issetequal(edge_parameters(dsrs), [d])
     end
 end
 
@@ -52,14 +52,14 @@ let
     tr_1 = @transport_reaction dX X
     tr_2 = @transport_reaction dY Y
     for grid in grids
-        lrs = LatticeReactionSystem(rs, [tr_1, tr_2], grid)
+        dsrs = DiscreteSpaceReactionSystem(rs, [tr_1, tr_2], grid)
 
         @unpack X, Y, pX, pY, dX, dY = rs
-        @test issetequal(species(lrs), [X, Y])
-        @test issetequal(spatial_species(lrs), [X, Y])
-        @test issetequal(parameters(lrs), [pX, pY, dX, dY])
-        @test issetequal(vertex_parameters(lrs), [pX, pY, dY])
-        @test issetequal(edge_parameters(lrs), [dX])
+        @test issetequal(species(dsrs), [X, Y])
+        @test issetequal(spatial_species(dsrs), [X, Y])
+        @test issetequal(parameters(dsrs), [pX, pY, dX, dY])
+        @test issetequal(vertex_parameters(dsrs), [pX, pY, dY])
+        @test issetequal(edge_parameters(dsrs), [dX])
     end
 end
 
@@ -72,14 +72,14 @@ let
     end
     tr_1 = @transport_reaction dX X
     for grid in grids
-        lrs = LatticeReactionSystem(rs, [tr_1], grid)
+        dsrs = DiscreteSpaceReactionSystem(rs, [tr_1], grid)
 
         @unpack dX, p, X, Y, pX, pY = rs
-        @test issetequal(species(lrs), [X, Y])
-        @test issetequal(spatial_species(lrs), [X])
-        @test issetequal(parameters(lrs), [dX, p, pX, pY])
-        @test issetequal(vertex_parameters(lrs), [dX, p, pX, pY])
-        @test issetequal(edge_parameters(lrs), [])
+        @test issetequal(species(dsrs), [X, Y])
+        @test issetequal(spatial_species(dsrs), [X])
+        @test issetequal(parameters(dsrs), [dX, p, pX, pY])
+        @test issetequal(vertex_parameters(dsrs), [dX, p, pX, pY])
+        @test issetequal(edge_parameters(dsrs), [])
     end
 end
 
@@ -103,15 +103,15 @@ let
     tr_4 = TransportReaction(dV, V)
     tr_5 = TransportReaction(dW, W)
     for grid in grids
-        lrs = LatticeReactionSystem(rs, [tr_1, tr_2, tr_3, tr_4, tr_5], grid)
+        dsrs = DiscreteSpaceReactionSystem(rs, [tr_1, tr_2, tr_3, tr_4, tr_5], grid)
 
         @unpack pX, pY, pZ, pV, dX, dY, X, Y, Z, V = rs
-        dZ, dV, dW = edge_parameters(lrs)[2:end]
-        @test issetequal(species(lrs), [W, X, Y, Z, V])
-        @test issetequal(spatial_species(lrs), [X, Y, Z, V, W])
-        @test issetequal(parameters(lrs), [pX, pY, dX, dY, pZ, pV, dZ, dV, dW])
-        @test issetequal(vertex_parameters(lrs), [pX, pY, dY, pZ, pV])
-        @test issetequal(edge_parameters(lrs), [dX, dZ, dV, dW])
+        dZ, dV, dW = edge_parameters(dsrs)[2:end]
+        @test issetequal(species(dsrs), [W, X, Y, Z, V])
+        @test issetequal(spatial_species(dsrs), [X, Y, Z, V, W])
+        @test issetequal(parameters(dsrs), [pX, pY, dX, dY, pZ, pV, dZ, dV, dW])
+        @test issetequal(vertex_parameters(dsrs), [pX, pY, dY, pZ, pV])
+        @test issetequal(edge_parameters(dsrs), [dX, dZ, dV, dW])
     end
 end
 
@@ -122,15 +122,15 @@ let
     end
     tr = @transport_reaction d X
     for grid in grids
-        lrs = LatticeReactionSystem(rs, [tr], grid)
+        dsrs = DiscreteSpaceReactionSystem(rs, [tr], grid)
 
-        @test nameof(lrs) == :customname
+        @test nameof(dsrs) == :customname
     end
 end
 
 # Tests using various more obscure types of getters.
 let
-    # Create LatticeReactionsSystems.
+    # Create DiscreteSpaceReactionSystems.
     t = default_t()
     @parameters p d kB kD
     @species X(t) X2(t)
@@ -143,20 +143,20 @@ let
     @named rs = ReactionSystem(rxs, t; metadata = [MiscSystemData => "Metadata string"])
     rs = complete(rs)
     tr = @transport_reaction D X2
-    lrs = LatticeReactionSystem(rs, [tr], small_2d_cartesian_grid)
+    dsrs = DiscreteSpaceReactionSystem(rs, [tr], small_2d_cartesian_grid)
 
     # Generic ones (simply forwards call to the non-spatial system).
-    @test isequal(reactions(lrs), rxs)
-    @test isequal(nameof(lrs), :rs)
-    @test isequal(ModelingToolkitBase.get_iv(lrs), t)
-    @test isequal(equations(lrs), rxs)
-    @test isequal(unknowns(lrs), [X, X2])
-    @test isequal(ModelingToolkitBase.getmetadata(lrs, MiscSystemData, nothing), "Metadata string")
-    @test isequal(ModelingToolkitBase.get_eqs(lrs), rxs)
-    @test isequal(ModelingToolkitBase.get_unknowns(lrs), [X, X2])
-    @test isequal(ModelingToolkitBase.get_ps(lrs), [p, d, kB, kD])
-    @test isequal(ModelingToolkitBase.get_systems(lrs), [])
-    @test isequal(independent_variables(lrs), [t])
+    @test isequal(reactions(dsrs), rxs)
+    @test isequal(nameof(dsrs), :rs)
+    @test isequal(ModelingToolkitBase.get_iv(dsrs), t)
+    @test isequal(equations(dsrs), rxs)
+    @test isequal(unknowns(dsrs), [X, X2])
+    @test isequal(ModelingToolkitBase.getmetadata(dsrs, MiscSystemData, nothing), "Metadata string")
+    @test isequal(ModelingToolkitBase.get_eqs(dsrs), rxs)
+    @test isequal(ModelingToolkitBase.get_unknowns(dsrs), [X, X2])
+    @test isequal(ModelingToolkitBase.get_ps(dsrs), [p, d, kB, kD])
+    @test isequal(ModelingToolkitBase.get_systems(dsrs), [])
+    @test isequal(independent_variables(dsrs), [t])
 end
 
 ### Tests Error generation ###
@@ -168,7 +168,7 @@ let
     end
     tr = @transport_reaction D Y
     for grid in grids
-        @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
+        @test_throws ErrorException DiscreteSpaceReactionSystem(rs, [tr], grid)
     end
 end
 
@@ -180,7 +180,7 @@ let
     end
     tr = @transport_reaction D*Y X
     for grid in grids
-        @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
+        @test_throws ErrorException DiscreteSpaceReactionSystem(rs, [tr], grid)
     end
 end
 
@@ -192,7 +192,7 @@ let
     end
     tr = @transport_reaction D X
     for grid in grids
-        @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
+        @test_throws ErrorException DiscreteSpaceReactionSystem(rs, [tr], grid)
     end
 end
 
@@ -204,14 +204,14 @@ let
     end
     tr = @transport_reaction D X
     for grid in grids
-        @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
+        @test_throws ErrorException DiscreteSpaceReactionSystem(rs, [tr], grid)
 
         rs = @reaction_network begin
             @parameters D [description="Parameter with added metadata"]
             (p, d), 0 <--> X
         end
         tr = @transport_reaction D X
-        @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
+        @test_throws ErrorException DiscreteSpaceReactionSystem(rs, [tr], grid)
     end
 end
 
@@ -220,10 +220,10 @@ let
     # Define an invalid spatial reaction type (not a subtype of AbstractSpatialReaction)
     struct InvalidSpatialReactionType end
 
-    # Attempt to create the LatticeReactionSystem with InvalidSpatialReactionType
+    # Attempt to create the DiscreteSpaceReactionSystem with InvalidSpatialReactionType
     for grid in grids
-        @test_throws ArgumentError LatticeReactionSystem(binding_system, [], grid)
-        @test_throws ArgumentError LatticeReactionSystem(binding_system, [InvalidSpatialReactionType()], grid)
+        @test_throws ArgumentError DiscreteSpaceReactionSystem(binding_system, [], grid)
+        @test_throws ArgumentError DiscreteSpaceReactionSystem(binding_system, [InvalidSpatialReactionType()], grid)
     end
 end
 
@@ -236,28 +236,28 @@ let
         @variables V(t)
         (p,d), 0 <--> X
     end
-    @test_throws ArgumentError LatticeReactionSystem(rs1, [tr], short_path)
+    @test_throws ArgumentError DiscreteSpaceReactionSystem(rs1, [tr], short_path)
 
     # Non-reaction equations.
     rs2 = @reaction_network begin
         @equations D(V) ~ X - V
         (p,d), 0 <--> X
     end
-    @test_throws ArgumentError LatticeReactionSystem(rs2, [tr], short_path)
+    @test_throws ArgumentError DiscreteSpaceReactionSystem(rs2, [tr], short_path)
 
     # Events.
     rs3 = @reaction_network begin
         @discrete_events [1.0] => [p => p + 1]
         (p,d), 0 <--> X
     end
-    @test_throws ArgumentError LatticeReactionSystem(rs3, [tr], short_path)
+    @test_throws ArgumentError DiscreteSpaceReactionSystem(rs3, [tr], short_path)
 
     # Observables (only generates a warning).
     rs4 = @reaction_network begin
         @observables X2 ~ 2X
         (p,d), 0 <--> X
     end
-    @test_logs (:warn, r"The `ReactionSystem` used as input to `LatticeReactionSystem` contain observables. It *") match_mode=:any LatticeReactionSystem(rs4, [tr], short_path)
+    @test_logs (:warn, r"The `ReactionSystem` used as input to `DiscreteSpaceReactionSystem` contain observables. It *") match_mode=:any DiscreteSpaceReactionSystem(rs4, [tr], short_path)
 end
 
 # Tests for hierarchical input system (should yield a warning).
@@ -269,7 +269,7 @@ let
     @named rs1 = ReactionSystem(rxs, t)
     @named rs2 = ReactionSystem(rxs, t; systems = [rs1])
     rs2 = complete(rs2)
-    @test_logs (:warn, r"The `ReactionSystem` used as input to `LatticeReactionSystem` was originally created as a hierarchical model. While *") match_mode=:any LatticeReactionSystem(rs2, [TransportReaction(D, X)], CartesianGrid((2,2)))
+    @test_logs (:warn, r"The `ReactionSystem` used as input to `DiscreteSpaceReactionSystem` was originally created as a hierarchical model. While *") match_mode=:any DiscreteSpaceReactionSystem(rs2, [TransportReaction(D, X)], CartesianGrid((2,2)))
 end
 
 # Tests for non-complete input `ReactionSystem`.
@@ -278,7 +278,7 @@ let
     rs = @network_component begin
         (p,d), 0 <--> X
     end
-    @test_throws ArgumentError LatticeReactionSystem(rs, [tr], CartesianGrid((2,2)))
+    @test_throws ArgumentError DiscreteSpaceReactionSystem(rs, [tr], CartesianGrid((2,2)))
 end
 
 # Tests for array parameters/species.
@@ -289,7 +289,7 @@ let
         @species X(t)[1:2] Y(t)
         (k1,k2), X[1] <--> X[2]
     end
-    @test_throws ArgumentError LatticeReactionSystem(rs1, [tr], CartesianGrid((2,2)))
+    @test_throws ArgumentError DiscreteSpaceReactionSystem(rs1, [tr], CartesianGrid((2,2)))
 
     rs2 =  @reaction_network begin
         @species Y(t)
@@ -297,7 +297,7 @@ let
         (k[1,1],k[1,2]), X11 <--> X12
         (k[2,1],k[2,2]), X21 <--> X22
     end
-    @test_throws ArgumentError LatticeReactionSystem(rs2, [tr], CartesianGrid((2,2)))
+    @test_throws ArgumentError DiscreteSpaceReactionSystem(rs2, [tr], CartesianGrid((2,2)))
 end
 
 ### Tests Grid Vertex and Edge Number Computation ###
@@ -312,18 +312,18 @@ let
     end
 
     # Cartesian and masked grid (test diagonal edges as well).
-    for lattice in [small_1d_cartesian_grid, small_2d_cartesian_grid, small_3d_cartesian_grid,
+    for space in [small_1d_cartesian_grid, small_2d_cartesian_grid, small_3d_cartesian_grid,
                 random_1d_masked_grid, random_2d_masked_grid, random_3d_masked_grid]
-        lrs1 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice)
-        lrs2 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice; diagonal_connections=true)
-        @test num_edges(lrs1) == iterator_count(edge_iterator(lrs1))
-        @test num_edges(lrs2) == iterator_count(edge_iterator(lrs2))
+        dsrs1 = DiscreteSpaceReactionSystem(SIR_system, SIR_srs_1, space)
+        dsrs2 = DiscreteSpaceReactionSystem(SIR_system, SIR_srs_1, space; diagonal_connections=true)
+        @test num_edges(dsrs1) == iterator_count(edge_iterator(dsrs1))
+        @test num_edges(dsrs2) == iterator_count(edge_iterator(dsrs2))
     end
 
     # Graph grids (cannot test diagonal connections).
-    for lattice in [small_2d_graph_grid, small_3d_graph_grid, undirected_cycle, small_directed_cycle, unconnected_graph]
-        lrs1 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice)
-        @test num_edges(lrs1) == iterator_count(edge_iterator(lrs1))
+    for space in [small_2d_graph_grid, small_3d_graph_grid, undirected_cycle, small_directed_cycle, unconnected_graph]
+        dsrs1 = DiscreteSpaceReactionSystem(SIR_system, SIR_srs_1, space)
+        @test num_edges(dsrs1) == iterator_count(edge_iterator(dsrs1))
     end
 end
 
@@ -341,15 +341,15 @@ let
     end
 
     # Loops through a variety of grids, checks that `make_edge_p_values` yields the correct values.
-    for grid in [small_1d_cartesian_grid, small_2d_cartesian_grid, small_3d_cartesian_grid,
+    for space in [small_1d_cartesian_grid, small_2d_cartesian_grid, small_3d_cartesian_grid,
                  small_1d_masked_grid, small_2d_masked_grid, small_3d_masked_grid,
                  random_1d_masked_grid, random_2d_masked_grid, random_3d_masked_grid]
-        lrs = LatticeReactionSystem(rn, [tr], grid)
-        flat_to_grid_idx = Catalyst.get_index_converters(lattice(lrs), num_verts(lrs))[1]
-        edge_values = make_edge_p_values(lrs, make_edge_p_value)
+        dsrs = DiscreteSpaceReactionSystem(rn, [tr], space)
+        fspat_to_grid_idx = Catalyst.get_index_converters(dspace(dsrs), num_verts(dsrs))[1]
+        edge_values = make_edge_p_values(dsrs, make_edge_p_value)
 
-        for e in edge_iterator(lrs)
-            @test edge_values[e[1], e[2]] == make_edge_p_value(flat_to_grid_idx[e[1]], flat_to_grid_idx[e[2]])
+        for e in edge_iterator(dsrs)
+            @test edge_values[e[1], e[2]] == make_edge_p_value(fspat_to_grid_idx[e[1]], fspat_to_grid_idx[e[2]])
         end
     end
 end
@@ -366,35 +366,35 @@ let
     u0 = [:X => 1.0]
 
     # Checks the 1d case.
-    lrs = LatticeReactionSystem(rn, [tr], CartesianGrid(n))
-    ps = [:D => make_directed_edge_values(lrs, (10.0, 0.0))]
-    oprob = ODEProblem(lrs, u0, tspan, ps)
+    dsrs = DiscreteSpaceReactionSystem(rn, [tr], CartesianGrid(n))
+    ps = [:D => make_directed_edge_values(dsrs, (10.0, 0.0))]
+    oprob = ODEProblem(dsrs, u0, tspan, ps)
     @test isapprox(solve(oprob, Tsit5()).u[end][5], n, rtol=1e-6)
 
     # Checks the 2d case (both with 1d and 2d flow).
-    lrs = LatticeReactionSystem(rn, [tr], CartesianGrid((n,n)))
+    dsrs = DiscreteSpaceReactionSystem(rn, [tr], CartesianGrid((n,n)))
 
-    ps = [:D => make_directed_edge_values(lrs, (1.0, 0.0), (0.0, 0.0))]
-    oprob = ODEProblem(lrs, u0, tspan, ps)
+    ps = [:D => make_directed_edge_values(dsrs, (1.0, 0.0), (0.0, 0.0))]
+    oprob = ODEProblem(dsrs, u0, tspan, ps)
     @test all(isapprox.(solve(oprob, Tsit5()).u[end][5:5:25], n, rtol=1e-6))
 
-    ps = [:D => make_directed_edge_values(lrs, (1.0, 0.0), (1.0, 0.0))]
-    oprob = ODEProblem(lrs, u0, tspan, ps)
+    ps = [:D => make_directed_edge_values(dsrs, (1.0, 0.0), (1.0, 0.0))]
+    oprob = ODEProblem(dsrs, u0, tspan, ps)
     @test isapprox(solve(oprob, Tsit5()).u[end][25], n^2, rtol=1e-6)
 
     # Checks the 3d case (both with 1d and 2d flow).
-    lrs = LatticeReactionSystem(rn, [tr], CartesianGrid((n,n,n)))
+    dsrs = DiscreteSpaceReactionSystem(rn, [tr], CartesianGrid((n,n,n)))
 
-    ps = [:D => make_directed_edge_values(lrs, (1.0, 0.0), (0.0, 0.0), (0.0, 0.0))]
-    oprob = ODEProblem(lrs, u0, tspan, ps)
+    ps = [:D => make_directed_edge_values(dsrs, (1.0, 0.0), (0.0, 0.0), (0.0, 0.0))]
+    oprob = ODEProblem(dsrs, u0, tspan, ps)
     @test all(isapprox.(solve(oprob, Tsit5()).u[end][5:5:125], n, rtol=1e-6))
 
-    ps = [:D => make_directed_edge_values(lrs, (1.0, 0.0), (1.0, 0.0), (0.0, 0.0))]
-    oprob = ODEProblem(lrs, u0, tspan, ps)
+    ps = [:D => make_directed_edge_values(dsrs, (1.0, 0.0), (1.0, 0.0), (0.0, 0.0))]
+    oprob = ODEProblem(dsrs, u0, tspan, ps)
     @test all(isapprox.(solve(oprob, Tsit5()).u[end][25:25:125], n^2, rtol=1e-6))
 
-    ps = [:D => make_directed_edge_values(lrs, (1.0, 0.0), (1.0, 0.0), (1.0, 0.0))]
-    oprob = ODEProblem(lrs, u0, tspan, ps)
+    ps = [:D => make_directed_edge_values(dsrs, (1.0, 0.0), (1.0, 0.0), (1.0, 0.0))]
+    oprob = ODEProblem(dsrs, u0, tspan, ps)
     @test isapprox(solve(oprob, Tsit5()).u[end][125], n^3, rtol=1e-6)
 end
 
@@ -408,19 +408,19 @@ let
     make_edge_p_value(src_vert, dst_vert) = rand()
 
     # Graph grids.
-    lrs = LatticeReactionSystem(rn, [tr], path_graph(5))
-    @test_throws Exception make_edge_p_values(lrs, make_edge_p_value,)
-    @test_throws Exception make_directed_edge_values(lrs, (1.0, 0.0))
+    dsrs = DiscreteSpaceReactionSystem(rn, [tr], path_graph(5))
+    @test_throws Exception make_edge_p_values(dsrs, make_edge_p_value,)
+    @test_throws Exception make_directed_edge_values(dsrs, (1.0, 0.0))
 
     # Wrong dimensions to `make_directed_edge_values`.
-    lrs_1d = LatticeReactionSystem(rn, [tr], CartesianGrid(5))
-    lrs_2d = LatticeReactionSystem(rn, [tr], fill(true,5,5))
-    lrs_3d = LatticeReactionSystem(rn, [tr], CartesianGrid((5,5,5)))
+    dsrs_1d = DiscreteSpaceReactionSystem(rn, [tr], CartesianGrid(5))
+    dsrs_2d = DiscreteSpaceReactionSystem(rn, [tr], fill(true,5,5))
+    dsrs_3d = DiscreteSpaceReactionSystem(rn, [tr], CartesianGrid((5,5,5)))
 
-    @test_throws Exception make_directed_edge_values(lrs_1d, (1.0, 0.0), (1.0, 0.0))
-    @test_throws Exception make_directed_edge_values(lrs_1d, (1.0, 0.0), (1.0, 0.0), (1.0, 0.0))
-    @test_throws Exception make_directed_edge_values(lrs_2d, (1.0, 0.0))
-    @test_throws Exception make_directed_edge_values(lrs_2d, (1.0, 0.0), (1.0, 0.0), (1.0, 0.0))
-    @test_throws Exception make_directed_edge_values(lrs_3d, (1.0, 0.0))
-    @test_throws Exception make_directed_edge_values(lrs_3d, (1.0, 0.0), (1.0, 0.0))
+    @test_throws Exception make_directed_edge_values(dsrs_1d, (1.0, 0.0), (1.0, 0.0))
+    @test_throws Exception make_directed_edge_values(dsrs_1d, (1.0, 0.0), (1.0, 0.0), (1.0, 0.0))
+    @test_throws Exception make_directed_edge_values(dsrs_2d, (1.0, 0.0))
+    @test_throws Exception make_directed_edge_values(dsrs_2d, (1.0, 0.0), (1.0, 0.0), (1.0, 0.0))
+    @test_throws Exception make_directed_edge_values(dsrs_3d, (1.0, 0.0))
+    @test_throws Exception make_directed_edge_values(dsrs_3d, (1.0, 0.0), (1.0, 0.0))
 end
