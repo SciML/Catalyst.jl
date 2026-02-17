@@ -1,4 +1,44 @@
 # [Coupled non-reaction network equations to models](@id coupled_models)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+  \
+
+Non-reaction model components can be inserted directly in a Catalyst model. Here we will briefly describe the simplest case: adding an ODE to a model declared through the `@reaction_network` DSL. The equation is added using the `@equations` option, after which the equation is written (with `D(V)` denoting differential with respect to time).
+```julia
+using Catalyst, OrdinaryDiffEqDefault, Plots
+
+# Create model with a ODE for the variable `V` (e.g. denoting Volume).
+rn = @reaction_network begin
+    @parameters Vmax # Parameters appearing in equations must be explicitly declared as such.
+    @equations D(V) ~ X * (Vmax - V) # `~` (not `=`!) separates equation left and right-hand sides.
+    (p,d), 0 <--> X
+end
+
+# The model can be simulated using normal syntax.
+u0 = [:X => 2.0, :V => 0.5] # Must give an initial condition for `V` as well as `X`.
+ps = [:p => 2.0, :d => 0.25, :Vmax => 2.0]
+oprob = ODEProblem(rn, u0, 10.0, ps)
+sol = solve(oprob)
+plot(sol)
+```
+Other types of model components (algebraic equations and brownian and poissonian processes) are also possible, as are non-DSL approaches for adding these to a model.
+```@raw html
+</details>
+```
+  \
+
 In many applications one has additional algebraic or differential equations for
 non-chemical species that can be coupled to a chemical reaction network model.
 Catalyst supports coupled differential and algebraic equations, and currently

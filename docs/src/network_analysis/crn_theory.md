@@ -1,4 +1,38 @@
 # [Chemical Reaction Network Theory](@id network_analysis_structural_aspects)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("CairoMakie")
+Pkg.add("Catalyst")
+Pkg.add("GraphMakie")
+Pkg.add("NetworkLayout")
+```
+```@raw html
+</details>
+```
+```@raw html
+<details><summary><strong>Quick-start example</strong></summary>
+```
+Catalyst provides a range of function for querying a reaction network model for various network properties. A few examples include:
+```julia
+rn = @reaction_network begin
+    (p,d), 0 <--> X
+    (kB,kD), 2X <--> X2
+    (kB,kD), X2 + X <--> X3
+end
+linkageclasses(rn)
+deficiency(rn)
+isreversible(rn)
+```
+```@raw html
+</details>
+```
+  \
+  
 
 The systems of ODEs or stochastic chemical kinetics models that arise from chemical
 reaction networks can often have their steady-state properties (number of steady states, etc.) known in advance,

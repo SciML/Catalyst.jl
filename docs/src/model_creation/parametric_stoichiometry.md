@@ -1,4 +1,42 @@
 # [Symbolic Stoichiometries](@id parametric_stoichiometry)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("Distributions")
+Pkg.add("JumpProcesses")
+Pkg.add("Latexify")
+Pkg.add("ModelingToolkitBase")
+Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+```@raw html
+<details><summary><strong>Quick-start example</strong></summary>
+```
+Reaction stoichiometric coefficients can be parameters, which values are then designated after model creation. In the following example we designate `n` as a parametric stoichiometry.
+```julia
+using Catalyst, OrdinaryDiffEqDefault, Plots
+rn = @reaction_network begin
+    (kB,kD), n*X <--> Xn
+end
+u0 = [:X => 10.0, :Xn => 1.0]
+ps = (:kB => 0.2, :kD => 1.0, :n => 3)
+oprob = ODEProblem(rn, u0, 10.0, ps)
+sol = solve(oprob)
+plot(sol)
+```
+```@raw html
+</details>
+```
+  \
+  
 Catalyst supports stoichiometric coefficients that involve parameters, species,
 or even general expressions. In this tutorial we show several examples of how to
 use symbolic stoichiometries, and discuss several caveats to be aware of.

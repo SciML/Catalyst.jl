@@ -1,4 +1,36 @@
 # [Steady state stability computation](@id steady_state_stability)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("HomotopyContinuation")
+```
+```@raw html
+</details>
+```
+```@raw html
+<details><summary><strong>Quick-start example</strong></summary>
+```
+The following code provides a brief example of how a steady state's stability can be determine using the `steady_state_stability` function.
+```julia
+using Catalyst
+rn = @reaction_network begin 
+    (p,d), 0 <--> X
+end
+ps = [:p => 2.0, :d => 0.5]
+steady_state = [:X => 4.0] # This must be a true steady state of the system.
+steady_state_stability(steady_state, rn, ps)
+```
+```@raw html
+</details>
+```
+  \
+  
+
 After system steady states have been found using [HomotopyContinuation.jl](@ref homotopy_continuation), [NonlinearSolve.jl](@ref steady_state_solving), or other means, their stability can be computed using Catalyst's `steady_state_stability` function. Systems with conservation laws will automatically have these removed, permitting stability computation on systems with singular Jacobian.
 
 !!! warning 

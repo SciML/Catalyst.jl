@@ -1,4 +1,23 @@
 # [Model Visualisation](@id visualisation)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("CairoMakie")
+Pkg.add("Catalyst")
+Pkg.add("GLMakie")
+Pkg.add("GraphMakie")
+Pkg.add("Latexify")
+Pkg.add("NetworkLayout")
+```
+```@raw html
+</details>
+```
+  \
+  
 Catalyst-created `ReactionSystem` models can be visualised either as LaTeX code (of either the model reactions or its equations) or as a network graph. This section describes both functionalities.
 
 ## [Displaying models using LaTeX](@id visualisation_latex)

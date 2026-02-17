@@ -1,4 +1,20 @@
 # [Decomposing the Reaction Network ODEs](@id network_analysis_odes)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("CairoMakie")
+Pkg.add("Catalyst")
+Pkg.add("GraphMakie")
+Pkg.add("NetworkLayout")
+```
+```@raw html
+</details>
+```
+  \
 
 In this tutorial we will discuss the specific mathematical 
 structure of the [ODEs that arise from the mass-action dynamics](@ref math_models_in_catalyst_rre_odes)

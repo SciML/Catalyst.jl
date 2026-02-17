@@ -1,4 +1,46 @@
 # [Modelling Events](@id events)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+```@raw html
+<details><summary><strong>Quick-start example</strong></summary>
+```
+In this quick-start example we show how to add a "continuous event" directly to a model declared through the DSL.
+```julia
+using Catalyst, OrdinaryDiffEqDefault, Plots
+
+# The `@continuous_events option is used to declare events.
+# When the condition on the event left hold, the effect on the right is triggered.
+# In this case, whenever `X` reached `1.0`, `X` is assigned the value `2.0`.
+rn = @reaction_network begin
+    @continuous_events [X ~ 1.0] => [X => 2]
+    d, X --> 0
+end
+
+# The model can be simulated using normal syntax.
+u0 = [:X => 2.0]
+ps = [:d => 1.0]
+oprob = ODEProblem(rn, u0, 10.0, ps)
+sol = solve(oprob)
+plot(sol)
+```
+In addition to continuous events, three different types of "discrete events" also exists. Furthermore, events can be added to programmatically created models through a slightly different syntax. Finally, callbacks (which are similar to events) can be added at the time of simulation.
+```@raw html
+</details>
+```
+  \
+  
 In many applications one needs to model events that can occur when a set
 condition is reached, such as providing a drug treatment at a specified time, or
 turning off production of cells once the population reaches a given level.
