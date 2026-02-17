@@ -568,6 +568,44 @@ for full details on these features.
 
 New metadata keys `U0Map` and `ParameterMap` with convenience accessors (`has_u0_map`, `get_u0_map`, `set_u0_map` and `has_parameter_map`, `get_parameter_map`, `set_parameter_map`) allow file parsers to store species/variable and parameter value mappings on a `ReactionSystem` in formats distinct from `initial_conditions`. These are set via the `metadata` keyword or `set_*` functions and are preserved through `flatten`, `complete`, and model conversions. **Note** that Catalyst does not use these at all, they, and other metadata, are intended to provide a way for users to cache additional information in a system.
 
+#### New: `tstops` field for `ReactionSystem`
+
+- **`ReactionSystem` now supports a `tstops` keyword argument** for specifying
+  extra time points at which the integrator should stop. These can be numeric
+  values or symbolic expressions of parameters. Tstops are automatically
+  forwarded through model conversions (`ode_model`, `sde_model`, `jump_model`,
+  `hybrid_model`) to the underlying `System`.
+
+  ```julia
+  @parameters t_switch
+  @species X(t)
+  @named rn = ReactionSystem([Reaction(k, nothing, [X])], t;
+      tstops = [t_switch, 5.0])
+  ```
+
+- **New `@tstops` DSL option** for declaring tstops within `@reaction_network`
+  and `@network_component`. Symbols appearing in tstop expressions that are not
+  already declared are auto-discovered as parameters (consistent with how
+  reaction rate parameters are inferred):
+
+  ```julia
+  rn = @reaction_network begin
+      @tstops begin
+          t_switch           # auto-discovered as a parameter
+          0.5 * t_switch
+      end
+      (p, d), 0 <--> X
+  end
+  ```
+
+- **Tstops are validated at construction time** — expressions containing
+  unknowns (species/variables) or the independent variable are rejected with
+  an informative error, since tstops must be computable before the solve starts.
+
+- **Tstops are handled through composition** (`flatten`, `extend`) and
+  equivalence checking (`isequivalent`), following the same patterns as events
+  and brownians.
+
 ## Catalyst 15.0
 - The Catalyst release process is changing; certain core dependencies of
   Catalyst will now be capped to ensure Catalyst releases are only installed
