@@ -381,29 +381,32 @@ let
         # For a couple of iterations, updates the problem, ensuring that when a species is updated:
         # - Only that species and the conservation constant have their values updated.
         # The `≈` is because sometimes the computed values will not be fully exact.
-        # Since MTKBase, the problems do not store teh correct values after `remake`. These are only 
-        #computed after initialization. Hence, comparisons are made for the integrators.
+        # Since MTKBase, the problems do not store the correct values after `remake`. These are only
+        # computed after initialization. Hence, comparisons are made for the integrators.
+        # StochasticDiffEq defaults to abstol=reltol=0.01, which gets inherited by the
+        # initialization NonlinearSolve. We pass tight tolerances to get precise initialization.
+        init_kwargs = solver isa ImplicitEM ? (; abstol = 1e-8, reltol = 1e-8) : (;)
         for _ = 1:3
-            integ_old = init(prob_old, solver)
+            integ_old = init(prob_old, solver; init_kwargs...)
             # Updates X2, checks the values of all species and Γ, then resets `prob_old`.
             X2_new = rand(rng, 1.0:10.0)
             prob_new = remake(prob_old; u0 = [:X2 => X2_new])
-            integ_new = init(prob_new, solver)
+            integ_new = init(prob_new, solver; init_kwargs...)
             @test integ_old[:X1] ≈ integ_new[:X1]
             @test X2_new ≈ integ_new[:X2]
-            @test integ_old[:X3] ≈ integ_new[:X3] atol = 1e-2 rtol = 1e-2 # Required for lts tests to pass.
-            @test SymbolicUtils.unwrap_const(substitute(conserved_quantity, Dict([X1 => integ_old[X1], X2 => X2_new, X3 => integ_old[X3]]))) ≈ integ_new.ps[:Γ][1] atol = 1e-2 rtol = 1e-2 # Required for lts tests to pass.
+            @test integ_old[:X3] ≈ integ_new[:X3]
+            @test SymbolicUtils.unwrap_const(substitute(conserved_quantity, Dict([X1 => integ_old[X1], X2 => X2_new, X3 => integ_old[X3]]))) ≈ integ_new.ps[:Γ][1]
             prob_old = prob_new
             integ_old = integ_new
 
             # Updates X3, checks the values of all species and Γ, then resets `prob_old`.
             X3_new = rand(rng, 1.0:10.0)
             prob_new = remake(prob_old; u0 = [:X3 => X3_new])
-            integ_new = init(prob_new, solver)
+            integ_new = init(prob_new, solver; init_kwargs...)
             @test integ_old[:X1] ≈ integ_new[:X1]
             @test integ_old[:X2] ≈ integ_new[:X2]
-            @test X3_new ≈ integ_new[:X3] atol = 1e-2 rtol = 1e-2 # Required for lts tests to pass.
-            @test SymbolicUtils.unwrap_const(substitute(conserved_quantity, Dict([X1 => integ_old[X1], X2 => integ_old[X2], X3 => X3_new]))) ≈ integ_new.ps[:Γ][1] atol = 1e-2 rtol = 1e-2 # Required for lts tests to pass.
+            @test X3_new ≈ integ_new[:X3]
+            @test SymbolicUtils.unwrap_const(substitute(conserved_quantity, Dict([X1 => integ_old[X1], X2 => integ_old[X2], X3 => X3_new]))) ≈ integ_new.ps[:Γ][1]
             prob_old = prob_new
         end
 
@@ -414,11 +417,11 @@ let
         # ensure that its value is updated to accommodate the new conservation law).
         # The random Γ is ensured to be large enough not to generate negative values in the eliminated species.
         for _ in 1:3
-            integ_old = init(prob_old, solver)
+            integ_old = init(prob_old, solver; init_kwargs...)
             # Updates Γ, checks the values of all species and Γ, then resets `prob_old`.
             Γ_new = SymbolicUtils.unwrap_const(substitute(conserved_quantity, Dict([X1 => integ_old[X1], X2 => integ_old[X2], X3 => 0]))) + rand(rng, 0.0:5.0)
             prob_new = remake(prob_old; u0 = [:X3 => nothing], p = [:Γ => [Γ_new]])
-            integ_new = init(prob_new, solver)
+            integ_new = init(prob_new, solver; init_kwargs...)
             @test integ_old[:X1] ≈ integ_new[:X1]
             @test integ_old[:X2] ≈ integ_new[:X2]
             @test Γ_new ≈ integ_new.ps[:Γ][1]
@@ -430,7 +433,7 @@ let
             # Note that now, `X3` will have its value modified (and `Γ` remains unchanged).
             X1_new = rand(rng, 1.0:10.0)
             prob_new = remake(prob_old; u0 = [:X1 => X1_new, :X3 => nothing])
-            integ_new = init(prob_new, solver)
+            integ_new = init(prob_new, solver; init_kwargs...)
             @test X1_new ≈ integ_new[:X1]
             @test integ_old[:X2] ≈ integ_new[:X2]
             @test integ_old.ps[:Γ][1] ≈ integ_new.ps[:Γ][1]
@@ -442,7 +445,7 @@ let
             # accommodate the new value of X3.
             X3_new = rand(rng, 1.0:10.0)
             @test_broken prob_new = remake(prob_old; u0 = [:X3 => X3_new], p = [:Γ => nothing]) # Throws error due to undocumented problem
-            #integ_new = init(prob_new, solver)
+            #integ_new = init(prob_new, solver; init_kwargs...)
             # @test integ_old[:X1] ≈ integ_new[:X1]
             # @test integ_old[:X2] ≈ integ_new[:X2]
             # @test X3_new ≈ integ_new[:X3]
