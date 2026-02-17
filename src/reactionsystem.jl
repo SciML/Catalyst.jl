@@ -201,14 +201,11 @@ function find_jump_vars!(ps, us, jumps::Vector, t)
 end
 
 # Loops through all tstop expressions, adding encountered unknowns and parameters
-# to their respective vectors (`ps` and `us`). Strips any `ParentScope` metadata
-# (added by `@named` via `default_to_parentscope`) so `collect_vars!` doesn't skip
-# the variables, then unwraps (Num → SymbolicT) for traversal.
+# to their respective vectors (`ps` and `us`). Unwraps each expression (Num → SymbolicT)
+# so that `collect_vars!` can traverse it.
 function find_tstop_vars!(ps, us, tstops::Vector, t)
     for ts in tstops
-        wu = unwrap(ts)
-        wu isa SymbolicT && (wu = unwrap(MT.LocalScope(wu)))
-        MT.collect_vars!(us, ps, wu, t)
+        MT.collect_vars!(us, ps, unwrap(ts), t)
     end
 end
 
@@ -495,11 +492,12 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
     brownians′ = isempty(brownians) ? SymbolicT[] : unwrap.(brownians)
     poissonians′ = isempty(poissonians) ? SymbolicT[] : unwrap.(poissonians)
     jumps′ = isempty(jumps) ? JumpType[] : collect(jumps)
+    tstops′ = Any[unwrap(ts) for ts in tstops]
 
     ReactionSystem(
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
         systems, initial_conditions, nps, combinatoric_ratelaws,
-        continuous_events, discrete_events, tstops, brownians′, poissonians′, jumps′, metadata;
+        continuous_events, discrete_events, tstops′, brownians′, poissonians′, jumps′, metadata;
         checks, unit_checks)
 end
 

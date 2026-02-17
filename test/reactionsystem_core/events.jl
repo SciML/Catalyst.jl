@@ -486,7 +486,7 @@ let
     @species X(t)
     @parameters k
     rxs = [Reaction(k, nothing, [X])]
-    @named rs = ReactionSystem(rxs, t)
+    rs = ReactionSystem(rxs, t; name = :rs)
     @test isempty(ModelingToolkitBase.get_tstops(rs))
 end
 
@@ -495,7 +495,7 @@ let
     @species X(t)
     @parameters k d
     rxs = [Reaction(k, nothing, [X]), Reaction(d, [X], nothing)]
-    @named rs = ReactionSystem(rxs, t, [X], [k, d]; tstops = [1.0, 2.0, 3.0])
+    rs = ReactionSystem(rxs, t, [X], [k, d]; tstops = [1.0, 2.0, 3.0], name = :rs)
     @test issetequal(ModelingToolkitBase.get_tstops(rs), [1.0, 2.0, 3.0])
 end
 
@@ -504,34 +504,33 @@ let
     @species X(t)
     @parameters k d switch_time
     rxs = [Reaction(k, nothing, [X]), Reaction(d, [X], nothing)]
-    @named rs = ReactionSystem(rxs, t, [X], [k, d, switch_time]; tstops = [switch_time])
+    rs = ReactionSystem(rxs, t, [X], [k, d, switch_time]; tstops = [switch_time], name = :rs)
     @test issetequal(ModelingToolkitBase.get_tstops(rs), [switch_time])
 end
 
 # Tests auto-discovery of parameters in tstop expressions (2-arg constructor).
 let
     @species X(t)
-    @parameters k switch_time
+    @parameters k t_switch
     rxs = [Reaction(k, nothing, [X])]
-    @named rs = ReactionSystem(rxs, t; tstops = [switch_time, 2 * switch_time])
+    rs = ReactionSystem(rxs, t; tstops = [t_switch, 2 * t_switch], name = :rs)
     rs = complete(rs)
-    @test issetequal(ModelingToolkitBase.get_tstops(rs), [switch_time, 2 * switch_time])
-    @test issetequal(parameters(rs), [k, switch_time])
+    @test issetequal(ModelingToolkitBase.get_tstops(rs), [t_switch, 2 * t_switch])
+    @test issetequal(parameters(rs), [k, t_switch])
 end
 
 # Tests that tstops are forwarded through ode_model/hybrid_model to the converted System.
 let
     @species X(t)
-    @parameters k d switch_time
+    @parameters k d t_switch
     rxs = [Reaction(k, nothing, [X]), Reaction(d, [X], nothing)]
-    @named rs = ReactionSystem(rxs, t; tstops = [switch_time, 5.0])
-    rs = complete(rs)
+    rs = complete(ReactionSystem(rxs, t; tstops = [t_switch, 5.0], name = :rs))
 
     osys = ode_model(rs)
-    @test issetequal(ModelingToolkitBase.get_tstops(osys), [switch_time, 5.0])
+    @test issetequal(ModelingToolkitBase.get_tstops(osys), [t_switch, 5.0])
 
     hsys = hybrid_model(rs; default_scale = Catalyst.PhysicalScale.ODE)
-    @test issetequal(ModelingToolkitBase.get_tstops(hsys), [switch_time, 5.0])
+    @test issetequal(ModelingToolkitBase.get_tstops(hsys), [t_switch, 5.0])
 end
 
 # Tests that flatten collects tstops from subsystems.
@@ -540,7 +539,7 @@ let
     @parameters k1 k2 t1 t2
 
     rxs_inner = [Reaction(k1, nothing, [X])]
-    @named inner = ReactionSystem(rxs_inner, t; tstops = [t1])
+    inner = ReactionSystem(rxs_inner, t; tstops = [t1], name = :inner)
 
     rxs_outer = [Reaction(k2, [X], nothing)]
     outer = ReactionSystem(rxs_outer, t; systems = [inner], tstops = [t2], name = :outer)
@@ -558,18 +557,13 @@ let
     @parameters k1 k2 t1 t2
 
     rxs1 = [Reaction(k1, nothing, [X])]
-    @named rs1 = ReactionSystem(rxs1, t; tstops = [t1, 1.0])
+    rs1 = ReactionSystem(rxs1, t; tstops = [t1, 1.0], name = :rs1)
 
     rxs2 = [Reaction(k2, nothing, [Y])]
-    @named rs2 = ReactionSystem(rxs2, t; tstops = [t2, 2.0])
+    rs2 = ReactionSystem(rxs2, t; tstops = [t2, 2.0], name = :rs2)
 
     rs_ext = extend(rs1, rs2; name = :extended)
-    ext_tstops = ModelingToolkitBase.get_tstops(rs_ext)
-    @test length(ext_tstops) == 4
-    @test any(isequal(t1), ext_tstops)
-    @test any(isequal(t2), ext_tstops)
-    @test any(isequal(1.0), ext_tstops)
-    @test any(isequal(2.0), ext_tstops)
+    @test issetequal(ModelingToolkitBase.get_tstops(rs_ext), [t1, 1.0, t2, 2.0])
 end
 
 # Tests isequivalent with matching and non-matching tstops.
@@ -578,10 +572,10 @@ let
     @parameters k t1
 
     rxs = [Reaction(k, nothing, [X])]
-    @named rs1 = ReactionSystem(rxs, t; tstops = [t1, 1.0])
-    @named rs2 = ReactionSystem(rxs, t; tstops = [1.0, t1])
-    @named rs3 = ReactionSystem(rxs, t; tstops = [t1, 2.0])
-    @named rs4 = ReactionSystem(rxs, t)
+    rs1 = ReactionSystem(rxs, t; tstops = [t1, 1.0], name = :rs1)
+    rs2 = ReactionSystem(rxs, t; tstops = [1.0, t1], name = :rs2)
+    rs3 = ReactionSystem(rxs, t; tstops = [t1, 2.0], name = :rs3)
+    rs4 = ReactionSystem(rxs, t; name = :rs4)
 
     @test Catalyst.isequivalent(rs1, rs2)
     @test !Catalyst.isequivalent(rs1, rs3)
@@ -591,36 +585,37 @@ end
 # Tests system_to_reactionsystem roundtrip preserves tstops.
 let
     @species X(t)
-    @parameters k switch_time
+    @parameters k t_switch
     rxs = [Reaction(k, nothing, [X])]
-    @named rs = ReactionSystem(rxs, t; tstops = [switch_time, 5.0])
-    rs_complete = complete(rs)
+    rs = complete(ReactionSystem(rxs, t; tstops = [t_switch, 5.0], name = :rs))
 
     # Convert to System and back.
-    sys = ode_model(rs_complete)
+    sys = ode_model(rs)
     rs_back = Catalyst.system_to_reactionsystem(sys; name = :roundtrip)
-    @test issetequal(ModelingToolkitBase.get_tstops(rs_back), [switch_time, 5.0])
+    @test issetequal(ModelingToolkitBase.get_tstops(rs_back), [t_switch, 5.0])
 end
 
-# Integration test: solve ODE with discrete event at a symbolic tstop time.
-# The tstop ensures the integrator steps exactly at the event time for accurate triggering.
+# Integration test: solve ODE with symbolic expression tstops and a discrete event.
+# Uses multiple tstops including a parameter expression (2*t_event) to verify that
+# symbolic tstops are correctly forwarded to the solver.
 let
     @variables V(t)=1.0
-    @parameters switch_time=5.0
+    @parameters t_event=3.0
     D = default_time_deriv()
     eqs = [D(V) ~ -0.5 * V]
-    discrete_events = [5.0 => [V ~ 10.0]]
-    @named rs = ReactionSystem(eqs, t; discrete_events, tstops = [switch_time])
-    rs = complete(rs)
+    discrete_events = [3.0 => [V ~ 10.0], 6.0 => [V ~ 20.0]]
+    rs = complete(ReactionSystem(eqs, t; discrete_events,
+        tstops = [t_event, 2 * t_event], name = :rs))
 
     osys = complete(ode_model(rs))
     oprob = ODEProblem(osys, [], (0.0, 10.0))
     sol = solve(oprob, Tsit5())
 
-    # After the event at t=5.0, V should be reset to 10.0 and then decay.
-    # Check that V is close to 10.0 right after the event.
-    @test sol(5.0 + 10 * eps(), idxs = V) ≈ 10.0 atol=0.01
+    # After the first event at t=3.0, V should be reset to 10.0.
+    @test sol(3.0 + 10 * eps(), idxs = V) ≈ 10.0 atol=0.01
+    # After the second event at t=6.0 (= 2*t_event), V should be reset to 20.0.
+    @test sol(6.0 + 10 * eps(), idxs = V) ≈ 20.0 atol=0.01
 
-    # Verify the symbolic tstop was forwarded to the System.
-    @test issetequal(ModelingToolkitBase.get_tstops(osys), [switch_time])
+    # Verify both symbolic tstops were forwarded to the System.
+    @test issetequal(ModelingToolkitBase.get_tstops(osys), [t_event, 2 * t_event])
 end
