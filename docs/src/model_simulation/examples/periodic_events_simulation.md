@@ -1,4 +1,21 @@
 # [Modelling a Periodic Event During ODE and Jump Simulations](@id periodic_event_simulation_example)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("JumpProcesses")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+  \
+  
 This tutorial will describe how to simulate systems with periodic events in ODEs and jump simulations (SDEs use identical syntax). We will consider a model with a [circadian rhythm](https://en.wikipedia.org/wiki/Circadian_rhythm), where a parameter represents the level of light. While outdoor light varies smoothly, in experimental settings a lamp is often simply turned on/off every 12 hours. Here we will model this toggling of the light using a periodic event that is triggered every 12 hours.
 
 ## [Modelling a circadian periodic event in an ODE simulation](@id periodic_event_simulation_example_ode)

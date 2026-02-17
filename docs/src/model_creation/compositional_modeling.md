@@ -1,4 +1,20 @@
 # [Compositional Modeling of Reaction Systems](@id compositional_modeling)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("GraphRecipes")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+  \
+
 Catalyst supports the construction of models in a compositional fashion, based
 on ModelingToolkit's subsystem functionality. In this tutorial we'll see how we
 can construct the earlier repressilator model by composing together three

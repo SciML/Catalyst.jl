@@ -1,4 +1,21 @@
 # [Working with Conservation Laws](@id conservation_laws)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("Latexify")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+  \
+
 Catalyst can detect, and eliminate for differential-equation based models, *conserved quantities*, i.e. linear combinations of species which are conserved via their chemistry. This functionality is both automatically utilised by Catalyst (e.g. to [remove singular Jacobians during steady state computations](@ref homotopy_continuation_conservation_laws)), but is also available for users to utilise directly (e.g. to potentially [improve simulation performance](@ref ode_simulation_performance_conservation_laws)).
 
 To illustrate conserved quantities, let us consider the following [two-state](@ref basic_CRN_library_two_states) model:

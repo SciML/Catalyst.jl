@@ -1,4 +1,20 @@
 # [Simulation Plotting](@id simulation_plotting)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+  \
+  
 Catalyst uses the [Plots.jl](https://github.com/JuliaPlots/Plots.jl) package for performing all plots. This section provides a brief summary of some useful plotting options, while [Plots.jl's documentation](https://docs.juliaplots.org/stable/) provides a more throughout description of how to tune your plots.
 
 !!! note

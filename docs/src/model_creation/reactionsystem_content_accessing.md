@@ -1,4 +1,21 @@
 # [Accessing Model Properties](@id model_accessing)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+Pkg.add("SymbolicIndexingInterface")
+```
+```@raw html
+</details>
+```
+  \
+  
 Catalyst is based around the creation, analysis, and simulation of chemical reaction network models. Catalyst stores these models in [`ReactionSystem`](@ref) structures. This page describes some basic functions for accessing the content of these structures. This includes retrieving lists of species, parameters, or reactions that a model consists of. An extensive list of relevant functions for working with `ReactionSystem` models can be found in Catalyst's [API](@ref api).
 
 !!! warning
