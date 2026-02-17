@@ -209,6 +209,32 @@ function find_tstop_vars!(ps, us, tstops::Vector, t)
     end
 end
 
+# Validates that tstop expressions only contain parameters and constants (no unknowns or
+# independent variable). Tstops must be computable before the solve starts, so they cannot
+# depend on dynamic state.
+function check_tstops(tstops, unknowns, iv)
+    isempty(tstops) && return nothing
+    unknowns_set = Set(unknowns)
+    for ts in tstops
+        tsu = unwrap(ts)
+        # Numeric literals are always valid tstops — skip symbolic checks.
+        (tsu isa Real) && continue
+        # Check that the independent variable does not appear in the tstop expression.
+        if isequal(tsu, iv) || hasnode(x -> isequal(x, iv), tsu)
+            throw(ArgumentError("Tstop expression `$ts` depends on the independent variable `$iv`. Tstops must be computable before the solve starts."))
+        end
+        # Check that no unknowns (species/variables) appear in the tstop expression.
+        found_us = OrderedSet{typeof(iv)}()
+        MT.collect_vars!(found_us, OrderedSet{typeof(iv)}(), tsu, iv)
+        for v in found_us
+            if v in unknowns_set
+                throw(ArgumentError("Tstop expression `$ts` contains unknown `$v`. Tstops must only depend on parameters and constants, not dynamic state."))
+            end
+        end
+    end
+    nothing
+end
+
 ### ReactionSystem Structure ###
 
 """
@@ -354,6 +380,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
             nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
             !isempty(nonrx_eqs) && check_equations(nonrx_eqs, iv)
             !isempty(cevs) && check_equations(equations(cevs), iv)
+            check_tstops(tstops, unknowns, iv)
         end
 
         # Checks that no (non-reaction) equation contains a differential w.r.t. a species.
@@ -492,7 +519,10 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
     brownians′ = isempty(brownians) ? SymbolicT[] : unwrap.(brownians)
     poissonians′ = isempty(poissonians) ? SymbolicT[] : unwrap.(poissonians)
     jumps′ = isempty(jumps) ? JumpType[] : collect(jumps)
-    tstops′ = Any[unwrap(ts) for ts in tstops]
+    # Normalize tstops via `Symbolics.value`: unwraps Num to BasicSymbolic for symbolic
+    # parameters, and extracts plain numeric values for literal constants (e.g. 5.0 that
+    # got promoted to Num by array promotion in `[param, 5.0]`).
+    tstops′ = Any[Symbolics.value(ts) for ts in tstops]
 
     ReactionSystem(
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,

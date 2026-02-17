@@ -533,10 +533,10 @@ let
     rs = complete(ReactionSystem(rxs, t; tstops = [t_switch, 5.0], name = :rs))
 
     osys = ode_model(rs)
-    @test issetequal(ModelingToolkitBase.get_tstops(osys), [t_switch, 5.0])
+    @test issetequal(ModelingToolkitBase.get_tstops(osys), Any[t_switch, 5.0])
 
     hsys = hybrid_model(rs; default_scale = Catalyst.PhysicalScale.ODE)
-    @test issetequal(ModelingToolkitBase.get_tstops(hsys), [t_switch, 5.0])
+    @test issetequal(ModelingToolkitBase.get_tstops(hsys), Any[t_switch, 5.0])
 end
 
 # Tests that flatten collects tstops from subsystems.
@@ -569,7 +569,7 @@ let
     rs2 = ReactionSystem(rxs2, t; tstops = [t2, 2.0], name = :rs2)
 
     rs_ext = extend(rs1, rs2; name = :extended)
-    @test issetequal(ModelingToolkitBase.get_tstops(rs_ext), [t1, 1.0, t2, 2.0])
+    @test issetequal(ModelingToolkitBase.get_tstops(rs_ext), Any[t1, 1.0, t2, 2.0])
 end
 
 # Tests isequivalent with matching and non-matching tstops.
@@ -598,7 +598,7 @@ let
     # Convert to System and back.
     sys = ode_model(rs)
     rs_back = Catalyst.system_to_reactionsystem(sys; name = :roundtrip)
-    @test issetequal(ModelingToolkitBase.get_tstops(rs_back), [t_switch, 5.0])
+    @test issetequal(ModelingToolkitBase.get_tstops(rs_back), Any[t_switch, 5.0])
 end
 
 # Integration test: solve ODE with symbolic expression tstops and a discrete event.
@@ -624,4 +624,21 @@ let
 
     # Verify both symbolic tstops were forwarded to the System.
     @test issetequal(ModelingToolkitBase.get_tstops(osys), [t_event, 2 * t_event])
+end
+
+# Tests that tstops containing unknowns (species/variables) are rejected.
+let
+    @parameters k
+    @species X(t)
+    rxs = [Reaction(k, nothing, [X])]
+    @test_throws ArgumentError ReactionSystem(rxs, t, [X], [k]; tstops = [X], name = :rs)
+end
+
+# Tests that tstops containing the independent variable `t` are rejected.
+let
+    @parameters k
+    @species X(t)
+    rxs = [Reaction(k, nothing, [X])]
+    @test_throws ArgumentError ReactionSystem(rxs, t, [X], [k]; tstops = [t + 1], name = :rs)
+    @test_throws ArgumentError ReactionSystem(rxs, t, [X], [k]; tstops = [t], name = :rs)
 end
