@@ -1,4 +1,20 @@
 # [Plotting Nullclines and Steady States in Phase Space](@id nullcline_plotting)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("HomotopyContinuation")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+  \
+
 In this tutorial we will show how to extract a system's steady states and [nullclines](https://en.wikipedia.org/wiki/Nullcline), and how to plot these in [phase space](https://en.wikipedia.org/wiki/Phase_space). Generally, while nullclines are not directly needed for most types analysis, plotting these can give some understanding of a system's steady state and stability properties.
 
 For an ordinary differential equation

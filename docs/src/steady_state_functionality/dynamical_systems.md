@@ -1,4 +1,23 @@
 # [Analysing Model Steady State Properties with DynamicalSystems.jl](@id dynamical_systems)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("CairoMakie")
+Pkg.add("Catalyst")
+Pkg.add("DynamicalSystems")
+Pkg.add("OrdinaryDiffEqRosenbrock")
+Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+  \
+  
 The [DynamicalSystems.jl package](https://github.com/JuliaDynamics/DynamicalSystems.jl) implements a wide range of methods for analysing dynamical systems[^1][^2]. This includes both continuous-time systems (i.e. ODEs) and discrete-times ones (difference equations, however, these are not relevant to chemical reaction network modelling). Here we give two examples of how DynamicalSystems.jl can be used, with the package's [documentation describing many more features](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/dev/tutorial/). Finally, it should also be noted that DynamicalSystems.jl contain several tools for [analysing data measured from dynamical systems](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/dev/contents/#Exported-submodules).
 
 ## [Finding basins of attraction](@id dynamical_systems_basins_of_attraction)

@@ -90,9 +90,6 @@ sol[:X₂]
 !!! note
     The `remove_conserved = true` option is available when creating `SDEProblem`s, `NonlinearProblem`s, and `SteadyStateProblem`s (and their corresponding systems). However, it cannot be used when creating `JumpProblem`s.
 
-!!! warn
-    Users of the [ModelingToolkitBase.jl](https://github.com/SciML/ModelingToolkit.jl) package might be familiar with the `mtkcompile` function. While it can be applied to Catalyst models as well, generally, this should be avoided (as `remove_conserved` performs a similar role, but is better adapted to these models). Furthermore, applying `mtkcompile` will interfere with conservation law removal, preventing users from accessing eliminated quantities.
-
 ## [Conservation law accessor functions](@id conservation_laws_accessors)
 
 For any given `ReactionSystem` model, we can use `conservationlaw_constants` to compute all of a system's conserved quantities:
@@ -136,7 +133,7 @@ oprob = ODEProblem(rs, u0, 10.0, ps; remove_conserved = true)
 oprob = remake(oprob; u0 = [:X₁ => 16.0])
 ```
 !!! warn
-    If a problem with conservation laws have had values related to that conservation law updated using `remake`, the values stored within the problem will no longer appear correct. I.e. `oprob[:X₂]` will not necessarily yield the correct value. The correct values are, however, computed correctly during `solve`, and it is only when checking teh content of the problem that errnoneous values appears.
+    If a problem with conservation laws have had values related to that conservation law updated using `remake`, the values stored within the problem will no longer appear correct. I.e. `oprob[:X₂]` will not necessarily yield the correct value. The correct values are, however, computed correctly during `solve`, and it is only when checking the content of the problem that erroneous values appears.
 
 It is also possible to update the value of $Γ$. Here, as $X₂$ is the species eliminated by the conservation law (which can be checked using `conservedequations`), $X₂$'s value will be modified to ensure that $Γ$'s new value is correct. This, however, also requires designating `X₂ = nothing`
 ```@example conservation_laws
@@ -151,7 +148,7 @@ Generally, for a conservation law where we have:
 If the value of the conservation law parameter $Γ$'s value *has never been specified*, its value will be updated to accommodate changes in species values. If the conservation law parameter ($Γ$)'s value *has been specified* (either when the `ODEProblem` was created, or using `remake`), then the eliminated species's value will be updated to accommodate changes in the conservation law parameter or non-eliminated species's values. Furthermore, in this case, the value of the eliminated species *cannot be updated*. 
 
 !!! warn
-    When updating the values of problems with conservation laws it is additionally important to use `remake` (as opposed to direct indexing, e.g. setting `oprob[:X₁] = 16.0`). Moreover, care is needed when using `remake` with `NonlinearProblem`s for which conserved equations have been removed. See [the FAQ](https://docs.sciml.ai/Catalyst/stable/faqs/#faq_remake_nonlinprob) for details on what is supported and what may lead to `u0` values that do not satisfy the conservation law in the special case of `NonlinearProblem`s.
+    When updating the values of problems with conservation laws it is additionally important to use `remake` (as opposed to direct indexing, e.g. setting `oprob[:X₁] = 16.0`).
 
 ### [Extracting the conservation law parameter's symbolic variable](@id conservation_laws_prob_updating_symvar)
 Catalyst represents its models using the [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl) computer algebraic system, something which allows the user to [form symbolic expressions of model components](@ref simulation_structure_interfacing_symbolic_representation). If you wish to extract and use the symbolic variable corresponding to a model's conserved quantities, you can use the following syntax:

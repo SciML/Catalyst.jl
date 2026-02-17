@@ -1,4 +1,69 @@
 # [Parameter Fitting for ODEs using Optimization.jl](@id optimization_parameter_fitting)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("OptimizationBase")
+Pkg.add("OptimizationNLopt")
+Pkg.add("OptimizationEvolutionary")
+Pkg.add("OptimizationOptimJL")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+```@raw html
+<details><summary><strong>Quick-start example</strong></summary>
+```
+The following code provides a brief example of how to perform parameter fitting using the [Optimization.jl](https://github.com/SciML/Optimization.jl) package.
+```julia
+using Catalyst, OrdinaryDiffEqDefault, OptimizationBase, OptimizationNLopt, SymbolicIndexingInterface
+
+# What we know: A model, an initial condition, and sampled datapoints.
+rn = @reaction_network begin
+    (p,d), 0 <--> X
+end
+u0 = [:X => 0.1]
+t_samples = 1:5
+X_samples = [1.6, 2.5, 3.1, 3.5, 3.7]
+
+# Declare required structures (a base ODEProblem and a "p_setter" which updates the parameter sets in a performant manner).
+oprob_base = ODEProblem(rn, u0, (0.0, 5.0), [:p => 1.0, :d => 1.0]) # Parameter valued do not matter here.
+p_setter = setp_oop(oprob_base, [:p, :d])
+
+# A loss function measuring the sum-of-square distance between a simulation and the data.
+function loss(p, (oprob_base, p_setter, t_samples, X_samples))
+    # Updates the ODEProblem with teh proposed parameter set.
+    p = p_setter(oprob_base, p)
+    oprob = remake(oprob_base; p)
+
+    # Simulate the model. If sucesfull, return sum-of-squares distance as loss.
+    sol = solve(oprob; saveat = t_samples, verbose = false, maxiters = 10000)
+    SciMLBase.successful_retcode(sol) || return Inf
+    return sum(abs2, sol[:X] .- X_samples)
+end
+
+# Creates an OptimizationProblem and solves it.
+p_init = [1.0, 1.0] # Initial guess for optimization run.
+opt_prob = OptimizationProblem(loss, p_init, (oprob_base, p_setter, t_samples, X_samples))
+opt_sol = solve(opt_prob, NLopt.LN_NELDERMEAD())
+
+# Simulates the model for the found parameter set.
+p = p_setter(oprob_base, opt_sol.u)
+oprob_fitted = remake(oprob_base; p)
+sol_fitted = solve(oprob_fitted)
+```
+```@raw html
+</details>
+```
+  \
+  
+
 Fitting parameters to data involves solving an optimisation problem (that is, finding the parameter set that optimally fits your model to your data, typically by minimising an objective function)[^1]. The SciML ecosystem's primary package for solving optimisation problems is [Optimization.jl](https://github.com/SciML/Optimization.jl). It provides access to a variety of solvers via a single common interface by wrapping a large number of optimisation libraries that have been implemented in Julia.
 
 This tutorial demonstrates how to 
