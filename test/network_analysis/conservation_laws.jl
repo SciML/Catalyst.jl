@@ -341,8 +341,7 @@ end
 # values. If it has been explicitly updated, the corresponding eliminated quantity will have its
 # value updated to accommodate new Γ/species values (however, we have to manually designate this by setting it to `nothing`).
 # Also checks that quantities are correctly updated in integrators and solutions derived from problems.
-@test_broken let
-    return false # Cases of `remake` does not work for nonlinear `System`s with `remove_conserved = true`.
+let
     # Prepares the problem inputs and computes the conservation equation.
     rn = @reaction_network begin
         (k1,k2), 2X1 <--> X2
@@ -356,43 +355,35 @@ end
     # Loops through the tests for different problem types.
     oprob = ODEProblem(rn, u0, 1.0, ps; remove_conserved = true)
     sprob = SDEProblem(rn, u0, 1.0, ps; remove_conserved = true)
-    # nlprob = NonlinearProblem(rn, u0, ps; remove_conserved = true)
-    for (prob_old, solver) in zip([oprob, sprob], [Tsit5(), ImplicitEM()])
+    nlprob = NonlinearProblem(rn, u0, ps; remove_conserved = true)
+    for (prob_old, solver) in zip([oprob, sprob, nlprob], [Tsit5(), ImplicitEM(), NewtonRaphson()])
         # For a couple of iterations, updates the problem, ensuring that when a species is updated:
         # - Only that species and the conservation constant have their values updated.
         # The `≈` is because sometimes the computed values will not be fully exact.
+        # Since MTKBase, the problems do not store teh correct values after `remake`. These are only 
+        #computed after initialization. Hence, comparisons are made for the integrators.
         for _ = 1:3
+            integ_old = init(prob_old, solver)
             # Updates X2, checks the values of all species and Γ, then resets `prob_old`.
             X2_new = rand(rng, 1.0:10.0)
             prob_new = remake(prob_old; u0 = [:X2 => X2_new])
-            @test prob_old[:X1] ≈ prob_new[:X1]
-            @test X2_new ≈ prob_new[:X2]
-            @test prob_old[:X3] ≈ prob_new[:X3]
-            @test substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => X2_new, X3 => prob_old[X3]])) ≈ prob_new.ps[:Γ][1]
+            integ_new = init(prob_new, solver)
+            @test integ_old[:X1] ≈ integ_new[:X1]
+            @test X2_new ≈ integ_new[:X2]
+            @test integ_old[:X3] ≈ integ_new[:X3]
+            @test SymbolicUtils.unwrap_const(substitute(conserved_quantity, Dict([X1 => integ_old[X1], X2 => X2_new, X3 => integ_old[X3]]))) ≈ integ_new.ps[:Γ][1]
             prob_old = prob_new
+            integ_old = integ_new
 
             # Updates X3, checks the values of all species and Γ, then resets `prob_old`.
             X3_new = rand(rng, 1.0:10.0)
             prob_new = remake(prob_old; u0 = [:X3 => X3_new])
-            @test prob_old[:X1] ≈ prob_new[:X1]
-            @test prob_old[:X2] ≈ prob_new[:X2]
-            @test X3_new ≈ prob_new[:X3]
-            @test substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => prob_old[X2], X3 => X3_new])) ≈ prob_new.ps[:Γ][1]
+            integ_new = init(prob_new, solver)
+            @test integ_old[:X1] ≈ integ_new[:X1]
+            @test integ_old[:X2] ≈ integ_new[:X2]
+            @test X3_new ≈ integ_new[:X3]
+            @test SymbolicUtils.unwrap_const(substitute(conserved_quantity, Dict([X1 => integ_old[X1], X2 => integ_old[X2], X3 => X3_new]))) ≈ integ_new.ps[:Γ][1]
             prob_old = prob_new
-
-            # Checks that integrator and solutions have identical content to problem.
-            integrator = init(prob_new, solver)
-            sol = solve(prob_new, solver; maxiters = 1, verbose = false)
-            @test prob_new.ps[:Γ][1] == integrator.ps[:Γ][1] == sol.ps[:Γ][1]
-            if ModelingToolkitBase.is_time_dependent(prob_new)
-                @test prob_new[:X1] == integrator[:X1] == sol[:X1][1]
-                @test prob_new[:X2] == integrator[:X2] == sol[:X2][1]
-                @test prob_new[:X3] == integrator[:X3] == sol[:X3][1]
-            else
-                @test prob_new[:X1] == integrator[:X1]
-                @test prob_new[:X2] == integrator[:X2]
-                @test prob_new[:X3] == integrator[:X3]
-            end
         end
 
         # Similarly, but now also updates the conservation constant. Here, once Γ has been updated:
@@ -402,48 +393,40 @@ end
         # ensure that its value is updated to accommodate the new conservation law).
         # The random Γ is ensured to be large enough not to generate negative values in the eliminated species.
         for _ in 1:3
+            integ_old = init(prob_old, solver)
             # Updates Γ, checks the values of all species and Γ, then resets `prob_old`.
-            Γ_new = substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => prob_old[X2], X3 => 0])) + rand(rng, 0.0:5.0)
+            Γ_new = SymbolicUtils.unwrap_const(substitute(conserved_quantity, Dict([X1 => integ_old[X1], X2 => integ_old[X2], X3 => 0]))) + rand(rng, 0.0:5.0)
             prob_new = remake(prob_old; u0 = [:X3 => nothing], p = [:Γ => [Γ_new]])
-            @test prob_old[:X1] ≈ prob_new[:X1]
-            @test prob_old[:X2] ≈ prob_new[:X2]
-            @test Γ_new ≈ prob_new.ps[:Γ][1]
-            @test substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => prob_old[X2], X3 => prob_new[X3]])) ≈ prob_new.ps[:Γ][1]
+            integ_new = init(prob_new, solver)
+            @test integ_old[:X1] ≈ integ_new[:X1]
+            @test integ_old[:X2] ≈ integ_new[:X2]
+            @test Γ_new ≈ integ_new.ps[:Γ][1]
+            @test SymbolicUtils.unwrap_const(substitute(conserved_quantity, Dict([X1 => integ_old[X1], X2 => integ_old[X2], X3 => integ_new[X3]]))) ≈ integ_new.ps[:Γ][1]
             prob_old = prob_new
+            integ_old = integ_new
 
             # Updates X1 (non-eliminated species), checks the values of all species and Γ, then resets `prob_old`.
             # Note that now, `X3` will have its value modified (and `Γ` remains unchanged).
             X1_new = rand(rng, 1.0:10.0)
             prob_new = remake(prob_old; u0 = [:X1 => X1_new, :X3 => nothing])
-            @test X1_new ≈ prob_new[:X1]
-            @test prob_old[:X2] ≈ prob_new[:X2]
-            @test prob_old.ps[:Γ][1] ≈ prob_new.ps[:Γ][1]
-            @test substitute(conserved_quantity, Dict([X1 => X1_new, X2 => prob_old[X2], X3 => prob_new[X3]])) ≈ prob_new.ps[:Γ][1]
+            integ_new = init(prob_new, solver)
+            @test X1_new ≈ integ_new[:X1]
+            @test integ_old[:X2] ≈ integ_new[:X2]
+            @test integ_old.ps[:Γ][1] ≈ integ_new.ps[:Γ][1]
+            @test SymbolicUtils.unwrap_const(substitute(conserved_quantity, Dict([X1 => X1_new, X2 => integ_old[X2], X3 => integ_new[X3]]))) ≈ integ_new.ps[:Γ][1]
             prob_old = prob_new
+            integ_old = integ_new
 
             # Updates X3 (the eliminated species). Since we reset Γ, this has its value modified to
             # accommodate the new value of X3.
             X3_new = rand(rng, 1.0:10.0)
-            prob_new = remake(prob_old; u0 = [:X3 => X3_new], p = [:Γ => nothing])
-            @test prob_old[:X1] ≈ prob_new[:X1]
-            @test prob_old[:X2] ≈ prob_new[:X2]
-            @test X3_new ≈ prob_new[:X3]
-            @test substitute(conserved_quantity, Dict([X1 => prob_old[X1], X2 => prob_old[X2], X3 => X3_new])) ≈ prob_new.ps[:Γ][1]
-            prob_old = prob_new
-
-            # Checks that integrator and solutions have identical content to problem.
-            integrator = init(prob_new, solver)
-            sol = solve(prob_new, solver; maxiters = 1, verbose = false)
-            @test prob_new.ps[:Γ][1] == integrator.ps[:Γ][1] == sol.ps[:Γ][1]
-            if ModelingToolkitBase.is_time_dependent(prob_new)
-                @test prob_new[:X1] == integrator[:X1] == sol[:X1][1]
-                @test prob_new[:X2] == integrator[:X2] == sol[:X2][1]
-                @test prob_new[:X3] == integrator[:X3] == sol[:X3][1]
-            else
-                @test prob_new[:X1] == integrator[:X1]
-                @test prob_new[:X2] == integrator[:X2]
-                @test prob_new[:X3] == integrator[:X3]
-            end
+            @test_broken prob_new = remake(prob_old; u0 = [:X3 => X3_new], p = [:Γ => nothing]) # Throws error due to undocumented problem
+            #integ_new = init(prob_new, solver)
+            # @test integ_old[:X1] ≈ integ_new[:X1]
+            # @test integ_old[:X2] ≈ integ_new[:X2]
+            # @test X3_new ≈ integ_new[:X3]
+            # @test SymbolicUtils.unwrap_const(substitute(conserved_quantity, Dict([X1 => integ_old[X1], X2 => integ_old[X2], X3 => X3_new]))) ≈ integ_new.ps[:Γ][1]
+            # prob_old = prob_new
         end
     end
 end
@@ -498,8 +481,7 @@ let
 end
 
 # Check that `remake` work properly for `NonlinearProblem`s
-@test_broken let
-    return false
+let
     # Create models.
     rn = @reaction_network begin
         (k1,k2), X1 <--> X2
@@ -507,18 +489,6 @@ end
     end
     u0 = [:X1 => 1.0, :X2 => 2.0, :X3 => 3.0]
     ps = [:k1 => 0.1, :k2 => 0.2, :k3 => 0.3, :k4 => 0.4]
-
-    # @variables X1 X2 X3
-    # @parameters k1 k2 k3 k4 Γ[1:1] = missing [guess = ones(1)]
-    # eqs = [
-    #     0 ~ -k1*X1 + k2*X2 - k3*X1*X2 + (1//2)*k4*((-X1 - X2 + Γ[1])^2),
-    #     0 ~ k1*X1 - k2*X2 - k3*X1*X2 + (1//2)*k4*((-X1 - X2 + Γ[1])^2),
-    #     0 ~ -X1 - X2 - X3 + Γ[1]
-    # ]
-    # initeqs = [Γ[1] ~ Initial(X1) + Initial(X3) + Initial(X2)]
-    # @named nlsys = System(eqs, [X1, X2, X3], [k1, k2, k3, k4, Γ];
-    #     initialization_eqs = initeqs)
-
 
     # WITHOUT structural_simplify
     nlsys = ss_ode_model(rn; remove_conserved = true)
@@ -538,23 +508,23 @@ end
     nlprob1b = remake(nlprob1; u0 = [:X3 => nothing], p = [:Γ => [4.0]])
     @test nlprob1b[:X1] == 1.0
     @test nlprob1b[:X2] == 2.0
-    @test_broken nlprob1b[:X3] == 1.0
+    @test nlprob1b[:X3] == 1.0
     @test nlprob1b.ps[:Γ][1] == 4.0
     integ1 = init(nlprob1b, NewtonRaphson())
     @test integ1[:X1] == 1.0
     @test integ1[:X2] == 2.0
-    @test_broken integ1[:X3] == 1.0
+    @test integ1[:X3] == 1.0
     @test integ1.ps[:Γ][1] == 4.0
 
     nlprob1c = remake(nlprob1; u0 = [:X2 => nothing], p = [:Γ => [4.0]])
     @test nlprob1c[:X1] == 1.0
     @test_broken nlprob1c[:X2] == 0.0
-    @test nlprob1c[:X3] == 3.0
+    @test_broken nlprob1c[:X3] == 3.0
     @test nlprob1c.ps[:Γ][1] == 4.0
-    integ1 = init(nlprob1b, NewtonRaphson())
+    integ1 = init(nlprob1c, NewtonRaphson())
     @test integ1[:X1] == 1.0
     @test_broken integ1[:X2] == 0.0
-    @test integ1[:X3] == 3.0
+    @test_broken integ1[:X3] == 3.0
     @test integ1.ps[:Γ][1] == 4.0
 
     # WITH structural_simplify
