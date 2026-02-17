@@ -11,6 +11,9 @@ Pkg.add("Catalyst")
 Pkg.add("OrdinaryDiffEqDefault")
 Pkg.add("Plots")
 ```
+```@raw html
+</details>
+```
   \
 
 Previously, we have shown how to [compute bifurcation diagrams](@ref bifurcation_diagrams) using [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl). In this example we will consider a system which exhibits an oscillation and show how to use BifurcationKit to track not just the system's (potentially unstable) steady state, but also the periodic orbit itself. More information on how to track periodic orbits can be found in the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/tutorials/tutorials/#Periodic-orbits).

@@ -11,6 +11,9 @@ Pkg.add("Catalyst")
 Pkg.add("OrdinaryDiffEqDefault")
 Pkg.add("Plots")
 ```
+```@raw html
+</details>
+```
   \
   
 

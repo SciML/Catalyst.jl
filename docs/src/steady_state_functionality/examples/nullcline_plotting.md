@@ -10,6 +10,9 @@ Pkg.add("Catalyst")
 Pkg.add("HomotopyContinuation")
 Pkg.add("Plots")
 ```
+```@raw html
+</details>
+```
   \
 
 In this tutorial we will show how to extract a system's steady states and [nullclines](https://en.wikipedia.org/wiki/Nullcline), and how to plot these in [phase space](https://en.wikipedia.org/wiki/Phase_space). Generally, while nullclines are not directly needed for most types analysis, plotting these can give some understanding of a system's steady state and stability properties.
