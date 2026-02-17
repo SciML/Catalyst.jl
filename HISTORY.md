@@ -5,8 +5,8 @@
 Catalyst 16 is a major release that transitions from ModelingToolkit (MT) v9 to
 ModelingToolkitBase (the base for ModelingToolkit v11); introduces unified
 hybrid model support for mixed ODE/SDE/Jump systems; supports user-provided
-coupled ODEs, SDEs, jump processes, and jump-diffusions; and modernizes the conversion and
-problem-creation API.
+coupled ODEs, SDEs, jump processes, and jump-diffusions; and modernizes the
+conversion and problem-creation API.
 
 Please also see the [ModelingToolkit
 NEWS.md](https://github.com/SciML/ModelingToolkit.jl/blob/master/NEWS.md) for
@@ -25,12 +25,16 @@ and which are now relevant for Catalyst users.
   
   Most commonly used functions (`unknowns`, `parameters`, `equations`,
   `@mtkcompile`, etc.) are available through ModelingToolkitBase. However, if
-  you relied on `structural_simplify`, now handled via `mtkcompile`, for reducing models with algebraic equations, you may need to explicitly load ModelingToolkit:
+  you relied on `structural_simplify`, now part of `mtkcompile`, for
+  reducing models with algebraic equations, you may need to explicitly load
+  ModelingToolkit to obtain equivalent levels of model reduction and optimization:
   ```julia
   using Catalyst
   using ModelingToolkit  # only if you need MTK-specific features not in MTKBase
   ```
-  The version of `mtkcompile` in ModelingToolkitBase is less feature filled than in ModelingToolkit, but please be aware that the latter version now loads AGPL-licensed libraries that may impose additional restrictions on your code.
+  The version of `mtkcompile` in ModelingToolkitBase is less feature filled than
+  in ModelingToolkit, but please be aware that the latter version now loads
+  AGPL-licensed libraries that may impose additional restrictions on your code.
 
 #### BREAKING: Conversion functions renamed
 
@@ -167,9 +171,10 @@ and which are now relevant for Catalyst users.
   (e.g., Michaelis-Menten rates passed via the `=>` arrow) would fail
   validation because substrate units were erroneously included.
 
-- **`validate_units(rs::ReactionSystem)` now also validates non-reaction equations**
-  (including those involving brownian and poissonian noise terms), checking that
-  left- and right-hand side units match. **Note**, currently events and user-provided `jumps` are not unit checked.
+- **`validate_units(rs::ReactionSystem)` now also validates non-reaction
+  equations** (including those involving brownian and poissonian noise terms),
+  checking that left- and right-hand side units match. **Note**, currently
+  events and user-provided `jumps` are not unit checked.
 
 - **Unit checks now validate comparison/conditional expressions and exponent units**
   in equations and rates. Comparisons are treated as unitless predicates with
@@ -202,7 +207,8 @@ and which are now relevant for Catalyst users.
   `System`.
 
 #### BREAKING: Several functions no longer exported
-The following are now considered internal, no longer exported, and could be removed at any time:
+The following are now considered internal, no longer exported, and could be
+removed at any time:
 - **`isequivalent`**.
 - **`symmap_to_varmap`**
 
@@ -310,7 +316,8 @@ An aggregator can be designated through the `aggregator` key word argument (with
 
 #### BREAKING: New syntax for events in DSL.
 
-The affect part of events in the DSL (and only in the DSL) now uses `=>` instead of `~`. I.e.
+The affect part of events in the DSL (and only in the DSL) now uses `=>` instead
+of `~`. I.e.
 ```julia
 @reaction_network begin
     @discrete_events begin
@@ -330,9 +337,9 @@ instead of
     (p,d), 0 <--> X
 end
 ```
-This is to align with a future expected ModelingToolkit update creating so-called "Assignment affects". 
-
-Other aspects of events within teh DSL remains unchanged (see next section regarding more general event updates).
+This is to align with a future expected ModelingToolkit update creating
+so-called "Assignment affects". Other aspects of events within the DSL remain
+unchanged (see next section regarding more general event updates).
 
 #### New: MTK v11 event and callback features
 
@@ -398,8 +405,10 @@ for full details on these features.
 #### New: `brownians`, `poissonians`, and `jumps` fields in ReactionSystem
 
 - **`ReactionSystem` now has `brownians`, `poissonians`, and `jumps` fields** to
-  support non-reaction coupled Brownian motions, Poisson jump noise, and
-  explicit jump processes. This mirrors the capability in ModelingToolkitBase's
+  support non-reaction differential equations containing Brownian motions and/or
+  unit Poisson counting process-based jumps, and to also support explicitly
+  passed coupled jumps (i.e. symbolic `VariableRateJump`s, `ConstantRateJump`s,
+  or `MassActionJump`s). This mirrors the capability in ModelingToolkitBase's
   `System` struct and enables modeling hybrid stochastic systems where reactions
   couple with other equation types (ODEs, SDEs, PDMPs, jump-diffusions, etc). 
 
@@ -525,7 +534,9 @@ for full details on these features.
   # State-dependent rate → VariableRateJump (e.g. pure-birth / Yule process)
   @poissonians dN_birth(k * X)  # rate depends on state X
   ```
-  We hope to add a more refined classification into `VariableRateJump`s, `ConstantRateJump`s, and `MassActionJump`s in the future.
+  We hope to add a more refined classification into `VariableRateJump`s,
+  `ConstantRateJump`s, and `MassActionJump`s in the future.
+
 - **`ode_model`, `sde_model`, and `jump_model` error with informative messages**
   when called on systems containing poissonians. Use `HybridProblem` instead,
   which handles the poissonian-to-jump conversion automatically.
@@ -566,7 +577,22 @@ for full details on these features.
 
 #### New: `U0Map` and `ParameterMap` system-level metadata
 
-New metadata keys `U0Map` and `ParameterMap` with convenience accessors (`has_u0_map`, `get_u0_map`, `set_u0_map` and `has_parameter_map`, `get_parameter_map`, `set_parameter_map`) allow file parsers to store species/variable and parameter value mappings on a `ReactionSystem` in formats distinct from `initial_conditions`. These are set via the `metadata` keyword or `set_*` functions and are preserved through `flatten`, `complete`, and model conversions. **Note** that Catalyst does not use these at all, they, and other metadata, are intended to provide a way for users to cache additional information in a system.
+New metadata keys `U0Map` and `ParameterMap` with convenience accessors
+(`has_u0_map`, `get_u0_map`, `set_u0_map` and `has_parameter_map`,
+`get_parameter_map`, `set_parameter_map`) allow file parsers to store
+species/variable and parameter value mappings on a `ReactionSystem` in formats
+distinct from `initial_conditions`. These are set via the `metadata` keyword or
+`set_*` functions and are preserved through `flatten`, `complete`, and model
+conversions. **Note** that Catalyst does not use these at all, they, and other
+metadata, are intended to provide a way for users to cache additional
+information in a system.
+
+### Additional note: `remake` for `NonlinearProblems`s with `remove_conserved = true` fully functional
+Previously there were some limitations when applying `remake` on a
+`NonlinearProblems` where `remove_conserved = true` had been used. This is no
+longer the case. The associated warning has been removed, and the default is now
+`remove_conserved = false` for `NonlinearProblem`s, consistent with all other
+problem types.
 
 ## Catalyst 15.0
 - The Catalyst release process is changing; certain core dependencies of

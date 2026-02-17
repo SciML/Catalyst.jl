@@ -497,7 +497,7 @@ end
 # merge constraint components with the ReactionSystem components
 # also handles removing BC and constant species
 function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved = false,
-        treat_conserved_as_eqs = false)
+        compute_cl_initeqs = false)
     # if there are BC species, put them after the independent species
     rssts = get_unknowns(rs)
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
@@ -514,21 +514,15 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
         ps = copy(ps)
         push!(ps, nps.conservedconst)
 
-        if treat_conserved_as_eqs
-            # add back previously removed dependent species
-            sts = union(sts, nps.depspecs)
+        # add the dependent species as observed
+        obs = copy(obs)
+        append!(obs, conservedequations(rs))
 
-            # treat conserved eqs as normal eqs (lhs must be `0` in case structural simplify is not used)
-            append!(eqs, [0 ~ eq.rhs - eq.lhs for eq in conservationlaw_constants(rs)])
-
-            # add initialization equations for conserved parameters
+        # create initialization equations (only used for nonlinear systems)        
+        if compute_cl_initeqs
             initialmap = Dict(u => Initial(u) for u in species(rs))
             conseqs = conservationlaw_constants(rs)
             initeqs = [Symbolics.substitute(conseq, initialmap) for conseq in conseqs]
-        else
-            # add the dependent species as observed
-            obs = copy(obs)
-            append!(obs, conservedequations(rs))
         end
     end
 
@@ -781,15 +775,6 @@ function ode_model(rs::ReactionSystem; name = nameof(rs),
         expand_catalyst_funs, kwargs...)
 end
 
-const NONLIN_PROB_REMAKE_WARNING = """
-    Note, when constructing nonlinear systems with `remove_conserved = true`, possibly via \
-    calling `NonlinearProblem`, `remake(::NonlinearProblem)` has some \
-    limitations. If in `remake` the value of the conserved constant is \
-    explicitly updated, it is not possible to have one variable's `u0` value \
-    auto-update to preserve the conservation law. See the [FAQ \
-    entry](https://docs.sciml.ai/Catalyst/stable/faqs/#faq_remake_nonlinprob) for more \
-    details. This warning can be disabled by passing `conseqs_remake_warn = false`."""
-
 function is_autonomous_error(iv)
     return """
     Attempting to convert a non-autonomous `ReactionSystem` (e.g. where some rate depends \
@@ -875,23 +860,17 @@ Keyword args and default values:
   underlying set of reactions (ignoring coupled ODE or algebraic equations). For each
   conservation law one steady-state equation is eliminated, and replaced with the
   conservation law. This ensures a non-singular Jacobian.
-- `conseqs_remake_warn = true`, set to false to disable warning about `remake` and
-  conservation laws. See the [FAQ
-  entry](https://docs.sciml.ai/Catalyst/stable/faqs/#faq_remake_nonlinprob) for more
-  details.
 - `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
   with their rational function representation when converting to another system type. Set to
   `false` to disable.
 """
 function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        remove_conserved = false, conseqs_remake_warn = true, checks = false,
-        initial_conditions = Dict(),
+        remove_conserved = false, checks = false, initial_conditions = Dict(),
         all_differentials_permitted = false, expand_catalyst_funs = true, kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, System)
-    remove_conserved && conseqs_remake_warn && (@warn NONLIN_PROB_REMAKE_WARNING)
     isautonomous(rs) || error(is_autonomous_error(get_iv(rs)))
 
     # Generates system equations.
@@ -901,7 +880,7 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
         as_odes = false, include_zero_odes = false, expand_catalyst_funs)
     eqs, us, ps, obs, defs, initeqs = addconstraints!(eqs, fullrs, ists, ispcs;
-        remove_conserved, treat_conserved_as_eqs = true)
+        remove_conserved, compute_cl_initeqs = true)
 
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.
@@ -1200,10 +1179,6 @@ Keyword args and default values:
   conservation law. This ensures a non-singular Jacobian. When using this option, it is
   recommended to call `ModelingToolkitBase.structural_simplify` on the converted system to then
   eliminate the conservation laws from the system equations.
-- `conseqs_remake_warn = true`, set to false to disable warning about `remake` and
-  conservation laws. See the [FAQ
-  entry](https://docs.sciml.ai/Catalyst/stable/faqs/#faq_remake_nonlinprob) for more
-  details.
 - `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
   with their rational function representation when converting to another system type. Set to
   `false`` to disable.
@@ -1211,12 +1186,10 @@ Keyword args and default values:
 function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         p = DiffEqBase.NullParameters(), args...;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        remove_conserved = false, conseqs_remake_warn = true, checks = false,
-        check_length = false, expand_catalyst_funs = true,
+        remove_conserved = false,  checks = false, check_length = false, expand_catalyst_funs = true,
         structural_simplify = false, all_differentials_permitted = false, kwargs...)
-    nlsys = ss_ode_model(rs; name, combinatoric_ratelaws, checks,
-        all_differentials_permitted, remove_conserved, conseqs_remake_warn,
-        expand_catalyst_funs)
+    nlsys = ss_ode_model(rs; name, combinatoric_ratelaws, checks, all_differentials_permitted,
+        remove_conserved, expand_catalyst_funs)
     nlsys = structural_simplify ? MT.mtkcompile(nlsys) : complete(nlsys)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any,Any}(u0), Dict{Any,Any}(p))
     return NonlinearProblem(nlsys, prob_cond, args...; check_length,

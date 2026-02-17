@@ -37,6 +37,6 @@ function bkext_make_nsys(rs, u0)
     cons_default = [cons_eq.rhs for cons_eq in cons_eqs]
     cons_default = Catalyst.get_networkproperties(rs).conservedconst => cons_default
     initial_conditions = Dict([u0; cons_default])
-    nsys = ss_ode_model(rs; initial_conditions, remove_conserved = true, conseqs_remake_warn = false)
+    nsys = ss_ode_model(rs; initial_conditions, remove_conserved = true)
     return complete(nsys)
 end
