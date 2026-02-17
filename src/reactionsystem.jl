@@ -200,6 +200,18 @@ function find_jump_vars!(ps, us, jumps::Vector, t)
     end
 end
 
+# Loops through all tstop expressions, adding encountered unknowns and parameters
+# to their respective vectors (`ps` and `us`). Strips any `ParentScope` metadata
+# (added by `@named` via `default_to_parentscope`) so `collect_vars!` doesn't skip
+# the variables, then unwraps (Num → SymbolicT) for traversal.
+function find_tstop_vars!(ps, us, tstops::Vector, t)
+    for ts in tstops
+        wu = unwrap(ts)
+        wu isa SymbolicT && (wu = unwrap(MT.LocalScope(wu)))
+        MT.collect_vars!(us, ps, wu, t)
+    end
+end
+
 ### ReactionSystem Structure ###
 
 """
@@ -216,7 +228,7 @@ const reactionsystem_fields = (
     :eqs, :rxs, :iv, :sivs, :unknowns, :species, :ps, :var_to_name,
     :observed, :name, :systems, :initial_conditions,
     :networkproperties, :combinatoric_ratelaws, :continuous_events,
-    :discrete_events, :brownians, :poissonians, :jumps, :metadata, :complete, :parent)
+    :discrete_events, :tstops, :brownians, :poissonians, :jumps, :metadata, :complete, :parent)
 
 """
 $(TYPEDEF)
@@ -254,6 +266,8 @@ Keyword Arguments:
   the `ReactionSystem`.
 - `balanced_bc_check = true`, sets whether to check that BC species appearing in reactions
   are balanced (i.e appear as both a substrate and a product with the same stoichiometry).
+- `tstops = []`, a vector of extra time points for the integrator to stop at. These can be
+  numeric values or symbolic expressions of parameters and time.
 - `brownians`, vector of Brownian variables for non-reaction SDE noise (created via
   `@brownians`). Auto-discovered from equations in the two-argument constructor.
 - `poissonians`, vector of Poissonian variables for Poisson jump noise (created via
@@ -305,6 +319,11 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     true at the end of an integration step.
     """
     discrete_events::Vector{MT.SymbolicDiscreteCallback}
+    """
+    tstops: A `Vector{Any}` of extra time points for the integrator to stop at.
+    These can be numeric values or symbolic expressions of parameters and time.
+    """
+    tstops::Vector{Any}
     """Brownian variables for non-reaction noise, created via @brownians."""
     brownians::Vector{SymbolicT}
     """Poissonian variables for Poisson jump noise, created via @poissonians."""
@@ -327,7 +346,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
 
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
-            name, systems, defaults, nps, cls, cevs, devs,
+            name, systems, defaults, nps, cls, cevs, devs, tstops,
             brownians, poissonians, jumps, metadata, complete = false, parent = nothing;
             checks::Bool = true, unit_checks::Bool = false)
 
@@ -349,7 +368,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
         rs = new{typeof(nps)}(
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
             name, systems, defaults, nps, cls, cevs,
-            devs, brownians, poissonians, jumps, metadata, complete, parent)
+            devs, tstops, brownians, poissonians, jumps, metadata, complete, parent)
         unit_checks && assert_valid_units(rs; info = string("ReactionSystem constructor for ", name))
         rs
     end
@@ -383,6 +402,7 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
         spatial_ivs = nothing,
         continuous_events = nothing,
         discrete_events = nothing,
+        tstops = [],
         metadata = MT.MetadataT(),
         disable_forbidden_symbol_check = false)
 
@@ -479,7 +499,7 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
     ReactionSystem(
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
         systems, initial_conditions, nps, combinatoric_ratelaws,
-        continuous_events, discrete_events, brownians′, poissonians′, jumps′, metadata;
+        continuous_events, discrete_events, tstops, brownians′, poissonians′, jumps′, metadata;
         checks, unit_checks)
 end
 
@@ -528,7 +548,7 @@ end
 # but carried out at a later stage.
 function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in, brownians = SymbolicT[];
         poissonians = SymbolicT[], spatial_ivs = nothing, continuous_events = [],
-        discrete_events = [], observed = [], jumps = JumpType[], kwargs...)
+        discrete_events = [], tstops = [], observed = [], jumps = JumpType[], kwargs...)
 
     # Error if any observables have been declared a species or variable
     obs_vars = Set(obs_eq.lhs for obs_eq in observed)
@@ -585,6 +605,9 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in, bro
     # Loops through all jumps, adding encountered quantities to the unknown and parameter vectors.
     find_jump_vars!(ps, us, jumps, t)
 
+    # Loops through all tstop expressions, adding encountered quantities to the unknown and parameter vectors.
+    find_tstop_vars!(ps, us, tstops, t)
+
     # Discover parameters/unknowns from observed equation RHS.
     # Only process RHS to avoid adding observable LHS to unknowns (observables stay observables).
     for eq in observed
@@ -613,7 +636,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in, bro
     # Passes the processed input into the next `ReactionSystem` call.
     # Note: brownians are passed as the 5th positional argument.
     ReactionSystem(fulleqs, t, usv, psv, brownians; poissonians, spatial_ivs,
-        continuous_events, discrete_events, observed, jumps, kwargs...)
+        continuous_events, discrete_events, tstops, observed, jumps, kwargs...)
 end
 
 ### Base Function Dispatches ###
@@ -718,6 +741,8 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
         MT.get_continuous_events(rn2), "cevents"; debug) || return false
     debug_comparer(discrete_events_equal, MT.get_discrete_events(rn1),
         MT.get_discrete_events(rn2), "devents"; debug) || return false
+    debug_comparer(issetequal, MT.get_tstops(rn1), MT.get_tstops(rn2), "tstops"; debug) ||
+        return false
 
     # brownians, poissonians, and jumps
     debug_comparer(issetequal, MT.get_brownians(rn1), MT.get_brownians(rn2), "brownians"; debug) ||
@@ -1473,6 +1498,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
         spatial_ivs = get_sivs(rs),
         continuous_events = MT.continuous_events(rs),
         discrete_events = MT.discrete_events(rs),
+        tstops = MT.symbolic_tstops(rs),
         metadata = MT.get_metadata(rs))
 end
 
@@ -1555,6 +1581,7 @@ function MT.extend(sys::ReactionSystem, rs::ReactionSystem;
     defs = merge(MT.get_initial_conditions(rs), MT.get_initial_conditions(sys)) # prefer `sys`
     continuous_events = union(MT.get_continuous_events(rs), MT.get_continuous_events(sys))
     discrete_events = union(MT.get_discrete_events(rs), MT.get_discrete_events(sys))
+    tstops = vcat(MT.get_tstops(rs), MT.get_tstops(sys))
 
     # ReactionSystem specific properties
     combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(sys) |
@@ -1578,7 +1605,8 @@ function MT.extend(sys::ReactionSystem, rs::ReactionSystem;
         balanced_bc_check = false,
         spatial_ivs = sivs,
         continuous_events,
-        discrete_events)
+        discrete_events,
+        tstops)
 end
 
 ### Units Handling ###

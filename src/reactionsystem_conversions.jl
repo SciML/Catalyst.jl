@@ -727,6 +727,7 @@ function hybrid_model(rs::ReactionSystem;
         checks,
         continuous_events = MT.get_continuous_events(flatrs),
         discrete_events = MT.get_discrete_events(flatrs),
+        tstops = MT.get_tstops(flatrs),
         metadata = MT.get_metadata(rs),
         kwargs...)
 end
@@ -832,6 +833,7 @@ function system_to_reactionsystem(sys::MT.AbstractSystem;
     jmps = MT.jumps(sys)
     cevs = MT.get_continuous_events(sys)
     devs = MT.get_discrete_events(sys)
+    tstps = MT.get_tstops(sys)
     meta = MT.get_metadata(sys)
     ics = MT.initial_conditions(sys)
 
@@ -853,6 +855,7 @@ function system_to_reactionsystem(sys::MT.AbstractSystem;
         initial_conditions = ics,
         continuous_events = cevs,
         discrete_events = devs,
+        tstops = tstps,
         metadata = meta,
         checks,
         disable_forbidden_symbol_check)
