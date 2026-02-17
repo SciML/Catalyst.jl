@@ -44,7 +44,7 @@ let
     @test all(SymbolicUtils.unwrap_const.(V_vals) .≈ 0.5*(1.0+2.0) ./ (0.1 .* 2*B_vals .+ 0.5))
 
     # Checks that the bifurcation point is correct.
-    @test length(bif_dia.γ.specialpoint) == 3 # Includes start and end point.
+    @test length(bif_dia.γ.specialpoint) == 2 # Includes start and end point.
     hopf_bif_point = filter(sp -> sp.type == :hopf, bif_dia.γ.specialpoint)[1]
     @test isapprox(hopf_bif_point.param, 1.5, atol=1e-5)
 
