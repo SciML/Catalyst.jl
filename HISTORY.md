@@ -549,6 +549,9 @@ for full details on these features.
 
 New metadata keys `U0Map` and `ParameterMap` with convenience accessors (`has_u0_map`, `get_u0_map`, `set_u0_map` and `has_parameter_map`, `get_parameter_map`, `set_parameter_map`) allow file parsers to store species/variable and parameter value mappings on a `ReactionSystem` in formats distinct from `initial_conditions`. These are set via the `metadata` keyword or `set_*` functions and are preserved through `flatten`, `complete`, and model conversions. **Note** that Catalyst does not use these at all, they, and other metadata, are intended to provide a way for users to cache additional information in a system.
 
+### Additional note: `remake` for `NonlinearProblems`s with `remove_conserved = true` fully functional
+Previously there were some limitations when applying `remake` on a `NonlinearProblems` where `remove_conserved = true` had been used. This is not longer the case. This also mean that the associate warning, and the `remove_conserved = true` argument to `NonlinearProblems`, has been removed.
+
 ## Catalyst 15.0
 - The Catalyst release process is changing; certain core dependencies of
   Catalyst will now be capped to ensure Catalyst releases are only installed

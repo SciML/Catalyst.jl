@@ -125,14 +125,13 @@ let
 
     let # SteadyStateProblem issue from MTK #4177 is now fixed.
         # Checks that steady states found using nonlinear solving and steady state simulations are identical.
-        nsys = ss_ode_model(rn; remove_conserved = true, conseqs_remake_warn = false)
+        nsys = ss_ode_model(rn; remove_conserved = true)
         nsys_ss = mtkcompile(nsys)
         nsys = complete(nsys)
         nprob1 = NonlinearProblem{true}(nsys, merge(Dict(u0), Dict(p)))
         nprob1b = NonlinearProblem{true}(nsys_ss, merge(Dict(u0), Dict(p)))
-        nprob2 = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false)
-        nprob2b = NonlinearProblem(rn, u0, p; remove_conserved = true, conseqs_remake_warn = false,
-            structural_simplify = true)
+        nprob2 = NonlinearProblem(rn, u0, p; remove_conserved = true)
+        nprob2b = NonlinearProblem(rn, u0, p; remove_conserved = true, structural_simplify = true)
         nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
         nsol1b = solve(nprob1b, NewtonRaphson(); abstol = 1e-8)
         nsol2 = solve(nprob2, NewtonRaphson(); abstol = 1e-8)
@@ -325,7 +324,7 @@ let
     sprob = SDEProblem(rn, ss, 1.0, ps; jac = true)
     sprob_rc = SDEProblem(rn, ss, 1.0, ps; jac = true, remove_conserved = true)
     nlprob = NonlinearProblem(rn, ss, ps; jac = true)
-    nlprob_rc = NonlinearProblem(rn, ss, ps; jac = true, remove_conserved = true, conseqs_remake_warn = false, structural_simplify = true)
+    nlprob_rc = NonlinearProblem(rn, ss, ps; jac = true, remove_conserved = true, structural_simplify = true)
 
     # Checks that removing conservation laws generates non-singular Jacobian (and else that it is singular).
     @test is_singular(oprob) == true
@@ -357,7 +356,7 @@ end
     # Loops through the tests for different problem types.
     oprob = ODEProblem(rn, u0, 1.0, ps; remove_conserved = true)
     sprob = SDEProblem(rn, u0, 1.0, ps; remove_conserved = true)
-    # nlprob = NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = false)
+    # nlprob = NonlinearProblem(rn, u0, ps; remove_conserved = true)
     for (prob_old, solver) in zip([oprob, sprob], [Tsit5(), ImplicitEM()])
         # For a couple of iterations, updates the problem, ensuring that when a species is updated:
         # - Only that species and the conservation constant have their values updated.
@@ -498,8 +497,7 @@ let
     @test sol[X[2]][end] ≈ 4.0
 end
 
-# Check conservation law elimination warnings (and the disabling of these) for nonlinear `System`s
-# and `NonlinearProblem`s.
+# Check that `remake` work properly for `NonlinearProblem`s
 @test_broken let
     return false
     # Create models.
@@ -509,12 +507,6 @@ end
     end
     u0 = [:X1 => 1.0, :X2 => 2.0, :X3 => 3.0]
     ps = [:k1 => 0.1, :k2 => 0.2, :k3 => 0.3, :k4 => 0.4]
-
-    # Checks that the warning si given and can be suppressed for the variosu cases.
-    @test_nowarn ss_ode_model(rn; remove_conserved = true, conseqs_remake_warn = false)
-    @test_logs (:warn, r"Note, when constructing*") ss_ode_model(rn; remove_conserved = true, conseqs_remake_warn = true)
-    @test_nowarn NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = false)
-    @test_logs (:warn, Catalyst.NONLIN_PROB_REMAKE_WARNING) NonlinearProblem(rn, u0, ps; remove_conserved = true, conseqs_remake_warn = true)
 
     # @variables X1 X2 X3
     # @parameters k1 k2 k3 k4 Γ[1:1] = missing [guess = ones(1)]
@@ -529,8 +521,7 @@ end
 
 
     # WITHOUT structural_simplify
-    nlsys = ss_ode_model(rn; remove_conserved = true,
-        conseqs_remake_warn = false)
+    nlsys = ss_ode_model(rn; remove_conserved = true)
     nlsys1 = complete(nlsys)
     nlprob1 = NonlinearProblem(nlsys1, [u0; ps])
 
