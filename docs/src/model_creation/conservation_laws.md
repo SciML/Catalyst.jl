@@ -1,7 +1,11 @@
 # [Working with Conservation Laws](@id conservation_laws)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
 ```julia
 using Pkg
-Pkg.activate(".")
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("Catalyst")
 Pkg.add("Latexify")
 Pkg.add("OrdinaryDiffEqDefault")
