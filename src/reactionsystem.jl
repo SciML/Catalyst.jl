@@ -215,8 +215,11 @@ end
 function check_tstops(tstops, unknowns, iv)
     isempty(tstops) && return nothing
     unknowns_set = Set(unknowns)
+    SymT = typeof(iv)
+    found_us = OrderedSet{SymT}()
+    found_ps = OrderedSet{SymT}()
     for ts in tstops
-        tsu = unwrap(ts)
+        tsu = Symbolics.value(ts)
         # Numeric literals are always valid tstops — skip symbolic checks.
         (tsu isa Real) && continue
         # Check that the independent variable does not appear in the tstop expression.
@@ -224,8 +227,9 @@ function check_tstops(tstops, unknowns, iv)
             throw(ArgumentError("Tstop expression `$ts` depends on the independent variable `$iv`. Tstops must be computable before the solve starts."))
         end
         # Check that no unknowns (species/variables) appear in the tstop expression.
-        found_us = OrderedSet{typeof(iv)}()
-        MT.collect_vars!(found_us, OrderedSet{typeof(iv)}(), tsu, iv)
+        empty!(found_us)
+        empty!(found_ps)
+        MT.collect_vars!(found_us, found_ps, tsu, iv)
         for v in found_us
             if v in unknowns_set
                 throw(ArgumentError("Tstop expression `$ts` contains unknown `$v`. Tstops must only depend on parameters and constants, not dynamic state."))
