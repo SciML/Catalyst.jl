@@ -114,13 +114,13 @@ kinase_model = @reaction_network begin
 end
 
 u_guess = [:K => 1.0, :X => 1.0, :Xp => 1.0]
-p_start = [:p => 1.0, :d => 0.5, :kP => 2.0, :kD => 5.0]
+p_start = [:p => 1.0, :d => 0.1, :kP => 2.0, :kD => 5.0]
 u0 = [:X => 1.0, :Xp => 0.0]
 bprob = BifurcationProblem(kinase_model, u_guess, p_start, :d; plot_var = :Xp, u0)
 
 p_span = (0.1, 10.0)
 opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2])
-bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
+bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br)
 plot(bif_dia; xguide = "d", yguide = "Xp")
 ```
 This bifurcation diagram does not contain any interesting features (such as bifurcation points), and only shows how the steady state concentration of $Xp$ is reduced as $d$ increases. 
