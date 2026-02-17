@@ -481,6 +481,12 @@ end
 
 ### Tstops Tests ###
 
+# NOTE: These tests use `name = :foo` instead of `@named` because of an MTKBase bug where
+# `_named` checks `op isa DataType` instead of `op isa Type`. Since `ReactionSystem{V}` is a
+# `UnionAll` (not a `DataType`), `@named` incorrectly applies `default_to_parentscope` to
+# all kwargs, adding `ParentScope` metadata to symbolic tstop values. Once this is fixed,
+# these tests can be switched back to use `@named`.
+
 # Tests that a system without tstops has empty tstops by default.
 let
     @species X(t)
