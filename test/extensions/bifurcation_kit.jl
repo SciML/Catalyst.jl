@@ -30,7 +30,7 @@ let
     end
     @unpack A, B, k1 = extended_brusselator
     u0_guess = [:X => 1.0, :Y => 1.0, :V => 0.0, :W => 0.0]
-    p_start = [A => 1.0, B => 4.0, k1 => 0.1]
+    p_start = [A => 1.0, B => 0.1, k1 => 0.1]
 
     # Computes bifurcation diagram.
     bprob = BifurcationProblem(extended_brusselator, u0_guess, p_start, :B; plot_var = :V, u0 = [:V => 1.0])
@@ -41,7 +41,7 @@ let
     # Checks computed V values are correct (Formula: V = k2*(V0+W0)/(k1*Y+k2), where Y=2*B.)
     B_vals = getfield.(bif_dia.γ.branch, :param)
     V_vals = getfield.(bif_dia.γ.branch, :x)
-    @test all(V_vals .≈ 0.5*(1.0+2.0) ./ (0.1 .* 2*B_vals .+ 0.5))
+    @test all(SymbolicUtils.unwrap_const.(V_vals) .≈ 0.5*(1.0+2.0) ./ (0.1 .* 2*B_vals .+ 0.5))
 
     # Checks that the bifurcation point is correct.
     @test length(bif_dia.γ.specialpoint) == 3 # Includes start and end point.
