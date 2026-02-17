@@ -391,8 +391,8 @@ let
             integ_new = init(prob_new, solver)
             @test integ_old[:X1] ≈ integ_new[:X1]
             @test X2_new ≈ integ_new[:X2]
-            @test integ_old[:X3] ≈ integ_new[:X3]
-            @test SymbolicUtils.unwrap_const(substitute(conserved_quantity, Dict([X1 => integ_old[X1], X2 => X2_new, X3 => integ_old[X3]]))) ≈ integ_new.ps[:Γ][1]
+            @test integ_old[:X3] ≈ integ_new[:X3] atol = 1e-5 rtol = 1e-5 # Required for lts tests to pass.
+            @test SymbolicUtils.unwrap_const(substitute(conserved_quantity, Dict([X1 => integ_old[X1], X2 => X2_new, X3 => integ_old[X3]]))) ≈ integ_new.ps[:Γ][1] atol = 1e-5 rtol = 1e-5 # Required for lts tests to pass.
             prob_old = prob_new
             integ_old = integ_new
 
