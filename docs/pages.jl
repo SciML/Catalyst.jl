@@ -51,7 +51,7 @@ pages = Any[
     "steady_state_functionality/nonlinear_solve.md",
     "steady_state_functionality/steady_state_stability_computation.md",
     # "steady_state_functionality/bifurcation_diagrams.md", # https://github.com/SciML/ModelingToolkit.jl/issues/4228
-    "steady_state_functionality/dynamical_systems.md",
+    # "steady_state_functionality/dynamical_systems.md", # https://github.com/JuliaDynamics/Attractors.jl/issues/194#issuecomment-3913300679
     "Examples" => Any[
         "steady_state_functionality/examples/nullcline_plotting.md",
         "steady_state_functionality/examples/bifurcationkit_periodic_orbits.md",
@@ -69,9 +69,9 @@ pages = Any[
     #]
 ],
 "Spatial modelling" => Any[
-    "spatial_modelling/discrete_space_reaction_systems.md",
-    "spatial_modelling/discrete_space_simulation_structure_interaction.md",
-    "spatial_modelling/discrete_space_simulation_plotting.md",
+    "spatial_modelling/lattice_reaction_systems.md",
+    "spatial_modelling/lattice_simulation_structure_ interaction.md",
+    "spatial_modelling/lattice_simulation_plotting.md",
     "spatial_modelling/spatial_ode_simulations.md",
     "spatial_modelling/spatial_jump_simulations.md"
 ],
