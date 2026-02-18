@@ -601,29 +601,87 @@ let
     @test issetequal(ModelingToolkitBase.get_tstops(rs_back), Any[t_switch, 5.0])
 end
 
-# Integration test: solve ODE with symbolic expression tstops and a discrete event.
-# Uses multiple tstops including a parameter expression (2*t_event) to verify that
-# symbolic tstops are correctly forwarded to the solver.
+# Integration test: solve ODE with symbolic tstops and a generic symbolic discrete event.
+# Uses a symbolic condition (t == t_switch) rather than a numeric PresetTimeCallback, so the
+# tstops field is needed to ensure the solver steps to exactly t_switch.
+# Note: only ODE solvers currently support SymbolicTstops; SDE/Jump/Hybrid solvers do not.
 let
-    @variables V(t)=1.0
-    @parameters t_event=3.0
+    @variables V(t)=10.0
+    @parameters t_switch=3.0
     D = default_time_deriv()
-    eqs = [D(V) ~ -0.5 * V]
-    discrete_events = [3.0 => [V ~ 10.0], 6.0 => [V ~ 20.0]]
+    eqs = [D(V) ~ -V]
+    # Generic symbolic condition — NOT a numeric PresetTimeCallback.
+    # The tstop forces the solver to step to exactly t_switch so the equality holds.
+    discrete_events = [(t == t_switch) => [V ~ 100.0]]
     rs = complete(ReactionSystem(eqs, t; discrete_events,
-        tstops = [t_event, 2 * t_event], name = :rs))
+        tstops = [t_switch], name = :rs))
 
     osys = complete(ode_model(rs))
-    oprob = ODEProblem(osys, [], (0.0, 10.0))
+    oprob = ODEProblem(osys, [], (0.0, 8.0))
     sol = solve(oprob, Tsit5())
 
-    # After the first event at t=3.0, V should be reset to 10.0.
-    @test sol(3.0 + 10 * eps(), idxs = V) ≈ 10.0 atol=0.01
-    # After the second event at t=6.0 (= 2*t_event), V should be reset to 20.0.
-    @test sol(6.0 + 10 * eps(), idxs = V) ≈ 20.0 atol=0.01
+    # Without the tstop the solver would likely step over t_switch=3.0;
+    # with it, V is reset to 100.0 at exactly that time.
+    @test sol(3.0 + 0.01, idxs = V) ≈ 100.0 atol=1.0
 
-    # Verify both symbolic tstops were forwarded to the System.
-    @test issetequal(ModelingToolkitBase.get_tstops(osys), [t_event, 2 * t_event])
+    # Verify the symbolic tstop was forwarded to the System.
+    @test issetequal(ModelingToolkitBase.get_tstops(osys), [t_switch])
+end
+
+# Tests that symbolic tstops are forwarded through sde_model to the converted System.
+let
+    rn = @reaction_network begin
+        @parameters t_event=3.0
+        @tstops begin
+            t_event
+            2 * t_event
+        end
+        (10.0, 0.01), 0 <--> X
+    end
+    ssys = sde_model(rn)
+    @test issetequal(ModelingToolkitBase.get_tstops(ssys),
+        ModelingToolkitBase.get_tstops(rn))
+end
+
+# Tests that symbolic tstops are forwarded through jump_model to the converted System.
+let
+    rn = @reaction_network begin
+        @parameters t_event=2.0
+        @tstops begin
+            t_event
+            2 * t_event
+        end
+        (10.0, 0.01), 0 <--> X
+    end
+    jsys = jump_model(rn)
+    @test issetequal(ModelingToolkitBase.get_tstops(jsys),
+        ModelingToolkitBase.get_tstops(rn))
+end
+
+# Tests that symbolic tstops are forwarded through hybrid_model to the converted System.
+let
+    rn = @reaction_network begin
+        @parameters t_event=4.0
+        @tstops t_event
+        (10.0, 0.01), 0 <--> X
+        1.0, X --> 0, [physical_scale = Catalyst.PhysicalScale.Jump]
+    end
+    hsys = hybrid_model(rn; default_scale = Catalyst.PhysicalScale.ODE)
+    @test issetequal(ModelingToolkitBase.get_tstops(hsys),
+        ModelingToolkitBase.get_tstops(rn))
+end
+
+# Tests that SDEProblem, JumpProblem, and HybridProblem warn about unsupported symbolic tstops.
+let
+    rn = @reaction_network begin
+        @parameters t_event=3.0
+        @tstops t_event
+        (10.0, 0.01), 0 <--> X
+        1.0, X --> 0, [physical_scale = Catalyst.PhysicalScale.Jump]
+    end
+    @test_warn "Symbolic tstops" SDEProblem(rn, [:X => 999.0], (0.0, 10.0))
+    @test_warn "Symbolic tstops" JumpProblem(rn, [:X => 100], (0.0, 5.0); rng)
+    @test_warn "Symbolic tstops" HybridProblem(rn, [:X => 100.0], (0.0, 5.0); rng)
 end
 
 # Tests that tstops containing unknowns (species/variables) are rejected.

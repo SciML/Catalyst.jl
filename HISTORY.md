@@ -606,6 +606,12 @@ New metadata keys `U0Map` and `ParameterMap` with convenience accessors (`has_u0
   equivalence checking (`isequivalent`), following the same patterns as events
   and brownians.
 
+- **Solver support**: Symbolic tstops are currently only supported when solving
+  `ODEProblem`s. Creating an `SDEProblem`, `JumpProblem`, or `HybridProblem`
+  from a `ReactionSystem` with symbolic tstops will emit a warning. The tstops
+  are still stored and forwarded, so they will work automatically once the
+  underlying solver ecosystems add support.
+
 ## Catalyst 15.0
 - The Catalyst release process is changing; certain core dependencies of
   Catalyst will now be capped to ensure Catalyst releases are only installed

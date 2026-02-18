@@ -1021,6 +1021,7 @@ function sde_model(rs::ReactionSystem;
             checks,
             continuous_events = MT.get_continuous_events(flatrs),
             discrete_events = MT.get_discrete_events(flatrs),
+            tstops = MT.get_tstops(flatrs),
             metadata = MT.get_metadata(rs),
             kwargs...)
     else
@@ -1155,6 +1156,17 @@ end
 
 ### Problems ###
 
+# Warn if a system has symbolic tstops and the target problem type doesn't support them.
+# Should be called on an already-flattened system to avoid redundant flatten overhead.
+function _warn_symbolic_tstops(sys, problem_type::String)
+    if !isempty(MT.get_tstops(sys))
+        @warn "Symbolic tstops are currently only supported for ODEProblem. The tstops on this \
+               system will be stored but ignored when solving the $problem_type. Once the \
+               $problem_type solver supports symbolic tstops this warning will be removed."
+    end
+    nothing
+end
+
 # ODEProblem from AbstractReactionNetwork
 function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
         p = DiffEqBase.NullParameters(), args...;
@@ -1236,6 +1248,7 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
 
     # Flatten once upfront and pass to sde_model.
     flatrs = Catalyst.flatten(rs)
+    _warn_symbolic_tstops(flatrs, "SDEProblem")
     sde_sys = sde_model(flatrs; name, combinatoric_ratelaws, expand_catalyst_funs,
         include_zero_odes, checks, remove_conserved, use_legacy_noise)
 
@@ -1310,6 +1323,7 @@ function JumpProcesses.JumpProblem(rs::ReactionSystem, u0, tspan,
     # Pure jump system - use HybridProblem for hybrid ODE+SDE+Jump systems.
     jsys = complete(jump_model(rs; name, combinatoric_ratelaws, checks,
         expand_catalyst_funs, save_positions))
+    _warn_symbolic_tstops(jsys, "JumpProblem")
 
     # Use Dict{Any,Any} to prevent type promotion during merge (MTK converts to this anyway).
     op = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any,Any}(u0), Dict{Any,Any}(p))
@@ -1398,9 +1412,9 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
         checks = false,
         structural_simplify = false,
         kwargs...)
-
     # Determine which scale types are present.
     flatrs = Catalyst.flatten(rs)
+    _warn_symbolic_tstops(flatrs, "HybridProblem")
     resolved_scales = merge_physical_scales(reactions(flatrs), physical_scales, default_scale)
     has_ode, has_sde, has_jump = detect_scale_types(resolved_scales)
 
