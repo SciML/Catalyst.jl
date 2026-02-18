@@ -1627,6 +1627,19 @@ let
         end
     end
     @test Catalyst.isequivalent(rn61, rn62)
+
+    # The `@tstops` option.
+    rn71 = @reaction_network rn1 begin
+        @species X(t)
+        @tstops 1.0
+    end
+    rn72 = @reaction_network rn1 begin
+        @species X(t)
+        @tstops begin
+            1.0
+        end
+    end
+    @test Catalyst.isequivalent(rn71, rn72)
 end
 
 # test unit_checks DSL option
@@ -1864,6 +1877,106 @@ let
         @differentials D = Differential(t)
         @variables X1(t) X2(t)
         @observables X2 ~ X1
+    end
+end
+
+### Tests `@tstops` Option ###
+
+# Tests that @tstops with numeric values stores them correctly.
+let
+    rn = @reaction_network begin
+        @tstops begin
+            1.0
+            2.0
+            3.0
+        end
+        d, X --> 0
+    end
+    @test issetequal(ModelingToolkitBase.get_tstops(rn), [1.0, 2.0, 3.0])
+end
+
+# Tests that @tstops with a single numeric value works.
+let
+    rn = @reaction_network begin
+        @tstops 5.0
+        d, X --> 0
+    end
+    @test issetequal(ModelingToolkitBase.get_tstops(rn), [5.0])
+end
+
+# Tests that @tstops with a symbolic parameter auto-discovers it and is isequivalent.
+let
+    rn_dsl = @reaction_network rn begin
+        @tstops t_switch
+        d, X --> 0
+    end
+
+    @parameters d t_switch
+    @species X(t)
+    rxs = [Reaction(d, [X], nothing)]
+    rn_prog = complete(ReactionSystem(rxs, t; name = :rn, tstops = [t_switch]))
+    @test Catalyst.isequivalent(rn_dsl, rn_prog)
+end
+
+# Tests that @tstops with symbolic expressions auto-discovers parameters and is isequivalent.
+let
+    rn_dsl = @reaction_network rn begin
+        @tstops begin
+            0.5 * t_switch
+            t_switch + 1.0
+        end
+        d, X --> 0
+    end
+
+    @parameters d t_switch
+    @species X(t)
+    rxs = [Reaction(d, [X], nothing)]
+    rn_prog = complete(ReactionSystem(rxs, t; name = :rn,
+        tstops = Any[0.5 * t_switch, t_switch + 1.0]))
+    @test Catalyst.isequivalent(rn_dsl, rn_prog)
+end
+
+# Tests that DSL-created system with @tstops is isequivalent to programmatic construction.
+let
+    rn_dsl = @reaction_network rn begin
+        @parameters t_switch
+        @tstops begin
+            t_switch
+            5.0
+        end
+        d, X --> 0
+    end
+
+    @parameters d t_switch
+    @species X(t)
+    rxs = [Reaction(d, [X], nothing)]
+    rn_prog = complete(ReactionSystem(rxs, t; name = :rn, tstops = [t_switch, 5.0]))
+    @test Catalyst.isequivalent(rn_dsl, rn_prog)
+end
+
+# Tests that a system without @tstops has empty tstops.
+let
+    rn = @reaction_network begin
+        d, X --> 0
+    end
+    @test isempty(ModelingToolkitBase.get_tstops(rn))
+end
+
+# Tests that @require_declaration errors when tstop symbols are not declared.
+let
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters d
+        @species X(t)
+        @tstops t_switch
+        d, X --> 0
+    end
+    @test_nowarn @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters d t_switch
+        @species X(t)
+        @tstops t_switch
+        d, X --> 0
     end
 end
 

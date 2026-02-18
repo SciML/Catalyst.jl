@@ -594,6 +594,50 @@ longer the case. The associated warning has been removed, and the default is now
 `remove_conserved = false` for `NonlinearProblem`s, consistent with all other
 problem types.
 
+#### New: `tstops` field for `ReactionSystem`
+
+- **`ReactionSystem` now supports a `tstops` keyword argument** for specifying
+  extra time points at which the integrator should stop. These can be numeric
+  values or symbolic expressions of parameters. Tstops are automatically
+  forwarded through model conversions (`ode_model`, `sde_model`, `jump_model`,
+  `hybrid_model`) to the underlying `System`.
+
+  ```julia
+  @parameters t_switch
+  @species X(t)
+  @named rn = ReactionSystem([Reaction(k, nothing, [X])], t;
+      tstops = [t_switch, 5.0])
+  ```
+
+- **New `@tstops` DSL option** for declaring tstops within `@reaction_network`
+  and `@network_component`. Symbols appearing in tstop expressions that are not
+  already declared are auto-discovered as parameters (consistent with how
+  reaction rate parameters are inferred):
+
+  ```julia
+  rn = @reaction_network begin
+      @tstops begin
+          t_switch           # auto-discovered as a parameter
+          0.5 * t_switch
+      end
+      (p, d), 0 <--> X
+  end
+  ```
+
+- **Tstops are validated at construction time** — expressions containing
+  unknowns (species/variables) or the independent variable are rejected with
+  an informative error, since tstops must be computable before the solve starts.
+
+- **Tstops are handled through composition** (`flatten`, `extend`) and
+  equivalence checking (`isequivalent`), following the same patterns as events
+  and brownians.
+
+- **Solver support**: Symbolic tstops are currently only supported when solving
+  `ODEProblem`s. Creating an `SDEProblem`, `JumpProblem`, or `HybridProblem`
+  from a `ReactionSystem` with symbolic tstops will emit a warning. The tstops
+  are still stored and forwarded, so they will work automatically once the
+  underlying solver ecosystems add support.
+
 ## Catalyst 15.0
 - The Catalyst release process is changing; certain core dependencies of
   Catalyst will now be capped to ensure Catalyst releases are only installed

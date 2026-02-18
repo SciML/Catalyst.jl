@@ -10,7 +10,7 @@ const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔
 # Declares the keys used for various options.
 const option_keys = (:species, :parameters, :variables, :discretes, :ivs, :compounds, :observables,
     :default_noise_scaling, :differentials, :equations, :continuous_events, :discrete_events,
-    :brownians, :poissonians, :combinatoric_ratelaws, :require_declaration, :unit_checks)
+    :tstops, :brownians, :poissonians, :combinatoric_ratelaws, :require_declaration, :unit_checks)
 
 ### `@species` Macro ###
 
@@ -287,6 +287,7 @@ function make_reaction_system(ex::Expr, name)
     discs_inferred = Vector{Symbol}()
     continuous_events_expr = read_events_option!(options, discs_inferred, ps_inferred, discs_declared, :continuous_events)
     discrete_events_expr = read_events_option!(options, discs_inferred, ps_inferred, discs_declared, :discrete_events)
+    tstops_expr, ps_inferred = read_tstops_option(options, ps_inferred, all_syms; requiredec)
     default_reaction_metadata = read_default_noise_scaling_option(options)
     combinatoric_ratelaws = read_combinatoric_ratelaws_option(options)
     unit_checks = read_unit_checks_option(options)
@@ -330,13 +331,15 @@ function make_reaction_system(ex::Expr, name)
         _observed = $obs_eqs
         _continuous_events = $continuous_events_expr
         _discrete_events = $discrete_events_expr
+        _tstops = $tstops_expr
         _combinatoric_ratelaws = $combinatoric_ratelaws
         _default_reaction_metadata = $default_reaction_metadata
 
         remake_ReactionSystem_internal(
             make_ReactionSystem_internal(rx_eq_vec, $tiv, us, ps, $brownsvar; poissonians = $poissvar,
                 name, spatial_ivs, observed = _observed, continuous_events = _continuous_events,
-                discrete_events = _discrete_events, combinatoric_ratelaws = _combinatoric_ratelaws,
+                discrete_events = _discrete_events, tstops = _tstops,
+                combinatoric_ratelaws = _combinatoric_ratelaws,
                 unit_checks = _unit_checks);
             default_reaction_metadata = _default_reaction_metadata)
     end))
@@ -995,6 +998,38 @@ function read_events_option!(options, discs_inferred::Vector, ps_inferred::Vecto
     end
 
     return events_expr
+end
+
+# Read the tstops provided as options to the DSL. Returns a tuple of (tstops_expr, ps_inferred)
+# where unknown symbols in tstop expressions are auto-discovered as parameters.
+function read_tstops_option(options, ps_inferred, all_syms; requiredec = false)
+    !haskey(options, :tstops) && return (:(Any[]), ps_inferred)
+    tstops_input = get_block_option(options[:tstops])
+
+    # Collect individual tstop arguments into a vector.
+    tstop_args = if !(tstops_input isa Expr)
+        # Single literal value (e.g. `@tstops 1.0`) — get_block_option returns non-Expr.
+        [tstops_input]
+    else
+        option_block_form(tstops_input).args
+    end
+
+    # Extract unknown symbols from tstop expressions and infer them as parameters.
+    new_ps = OrderedSet{Union{Symbol, Expr}}()
+    for arg in tstop_args
+        add_syms_from_expr!(new_ps, arg, all_syms)
+    end
+    if requiredec && !isempty(new_ps)
+        throw(UndeclaredSymbolicError("Unrecognized symbol(s) $(join(new_ps, ", ")) detected in @tstops expression. Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters option."))
+    end
+    ps_inferred = union(ps_inferred, new_ps)
+
+    # Build the output expression.
+    tstops_expr = :(Any[])
+    for arg in tstop_args
+        push!(tstops_expr.args, arg)
+    end
+    return (tstops_expr, ps_inferred)
 end
 
 # Returns the `default_reaction_metadata` output. Technically Catalyst's code could have been made

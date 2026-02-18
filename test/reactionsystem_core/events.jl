@@ -477,3 +477,258 @@ let
     @test issetequal(species(rs2), [B, C])
     @test issetequal(parameters(rs2), [k, injection_amount])
 end
+
+
+### Tstops Tests ###
+
+# NOTE: These tests use `name = :foo` instead of `@named` because of an MTKBase bug where
+# `_named` checks `op isa DataType` instead of `op isa Type`. Since `ReactionSystem{V}` is a
+# `UnionAll` (not a `DataType`), `@named` incorrectly applies `default_to_parentscope` to
+# all kwargs, adding `ParentScope` metadata to symbolic tstop values. Once this is fixed,
+# these tests can be switched back to use `@named`.
+
+# Tests that a system without tstops has empty tstops by default.
+let
+    @species X(t)
+    @parameters k
+    rxs = [Reaction(k, nothing, [X])]
+    rs = ReactionSystem(rxs, t; name = :rs)
+    @test isempty(ModelingToolkitBase.get_tstops(rs))
+end
+
+# Tests programmatic construction with numeric tstops (5-arg constructor).
+let
+    @species X(t)
+    @parameters k d
+    rxs = [Reaction(k, nothing, [X]), Reaction(d, [X], nothing)]
+    rs = ReactionSystem(rxs, t, [X], [k, d]; tstops = [1.0, 2.0, 3.0], name = :rs)
+    @test issetequal(ModelingToolkitBase.get_tstops(rs), [1.0, 2.0, 3.0])
+end
+
+# Tests programmatic construction with symbolic parameter tstops.
+let
+    @species X(t)
+    @parameters k d switch_time
+    rxs = [Reaction(k, nothing, [X]), Reaction(d, [X], nothing)]
+    rs = ReactionSystem(rxs, t, [X], [k, d, switch_time]; tstops = [switch_time], name = :rs)
+    @test issetequal(ModelingToolkitBase.get_tstops(rs), [switch_time])
+end
+
+# Tests auto-discovery of parameters in tstop expressions (2-arg constructor).
+let
+    @species X(t)
+    @parameters k t_switch
+    rxs = [Reaction(k, nothing, [X])]
+    rs = ReactionSystem(rxs, t; tstops = [t_switch, 2 * t_switch], name = :rs)
+    rs = complete(rs)
+    @test issetequal(ModelingToolkitBase.get_tstops(rs), [t_switch, 2 * t_switch])
+    @test issetequal(parameters(rs), [k, t_switch])
+end
+
+# Tests that tstops are forwarded through ode_model/hybrid_model to the converted System.
+let
+    @species X(t)
+    @parameters k d t_switch
+    rxs = [Reaction(k, nothing, [X]), Reaction(d, [X], nothing)]
+    rs = complete(ReactionSystem(rxs, t; tstops = [t_switch, 5.0], name = :rs))
+
+    osys = ode_model(rs)
+    @test issetequal(ModelingToolkitBase.get_tstops(osys), Any[t_switch, 5.0])
+
+    hsys = hybrid_model(rs; default_scale = Catalyst.PhysicalScale.ODE)
+    @test issetequal(ModelingToolkitBase.get_tstops(hsys), Any[t_switch, 5.0])
+end
+
+# Tests that flatten collects tstops from subsystems.
+let
+    @species X(t)
+    @parameters k1 k2 t1 t2
+
+    rxs_inner = [Reaction(k1, nothing, [X])]
+    inner = ReactionSystem(rxs_inner, t; tstops = [t1], name = :inner)
+
+    rxs_outer = [Reaction(k2, [X], nothing)]
+    outer = ReactionSystem(rxs_outer, t; systems = [inner], tstops = [t2], name = :outer)
+
+    flat = Catalyst.flatten(outer)
+    flat_tstops = ModelingToolkitBase.get_tstops(flat)
+    # After flattening, should contain both t2 (outer) and namespaced t1 (inner).
+    @test length(flat_tstops) == 2
+    @test any(isequal(t2), flat_tstops)
+end
+
+# Tests that extend merges tstops from both systems.
+let
+    @species X(t) Y(t)
+    @parameters k1 k2 t1 t2
+
+    rxs1 = [Reaction(k1, nothing, [X])]
+    rs1 = ReactionSystem(rxs1, t; tstops = [t1, 1.0], name = :rs1)
+
+    rxs2 = [Reaction(k2, nothing, [Y])]
+    rs2 = ReactionSystem(rxs2, t; tstops = [t2, 2.0], name = :rs2)
+
+    rs_ext = extend(rs1, rs2; name = :extended)
+    @test issetequal(ModelingToolkitBase.get_tstops(rs_ext), Any[t1, 1.0, t2, 2.0])
+end
+
+# Tests isequivalent with matching and non-matching tstops.
+let
+    @species X(t)
+    @parameters k t1
+
+    rxs = [Reaction(k, nothing, [X])]
+    rs1 = ReactionSystem(rxs, t; tstops = [t1, 1.0], name = :rs1)
+    rs2 = ReactionSystem(rxs, t; tstops = [1.0, t1], name = :rs2)
+    rs3 = ReactionSystem(rxs, t; tstops = [t1, 2.0], name = :rs3)
+    rs4 = ReactionSystem(rxs, t; name = :rs4)
+
+    @test Catalyst.isequivalent(rs1, rs2)
+    @test !Catalyst.isequivalent(rs1, rs3)
+    @test !Catalyst.isequivalent(rs1, rs4)
+end
+
+# Tests system_to_reactionsystem roundtrip preserves tstops.
+let
+    @species X(t)
+    @parameters k t_switch
+    rxs = [Reaction(k, nothing, [X])]
+    rs = complete(ReactionSystem(rxs, t; tstops = [t_switch, 5.0], name = :rs))
+
+    # Convert to System and back.
+    sys = ode_model(rs)
+    rs_back = Catalyst.system_to_reactionsystem(sys; name = :roundtrip)
+    @test issetequal(ModelingToolkitBase.get_tstops(rs_back), Any[t_switch, 5.0])
+end
+
+# Integration test: solve ODE with symbolic tstops and a generic symbolic discrete event.
+# Uses a symbolic condition (t == t_switch) rather than a numeric PresetTimeCallback, so the
+# tstops field is needed to ensure the solver steps to exactly t_switch.
+# Note: only ODE solvers currently support SymbolicTstops; SDE/Jump/Hybrid solvers do not.
+let
+    @variables V(t)=10.0
+    @parameters t_switch=3.0
+    D = default_time_deriv()
+    eqs = [D(V) ~ -V]
+    # Generic symbolic condition — NOT a numeric PresetTimeCallback.
+    # The tstop forces the solver to step to exactly t_switch so the equality holds.
+    discrete_events = [(t == t_switch) => [V ~ 100.0]]
+    rs = complete(ReactionSystem(eqs, t; discrete_events,
+        tstops = [t_switch], name = :rs))
+
+    osys = complete(ode_model(rs))
+    oprob = ODEProblem(osys, [], (0.0, 8.0))
+    sol = solve(oprob, Tsit5())
+
+    # Without the tstop the solver would likely step over t_switch=3.0;
+    # with it, V is reset to 100.0 at exactly that time.
+    @test sol(3.0 + 0.01, idxs = V) ≈ 100.0 atol=1.0
+
+    # Verify the symbolic tstop was forwarded to the System.
+    @test issetequal(ModelingToolkitBase.get_tstops(osys), [t_switch])
+end
+
+# Tests that symbolic tstops are forwarded through sde_model to the converted System.
+let
+    rn = @reaction_network begin
+        @parameters t_event=3.0
+        @tstops begin
+            t_event
+            2 * t_event
+        end
+        (10.0, 0.01), 0 <--> X
+    end
+    ssys = sde_model(rn)
+    @test issetequal(ModelingToolkitBase.get_tstops(ssys),
+        ModelingToolkitBase.get_tstops(rn))
+end
+
+# Tests that symbolic tstops are forwarded through jump_model to the converted System.
+let
+    rn = @reaction_network begin
+        @parameters t_event=2.0
+        @tstops begin
+            t_event
+            2 * t_event
+        end
+        (10.0, 0.01), 0 <--> X
+    end
+    jsys = jump_model(rn)
+    @test issetequal(ModelingToolkitBase.get_tstops(jsys),
+        ModelingToolkitBase.get_tstops(rn))
+end
+
+# Tests that symbolic tstops are forwarded through hybrid_model to the converted System.
+let
+    rn = @reaction_network begin
+        @parameters t_event=4.0
+        @tstops t_event
+        (10.0, 0.01), 0 <--> X
+        1.0, X --> 0, [physical_scale = Catalyst.PhysicalScale.Jump]
+    end
+    hsys = hybrid_model(rn; default_scale = Catalyst.PhysicalScale.ODE)
+    @test issetequal(ModelingToolkitBase.get_tstops(hsys),
+        ModelingToolkitBase.get_tstops(rn))
+end
+
+# Tests that SDEProblem, JumpProblem, and HybridProblem warn about unsupported symbolic tstops.
+let
+    rn = @reaction_network begin
+        @parameters t_event=3.0
+        @tstops t_event
+        (10.0, 0.01), 0 <--> X
+        1.0, X --> 0, [physical_scale = Catalyst.PhysicalScale.Jump]
+    end
+    @test_warn "Symbolic tstops" SDEProblem(rn, [:X => 999.0], (0.0, 10.0))
+    @test_warn "Symbolic tstops" JumpProblem(rn, [:X => 100], (0.0, 5.0); rng)
+    @test_warn "Symbolic tstops" HybridProblem(rn, [:X => 100.0], (0.0, 5.0); rng)
+end
+
+# Tests that tstops containing unknowns (species/variables) are rejected.
+let
+    @parameters k
+    @species X(t)
+    @variables V(t)
+    rxs = [Reaction(k, nothing, [X])]
+    D = Catalyst.default_time_deriv()
+
+    # Species in tstops (5-arg constructor).
+    @test_throws ArgumentError ReactionSystem(rxs, t, [X], [k]; tstops = [X], name = :rs)
+    # Variable in tstops (5-arg constructor).
+    @test_throws ArgumentError ReactionSystem([rxs; D(V) ~ -V], t, [X, V], [k];
+        tstops = [V], name = :rs)
+    # Species in tstops (short-form constructor).
+    @test_throws ArgumentError ReactionSystem(rxs, t; tstops = [X], name = :rs)
+    # Variable in tstops (short-form constructor).
+    @test_throws ArgumentError ReactionSystem([rxs; D(V) ~ -V], t;
+        tstops = [V], name = :rs)
+    # Species/variable in tstops via the DSL.
+    @test_throws ArgumentError @eval @reaction_network begin
+        @tstops X
+        k, 0 --> X
+    end
+    @test_throws ArgumentError @eval @reaction_network begin
+        @variables V(t)
+        @tstops V
+        @equations D(V) ~ -V
+        k, 0 --> X
+    end
+end
+
+# Tests that tstops containing the independent variable `t` are rejected.
+let
+    @parameters k
+    @species X(t)
+    rxs = [Reaction(k, nothing, [X])]
+
+    # 5-arg constructor.
+    @test_throws ArgumentError ReactionSystem(rxs, t, [X], [k]; tstops = [t + 1], name = :rs)
+    @test_throws ArgumentError ReactionSystem(rxs, t, [X], [k]; tstops = [t], name = :rs)
+    # Short-form constructor.
+    @test_throws ArgumentError ReactionSystem(rxs, t; tstops = [t + 1], name = :rs)
+    # DSL.
+    @test_throws ArgumentError @eval @reaction_network begin
+        @tstops t
+        k, 0 --> X
+    end
+end
