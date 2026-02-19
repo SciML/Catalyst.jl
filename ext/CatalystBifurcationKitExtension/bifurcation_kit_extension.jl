@@ -34,9 +34,13 @@ end
 # more things here.
 function bkext_make_nsys(rs, u0)
     cons_eqs = conservationlaw_constants(rs)
-    cons_default = [cons_eq.rhs for cons_eq in cons_eqs]
-    cons_default = Catalyst.get_networkproperties(rs).conservedconst => cons_default
-    initial_conditions = Dict([u0; cons_default])
-    nsys = ss_ode_model(rs; initial_conditions, remove_conserved = true)
+    nsys = if Catalyst.num_cons_laws(rs) == 0
+        ss_ode_model(rs)
+    else
+        cons_default = [cons_eq.rhs for cons_eq in cons_eqs]
+        cons_default = Catalyst.get_networkproperties(rs).conservedconst => cons_default
+        initial_conditions = Dict([u0; cons_default])
+        ss_ode_model(rs; initial_conditions, remove_conserved = true)
+    end
     return complete(nsys)
 end

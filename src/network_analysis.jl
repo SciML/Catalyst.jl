@@ -946,6 +946,18 @@ Compute conserved quantities for a system with the given conservation laws.
 """
 conservedquantities(state, cons_laws) = cons_laws * MT.wrap(state)
 
+"""
+    num_cons_laws(rs)
+
+Returns the number of conservation laws in the system. If conservation laws has not been compute 
+them yet, these will compute them first.
+"""
+function num_cons_laws(rs::ReactionSystem)
+    nps = get_networkproperties(rs)
+    isempty(nps.conservationmat) && conservationlaws(rs)
+    return nps.nullity
+end
+
 # If u0s are not given while conservation laws are present, throws an error.
 # Used in HomotopyContinuation and BifurcationKit extensions.
 # Currently only checks if any u0s are given
