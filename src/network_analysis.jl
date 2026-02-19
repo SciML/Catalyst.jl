@@ -949,8 +949,7 @@ conservedquantities(state, cons_laws) = cons_laws * MT.wrap(state)
 """
     num_cons_laws(rs)
 
-Returns the number of conservation laws in the system. If conservation laws has not been compute 
-them yet, these will compute them first.
+Returns the number of conservation laws in the system. If the conservation laws have not been computed yet, this will compute them.
 """
 function num_cons_laws(rs::ReactionSystem)
     nps = get_networkproperties(rs)
