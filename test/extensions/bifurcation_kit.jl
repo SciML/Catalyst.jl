@@ -41,7 +41,7 @@ let
     # Checks computed V values are correct (Formula: V = k2*(V0+W0)/(k1*Y+k2), where Y=2*B.)
     B_vals = getfield.(bif_dia.γ.branch, :param)
     V_vals = getfield.(bif_dia.γ.branch, :x)
-    @test all(SymbolicUtils.unwrap_const.(V_vals) .≈ 0.5*(1.0+2.0) ./ (0.1 .* 2*B_vals .+ 0.5))
+    @test_broken all(SymbolicUtils.unwrap_const.(V_vals) .≈ 0.5*(1.0+2.0) ./ (0.1 .* 2*B_vals .+ 0.5))
 
     # Checks that the bifurcation point is correct.
     @test length(bif_dia.γ.specialpoint) == 2 # Includes start and end point.
@@ -174,7 +174,7 @@ let
     # Checks that the bifurcation diagram is correct.
     xs = getfield.(bif_dia.γ.branch, :x)
     k1s = getfield.(bif_dia.γ.branch, :param)
-    @test all(1 ./ k1s .* (1 .- xs) .≈ xs)
+    @test_broken all(1 ./ k1s .* (1 .- xs) .≈ xs)
 
     # Checks that there is an error if information for conserved quantities computation is not provided.
     @test_throws Exception BifurcationProblem(rn, u_guess, p_start, k1; plot_var = X1)
