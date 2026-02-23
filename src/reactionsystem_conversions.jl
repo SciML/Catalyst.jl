@@ -497,7 +497,7 @@ end
 # merge constraint components with the ReactionSystem components
 # also handles removing BC and constant species
 function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved = false,
-        compute_cl_initeqs = false)
+        compute_cl_initeqs = false, include_cl_as_eqs = false)
     # if there are BC species, put them after the independent species
     rssts = get_unknowns(rs)
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
@@ -509,17 +509,22 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     # make dependent species observables and add conservation constants as parameters
     if remove_conserved && !isempty(conservedequations(rs))
         nps = get_networkproperties(rs)
-
+        
         # add the conservation constants as parameters and set their values
         ps = copy(ps)
         push!(ps, nps.conservedconst)
 
-        # add the dependent species as observed
-        obs = copy(obs)
-        append!(obs, conservedequations(rs))
+        # add the dependent species as observed. If `include_cl_as_eqs = true` add them as
+        # equations isntead.
+        if !include_cl_as_eqs
+            obs = copy(obs)
+            append!(obs, conservedequations(rs))
+        else
+            append!(eqs, [0 ~ ceq.rhs - ceq.lhs for ceq in conservedequations(rs)])
+        end
 
         # create initialization equations (only used for nonlinear systems)        
-        if compute_cl_initeqs
+        if compute_cl_initeqs && !include_cl_as_eqs
             initialmap = Dict(u => Initial(u) for u in species(rs))
             conseqs = conservationlaw_constants(rs)
             initeqs = [Symbolics.substitute(conseq, initialmap) for conseq in conseqs]
@@ -863,24 +868,28 @@ Keyword args and default values:
 - `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
   with their rational function representation when converting to another system type. Set to
   `false` to disable.
+- `include_cl_as_eqs = false`, if `remove_conserved=true`, setting this to `true` will
+  explicitly include the conservation laws as system equations, rather than eliminating them
+  as observables. Primarily used by internal Catalyst functions.
 """
 function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, checks = false, initial_conditions = Dict(),
-        all_differentials_permitted = false, expand_catalyst_funs = true, kwargs...)
+        all_differentials_permitted = false, expand_catalyst_funs = true, 
+        include_cl_as_eqs = false, kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, System)
     isautonomous(rs) || error(is_autonomous_error(get_iv(rs)))
-
+    
     # Generates system equations.
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
-    ists, ispcs = get_indep_sts(fullrs, remove_conserved)
+    ists, ispcs = get_indep_sts(fullrs, (remove_conserved && !include_cl_as_eqs))
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
         as_odes = false, include_zero_odes = false, expand_catalyst_funs)
     eqs, us, ps, obs, defs, initeqs = addconstraints!(eqs, fullrs, ists, ispcs;
-        remove_conserved, compute_cl_initeqs = true)
+        remove_conserved, compute_cl_initeqs = !include_cl_as_eqs, include_cl_as_eqs)
 
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.

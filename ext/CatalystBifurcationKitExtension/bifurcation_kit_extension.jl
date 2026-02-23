@@ -20,27 +20,19 @@ function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
         u0 = Catalyst.symmap_to_varmap(rs, u0)
     end
 
-    # Creates nonlinear System.
+    # Creates nonlinear System. If there are conservation laws, these are manually added as 
+    # equations, and the conservationlaw parameter values are manually computed and added to `ps`.
     Catalyst.conservationlaw_errorcheck(rs, vcat(ps, u0))
-    nsys = bkext_make_nsys(rs, u0)
+    nsys = if Catalyst.num_cons_laws(rs) == 0
+        complete(ss_ode_model(rs))
+    else
+        Γ_vals = Catalyst.get_networkproperties(rs).conservedconst => 
+            [Symbolics.substitute(ceq.rhs, u0) for ceq in conservationlaw_constants(rs)]
+        ps = [ps; Γ_vals]
+        complete(ss_ode_model(rs; remove_conserved = true, include_cl_as_eqs = true))
+    end
 
     # Makes BifurcationProblem (this call goes through the ModelingToolkit-based BifurcationKit extension).
     return BK.BifurcationProblem(nsys, u0_bif, ps, bif_par, args...; plot_var,
         record_from_solution, jac, kwargs...)
-end
-
-# Creates the nonlinear System for the bifurcation problem. Used to be straightforward, but MTK
-# updates have made handling of conservation laws more complicated, so we now have to do
-# more things here.
-function bkext_make_nsys(rs, u0)
-    cons_eqs = conservationlaw_constants(rs)
-    nsys = if Catalyst.num_cons_laws(rs) == 0
-        ss_ode_model(rs)
-    else
-        cons_default = [cons_eq.rhs for cons_eq in cons_eqs]
-        cons_default = Catalyst.get_networkproperties(rs).conservedconst => cons_default
-        initial_conditions = Dict([u0; cons_default])
-        ss_ode_model(rs; initial_conditions, remove_conserved = true)
-    end
-    return complete(nsys)
 end
