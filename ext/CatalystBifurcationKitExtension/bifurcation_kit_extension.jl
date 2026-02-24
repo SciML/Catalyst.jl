@@ -22,13 +22,13 @@ function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
 
     # Creates nonlinear System. If there are conservation laws, these are manually added as 
     # equations, and the conservationlaw parameter values are manually computed and added to `ps`.
-    Catalyst.conservationlaw_errorcheck(rs, vcat(ps, u0))
+    Catalyst.conservationlaw_errorcheck(rs, merge(Dict(ps), Dict(u0)))
     nsys = if Catalyst.num_cons_laws(rs) == 0
         complete(ss_ode_model(rs))
     else
         Γ_vals = Catalyst.get_networkproperties(rs).conservedconst => 
             [Symbolics.substitute(ceq.rhs, u0) for ceq in conservationlaw_constants(rs)]
-        ps = [ps; Γ_vals]
+        ps = merge(Dict(ps), Dict(Γ_vals))
         complete(ss_ode_model(rs; remove_conserved = true, include_cl_as_eqs = true))
     end
 

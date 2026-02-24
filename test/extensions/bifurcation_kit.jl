@@ -147,6 +147,8 @@ let
     end
 end
 
+### Conservationlaw-specific Tests ###
+
 # Tests for nested model with conservation laws.
 let
     # Creates model.
@@ -178,6 +180,35 @@ let
 
     # Checks that there is an error if information for conserved quantities computation is not provided.
     @test_throws Exception BifurcationProblem(rn, u_guess, p_start, k1; plot_var = X1)
+end
+
+# Checks that bifurcation diagrams can be computed with respect to conservation law parameters.
+# Checks that Dictionary inputs works for BifurcationProblems.
+let
+    # Creates the model programmatically.
+    t = default_t()
+    @parameters k1 k2
+    @species X1(t) X2(t)
+    rxs = [
+        Reaction(k1, [X1], [X2]),
+        Reaction(k2, [X2], [X1])
+    ]
+    @named rs = ReactionSystem(rxs, t)
+    rs = complete(rs)
+
+    # Computes the bifurcation diagram.
+    u0_guess = Dict(X1 => 1.0, X2 => 1.0)
+    p_start = Dict(k1 => 0.1, k2 => 0.2)
+    u0 = Dict(X1 => 1.0, X2 => 1.0)
+    Γ = Catalyst.get_networkproperties(rs).conservedconst
+    bprob = BifurcationProblem(rs, u0_guess, p_start, Γ[1]; plot_var = X1, u0)
+    opts_br = ContinuationPar(p_min = 0.1, p_max = 6.0)
+    bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br, bothside = true)
+
+    # Checks that the stored values are correct.
+    X1s = getfield.(bif_dia.γ.branch, :x)
+    Γs = getfield.(bif_dia.γ.branch, :param)
+    @test all(X1s ./ Γs .≈ p_start[k2] / (p_start[k1] + p_start[k2]))
 end
 
 
@@ -233,42 +264,47 @@ let
 end
 
 # Tests the bifurcation when one of the parameters depends on another parameter, initial condition, etc.
-# let
-#     rn = @reaction_network begin
-#         @parameters k ksq = k^2
-#         (k, ksq), A <--> B
-#     end
+let
+    rn = @reaction_network begin
+        @parameters k ksq = k^2
+        (k, ksq), A <--> B
+    end
 
-#     rn = complete(rn)
-#     u0_guess = [:A => 1., :B => 1.]
-#     p_start = [:k => 2.]
+    rn = complete(rn)
+    u0_guess = [:A => 1., :B => 1.]
+    p_start = [:k => 2.]
 
-#     bprob = BifurcationProblem(rn, u0_guess, p_start, :k; plot_var = :A, u0 = [:A => 5., :B => 3.])
-#     p_span = (0.1, 6.0)
-#     opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
-#     bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
-#     plot(bif_dia, xlabel = "k", ylabel = "A", xlims = (0, 6), ylims=(0,8))
+    # Computes bifurcation diagram and checks that it can be sucesfully plotted.
+    bprob = BifurcationProblem(rn, u0_guess, p_start, :k; plot_var = :A, u0 = [:A => 5., :B => 3.])
+    p_span = (0.1, 6.0)
+    opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
+    bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
+    plot(bif_dia, xlabel = "k", ylabel = "A", xlims = (0, 6), ylims=(0,8))
 
-#     xs = getfield.(bif_dia.γ.branch, :x)
-#     ks = getfield.(bif_dia.γ.branch, :param)
-#     @test_broken @. 8 * (ks / (ks + ks^2)) ≈ xs
+    # Checks that the correct values are computed in the bifurcation diagram.
+    As = getfield.(bif_dia.γ.branch, :x)
+    Bs = 8.0 .- getfield.(bif_dia.γ.branch, :x)
+    ks = getfield.(bif_dia.γ.branch, :param)
+    ksqs = ks .^ 2
+    @test all(ks .* As .≈ ksqs .* Bs)
 
-#     # Test that parameter updating happens correctly in ODE System
-#     t = default_t()
-#     kval = 4.
-#     @parameters k ksq = k^2 tratechange = 10.
-#     @species A(t) B(t)
-#     rxs = [(@reaction k, A --> B), (@reaction ksq, B --> A)]
-#     ratechange = (t == tratechange) => [k ~ kval]
-#     u0 = [A => 5., B => 3.]
-#     tspan = (0.0, 30.0)
-#     p = [k => 1.0]
+    # Comment: Old commented out test, not 100% sure what it is testing so leaving commented out for now.
+    # Test that parameter updating happens correctly in ODE System
+    # t = default_t()
+    # kval = 4.
+    # @parameters k ksq = k^2 tratechange = 10.
+    # @species A(t) B(t)
+    # rxs = [(@reaction k, A --> B), (@reaction ksq, B --> A)]
+    # ratechange = (t == tratechange) => [k ~ kval]
+    # u0 = [A => 5., B => 3.]
+    # tspan = (0.0, 30.0)
+    # p = [k => 1.0]
 
-#     @named rs2 = ReactionSystem(rxs, t, [A, B], [k, ksq, tratechange]; discrete_events = ratechange)
-#     rs2 = complete(rs2)
+    # @named rs2 = ReactionSystem(rxs, t, [A, B], [k, ksq, tratechange]; discrete_events = ratechange)
+    # rs2 = complete(rs2)
 
-#     oprob = ODEProblem(rs2, u0, tspan, p)
-#     sol = OrdinaryDiffEq.solve(oprob, Tsit5(); tstops = 10.0)
-#     xval = sol.u[end][1]
-#     @test isapprox(xval, 8 * (kval / (kval + kval^2)), atol=1e-3)
-# end
+    # oprob = ODEProblem(rs2, u0, tspan, p)
+    # sol = OrdinaryDiffEq.solve(oprob, Tsit5(); tstops = 10.0)
+    # xval = sol.u[end][1]
+    # @test isapprox(xval, 8 * (kval / (kval + kval^2)), atol=1e-3)
+end
