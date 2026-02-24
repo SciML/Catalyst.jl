@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using BifurcationKit, Catalyst, Test
+using BifurcationKit, Catalyst, Plots, Test
 
 # Sets stable rng number.
 using StableRNGs
@@ -200,6 +200,7 @@ let
     u0_guess = Dict(X1 => 1.0, X2 => 1.0)
     p_start = Dict(k1 => 0.1, k2 => 0.2)
     u0 = Dict(X1 => 1.0, X2 => 1.0)
+    conservationlaws(rs) # Required to initialise Γ.
     Γ = Catalyst.get_networkproperties(rs).conservedconst
     bprob = BifurcationProblem(rs, u0_guess, p_start, Γ[1]; plot_var = X1, u0)
     opts_br = ContinuationPar(p_min = 0.1, p_max = 6.0)
