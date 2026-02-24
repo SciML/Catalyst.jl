@@ -515,7 +515,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
         push!(ps, nps.conservedconst)
 
         # add the dependent species as observed. If `include_cl_as_eqs = true` add them as
-        # equations isntead.
+        # algebraic equations instead.
         if !include_cl_as_eqs
             obs = copy(obs)
             append!(obs, conservedequations(rs))

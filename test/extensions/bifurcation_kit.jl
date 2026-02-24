@@ -30,13 +30,13 @@ let
     end
     @unpack A, B, k1 = extended_brusselator
     u0_guess = [:X => 1.0, :Y => 1.0, :V => 0.0, :W => 0.0]
-    p_start = [A => 1.0, B => 2.0, k1 => 0.1]
+    p_start = [A => 1.0, B => 4.0, k1 => 0.1]
 
     # Computes bifurcation diagram.
     bprob = BifurcationProblem(extended_brusselator, u0_guess, p_start, :B; plot_var = :V, u0 = [:V => 1.0, :W => 2.0])
     p_span = (0.1, 6.0)
     opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
-    bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br, bothside = true)
+    bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
 
     # Checks computed V values are correct (Formula: V = k2*(V0+W0)/(k1*Y+k2), where Y=2*B.)
     B_vals = getfield.(bif_dia.γ.branch, :param)
