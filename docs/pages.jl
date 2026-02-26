@@ -50,7 +50,7 @@ pages = Any[
     "steady_state_functionality/homotopy_continuation.md",
     "steady_state_functionality/nonlinear_solve.md",
     "steady_state_functionality/steady_state_stability_computation.md",
-    # "steady_state_functionality/bifurcation_diagrams.md", # https://github.com/SciML/ModelingToolkit.jl/issues/4228
+    "steady_state_functionality/bifurcation_diagrams.md",
     "steady_state_functionality/dynamical_systems.md",
     "Examples" => Any[
         "steady_state_functionality/examples/nullcline_plotting.md",
