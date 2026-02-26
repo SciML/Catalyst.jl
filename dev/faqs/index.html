@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>FAQs · Catalyst.jl</title><meta name="title" content="FAQs · Catalyst.jl"/><meta property="og:title" content="FAQs · Catalyst.jl"/><meta property="twitter:title" content="FAQs · Catalyst.jl"/><meta name="description" content="Documentation for Catalyst.jl."/><meta property="og:description" content="Documentation for Catalyst.jl."/><meta property="twitter:description" content="Documentation for Catalyst.jl."/><meta property="og:url" content="https://docs.sciml.ai/Catalyst/stable/faqs/"/><meta property="twitter:url" content="https://docs.sciml.ai/Catalyst/stable/faqs/"/><link rel="canonical" href="https://docs.sciml.ai/Catalyst/stable/faqs/"/><script async src="https://www.googletagmanager.com/gtag/js?id=UA-90474609-3"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-90474609-3', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="../assets/favicon.ico" rel="icon" type="image/x-icon"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.png" alt="Catalyst.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../">Catalyst.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><input class="collapse-toggle" id="menuitem-2" type="checkbox"/><label class="tocitem" for="menuitem-2"><span class="docs-label">Introduction to Catalyst</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../introduction_to_catalyst/catalyst_for_new_julia_users/">Introduction to Catalyst and Julia for New Julia users</a></li><li><a class="tocitem" href="../introduction_to_catalyst/introduction_to_catalyst/">Introduction to Catalyst</a></li><li><a class="tocitem" href="../introduction_to_catalyst/math_models_intro/">Mathematical Models Catalyst can Generate</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-3" type="checkbox"/><label class="tocitem" for="menuitem-3"><span class="docs-label">Model creation and properties</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../model_creation/dsl_basics/">The Catalyst DSL - Introduction</a></li><li><a class="tocitem" href="../model_creation/dsl_advanced/">The Catalyst DSL - Advanced Features and Options</a></li><li><a class="tocitem" href="../model_creation/programmatic_CRN_construction/">Programmatic Construction of Symbolic Reaction Systems</a></li><li><a class="tocitem" href="../model_creation/compositional_modeling/">Compositional Modeling of Reaction Systems</a></li><li><a class="tocitem" href="../model_creation/coupled_non_crn_models/">Coupled non-reaction network equations to models</a></li><li><a class="tocitem" href="../model_creation/events/">Modelling Events</a></li><li><a class="tocitem" href="../model_creation/conservation_laws/">Working with Conservation Laws</a></li><li><a class="tocitem" href="../model_creation/parametric_stoichiometry/">Symbolic Stoichiometries</a></li><li><a class="tocitem" href="../model_creation/functional_parameters/">Inputs and time-dependent (or functional) parameters</a></li><li><a class="tocitem" href="../model_creation/model_file_loading_and_export/">Loading Chemical Reaction Network Models from Files</a></li><li><a class="tocitem" href="../model_creation/model_visualisation/">Model Visualisation</a></li><li><a class="tocitem" href="../model_creation/reactionsystem_content_accessing/">Accessing Model Properties</a></li><li><a class="tocitem" href="../model_creation/chemistry_related_functionality/">Chemistry-related Functionality</a></li><li><input class="collapse-toggle" id="menuitem-3-14" type="checkbox"/><label class="tocitem" for="menuitem-3-14"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../model_creation/examples/basic_CRN_library/">Library of Basic Chemical Reaction Network Models</a></li><li><a class="tocitem" href="../model_creation/examples/programmatic_generative_linear_pathway/">Programmatic, Generative, Modelling of a Linear Pathway</a></li><li><a class="tocitem" href="../model_creation/examples/hodgkin_huxley_equation/">Hodgkin-Huxley Equation</a></li><li><a class="tocitem" href="../model_creation/examples/smoluchowski_coagulation_equation/">Smoluchowski Coagulation Equation</a></li><li><a class="tocitem" href="../model_creation/examples/noise_modelling_approaches/">Approaches for modelling system noise</a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox"/><label class="tocitem" for="menuitem-4"><span class="docs-label">Model simulation and visualization</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../model_simulation/simulation_introduction/">Model Simulation Introduction</a></li><li><a class="tocitem" href="../model_simulation/simulation_plotting/">Simulation Plotting</a></li><li><a class="tocitem" href="../model_simulation/simulation_structure_interfacing/">Interfacing Problems, Integrators, and Solutions</a></li><li><a class="tocitem" href="../model_simulation/ensemble_simulations/">Ensemble/Monte Carlo Simulations</a></li><li><a class="tocitem" href="../model_simulation/ode_simulation_performance/">Advice for Performant ODE Simulations</a></li><li><a class="tocitem" href="../model_simulation/sde_simulation_performance/">Advice for Performant SDE Simulations</a></li><li><input class="collapse-toggle" id="menuitem-4-7" type="checkbox"/><label class="tocitem" for="menuitem-4-7"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../model_simulation/examples/periodic_events_simulation/">Modelling a Periodic Event During ODE and Jump Simulations</a></li><li><a class="tocitem" href="../model_simulation/examples/activation_time_distribution_measurement/">Measuring the Distribution of System Activation Times</a></li><li><a class="tocitem" href="../model_simulation/examples/interactive_brusselator_simulation/">Interactive Simulation and Plotting</a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">Network Analysis</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../network_analysis/odes/">Decomposing the Reaction Network ODEs</a></li><li><a class="tocitem" href="../network_analysis/crn_theory/">Chemical Reaction Network Theory</a></li><li><a class="tocitem" href="../network_analysis/network_properties/">Caching of Network Properties in <code>ReactionSystems</code></a></li></ul></li><li><input class="collapse-toggle" id="menuitem-6" type="checkbox"/><label class="tocitem" for="menuitem-6"><span class="docs-label">Steady state analysis</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../steady_state_functionality/homotopy_continuation/">Finding Steady States through Homotopy Continuation</a></li><li><a class="tocitem" href="../steady_state_functionality/nonlinear_solve/">Finding Steady States using NonlinearSolve.jl and SteadyStateDiffEq.jl</a></li><li><a class="tocitem" href="../steady_state_functionality/steady_state_stability_computation/">Steady state stability computation</a></li><li><a class="tocitem" href="../steady_state_functionality/dynamical_systems/">Analysing Model Steady State Properties with DynamicalSystems.jl</a></li><li><input class="collapse-toggle" id="menuitem-6-5" type="checkbox"/><label class="tocitem" for="menuitem-6-5"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../steady_state_functionality/examples/nullcline_plotting/">Plotting Nullclines and Steady States in Phase Space</a></li><li><a class="tocitem" href="../steady_state_functionality/examples/bifurcationkit_periodic_orbits/">Computing Periodic Orbits (Oscillations) Using BifurcationKit.jl</a></li><li><a class="tocitem" href="../steady_state_functionality/examples/bifurcationkit_codim2/">Tracking Bifurcation Point w.r.t. Secondary Parameters using BifurcationKit.jl</a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-7" type="checkbox"/><label class="tocitem" for="menuitem-7"><span class="docs-label">Inverse problems</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../inverse_problems/optimization_ode_param_fitting/">Parameter Fitting for ODEs using Optimization.jl</a></li><li><a class="tocitem" href="../inverse_problems/behaviour_optimisation/">Optimization for Non-data Fitting Purposes</a></li><li><a class="tocitem" href="../inverse_problems/structural_identifiability/">Structural Identifiability Analysis</a></li><li><a class="tocitem" href="../inverse_problems/global_sensitivity_analysis/">Global Sensitivity Analysis</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-8" type="checkbox"/><label class="tocitem" for="menuitem-8"><span class="docs-label">Spatial modelling</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../spatial_modelling/discrete_space_reaction_systems/">Introduction to Spatial Modelling with Catalyst</a></li><li><a class="tocitem" href="../spatial_modelling/discrete_space_simulation_structure_interaction/">Interfacing with Lattice Problems, Integrators, and Solutions</a></li><li><a class="tocitem" href="../spatial_modelling/discrete_space_simulation_plotting/">Plotting Spatial Simulations</a></li><li><a class="tocitem" href="../spatial_modelling/spatial_ode_simulations/">Spatial ODE simulations</a></li><li><a class="tocitem" href="../spatial_modelling/spatial_jump_simulations/">Spatial Jump Simulations</a></li></ul></li><li class="is-active"><a class="tocitem" href>FAQs</a><ul class="internal"><li><a class="tocitem" href="#How-to-index-solution-objects-using-symbolic-variables-and-observables?"><span>How to index solution objects using symbolic variables and observables?</span></a></li><li><a class="tocitem" href="#faq_combinatoric_ratelaws"><span>How to disable rescaling of reaction rates in rate laws?</span></a></li><li><a class="tocitem" href="#How-to-use-non-integer-stoichiometric-coefficients?"><span>How to use non-integer stoichiometric coefficients?</span></a></li><li><a class="tocitem" href="#How-to-set-default-values-for-initial-conditions-and-parameters?"><span>How to set default values for initial conditions and parameters?</span></a></li><li><a class="tocitem" href="#How-to-specify-initial-conditions-and-parameters-values-for-ODEProblem-and-other-problem-types?"><span>How to specify initial conditions and parameters values for <code>ODEProblem</code> and other problem types?</span></a></li><li><a class="tocitem" href="#How-to-include-non-reaction-terms-in-equations-for-a-chemical-species?"><span>How to include non-reaction terms in equations for a chemical species?</span></a></li><li><a class="tocitem" href="#How-to-modify-generated-ODEs?"><span>How to modify generated ODEs?</span></a></li><li><a class="tocitem" href="#How-to-override-mass-action-kinetics-rate-laws?"><span>How to override mass action kinetics rate laws?</span></a></li><li><a class="tocitem" href="#user_functions"><span>How to specify user-defined functions as reaction rates?</span></a></li><li><a class="tocitem" href="#faq_dsl_sym_inference"><span>How does the Catalyst DSL (<code>@reaction_network</code>) infer what different symbols represent?</span></a></li><li><a class="tocitem" href="#faq_require_declaration"><span>How can I turn off automatic inferring of species and parameters when using the DSL?</span></a></li></ul></li><li><input class="collapse-toggle" id="menuitem-10" type="checkbox"/><label class="tocitem" for="menuitem-10"><span class="docs-label">API</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../api/core_api/">Catalyst.jl API</a></li><li><a class="tocitem" href="../api/network_analysis_api/">Network analysis and representations</a></li></ul></li><li><a class="tocitem" href="../devdocs/dev_guide/">Developer Documentation</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>FAQs</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>FAQs</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/SciML/Catalyst.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/SciML/Catalyst.jl/blob/master/docs/src/faqs.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="FAQs"><a class="docs-heading-anchor" href="#FAQs">FAQs</a><a id="FAQs-1"></a><a class="docs-heading-anchor-permalink" href="#FAQs" title="Permalink"></a></h1><h2 id="How-to-index-solution-objects-using-symbolic-variables-and-observables?"><a class="docs-heading-anchor" href="#How-to-index-solution-objects-using-symbolic-variables-and-observables?">How to index solution objects using symbolic variables and observables?</a><a id="How-to-index-solution-objects-using-symbolic-variables-and-observables?-1"></a><a class="docs-heading-anchor-permalink" href="#How-to-index-solution-objects-using-symbolic-variables-and-observables?" title="Permalink"></a></h2><p>One can directly use symbolic variables to index into SciML solution objects. Moreover, observables can also be evaluated in this way. For example, consider the system</p><pre><code class="language-julia hljs">using Catalyst, OrdinaryDiffEqTsit5, Plots
+rn = @reaction_network ABtoC begin
+  (k₊,k₋), A + B &lt;--&gt; C
+end</code></pre><p>Let&#39;s convert it to a system of ODEs, using the conservation laws of the system to eliminate two of the species:</p><pre><code class="language-julia hljs">osys = ode_model(rn; remove_conserved = true)
+osys = complete(osys)</code></pre><p class="math-container">\[ \begin{align}
+\frac{\mathrm{d} ~ A\left( t \right)}{\mathrm{d}t} &amp;= \mathtt{k_-} ~ \left(  - A\left( t \right) + \Gamma_{2} \right) - \mathtt{k.} ~ A\left( t \right) ~ \left( A\left( t \right) + \Gamma_{1} \right)
+\end{align}
+ \]</p><p>Notice the resulting ODE system has just one ODE, while algebraic observables have been added for the two removed species (in terms of the conservation law constants, <code>Γ[1]</code> and <code>Γ[2]</code>)</p><pre><code class="language-julia hljs">observed(osys)</code></pre><p class="math-container">\[ \begin{align}
+B\left( t \right) &amp;= A\left( t \right) + \Gamma_{1} \\
+C\left( t \right) &amp;=  - A\left( t \right) + \Gamma_{2}
+\end{align}
+ \]</p><p>Let&#39;s solve the system and see how to index the solution using our symbolic variables</p><pre><code class="language-julia hljs">sim_cond = [
+    osys.A =&gt; 1.0, osys.B =&gt; 2.0, osys.C =&gt; 0.0,
+    osys.k₊ =&gt; 1.0, osys.k₋ =&gt; 1.0
+]
+oprob = ODEProblem(osys, sim_cond, (0.0, 10.0))
+sol = solve(oprob, Tsit5())</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">retcode: Success
+Interpolation: specialized 4th order &quot;free&quot; interpolation
+t: 19-element Vector{Float64}:
+  0.0
+  0.06602162921791198
+  0.16167383723177658
+  0.27797398569864795
+  0.42472768210212675
+  0.5991542465684496
+  0.8069250399875878
+  1.0494129741596487
+  1.3328285260259545
+  1.6634553095820483
+  2.0523543727756204
+  2.514619744984259
+  3.073985028187367
+  3.7668739415643824
+  4.65256513049854
+  5.821585305489345
+  7.328825483832256
+  8.975283435170365
+ 10.0
+u: 19-element Vector{Vector{Float64}}:
+ [1.0]
+ [0.8836569748526828]
+ [0.7588242777314496]
+ [0.6540331462534722]
+ [0.5681302593629074]
+ [0.5062418977317178]
+ [0.46461886630919025]
+ [0.4393791455702212]
+ [0.4254491965753469]
+ [0.41861487142896664]
+ [0.41567900839539446]
+ [0.4146117644861057]
+ [0.41429729905360974]
+ [0.4142270387749866]
+ [0.4142160588486051]
+ [0.4142152933849369]
+ [0.41421968308660145]
+ [0.41425212965222974]
+ [0.41422623068922215]</code></pre><p>Suppose we want to plot just species <code>C</code>, without having to know its integer index in the unknown vector. We can do this using the symbolic variable <code>C</code>, which we can get at in several ways</p><pre><code class="language-julia hljs">sol[osys.C]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">19-element Vector{Float64}:
+ 0.0
+ 0.1163430251473172
+ 0.24117572226855044
+ 0.3459668537465278
+ 0.4318697406370926
+ 0.4937581022682822
+ 0.5353811336908098
+ 0.5606208544297788
+ 0.5745508034246531
+ 0.5813851285710334
+ 0.5843209916046055
+ 0.5853882355138943
+ 0.5857027009463902
+ 0.5857729612250133
+ 0.585783941151395
+ 0.5857847066150631
+ 0.5857803169133986
+ 0.5857478703477703
+ 0.5857737693107778</code></pre><p>or</p><pre><code class="language-julia hljs">@unpack C = osys
+sol[C]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">19-element Vector{Float64}:
+ 0.0
+ 0.1163430251473172
+ 0.24117572226855044
+ 0.3459668537465278
+ 0.4318697406370926
+ 0.4937581022682822
+ 0.5353811336908098
+ 0.5606208544297788
+ 0.5745508034246531
+ 0.5813851285710334
+ 0.5843209916046055
+ 0.5853882355138943
+ 0.5857027009463902
+ 0.5857729612250133
+ 0.585783941151395
+ 0.5857847066150631
+ 0.5857803169133986
+ 0.5857478703477703
+ 0.5857737693107778</code></pre><p>To evaluate <code>C</code> at specific times and plot it we can just do</p><pre><code class="language-julia hljs">t = range(0.0, 10.0, length = 101)
+plot(sol(t, idxs = C), label = &quot;C(t)&quot;, xlabel = &quot;t&quot;)</code></pre><img src="303b20b6.svg" alt="Example block output"/><p>If we want to get multiple variables we can just do</p><pre><code class="language-julia hljs">@unpack A, B = osys
+sol(t, idxs = [A, B])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">t: 0.0:0.1:10.0
+u: 101-element Vector{Vector{Float64}}:
+ [1.0, 2.0]
+ [0.8342522596177404, 1.8342522596177404]
+ [0.7195976232151851, 1.719597623215185]
+ [0.6383995987555827, 1.6383995987555826]
+ [0.5799339465200816, 1.5799339465200815]
+ [0.5373276995576052, 1.537327699557605]
+ [0.5060148770362883, 1.5060148770362884]
+ [0.48284725481332674, 1.4828472548133267]
+ [0.4656339915322625, 1.4656339915322625]
+ [0.452789937647887, 1.452789937647887]
+ ⋮
+ [0.4142262072524865, 1.4142262072524865]
+ [0.4142173055979212, 1.4142173055979212]
+ [0.41421185440153946, 1.4142118544015394]
+ [0.4142102517136676, 1.4142102517136677]
+ [0.4142122146278583, 1.4142122146278582]
+ [0.41421677928089057, 1.4142167792808906]
+ [0.41422230085276973, 1.4142223008527697]
+ [0.4142264535667276, 1.4142264535667275]
+ [0.41422623068922215, 1.4142262306892222]</code></pre><p>Plotting multiple variables using the SciML plot recipe can be achieved like</p><pre><code class="language-julia hljs">plot(sol; idxs = [A, B])</code></pre><img src="73903d8a.svg" alt="Example block output"/><h2 id="faq_combinatoric_ratelaws"><a class="docs-heading-anchor" href="#faq_combinatoric_ratelaws">How to disable rescaling of reaction rates in rate laws?</a><a id="faq_combinatoric_ratelaws-1"></a><a class="docs-heading-anchor-permalink" href="#faq_combinatoric_ratelaws" title="Permalink"></a></h2><p>As explained in the <a href="../introduction_to_catalyst/introduction_to_catalyst/#introduction_to_catalyst_ratelaws">Reaction rate laws used in simulations</a> section, for a reaction such as <code>k, 2X --&gt; 0</code>, the generated rate law will rescale the rate constant, giving <code>k*X^2/2</code> instead of <code>k*X^2</code> for ODEs and <code>k*X*(X-1)/2</code> instead of <code>k*X*(X-1)</code> for jumps. This can be disabled when directly converting a <a href="../api/core_api/#Catalyst.ReactionSystem"><code>ReactionSystem</code></a>. If <code>rn</code> is a generated <a href="../api/core_api/#Catalyst.ReactionSystem"><code>ReactionSystem</code></a>, we can do</p><pre><code class="language-julia hljs">osys = ode_model(rn; combinatoric_ratelaws = false)</code></pre><p class="math-container">\[ \begin{align}
+\frac{\mathrm{d} ~ A\left( t \right)}{\mathrm{d}t} &amp;= \mathtt{k{_-}} ~ C\left( t \right) - \mathtt{k.} ~ B\left( t \right) ~ A\left( t \right) \\
+\frac{\mathrm{d} ~ B\left( t \right)}{\mathrm{d}t} &amp;= \mathtt{k{_-}} ~ C\left( t \right) - \mathtt{k.} ~ B\left( t \right) ~ A\left( t \right) \\
+\frac{\mathrm{d} ~ C\left( t \right)}{\mathrm{d}t} &amp;=  - \mathtt{k{_-}} ~ C\left( t \right) + \mathtt{k.} ~ B\left( t \right) ~ A\left( t \right)
+\end{align}
+ \]</p><p>Disabling these rescalings should work for all conversions of <code>ReactionSystem</code>s to other <code>ModelingToolkitBase.AbstractSystem</code>s.</p><p>When creating a <a href="../api/core_api/#Catalyst.ReactionSystem"><code>ReactionSystem</code></a> using the DSL, combinatoric rate laws can be disabled (for  the created system, and all systems derived from it) using the <code>@combinatoric_ratelaws</code> option (providing <code>false</code> as its only input):</p><pre><code class="language-julia hljs">rn = @reaction_network begin
+    @combinatoric_ratelaws false
+    k, 2X --&gt; 0
+end</code></pre><h2 id="How-to-use-non-integer-stoichiometric-coefficients?"><a class="docs-heading-anchor" href="#How-to-use-non-integer-stoichiometric-coefficients?">How to use non-integer stoichiometric coefficients?</a><a id="How-to-use-non-integer-stoichiometric-coefficients?-1"></a><a class="docs-heading-anchor-permalink" href="#How-to-use-non-integer-stoichiometric-coefficients?" title="Permalink"></a></h2><pre><code class="language-julia hljs">using Catalyst
+rn = @reaction_network begin
+  k, 2.5*A --&gt; 3*B
+end</code></pre><p class="math-container">\[ \begin{align*}
+2.5 \mathrm{A} &amp;\xrightarrow{k} 3.0 \mathrm{B}  
+ \end{align*}
+ \]</p><p>or directly via</p><pre><code class="language-julia hljs">t = default_t()
+@parameters k b
+@species A(t) B(t) C(t) D(t)
+rx1 = Reaction(k, [B,C], [B,D], [2.5,1], [3.5, 2.5])
+rx2 = Reaction(2*k, [B], [D], [1], [2.5])
+rx3 = Reaction(2*k, [B], [D], [2.5], [2])
+@named mixedsys = ReactionSystem([rx1, rx2, rx3], t, [A, B, C, D], [k, b])
+mixedsys = complete(mixedsys)
+osys = ode_model(mixedsys; combinatoric_ratelaws = false)
+osys = complete(osys)</code></pre><p class="math-container">\[ \begin{align}
+\frac{\mathrm{d} ~ A\left( t \right)}{\mathrm{d}t} &amp;= 0 \\
+\frac{\mathrm{d} ~ B\left( t \right)}{\mathrm{d}t} &amp;=  - 2 ~ k ~ B\left( t \right) - 5 ~ \left( B\left( t \right) \right)^{2.5} ~ k + \left( B\left( t \right) \right)^{2.5} ~ k ~ C\left( t \right) \\
+\frac{\mathrm{d} ~ C\left( t \right)}{\mathrm{d}t} &amp;=  - \left( B\left( t \right) \right)^{2.5} ~ k ~ C\left( t \right) \\
+\frac{\mathrm{d} ~ D\left( t \right)}{\mathrm{d}t} &amp;= 5 ~ k ~ B\left( t \right) + 4 ~ \left( B\left( t \right) \right)^{2.5} ~ k + 2.5 ~ \left( B\left( t \right) \right)^{2.5} ~ k ~ C\left( t \right)
+\end{align}
+ \]</p><p>Note, when using <code>ode_model(mixedsys; combinatoric_ratelaws=false)</code> the <code>combinatoric_ratelaws=false</code> parameter must be passed. This is also true when calling <code>ODEProblem(mixedsys,...; combinatoric_ratelaws=false)</code>. As described above, this disables Catalyst&#39;s standard rescaling of reaction rates when generating reaction rate laws, see also the <a href="../introduction_to_catalyst/introduction_to_catalyst/#introduction_to_catalyst_ratelaws">Reaction rate laws used in simulations</a> section. Leaving this keyword out for systems with floating point stoichiometry will give an error message.</p><p>For a more extensive documentation of using non-integer stoichiometric coefficients, please see the <a href="../model_creation/parametric_stoichiometry/#parametric_stoichiometry">Symbolic Stochiometries</a> section.</p><h2 id="How-to-set-default-values-for-initial-conditions-and-parameters?"><a class="docs-heading-anchor" href="#How-to-set-default-values-for-initial-conditions-and-parameters?">How to set default values for initial conditions and parameters?</a><a id="How-to-set-default-values-for-initial-conditions-and-parameters?-1"></a><a class="docs-heading-anchor-permalink" href="#How-to-set-default-values-for-initial-conditions-and-parameters?" title="Permalink"></a></h2><p>How to set defaults when using the <code>@reaction_network</code> macro is described in more detail <a href="../model_creation/dsl_advanced/#dsl_advanced_options_default_vals">here</a>. There are several ways to do this. Using the DSL, one can use the <code>@species</code> and <code>@parameters</code> options:</p><pre><code class="language-julia hljs">using Catalyst
+sir = @reaction_network sir begin
+    @species S(t)=999.0 I(t)=1.0 R(t)=0.0
+    @parameters β=1e-4 ν=0.01
+    β, S + I --&gt; 2I
+    ν, I --&gt; R
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr1">Model sir:</span>
+<span class="sgr1">Unknowns (3):</span> see unknowns(sir)
+  S(t)
+  I(t)
+  R(t)
+<span class="sgr1">Parameters (2):</span> see parameters(sir)
+  β
+  ν</code></pre><p>When directly constructing a <code>ReactionSystem</code>, we can set the symbolic values to have the desired default values, and this will automatically be propagated through to the equation solvers:</p><pre><code class="language-julia hljs">using Catalyst, Plots, OrdinaryDiffEqTsit5
+t = default_t()
+@parameters β=1e-4 ν=.01
+@species S(t)=999.0 I(t)=1.0 R(t)=0.0
+rx1 = Reaction(β, [S, I], [I], [1,1], [2])
+rx2 = Reaction(ν, [I], [R])
+@named sir = ReactionSystem([rx1, rx2], t)
+sir = complete(sir)
+oprob = ODEProblem(sir, [], (0.0, 250.0))
+sol = solve(oprob, Tsit5())
+plot(sol)</code></pre><img src="23934bc4.svg" alt="Example block output"/><p>One can also build a mapping from symbolic parameter/species to value/initial condition and pass these to the <code>ReactionSystem</code> via the <code>initial_conditions</code> keyword argument:</p><pre><code class="language-julia hljs">@parameters β ν
+@species S(t) I(t) R(t)
+rx1 = Reaction(β, [S,I], [I], [1,1], [2])
+rx2 = Reaction(ν, [I], [R])
+ics = [β =&gt; 1e-4, ν =&gt; .01, S =&gt; 999.0, I =&gt; 1.0, R =&gt; 0.0]
+@named sir = ReactionSystem([rx1, rx2], t; initial_conditions = ics)</code></pre><h2 id="How-to-specify-initial-conditions-and-parameters-values-for-ODEProblem-and-other-problem-types?"><a class="docs-heading-anchor" href="#How-to-specify-initial-conditions-and-parameters-values-for-ODEProblem-and-other-problem-types?">How to specify initial conditions and parameters values for <code>ODEProblem</code> and other problem types?</a><a id="How-to-specify-initial-conditions-and-parameters-values-for-ODEProblem-and-other-problem-types?-1"></a><a class="docs-heading-anchor-permalink" href="#How-to-specify-initial-conditions-and-parameters-values-for-ODEProblem-and-other-problem-types?" title="Permalink"></a></h2><p>To explicitly pass initial conditions and parameters we can use mappings from Julia <code>Symbol</code>s corresponding to each variable/parameter to their values, or from ModelingToolkitBase symbolic variables/parameters to their values. Using <code>Symbol</code>s we have</p><pre><code class="language-julia hljs">using Catalyst, OrdinaryDiffEqTsit5
+rn = @reaction_network begin
+    α, S + I --&gt; 2I
+    β, I --&gt; R
+end
+u0 = [:S =&gt; 999.0, :I =&gt; 1.0, :R =&gt; 0.0]
+p  = (:α =&gt; 1e-4, :β =&gt; .01)
+op1  = ODEProblem(rn, u0, (0.0, 250.0), p)</code></pre><p>while using ModelingToolkit symbolic variables we have</p><pre><code class="language-julia hljs">t = default_t()
+u0 = [rn.S =&gt; 999.0, rn.I =&gt; 1.0, rn.R =&gt; 0.0]
+p  = (rn.α =&gt; 1e-4, rn.β =&gt; .01)
+op2  = ODEProblem(rn, u0, (0.0, 250.0), p)</code></pre><h2 id="How-to-include-non-reaction-terms-in-equations-for-a-chemical-species?"><a class="docs-heading-anchor" href="#How-to-include-non-reaction-terms-in-equations-for-a-chemical-species?">How to include non-reaction terms in equations for a chemical species?</a><a id="How-to-include-non-reaction-terms-in-equations-for-a-chemical-species?-1"></a><a class="docs-heading-anchor-permalink" href="#How-to-include-non-reaction-terms-in-equations-for-a-chemical-species?" title="Permalink"></a></h2><p>One method to add non-reaction terms into an ODE or algebraic equation for a chemical species is to add a new (non-species) unknown variable that represents those terms, let it be the rate of zero order reaction, and add a constraint equation. I.e., to add a force of <code>(1 + sin(t))</code> to <span>$dA/dt$</span> in a system with the reaction <code>k, A --&gt; 0</code>, we can do</p><pre><code class="language-julia hljs">using Catalyst
+t = default_t()
+@variables f(t)
+rx1 = @reaction k, A --&gt; 0
+rx2 = @reaction $f, 0 --&gt; A
+eq = f ~ (1 + sin(t))
+@named rs = ReactionSystem([rx1, rx2, eq], t)
+rs = complete(rs)
+osys = ode_model(rs)</code></pre><p class="math-container">\[ \begin{align}
+\frac{\mathrm{d} ~ A\left( t \right)}{\mathrm{d}t} &amp;= f\left( t \right) - k ~ A\left( t \right) \\
+f\left( t \right) &amp;= 1 + \sin\left( t \right)
+\end{align}
+ \]</p><p>In the final ODE model, <code>f</code> can be eliminated by using <code>ModelingToolkitBase.mtkcompile</code></p><pre><code class="language-julia hljs">osyss = mtkcompile(osys)
+full_equations(osyss)</code></pre><p class="math-container">\[ \begin{align}
+\frac{\mathrm{d} ~ A\left( t \right)}{\mathrm{d}t} &amp;= 1 + \sin\left( t \right) - k ~ A\left( t \right)
+\end{align}
+ \]</p><h2 id="How-to-modify-generated-ODEs?"><a class="docs-heading-anchor" href="#How-to-modify-generated-ODEs?">How to modify generated ODEs?</a><a id="How-to-modify-generated-ODEs?-1"></a><a class="docs-heading-anchor-permalink" href="#How-to-modify-generated-ODEs?" title="Permalink"></a></h2><p>Conversion to <code>ModelingToolkitBase.System</code> allows the possibility to modify the system with further terms that are difficult to encode as a chemical reaction or a constraint equation. For example, an alternative method to the previous question for adding a forcing function, <span>$1 + \sin(t)$</span>, to the ODE for <code>dA/dt</code> is</p><pre><code class="language-julia hljs">using Catalyst
+rn = @reaction_network begin
+    k, A --&gt; 0
+end
+osys = ode_model(rn)
+dAdteq = equations(osys)[1]
+t      = ModelingToolkitBase.get_iv(osys)
+dAdteq = Equation(dAdteq.lhs, dAdteq.rhs + 1 + sin(t))
+
+# create a new ODE System with the modified equation
+@named osys2  = System([dAdteq], t)</code></pre><p class="math-container">\[ \begin{align}
+\frac{\mathrm{d} ~ A\left( t \right)}{\mathrm{d}t} &amp;= 1 + \sin\left( t \right) - k ~ A\left( t \right)
+\end{align}
+ \]</p><h2 id="How-to-override-mass-action-kinetics-rate-laws?"><a class="docs-heading-anchor" href="#How-to-override-mass-action-kinetics-rate-laws?">How to override mass action kinetics rate laws?</a><a id="How-to-override-mass-action-kinetics-rate-laws?-1"></a><a class="docs-heading-anchor-permalink" href="#How-to-override-mass-action-kinetics-rate-laws?" title="Permalink"></a></h2><p>While generally one wants the reaction rate law to use the law of mass action, so the reaction</p><pre><code class="language-julia hljs">using Catalyst
+rn = @reaction_network begin
+    k, X --&gt; ∅
+end
+ode_model(rn)</code></pre><p class="math-container">\[
+\begin{align*}
+\frac{\mathrm{d} X}{\mathrm{d}t} &amp;=  - k X  
+ \end{align*}
+\]</p><p>occurs at the (ODE) rate <span>$d[X]/dt = -k[X]$</span>, it is possible to override this by using any of the following non-filled arrows when declaring the reaction: <code>&lt;=</code>, <code>⇐</code>, <code>⟽</code>, <code>=&gt;</code>, <code>⇒</code>, <code>⟾</code>, <code>⇔</code>, <code>⟺</code>. This means that the reaction</p><pre><code class="language-julia hljs">rn = @reaction_network begin
+    k, X =&gt; ∅
+end
+ode_model(rn)</code></pre><p class="math-container">\[
+\begin{align*}
+\frac{\mathrm{d} X}{\mathrm{d}t} &amp;=  - k  
+ \end{align*}
+\]</p><p>will occur at rate <span>$d[X]/dt = -k$</span> (which might become a problem since <span>$[X]$</span> will be degraded at a constant rate even when very small or equal to 0).</p><p>Note, stoichiometric coefficients are still included, i.e. the reaction</p><pre><code class="language-julia hljs">rn = @reaction_network begin
+    k, 2*X ⇒ ∅
+end
+ode_model(rn)</code></pre><p class="math-container">\[
+\begin{align*}
+\frac{\mathrm{d} X}{\mathrm{d}t} &amp;=  - 2 k  
+ \end{align*}
+\]</p><p>has rate <span>$d[X]/dt = -2 k$</span>.</p><h2 id="user_functions"><a class="docs-heading-anchor" href="#user_functions">How to specify user-defined functions as reaction rates?</a><a id="user_functions-1"></a><a class="docs-heading-anchor-permalink" href="#user_functions" title="Permalink"></a></h2><p>The reaction network DSL can &quot;see&quot; user-defined functions that work with ModelingToolkitBase. e.g., this is should work</p><pre><code class="language-julia hljs">using Catalyst
+myHill(x) = 2*x^3/(x^3+1.5^3)
+rn = @reaction_network begin
+    myHill(X), ∅ --&gt; X
+end</code></pre><p class="math-container">\[ \begin{align*}
+\varnothing &amp;\xrightarrow{\frac{2 X^{3}}{3.375 + X^{3}}} \mathrm{X}  
+ \end{align*}
+ \]</p><p>In some cases, it may be necessary or desirable to register functions with Symbolics.jl before their use in Catalyst, see the discussion <a href="https://symbolics.juliasymbolics.org/stable/manual/functions/">here</a>.</p><h2 id="faq_dsl_sym_inference"><a class="docs-heading-anchor" href="#faq_dsl_sym_inference">How does the Catalyst DSL (<code>@reaction_network</code>) infer what different symbols represent?</a><a id="faq_dsl_sym_inference-1"></a><a class="docs-heading-anchor-permalink" href="#faq_dsl_sym_inference" title="Permalink"></a></h2><p>When declaring a model using the Catalyst DSL, e.g.</p><pre><code class="language-julia hljs">using Catalyst
+rn = @reaction_network begin
+ (p,d), 0 &lt;--&gt; X
+end</code></pre><p class="math-container">\[ \begin{align*}
+\varnothing &amp;\xrightleftharpoons[d]{p} \mathrm{X}  
+ \end{align*}
+ \]</p><p>Catalyst can automatically infer that <code>X</code> is a species and <code>p</code> and <code>d</code> are parameters. In total, Catalyst can infer the following quantities:</p><ul><li>Species (from reaction reactants).</li><li>Parameters (from reaction rates and stoichiometries).</li><li>(non-species) Variables (from the <code>@equations</code> option).</li><li>Differential functions (from the <code>@equations</code> option).</li><li>Observables (from the <a href="../model_creation/dsl_advanced/#dsl_advanced_options_observables"><code>@observables</code> option</a>).</li><li>Compound species (from the <a href="../model_creation/chemistry_related_functionality/#chemistry_functionality_compounds_DSL"><code>@compounds</code> option</a>).</li></ul><p>Inference of species, variables, and parameters follows the following steps:</p><ol><li>Every symbol <a href="../model_creation/dsl_advanced/#dsl_advanced_options_declaring_species_and_parameters">explicitly declared</a> using some option (typically <code>@species</code>, <code>@variables</code>, and <code>@parameters</code>, although other options such as <code>@brownian</code> also are possible) are assigned to the corresponding category.</li><li>Every symbol not declared in (1) that occurs as a reaction reactant is inferred as a species.</li><li>Every symbol not declared in (1) or (2) that occurs in an expression provided after <code>@equations</code> is inferred as a variable.</li><li>Every symbol not declared in (1), (2), or (3) that occurs either as a reaction rate or stoichiometric coefficient is inferred to be a parameter.</li><li>If the symbol <code>D</code> is not declared in (1), (2), (3), or (4), and occurs on the form <code>D(...)</code> within the <code>@equations</code> option, <code>D</code> is inferred to be the differential with respect to the default independent variable (typically <code>t</code>).</li></ol><p>Here, in </p><pre><code class="language-julia hljs">using Catalyst
+rn = @reaction_network begin
+    @parameters p1
+    @equations V ~ X + p1
+ X + V + p1 + p2, 0 --&gt; X
+end</code></pre><p class="math-container">\[ \begin{align*}
+\varnothing &amp;\xrightarrow{V + X + p1 + p2} \mathrm{X} \\
+V &amp;= p1 + X  
+ \end{align*}
+ \]</p><p><code>p</code> is first set as a parameter (as it is explicitly declared as such). Next, <code>X</code> is inferred as a species. Next, <code>V</code> is inferred as a variable. Finally, <code>p2</code> is inferred as a parameter.</p><p>Next, if any expression <code>D(...)</code> (where <code>...</code> can be anything) is encountered within the <code>@equations</code> option, <code>D</code> is inferred to be the differential with respect to the default independent variable (typically <code>t</code>). Note that using <code>D</code> in this way, while also using it in another form (e.g. in a reaction rate) will produce an error.</p><p>Any symbol used as the left-hand side within the <code>@observables</code> option is inferred to be an observable. These are by default assumed to be <em>variables</em>. It is possible to simultaneously explicitly declare an observable using the <code>@species</code> or <code>@variables</code> options (in the former case, the observable will be treated as a species instead). Using observables within most other expressions (e.g. as a reactant) will produce an error.</p><p>Any symbol declared as a compound using the <code>@compound</code> option is automatically inferred to be a system species.</p><p>Symbols occurring within other expressions will not be inferred as anything. These must either occur in one of the forms described above (which enables Catalyst to infer what they are) or be explicitly declared. E.g. having a parameter which only occurs in an event:</p><pre><code class="language-julia hljs">using Catalyst
+rn_error = @reaction_network begin
+    @discrete_events 1.0 =&gt; [X =&gt; X + Xadd] 
+ d, X --&gt; 0
+end</code></pre><p>is not permitted. E.g. here <code>Xadd</code> must be explicitly declared as a parameter using <code>@parameters</code>:</p><pre><code class="language-julia hljs">using Catalyst
+rn = @reaction_network begin
+    @parameters Xadd
+    @discrete_events 1.0 =&gt; [X =&gt; X + Xadd]
+ d, X --&gt; 0
+end</code></pre><p class="math-container">\[ \begin{align*}
+\mathrm{X} &amp;\xrightarrow{d} \varnothing  
+ \end{align*}
+ \]</p><p>It is possible to turn off all inference (requiring all symbols to be declared using <code>@parameters</code>, <code>@species</code>, <code>@variables</code>, or some other option) through the <a href="#faq_require_declaration"><code>@require_declaration</code> option</a>.</p><h2 id="faq_require_declaration"><a class="docs-heading-anchor" href="#faq_require_declaration">How can I turn off automatic inferring of species and parameters when using the DSL?</a><a id="faq_require_declaration-1"></a><a class="docs-heading-anchor-permalink" href="#faq_require_declaration" title="Permalink"></a></h2><p>This option can be set using the <code>@require_declaration</code> option inside <code>@reaction_network</code>. In this case all the species, parameters, and variables in the system must be pre-declared using one of the <code>@species</code>, <code>@parameters</code>, or <code>@variables</code> macros. For more information about what is inferred automatically and not, please see the section on <a href="../model_creation/dsl_advanced/#dsl_advanced_options_require_dec"><code>@require_declaration</code></a>.</p><pre><code class="language-julia hljs">using Catalyst
+rn = @reaction_network begin
+    @require_declaration
+    @species A(t) B(t)
+    @parameters k1 k2
+    (k1, k2), A &lt;--&gt; B
+end</code></pre><p class="math-container">\[ \begin{align*}
+\mathrm{A} &amp;\xrightleftharpoons[k2]{k1} \mathrm{B}  
+ \end{align*}
+ \]</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../spatial_modelling/spatial_jump_simulations/">« Spatial Jump Simulations</a><a class="docs-footer-nextpage" href="../api/core_api/">Catalyst.jl API »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Wednesday 18 February 2026 15:31">Wednesday 18 February 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
