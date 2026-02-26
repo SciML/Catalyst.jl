@@ -36,6 +36,8 @@ jobs:
       - name: "Cache Julia packages"
         uses: julia-actions/cache@v2
         with:
+          include-matrix: "false"
+          cache-name: "extensions-cache;julia=${{ matrix.version }}"
           token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: "Build main package"
@@ -63,7 +65,7 @@ jobs:
 
       - name: "Report Coverage with Codecov"
         uses: codecov/codecov-action@v5
-        if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         with:
           files: lcov.info
           token: "${{ secrets.CODECOV_TOKEN }}"

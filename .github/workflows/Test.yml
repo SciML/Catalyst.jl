@@ -16,9 +16,62 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
+permissions:
+  actions: write
+  contents: read
+
 jobs:
+  prewarm-cache:
+    name: "Prewarm Cache"
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - "1"
+          - "lts"
+          - "pre"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: "Setup Julia ${{ matrix.version }}"
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: "${{ matrix.version }}"
+          arch: "${{ runner.arch }}"
+
+      - name: "Restore Julia cache"
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.julia/artifacts
+            ~/.julia/packages
+            ~/.julia/registries
+            ~/.julia/compiled
+            ~/.julia/scratchspaces
+            ~/.julia/logs
+          key: "tests-cache-v1;os=${{ runner.os }};julia=${{ matrix.version }};deps=${{ hashFiles('Project.toml', 'Manifest.toml', 'test/Manifest.toml') }}"
+
+      - name: "Build package"
+        uses: julia-actions/julia-buildpkg@v1
+
+      - name: "Save Julia cache"
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.julia/artifacts
+            ~/.julia/packages
+            ~/.julia/registries
+            ~/.julia/compiled
+            ~/.julia/scratchspaces
+            ~/.julia/logs
+          key: "tests-cache-v1;os=${{ runner.os }};julia=${{ matrix.version }};deps=${{ hashFiles('Project.toml', 'Manifest.toml', 'test/Manifest.toml') }}"
+
   tests:
     name: "Tests"
+    needs: prewarm-cache
     strategy:
       fail-fast: false
       matrix:
@@ -32,8 +85,48 @@ jobs:
           - Hybrid
           - Misc
           - Spatial
-    uses: "SciML/.github/.github/workflows/tests.yml@v1"
-    with:
-      julia-version: "${{ matrix.version }}"
-      group: "${{ matrix.group }}"
-    secrets: "inherit"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: "Setup Julia ${{ matrix.version }}"
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: "${{ matrix.version }}"
+          arch: "${{ runner.arch }}"
+
+      - name: "Restore Julia cache"
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.julia/artifacts
+            ~/.julia/packages
+            ~/.julia/registries
+            ~/.julia/compiled
+            ~/.julia/scratchspaces
+            ~/.julia/logs
+          key: "tests-cache-v1;os=${{ runner.os }};julia=${{ matrix.version }};deps=${{ hashFiles('Project.toml', 'Manifest.toml', 'test/Manifest.toml') }}"
+
+      - name: "Build package"
+        uses: julia-actions/julia-buildpkg@v1
+
+      - name: "Run tests on ubuntu-latest with Julia v${{ matrix.version }} - ${{ matrix.group }}"
+        uses: julia-actions/julia-runtest@v1
+        with:
+          project: "@."
+          depwarn: "yes"
+          coverage: "true"
+        env:
+          GROUP: "${{ matrix.group }}"
+
+      - uses: julia-actions/julia-processcoverage@v1
+        with:
+          directories: "src,ext"
+
+      - name: "Report Coverage with Codecov"
+        uses: codecov/codecov-action@v5
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        with:
+          files: lcov.info
+          token: "${{ secrets.CODECOV_TOKEN }}"
+          fail_ci_if_error: true
