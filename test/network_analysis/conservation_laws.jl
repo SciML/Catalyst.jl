@@ -241,6 +241,25 @@ let
     @test all(sol2[osys.X1 + osys.X2] .≈ 4.0)
 end
 
+# Checks `num_cons_laws` function.
+let
+    rn1 = @reaction_network begin
+        (p,d), 0 <--> X
+    end
+    @test Catalyst.num_cons_laws(rn1) == 0
+
+    rn2 = @reaction_network begin
+        (k1,k2), X1 <--> X2
+    end
+    @test Catalyst.num_cons_laws(rn2) == 1
+
+    rn3 = @reaction_network begin
+        (k1,k2), X1 <--> X2
+        (k1,k2), Y1 <--> Y2
+    end
+    @test Catalyst.num_cons_laws(rn3) == 2
+end
+
 ### Problem `remake`ing and Updating Tests ###
 
 # Tests system problem updating when conservation laws are eliminated.
