@@ -708,16 +708,18 @@ let
 end
 
 # Integration test: solve HybridProblem with symbolic tstops and a discrete event.
+# Uses ODE-scale production/degradation + a Jump-scale degradation to ensure a true hybrid.
 let
     rn = @reaction_network begin
         @parameters t_event=3.0
         @tstops t_event
         @discrete_events (t == t_event) => [X => X + 10000.0]
-        (10.0, 0.01), 0 <--> X
+        10.0, 0 --> X, [physical_scale = Catalyst.PhysicalScale.ODE]
+        0.01, X --> 0, [physical_scale = Catalyst.PhysicalScale.ODE]
         1.0, X --> 0, [physical_scale = Catalyst.PhysicalScale.Jump]
     end
     hprob = HybridProblem(rn, [:X => 100.0], (0.0, 5.0); rng)
-    sol = solve(hprob)
+    sol = solve(hprob, Tsit5())
 
     @test sol.t[end] == 5.0
     @test 3.0 ∈ sol.t
