@@ -135,7 +135,7 @@ let
     @parameters k_ma
 
     # MassActionJump: A -> B with rate k_ma.
-    user_jump = MT.MassActionJump(k_ma, [A => 1], [A => -1, B => 1])
+    user_jump = MT.MassActionJump(k_ma, [A => 1], [A => -1, B => 1]; scale_rates = false)
 
     rn = ReactionSystem([], t; jumps = [user_jump], name = :rn)
 

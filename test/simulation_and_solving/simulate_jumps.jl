@@ -410,3 +410,243 @@ let
     jprob = JumpProblem(rn, u0, (0.0, 1.0), ps)
     @test eltype(jprob.prob.u0) == Float64
 end
+
+### Higher-Order MassActionJump Parameter Update Tests ###
+
+# Tests that higher-order reactions (where factorial scaling matters) produce correct
+# scaled_rates through all parameter update paths: initial construction, remake,
+# round-trip remake, callbacks with reset_aggregated_jumps!, and symbolic indexing.
+# Uses 3X → Y (factorial(3)=6) to make double-scaling easy to detect.
+
+# Test 1: combinatoric_ratelaws = true (default) — all update paths.
+@testset "Higher-order MAJ parameter updates (combinatoric=true)" begin
+    rn = @reaction_network begin
+        k, 3X --> Y
+    end
+
+    u0 = [:X => 100, :Y => 0]
+    ps = [:k => 6.0]
+    tspan = (0.0, 10.0)
+
+    jprob = JumpProblem(rn, u0, tspan, ps; aggregator = Direct())
+
+    # Catalyst end-to-end: rescale_rates_on_update must be false.
+    @test jprob.massaction_jump.rescale_rates_on_update == false
+    # Catalyst pre-scales rate by 1/3!, so scaled_rate = k/6.
+    @test jprob.massaction_jump.scaled_rates[1] ≈ 6.0 / factorial(3)  # 1.0
+
+    # remake.
+    jprob2 = remake(jprob; p = [:k => 12.0])
+    @test jprob2.massaction_jump.scaled_rates[1] ≈ 12.0 / factorial(3)  # 2.0
+
+    # remake round-trip.
+    jprob3 = remake(jprob2; p = [:k => 6.0])
+    @test jprob3.massaction_jump.scaled_rates[1] ≈ 6.0 / factorial(3)
+
+    # callback + reset_aggregated_jumps!
+    jprob_cb = JumpProblem(rn, u0, (0.0, 200.0), ps;
+        aggregator = Direct(), save_positions = (false, false))
+    condit(u, t, integrator) = t == 100.0
+    function affect_cb!(integrator)
+        integrator.ps[:k] = 24.0
+        reset_aggregated_jumps!(integrator)
+    end
+    cb = DiscreteCallback(condit, affect_cb!)
+    sol = solve(jprob_cb, SSAStepper(); tstops = [100.0], callback = cb)
+    @test jprob_cb.massaction_jump.scaled_rates[1] ≈ 24.0 / factorial(3)  # 4.0
+
+    # symbolic indexing on integrator.
+    jprob_si = JumpProblem(rn, u0, tspan, ps; aggregator = Direct())
+    integ = init(jprob_si, SSAStepper())
+    integ.ps[:k] = 18.0
+    reset_aggregated_jumps!(integ)
+    @test jprob_si.massaction_jump.scaled_rates[1] ≈ 18.0 / factorial(3)  # 3.0
+
+    # symbolic indexing on problem (finalize_parameters_hook!).
+    jprob_fp = JumpProblem(rn, u0, tspan, ps; aggregator = Direct())
+    jprob_fp.ps[:k] = 30.0
+    @test jprob_fp.massaction_jump.scaled_rates[1] ≈ 30.0 / factorial(3)  # 5.0
+end
+
+# Test 2: combinatoric_ratelaws = false — all update paths.
+@testset "Higher-order MAJ parameter updates (combinatoric=false)" begin
+    rn = @reaction_network begin
+        @combinatoric_ratelaws false
+        k, 3X --> Y
+    end
+
+    u0 = [:X => 100, :Y => 0]
+    ps = [:k => 6.0]
+    tspan = (0.0, 10.0)
+
+    jprob = JumpProblem(rn, u0, tspan, ps; aggregator = Direct())
+
+    @test jprob.massaction_jump.rescale_rates_on_update == false
+    @test jprob.massaction_jump.scaled_rates[1] ≈ 6.0  # raw, NO scaling
+
+    # remake.
+    jprob2 = remake(jprob; p = [:k => 12.0])
+    @test jprob2.massaction_jump.scaled_rates[1] ≈ 12.0
+
+    # remake round-trip.
+    jprob3 = remake(jprob2; p = [:k => 6.0])
+    @test jprob3.massaction_jump.scaled_rates[1] ≈ 6.0
+
+    # callback + reset_aggregated_jumps!
+    jprob_cb = JumpProblem(rn, u0, (0.0, 200.0), ps;
+        aggregator = Direct(), save_positions = (false, false))
+    condit(u, t, integrator) = t == 100.0
+    function affect_cb!(integrator)
+        integrator.ps[:k] = 24.0
+        reset_aggregated_jumps!(integrator)
+    end
+    cb = DiscreteCallback(condit, affect_cb!)
+    sol = solve(jprob_cb, SSAStepper(); tstops = [100.0], callback = cb)
+    @test jprob_cb.massaction_jump.scaled_rates[1] ≈ 24.0
+
+    # symbolic indexing on integrator.
+    jprob_si = JumpProblem(rn, u0, tspan, ps; aggregator = Direct())
+    integ = init(jprob_si, SSAStepper())
+    integ.ps[:k] = 18.0
+    reset_aggregated_jumps!(integ)
+    @test jprob_si.massaction_jump.scaled_rates[1] ≈ 18.0
+
+    # symbolic indexing on problem.
+    jprob_fp = JumpProblem(rn, u0, tspan, ps; aggregator = Direct())
+    jprob_fp.ps[:k] = 30.0
+    @test jprob_fp.massaction_jump.scaled_rates[1] ≈ 30.0
+end
+
+# Test 3: Mixed-order system — higher-order + unimolecular (both combinatoric settings).
+@testset "Mixed-order MAJ parameter updates (combinatoric=true)" begin
+    rn = @reaction_network begin
+        k1, 3X --> Y
+        k2, X --> Z
+    end
+
+    u0 = [:X => 100, :Y => 0, :Z => 0]
+    ps = [:k1 => 6.0, :k2 => 1.0]
+    tspan = (0.0, 10.0)
+
+    jprob = JumpProblem(rn, u0, tspan, ps; aggregator = Direct())
+    @test jprob.massaction_jump.scaled_rates[1] ≈ 6.0 / factorial(3)  # 1.0
+    @test jprob.massaction_jump.scaled_rates[2] ≈ 1.0                  # unimolecular
+
+    # remake both.
+    jprob2 = remake(jprob; p = [:k1 => 12.0, :k2 => 3.0])
+    @test jprob2.massaction_jump.scaled_rates[1] ≈ 12.0 / factorial(3)  # 2.0
+    @test jprob2.massaction_jump.scaled_rates[2] ≈ 3.0
+
+    # callback changing only the higher-order rate.
+    jprob_cb = JumpProblem(rn, u0, (0.0, 200.0), ps;
+        aggregator = Direct(), save_positions = (false, false))
+    condit(u, t, integrator) = t == 100.0
+    function affect_cb!(integrator)
+        integrator.ps[:k1] = 24.0
+        reset_aggregated_jumps!(integrator)
+    end
+    cb = DiscreteCallback(condit, affect_cb!)
+    sol = solve(jprob_cb, SSAStepper(); tstops = [100.0], callback = cb)
+    @test jprob_cb.massaction_jump.scaled_rates[1] ≈ 24.0 / factorial(3)  # 4.0
+    @test jprob_cb.massaction_jump.scaled_rates[2] ≈ 1.0                   # unchanged
+end
+
+@testset "Mixed-order MAJ parameter updates (combinatoric=false)" begin
+    rn = @reaction_network begin
+        @combinatoric_ratelaws false
+        k1, 3X --> Y
+        k2, X --> Z
+    end
+
+    u0 = [:X => 100, :Y => 0, :Z => 0]
+    ps = [:k1 => 6.0, :k2 => 1.0]
+    tspan = (0.0, 10.0)
+
+    jprob = JumpProblem(rn, u0, tspan, ps; aggregator = Direct())
+    @test jprob.massaction_jump.scaled_rates[1] ≈ 6.0  # raw, no scaling
+    @test jprob.massaction_jump.scaled_rates[2] ≈ 1.0  # raw
+
+    # remake both.
+    jprob2 = remake(jprob; p = [:k1 => 12.0, :k2 => 3.0])
+    @test jprob2.massaction_jump.scaled_rates[1] ≈ 12.0
+    @test jprob2.massaction_jump.scaled_rates[2] ≈ 3.0
+end
+
+# Test 4: Multi-species higher-order (2X + Y → Z, both combinatoric settings).
+@testset "Multi-species higher-order MAJ updates (combinatoric=true)" begin
+    rn = @reaction_network begin
+        k, 2X + Y --> Z
+    end
+
+    u0 = [:X => 100, :Y => 50, :Z => 0]
+    ps = [:k => 4.0]
+    tspan = (0.0, 10.0)
+
+    jprob = JumpProblem(rn, u0, tspan, ps; aggregator = Direct())
+    # factorial(2) * factorial(1) = 2, so scaled_rate = 4.0 / 2 = 2.0.
+    @test jprob.massaction_jump.scaled_rates[1] ≈ 4.0 / factorial(2)
+
+    jprob2 = remake(jprob; p = [:k => 8.0])
+    @test jprob2.massaction_jump.scaled_rates[1] ≈ 8.0 / factorial(2)
+end
+
+@testset "Multi-species higher-order MAJ updates (combinatoric=false)" begin
+    rn = @reaction_network begin
+        @combinatoric_ratelaws false
+        k, 2X + Y --> Z
+    end
+
+    u0 = [:X => 100, :Y => 50, :Z => 0]
+    ps = [:k => 4.0]
+    tspan = (0.0, 10.0)
+
+    jprob = JumpProblem(rn, u0, tspan, ps; aggregator = Direct())
+    @test jprob.massaction_jump.scaled_rates[1] ≈ 4.0  # raw, no factorial division
+
+    jprob2 = remake(jprob; p = [:k => 8.0])
+    @test jprob2.massaction_jump.scaled_rates[1] ≈ 8.0
+end
+
+# Test 5: Combinatoric true/false equivalence — deterministic rate check.
+@testset "Combinatoric true/false equivalence (3X→Y)" begin
+    rn_true = @reaction_network begin
+        k, 3X --> Y
+    end
+    rn_false = @reaction_network begin
+        @combinatoric_ratelaws false
+        k, 3X --> Y
+    end
+
+    u0 = [:X => 100, :Y => 0]
+    tspan = (0.0, 10.0)
+    k_val = 6.0
+    ps_true = [:k => k_val]
+    ps_false = [:k => k_val / factorial(3)]
+
+    # Initial construction — both should yield the same scaled_rate.
+    jprob_t = JumpProblem(rn_true, u0, tspan, ps_true; aggregator = Direct())
+    jprob_f = JumpProblem(rn_false, u0, tspan, ps_false; aggregator = Direct())
+    @test jprob_t.massaction_jump.scaled_rates[1] ≈ jprob_f.massaction_jump.scaled_rates[1]
+
+    # After remake — both should still agree.
+    jprob_t2 = remake(jprob_t; p = [:k => 12.0])
+    jprob_f2 = remake(jprob_f; p = [:k => 12.0 / factorial(3)])
+    @test jprob_t2.massaction_jump.scaled_rates[1] ≈ 12.0 / factorial(3)
+    @test jprob_f2.massaction_jump.scaled_rates[1] ≈ 12.0 / factorial(3)
+    @test jprob_t2.massaction_jump.scaled_rates[1] ≈ jprob_f2.massaction_jump.scaled_rates[1]
+
+    # After callback — both should still agree.
+    for (rn, ps) in [(rn_true, [:k => k_val]), (rn_false, [:k => k_val / factorial(3)])]
+        jp = JumpProblem(rn, u0, (0.0, 200.0), ps;
+            aggregator = Direct(), save_positions = (false, false))
+        condit(u, t, integrator) = t == 100.0
+        new_k_true = 24.0
+        function affect_equiv!(integrator)
+            integrator.ps[:k] = rn === rn_true ? new_k_true : new_k_true / factorial(3)
+            reset_aggregated_jumps!(integrator)
+        end
+        cb = DiscreteCallback(condit, affect_equiv!)
+        solve(jp, SSAStepper(); tstops = [100.0], callback = cb)
+        @test jp.massaction_jump.scaled_rates[1] ≈ 24.0 / factorial(3)
+    end
+end
