@@ -74,7 +74,7 @@ Setfield = "1"
 StructuralIdentifiability = "0.5.11"
 SymbolicIndexingInterface = "0.3"
 SymbolicUtils = "4.9.1"
-Symbolics = "7.2.0"
+Symbolics = "7.13.0"
 julia = "1.10"
 
 [extras]
