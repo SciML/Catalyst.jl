@@ -604,7 +604,7 @@ end
 # Integration test: solve ODE with symbolic tstops and a generic symbolic discrete event.
 # Uses a symbolic condition (t == t_switch) rather than a numeric PresetTimeCallback, so the
 # tstops field is needed to ensure the solver steps to exactly t_switch.
-# Note: only ODE solvers currently support SymbolicTstops; SDE/Jump/Hybrid solvers do not.
+# Note: SDE/Jump/Hybrid solvers also support SymbolicTstops (tested separately below).
 let
     @variables V(t)=10.0
     @parameters t_switch=3.0
@@ -671,17 +671,60 @@ let
         ModelingToolkitBase.get_tstops(rn))
 end
 
-# Tests that SDEProblem, JumpProblem, and HybridProblem warn about unsupported symbolic tstops.
+# Integration test: solve JumpProblem with symbolic tstops and a discrete event.
+# The discrete event at t_event adds a large number of molecules, verifiable in the solution.
 let
     rn = @reaction_network begin
         @parameters t_event=3.0
         @tstops t_event
+        @discrete_events (t == t_event) => [X => X + 10000]
         (10.0, 0.01), 0 <--> X
+    end
+    jprob = JumpProblem(rn, [:X => 0], (0.0, 5.0); rng)
+    sol = solve(jprob, SSAStepper())
+
+    @test sol.t[end] == 5.0
+    @test 3.0 ∈ sol.t
+    # The event should have fired at t_event, adding 10000 molecules.
+    idx = findlast(==(3.0), sol.t)
+    @test sol.u[idx][1] >= 10000
+end
+
+# Integration test: solve SDEProblem with symbolic tstops and a discrete event.
+let
+    rn = @reaction_network begin
+        @parameters t_event=3.0
+        @tstops t_event
+        @discrete_events (t == t_event) => [X => X + 10000.0]
+        (10.0, 0.01), 0 <--> X
+    end
+    sprob = SDEProblem(rn, [:X => 999.0], (0.0, 5.0))
+    sol = solve(sprob, ImplicitEM())
+
+    @test sol.t[end] == 5.0
+    @test 3.0 ∈ sol.t
+    idx = findlast(==(3.0), sol.t)
+    @test sol.u[idx][1] >= 10000.0
+end
+
+# Integration test: solve HybridProblem with symbolic tstops and a discrete event.
+# Uses ODE-scale production/degradation + a Jump-scale degradation to ensure a true hybrid.
+let
+    rn = @reaction_network begin
+        @parameters t_event=3.0
+        @tstops t_event
+        @discrete_events (t == t_event) => [X => X + 10000.0]
+        10.0, 0 --> X, [physical_scale = Catalyst.PhysicalScale.ODE]
+        0.01, X --> 0, [physical_scale = Catalyst.PhysicalScale.ODE]
         1.0, X --> 0, [physical_scale = Catalyst.PhysicalScale.Jump]
     end
-    @test_warn "Symbolic tstops" SDEProblem(rn, [:X => 999.0], (0.0, 10.0))
-    @test_warn "Symbolic tstops" JumpProblem(rn, [:X => 100], (0.0, 5.0); rng)
-    @test_warn "Symbolic tstops" HybridProblem(rn, [:X => 100.0], (0.0, 5.0); rng)
+    hprob = HybridProblem(rn, [:X => 100.0], (0.0, 5.0); rng)
+    sol = solve(hprob, Tsit5())
+
+    @test sol.t[end] == 5.0
+    @test 3.0 ∈ sol.t
+    idx = findlast(==(3.0), sol.t)
+    @test sol.u[idx][1] >= 10000.0
 end
 
 # Tests that tstops containing unknowns (species/variables) are rejected.

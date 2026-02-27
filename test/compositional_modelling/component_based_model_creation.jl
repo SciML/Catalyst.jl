@@ -51,7 +51,7 @@ let
         sys₃.m => 0.0, sys₃.P => 0.0]
     tspan = (0.0, 100000.0)
     oprob = ODEProblem(oderepressilator, merge(Dict(u₀), Dict(pvals)), tspan)
-    sol = solve(oprob, Tsit5())
+    sol = solve(oprob, Tsit5(); abstol = 1e-8, reltol = 1e-8)
 
     # Hardcoded network.
     function repress!(f, y, p, t)
@@ -74,7 +74,7 @@ let
         μ = (log(2) / 600))
     u0 = [0.0, 0.0, 0.0, 20.0, 0.0, 0.0]
     oprob2 = ODEProblem(repress!, u0, tspan, ps)
-    sol2 = solve(oprob2, Tsit5())
+    sol2 = solve(oprob2, Tsit5(); abstol = 1e-8, reltol = 1e-8)
     tvs = 0:1:tspan[end]
     @test all(isapprox.(sol(tvs, idxs = sys₁.P), sol2(tvs, idxs = 4), atol = 1e-4))
 
@@ -91,7 +91,7 @@ let
     @named oderepressilator2 = ode_model(repressilator, include_zero_odes = false)
     sys2 = mtkcompile(oderepressilator2)  # FAILS currently
     oprob = ODEProblem(sys2, [u₀; pvals], tspan)
-    sol = solve(oprob, Tsit5())
+    sol = solve(oprob, Tsit5(); abstol = 1e-8, reltol = 1e-8)
     @test all(isapprox.(sol(tvs, idxs = sys₁.P), sol2(tvs, idxs = 4), atol = 1e-4))
 
     # Test conversion to nonlinear system.
@@ -242,7 +242,7 @@ let
     @named oderepressilator = ode_model(repressilator2, include_zero_odes = false)
     sys2 = mtkcompile(oderepressilator)  # FAILS currently
     oprob = ODEProblem(sys2, [u₀; pvals], tspan)
-    sol = solve(oprob, Tsit5())
+    sol = solve(oprob, Tsit5(); abstol = 1e-8, reltol = 1e-8)
     @test all(isapprox.(sol(tvs, idxs = sys₁.P), sol2(tvs, idxs = 4), atol = 1e-4))
 
     # Test extending with nonlinear System.

@@ -632,11 +632,8 @@ problem types.
   equivalence checking (`isequivalent`), following the same patterns as events
   and brownians.
 
-- **Solver support**: Symbolic tstops are currently only supported when solving
-  `ODEProblem`s. Creating an `SDEProblem`, `JumpProblem`, or `HybridProblem`
-  from a `ReactionSystem` with symbolic tstops will emit a warning. The tstops
-  are still stored and forwarded, so they will work automatically once the
-  underlying solver ecosystems add support.
+- **Solver support**: Symbolic tstops are supported for all problem types:
+  `ODEProblem`, `SDEProblem`, `JumpProblem`, and `HybridProblem`.
 
 ## Catalyst 15.0
 - The Catalyst release process is changing; certain core dependencies of
