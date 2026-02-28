@@ -331,7 +331,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     is an error. Bindings for variables (ones created via `@species`, `@variables`, and `@discretes`)
     are treated as initial conditions.
     """
-    bindings::ROSymmapT
+    bindings::MT.ROSymmapT
     """
     The initial values to use when initial conditions and/or
     parameters are not supplied to problem constructors.
