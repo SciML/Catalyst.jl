@@ -326,6 +326,13 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """Internal sub-systems"""
     systems::Vector{ReactionSystem}
     """
+    Binding relations for variables/parameters. The bound variable (key) is completely
+    determined by the binding (value). Providing an initial condition for a bound variable
+    is an error. Bindings for variables (ones created via `@species`, `@variables`, and `@discretes`)
+    are treated as initial conditions.
+    """
+    bindings::ROSymmapT
+    """
     The initial values to use when initial conditions and/or
     parameters are not supplied to problem constructors.
     """
@@ -373,7 +380,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
 
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
-            name, systems, defaults, nps, cls, cevs, devs, tstops,
+            name, systems, bindings, initial_conditions, nps, cls, cevs, devs, tstops,
             brownians, poissonians, jumps, metadata, complete = false, parent = nothing;
             checks::Bool = true, unit_checks::Bool = false)
 
@@ -395,7 +402,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
         end
         rs = new{typeof(nps)}(
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
-            name, systems, defaults, nps, cls, cevs,
+            name, systems, bindings, initial_conditions, nps, cls, cevs,
             devs, tstops, brownians, poissonians, jumps, metadata, complete, parent)
         unit_checks && assert_valid_units(rs; info = string("ReactionSystem constructor for ", name))
         rs
@@ -421,6 +428,7 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
         observed = Equation[],
         systems = [],
         name = nothing,
+        bindings = MT.ROSymmapT(),
         initial_conditions = SymmapT(),
         checks = true,
         unit_checks = false,
@@ -449,10 +457,11 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
     # Process initial_conditions to unwrap Num wrappers.
     initial_conditions = SymmapT(value(entry[1]) => value(entry[2]) for entry in initial_conditions)
 
-    # Bindings are auto-discovered by MTKBase from variable metadata when Systems are created.
-    # The 5-argument System constructor calls process_variables! which extracts bindings from
-    # variables with symbolic default values. No explicit Catalyst handling is needed.
-    bindings = MT.SymmapT()
+    # In addition to being supplied with the constructor, bindings are auto-discovered by 
+    # MTKBase from variable metadata when Systems are created. The 5-argument System 
+    # constructor calls process_variables! which extracts bindings from variables with 
+    # symbolic default values. No explicit Catalyst handling is needed.
+    # @Aayush: DO WE NEED TO DO STUFF WITH bieningd here?
 
     # Extracts independent variables (iv and sivs), dependent variables (species and variables)
     # and parameters. Sorts so that species comes before variables in unknowns vector.
@@ -530,7 +539,7 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
 
     ReactionSystem(
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
-        systems, initial_conditions, nps, combinatoric_ratelaws,
+        systems, bindings, initial_conditions, nps, combinatoric_ratelaws,
         continuous_events, discrete_events, tstops′, brownians′, poissonians′, jumps′, metadata;
         checks, unit_checks)
 end
