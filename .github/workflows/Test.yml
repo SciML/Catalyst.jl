@@ -9,7 +9,7 @@ on:
       - master
     paths-ignore:
       - 'docs/**'
-      
+
 concurrency:
   # Skip intermediate builds: always, but for the master branch.
   # Cancel intermediate builds: always, but for the master branch.
@@ -31,8 +31,14 @@ jobs:
           - "lts"
           - "pre"
     runs-on: ubuntu-latest
+    outputs:
+      deps-hash: ${{ steps.deps-hash.outputs.hash }}
     steps:
       - uses: actions/checkout@v6
+
+      - name: "Compute dependency hash"
+        id: deps-hash
+        run: echo "hash=${{ hashFiles('Project.toml') }}" >> "$GITHUB_OUTPUT"
 
       - name: "Setup Julia ${{ matrix.version }}"
         uses: julia-actions/setup-julia@v2
@@ -51,7 +57,7 @@ jobs:
             ~/.julia/compiled
             ~/.julia/scratchspaces
             ~/.julia/logs
-          key: "tests-cache-v1;os=${{ runner.os }};julia=${{ matrix.version }};deps=${{ hashFiles('Project.toml', 'Manifest.toml', 'test/Manifest.toml') }}"
+          key: "tests-cache-v2;os=${{ runner.os }};julia=${{ matrix.version }};deps=${{ steps.deps-hash.outputs.hash }}"
 
       - name: "Build package"
         uses: julia-actions/julia-buildpkg@v1
@@ -67,7 +73,7 @@ jobs:
             ~/.julia/compiled
             ~/.julia/scratchspaces
             ~/.julia/logs
-          key: "tests-cache-v1;os=${{ runner.os }};julia=${{ matrix.version }};deps=${{ hashFiles('Project.toml', 'Manifest.toml', 'test/Manifest.toml') }}"
+          key: "tests-cache-v2;os=${{ runner.os }};julia=${{ matrix.version }};deps=${{ steps.deps-hash.outputs.hash }}"
 
   tests:
     name: "Tests"
@@ -105,7 +111,7 @@ jobs:
             ~/.julia/compiled
             ~/.julia/scratchspaces
             ~/.julia/logs
-          key: "tests-cache-v1;os=${{ runner.os }};julia=${{ matrix.version }};deps=${{ hashFiles('Project.toml', 'Manifest.toml', 'test/Manifest.toml') }}"
+          key: "tests-cache-v2;os=${{ runner.os }};julia=${{ matrix.version }};deps=${{ needs.prewarm-cache.outputs.deps-hash }}"
 
       - name: "Build package"
         uses: julia-actions/julia-buildpkg@v1
