@@ -610,6 +610,12 @@ let
     @test !Catalyst.isconstant(Y)
 end
 
+### Bindings & (Default) Initial Conditions Tests ###
+
+# TO BE ADDED
+
+
+
 ### Error Tests ###
 
 # Tests various erroneous `ReactionSystem` creations.

@@ -825,6 +825,7 @@ function system_to_reactionsystem(sys::MT.AbstractSystem;
     devs = MT.get_discrete_events(sys)
     tstps = MT.get_tstops(sys)
     meta = MT.get_metadata(sys)
+    binds = MT.get_bindings(sys)
     ics = MT.initial_conditions(sys)
 
     # Mark non-BC species as BC species so D(species) is allowed in equations.
@@ -842,6 +843,7 @@ function system_to_reactionsystem(sys::MT.AbstractSystem;
         observed = obs,
         name,
         combinatoric_ratelaws,
+        bindings = binds,
         initial_conditions = ics,
         continuous_events = cevs,
         discrete_events = devs,
@@ -902,6 +904,7 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
     System(eqs, us, ps;
         name,
         observed = obs, initialization_eqs = initeqs,
+        bindings = MT.get_bindings(rs),
         initial_conditions = merge(initial_conditions, defs),
         checks,
         metadata = MT.get_metadata(rs),
