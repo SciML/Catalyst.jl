@@ -1,4 +1,37 @@
 # [Structural Identifiability Analysis](@id structural_identifiability)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("StructuralIdentifiability")
+```
+```@raw html
+</details>
+```
+```@raw html
+<details><summary><strong>Quick-start example</strong></summary>
+```
+The following code provides a brief example of how [*structural identifiability*](https://en.wikipedia.org/wiki/Structural_identifiability) can be determined for a reaction network model using the [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) package.
+```julia
+using Catalyst, StructuralIdentifiability
+gwo = @reaction_network begin
+    (pₘ/(1+P), dₘ), 0 <--> M
+    (pₑ*M,dₑ), 0 <--> E
+    (pₚ*E,dₚ), 0 <--> P
+end
+
+# Asses global identifiability using the `assess_identifiability` function.
+assess_identifiability(gwo; measured_quantities = [:M])
+```
+```@raw html
+</details>
+```
+  \
+  
 
 During parameter fitting, parameter values are inferred from data. Parameter identifiability refers to whether inferring parameter values for a given model is mathematically feasible. Ideally, parameter fitting should always be accompanied with an identifiability analysis of the problem. 
 

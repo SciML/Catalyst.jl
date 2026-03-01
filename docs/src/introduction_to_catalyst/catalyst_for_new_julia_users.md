@@ -169,8 +169,7 @@ nothing # hide
 Previously we have bundled this information into an `ODEProblem` (denoting a deterministic *ordinary differential equation*). Now we wish to simulate our model as a jump process (where each reaction event corresponds to a discrete change in the state of the system). We do this by first processing the inputs to work in a jump model -- an extra step needed for jump models that can be avoided for ODE/SDE models -- and then creating a `JumpProblem` from the inputs:
 ```@example ex2
 using JumpProcesses # hide
-jinput = JumpInputs(sir_model, u0, tspan, params)
-jprob = JumpProblem(jinput)
+jprob = JumpProblem(sir_model, u0, tspan, params)
 nothing # hide
 ```
 Finally, we can now simulate our model using the `solve` function, and plot the solution using the `plot` function.

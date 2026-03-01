@@ -15,10 +15,11 @@ Symbolics.option_to_metadata_type(::Val{:edgeparameter}) = EdgeParameter
 
 Returns `true` if the parameter `p` is an edge parameter (else `false`).
 """
-isedgeparameter(x::Num, args...) = isedgeparameter(Symbolics.unwrap(x), args...)
+isedgeparameter(x::Num, args...) = isedgeparameter(unwrap(x), args...)
 function isedgeparameter(x, default = false)
-    p = Symbolics.getparent(x, nothing)
-    p === nothing || (x = p)
+    if iscall(x) && operation(x) === getindex
+        x = first(arguments(x))
+    end
     Symbolics.getmetadata(x, EdgeParameter, default)
 end
 
@@ -30,7 +31,7 @@ struct TransportReaction <: AbstractSpatialReaction
     """The rate function (excluding mass action terms). Currently, only constants supported"""
     rate::Any
     """The species that is subject to diffusion."""
-    species::BasicSymbolic{Real}
+    species::SymbolicT
 
     # Creates a diffusion reaction.
     function TransportReaction(rate, species)
@@ -57,10 +58,9 @@ function make_transport_reaction(rateex, species)
     # Checks for input errors.
     forbidden_symbol_check(union([species], parameters))
 
-
     # Creates expressions corresponding to actual code from the internal DSL representation.
     sexprs = get_usexpr([species], Dict{Symbol, Expr}())
-    pexprs = get_psexpr(parameters, Dict{Symbol, Expr}())
+    pexprs = get_psexpr(parameters, [], Dict{Symbol, Expr}())
     iv = :($(DEFAULT_IV_SYM) = default_t())
     trxexpr = :(TransportReaction($rateex, $species))
 
@@ -78,7 +78,7 @@ function make_transport_reaction(rateex, species)
 end
 
 # Gets the parameters in a `TransportReaction`.
-ModelingToolkit.parameters(tr::TransportReaction) = Symbolics.get_variables(tr.rate)
+MT.parameters(tr::TransportReaction) = collect(Symbolics.get_variables(tr.rate))
 
 # Gets the species in a `TransportReaction`.
 spatial_species(tr::TransportReaction) = [tr.species]
@@ -94,23 +94,23 @@ function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReacti
     end
 
     # Checks that the rate does not depend on species.
-    rate_vars = ModelingToolkit.getname.(Symbolics.get_variables(tr.rate))
-    if !isempty(intersect(ModelingToolkit.getname.(species(rs)), rate_vars))
-        error("The following species were used in rates of a transport reactions: $(setdiff(ModelingToolkit.getname.(species(rs)), rate_vars)).")
+    rate_vars = MT.getname.(Symbolics.get_variables(tr.rate))
+    if !isempty(intersect(MT.getname.(species(rs)), rate_vars))
+        error("The following species were used in rates of a transport reactions: $(setdiff(MT.getname.(species(rs)), rate_vars)).")
     end
 
     # Checks that the species does not exist in the system with different metadata.
     if any(isequal(tr.species, s) && !isequivalent(tr.species, s) for s in species(rs))
-        error("A transport reaction used a species, $(tr.species), with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and use it during transport reaction creation.")
+        error("A transport reaction used a species, $(tr.species), with metadata not matching its discrete space reaction system. Please fetch this species from the reaction system and use it during transport reaction creation.")
     end
     if any(isequal(rs_p, tr_p) && !isequivalent(rs_p, tr_p)
-            for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate))
-        error("A transport reaction used a parameter with metadata not matching its lattice reaction system. Please fetch this parameter from the reaction system and use it during transport reaction creation.")
+    for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate))
+        error("A transport reaction used a parameter with metadata not matching its discrete space reaction system. Please fetch this parameter from the reaction system and use it during transport reaction creation.")
     end
 
     # Checks that no edge parameter occurs among rates of non-spatial reactions.
     if any(!isempty(intersect(Symbolics.get_variables(r.rate), edge_parameters))
-            for r in reactions(rs))
+    for r in reactions(rs))
         error("Edge parameter(s) were found as a rate of a non-spatial reaction.")
     end
 end
@@ -125,10 +125,10 @@ const ep_metadata = Catalyst.EdgeParameter => true
 function isequivalent(sym1, sym2; ignored_metadata = [MT.SymScope])
     isequal(sym1, sym2) || (return false)
     if any((md1 != ep_metadata) && (md1[1] ∉ ignored_metadata) && (md1 ∉ sym2.metadata)
-            for md1 in sym1.metadata)
+    for md1 in sym1.metadata)
         return false
     elseif any((md2 != ep_metadata) && (md2[1] ∉ ignored_metadata) && (md2 ∉ sym1.metadata)
-            for md2 in sym2.metadata)
+    for md2 in sym2.metadata)
         return false
     elseif typeof(sym1) != typeof(sym2)
         return false

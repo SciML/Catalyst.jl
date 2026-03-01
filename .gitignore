@@ -2,6 +2,7 @@
 *.jl.*.cov
 *.jl.mem
 Manifest.toml
+docs/src/assets/Project.toml
 
 # Vim files
 *.swp
@@ -11,3 +12,11 @@ Manifest.toml
 .vscode/*
 
 LocalPreferences.toml
+
+# claude
+.claude
+.claude/*
+.planning
+.planning/*
+CLAUDE.md
+AGENTS.md

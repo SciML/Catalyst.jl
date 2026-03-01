@@ -44,7 +44,7 @@ used for any other purpose or exported.
 # ]
 
 # currently we only use PNG conversion, but others can be added from above as needed
-_showables = [(:PNG, "image/png")]
+const _showables = [(:PNG, "image/png")]
 
 struct Showable{mime <: MIME}
     content::Any
@@ -58,7 +58,8 @@ end
 
 for (_, mime) in _showables
     MIMEType = typeof(MIME(mime))
-    @eval Base.show(io::IO, ::$MIMEType, s::Showable{>:$MIMEType}; options...) = show(
+    @eval Base.show(io::IO, ::$MIMEType, s::Showable{>:$MIMEType};
+        options...) = show(
         io, $MIMEType(), s.content; s.options..., options...)
 end
 

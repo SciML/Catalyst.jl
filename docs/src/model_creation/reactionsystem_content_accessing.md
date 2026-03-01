@@ -1,8 +1,25 @@
 # [Accessing Model Properties](@id model_accessing)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+Pkg.add("SymbolicIndexingInterface")
+```
+```@raw html
+</details>
+```
+  \
+  
 Catalyst is based around the creation, analysis, and simulation of chemical reaction network models. Catalyst stores these models in [`ReactionSystem`](@ref) structures. This page describes some basic functions for accessing the content of these structures. This includes retrieving lists of species, parameters, or reactions that a model consists of. An extensive list of relevant functions for working with `ReactionSystem` models can be found in Catalyst's [API](@ref api).
 
 !!! warning
-    Generally, a field of a Julia structure can be accessed through `struct.fieldname`. E.g. a simulation's time vector can be retrieved using `simulation.t`. While Catalyst `ReactionSystem`s are structures, one should *never* access their fields using this approach, but rather using the accessor functions described below and in the [API](@ref api_accessor_functions) (direct accessing of fields can yield unexpected behaviours). E.g. to retrieve the species of a `ReactionsSystem` called `rs`, use `Catalyst.get_species(rs)`, *not* `rs.species`. The reason is that, as shown [below](@ref model_accessing_symbolic_variables), Catalyst (and more generally any [ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl) system types) reserves this type of accessing for accessing symbolic variables stored in the system. I.e. `rs.X` refers to the `X` symbolic variable, not a field in `rs` named "X".
+    Generally, a field of a Julia structure can be accessed through `struct.fieldname`. E.g. a simulation's time vector can be retrieved using `simulation.t`. While Catalyst `ReactionSystem`s are structures, one should *never* access their fields using this approach, but rather using the accessor functions described below and in the [API](@ref api_accessor_functions) (direct accessing of fields can yield unexpected behaviours). E.g. to retrieve the species of a `ReactionsSystem` called `rs`, use `Catalyst.get_species(rs)`, *not* `rs.species`. The reason is that, as shown [below](@ref model_accessing_symbolic_variables), Catalyst (and more generally any [ModelingToolkitBase](https://github.com/SciML/ModelingToolkit.jl) system) reserves this type of accessing for accessing symbolic variables stored in the system. I.e. `rs.X` refers to the `X` symbolic variable, not a field in `rs` named "X".
 
 ## [Direct accessing of symbolic model parameter and species](@id model_accessing_symbolic_variables)
 Previously we have described how the parameters and species that Catalyst models contain are represented using so-called [*symbolic variables*](@ref introduction_to_catalyst) (and how these enable the forming of [*symbolic expressions*](@ref introduction_to_catalyst)). We have described how, during [programmatic modelling](@ref programmatic_CRN_construction), the user has [direct access to these](@ref programmatic_CRN_construction) and how this can be [taken advantage of](@ref programmatic_CRN_construction). We have also described how, during [DSL-based modelling](@ref dsl_description), the need for symbolic representation can be circumvented by [using `@unpack`](@ref dsl_advanced_options_symbolics_and_DSL_unpack) or by [creating an observable](@ref dsl_advanced_options_observables). However, sometimes, it is easier to *directly access a symbolic variable through the model itself*, something which we will describe here.
@@ -136,11 +153,22 @@ nonreactions(coupled_crn)
 ### [Accessing other model properties](@id model_accessing_basics_others)
 There exist several other functions for accessing model properties. 
 
-The `observed`, `continuous_events`, `discrete_events` functions can be used to access a model's [observables](@ref dsl_advanced_options_observables), [continuous events](@ref constraint_equations_events), and [discrete events](@ref constraint_equations_events), respectively.
+The `observed`, `continuous_events`, `discrete_events` functions can be used to access a model's [observables](@ref dsl_advanced_options_observables), [continuous events](@ref events), and [discrete events](@ref events), respectively.
 
-The `ModelingToolkit.get_iv` function can be used to retrieve a [model's independent variable](@ref programmatic_CRN_construction):
+The `ModelingToolkitBase.get_iv` function can be used to retrieve a [model's independent variable](@ref programmatic_CRN_construction):
 ```@example model_accessing_basics
-ModelingToolkit.get_iv(sir)
+ModelingToolkitBase.get_iv(sir)
+```
+
+### [Extracting names from symbolic variables](@id model_accessing_basics_getname)
+When working with symbolic variables, it can be useful to extract their names as `Symbol`s (e.g. for labelling or building dictionaries). The `SymbolicIndexingInterface.getname` function does this:
+```@example model_accessing_basics
+using SymbolicIndexingInterface: getname
+getname(sir.S)
+```
+This can be broadcast to extract names from a collection of symbolic variables:
+```@example model_accessing_basics
+getname.(species(sir))
 ```
 
 ## [Accessing properties of hierarchical models](@id model_accessing_hierarchical)
@@ -225,12 +253,12 @@ Similarly, `parameters` retrieves five different parameters. Here, we note that 
 parameters(rs)
 ```
 
-If we wish to retrieve the species (or parameters) that are specifically contained in the top-level system (and not only indirectly through its subsystems), we can use the `Catalyst.get_species` (or `ModelingToolkit.getps`) functions:
+If we wish to retrieve the species (or parameters) that are specifically contained in the top-level system (and not only indirectly through its subsystems), we can use the `Catalyst.get_species` (or `ModelingToolkitBase.getps`) functions:
 ```@example model_accessing_hierarchical
 Catalyst.get_species(rs)
 ```
 ```@example model_accessing_hierarchical
-ModelingToolkit.get_ps(rs)
+ModelingToolkitBase.get_ps(rs)
 ```
 Here, our top-level model contains a single parameter (`kₜ`), and two the two versions of the `Xᵢ` species. These are all the symbolic variables that occur in the transportation reaction (`@kₜ, $(nucleus_sys.Xᵢ) --> $(cytoplasm_sys.Xᵢ)`), which is the only reaction of the top-level system. We can apply these functions to the systems as well. However, when we do so, the systems' names are not prepended:
 ```@example model_accessing_hierarchical

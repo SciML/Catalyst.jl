@@ -1,4 +1,20 @@
 # [Decomposing the Reaction Network ODEs](@id network_analysis_odes)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("CairoMakie")
+Pkg.add("Catalyst")
+Pkg.add("GraphMakie")
+Pkg.add("NetworkLayout")
+```
+```@raw html
+</details>
+```
+  \
 
 In this tutorial we will discuss the specific mathematical 
 structure of the [ODEs that arise from the mass-action dynamics](@ref math_models_in_catalyst_rre_odes)
@@ -88,9 +104,9 @@ Note, as [`oderatelaw`](@ref) takes just one reaction as input we use
 broadcasting to apply it to each element of `rxs`.
 
 Let's check that this really gives the same ODEs as Catalyst. Here is what Catalyst
-generates by converting to an `ODESystem`
+generates by converting to an ODE `System`
 ```@example s1
-osys = convert(ODESystem, repressilator)
+osys = ode_model(repressilator)
 
 # for display purposes we just pull out the right side of the equations
 odes = [eq.rhs for eq in equations(osys)]

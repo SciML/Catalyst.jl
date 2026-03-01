@@ -54,11 +54,11 @@ a(\mathbf{X}(t)) = \frac{k}{2} A (A-1) B.
 
 Note, if the combinatoric factors are already included in one's rate constants,
 the implicit rescaling of rate constants can be disabled through use of the
-`combinatoric_ratelaws = false` argument to [`Base.convert`](@ref) or whatever
+`combinatoric_ratelaws = false` argument to `ode_model` (or similar) or whatever
 Problem is being generated, i.e.
 ```julia
 rn = @reaction_network ...
-osys = convert(ODESystem, rn; combinatoric_ratelaws = false)
+osys = ode_model(rn; combinatoric_ratelaws = false)
 oprob = ODEProblem(osys, ...)
 
 # or
@@ -76,11 +76,13 @@ One can also specify during system construction that by default combinatoric
 scalings should be disabled, i.e.
 ```@example math_examples
 using Catalyst
+using Latexify # hide
 rn = @reaction_network begin
     @combinatoric_ratelaws false
     k, 3A + 2B --> A + 3D
 end
-osys = convert(ODESystem, rn)
+osys = ode_model(rn)
+latexify(rn; form = :ode, math_delimiters = true) # hide
 ```
 
 ## [Reaction Rate Equation (RRE) ODE Models](@id math_models_in_catalyst_rre_odes)
@@ -97,20 +99,22 @@ for a steady-state $\bar{\mathbf{X}}$. Note, here we have assumed the rate laws 
 ### RRE ODE Example
 Let's see the generated ODEs for the following network
 ```@example math_examples
-using Catalyst, ModelingToolkit, Latexify
+using Catalyst, ModelingToolkitBase, Latexify
 rn = @reaction_network begin
     k₁, 2A + B --> 3C
     k₂, A --> 0
     k₃, 0 --> A
 end
-osys = convert(ODESystem, rn)
+osys = ode_model(rn)
+latexify(rn; form = :ode, math_delimiters = true) # hide
 ```
 Likewise, the following drops the combinatoric scaling factors, giving unscaled ODEs
 ```@example math_examples
-osys = convert(ODESystem, rn; combinatoric_ratelaws = false)
+osys = ode_model(rn; combinatoric_ratelaws = false)
+latexify(Catalyst.system_to_reactionsystem(osys); math_delimiters = true) # hide
 ```
 
-## Chemical Langevin Equation (CLE) SDE Models
+## [Chemical Langevin Equation (CLE) SDE Models](@id math_models_in_catalyst_cle_sdes)
 The CLE SDE models Catalyst creates for a general system correspond to the coupled system of SDEs given by
 ```math
 d X_m = \sum_{k=1}^K \nu_m^k a_k(\mathbf{X}(t),t) dt + \sum_{k=1}^K \nu_m^k \sqrt{a_k(\mathbf{X}(t),t)} dW_k(t), \quad m = 1,\dots,M,
@@ -137,7 +141,7 @@ dC(t) &= \frac{3}{2} k_1 A^{2} B \, dt + 3 \sqrt{\frac{k_1}{2} A^{2} B} \, dW_1(
 \end{align}
 ```
 
-## Stochastic Chemical Kinetics Jump Process Models
+## [Stochastic Chemical Kinetics Jump Process Models](@id math_models_in_catalyst_sck_jumps)
 The stochastic chemical kinetics jump process models Catalyst creates for a general system correspond to the coupled system of jump processes, in the time change representation, given by
 ```math
 X_m(t) = X_m(0) + \sum_{k=1}^K \nu_m^k Y_k\left( \int_{0}^t a_k(\mathbf{X}(s^-),s) \, ds \right), \quad m = 1,\dots,M.

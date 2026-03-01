@@ -1,4 +1,17 @@
 # [Chemistry-related Functionality](@id chemistry_functionality)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+```
+```@raw html
+</details>
+```
+  \
 
 While Catalyst has primarily been designed around the modelling of biological systems, reaction network models are also common in chemistry. This section describes two types of functionality, that while of general interest, should be especially useful in the modelling of chemical systems.
 - The `@compound` option, which enables the user to designate that a specific species is composed of certain subspecies.

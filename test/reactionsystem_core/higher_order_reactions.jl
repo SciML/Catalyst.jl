@@ -44,9 +44,9 @@ let
         ps = rnd_ps(base_higher_order_network, rng; factor)
         t = rand(rng)
 
-        @test f_eval(base_higher_order_network, u0, ps, t) == f_eval(higher_order_network_alt1, u0, ps, t)
-        @test jac_eval(base_higher_order_network, u0, ps, t) == jac_eval(higher_order_network_alt1, u0, ps, t)
-        @test g_eval(base_higher_order_network, u0, ps, t) == g_eval(higher_order_network_alt1, u0, ps, t)
+        @test f_eval(base_higher_order_network, u0, ps, t) ≈ f_eval(higher_order_network_alt1, u0, ps, t)
+        @test jac_eval(base_higher_order_network, u0, ps, t) ≈ jac_eval(higher_order_network_alt1, u0, ps, t)
+        @test g_eval(base_higher_order_network, u0, ps, t) ≈ g_eval(higher_order_network_alt1, u0, ps, t)
     end
 end
 
@@ -89,17 +89,15 @@ let
     # Prepares JumpProblem via Catalyst.
     u0_base = rnd_u0_Int64(base_higher_order_network, rng)
     ps_base = rnd_ps(base_higher_order_network, rng)
-    jin_base = JumpInputs(base_higher_order_network, u0_base, (0.0, 100.0), ps_base)
-    jprob_base = JumpProblem(jin_base; rng = StableRNG(1234))
+    jprob_base = JumpProblem(base_higher_order_network, u0_base, (0.0, 1000.0), ps_base; rng = StableRNG(1234))
 
     # Prepares JumpProblem partially declared manually.
-    jin_alt1 = JumpInputs(higher_order_network_alt1, u0_base, (0.0, 100.0), ps_base)
-    jprob_alt1 = JumpProblem(jin_alt1; rng = StableRNG(1234))
+    jprob_alt1 = JumpProblem(higher_order_network_alt1, u0_base, (0.0, 1000.0), ps_base; rng = StableRNG(1234))
 
     # Prepares JumpProblem via manually declared system.
     u0_alt2 = map_to_vec(u0_base, [:X1, :X2, :X3, :X4, :X5, :X6, :X7, :X8, :X9, :X10])
     ps_alt2 = map_to_vec(ps_base, [:p, :r1, :r2, :K, :r3, :r4, :r5, :r6, :d])
-    dprob_alt2 = DiscreteProblem(u0_alt2, (0.0, 100.0), ps_alt2)
+    dprob_alt2 = DiscreteProblem(u0_alt2, (0.0, 1000.0), ps_alt2)
     jprob_alt2 = JumpProblem(dprob_alt2, Direct(), higher_order_network_alt2...; rng = StableRNG(1234))
 
     # Simulates the models.

@@ -14,7 +14,7 @@ end
 
 ### Run Tests ###
 @time begin
-    if GROUP == "All" || GROUP == "Core"
+    if GROUP == "All" || GROUP == "Modeling"
         # Tests the `ReactionSystem` structure and its properties.
         @time @safetestset "Reaction Structure" begin include("reactionsystem_core/reaction.jl") end
         @time @safetestset "ReactionSystem Structure" begin include("reactionsystem_core/reactionsystem.jl") end
@@ -32,19 +32,22 @@ end
         @time @safetestset "DSL Options" begin include("dsl/dsl_options.jl") end
 
         # Tests compositional and hierarchical modelling.
-        @time @safetestset "ReactionSystem Components Based Creation" begin include("compositional_modelling/component_based_model_creation.jl") end
+        @time @safetestset "ReactionSystem Components Based Creation" begin include("compositional_modelling/component_based_model_creation.jl") end # hierarchical modelling broken due to https://github.com/SciML/ModelingToolkit.jl/pull/4101
+        @time @safetestset "Brownians, Jumps, and Poissonians Composition" begin include("compositional_modelling/brownians_and_jumps_composition.jl") end
 
         # Tests various miscellaneous features.
         @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
-        @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end
+        @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end # `_validate` currently no longer avaiable, awaiting advice.
         @time @safetestset "Compound Species" begin include("miscellaneous_tests/compound_macro.jl") end
         @time @safetestset "Reaction Balancing" begin include("miscellaneous_tests/reaction_balancing.jl") end
 
         # Tests reaction network analysis features.
-        @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end
+        @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end # Multiple issues. https://github.com/SciML/ModelingToolkit.jl/issues/4102 required to start debugging.
         @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
         @time @safetestset "CRN Theory" begin include("network_analysis/crn_theory.jl") end
+    end
 
+    if GROUP == "All" || GROUP == "Simulation"
         # Tests ODE, SDE, jump simulations, nonlinear solving, and steady state simulations.
         @time @safetestset "ODE System Simulations" begin include("simulation_and_solving/simulate_ODEs.jl") end
         @time @safetestset "Automatic Jacobian Construction" begin include("simulation_and_solving/jacobian_construction.jl") end
@@ -54,42 +57,35 @@ end
 
         # Tests upstream SciML and DiffEq stuff.
         @time @safetestset "MTK Structure Indexing" begin include("upstream/mtk_structure_indexing.jl") end
-        @time @safetestset "MTK Problem Inputs" begin include("upstream/mtk_problem_inputs.jl") end
+        @time @safetestset "MTK Problem Inputs" begin include("upstream/mtk_problem_inputs.jl") end # Required to fix lots of these: https://github.com/SciML/ModelingToolkit.jl/issues/4098
     end
 
     if GROUP == "All" || GROUP == "Hybrid"
         @time @safetestset "ReactionSystem Hybrid Solvers" begin include("simulation_and_solving/hybrid_models.jl") end
     end
 
-    if GROUP == "All" || GROUP == "IO"
+    if GROUP == "All" || GROUP == "Misc"
         @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
+        @time @safetestset "Explicit Imports" begin include("miscellaneous_tests/explicit_imports.jl") end
         # BROKEN
-        # @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
+        #@time @safetestset "Latexify" begin include("visualisation/latexify.jl") end # https://github.com/SciML/Catalyst.jl/issues/1352
     end
 
     if GROUP == "All" || GROUP == "Spatial"
         # Tests spatial modelling and simulations.
         @time @safetestset "PDE Systems Simulations" begin include("spatial_modelling/simulate_PDEs.jl") end
         @time @safetestset "Spatial Reactions" begin include("spatial_modelling/spatial_reactions.jl") end
-        @time @safetestset "Lattice Reaction Systems" begin include("spatial_modelling/lattice_reaction_systems.jl") end
-        @time @safetestset "Spatial Lattice Variants" begin include("spatial_modelling/lattice_reaction_systems_lattice_types.jl") end
-        @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_ODEs.jl") end
-        @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_jumps.jl") end
-        @time @safetestset "Lattice Simulation Structure Interfacing" begin include("spatial_modelling/lattice_simulation_struct_interfacing.jl") end
+        @time @safetestset "Discrete Space Reaction Systems" begin include("spatial_modelling/dspace_reaction_systems.jl") end
+        @time @safetestset "Spatial Discrete Space Variants" begin include("spatial_modelling/dspace_reaction_systems_space_types.jl") end
+        @time @safetestset "ODE Discrete Space Systems Simulations" begin include("spatial_modelling/dspace_reaction_systems_ODEs.jl") end
+        @time @safetestset "Jump Discrete Space Systems Simulations" begin include("spatial_modelling/dspace_reaction_systems_jumps.jl") end
+        @time @safetestset "Discrete Space Simulation Structure Interfacing" begin include("spatial_modelling/dspace_simulation_struct_interfacing.jl") end
     end
 
     # Tests extensions.
     if GROUP == "All" || GROUP == "Extensions"
         activate_extensions_env()
-
-        @time @safetestset "Graph visualization" begin include("extensions/graphmakie.jl") end
-        @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
-        @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
-        @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
-        @time @safetestset "Steady State Stability Computations" begin include("extensions/stability_computation.jl") end
-
-        # Test spatial plotting, using CairoMakie and GraphMakie
-        @time @safetestset "Lattice Simulation Plotting" begin include("extensions/lattice_simulation_plotting.jl") end
+        include("runtests_extensions.jl")
     end
 
 end # @time

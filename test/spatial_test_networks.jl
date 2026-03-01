@@ -1,7 +1,8 @@
 ### Fetch packages ###
 using Catalyst, Graphs
-using Catalyst: reactionsystem, spatial_reactions, lattice, num_verts, num_edges, num_species, 
+using Catalyst: reactionsystem, spatial_reactions, dspace, num_verts, num_edges, num_species,
                 spatial_species, vertex_parameters, edge_parameters, edge_iterator
+const MT = ModelingToolkitBase
 
 # Sets rnd number.
 using StableRNGs
@@ -11,8 +12,8 @@ rng = StableRNG(12345)
 
 # Generates randomised initial condition or parameter values.
 rand_v_vals(grid, x::Number) = rand_v_vals(grid) * x
-rand_v_vals(lrs::LatticeReactionSystem) = rand_v_vals(lattice(lrs))
-function rand_v_vals(grid::DiGraph) 
+rand_v_vals(dsrs::DiscreteSpaceReactionSystem) = rand_v_vals(dspace(dsrs))
+function rand_v_vals(grid::DiGraph)
     return rand(rng, nv(grid))
 end
 function rand_v_vals(grid::Catalyst.CartesianGridRej{N,T}) where {N,T}
@@ -23,26 +24,26 @@ function rand_v_vals(grid::Array{Bool, N}) where {N}
 end
 
 rand_e_vals(grid, x::Number) = rand_e_vals(grid) * x
-function rand_e_vals(lrs::LatticeReactionSystem)
-    e_vals = spzeros(num_verts(lrs), num_verts(lrs))
-    for e in edge_iterator(lrs)
+function rand_e_vals(dsrs::DiscreteSpaceReactionSystem)
+    e_vals = spzeros(num_verts(dsrs), num_verts(dsrs))
+    for e in edge_iterator(dsrs)
         e_vals[e[1], e[2]] = rand(rng)
     end
     return e_vals
 end
 
 # Generates edge values, where each edge have the same value.
-function uniform_e_vals(lrs::LatticeReactionSystem, val)
-    e_vals = spzeros(num_verts(lrs), num_verts(lrs))
-    for e in edge_iterator(lrs)
+function uniform_e_vals(dsrs::DiscreteSpaceReactionSystem, val)
+    e_vals = spzeros(num_verts(dsrs), num_verts(dsrs))
+    for e in edge_iterator(dsrs)
         e_vals[e[1], e[2]] = val
     end
     return e_vals
 end
 
 # Gets a symbol list of spatial parameters.
-function spatial_param_syms(lrs::LatticeReactionSystem)
-    ModelingToolkit.getname.(edge_parameters(lrs))
+function spatial_param_syms(dsrs::DiscreteSpaceReactionSystem)
+    MT.getname.(edge_parameters(dsrs))
 end
 
 # Converts to integer value (for JumpProcess simulations).

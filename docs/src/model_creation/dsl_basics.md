@@ -1,4 +1,19 @@
 # [The Catalyst DSL - Introduction](@id dsl_description)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("Latexify")
+```
+```@raw html
+</details>
+```
+  \
+  
 In the [introduction to Catalyst](@ref introduction_to_catalyst) we described how the `@reaction_network` [macro](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros) can be used to create chemical reaction network (CRN) models. This macro enables a so-called [domain-specific language](https://en.wikipedia.org/wiki/Domain-specific_language) (DSL) for creating CRN models. This tutorial will give a basic introduction on how to create Catalyst models using this macro (from now onwards called "*the Catalyst DSL*"). A [follow-up tutorial](@ref dsl_advanced_options) will describe some of the DSL's more advanced features.
 
 The Catalyst DSL generates a [`ReactionSystem`](@ref) (the [julia structure](https://docs.julialang.org/en/v1/manual/types/#Composite-Types) Catalyst uses to represent CRN models). These can be created through alternative methods (e.g. [programmatically](@ref programmatic_CRN_construction) or [compositionally](@ref compositional_modeling)). [Previous](@ref introduction_to_catalyst) and [following](@ref simulation_intro) tutorials describe how to simulate models once they have been created using the DSL. This tutorial will solely focus on model creation.
@@ -211,6 +226,7 @@ Here, `P`'s production rate will be reduced as `A` decays. We can [print the ODE
 ```@example dsl_basics
 using Latexify
 latexify(rn_ap; form = :ode)
+latexify(rn_ap; form = :ode, math_delimiters = true) # hide
 ```
 
 In this case, we can generate an equivalent model by instead adding `A` as both a substrate and a product to `P`'s production reaction:
@@ -223,6 +239,7 @@ end
 We can confirm that this generates the same ODE:
 ```@example dsl_basics
 latexify(rn_ap_alt; form = :ode)
+latexify(rn_ap_alt; form = :ode, math_delimiters = true) # hide
 ```
 Here, while these models will generate identical ODE, SDE, and jump simulations, the chemical reaction network models themselves are not equivalent. Generally, as pointed out in the two notes below, using the second form is preferable.
 !!! warning
@@ -324,6 +341,7 @@ It is also possible to have non-integer stoichiometric coefficients for substrat
 It is possible for stoichiometric coefficients to be parameters. E.g. here we create a generic polymerisation system where `n` copies of `X` bind to form `Xn`:
 ```@example dsl_basics
 rn = @reaction_network begin
+    @parameters n::Int64 
     (kB,kD), n*X <--> Xn
 end
 ```
@@ -334,6 +352,9 @@ ps = [:kB => 1.0, :kD => 0.1, :n => 4]
 oprob = ODEProblem(rn, u0, (0.0, 1.0), ps)
 nothing # hide
 ```
+
+!!! note
+    Using non-integer stoichiometric coefficients is possible. However, this requires both using the `combinatoric_ratelaw = false` option, and also explicitly designating the stoichiometric parameter as a `Float64` using the approach described [here](@ref dsl_advanced_options_parameter_types).
 
 ## [Using special symbols](@id dsl_description_symbols)
 Julia permits any Unicode characters to be used in variable names, thus Catalyst can use these as well. Below we describe some cases where this can be useful. No functionality is, however, tied to this.

@@ -1,4 +1,38 @@
 # [Finding Steady States using NonlinearSolve.jl and SteadyStateDiffEq.jl](@id steady_state_solving)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("NonlinearSolve")
+Pkg.add("OrdinaryDiffEqRosenbrock")
+Pkg.add("SteadyStateDiffEq")
+```
+```@raw html
+</details>
+```
+```@raw html
+<details><summary><strong>Quick-start example</strong></summary>
+```
+The following code provides a brief example of how *a single* system steady state can be found using the [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl) package.
+```julia
+using Catalyst
+rn = @reaction_network begin 
+    (p,d), 0 <--> X
+end
+ps = [:p => 2.0, :d => 0.5] # The parameter set for which we want to find a steady state.
+u_guess = [:X => 1.0] # For single steady state models, this value have little impact on the result.
+nlprob = NonlinearProblem(rn, u_guess, ps)
+steady_state = solve(nlprob)
+```
+```@raw html
+</details>
+```
+  \
+  
 
 Catalyst `ReactionSystem` models can be converted to ODEs (through [the reaction rate equation](@ref introduction_to_catalyst_ratelaws)). We have previously described how these ODEs' steady states can be found through [homotopy continuation](@ref homotopy_continuation). Generally, homotopy continuation (due to its ability to find *all* of a system's steady states) is the preferred approach. However, Catalyst supports two additional approaches for finding steady states:
 - Through solving the nonlinear system produced by setting all ODE differentials to 0[^1].
@@ -114,19 +148,19 @@ Note that, unlike for nonlinear system solving, `u0` is not just an initial gues
 Generally, `SteadyStateProblem`s can be solved using the [same options that are available for ODE simulations](@ref simulation_intro_solver_options). E.g. here we designate a specific `dt` step size:
 ```@example steady_state_solving_simulation
 solve(ssprob, DynamicSS(Rodas5P()); dt = 0.01)
-nothing # hide
+nothing # hide
 ```
 
 It is possible to use solve `SteadyStateProblem`s using a nonlinear solver, and `NonlinearProblem`s using forward ODE simulation solvers:
 ```@example steady_state_solving_simulation
-using NonlinearSolve
+using NonlinearSolve
 solve(ssprob, TrustRegion())
-nothing # hide
+nothing # hide
 ```
 ```@example steady_state_solving_simulation
 nlprob = NonlinearProblem(dimer_production, u0, p)
 solve(nlprob, DynamicSS(Rodas5P()))
-nothing # hide
+nothing # hide
 ```
 However, especially when the forward ODE simulation approach is used, it is recommended to use the problem type which corresponds to the intended solver.
 

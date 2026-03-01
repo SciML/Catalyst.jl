@@ -1,4 +1,22 @@
 # [Advice for Performant SDE Simulations](@id sde_simulation_performance)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("CUDA")
+Pkg.add("DiffEqGPU")
+Pkg.add("StaticArrays")
+Pkg.add("StochasticDiffEq")
+```
+```@raw html
+</details>
+```
+  \
+  
 While there exist relatively straightforward approaches to manage performance for [ODE](@ref ode_simulation_performance) and jump simulations, this is generally not the case for SDE simulations. Below, we briefly describe some options. However, as one starts to investigate these, one quickly reaches what is (or could be) active areas of research.
 
 ## [SDE solver selection](@id sde_simulation_performance_solvers)

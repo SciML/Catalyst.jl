@@ -1,4 +1,20 @@
 # [Compositional Modeling of Reaction Systems](@id compositional_modeling)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("GraphRecipes")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+  \
+
 Catalyst supports the construction of models in a compositional fashion, based
 on ModelingToolkit's subsystem functionality. In this tutorial we'll see how we
 can construct the earlier repressilator model by composing together three
@@ -25,13 +41,13 @@ rx = Reaction(d, [X], nothing)
 ```
 We can test whether a system is complete using the `ModelingToolkit.iscomplete` function:
 ```@example ex0
-ModelingToolkit.iscomplete(degradation_component)
+ModelingToolkitBase.iscomplete(degradation_component)
 ```
 To mark a system as complete, after which it should be considered as
 representing a finalized model, use the `complete` function
 ```@example ex0
 degradation_component_complete = complete(degradation_component)
-ModelingToolkit.iscomplete(degradation_component_complete)
+ModelingToolkitBase.iscomplete(degradation_component_complete)
 ```
 
 ## Compositional modeling tooling
@@ -69,7 +85,7 @@ prefaced) by the name of the system they come from.
 
 We can see the subsystems of a given system by
 ```@example ex1
-ModelingToolkit.get_systems(rn)
+ModelingToolkitBase.get_systems(rn)
 ```
 They naturally form a tree-like structure
 ```julia
@@ -116,7 +132,7 @@ flatrn = Catalyst.flatten(rn)
 ```
 where
 ```@example ex1
-ModelingToolkit.get_systems(flatrn)
+ModelingToolkitBase.get_systems(flatrn)
 ```
 
 More about ModelingToolkit's interface for compositional modeling can be found

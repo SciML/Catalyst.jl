@@ -1,58 +1,64 @@
 ### 1d Lattice Simulation Plots/Animations ###
 
-# Internal dispatch for the plotting of a lattice simulation on a 1d lattice (Cartesian or masked).
-function lattice_plot(
-        sol, sp, lrs::LatticeReactionSystem{Q, R, <:Catalyst.GridLattice{1, S}, T};
+# Internal dispatch for the plotting of a discrete space simulation on a 1d space (Cartesian or masked).
+function dspace_plot(
+        sol, sp, dsrs::DiscreteSpaceReactionSystem{Q, R, <:Catalyst.GridLattice{1, S}, T};
         t = sol.t[end], markersize = 20, kwargs...) where {Q, R, S, T}
 
     # Prepares and creates the plot.
-    vals = lat_getu(sol, sp, lrs; t = [t])
-    vals = Catalyst.demask_vals(vals, lrs)[1]
+    vals = spat_getu(sol, sp, dsrs; t = [t])
+    vals = Catalyst.demask_vals(vals, dsrs)[1]
     return scatterlines(vals; axis = (xlabel = "Compartment", ylabel = "$(sp)"),
         markersize = markersize, kwargs...)
 end
 
-# Internal dispatch for the animation of a lattice simulation on a 1d lattice (Cartesian or masked).
-function lattice_animation(
-        sol, sp, lrs::LatticeReactionSystem{Q, R, <:Catalyst.GridLattice{1, S}, T},
+# Internal dispatch for the animation of a discrete space simulation on a 1d space (Cartesian or masked).
+function dspace_animation(
+        sol, sp, dsrs::DiscreteSpaceReactionSystem{Q, R, <:Catalyst.GridLattice{1, S}, T},
         filename::String;
         markersize = 20, plot_min = nothing, plot_max = nothing, nframes = 200, framerate = 20,
         ttitle = true, kwargs...) where {Q, R, S, T}
 
     # Prepares the inputs to the figure.
     t = LinRange(sol.prob.tspan[1], sol.prob.tspan[2], nframes)
-    vals, plot_min, plot_max = Catalyst.extract_vals(sol, sp, lrs, plot_min, plot_max, t)
+    vals, plot_min, plot_max = Catalyst.extract_vals(sol, sp, dsrs, plot_min, plot_max, t)
 
     # Creates the base figure (which is modified in the animation).
-    fig, ax, plt = scatterlines(vals[1];
-        axis = (xlabel = "Compartment", ylabel = "$(sp)",
-            limits = (nothing, nothing, plot_min, plot_max)),
+    frame = Makie.Observable(1)
+    axis_kwargs = (;
+        xlabel = "Compartment", ylabel = string(sp),
+        limits = (nothing, nothing, plot_min, plot_max),
+    )
+    if ttitle
+        axis_kwargs = merge(
+            axis_kwargs,
+            (; title = Makie.@lift(string("Time: ", round(t[$frame]; sigdigits = 3)))),
+        )
+    end
+    fig, ax, plt = scatterlines(Makie.@lift(vals[$frame]);
+        axis = axis_kwargs,
         markersize = markersize, kwargs...)
-    ttitle && (ax.title = "Time: $(round(t[1]; sigdigits = 3))")
 
     # Creates the animation.
     record(fig, filename, 1:1:nframes; framerate) do i
-        for vertex in 1:grid_size(lrs)[1]
-            plt[1].val[vertex] = [vertex, vals[i][vertex]]
-        end
-        ttitle && (ax.title = "Time: $(round(t[i]; sigdigits = 3))")
+        frame[] = i
     end
     return nothing
 end
 
-# Internal dispatch for the kymographs of a lattice simulation on a 1d lattice (Cartesian or masked).
-function lattice_kymograph(
-        sol, sp, lrs::LatticeReactionSystem{Q, R, <:Catalyst.GridLattice{1, S}, T};
+# Internal dispatch for the kymographs of a discrete space simulation on a 1d space (Cartesian or masked).
+function dspace_kymograph(
+        sol, sp, dsrs::DiscreteSpaceReactionSystem{Q, R, <:Catalyst.GridLattice{1, S}, T};
         colormap = :BuGn_7,
         plot_min = nothing, plot_max = nothing, nframes = 200, kwargs...) where {Q, R, S, T}
 
     # Prepares the inputs to the figure.
     t = LinRange(sol.prob.tspan[1], sol.prob.tspan[2], nframes)
-    vals, plot_min, plot_max = Catalyst.extract_vals(sol, sp, lrs, plot_min, plot_max, t)
+    vals, plot_min, plot_max = Catalyst.extract_vals(sol, sp, dsrs, plot_min, plot_max, t)
     vals = hcat(vals...)'
 
     # Creates the figure.
-    y_vals = LinRange(1, grid_size(lrs)[1], grid_size(lrs)[1])
+    y_vals = LinRange(1, grid_size(dsrs)[1], grid_size(dsrs)[1])
     return heatmap(t,
         y_vals,
         vals;
@@ -64,17 +70,17 @@ end
 
 ### 2d Lattice Simulation Plots/Animations ###
 
-# Internal dispatch for the plotting of a lattice simulation on a 2d lattice (Cartesian or masked).
-function lattice_plot(sol, sp,
-        lrs::LatticeReactionSystem{Q, R, <:Catalyst.GridLattice{2, S}, T}; t = sol.t[end],
+# Internal dispatch for the plotting of a discrete space simulation on a 2d space (Cartesian or masked).
+function dspace_plot(sol, sp,
+        dsrs::DiscreteSpaceReactionSystem{Q, R, <:Catalyst.GridLattice{2, S}, T}; t = sol.t[end],
         colormap = :BuGn_7, plot_min = nothing, plot_max = nothing,
         kwargs...) where {Q, R, S, T}
 
     # Prepares the inputs to the figure (the `extract_vals` call only finds limits).
-    _, plot_min, plot_max = Catalyst.extract_vals(sol, sp, lrs, plot_min, plot_max, nothing)
-    vals = lat_getu(sol, sp, lrs; t = [t])
-    vals = Catalyst.demask_vals(vals, lrs)[1]
-    x_vals, y_vals = Catalyst.extract_grid_axes(lrs)
+    _, plot_min, plot_max = Catalyst.extract_vals(sol, sp, dsrs, plot_min, plot_max, nothing)
+    vals = spat_getu(sol, sp, dsrs; t = [t])
+    vals = Catalyst.demask_vals(vals, dsrs)[1]
+    x_vals, y_vals = Catalyst.extract_grid_axes(dsrs)
 
     # Creates the figure.
     return heatmap(x_vals,
@@ -87,45 +93,54 @@ function lattice_plot(sol, sp,
         kwargs...)
 end
 
-# Internal dispatch for the animation of a lattice simulation on a 2d lattice (Cartesian or masked).
-function lattice_animation(
-        sol, sp, lrs::LatticeReactionSystem{Q, R, <:Catalyst.GridLattice{2, S}, T},
+# Internal dispatch for the animation of a discrete space simulation on a 2d space (Cartesian or masked).
+function dspace_animation(
+        sol, sp, dsrs::DiscreteSpaceReactionSystem{Q, R, <:Catalyst.GridLattice{2, S}, T},
         filename::String;
         colormap = :BuGn_7, nframes = 200, framerate = 20, plot_min = nothing,
-        plot_max = nothing, ttitle = true, kwargs...) where {Q, R, S, T}
+        plot_max = nothing, ttitle::Bool = true, kwargs...) where {Q, R, S, T}
 
     # Prepares the inputs to the figure.
     t = LinRange(sol.prob.tspan[1], sol.prob.tspan[2], nframes)
-    vals, plot_min, plot_max = Catalyst.extract_vals(sol, sp, lrs, plot_min, plot_max, t)
-    x_vals, y_vals = Catalyst.extract_grid_axes(lrs)
+    vals, plot_min, plot_max = Catalyst.extract_vals(sol, sp, dsrs, plot_min, plot_max, t)
+    x_vals, y_vals = Catalyst.extract_grid_axes(dsrs)
 
     # Creates the base figure (which is modified in the animation).
-    fig, ax, hm = heatmap(x_vals, y_vals, vals[1];
-        axis = (xgridvisible = false, ygridvisible = false, xlabel = "Compartment", ylabel = "Compartment"),
+    frame = Makie.Observable(1)
+    axis_kwargs = (;
+        xgridvisible = false, ygridvisible = false,
+        xlabel = "Compartment", ylabel = "Compartment",
+    )
+    if ttitle
+        axis_kwargs = merge(
+            axis_kwargs,
+            (; title = Makie.@lift(string("Time: ", round(t[$frame]; sigdigits = 3)))),
+        )
+    end
+    fig, ax, hm = heatmap(x_vals, y_vals, Makie.@lift(vals[$frame]);
+        axis = axis_kwargs,
         colormap, colorrange = (plot_min, plot_max),
         kwargs...)
-    ttitle && (ax.title = "Time: $(round(t[1]; sigdigits = 3))")
 
     # Creates the animation.
     record(fig, filename, 1:1:nframes; framerate) do i
-        ttitle && (ax.title = "Time: $(round(t[i]; sigdigits = 3))")
-        hm[3] = vals[i]
+        frame[] = i
     end
     return nothing
 end
 
 ### 3d Lattice Simulation Plots/Animations (Errors Only) ###
 
-# Internal dispatch for the plotting of a lattice simulation on a 3d lattice (Cartesian or masked).
-function lattice_plot(
-        sol, sp, lrs::LatticeReactionSystem{Q, R, <:Catalyst.GridLattice{3, S}, T};
+# Internal dispatch for the plotting of a discrete space simulation on a 3d space (Cartesian or masked).
+function dspace_plot(
+        sol, sp, dsrs::DiscreteSpaceReactionSystem{Q, R, <:Catalyst.GridLattice{3, S}, T};
         kwargs...) where {Q, R, S, T}
-    throw(ArgumentError("The `lattice_plot` function does not support 3d Cartesian/masked lattices."))
+    throw(ArgumentError("The `dspace_plot` function does not support 3d Cartesian/masked spaces."))
 end
 
-# Internal dispatch for the animation of a lattice simulation on a 3d lattice (Cartesian or masked).
-function lattice_animation(
-        sol, sp, lrs::LatticeReactionSystem{Q, R, <:Catalyst.GridLattice{3, S}, T},
+# Internal dispatch for the animation of a space simulation on a 3d space (Cartesian or masked).
+function dspace_animation(
+        sol, sp, dsrs::DiscreteSpaceReactionSystem{Q, R, <:Catalyst.GridLattice{3, S}, T},
         filename::String; kwargs...) where {Q, R, S, T}
-    throw(ArgumentError("The `lattice_animation` function does not support 3d Cartesian/masked lattices."))
+    throw(ArgumentError("The `dspace_animation` function does not support 3d Cartesian/masked spaces."))
 end

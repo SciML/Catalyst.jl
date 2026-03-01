@@ -1,4 +1,50 @@
 # [Interfacing Problems, Integrators, and Solutions](@id simulation_structure_interfacing)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("SymbolicIndexingInterface")
+```
+```@raw html
+</details>
+```
+```@raw html
+<details><summary><strong>Quick-start example</strong></summary>
+```
+Variable and species values stored in e.g. `ODEProblem`s and solution objects can be easily accessed, e.g. as in the following simple example:
+```julia
+using Catalyst, OrdinaryDiffEqDefault
+
+# First we create a `ODEProblem` and find its solution.
+rs = @reaction_network begin
+    (p,d), 0 <--> X
+end
+oprob = ODEProblem(bd_model, [:X => 0.5], 5.0, [:p => 1.0, :d => 0.2])
+sol = solve(oprob)
+
+# Accessing species values:
+oprob[:X] # Returns initial condition value of `X`.
+sol[:X] # Returns `X`'s value across the simulation.
+sol(0:5; idxs = :X) # Returns `X`'s value sampled at time points 0, 1, 2, 3, 4, 5.
+
+# Accessing parameter values requires adding `.ps` to the call:
+oprob.ps[:p]
+sol.ps[:p]
+
+# Problems can have their values updated using the `remake` function:
+oprob_new = remake(oprob; u0 = [:X => 0.1], p = [:d => 2.0])
+# Undesignated values uses the values of input problem.
+```
+```@raw html
+</details>
+```
+  \
+  
 When simulating a model, one begins with creating a [problem](https://docs.sciml.ai/DiffEqDocs/stable/basics/problem/). Next, a simulation is performed on the problem, during which the simulation's state is recorded through an [integrator](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/). Finally, the simulation output is returned as a [solution](https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/). This tutorial describes how to access (or modify) the state (or parameter) values of problem, integrator, and solution structures.
 
 Generally, when we have a structure `simulation_struct` and want to interface with the unknown (or parameter) `x`, we use `simulation_struct[:x]` to access the value. For situations where a value is accessed (or changed) a large number of times, it can *improve performance* to first create a [specialised getter/setter function](@ref simulation_structure_interfacing_functions).
@@ -123,27 +169,28 @@ sol(1.0; idxs = [:C])
 ## [Interfacing using specialised getter/setter functions](@id simulation_structure_interfacing_functions)
 Internally, species and parameter values are stored in vectors. Whenever e.g. `oprob[:C]` is called, Julia must first find which index in the storage vector $C$ is stored in. Next, its value can be retrieved. If `oprob[:C]` is called a large number of times, this index must be found in each call. If a large number of such accesses are carried out, and performance is essential, it can be worthwhile to pre-compute a function to carry this out.
 
-There exist four different functions, each returning a function for performing a specific type of interfacing:
-- `ModelingToolkit.getu`: For accessing species values.
-- `ModelingToolkit.getp`: For accessing parameter values.
-- `ModelingToolkit.setu`: For changing species values.
-- `ModelingToolkit.setp`: For changing parameter values.
+There exist four different functions, all implemented by the [SymbolicIndexingInterface.jl](https://github.com/SciML/SymbolicIndexingInterface.jl), each returning a function for performing a specific type of interfacing:
+- `getu`: For accessing species values.
+- `getp`: For accessing parameter values.
+- `setu`: For changing species values.
+- `setp`: For changing parameter values.
 
 For each species (or parameter) we wish to interface with, a new interfacing function must be created. Here we first creates a function for retrieving the value of $C$, and then use it for this purpose:
 ```@example structure_indexing
-get_C = ModelingToolkit.getu(oprob, :C)
+using SymbolicIndexingInterface
+get_C = getu(oprob, :C)
 get_C(oprob)
 ```
 Here, `getu` (as well as `getp`, `setu`, and `setp`) first takes the structure we wish to interface with, and then the target quantity. When using `setu` and `setp`, in the second step, we must also provide the update value:
 ```@example structure_indexing
-set_C = ModelingToolkit.setu(oprob, :C)
+set_C = setu(oprob, :C)
 set_C(oprob, 0.2)
 get_C(oprob)
 ```
 
 Like when indexing-based interfacing is used, these functions also work with vectors:
 ```@example structure_indexing
-get_S = ModelingToolkit.getu(oprob, [:S₁, :S₂])
+get_S = getu(oprob, [:S₁, :S₂])
 get_S(oprob)
 ```
 

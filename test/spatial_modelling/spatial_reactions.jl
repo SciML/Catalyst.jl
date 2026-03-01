@@ -40,12 +40,12 @@ let
     tr_1 = @transport_reaction dX X
     tr_2 = @transport_reaction dY1*dY2 Y
 
-    # @test ModelingToolkit.getname.(species(tr_1)) == ModelingToolkit.getname.(spatial_species(tr_1)) == [:X] # species(::TransportReaction) currently not supported.
-    # @test ModelingToolkit.getname.(species(tr_2)) == ModelingToolkit.getname.(spatial_species(tr_2)) == [:Y]
-    @test ModelingToolkit.getname.(spatial_species(tr_1)) == [:X]
-    @test ModelingToolkit.getname.(spatial_species(tr_2)) == [:Y]
-    @test ModelingToolkit.getname.(parameters(tr_1)) == [:dX]
-    @test ModelingToolkit.getname.(parameters(tr_2)) == [:dY1, :dY2]
+    # @test ModelingToolkitBase.getname.(species(tr_1)) == ModelingToolkitBase.getname.(spatial_species(tr_1)) == [:X] # species(::TransportReaction) currently not supported.
+    # @test ModelingToolkitBase.getname.(species(tr_2)) == ModelingToolkitBase.getname.(spatial_species(tr_2)) == [:Y]
+    @test ModelingToolkitBase.getname.(spatial_species(tr_1)) == [:X]
+    @test ModelingToolkitBase.getname.(spatial_species(tr_2)) == [:Y]
+    @test ModelingToolkitBase.getname.(parameters(tr_1)) == [:dX]
+    @test issetequal(ModelingToolkitBase.getname.(parameters(tr_2)), [:dY1, :dY2])
 
     # @test issetequal(species(tr_1), [tr_1.species])
     # @test issetequal(species(tr_2), [tr_2.species])
@@ -102,8 +102,7 @@ let
     tr_3 = TransportReaction(dZ, Z)
     tr_macro_1 = @transport_reaction $dX X
     tr_macro_2 = @transport_reaction $(rate2) Y
-    @test_broken false
-    # tr_macro_3 = @transport_reaction dZ $species3 # Currently does not work, something with meta programming.
+    @test_broken false # tr_macro_3 = @transport_reaction dZ $species3 # Currently does not work, something with meta programming.
 
     @test isequal(tr_1, tr_macro_1)
     @test isequal(tr_2, tr_macro_2)

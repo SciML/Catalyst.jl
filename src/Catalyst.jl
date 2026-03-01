@@ -5,39 +5,48 @@ module Catalyst
 
 using DocStringExtensions
 using SparseArrays, DiffEqBase, Reexport, Setfield, EnumX
-using LaTeXStrings, Latexify, Requires
+import SciMLBase
+using LaTeXStrings, Latexify
 using LinearAlgebra, Combinatorics
 using JumpProcesses: JumpProcesses, JumpProblem,
                      MassActionJump, ConstantRateJump, VariableRateJump,
                      SpatialMassActionJump, CartesianGrid, CartesianGridRej
 
 # ModelingToolkit imports and convenience functions we use
-using ModelingToolkit
-const MT = ModelingToolkit
-using DynamicQuantities #, Unitful # Having Unitful here as well currently gives an error.
+using ModelingToolkitBase
+const MT = ModelingToolkitBase
+using DynamicQuantities
 
-@reexport using ModelingToolkit
+@reexport using ModelingToolkitBase
 using Symbolics
 using LinearAlgebra
 using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
-import Symbolics: BasicSymbolic
-using Symbolics: iscall, sorted_arguments
-using ModelingToolkit: Symbolic, value, get_unknowns, get_ps, get_iv, get_systems,
-                       get_eqs, get_defaults, toparam, get_var_to_name, get_observed,
-                       getvar, has_iv
+import Symbolics: SymbolicT
+using Symbolics: iscall, sorted_arguments, value
+using ModelingToolkitBase: get_unknowns, get_ps, get_iv, get_systems,
+                       get_eqs, toparam, get_var_to_name, get_observed,
+                       getvar, has_iv, JumpType
 
-import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!,
-                        modified_unknowns!, validate, namespace_variables,
-                        namespace_parameters, rename, renamespace, getname, flatten,
+import ModelingToolkitBase: get_variables, namespace_expr, namespace_equation,
+                        modified_unknowns!, namespace_variables,
+                        namespace_parameters, renamespace, flatten,
                         is_alg_equation, is_diff_equation, collect_vars!,
                         eqtype_supports_collect_vars
 
+# Import from owner modules (not re-exporters) per ExplicitImports.jl audit
+import Symbolics: get_variables!, rename
+import SymbolicIndexingInterface
+import SymbolicIndexingInterface: getname
+import ModelingToolkitBase: SymmapT
+
 # internal but needed ModelingToolkit functions
-import ModelingToolkit: check_variables,
-                        check_parameters, _iszero, _merge, check_units,
-                        get_unit, check_equations, iscomplete
+import ModelingToolkitBase: check_variables, check_parameters,
+                        check_equations, iscomplete
+
+# Import from owner module (SymbolicUtils) per ExplicitImports.jl audit
+import SymbolicUtils: _iszero, unwrap
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
@@ -45,16 +54,18 @@ using MacroTools: striplines
 import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
-import Symbolics: occursin, wrap
+# Note: occursin is from Base (not Symbolics), so we don't import it
+import Symbolics: wrap
 import Symbolics.RewriteHelpers: hasnode, replacenode
 import SymbolicUtils: getmetadata, hasmetadata, setmetadata
+import SciMLPublic: @public
 
 # globals for the modulate
 function default_time_deriv()
-    return ModelingToolkit.D_nounits
+    return ModelingToolkitBase.D_nounits
 end
 function default_t()
-    return ModelingToolkit.t_nounits
+    return ModelingToolkitBase.t_nounits
 end
 const DEFAULT_IV = default_t()
 const DEFAULT_IV_SYM = Symbol(DEFAULT_IV)
@@ -73,6 +84,16 @@ const forbidden_symbols_skip = Set([:ℯ, :pi, :π, :t, :∅, :Ø])
 const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
     forbidden_symbols_skip)
 
+### Unit Helpers ###
+
+# SymbolicDimensions-preserving unit inference (replaces MTKBase's `get_unit` for validation).
+include("unit_helpers.jl")
+
+### LaTeX Utilities ###
+
+# Accessor functions for Symbolics' SymLatexWrapper metadata.
+include("latex_utils.jl")
+
 ### Package Main ###
 
 # The `Reaction` structure and its functions.
@@ -87,23 +108,29 @@ const CatalystEqType = Union{Reaction, Equation}
 include("reactionsystem.jl")
 export ReactionSystem, isspatial
 export species, nonspecies, reactions, nonreactions, speciesmap, paramsmap
-export numspecies, numreactions, setdefaults!
+export numspecies, numreactions, numparams
 export make_empty_network
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export isautonomous
 export reactionrates
-export isequivalent
 export set_default_noise_scaling
+export ode_model, sde_model, jump_model, ss_ode_model, hybrid_model
 
-# depreciated functions to remove in future releases
-export params, numparams
+# Mark unit validation APIs as public without exporting them.
+@public validate_units, assert_valid_units, unit_validation_report
+@public UnitValidationError, UnitValidationIssue, UnitValidationReport
+
+# System-level metadata key types and accessors.
+include("reactionsystem_metadata.jl")
+@public U0Map, ParameterMap
+@public has_u0_map, get_u0_map, set_u0_map
+@public has_parameter_map, get_parameter_map, set_parameter_map
 
 # Conversions of the `ReactionSystem` structure.
 include("reactionsystem_conversions.jl")
-export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem,
-       SteadyStateProblem, JumpInputs
+export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem,
+       SteadyStateProblem, HybridProblem
 export ismassaction, oderatelaw, jumpratelaw
-export symmap_to_varmap
 
 # reaction_network macro
 include("expression_utils.jl")
@@ -113,13 +140,17 @@ export @reaction_network, @network_component, @reaction, @species
 # Network analysis functionality.
 include("network_analysis.jl")
 export reactioncomplexmap, reactioncomplexes, incidencemat
-export complexstoichmat, laplacianmat, fluxmat, massactionvector, complexoutgoingmat, adjacencymat
+export complexstoichmat, laplacianmat, fluxmat, massactionvector, complexoutgoingmat,
+       adjacencymat
 export incidencematgraph, linkageclasses, stronglinkageclasses,
        terminallinkageclasses, deficiency, subnetworks
 export linkagedeficiencies, isreversible, isweaklyreversible
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
 export satisfiesdeficiencyone, satisfiesdeficiencyzero
 export iscomplexbalanced, isdetailedbalanced, robustspecies
+
+# Containes the `nullspace` function required for conservation law elimination.
+include("mtk_nullspace_function.jl")
 
 # registers CRN specific functions using Symbolics.jl
 include("registered_functions.jl")
@@ -166,28 +197,28 @@ export TransportReaction, @transport_reaction
 export isedgeparameter
 
 # Lattice reaction systems.
-include("spatial_reaction_systems/lattice_reaction_systems.jl")
-export LatticeReactionSystem
+include("spatial_reaction_systems/discrete_space_reaction_systems.jl")
+export DiscreteSpaceReactionSystem
 export spatial_species, vertex_parameters, edge_parameters
 export CartesianGrid, CartesianGridReJ # (Implemented in JumpProcesses)
-export has_cartesian_lattice, has_masked_lattice, has_grid_lattice, has_graph_lattice,
+export has_cartesian_dspace, has_masked_dspace, has_grid_dspace, has_graph_dspace,
        grid_dims, grid_size
 export make_edge_p_values, make_directed_edge_values
 
 # Specific spatial problem types.
 include("spatial_reaction_systems/spatial_ODE_systems.jl")
-include("spatial_reaction_systems/lattice_jump_systems.jl")
+include("spatial_reaction_systems/discrete_space_jump_systems.jl")
 
 # General spatial modelling utility functions.
 include("spatial_reaction_systems/utility.jl")
 
-# Methods for interfacing with from LatticeReactionSystem derived problems, integrators, and solutions.
-include("spatial_reaction_systems/lattice_sim_struct_interfacing.jl")
-export lat_getp, lat_setp!, lat_getu, lat_setu!, rebuild_lat_internals!
+# Methods for interfacing with from DiscreteSpaceReactionSystem derived problems, integrators, and solutions.
+include("spatial_reaction_systems/discrete_space_sim_struct_interfacing.jl")
+export spat_getp, spat_setp!, spat_getu, spat_setu!, rebuild_spat_internals!
 
-# Functions for plotting of lattice simulations (most of the code is in extensions, not here).
-include("spatial_reaction_systems/lattice_simulation_plotting.jl")
-export lattice_plot, lattice_animation, lattice_kymograph
+# Functions for plotting of discrete space simulations (most of the code is in extensions, not here).
+include("spatial_reaction_systems/discrete_space_simulation_plotting.jl")
+export dspace_plot, dspace_animation, dspace_kymograph
 
 ### ReactionSystem Serialisation ###
 # Has to be at the end (because it uses records of all metadata declared by Catalyst).

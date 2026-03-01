@@ -27,7 +27,7 @@ Here, the order of unknowns in `u0` and `p` matches the order that species and
 parameters first appear within the DSL. They can also be determined by examining
 the ordering within the `species(rn)` and `parameters` vectors, or accessed more
 explicitly through the [`speciesmap(rn)`](@ref) and [`paramsmap(rn)`](@ref)
-dictionaries, which map the Symbolics.jl `BasicSymbolic` corresponding to each
+dictionaries, which map the Symbolics.jl `SymbolicT` corresponding to each
 species or parameter to their integer id. The order can also be set manually
 using the `@species` and `@parameters` DSL options (see [The Reaction
 DSL](@ref)). Note, if no parameters are given in the

@@ -1,4 +1,40 @@
 # [Finding Steady States through Homotopy Continuation](@id homotopy_continuation)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("HomotopyContinuation")
+```
+```@raw html
+</details>
+```
+```@raw html
+<details><summary><strong>Quick-start example</strong></summary>
+```
+The following code provides a brief example of how to find *all* of a reaction network model's steady states using [HomotopyContinuation.jl](https://github.com/JuliaHomotopyContinuation/HomotopyContinuation.jl) package.
+```julia
+using Catalyst
+import HomotopyContinuation
+wilhelm_2009_model = @reaction_network begin
+    k1, Y --> 2X
+    k2, 2X --> X + Y
+    k3, X + Y --> Y
+    k4, X --> 0
+end
+
+# Designate the parameter sets for which we want to find steady states. Finds them using `hc_steady_states`.
+ps = [:k1 => 8.0, :k2 => 2.0, :k3 => 1.0, :k4 => 1.5]
+hc_steady_states(wilhelm_2009_model, ps)
+```
+```@raw html
+</details>
+```
+  \
+  
 
 The steady states of a dynamical system ${dx \over dt} = f(x)$ can be found by
 solving $0 = f(x)$. This is typically a hard problem, and generally, there is no

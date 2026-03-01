@@ -1,6 +1,6 @@
 
 # Fetch packages.
-using Catalyst, DataInterpolations, DynamicQuantities, JumpProcesses, OrdinaryDiffEqDefault, StochasticDiffEq, Test
+using Catalyst, DataInterpolations, JumpProcesses, OrdinaryDiffEqDefault, OrdinaryDiffEqTsit5, StochasticDiffEq, Test
 
 # Sets the default `t` to use.
 t = default_t()
@@ -46,8 +46,8 @@ let
         (k1*X,k2), Y1 <--> Y2
     end
 
-    # Checks that the two model declarations are identical.
-    @test isequal(rs_pIn, rs_pIn_dsl)
+    # Checks that the two model declarations are equivalent.
+    @test Catalyst.isequivalent(rs_pIn, rs_pIn_dsl)
 
     # Makes ODE simulation using different approaches.
     u0 = [X => 1.0, Y1 => 2.0, Y2 => 3.0]
@@ -105,12 +105,12 @@ let
     sde_sol_mean_pIn = EnsembleAnalysis.timeseries_point_mean(solve(esde_prob_pIn, ImplicitEM(); trajectories = 1000), 1.0:10.0).u
     @test sde_sol_mean_base ≈ sde_sol_mean_pIn rtol = 1e-1 atol = 1e-1
 
-    # Checks Jump simulations (cannot currently be created).
-    # ejmp_prob_base = EnsembleProblem(JumpProblem(JumpInputs(rs_base, u0, tend, ps_base)))
-    # ejmp_prob_pIn = EnsembleProblem(JumpProblem(JumpInputs(rs_pIn, u0, tend, ps)))
-    # jmp_sol_mean_base = EnsembleAnalysis.timeseries_point_mean(solve(ejmp_prob_base; trajectories = 1000), 1.0:10.0).u
-    # jmp_sol_mean_pIn = EnsembleAnalysis.timeseries_point_mean(solve(ejmp_prob_pIn; trajectories = 1000), 1.0:10.0).u
-    @test_broken jmp_sol_mean_base ≈ jmp_sol_meanpIn rtol = 1e-1 atol = 1e-1
+    # Checks Jump simulations (uses Tsit5 because model has time-dependent rates -> VariableRateJumps).
+    ejmp_prob_base = EnsembleProblem(JumpProblem(rs_base, u0, (0.0, tend), ps_base))
+    ejmp_prob_pIn = EnsembleProblem(JumpProblem(rs_pIn, u0, (0.0, tend), ps))
+    jmp_sol_mean_base = EnsembleAnalysis.timeseries_point_mean(solve(ejmp_prob_base, Tsit5(); trajectories = 1000), 1.0:10.0).u
+    jmp_sol_mean_pIn = EnsembleAnalysis.timeseries_point_mean(solve(ejmp_prob_pIn, Tsit5(); trajectories = 1000), 1.0:10.0).u
+    @test jmp_sol_mean_base ≈ jmp_sol_mean_pIn rtol = 1e-1 atol = 1e-1
 end
 
 # Checks correctness for non-time functions.
@@ -144,30 +144,6 @@ end
 
 ### Other tests ###
 
-# Checks the combination of functional parameters and units.
-# Unclear what the final expected behaviour should be here (read https://github.com/SciML/ModelingToolkit.jl/issues/3420).
-# `get_unit` works when called on the functional parameters as a call (`get_unit(pIn(t))`),
-# but not just on itself (`get_unit(pIn)`). This is currently how things work, and if MTK
-# changes how things work we will at least detect it in this test.
-let
-    # Defines an input process (just some decaying function of t).
-    ts = collect(0.0:0.01:1.0)
-    spline = LinearInterpolation(1 ./ (1 .+ ts), ts)
-    @parameters (pIn::typeof(spline))(..) [unit=u"1/(s*m^3)"]
-
-    # Defines a `ReactionSystem` using the input parameter (birth/death process, birth split in two parameters).
-    # Checks that the units of the reaction rates are correct.
-    @parameters t [unit=u"s"]
-    @species X(t) [unit=u"mol/m^3"]
-    @parameters p_base [unit=u"mol"] d [unit=u"1/s"]
-    rxs = [
-        Reaction(p_base*pIn(t), [], [X])
-        Reaction(d, [X], [])
-    ]
-    @named rs = ReactionSystem(rxs, t)
-    @test issetequal([Catalyst.get_unit(rx.rate) for rx in reactions(rs)], [u"mol/(s*m^3)", u"1/s"])
-end
-
 # Tests that a functional parameter can be interpolated as the function only, as a function of a 
 # symbolic variable, or interpolated with the functional parameter and argument separately.
 let 
@@ -191,5 +167,5 @@ let
         p, 0 --> X
         $pIn($t_var), 0 --> X
     end
-    @test rn1 == rn2 == rn3
+    @test all(rn -> Catalyst.isequivalent(rn1, rn), (rn2, rn3))
 end

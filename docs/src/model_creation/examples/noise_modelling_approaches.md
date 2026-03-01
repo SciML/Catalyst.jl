@@ -1,4 +1,23 @@
 # [Approaches for modelling system noise](@id noise_modelling_approaches)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("DataInterpolations")
+Pkg.add("Distributions")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+Pkg.add("StochasticDiffEq")
+```
+```@raw html
+</details>
+```
+  \
+  
 Catalyst's primary tools for modelling stochasticity include the creation of `SDEProblem`s or `JumpProblem`s from reaction network models. However, other approaches for incorporating model noise exist, some of which will be discussed here. We will first consider *intrinsic* and *extrinsic* noise. These are well-established terms, both of which we will describe below (however, to our knowledge, no generally agreed-upon definition of these terms exists)[^1]. Finally, we will demonstrate a third approach, the utilisation of a noisy input process to an otherwise deterministic system. This approach is infrequently used, however, as it is encountered in the literature, we will demonstrate it here as well. 
 
 We note that these approaches can all be combined. E.g. an intrinsic noise model (using an SDE) can be combined with extrinsic noise (using randomised parameter values), while also feeding a noisy input process into the system.
@@ -95,7 +114,7 @@ Finally, we will again perform ensemble simulations of our model. This time, at 
 ```@example noise_modelling_approaches
 function prob_func_Kin(prob, i, repeat)
     p = [ps; :K_in => make_K_series()]    
-    return ODEProblem(repressilator_Kin, prob.u0, prob.tspan, p)
+    return remake(prob; p)
 end
 oprob = ODEProblem(repressilator_Kin, u0, tend, [ps; :K_in => make_K_series()])
 eprob_inputnoise = EnsembleProblem(oprob; prob_func = prob_func_Kin)
@@ -114,10 +133,10 @@ nothing # hide
 ```
 Next, we can use the `EnsembleSummary` interface to plot each ensemble's mean activity (as well as 5% and 95% quantiles) over time:
 ```@example noise_modelling_approaches
-e_sumary_intrinsic = EnsembleAnalysis.EnsembleSummary(sol_intrinsic, 0.0:1.0:tend)
-e_sumary_extrinsic = EnsembleAnalysis.EnsembleSummary(sol_extrinsic, 0.0:1.0:tend)
-plot(e_sumary_intrinsic; label = "Intrinsic noise", idxs = 1)
-plot!(e_sumary_extrinsic; label = "Extrinsic noise", idxs = 1)
+e_summary_intrinsic = EnsembleAnalysis.EnsembleSummary(sol_intrinsic, 0.0:1.0:tend)
+e_summary_extrinsic = EnsembleAnalysis.EnsembleSummary(sol_extrinsic, 0.0:1.0:tend)
+plot(e_summary_intrinsic; label = "Intrinsic noise", idxs = 1)
+plot!(e_summary_extrinsic; label = "Extrinsic noise", idxs = 1)
 ```
 Here we can see that, over time, the systems' mean $X$ activity reaches a constant level around $30$.
 

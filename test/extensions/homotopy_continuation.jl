@@ -68,7 +68,7 @@ let
         (kZ1,kZ2), Z1 <--> Z2
     end
     ps = (:kY1 => 1.0, :kY2 => 3, :kZ1 => 1.0, :kZ2 => 4.0)
-    u0_1 = (:Y1 => 1.0, :Y2 => 3, :Z1 => 10, :Z2 =>40.0)
+    u0_1 = (:Y1 => 1.0, :Y2 => 3, :Z1 => 10, :Z2 => 40.0)
 
     ss_1 = sort(hc_steady_states(rs_1, ps; u0 = u0_1, show_progress = false, seed = 0x000004d1), by = sol->sol[1])
     @test ss_1 ≈ [[0.2, 0.1, 3.0, 1.0, 40.0, 10.0]]
@@ -125,7 +125,7 @@ let
     @test length(sss) == 5
     @test allunique(sss)
     for ss in sss
-        @test f_eval(rs, ss, ps, 0.0) ≈ [0.0, 0.0] atol = 1e-12 rtol = 1e-12
+        @test f_eval(rs, Pair.(unknowns(rs), ss), ps, 0.0) ≈ [0.0, 0.0] atol = 1e-12 rtol = 1e-12
     end
 end
 
@@ -139,7 +139,7 @@ let
         @variables C(t)
         @equations begin
             D(V) ~ k*X - V
-            C ~ X/V
+            0 ~ X/V - C
         end
         (p/V,d/V), 0 <--> X
     end

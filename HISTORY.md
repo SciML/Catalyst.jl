@@ -1,6 +1,639 @@
 # Breaking updates and feature summaries across releases
 
-## Catalyst unreleased (master branch)
+## Catalyst 16.0
+
+Catalyst 16 is a major release that transitions from ModelingToolkit (MT) v9 to
+ModelingToolkitBase (the base for ModelingToolkit v11); introduces unified
+hybrid model support for mixed ODE/SDE/Jump systems; supports user-provided
+coupled ODEs, SDEs, jump processes, and jump-diffusions; and modernizes the
+conversion and problem-creation API.
+
+Please also see the [ModelingToolkit
+NEWS.md](https://github.com/SciML/ModelingToolkit.jl/blob/master/NEWS.md) for
+all the changes that have occurred in ModelingToolkit as part of v10 and v11,
+and which are now relevant for Catalyst users.
+
+
+#### BREAKING: ModelingToolkitBase replaces ModelingToolkit
+
+- **Catalyst now depends on and re-exports `ModelingToolkitBase` instead of
+  `ModelingToolkit`.** This ensures Catalyst remains fully MIT-licensed after
+  the library split that occurred in ModelingToolkit v11. ModelingToolkitBase
+  provides the core symbolic system infrastructure (types, accessors, problem
+  construction) that Catalyst needs. With this update, Catalyst moves from
+  ModelingToolkit v9 to ModelingToolkitBase 1.12+ (part of ModelingToolkit v11).
+  
+  Most commonly used functions (`unknowns`, `parameters`, `equations`,
+  `@mtkcompile`, etc.) are available through ModelingToolkitBase. However, if
+  you relied on `structural_simplify`, now part of `mtkcompile`, for
+  reducing models with algebraic equations, you may need to explicitly load
+  ModelingToolkit to obtain equivalent levels of model reduction and optimization:
+  ```julia
+  using Catalyst
+  using ModelingToolkit  # only if you need MTK-specific features not in MTKBase
+  ```
+  The version of `mtkcompile` in ModelingToolkitBase is less feature filled than
+  in ModelingToolkit, but please be aware that the latter version now loads
+  AGPL-licensed libraries that may impose additional restrictions on your code.
+
+#### BREAKING: Conversion functions renamed
+
+- **`convert(ODESystem, rs)` is replaced by `ode_model(rs)`.**
+- **`convert(SDESystem, rs)` is replaced by `sde_model(rs)`.**
+- **`convert(JumpSystem, rs)` is replaced by `jump_model(rs)`.**
+- **`convert(NonlinearSystem, rs)` is replaced by `ss_ode_model(rs)`.**
+
+  The old `Base.convert` methods have been removed since ModelingToolkit now has
+  one, unified, system type, `System`. The new functions accept the same keyword
+  arguments as before.
+
+  **Before:**
+  ```julia
+  osys = convert(ODESystem, rn; remove_conserved = true)
+  ```
+
+  **After:**
+  ```julia
+  osys = ode_model(rn; remove_conserved = true)
+  ```
+
+  Problem constructors (`ODEProblem`, `SDEProblem`, `NonlinearProblem`, etc.)
+  still accept a `ReactionSystem` directly and continue to work as before.
+
+#### BREAKING: Jump API changes
+
+- **`JumpInputs` has been removed.** Use `JumpProblem(rs, u0, tspan, p; ...)`
+  directly instead.
+
+- **`DiscreteProblem(rs::ReactionSystem, ...)` has been removed.** Use
+  `JumpProblem(rs, u0, tspan, p; ...)` directly instead. `DiscreteProblem` is
+  also no longer exported by Catalyst.
+
+  **Before (old API):**
+  ```julia
+  jinputs = JumpInputs(rs, u0, tspan, p)
+  jprob = JumpProblem(jinputs)
+  ```
+
+  **After (new API):**
+  ```julia
+  jprob = JumpProblem(rs, u0, tspan, p)
+  ```
+
+  For advanced usage where you need to reuse a converted system or customize the
+  JumpSystem, use `jump_model(rs; ...)` to get the System, then call
+  `JumpProblem(sys, op, tspan; ...)` from ModelingToolkitBase.
+
+- **`JumpProblem(rs, ...)` now produces pure jump systems only** (symmetric with
+  `ODEProblem` and `SDEProblem`). For hybrid ODE+Jump or SDE+Jump systems, use
+  the new `HybridProblem` instead.
+
+- **`jump_model` no longer respects ODE/SDE metadata** — it forces all reactions
+  to Jump scale, only preserving `VariableRateJump` metadata if explicitly set.
+  Use `hybrid_model` or `HybridProblem` for mixed-scale systems.
+
+#### BREAKING: `defaults` replaced by `initial_conditions`
+
+- **The `defaults` field and keyword argument have been renamed to
+  `initial_conditions`** throughout Catalyst, following the same change in
+  ModelingToolkitBase. This affects:
+  - The `ReactionSystem` struct field (`defaults` → `initial_conditions`)
+  - The keyword argument in conversion functions (`ode_model`, `sde_model`,
+    `jump_model`, `ss_ode_model`, `hybrid_model`)
+  - The accessor function (`MT.defaults(rs)` → `MT.initial_conditions(rs)`)
+
+- **`setdefaults!` has been removed.** Use default values in `@species` and
+  `@parameters` declarations, or pass `initial_conditions` to the
+  `ReactionSystem` constructor:
+  ```julia
+  # Setting initial conditions via the constructor
+  rn = @reaction_network begin
+      @species A(t) = 1.0
+      @parameters k = 0.5
+      k, A --> B
+  end
+
+  # Or via the keyword argument
+  @named rn = ReactionSystem(rxs, t; initial_conditions = [A => 1.0, k => 0.5])
+  ```
+
+- **`default_u0` and `default_p` keyword arguments have been removed** from
+  conversion functions. Use `initial_conditions` instead:
+  ```julia
+  # Before:
+  osys = convert(ODESystem, rn; default_u0 = [A => 1.0], default_p = [k => 0.5])
+
+  # After:
+  osys = ode_model(rn; initial_conditions = Dict(A => 1.0, k => 0.5))
+  ```
+
+#### BREAKING: ReactionSystem composition restricted to ReactionSystems only
+
+- **`compose`, `extend`, and `flatten` now only accept `ReactionSystem`
+  subsystems.** Composing a `ReactionSystem` with a generic `MT.System` is no
+  longer supported.
+
+  **Migration:** Convert your `System` to a `ReactionSystem` with
+  algebraic/ODE equations:
+  ```julia
+  # Before (no longer works):
+  @named constraints = System([x ~ a], t)
+  extended = extend(constraints, rn)
+
+  # After:
+  @named constraints = ReactionSystem([x ~ a], t)
+  extended = extend(constraints, rn)
+  ```
+
+#### BREAKING and Bug fixes: Units handling rewritten with new API supporting non-SI units
+
+- New `validate_units`/`assert_valid_units` functions defined on `Reaction`s and
+  `ReactionSystem`s for checking units. For `Reaction`s, consistency of terms
+  within the rate expression are checked (i.e. if the rate is a sum of terms),
+  and consistency of substrate and product species units are checked. All other
+  checks are handled by the `ReactionSystem`.
+- **`validate_units` now correctly handles non-SI units (M, μM) in rate
+  expressions.** Previously, unit validation could produce spurious failures
+  with non-SI units due to floating-point precision loss during unit
+  expansion. Note that units should be specified using **symbolic units**
+  (`us"..."`) rather than concrete units (`u"..."`), as symbolic units use
+  exact arithmetic and avoid precision issues. For example, you can now use
+  μM concentrations:
+  ```julia
+  using DynamicQuantities
+  @independent_variables t [unit=us"s"]
+  @species X(t) [unit=us"μM"]
+  @parameters k [unit=us"μM/s"]
+  ```
+
+- **`validate_units(rs::ReactionSystem)` no longer multiplies substrate units into
+  the rate for `only_use_rate=true` reactions.** Previously, custom rate laws
+  (e.g., Michaelis-Menten rates passed via the `=>` arrow) would fail
+  validation because substrate units were erroneously included.
+
+- **`validate_units(rs::ReactionSystem)` now also validates non-reaction
+  equations** (including those involving brownian and poissonian noise terms),
+  checking that left- and right-hand side units match. **Note**, currently
+  events and user-provided `jumps` are not unit checked.
+
+- **Unit checks now validate comparison/conditional expressions and exponent units**
+  in equations and rates. Comparisons are treated as unitless predicates with
+  operand compatibility checks, `ifelse` branches must agree in units, and
+  exponents are required to be unitless.
+
+- **Catalyst now provides explicit unit validation APIs** `validate_units`
+  (non-throwing) and `assert_valid_units` (throwing), rather than overloading
+  `ModelingToolkitBase.validate`. These APIs and their report/error types are
+  public APIs, but are no longer exported; call them as
+  `Catalyst.validate_units(...)`, `Catalyst.assert_valid_units(...)`, etc. (on
+  Julia 1.11+, this is marked via `public`).
+
+- **New DSL option: `@unit_checks true|false`.** This controls constructor-time
+  unit validation for `@reaction_network` and `@network_component` generated
+  systems, matching the `unit_checks` keyword in programmatic
+  `ReactionSystem(...)` and `Reaction(...)` construction (`false` by default).
+- **In all interfaces unit checking is opt-in:** users with units should pass
+  `unit_checks = true` to `ReactionSystem` and `Reaction` constructors, or use
+  the `@unit_checks true` option within the DSL to enable validation at
+  construction time.
+- **Note** that `ReactionSystem`s assume `Reaction`s have already performed
+  their associated checks, so for full unit checking pass `unit_checks = true` to
+  both (or use the DSL `@unit_checks true` option).
+
+#### BREAKING: `==` removed for `ReactionSystem`
+
+- **`==` no longer performs structural comparison on `ReactionSystem`s.** It now
+  falls back to object identity (`===`), consistent with ModelingToolkitBase's
+  `System`.
+
+#### BREAKING: Several functions no longer exported
+The following are now considered internal, no longer exported, and could be
+removed at any time:
+- **`isequivalent`**.
+- **`symmap_to_varmap`**
+
+#### BREAKING: Update spatial modelling conventions
+Previously, Catalyst supported so-called `LatticeReactionSystem` spatial models. These have been renamed `DiscreteSpaceReactionSystem`s. Several corresponding name changes are also affected by this. E.g.
+- `Catalyst.has_cartesian_lattice` is now `Catalyst.has_cartesian_dspace`.
+- `Catalyst.lat_getp` is not `Catalyst.spat_getp`.
+- `Catalyst.lattice_animation` is now `Catalyst.dspace_animation`.
+
+Furthermore, instead of creating spatial `JumpProblem`s through spatial `DiscreteProblem`s:
+```julia
+dprob = DiscreteProblem(lrs, u0, tspan, ps)
+jprob = JumpProblem(lrs, dprob, NSM())
+```
+these are now created directly:
+```julia
+dprob = DiscreteProblem(lrs, u0, tspan, ps)
+jprob = JumpProblem(lrs, u0, tspan, ps)
+```
+An aggregator can be designated through the `aggregator` key word argument (with `NSM()` being the default).
+
+
+#### New: `hybrid_model` unified conversion function
+
+- **New `hybrid_model(rs::ReactionSystem; ...)` function** that converts a
+  `ReactionSystem` to a unified `ModelingToolkitBase.System` containing ODE
+  equations, Brownian noise terms (SDE), and/or jump processes, based on each
+  reaction's `PhysicalScale` metadata.
+
+  The existing `ode_model`, `sde_model`, and `jump_model` are now thin wrappers
+  around `hybrid_model`. This enables true hybrid models mixing ODE, SDE, and
+  Jump reactions in a single system.
+
+  ```julia
+  # Tag reactions with different physical scales
+  rn = @reaction_network begin
+      k1, S --> P, [physical_scale = PhysicalScale.ODE]
+      k2, P --> S, [physical_scale = PhysicalScale.SDE]
+      k3, S --> 0, [physical_scale = PhysicalScale.Jump]
+  end
+  sys = hybrid_model(rn)
+  ```
+
+  When building reactions programmatically, set the scale via the `metadata`
+  keyword:
+  ```julia
+  @species S(t) P(t)
+  @parameters k1 k2
+  rx1 = Reaction(k1, [S], [P]; metadata = [:physical_scale => PhysicalScale.ODE])
+  rx2 = Reaction(k2, [P], [S]; metadata = [:physical_scale => PhysicalScale.Jump])
+  ```
+
+  Users can also override scales via keyword arguments:
+  ```julia
+  sys = hybrid_model(rn; default_scale = PhysicalScale.ODE)
+  ```
+
+#### New: `HybridProblem` with scale-dependent return types
+
+- **New `HybridProblem(rs, u0, tspan, p; ...)` function** creates problems for
+  systems with per-reaction scale control. Uses `hybrid_model` internally and
+  respects per-reaction `PhysicalScale` metadata.
+
+  **The return type depends on which reaction scales are present:**
+  - Pure ODE (only ODE-scale reactions) → `ODEProblem`
+  - Pure SDE or ODE+SDE (no jumps) → `SDEProblem`
+  - Any jumps present (ODE+Jump, SDE+Jump, ODE+SDE+Jump) → `JumpProblem`
+
+  For SDE+Jump combinations, the returned `JumpProblem` wraps an `SDEProblem`
+  internally, allowing simulation of hybrid systems with both diffusive noise
+  and discrete jumps. For ODE+Jump combinations it wraps an `ODEProblem`.
+
+  ```julia
+  rn = @reaction_network begin
+      k1, S --> P
+      k2, P --> S
+  end
+
+  # Pure ODE via HybridProblem
+  prob_ode = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 10.0),
+      [:k1 => 1.0, :k2 => 0.5]; default_scale = PhysicalScale.ODE)
+  prob_ode isa ODEProblem  # true
+
+  # Hybrid ODE+Jump
+  rn2 = @reaction_network begin
+      k1, S --> P, [physical_scale = PhysicalScale.ODE]
+      k2, P --> S, [physical_scale = PhysicalScale.Jump]
+  end
+  prob = HybridProblem(rn2, [:S => 100.0, :P => 0.0], (0.0, 10.0),
+      [:k1 => 1.0, :k2 => 0.5])
+  prob isa JumpProblem  # true
+  sol = solve(prob, Tsit5())
+
+  # Hybrid SDE+Jump (requires SDE solver)
+  rn3 = @reaction_network begin
+      k1, S --> P, [physical_scale = PhysicalScale.SDE]
+      k2, P --> S, [physical_scale = PhysicalScale.Jump]
+  end
+  prob = HybridProblem(rn3, [:S => 100.0, :P => 0.0], (0.0, 10.0),
+      [:k1 => 1.0, :k2 => 0.5])
+  prob isa JumpProblem  # true
+  prob.prob isa SDEProblem  # true - underlying problem is SDE
+  sol = solve(prob, SRIW1())  # use SDE solver from StochasticDiffEq
+  ```
+
+#### BREAKING: New syntax for events in DSL.
+
+The affect part of events in the DSL (and only in the DSL) now uses `=>` instead
+of `~`. I.e.
+```julia
+@reaction_network begin
+    @discrete_events begin
+        [1.0] => [X => X + 10]
+        [X ~ 1.0] => [X => X + 1]
+    end
+    (p,d), 0 <--> X
+end
+```
+instead of 
+```julia
+@reaction_network begin
+    @discrete_events begin
+        [1.0] => [X ~ X + 10]
+        [X ~ 1.0] => [X ~=>~ X + 1]
+    end
+    (p,d), 0 <--> X
+end
+```
+This is to align with a future expected ModelingToolkit update creating
+so-called "Assignment affects". Other aspects of events within the DSL remain
+unchanged (see next section regarding more general event updates).
+
+#### New: MTK v11 event and callback features
+
+Catalyst now supports several ModelingToolkit v11 features for events and
+callbacks. See the
+[ModelingToolkit documentation](https://docs.sciml.ai/ModelingToolkit/stable/)
+for full details on these features.
+
+- **`Pre(x)` for pre-event values.** Event affects that reference the
+  current value of a variable or parameter must now use `Pre(x)` to access
+  the value before the event fires. In the DSL (`@continuous_events`,
+  `@discrete_events`), `Pre` is **automatically wrapped** — no user action
+  needed. When constructing callbacks programmatically via
+  `SymbolicContinuousCallback` or `SymbolicDiscreteCallback`, you must
+  explicitly write `Pre(x)`:
+  ```julia
+  # DSL (auto-wrapped, works as before):
+  rn = @reaction_network begin
+      @discrete_events 2.0 => [p => p + 0.1]   # becomes p ~ Pre(p + 0.1)
+      (p, d), 0 <--> X
+  end
+
+  # Programmatic (explicit Pre required):
+  continuous_events = [X ~ 1.0] => [X ~ Pre(X) - 0.5]
+  ```
+
+- **`@discretes` for event-modified parameters.** Parameters that are changed by
+  events must now be declared as discrete variables using `@discretes` in the
+  DSL (or `@discretes` from ModelingToolkitBase programmatically). In the DSL,
+  parameters that appear on the LHS of event affects are **automatically
+  inferred as discretes** — no explicit `@discretes` declaration is needed
+  unless you want to set default values. Note that discretes should be created
+  as time-dependent parameters. When constructing callbacks programmatically,
+  you must pass the `discrete_parameters` keyword:
+  ```julia
+  # DSL (p auto-inferred as discrete):
+  rn = @reaction_network begin
+      @discrete_events 12 => [p => (p + 1) % 2]
+      (p, d), 0 <--> X
+  end
+
+  # Programmatic (must declare and pass discrete_parameters):
+  @discretes p(t) = 1.0
+  discrete_events = SymbolicDiscreteCallback(
+      12 => [p ~ Pre(p + 1) % 2];
+      discrete_parameters = [p]
+  )
+  ```
+
+- **`@discretes` DSL option.** A new `@discretes` option can be used in
+  `@reaction_network` and `@network_component` to explicitly declare discrete
+  variables with default values:
+  ```julia
+  rn = @reaction_network begin
+      @discretes α(t)=5.0 β(t)=1.0
+      @species V(t) = 0.0
+      @continuous_events [V ~ 2.5] => [α => 0, β => 0]
+      α, 0 --> V
+      β, V --> 0
+  end
+  ```
+
+#### New: `brownians`, `poissonians`, and `jumps` fields in ReactionSystem
+
+- **`ReactionSystem` now has `brownians`, `poissonians`, and `jumps` fields** to
+  support non-reaction differential equations containing Brownian motions and/or
+  unit Poisson counting process-based jumps, and to also support explicitly
+  passed coupled jumps (i.e. symbolic `VariableRateJump`s, `ConstantRateJump`s,
+  or `MassActionJump`s). This mirrors the capability in ModelingToolkitBase's
+  `System` struct and enables modeling hybrid stochastic systems where reactions
+  couple with other equation types (ODEs, SDEs, PDMPs, jump-diffusions, etc). 
+
+  ```julia
+  using Catalyst
+  t = default_t()
+  D = default_time_deriv()
+  @brownians B
+  @variables V(t)
+  @species S(t) P(t)
+  @parameters k λ
+
+  # brownians is the 5th positional argument, jumps is a keyword arg
+  @named sys = ReactionSystem([Reaction(k, [S], [P]), D(V) ~ -V + B],
+      t, [V, S, P], [k, λ], [B])
+  ```
+
+  The two-argument constructor auto-discovers brownians and poissonians from
+  equations:
+  ```julia
+  @brownians B
+  @variables V(t)
+  @parameters λ
+  @named sys = ReactionSystem([D(V) ~ λ*V + B], t)
+  ```
+
+- **User-provided brownians/jumps are merged** with reaction-generated ones at
+  conversion time in `hybrid_model`, `sde_model`, and `HybridProblem`.
+
+- **Conversion functions enforce scale constraints:**
+  - `ode_model`: Errors if brownians OR jumps are present (pure ODE only)
+  - `sde_model`: Errors if jumps are present (ODE + SDE constraints allowed)
+  - `jump_model`: Errors if brownians OR non-reaction equations are present
+  - Use `hybrid_model` for mixed systems
+
+#### New: `@brownians` and `@poissonians` DSL options
+
+- **A new `@brownians` option** can be used within the `@reaction_network` and
+  `@network_component` macros to declare Brownian variables:
+
+  ```julia
+  rn = @reaction_network begin
+      @species S(t) P(t)
+      @parameters k
+      @brownians B W
+      k, S --> P
+  end
+  ```
+
+  Brownian variables declared via `@brownians` are automatically included in
+  the `ReactionSystem`'s `brownians` field.
+
+- **A new `@poissonians` option** can be used in `@reaction_network` and
+  `@network_component` to declare Poissonian variables — symbolic Poisson
+  counting processes with associated rates. Poissonians represent discrete
+  jump noise and are the jump-process analogue of Brownians:
+  ```julia
+  rn = @reaction_network begin
+      @parameters λ k d
+      @variables X(t)
+      @poissonians dN(λ)
+      @equations D(X) ~ dN
+      (k, d), 0 <--> S
+  end
+  ```
+  Here `dN(λ)` represents a Poisson counting process with rate/intensity `λ`.
+
+  Multiple poissonians and begin/end block syntax are supported:
+  ```julia
+  rn = @reaction_network begin
+      @parameters λ₁ λ₂
+      @poissonians begin
+          dN₁(λ₁)
+          dN₂(λ₂)
+      end
+      @equations begin
+          D(V) ~ dN₁
+          D(W) ~ dN₂
+      end
+      (p, d), 0 <--> X
+  end
+  ```
+
+  Symbols appearing in poissonian rates must be pre-declared (via
+  `@parameters`, `@species`, etc.) or interpolated — they are not
+  auto-inferred from the rate expression.
+
+- **Poissonians are handled through composition** (`flatten`, `extend`,
+  `compose`) with union semantics and through equivalence checking
+  (`isequivalent`), following the same patterns as brownians.
+
+- **`HybridProblem` automatically converts poissonians** to `ConstantRateJump`
+  (when the rate depends only on parameters) or `VariableRateJump` (when the
+  rate depends on state variables) via `mtkcompile`:
+  ```julia
+  using Catalyst, JumpProcesses
+  t = default_t()
+  D = default_time_deriv()
+  @parameters λ k d
+  @species S(t)
+  @variables X(t)
+  @poissonians dN(λ)
+
+  @named rn = ReactionSystem([Reaction(k, nothing, [S]), Reaction(d, [S], nothing), 
+      D(X) ~ dN], t, [S, X], [λ, k, d]; poissonians = [dN])
+  rn = complete(rn)
+
+  # Simple Poisson counter: X increases by 1 at rate λ
+  prob = HybridProblem(rn, [:S => 10.0, :X => 0.0], (0.0, 10.0),
+      [:λ => 5.0, :k => 1.0, :d => 0.1])
+  sol = solve(prob, Tsit5())
+
+  # Jump-diffusion: combine Brownian noise and Poisson jumps
+  @brownians dW
+  @poissonians dN(λ)
+  @parameters σ
+  @named jd = ReactionSystem([D(X) ~ σ * dW + dN], t, [X], [λ, σ], [dW]; 
+      poissonians = [dN])
+  jd = complete(jd)
+  prob = HybridProblem(jd, [:X => 0.0], (0.0, 10.0), [:λ => 3.0, :σ => 1.0])
+  sol = solve(prob, SRIW1())  # SDE solver for the diffusion component
+
+  # State-dependent rate → VariableRateJump (e.g. pure-birth / Yule process)
+  @poissonians dN_birth(k * X)  # rate depends on state X
+  ```
+  We hope to add a more refined classification into `VariableRateJump`s,
+  `ConstantRateJump`s, and `MassActionJump`s in the future.
+
+- **`ode_model`, `sde_model`, and `jump_model` error with informative messages**
+  when called on systems containing poissonians. Use `HybridProblem` instead,
+  which handles the poissonian-to-jump conversion automatically.
+
+#### New: `use_legacy_noise` kwarg for SDE systems
+
+- **`sde_model` and `SDEProblem` now accept `use_legacy_noise = true`
+  (default)** which uses the traditional `noise_eqs` matrix approach for
+  simple SDE systems without constraints, avoiding the overhead of
+  `mtkcompile`. Set to `false` to use the new Brownian-variable-based approach
+  where SDE noise terms are embedded directly in the equation RHS as
+  `stoich * sqrt(|ratelaw|) * B_j`.
+
+- **`SDEProblem(rs::ReactionSystem, ...)` calls `mtkcompile` only when
+  necessary** (when using Brownian-based noise or when the system has
+  constraints/algebraic equations).
+
+#### New: Stoichiometric parameters automatically typed as `Int64` in DSL
+
+- **Parameters that appear in stoichiometric positions** within the
+  `@reaction_network` DSL are now automatically designated as `Int64`. There
+  is no need to manually declare them with a type annotation:
+  ```julia
+  rn = @reaction_network begin
+      k, n*A --> B    # n is inferred as a parameter and typed as Int64
+  end
+  ```
+
+  If you need a non-integer type for a stoichiometric parameter (e.g., for
+  fractional stoichiometry), explicitly declare it with the desired type —
+  this overrides the automatic `Int64` designation:
+  ```julia
+  rn = @reaction_network begin
+      @parameters n::Float64
+      k, n*A --> B    # n is Float64 because of the explicit declaration
+  end
+  ```
+
+#### New: `U0Map` and `ParameterMap` system-level metadata
+
+New metadata keys `U0Map` and `ParameterMap` with convenience accessors
+(`has_u0_map`, `get_u0_map`, `set_u0_map` and `has_parameter_map`,
+`get_parameter_map`, `set_parameter_map`) allow file parsers to store
+species/variable and parameter value mappings on a `ReactionSystem` in formats
+distinct from `initial_conditions`. These are set via the `metadata` keyword or
+`set_*` functions and are preserved through `flatten`, `complete`, and model
+conversions. **Note** that Catalyst does not use these at all, they, and other
+metadata, are intended to provide a way for users to cache additional
+information in a system.
+
+### Additional note: `remake` for `NonlinearProblems`s with `remove_conserved = true` fully functional
+Previously there were some limitations when applying `remake` on a
+`NonlinearProblems` where `remove_conserved = true` had been used. This is no
+longer the case. The associated warning has been removed, and the default is now
+`remove_conserved = false` for `NonlinearProblem`s, consistent with all other
+problem types.
+
+#### New: `tstops` field for `ReactionSystem`
+
+- **`ReactionSystem` now supports a `tstops` keyword argument** for specifying
+  extra time points at which the integrator should stop. These can be numeric
+  values or symbolic expressions of parameters. Tstops are automatically
+  forwarded through model conversions (`ode_model`, `sde_model`, `jump_model`,
+  `hybrid_model`) to the underlying `System`.
+
+  ```julia
+  @parameters t_switch
+  @species X(t)
+  @named rn = ReactionSystem([Reaction(k, nothing, [X])], t;
+      tstops = [t_switch, 5.0])
+  ```
+
+- **New `@tstops` DSL option** for declaring tstops within `@reaction_network`
+  and `@network_component`. Symbols appearing in tstop expressions that are not
+  already declared are auto-discovered as parameters (consistent with how
+  reaction rate parameters are inferred):
+
+  ```julia
+  rn = @reaction_network begin
+      @tstops begin
+          t_switch           # auto-discovered as a parameter
+          0.5 * t_switch
+      end
+      (p, d), 0 <--> X
+  end
+  ```
+
+- **Tstops are validated at construction time** — expressions containing
+  unknowns (species/variables) or the independent variable are rejected with
+  an informative error, since tstops must be computable before the solve starts.
+
+- **Tstops are handled through composition** (`flatten`, `extend`) and
+  equivalence checking (`isequivalent`), following the same patterns as events
+  and brownians.
+
+- **Solver support**: Symbolic tstops are supported for all problem types:
+  `ODEProblem`, `SDEProblem`, `JumpProblem`, and `HybridProblem`.
 
 ## Catalyst 15.0
 - The Catalyst release process is changing; certain core dependencies of
@@ -56,7 +689,7 @@
   pmap = [k => rand(4)]
   ```
   While one can still manually scalarize a parameter array, it is recommended
-  *not* to do this as it has signifcant performance costs with ModelingToolkit
+  *not* to do this as it has significant performance costs with ModelingToolkit
   v9. Note, scalarized parameter arrays passed to the two-argument
   `ReactionSystem` constructor may become unscalarized.
 - **BREAKING:** We have introduced a restriction on bundling of reactions in the
@@ -261,10 +894,10 @@ oprob = ODEProblem(lrs, u0, tspan, ps)
 
 # Simulate the ODE and plot the results.
 sol = solve(oprob, FBDF())
-lattice_animation(sol, :X, lrs, "brusselator.mp4")
+dspace_animation(sol, :X, lrs, "brusselator.mp4")
 ```
 The addition of spatial modelling in Catalyst contains a large number of new features, all of which are
-described in the [corresponding documentation](https://docs.sciml.ai/Catalyst/stable/spatial_modelling/lattice_reaction_systems/).
+described in the [corresponding documentation](https://docs.sciml.ai/Catalyst/stable/spatial_modelling/dspace_reaction_systems/).
 
 ## Catalyst 14.0.1
 Bug fix to address that independent variables, like time, should now be `@parameters`

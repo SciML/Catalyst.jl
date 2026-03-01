@@ -1,4 +1,22 @@
 # [The Catalyst DSL - Advanced Features and Options](@id dsl_advanced_options)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("Latexify")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+  \
+  
 Within the Catalyst DSL, each line can represent either *a reaction* or *an option*. The [previous DSL tutorial](@ref dsl_description) described how to create reactions. This one will focus on options. These are typically used to supply a model with additional information. Examples include the declaration of initial condition/parameter default values, or the creation of observables. 
 
 All option designations begin with a declaration starting with `@`, followed by its input. E.g. the `@observables` option allows for the generation of observables. Each option can only be used once within each use of `@reaction_network`. This tutorial will also describe some additional advanced DSL features that do not involve using an option. 
@@ -149,15 +167,8 @@ oprob = ODEProblem(rn, u0, tspan, p)
 sol = solve(oprob, Tsit5())
 plot(sol)
 ```
-It is still possible to designate $X$'s value in `u0`, in which case this overrides the default value.
-```@example dsl_advanced_defaults
-u0 = [:X => 0.5]
-p = [:X₀ => 1.0, :p => 1.0, :d => 0.5]
-oprob = ODEProblem(rn, u0, tspan, p)
-sol = solve(oprob, Tsit5())
-plot(sol)
-```
-Please note that `X₀` is still a parameter of the system, and as such its value must still be designated to simulate the model (even if it is not actually used).
+
+When setting parametric default values these are called [*bindings*](https://docs.sciml.ai/ModelingToolkit/dev/tutorials/initialization/#bindings_and_ics). Bindings act similar to defaults, however, they cannot be override. E.g. in the example above, `X`'s initial condition must be specified through the `X₀` paraemter, and can no longer be provided through the `u0` vector.
 
 ### [Designating metadata for species and parameters](@id dsl_advanced_options_species_and_parameters_metadata)
 Catalyst permits the user to define *metadata* for species and parameters. This permits the user to assign additional information to these, which can be used for a variety of purposes. Some Catalyst features depend on using metadata (with each such case describing specifically how this is done). Here we will introduce how to set metadata, and describe some common metadata types. 
@@ -198,13 +209,13 @@ two_state_system = @reaction_network begin
 end
 ```
 
-Each metadata has its own getter functions. E.g. we can get the description of the parameter `kA` using `ModelingToolkit.getdescription`:
+Each metadata has its own getter functions. E.g. we can get the description of the parameter `kA` using `ModelingToolkitBase.getdescription`:
 ```@example dsl_advanced_metadata
-ModelingToolkit.getdescription(two_state_system.kA)
+ModelingToolkitBase.getdescription(two_state_system.kA)
 ```
 
 ### [Designating constant-valued/fixed species parameters](@id dsl_advanced_options_constant_species)
-Catalyst enables the designation of parameters as `constantspecies`. These parameters can be used as species in reactions, however, their values are not changed by the reaction and remain constant throughout the simulation (unless changed by e.g. the [occurrence of an event](@ref constraint_equations_events). Practically, this is done by setting the parameter's `isconstantspecies` metadata to `true`. Here, we create a simple reaction where the species `X` is converted to `Xᴾ` at rate `k`. By designating `X` as a constant species parameter, we ensure that its quantity is unchanged by the occurrence of the reaction.
+Catalyst enables the designation of parameters as `constantspecies`. These parameters can be used as species in reactions, however, their values are not changed by the reaction and remain constant throughout the simulation (unless changed by e.g. the [occurrence of an event](@ref events)). Practically, this is done by setting the parameter's `isconstantspecies` metadata to `true`. Here, we create a simple reaction where the species `X` is converted to `Xᴾ` at rate `k`. By designating `X` as a constant species parameter, we ensure that its quantity is unchanged by the occurrence of the reaction.
 ```@example dsl_advanced_constant_species
 using Catalyst # hide
 rn = @reaction_network begin
@@ -323,32 +334,6 @@ end
 nameof(rn)
 ```
 
-A consequence of generic names being used by default is that networks, even if seemingly identical, by default are not. E.g.
-```@example dsl_advanced_names
-rn1 = @reaction_network begin
-    (p,d), 0 <--> X
-end
-rn2 = @reaction_network begin
-    (p,d), 0 <--> X
-end
-rn1 == rn2
-```
-The reason can be confirmed by checking that their respective (randomly generated) names are different:
-```@example dsl_advanced_names
-nameof(rn1) == nameof(rn2)
-```
-By designating the networks to have the same name, however, identity is achieved.
-```@example dsl_advanced_names
-rn1 = @reaction_network my_network begin
-    (p,d), 0 <--> X
-end
-rn2 = @reaction_network my_network begin
-    (p,d), 0 <--> X
-end
-rn1 == rn2
-```
-If you wish to check for identity, and wish that models that have different names but are otherwise identical, should be considered equal, you can use the [`isequivalent`](@ref) function.
-
 Setting model names is primarily useful for [hierarchical modelling](@ref compositional_modeling), where network names are appended to the display names of subnetworks' species and parameters.
 
 ## [Creating observables](@id dsl_advanced_options_observables)
@@ -441,17 +426,7 @@ We can confirm that `Xᵢ` and `Xₐ` depend on `τ` (and not `t`):
 species(rn)
 ```
 
-It is possible to designate several independent variables using `@ivs`. If so, the first one is considered the default (time) independent variable, while the following one(s) are considered spatial independent variable(s). If we want some species to depend on a non-default independent variable, this has to be explicitly declared:
-```@example dsl_advanced_ivs
-rn = @reaction_network begin
-    @ivs τ x
-    @species X(τ) Y(x)
-    (p1,d1), 0 <--> X
-    (p2,d2), 0 <--> Y
-end
-species(rn)
-```
-It is also possible to have species which depends on several independent variables:
+It is possible to designate several independent variables using `@ivs`. If so, the first one is considered the default (time) independent variable, while the following one(s) are considered spatial independent variable(s). If we want some species to depend on a non-default independent variable, this has to be explicitly declared. In the following example, both `Xᵢ` and `Xₐ` depends both on the `t` and `x` independent variables.
 ```@example dsl_advanced_ivs
 rn = @reaction_network begin
     @ivs t x

@@ -1,9 +1,9 @@
 ### Preparations ###
 
 # Fetch packages.
-using Catalyst, Test
-using Catalyst: get_symbolics
-using ModelingToolkit: value, get_variables!, collect_vars!, eqtype_supports_collect_vars
+using Catalyst, DataStructures, Test
+using Catalyst: get_symbolics, SymbolicT
+using ModelingToolkitBase: value, get_variables!
 using Catalyst: has_physical_scale, get_physical_scale
 
 # Sets the default `t` to use.
@@ -30,12 +30,12 @@ let
         rx6 = Reaction(rate, [X], [x], [n1], [1])
 
         # Check `Reaction` types.
-        @test rx1 isa Reaction{Any,Int64}
-        @test rx2 isa Reaction{Any,Float64}
-        @test rx3 isa Reaction{Any,Any}
-        @test rx4 isa Reaction{Any,Rational{Int64}}
-        @test rx5 isa Reaction{Any,Any}
-        @test rx6 isa Reaction{Any,Any}
+        @test rx1 isa Reaction{SymbolicT,Int64}
+        @test rx2 isa Reaction{SymbolicT,Float64}
+        @test rx3 isa Reaction{SymbolicT,Any}
+        @test rx4 isa Reaction{SymbolicT,Rational{Int64}}
+        @test rx5 isa Reaction{SymbolicT,Any}
+        @test rx6 isa Reaction{SymbolicT,Any}
 
         # Check `Reaction` net stoichiometries.
         issetequal(rx1.netstoich, [X => -1])
@@ -109,9 +109,13 @@ let
 
     # Test `get_variables!`.
     @test issetequal(get_variables!([value(p)], rx1), [k1, X, p])
+    @test length(get_variables!([value(p)], rx1)) == 3
     @test issetequal(get_variables!([value(p)], rx2), [k1, k2, X, Y, n1, η1, p])
+    @test length(get_variables!([value(p)], rx2)) == 7
     @test issetequal(get_variables!([value(p)], rx3), [k1, k2, A, X, Y, Z, n1, n2, p])
+    @test length(get_variables!([value(p)], rx3)) == 9
     @test issetequal(get_variables!([value(p)], rx4), [X, t, Y, η1, η2, p])
+    @test length(get_variables!([value(p)], rx4)) == 6
 
     # Test `get_symbolics`.
     @test issetequal(get_symbolics(rx1), [k1, X])
@@ -246,10 +250,10 @@ let
     @parameters k1, k2, η
 
     rx = Reaction(k1*E, [A, B], [C], [k2*D, 3], [F], metadata = [:noise_scaling => η])
-    us = Set()
-    ps = Set()
-    @test eqtype_supports_collect_vars(rx) == true
-    collect_vars!(us, ps, rx, t)
+    us = OrderedSet{Symbolics.SymbolicT}()
+    ps = OrderedSet{Symbolics.SymbolicT}()
+    @test ModelingToolkitBase.eqtype_supports_collect_vars(rx) == true
+    ModelingToolkitBase.collect_vars!(us, ps, rx, ModelingToolkitBase.unwrap(t))
     @test us == Set((A, B, C, D, E, F))
     @test ps == Set((k1, k2, η))
 end

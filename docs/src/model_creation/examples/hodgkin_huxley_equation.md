@@ -1,4 +1,21 @@
 # [Hodgkin-Huxley Equation](@id hodgkin_huxley_equation)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("ModelingToolkitBase")
+Pkg.add("NonlinearSolveFirstOrder")
+Pkg.add("OrdinaryDiffEqRosenbrock")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+  \
 
 This tutorial shows how to construct a
 [Catalyst](http://docs.sciml.ai/Catalyst/stable/) [`ReactionSystem`](@ref) that
@@ -18,7 +35,7 @@ complete model.
 
 We begin by importing some necessary packages:
 ```@example hh1
-using ModelingToolkit, Catalyst, NonlinearSolve, Plots, OrdinaryDiffEqRosenbrock
+using ModelingToolkitBase, Catalyst, NonlinearSolveFirstOrder, Plots, OrdinaryDiffEqRosenbrock
 ```
 
 ## Building the model via the Catalyst DSL

@@ -488,7 +488,7 @@ nothing # hide
 More details on how to use events, including how to create events with multiple targets, can be found in [PEtab.jl's documentation](https://sebapersson.github.io/PEtab.jl/stable/petab_event/).
 
 !!! note
-    PEtab currently ignores events [created as a part of a Catalyst `ReactionSystem` model](@ref constraint_equations_events), and does not support SciML-style events. Instead, events have to use the preceding interface.
+    PEtab currently ignores events [created as a part of a Catalyst `ReactionSystem` model](@ref events), and does not support SciML-style events. Instead, events have to use the preceding interface.
 
 ## [Plot recipes](@id petab_plotting)
 There exist various types of graphs that can be used to evaluate the parameter fitting process. These can be plotted using the `plot` command, where the input is either the result of a `calibrate` or a `calibrate_multistart` run. To be able to use this functionality, you have to ensure that PEtab.jl [records the optimisation process](@ref petab_optimisation_path_recording) by providing the `save_trace=true` argument to the calibration functions.
@@ -546,4 +546,4 @@ If you use this functionality in your research, [in addition to Catalyst](@ref d
 ---
 ## References
 [^1]: [Schmiester, L et al. *PEtab—Interoperable specification of parameter estimation problems in systems biology*, PLOS Computational Biology (2021).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008646)
-[^2]: [Hass, H et al. *PBenchmark problems for dynamic modeling of intracellular processes*, Bioinformatics (2019).](https://academic.oup.com/bioinformatics/article/35/17/3073/5280731?login=false)
+[^2]: [Hass, H et al. *Benchmark problems for dynamic modeling of intracellular processes*, Bioinformatics (2019).](https://academic.oup.com/bioinformatics/article/35/17/3073/5280731?login=false)

@@ -1,11 +1,29 @@
 # [Smoluchowski Coagulation Equation](@id smoluchowski_coagulation_equation)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("JumpProcesses")
+Pkg.add("ModelingToolkitBase")
+Pkg.add("Plots")
+Pkg.add("SpecialFunctions")
+```
+```@raw html
+</details>
+```
+  \
+
 This tutorial shows how to programmatically construct a [`ReactionSystem`](@ref) corresponding to the chemistry underlying the [Smoluchowski coagulation model](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation) using [ModelingToolkit](http://docs.sciml.ai/ModelingToolkit/stable/)/[Catalyst](http://docs.sciml.ai/Catalyst/stable/). A jump process version of the model is then constructed from the [`ReactionSystem`](@ref), and compared to the model's analytical solution obtained by the [method of Scott](https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml) (see also [3](https://doi.org/10.1006/jcph.2002.7017)).
 
 The Smoluchowski coagulation equation describes a system of reactions in which monomers may collide to form dimers, monomers and dimers may collide to form trimers, and so on. This models a variety of chemical/physical processes, including polymerization and flocculation.
 
 We begin by importing some necessary packages.
 ```@example smcoag1
-using ModelingToolkit, Catalyst, LinearAlgebra
+using ModelingToolkitBase, Catalyst, LinearAlgebra
 using JumpProcesses
 using Plots, SpecialFunctions
 ```
@@ -101,11 +119,10 @@ end
 @named rs = ReactionSystem(rx, t, collect(X), [k])
 rs = complete(rs)
 ```
-We now convert the [`ReactionSystem`](@ref) into a `ModelingToolkit.JumpSystem`, and solve it using Gillespie's direct method. For details on other possible solvers (SSAs), see the [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/types/jump_types/) documentation
+We now convert the [`ReactionSystem`](@ref) into a ModelingToolkitBase jump `System`, and solve it using Gillespie's direct method. For details on other possible solvers (SSAs), see the [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/types/jump_types/) documentation
 ```@example smcoag1
 # solving the system
-jinputs = JumpInputs(rs, u₀map, tspan)
-jprob = JumpProblem(jinputs, Direct(); save_positions = (false, false))
+jprob = JumpProblem(rs, u₀map, tspan; save_positions = (false, false))
 jsol = solve(jprob; saveat = tspan[2] / 30)
 nothing #hide
 ```

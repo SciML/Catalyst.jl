@@ -1,4 +1,22 @@
 # [Tracking Bifurcation Point w.r.t. Secondary Parameters using BifurcationKit.jl](@id bifurcationkit_codim2)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("BifurcationKit")
+Pkg.add("Catalyst")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+  \
+  
+
 Previously, we have shown how to [compute bifurcation diagrams](@ref bifurcation_diagrams) using [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl). In this example, we will show how, after computing the initial diagram, we can track how the position of a bifurcation point moves as a secondary parameter is changed (so-called codimensional 2 bifurcation analysis). More information on how to track bifurcation points along secondary parameters can be found in the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/tutorials/ode/tutorialCO/#CO-oxidation-(codim-2)).
 
 ## [Computing the bifurcation diagram for the Repressilator](@id bifurcationkit_codim2_bifdia)
@@ -50,8 +68,8 @@ plot(plot(sol_nosc; title = "v = 5"), plot(sol_osc; title = "v = 15"), size = (1
 ## [Tracking the bifurcation point w.r.t. a second parameter](@id bifurcationkit_codim2_2ndpar_cont)
 Next, we will investigate how the Hopf bifurcation point moves (in $v$-$X$ space) as a second parameter ($K$) is changed. To do this we will use BifurcationKit.jl's [`continuation` function](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.continuation) (the [`bifurcationdiagram` function](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.bifurcationdiagram), which we previously have used, works by calling `continuation` recursively). We will call it on the Hopf bifurcation point. First we need to retrieve some indexes that are required to make Catalyst (which primarily indexes through symbols) work with BifurcationKit (which primarily indexes through numbers). A smoother interface for this will hopefully be added in the future.
 ```@example bifurcationkit_codim2
-K_idx = findfirst(isequal(repressilator.K), parameters(complete(convert(NonlinearSystem, repressilator))))
-v_idx = findfirst(isequal(repressilator.v), parameters(complete(convert(NonlinearSystem, repressilator))))
+K_idx = findfirst(isequal(repressilator.K), parameters(complete(ss_ode_model(repressilator))))
+v_idx = findfirst(isequal(repressilator.v), parameters(complete(ss_ode_model(repressilator))))
 K_sym = Symbol(:p, K_idx)
 v_sym = Symbol(:p, v_idx)
 nothing # hide

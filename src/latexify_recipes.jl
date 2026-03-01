@@ -17,12 +17,14 @@ const LATEX_DEFS = CatalystLatexParams()
         mult_symbol --> ""
         env --> :chem
         return rs
-    elseif form == :ode      # Returns ODE system code.
+    elseif form == :ode      # Returns ODE system code (rendered via chemical_arrows).
         mult_symbol --> ""
-        return convert(ODESystem, rs)
-    elseif form == :sde      # Returns SDE system code.
+        env --> :chem
+        return system_to_reactionsystem(ode_model(rs); disable_forbidden_symbol_check = true)
+    elseif form == :sde      # Returns SDE system code (rendered via chemical_arrows).
         mult_symbol --> ""
-        return convert(SDESystem, rs)
+        env --> :chem
+        return system_to_reactionsystem(sde_model(rs); disable_forbidden_symbol_check = true)
     end
     error("Unrecognised form argument given: $form. This should be either reactions (default), :ode, or :sde.")
 end
@@ -44,20 +46,22 @@ function processsym(s)
         idxs = args[2:end]
         var = value(Symbolics.variable(MT.getname(s), idxs...))
     end
+    _has_latex_wrapper(var) || (var = _set_latex_wrapper(var, string))
     var
 end
 
 function chemical_arrows(rn::ReactionSystem;
         double_linebreak = LATEX_DEFS.double_linebreak,
         starred = LATEX_DEFS.starred, mathrm = true,
-        mathjax = LATEX_DEFS.mathjax, kwargs...)
+        mathjax = LATEX_DEFS.mathjax, math_delimiters = false,
+        show_time_arg = false, kwargs...)
     any_nonrx_subsys(rn) &&
         (@warn "Latexify currently ignores non-ReactionSystem subsystems. Please call `flatsys = flatten(sys)` to obtain a flattened version of your system before trying to Latexify it.")
 
     rxs = reactions(rn)
     nonrxs = filter(eq -> eq isa Equation, equations(rn))
     if isempty(rxs) && isempty(nonrxs)
-        latexstr = Latexify.LaTeXString("ReactionSystem $(ModelingToolkit.nameof(rn)) has no reactions or equations.")
+        latexstr = Latexify.LaTeXString("ReactionSystem $(MT.nameof(rn)) has no reactions or equations.")
         Latexify.COPY_TO_CLIPBOARD && clipboard(latexstr)
         return latexstr
     end
@@ -75,7 +79,12 @@ function chemical_arrows(rn::ReactionSystem;
         str *= "\\require{mhchem} \n"
     end
 
-    subber = ModelingToolkit.substituter([s => processsym(s) for s in species(rn)])
+    syms = unknowns(rn)
+    if isempty(syms)
+        subber = identity
+    else
+        subber = SymbolicUtils.Substituter{true}([s => processsym(s) for s in syms], SymbolicUtils.default_substitute_filter)
+    end
 
     lastidx = length(rxs)
     for (i, r) in enumerate(rxs)
@@ -85,7 +94,7 @@ function chemical_arrows(rn::ReactionSystem;
         end
 
         ### Expand functions to maths expressions
-        rate = r.rate isa Symbolic ? subber(r.rate) : r.rate
+        rate = (r.rate isa SymbolicT && !show_time_arg) ? subber(r.rate) : r.rate
 
         ### Generate formatted string of substrates
         substrates = [make_stoich_str(substrate[1], substrate[2], subber; mathrm,
@@ -99,7 +108,7 @@ function chemical_arrows(rn::ReactionSystem;
         if i + 1 <= length(rxs) && issetequal(r.products, rxs[i + 1].substrates) &&
            issetequal(r.substrates, rxs[i + 1].products)
             ### Bi-directional arrows
-            rate_backwards = rxs[i + 1].rate isa Symbolic ? subber(rxs[i + 1].rate) :
+            rate_backwards = (rxs[i + 1].rate isa SymbolicT && !show_time_arg) ? subber(rxs[i + 1].rate) :
                              rxs[i + 1].rate
             str *= " &" * rev_arrow
             str *= "[" * latexraw(rate_backwards; kwargs...) * "]"
@@ -126,7 +135,11 @@ function chemical_arrows(rn::ReactionSystem;
     end
 
     if !isempty(nonrxs)
-        eqstrs = latexraw.(nonrxs)
+        eqstrs = [latexraw(eq; kwargs...) for eq in nonrxs]
+        if !show_time_arg
+            iv_latex = latexraw(get_iv(rn))
+            eqstrs = [replace(s, "\\left( $iv_latex \\right)" => "") for s in eqstrs]
+        end
         eqstr_list = replace.(eqstrs, "=" => "&=")
         newstr = join(eqstr_list, " $eol")
         str *= newstr
@@ -134,6 +147,15 @@ function chemical_arrows(rn::ReactionSystem;
     end
 
     str *= starred ? "\\end{align*}\n" : "\\end{align}\n"
+
+    # Strip \mathtt{} wrapping so multi-character names render as plain math italic.
+    str = replace(str, r"\\mathtt\{([^}]*)\}" => s"\1")
+
+    # Optionally wrap in $$ delimiters for renderers (Documenter, MathJax) that require
+    # explicit math delimiters. Not valid standard LaTeX, but needed for web rendering.
+    if math_delimiters
+        str = "\$\$\n" * str * "\$\$"
+    end
 
     latexstr = Latexify.LaTeXString(str)
     Latexify.COPY_TO_CLIPBOARD && clipboard(latexstr)
@@ -162,7 +184,7 @@ function make_stoich_str(spec, stoich, subber; mathrm = true, kwargs...)
     if isequal(stoich, one(stoich))
         prestr * latexraw(subber(spec); kwargs...) * poststr
     else
-        if (stoich isa Symbolic) && iscall(stoich)
+        if (stoich isa SymbolicT) && iscall(stoich)
             LaTeXString("(") *
             latexraw(subber(stoich); kwargs...) *
             LaTeXString(")") *

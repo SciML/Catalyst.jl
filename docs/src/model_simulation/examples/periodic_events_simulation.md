@@ -1,4 +1,21 @@
 # [Modelling a Periodic Event During ODE and Jump Simulations](@id periodic_event_simulation_example)
+```@raw html
+<details><summary><strong>Environment setup and package installation</strong></summary>
+```
+The following code sets up an environment for running the code on this page.
+```julia
+using Pkg
+Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
+Pkg.add("Catalyst")
+Pkg.add("JumpProcesses")
+Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("Plots")
+```
+```@raw html
+</details>
+```
+  \
+  
 This tutorial will describe how to simulate systems with periodic events in ODEs and jump simulations (SDEs use identical syntax). We will consider a model with a [circadian rhythm](https://en.wikipedia.org/wiki/Circadian_rhythm), where a parameter represents the level of light. While outdoor light varies smoothly, in experimental settings a lamp is often simply turned on/off every 12 hours. Here we will model this toggling of the light using a periodic event that is triggered every 12 hours.
 
 ## [Modelling a circadian periodic event in an ODE simulation](@id periodic_event_simulation_example_ode)
@@ -7,7 +24,7 @@ We will consider a simple circadian model, consisting of a single protein ($X$),
 using Catalyst
 circadian_model = @reaction_network begin
     @discrete_events begin
-        12 => [l ~ (l + 1)%2]
+        12 => [l => (l + 1)%2]
     end
  (kₚ*l,kᵢ), X <--> Xᴾ
 end
@@ -30,8 +47,7 @@ chemical kinetics jump process model
 ```@example periodic_event_example
 using JumpProcesses
 u0 = [:X => 150, :Xᴾ => 50]  # define u0 as integers now
-jinput = JumpInputs(circadian_model, u0, tspan, ps)
-jprob = JumpProblem(jinput)
+jprob = JumpProblem(circadian_model, u0, tspan, ps)
 jsol = solve(jprob)
 plot(jsol)
 Catalyst.PNG(plot(jsol; fmt = :png, dpi = 200)) # hide
@@ -45,7 +61,7 @@ general discrete callback as follows
 ```@example periodic_event_example
 circadian_model = @reaction_network begin
     @discrete_events begin
-        ((t % 12 == 0) & (t > 12)) => [l ~ (l + 1)%2]
+        ((t % 12 == 0) & (t > 12)) => [l => (l + 1)%2]
     end
     (kₚ*l,kᵢ), X <--> Xᴾ
 end
@@ -58,8 +74,7 @@ using JumpProcesses
 u0 = [:X => 150, :Xᴾ => 50]
 ps = [:kₚ => 0.1, :kᵢ => 0.1, :l => 1.0]
 tspan = (0.0, 100.0)
-jinput = JumpInputs(circadian_model, u0, tspan, ps)
-jprob = JumpProblem(jinput)
+jprob = JumpProblem(circadian_model, u0, tspan, ps)
 nothing # hide
 ```
 Next, if we simulate our model, we note that the events do not seem to be
@@ -82,26 +97,21 @@ Catalyst.PNG(plot(sol; fmt = :png, dpi = 200)) # hide
 ```
 
 ## [Plotting the light level](@id periodic_event_simulation_plotting_light)
-Sometimes when simulating models with periodic parameters, one would like to plot the parameter's value across the simulation. For this, there are two potential strategies. One includes creating a [*saving callback*](https://docs.sciml.ai/DiffEqCallbacks/stable/output_saving/#DiffEqCallbacks.SavingCallback). The other one, which we will demonstrate here, includes turning the parameter $l$ to a *variable* (so that its value is recorded throughout the simulation):
+Parameters which values change throughout the simulation can be plotted directly using the normal interface.
 ```@example periodic_event_example
 circadian_model = @reaction_network begin
-    @variables l(t)
     @discrete_events begin
-        12 => [l ~ (l + 1)%2]
+        12 => [l => (l + 1)%2]
     end
  (kₚ*l,kᵢ), X <--> Xᴾ
 end
-nothing # hide
-```
-Next, we simulate our model like before (but providing $l$'s value as an initial condition):
-```@example periodic_event_example
-u0 = [:X => 150.0, :Xᴾ => 50.0, :l => 1.0]
-ps = [:kₚ => 0.1, :kᵢ => 0.1]
+u0 = [:X => 150.0, :Xᴾ => 50.0]
+ps = [:kₚ => 0.1, :kᵢ => 0.1, :l => 1.0]
 oprob = ODEProblem(circadian_model, u0, (0.0, 100.0), ps)
 sol = solve(oprob)
 nothing # hide
 ```
-If we directly plot $l$'s value, it will be too small (compared to $X$ and $Xᴾ$ to be discernible). We instead [`@unpack` our variables](@ref dsl_advanced_options_symbolics_and_DSL_unpack), and then plot a re-scaled version:
+Here, if we directly plot $l$'s value, it will be too small (compared to $X$ and $Xᴾ$ to be discernible). We instead [`@unpack` our variables](@ref dsl_advanced_options_symbolics_and_DSL_unpack), and then plot a re-scaled version:
 ```@example periodic_event_example
 @unpack X, Xᴾ, l = circadian_model
 plot(sol; idxs = [X, Xᴾ, 150*l], labels = ["X" "Xᴾ" "Light amplitude"])

@@ -71,14 +71,21 @@ end
 # any variables (e.g. X(t)) the call part is stripped, and only variable name (e.g. X) is written.
 function expression_2_string(expr;
         strip_call_dict = make_strip_call_dict(Symbolics.get_variables(expr)))
-    strip_called_expr = substitute(expr, strip_call_dict)
+    strip_called_expr = substitute(expr, strip_call_dict; filterer = sub_inside_filter)
     return repr(strip_called_expr)
+end
+function sub_inside_filter(ex)
+    return if operation(ex) isa Union{Differential,Pre}
+        true
+    else
+        SymbolicUtils.default_substitute_filter(ex)
+    end
 end
 
 # Converts a vector of symbolics (e.g. the species or parameter vectors) to a string vector. Strips
 # any calls (e.g. X(t) becomes X). E.g. a species vector [X, Y, Z] is converted to "[X, Y, Z]".
 function syms_2_strings(syms)
-    strip_called_syms = [strip_call(Symbolics.unwrap(sym)) for sym in syms]
+    strip_called_syms = [strip_call(unwrap(sym)) for sym in syms]
     return get_substring_end("$(convert(Vector{Any}, strip_called_syms))", 4, 0)
 end
 
@@ -105,20 +112,13 @@ function sym_2_declaration_string(sym; multiline_format = false)
     dec_string = "$(sym)"
 
     # If the symbol has a non-default type, appends the declaration of this.
-    # Assumes that the type is on the form `BasicSymbolic{X}`. Contain error checks
-    # to ensure that this is the case.
-    if !(sym isa BasicSymbolic{Real})
-        sym_type = String(Symbol(typeof(Symbolics.unwrap(sym))))
-        if (get_substring(sym_type, 1, 28) != "SymbolicUtils.BasicSymbolic{") ||
-           (get_char_end(sym_type, 0) != '}')
-            error("Encountered symbolic of unexpected type: $sym_type.")
-        end
-        @string_append! dec_string "::" get_substring_end(sym_type, 29, -1)
+    if SymbolicUtils.symtype(sym) != Real
+        @string_append! dec_string "::" String(Symbol(SymbolicUtils.symtype(sym)))
     end
 
     # If there is a default value, adds this to the declaration.
-    if ModelingToolkit.hasdefault(sym)
-        def_val = x_2_string(ModelingToolkit.getdefault(sym))
+    if MT.hasdefault(sym)
+        def_val = x_2_string(MT.getdefault(sym))
         separator = (multiline_format ? " = " : "=")
         @string_append! dec_string separator "$(def_val)"
     end
@@ -142,7 +142,7 @@ end
 # and metadata values (which hopefully almost exclusively) have simple, supported, types. Ideally,
 # more supported types can be added here.
 x_2_string(x::Num) = expression_2_string(x)
-x_2_string(x::BasicSymbolic{<:Real}) = expression_2_string(x)
+x_2_string(x::SymbolicT) = expression_2_string(x)
 x_2_string(x::Bool) = string(x)
 x_2_string(x::String) = "\"$x\""
 x_2_string(x::Char) = "\'$x\'"
@@ -150,6 +150,7 @@ x_2_string(x::Symbol) = ":$x"
 x_2_string(x::Number) = string(x)
 x_2_string(x::Pair) = "$(x_2_string(x[1])) => $(x_2_string(x[2]))"
 x_2_string(x::Nothing) = "nothing"
+x_2_string(x::DataType) = "$x"
 function x_2_string(x::Vector)
     output = "["
     for val in x
@@ -164,12 +165,17 @@ function x_2_string(x::Tuple)
     end
     return get_substring_end(output, 1, -2) * ")"
 end
-function x_2_string(x::Dict)
+function x_2_string(x::Union{Base.ImmutableDict{DataType, Any}, Dict}) # Base.ImmutableDict{DataType, Any} is for writing metadata.
     output = "Dict(["
     for key in keys(x)
         @string_append! output x_2_string(key) " => " x_2_string(x[key]) ", "
     end
-    return get_substring_end(output, 1, -2) * "])"
+    output = isempty(keys(x)) ? output : Catalyst.get_substring_end(output, 1, -2)
+    return output * "])"
+end
+# Handle SymmapT (AtomicArrayDict) by converting to Dict.
+function x_2_string(x::MT.SymmapT)
+    return x_2_string(Dict(x))
 end
 function x_2_string(x::Union{Matrix, Symbolics.Arr{Any, 2}})
     output = "["
@@ -219,23 +225,23 @@ const RECOGNISED_METADATA = Dict([Catalyst.ParameterConstantSpecies => "isconsta
                                   Catalyst.CompoundSpecies => "iscompound"
                                   Catalyst.CompoundComponents => "components"
                                   Catalyst.CompoundCoefficients => "coefficients"
-                                  ModelingToolkit.VariableDescription => "description"
-                                  ModelingToolkit.VariableBounds => "bounds"
-                                  ModelingToolkit.VariableUnit => "unit"
-                                  ModelingToolkit.VariableConnectType => "connect"
-                                  ModelingToolkit.VariableNoiseType => "noise"
-                                  ModelingToolkit.VariableInput => "input"
-                                  ModelingToolkit.VariableOutput => "output"
-                                  ModelingToolkit.VariableIrreducible => "irreducible"
-                                  ModelingToolkit.VariableStatePriority => "state_priority"
-                                  ModelingToolkit.VariableMisc => "misc"
-                                  ModelingToolkit.TimeDomain => "timedomain"])
+                                  MT.VariableDescription => "description"
+                                  MT.VariableBounds => "bounds"
+                                  MT.VariableUnit => "unit"
+                                  MT.VariableConnectType => "connect"
+                                  #MT.VariableNoiseType => "noise"
+                                  MT.VariableInput => "input"
+                                  MT.VariableOutput => "output"
+                                  MT.VariableIrreducible => "irreducible"
+                                  MT.VariableStatePriority => "state_priority"
+                                  MT.VariableMisc => "misc"
+                                  MT.TimeDomain => "timedomain"])
 
 # List of metadata that does not need to be explicitly declared to be added (or which is handled separately).
 const SKIPPED_METADATA = [
     Catalyst.VariableSpecies,
-    ModelingToolkit.MTKVariableTypeCtx,
-    ModelingToolkit.SymScope,
+    MT.MTKVariableTypeCtx,
+    MT.SymScope,
     Symbolics.VariableDefaultValue,
     Symbolics.VariableSource]
 
@@ -244,25 +250,25 @@ const SKIPPED_METADATA = [
 # Potentially strips the call for a symbolics. E.g. X(t) becomes X (but p remains p). This is used
 # when variables are written to files, as in code they are used without the call part.
 function strip_call(sym)
-    return iscall(sym) ? Sym{Real}(Symbolics.getname(sym)) : sym
+    return iscall(sym) ? SymbolicUtils.Sym{Symbolics.VartypeT}(Symbolics.getname(sym); type = Real) : sym
 end
 
 # For an vector of symbolics, creates a dictionary taking each symbolics to each call-stripped form.
 function make_strip_call_dict(syms)
-    return Dict([sym => strip_call(Symbolics.unwrap(sym)) for sym in syms])
+    return Dict([sym => strip_call(unwrap(sym)) for sym in syms])
 end
 
 # If the input is a `ReactionSystem`, extracts the unknowns (i.e. syms depending on another variable).
 function make_strip_call_dict(rn::ReactionSystem)
-    return make_strip_call_dict(get_unknowns(rn))
+    return make_strip_call_dict([get_unknowns(rn); get_ps(rn)])
 end
 
 ### Handle Parameters/Species/Variables Declaration Dependencies ###
 
 # Gets a vector with the symbolics a symbolic depends on (currently only considers defaults).
 function get_dep_syms(sym)
-    ModelingToolkit.hasdefault(sym) || return []
-    return Symbolics.get_variables(ModelingToolkit.getdefault(sym))
+    MT.hasdefault(sym) || return []
+    return Symbolics.get_variables(MT.getdefault(sym))
 end
 
 # Checks if a symbolic depends on a symbolics in a vector being declared.
@@ -294,7 +300,7 @@ end
 # if it has metadata, default value, or type designation that must be declared.
 function complicated_declaration(sym)
     isempty(get_metadata_to_declare(sym)) || (return true)
-    ModelingToolkit.hasdefault(sym) && (return true)
-    (sym isa BasicSymbolic{Real}) || (return true)
+    MT.hasdefault(sym) && (return true)
+    (sym isa SymbolicT) || (return true)
     return false
 end
