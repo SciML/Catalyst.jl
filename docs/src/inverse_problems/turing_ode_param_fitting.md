@@ -71,10 +71,10 @@ using Turing
 end
 
 # Estimates parameter priors through Markov Chain Monte Carlo.
-using SymbolicIndexingInterface # Required for `setp_oop`.
+import SymbolicIndexingInterface # Required for `setp_oop`.
 n_steps = 1000
 n_chains = 4
-setp_oop = setp_oop(oprob_true, [:γ, :ν])
+setp_oop = SymbolicIndexingInterface.setp_oop(oprob_true, [:γ, :ν])
 model = sir_model(I_observed, oprob_true, setp_oop, t_measurement)
 chain = sample(model, NUTS(), MCMCThreads(), n_steps, n_chains; progress = false)
 
@@ -106,19 +106,19 @@ From an initial condition where only a small fraction of the population is in th
 ```@example turing_paramfit
 using OrdinaryDiffEqDefault, Plots
 u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
-p_true = [:γ => 0.0003, :ν => 0.1]
-oprob_true = ODEProblem(sir, u0, t_measurement[end], p_true)
+p_true = [:γ => 0.0005, :ν => 0.1]
+oprob_true = ODEProblem(sir, u0, 100.0, p_true)
 sol_true = solve(oprob_true)
-plot(sol_true; label = ["S (true)" "I (true)" "R (true)"])
+plot(sol_true; label = ["S (true)" "I (true)" "R (true)"], lw = 4)
 ```
-From this simulation, we generate synthetic measurements of the epidemic (on which we will demonstrate a Turing-based inference workflow). We make $100$, evenly spaced, measurements of the number of infected individuals ($I$). To these measurements we add some normally distributed noise (with mean at the true value and a standard deviation of $10$). 
+From this simulation, we generate synthetic measurements of the epidemic (on which we will demonstrate a Turing-based inference workflow). We make $50$, evenly spaced, measurements of the number of infected individuals ($I$). To these measurements we add some normally distributed noise (with mean at the true value and a standard deviation of $10$). 
 ```@example turing_paramfit
 using Distributions
 σI = 10.0
-t_measurement = 1.0:100.0
+t_measurement = 1.0:2:100.0
 I_observed = sol_true(t_measurement; idxs = :I)
 I_observed = [rand(Normal(I, σI)) for I in I_observed]
-plot!(t_measurement, I_observed; label = "I (measured)", color = 1)
+plot!(t_measurement, I_observed; label = "I (measured)", color = 2)
 ```
 
 Next, we are ready to create a Turing model/likelihood function (from which posteriors can be estimated). The Turing model have similarities to [the loss function utilised for normal parameter fitting workflows](@ref optimization_parameter_fitting_basics), but with a few differences:
@@ -132,7 +132,7 @@ Here, we declare our parameters on the form `p ~ Distribution(...)` where the le
 In our case, we first declare each parameter and their priors. Next we simulate the SIR model for a specific parameter set. Then, we compute the likelihood of observing out observables given the simulation.
 ```@example turing_paramfit
 using Turing, SymbolicIndexingInterface
-setp_oop = setp_oop(oprob_base, [:γ, :ν])
+setp_oop = SymbolicIndexingInterface.setp_oop(oprob_true, [:γ, :ν])
 @model function sir_likelihood(I_observed, oprob_base, setp_oop, saveat)
     # Defines the parameters we wish to estimate and their prior distributions.
     γ ~ LogUniform(0.00001, 0.001)
@@ -151,7 +151,7 @@ setp_oop = setp_oop(oprob_base, [:γ, :ν])
     end
 
     # Computes the likelihood of the observations.
-    for idx in eachindex(data)
+    for idx in eachindex(I_observed)
         I_observed[idx] ~ Normal(sol[:I][idx], σI)
     end
 end
@@ -161,6 +161,7 @@ nothing # hide
 Some specific comments regarding how we have declared the model above:
 - Like for [normal parameter fitting](@ref optimization_parameter_fitting_basics), we use the `maxiters = 10000` (to prevent spending long time simulating unfeasible parameter sets) and `verbose = false` (to prevent unnecessary printing of warning messages) arguments to `solve`.
 - Again, we need to handle parameter sets where the model cannot be successfully simulated. Here, we use `Turing.@addlogprob! -Inf` to set an non-existent likelihood, and `return nothing` to finish further evaluation of the specific parameter set.
+- Just like for normal parameter fitting we wish to [fit parameters on a log scale](@ref optimization_parameter_fitting_log_scale). Here we do so by declaring log-scaled prior distributions.
 - Here we assume that we (correctly) know that the noise is normally distributed. However, we assume that we *do not know the standard deviation*. Instead, we make the standard deviation a third parameter (which value we infer as part of the inference process). More complicated noise formulas can be used (and is sometimes even advisable[^2]).
 - Like for normal parameter fitting, we use [SymbolicIndexingInterface](https://github.com/SciML/SymbolicIndexingInterface.jl)'s`setp_oop` function to update the parameter values in each step (as this works well with [*automatic differentiation*](@ref optimization_parameter_fitting_AD)).
 
@@ -187,35 +188,41 @@ Turing contain a plotting interface for plotting the results:
 using StatsPlots
 plot(chain)
 ```
-Here, for each parameter, the left-hand side is shows the MCMC chain, and the right-hand side plot the posterior distribution.
+Here, for each parameter, the left-hand side is shows the MCMC chains, and the right-hand side plot the posterior distributions (one for each of teh four chains).
 
 ### [Accessing posterior information](@id turing_parameter_fitting_basic_example_output_interfacing)
 
 ## [Encoding non-negativity in observables formulas](@id turing_parameter_fitting_nonnegative_observables)
+In biology, most quantities are non-negative, which is information that we wish to incorporate in our inference problem. This holds both for priors (i.e. we know that the inferred parameters are non-negative) and observables (i.e. we know that the observed quantities are non-negative). This can be encoded either by:
+- Using a prior/observation formula where the distribution is strictly non-negative.
+- Truncating the prior/observation formula distribution at zero.
 
-## [Other useful options](@id turing_parameter_fitting_other_options)
+In the previous example we used the former approach for our parameter priors - i.e. `γ ~ LogUniform(0.00001, 0.001)` is a strictly non-negative distribution, implying the information that `γ` is non-negative. However, for our observations we used `I_observed[idx] ~ Normal(sol[:I][idx], σI)`. Here, `Normal(sol[:I][idx], σI)` suggests that negative number of infected cases can be observed. While the way with which we generated our synthetic data technically could result in this, for real applications, we might want to encode non-negativity in the distribution. A simple alternative is to truncate the distribution at zero using the [`truncated`](https://juliastats.org/Distributions.jl/stable/truncate/#Distributions.truncated) function. Here we can use
+```julia
+I_observed[idx] ~ truncated(Normal(sol[:I][idx], σI), 0.0, Inf)
+```
+to create a version of our normal distribution that is truncated at *0* and infinity.
 
 
 ---
 ## [Citations](@id turing_citations)
 If you use this functionality in your research, [in addition to Catalyst](@ref doc_index_citation), please cite the following paper to support the authors of the Turing.jl package.
 ```
-@inproceedings{ge2018t,
-  author    = {Hong Ge and
-               Kai Xu and
-               Zoubin Ghahramani},
-  title     = {Turing: a language for flexible probabilistic inference},
-  booktitle = {International Conference on Artificial Intelligence and Statistics,
-               {AISTATS} 2018, 9-11 April 2018, Playa Blanca, Lanzarote, Canary Islands,
-               Spain},
-  pages     = {1682--1690},
-  year      = {2018},
-  url       = {http://proceedings.mlr.press/v84/ge18b.html},
-  biburl    = {https://dblp.org/rec/bib/conf/aistats/GeXG18},
+@article{10.1145/3711897,
+    author = {Fjelde, Tor Erlend and Xu, Kai and Widmann, David and Tarek, Mohamed and Pfiffer, Cameron and Trapp, Martin and Axen, Seth D. and Sun, Xianda and Hauru, Markus and Yong, Penelope and Tebbutt, Will and Ghahramani, Zoubin and Ge, Hong},
+    title = {Turing.jl: a general-purpose probabilistic programming language},
+    year = {2025},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    url = {https://doi.org/10.1145/3711897},
+    doi = {10.1145/3711897},
+    note = {Just Accepted},
+    journal = {ACM Trans. Probab. Mach. Learn.},
+    month = feb,
 }
 ```
 
 ---
 ## References
-[^1]: 
+[^1]: [Andrew Gelman et al. *Bayesian Data Analysis*, CRC Press (2013).](https://sites.stat.columbia.edu/gelman/book/BDA3.pdf)
 [^2]: [Johannes H. Proost *Combined proportional and additive residual error models in population pharmacokinetic modelling*, European Journal of Pharmaceutical Sciences (2017).](https://www.sciencedirect.com/science/article/pii/S092809871730249X)
