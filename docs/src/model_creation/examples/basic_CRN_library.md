@@ -142,8 +142,8 @@ The [logistic growth model](https://en.wikipedia.org/wiki/Logistic_function) is 
 ```@example crn_library_logistic_growth
 using Catalyst
 logistic_growth = @reaction_network begin
- r, u --> 2u
- r/K, 2u --> u
+    r, u --> 2u
+    r/K, 2u --> u
 end
 ```
 Here, we will simulate it using the ODE and jump approaches, and do so across three different scales of population sizes. 
@@ -152,9 +152,9 @@ tspan = (0.0, 10.0)
 oprob_1 = ODEProblem(logistic_growth, [:u => 1], tspan, [:r => 1.0, :K => 10.0])
 oprob_2 = ODEProblem(logistic_growth, [:u => 10*1], tspan, [:r => 1.0, :K => 10*10.0])
 oprob_3 = ODEProblem(logistic_growth, [:u => 100*1], tspan, [:r => 1.0, :K => 100*10.0])
-jprob_1 = JumpProblem(JumpInputs(logistic_growth, [:u => 1], tspan, [:r => 1.0, :K => 10.0]))
-jprob_2 = JumpProblem(JumpInputs(logistic_growth, [:u => 10*1], tspan, [:r => 1.0, :K => 10*10.0]))
-jprob_3 = JumpProblem(JumpInputs(logistic_growth, [:u => 100*1], tspan, [:r => 1.0, :K => 100*10.0]))
+jprob_1 = JumpProblem(logistic_growth, [:u => 1], tspan, [:r => 1.0, :K => 10.0])
+jprob_2 = JumpProblem(logistic_growth, [:u => 10*1], tspan, [:r => 1.0, :K => 10*10.0])
+jprob_3 = JumpProblem(logistic_growth, [:u => 100*1], tspan, [:r => 1.0, :K => 100*10.0])
 
 plot(solve(oprob_1); label ="ODE")
 p1 = plot!(solve(jprob_1); label ="Jump")
