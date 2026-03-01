@@ -111,14 +111,14 @@ oprob_true = ODEProblem(sir, u0, 100.0, p_true)
 sol_true = solve(oprob_true)
 plot(sol_true; label = ["S (true)" "I (true)" "R (true)"], lw = 4)
 ```
-From this simulation, we generate synthetic measurements of the epidemic (on which we will demonstrate a Turing-based inference workflow). We make $50$, evenly spaced, measurements of the number of infected individuals ($I$). To these measurements we add some normally distributed noise (with mean at the true value and a standard deviation of $10$). 
+From this simulation, we generate synthetic measurements of the epidemic (on which we will demonstrate a Turing-based inference workflow). We make $25$, evenly spaced, measurements of the number of infected individuals ($I$). To these measurements we add some normally distributed noise (with mean at the true value and a standard deviation of $20$). 
 ```@example turing_paramfit
 using Distributions
-σI = 10.0
-t_measurement = 1.0:2:100.0
+σI = 20.0
+t_measurement = 4.0:4:100.0
 I_observed = sol_true(t_measurement; idxs = :I)
 I_observed = [rand(Normal(I, σI)) for I in I_observed]
-plot!(t_measurement, I_observed; label = "I (measured)", color = 2)
+plot!(t_measurement, I_observed; label = "I (measured)", color = 2, seriestype = :scatter)
 ```
 
 Next, we are ready to create a Turing model/likelihood function (from which posteriors can be estimated). The Turing model have similarities to [the loss function utilised for normal parameter fitting workflows](@ref optimization_parameter_fitting_basics), but with a few differences:
@@ -188,20 +188,36 @@ Turing contain a plotting interface for plotting the results:
 using StatsPlots
 plot(chain)
 ```
-Here, for each parameter, the left-hand side is shows the MCMC chains, and the right-hand side plot the posterior distributions (one for each of teh four chains).
+Here, for each parameter, the left-hand side is shows the MCMC chains, and the right-hand side plot the posterior distributions (one for each of the four chains).
 
-### [Accessing posterior information](@id turing_parameter_fitting_basic_example_output_interfacing)
-
-## [Encoding non-negativity in observables formulas](@id turing_parameter_fitting_nonnegative_observables)
+### [Encoding non-negativity in observables formulas](@id turing_parameter_fitting_nonnegative_observables)
 In biology, most quantities are non-negative, which is information that we wish to incorporate in our inference problem. This holds both for priors (i.e. we know that the inferred parameters are non-negative) and observables (i.e. we know that the observed quantities are non-negative). This can be encoded either by:
 - Using a prior/observation formula where the distribution is strictly non-negative.
 - Truncating the prior/observation formula distribution at zero.
 
-In the previous example we used the former approach for our parameter priors - i.e. `γ ~ LogUniform(0.00001, 0.001)` is a strictly non-negative distribution, implying the information that `γ` is non-negative. However, for our observations we used `I_observed[idx] ~ Normal(sol[:I][idx], σI)`. Here, `Normal(sol[:I][idx], σI)` suggests that negative number of infected cases can be observed. While the way with which we generated our synthetic data technically could result in this, for real applications, we might want to encode non-negativity in the distribution. A simple alternative is to truncate the distribution at zero using the [`truncated`](https://juliastats.org/Distributions.jl/stable/truncate/#Distributions.truncated) function. Here we can use
+In the previous example we used the former approach for our parameter priors - i.e. `γ ~ LogUniform(0.00001, 0.001)` is a strictly non-negative distribution, implying the information that `γ` is non-negative. However, for our observations we used `I_observed[idx] ~ Normal(sol[:I][idx], σI)`. Here, `Normal(sol[:I][idx], σI)` suggests that negative number of infected cases can be observed. While the way with which we generated our synthetic data mean that this actually could happen, for real applications, we might want to encode non-negativity in the distribution. A simple alternative is to truncate the distribution at zero using the [`truncated`](https://juliastats.org/Distributions.jl/stable/truncate/#Distributions.truncated) function. Here we can use
 ```julia
 I_observed[idx] ~ truncated(Normal(sol[:I][idx], σI), 0.0, Inf)
 ```
 to create a version of our normal distribution that is truncated at *0* and infinity.
+
+### [Accessing posterior information](@id turing_parameter_fitting_basic_example_output_interfacing)
+Say that we want to sample a parameter set from the computed posterior distribution. Here, we can use the following syntax to sample a single vector with the values of `γ`, `ν`, and `σI` (in that order):
+```@example turing_paramfit
+collect(chain.value[rand(1:n_steps), 1:3, rand(1:n_chains)])
+```
+
+We can use this to e.g. draw $10$ random parameter sets from the posterior distribution, simulate the model for these parameter sets, and plot the resulting ensemble simulation. For this, we will create an `EnsembleProblem` from our `ODEProblem` using the approach described [here](@ref @id ensemble_simulations_varying_conditions).
+```@example turing_paramfit
+function prob_func(prob, _, _)
+    γ, ν = collect(chain.value[rand(1:n_steps), 1:2, rand(1:n_chains)])
+    remake(prob; p = [:γ => γ, :ν => ν])
+end
+eprob = EnsembleProblem(oprob_true; prob_func)
+sols = solve(eprob; trajectories = 10)
+plot(sols; color = [1 2 3])
+```
+Here, we can see that all parameter sets sampled from the posterior yields very similar simulations.
 
 
 ---
