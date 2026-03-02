@@ -253,7 +253,7 @@ all such code and updating it appropriately (e.g. serialization). Please use a s
 # structure have been updated (in the `reactionsystem_uptodate_check` function).
 const reactionsystem_fields = (
     :eqs, :rxs, :iv, :sivs, :unknowns, :species, :ps, :var_to_name,
-    :observed, :name, :systems, :initial_conditions,
+    :observed, :name, :systems, :bindings, :initial_conditions,
     :networkproperties, :combinatoric_ratelaws, :continuous_events,
     :discrete_events, :tstops, :brownians, :poissonians, :jumps, :metadata, :complete, :parent)
 
@@ -770,6 +770,8 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
     debug_comparer(issetequal, get_species(rn1), get_species(rn2), "species"; debug) ||
         return false
     debug_comparer(issetequal, get_ps(rn1), get_ps(rn2), "ps"; debug) || return false
+    debug_comparer(issetequal, MT.get_bindings(rn1), MT.get_bindings(rn2), "bindings"; debug) ||
+        return false
     debug_comparer(
         issetequal, MT.get_initial_conditions(rn1), MT.get_initial_conditions(rn2), "defaults"; debug) ||
         return false

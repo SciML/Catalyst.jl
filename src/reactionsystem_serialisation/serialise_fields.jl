@@ -399,7 +399,7 @@ end
 
 # Extract a string which declares the system's bindings.
 function get_bindings_string(rn::ReactionSystem)
-    bindings_string = "bindings = " * x_2_string(MT.get_bindings(rn))
+    bindings_string = "bindings = " * x_2_string(convert(Dict, MT.get_bindings(rn)))
     return bindings_string
 end
 
@@ -653,4 +653,3 @@ end
 
 # Combines the 3 systems-related functions in a constant tuple.
 const SYSTEMS_FS = (seri_has_systems, get_systems_string, get_systems_annotation)
-
