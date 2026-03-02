@@ -3,7 +3,7 @@
 # Fetch packages.
 using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEqTsit5, OrdinaryDiffEqVerner, StochasticDiffEq, Test
 const MT = ModelingToolkitBase
-using ModelingToolkitBase: Pre
+using ModelingToolkitBase: Pre, unwrap
 
 # Sets stable rng number.
 using StableRNGs
@@ -681,6 +681,9 @@ end
 
 # Checks that correct bindings and (default) iniital conditions are created and stored in various ways and conversions.
 let
+    # Declare time differential.
+    D = default_time_deriv()
+
     # Declares parameters, species, and variables with various combinations of initial conditions and bindings.
     @parameters θ1 θ2 θ3 θ4 θ5
     @parameters ϕ1 ϕ2 ϕ3 ϕ4 ϕ5
