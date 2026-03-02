@@ -610,11 +610,6 @@ let
     @test !Catalyst.isconstant(Y)
 end
 
-### Bindings & (Default) Initial Conditions Tests ###
-
-# TO BE ADDED
-
-
 
 ### Error Tests ###
 
@@ -680,6 +675,98 @@ let
     # @test_throws ReactionSystem([rx], t, [X, X_sp,], [d, X_p]; name = :rs)
     # @test_throws ReactionSystem([rx], t, [X, X, X_v], [d, X_p]; name = :rs)
     # @test_throws ReactionSystem([rx], t, [X, X_sp, X_v], [d]; name = :rs)
+end
+
+### Specialised ReactionSystem Fields ###
+
+# Checks that correct bindings and (default) iniital conditions are created and stored in various ways and conversions.
+let
+    # Declares parameters, species, and variables with various combinations of initial conditions and bindings.
+    @parameters θ1 θ2 θ3 θ4 θ5
+    @parameters ϕ1 ϕ2 ϕ3 ϕ4 ϕ5
+    @parameters ψ1 ψ2 ψ3 ψ4 ψ5
+    @parameters χ1 χ2 χ3 χ4 χ5 χ6 χ7 χ8
+    @parameters a1 a2 a3 a4
+    @parameters b1=1.0 b2=2.0 b3=3.0 b4=4.0
+    @parameters c1=θ1 c2=θ1+θ2 c3=log(1+θ3) c4=θ4 * θ5^2
+    @parameters d1 d2 d3 d4
+    @species X1(t) X2(t) X3(t) X4(t)
+    @species Y1(t)=0.1 Y2(t)=0.2 Y3(t)=0.3 Y4(t)=0.4
+    @species Z1(t)=ϕ1 Z2(t)=ϕ1+ϕ2 Z3(t)=log(1+ϕ3) Z4(t)=ϕ5 * ϕ4^2
+    @species U1(t) U2(t) U3(t) U4(t)
+    @variables K1(t) K2(t) K3(t) K4(t)
+    @variables L1(t)=10.0 L2(t)=20.0 L3(t)=30.0 L4(t)=40.0
+    @variables M1(t)=ψ1 M2(t)=ψ1+ψ2 M3(t)=log(1+ψ3) M4(t)=ψ4 * ψ5^2
+    @variables N1(t) N2(t) N3(t) N4(t)
+    ps = [θ1, θ2, θ3, θ4, θ5, ϕ1, ϕ2, ϕ3, ϕ4, ϕ5, ψ1, ψ2, ψ3, ψ4, ψ5, χ1, χ2, χ3, χ4, χ5, χ6, χ7, χ8, a1, a2, a3, a4, b1, b2, b3, b4, c1, c2, c3, c4, d1, d2, d3, d4]
+    us = [X1, X2, X3, X4, Y1, Y2, Y3, Y4, Z1, Z2, Z3, Z4, U1, U2, U3, U4, K1, K2, K3, K4, L1, L2, L3, L4, M1, M2, M3, M4, N1, N2, N3, N4]
+
+    # Creates a single reaction system with all of them.
+    rxs = [
+        Reaction(a1, [X1], [Y1]),
+        Reaction(b1, [X2], [Y2]),
+        Reaction(c1, [X3], [Y3]),
+        Reaction(a2, [X4], [Y4]),
+        Reaction(b2, [Z1], [U1]),
+        Reaction(c2, [Z2], [U2]),
+        Reaction(a3, [Z3], [U3]),
+        Reaction(b3, [Z4], [U4]),
+        D(K1) ~ c3 - K1,
+        D(K2) ~ a4 - K2,
+        D(K3) ~ d1 - K3,
+        D(K4) ~ d2 - K4,
+        L1^2 + X1 ~ b4 ^ 2 + K1^2,
+        L2^2 + X2 ~ c4 ^ 2 + K2^2,
+        L3^2 + X3 ~ 1 ^ 2 + K3^2,
+        L4^2 + X4 ~ 1 ^ 2 + K4^2,
+        D(M1) ~ d3 - M1,
+        D(M2) ~ d4 - M2,
+        D(M3) ~ 1 - M3,
+        D(M4) ~ 1 - M4,
+        D(N1) ~ 1 - N1,
+        D(N2) ~ 1 - N2,
+        D(N3) ~ 1 - N3,
+        D(N4) ~ 1 - N4,
+    ]
+    initial_conditions = [
+        d1 => 100.0, d2 => χ1,
+        U1 => 200.0, U2 => χ2^3,
+        N1 => 300.0, N2 => χ3 + log(χ4+ 1),
+    ]
+    bindings = [
+        d3 => 1000.0, d4 => χ5,
+        U3 => 2000.0, U4 => χ6^3,
+        N3 => 3000.0, N4 => χ7 + log(χ8+ 1),
+    ]
+    @named rs = ReactionSystem(rxs, t, us, ps; initial_conditions, bindings)
+    rs_complete = complete(rs)
+
+    # generate different systems from the `ReactionSystem`
+    default_scale = PhysicalScale.ODE
+    all_sys = [
+        rs, rs_complete,
+        ode_model(rs_complete), complete(ode_model(rs_complete)), mtkcompile(ode_model(rs_complete)),
+        sde_model(rs_complete), complete(sde_model(rs_complete)), mtkcompile(sde_model(rs_complete)),
+        hybrid_model(rs_complete; default_scale), complete(hybrid_model(rs_complete; default_scale)), mtkcompile(hybrid_model(rs_complete; default_scale))
+    ]
+
+    # Checks that all stored bindings and initial conditions are correct.
+    ics = [
+        unwrap(b1) => tosym(1.0), unwrap(b2) => tosym(2.0), unwrap(b3) => tosym(3.0), unwrap(b4) => tosym(4.0),
+        unwrap(Y1) => tosym(0.1), unwrap(Y2) => tosym(0.2), unwrap(Y3) => tosym(0.3), unwrap(Y4) => tosym(0.4),
+        unwrap(L1) => tosym(10.0), unwrap(L2) => tosym(20.0), unwrap(L3) => tosym(30.0), unwrap(L4) => tosym(40.0)
+    ]
+    binds = [
+        unwrap(c1) => unwrap(θ1), unwrap(c2) => unwrap(θ1 + θ2), unwrap(c3) => unwrap(log(1+θ3)), unwrap(c4) => unwrap(θ4 * θ5^2),
+        unwrap(Z1) => unwrap(ϕ1), unwrap(Z2) => unwrap(ϕ1+ϕ2), unwrap(Z3) => unwrap(log(1+ϕ3)), unwrap(Z4) => unwrap(ϕ5 * ϕ4^2),
+        unwrap(M1) => unwrap(ψ1), unwrap(M2) => unwrap(ψ1+ψ2), unwrap(M3) => unwrap(log(1+ψ3)), unwrap(M4) => unwrap(ψ4 * ψ5^2)
+    ]
+    for sys in all_sys
+        @test issetequal((collect(ModelingToolkitBase.get_initial_conditions(sys))), ics)
+        @test issetequal((collect(ModelingToolkitBase.get_bindings(sys))), binds)
+        @test issetequal((collect(initial_conditions(sys))), ics)
+        @test issetequal((collect(bindings(sys))), binds)
+    end
 end
 
 ### Other Tests ###

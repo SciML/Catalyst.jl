@@ -101,7 +101,7 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: SymbolicT}
     """The definitions of the conserved constants in the form conserved_constant = dependent_species + ..."""
     constantdefs::Vector{Equation} = Equation[]
     """The conserved constant symbolic vector, or a default value if not yet initialized."""
-    conservedconst::SymbolicT = __UNINITIALIZED_CONSERVED_CONSTS 
+    conservedconst::SymbolicT = __UNINITIALIZED_CONSERVED_CONSTS
     """Map from symbolics for each species to their index in the species vector."""
     speciesmap::Dict{V, Int} = Dict{V, Int}()
     complextorxsmap::OrderedDict{ReactionComplex{Int}, Vector{Pair{Int, Int}}} = OrderedDict{ReactionComplex{Int},Vector{Pair{Int,Int}}}()
@@ -457,12 +457,13 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
     # Process initial_conditions to unwrap Num wrappers.
     initial_conditions = SymmapT(value(entry[1]) => value(entry[2]) for entry in initial_conditions)
 
-    # In addition to being supplied with the constructor, bindings are auto-discovered by 
-    # MTKBase from variable metadata when Systems are created. The 5-argument System 
-    # constructor calls process_variables! which extracts bindings from variables with 
+    # In addition to being supplied with the constructor, bindings are auto-discovered by
+    # MTKBase from variable metadata when Systems are created. The 5-argument System
+    # constructor calls process_variables! which extracts bindings from variables with
     # symbolic default values. No explicit Catalyst handling is needed.
-    filter!(!(Base.Fix1(===, COMMON_NOTHING) ∘ last), bindings)
-    check_bindings(ps, bindings)
+    bindings = MT.defsdict(bindings)
+    filter!(!(Base.Fix1(===, MT.COMMON_NOTHING) ∘ last), bindings)
+    MT.check_bindings(ps, bindings)
 
     # Extracts independent variables (iv and sivs), dependent variables (species and variables)
     # and parameters. Sorts so that species comes before variables in unknowns vector.
@@ -1086,7 +1087,7 @@ function MT.equations(sys::ReactionSystem)
     eqs = get_eqs(sys)
     systems = get_systems(sys)
     if !isempty(systems)
-        eqs = CatalystEqType[eqs; 
+        eqs = CatalystEqType[eqs;
             reduce(vcat, MT.namespace_equations.(systems); init = CatalystEqType[])]
         return sort!(eqs; by = eqsortby)
     end
@@ -1658,7 +1659,7 @@ end
 
 Check that all species in the [`ReactionSystem`](@ref) have the same units, and that the
 rate laws of all reactions reduce to units of (species units) / (time units). Also validates
-unit consistency of non-reaction equations. 
+unit consistency of non-reaction equations.
 
 Uses [`catalyst_get_unit`](@ref) for SymbolicDimensions-preserving unit inference, avoiding
 the floating-point precision loss that occurs with MTKBase's `get_unit` when using non-SI
