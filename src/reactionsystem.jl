@@ -461,7 +461,8 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
     # MTKBase from variable metadata when Systems are created. The 5-argument System 
     # constructor calls process_variables! which extracts bindings from variables with 
     # symbolic default values. No explicit Catalyst handling is needed.
-    # @Aayush: DO WE NEED TO DO STUFF WITH bieningd here?
+    filter!(!(Base.Fix1(===, COMMON_NOTHING) ∘ last), bindings)
+    check_bindings(ps, bindings)
 
     # Extracts independent variables (iv and sivs), dependent variables (species and variables)
     # and parameters. Sorts so that species comes before variables in unknowns vector.
