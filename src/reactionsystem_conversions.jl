@@ -509,7 +509,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     # make dependent species observables and add conservation constants as parameters
     if remove_conserved && !isempty(conservedequations(rs))
         nps = get_networkproperties(rs)
-        
+
         # add the conservation constants as parameters and set their values
         ps = copy(ps)
         push!(ps, nps.conservedconst)
@@ -523,7 +523,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
             append!(eqs, [0 ~ ceq.rhs - ceq.lhs for ceq in conservedequations(rs)])
         end
 
-        # create initialization equations (only used for nonlinear systems)        
+        # create initialization equations (only used for nonlinear systems)
         if compute_cl_initeqs && !include_cl_as_eqs
             initialmap = Dict(u => Initial(u) for u in species(rs))
             conseqs = conservationlaw_constants(rs)
@@ -704,7 +704,7 @@ function hybrid_model(rs::ReactionSystem;
 
     # --- Add constraints (BC species, constraint equations, conserved species) ---
     if has_continuous
-        eqs, us, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
+        eqs, us, ps, obs, ics = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
     else
         # Pure jump case.
         any(isbc, get_unknowns(flatrs)) &&
@@ -712,7 +712,7 @@ function hybrid_model(rs::ReactionSystem;
         us = ists
         ps = get_ps(flatrs)
         obs = MT.observed(flatrs)
-        defs = MT.initial_conditions(flatrs)
+        ics = MT.initial_conditions(flatrs)
     end
 
     # --- Construct unified System ---
@@ -722,7 +722,8 @@ function hybrid_model(rs::ReactionSystem;
         jumps,
         observed = obs,
         name,
-        initial_conditions = merge(initial_conditions, defs),
+        bindings = MT.get_bindings(flatrs),
+        initial_conditions = merge(initial_conditions, ics),
         checks,
         continuous_events = MT.get_continuous_events(flatrs),
         discrete_events = MT.get_discrete_events(flatrs),
@@ -880,13 +881,13 @@ Keyword args and default values:
 function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, checks = false, initial_conditions = Dict(),
-        all_differentials_permitted = false, expand_catalyst_funs = true, 
+        all_differentials_permitted = false, expand_catalyst_funs = true,
         include_cl_as_eqs = false, kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, System)
     isautonomous(rs) || error(is_autonomous_error(get_iv(rs)))
-    
+
     # Generates system equations.
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)

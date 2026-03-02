@@ -454,17 +454,6 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
         sys isa ReactionSystem || error("ReactionSystem subsystems must be ReactionSystems. Got $(typeof(sys)).")
     end
 
-    # Process initial_conditions to unwrap Num wrappers.
-    initial_conditions = SymmapT(value(entry[1]) => value(entry[2]) for entry in initial_conditions)
-
-    # In addition to being supplied with the constructor, bindings are auto-discovered by
-    # MTKBase from variable metadata when Systems are created. The 5-argument System
-    # constructor calls process_variables! which extracts bindings from variables with
-    # symbolic default values. No explicit Catalyst handling is needed.
-    bindings = MT.defsdict(bindings)
-    filter!(!(Base.Fix1(===, MT.COMMON_NOTHING) ∘ last), bindings)
-    MT.check_bindings(ps, bindings)
-
     # Extracts independent variables (iv and sivs), dependent variables (species and variables)
     # and parameters. Sorts so that species comes before variables in unknowns vector.
     iv′ = unwrap(iv)
@@ -477,6 +466,17 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
     unknowns′ = isempty(unknowns) ? SymbolicT[] : sort!(unwrap.(unknowns), by = !isspecies)
     spcs = filter(isspecies, unknowns′)
     ps′ = isempty(ps) ? SymbolicT[] : unwrap.(ps)
+
+    # Process initial_conditions to unwrap Num wrappers.
+    initial_conditions = SymmapT(value(entry[1]) => value(entry[2]) for entry in initial_conditions)
+
+    # In addition to being supplied with the constructor, bindings are auto-discovered by
+    # MTKBase from variable metadata when Systems are created. The 5-argument System
+    # constructor calls process_variables! which extracts bindings from variables with
+    # symbolic default values. No explicit Catalyst handling is needed.
+    bindings = MT.defsdict(bindings)
+    filter!(!(Base.Fix1(===, MT.COMMON_NOTHING) ∘ last), bindings)
+    MT.check_bindings(ps′, bindings)
 
     # Checks that no (by Catalyst) forbidden symbols are used.
     if !disable_forbidden_symbol_check

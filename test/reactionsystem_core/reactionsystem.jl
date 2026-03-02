@@ -741,7 +741,7 @@ let
     @named rs = ReactionSystem(rxs, t, us, ps; initial_conditions, bindings)
     rs_complete = complete(rs)
 
-    # generate different systems from the `ReactionSystem`
+    # Jump and nonlinear systems incompatible with reactions for various reasons.
     default_scale = PhysicalScale.ODE
     all_sys = [
         rs, rs_complete,
@@ -751,21 +751,28 @@ let
     ]
 
     # Checks that all stored bindings and initial conditions are correct.
+    tosym(x) = convert(ModelingToolkitBase.SymbolicT, x)
     ics = [
         unwrap(b1) => tosym(1.0), unwrap(b2) => tosym(2.0), unwrap(b3) => tosym(3.0), unwrap(b4) => tosym(4.0),
         unwrap(Y1) => tosym(0.1), unwrap(Y2) => tosym(0.2), unwrap(Y3) => tosym(0.3), unwrap(Y4) => tosym(0.4),
-        unwrap(L1) => tosym(10.0), unwrap(L2) => tosym(20.0), unwrap(L3) => tosym(30.0), unwrap(L4) => tosym(40.0)
+        unwrap(L1) => tosym(10.0), unwrap(L2) => tosym(20.0), unwrap(L3) => tosym(30.0), unwrap(L4) => tosym(40.0),
+        unwrap(d1) => tosym(100.0), unwrap(d2) => unwrap(χ1),
+        unwrap(U1) => tosym(200.0), unwrap(U2) => unwrap(χ2^3),
+        unwrap(N1) => tosym(300.0), unwrap(N2) => unwrap(χ3 + log(χ4+ 1)),
     ]
     binds = [
         unwrap(c1) => unwrap(θ1), unwrap(c2) => unwrap(θ1 + θ2), unwrap(c3) => unwrap(log(1+θ3)), unwrap(c4) => unwrap(θ4 * θ5^2),
         unwrap(Z1) => unwrap(ϕ1), unwrap(Z2) => unwrap(ϕ1+ϕ2), unwrap(Z3) => unwrap(log(1+ϕ3)), unwrap(Z4) => unwrap(ϕ5 * ϕ4^2),
-        unwrap(M1) => unwrap(ψ1), unwrap(M2) => unwrap(ψ1+ψ2), unwrap(M3) => unwrap(log(1+ψ3)), unwrap(M4) => unwrap(ψ4 * ψ5^2)
+        unwrap(M1) => unwrap(ψ1), unwrap(M2) => unwrap(ψ1+ψ2), unwrap(M3) => unwrap(log(1+ψ3)), unwrap(M4) => unwrap(ψ4 * ψ5^2),
+        unwrap(d3) => tosym(1000.0), unwrap(d4) => unwrap(χ5),
+        unwrap(U3) => tosym(2000.0), unwrap(U4) => unwrap(χ6^3),
+        unwrap(N3) => tosym(3000.0), unwrap(N4) => unwrap(χ7 + log(χ8+ 1)),
     ]
     for sys in all_sys
         @test issetequal((collect(ModelingToolkitBase.get_initial_conditions(sys))), ics)
         @test issetequal((collect(ModelingToolkitBase.get_bindings(sys))), binds)
-        @test issetequal((collect(initial_conditions(sys))), ics)
-        @test issetequal((collect(bindings(sys))), binds)
+        @test issetequal((collect(ModelingToolkitBase.initial_conditions(sys))), ics)
+        @test issetequal((collect(ModelingToolkitBase.bindings(sys))), binds)
     end
 end
 
