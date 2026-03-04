@@ -1223,13 +1223,16 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         include_zero_odes, checks, remove_conserved, use_legacy_noise)
 
     # Determine if we need mtkcompile:
+    # - If user brownians are present, sde_model routes through hybrid_model which requires mtkcompile
     # - If using Brownian-based approach (not legacy), mtkcompile extracts the noise matrix
     # - If there are algebraic equations, mtkcompile handles structural simplification
     # - If structural_simplify is requested explicitly
     has_constraints = has_alg_equations(flatrs) || any(isbc, get_unknowns(flatrs))
+    has_user_brownians = !isempty(MT.brownians(flatrs))
     needs_mtkcompile = structural_simplify ||
                        has_alg_equations(flatrs) ||
                        !use_legacy_noise ||
+                       has_user_brownians ||
                        has_constraints
 
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any,Any}(u0), Dict{Any,Any}(p))

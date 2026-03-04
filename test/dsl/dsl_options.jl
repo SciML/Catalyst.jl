@@ -1125,6 +1125,44 @@ let
     @test Catalyst.isequivalent(rs2, rs3)
 end
 
+# Checks that SDEProblem auto-detects user brownians and routes through mtkcompile
+# without requiring structural_simplify = true.
+let
+    # Model with @brownians + @equations.
+    rn = @reaction_network begin
+        @parameters η
+        @brownians B
+        @equations D(V) ~ X - V + η * B
+        (p, d), 0 <--> X
+    end
+    u0 = [:X => 10.0, :V => 0.0]
+    tspan = (0.0, 10.0)
+    ps = [:p => 10.0, :d => 1.0, :η => 0.5]
+
+    # SDEProblem should work without structural_simplify = true.
+    sprob = SDEProblem(rn, u0, tspan, ps)
+    @test sprob isa SDEProblem
+    sol = solve(sprob, EM(); dt = 0.01)
+    @test SciMLBase.successful_retcode(sol)
+
+    # Model with @brownians + @equations + @continuous_events.
+    rn2 = @reaction_network begin
+        @parameters η Vₘ
+        @brownians B
+        @equations D(V) ~ X - V + η * B
+        @continuous_events begin
+            [V ~ Vₘ] => [V => V / 2]
+        end
+        (p, d), 0 <--> X
+    end
+    u0_2 = [:X => 10.0, :V => 0.0]
+    ps_2 = [:p => 10.0, :d => 1.0, :η => 0.5, :Vₘ => 15.0]
+    sprob2 = SDEProblem(rn2, u0_2, tspan, ps_2)
+    @test sprob2 isa SDEProblem
+    sol2 = solve(sprob2, EM(); dt = 0.01)
+    @test SciMLBase.successful_retcode(sol2)
+end
+
 ### Poissonians ###
 
 # Checks equivalence of a poissonian model created using the DSL and programmatically.
