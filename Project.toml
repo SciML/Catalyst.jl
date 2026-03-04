@@ -75,6 +75,8 @@ StructuralIdentifiability = "0.5.11"
 SymbolicIndexingInterface = "0.3"
 SymbolicUtils = "4.9.1"
 Symbolics = "7.13.0"
+OrdinaryDiffEqCore = "3.15"
+StochasticDiffEq = "6.95"
 julia = "1.10"
 
 [extras]
@@ -87,6 +89,7 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
 OrdinaryDiffEqBDF = "6ad6398a-0878-4a85-9266-38940aa047c8"
+OrdinaryDiffEqCore = "bbf590c4-da51-4f83-b275-828f5024f33c"
 OrdinaryDiffEqDefault = "50262376-6c5a-4cf5-baba-aaf4f84d72d7"
 OrdinaryDiffEqRosenbrock = "43230ef6-c299-4910-a778-202eb28ce4ce"
 OrdinaryDiffEqTsit5 = "b1df2697-797e-41e3-8120-5422d3b24e4a"
@@ -104,7 +107,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["DataInterpolations", "DiffEqCallbacks", "DiffEqNoiseProcess", "DomainSets",
-    "ExplicitImports", "Logging", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqDefault",
-    "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner",
+    "ExplicitImports", "Logging", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqCore",
+    "OrdinaryDiffEqDefault", "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner",
     "Pkg", "Plots", "Random", "SafeTestsets", "StableRNGs",
     "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test"]
