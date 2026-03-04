@@ -206,6 +206,12 @@ and which are now relevant for Catalyst users.
   falls back to object identity (`===`), consistent with ModelingToolkitBase's
   `System`.
 
+#### BREAKING: `structural_simplify` renamed `mtkcompile`
+
+- All instances of `structural_simplify` (whenever as arguments to `ODEProblem` or as a separate 
+function) have been replaced with `mtkcompile`, which serves an identical purpose (with exceptions 
+of the move from ModelingToolkit to ModelingToolkitBase, as described previously).
+
 #### BREAKING: Several functions no longer exported
 The following are now considered internal, no longer exported, and could be
 removed at any time:

@@ -1099,7 +1099,7 @@ function MT.complete(sys::ReactionSystem; flatten = true, kwargs...)
     newparams = OrderedSet{SymbolicT}()
     iv = get_iv(sys)
     MT.collect_scoped_vars!(newunknowns, newparams, sys, iv; depth = -1)
-    # don't update unknowns to not disturb `structural_simplify` order
+    # don't update unknowns to not disturb `mtkcompile` order
     # `GlobalScope`d unknowns will be picked up and added there
     @set! sys.ps = unique!(vcat(get_ps(sys), collect(newparams)))
     if flatten

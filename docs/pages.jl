@@ -63,10 +63,10 @@ pages = Any[
     "inverse_problems/optimization_ode_param_fitting.md",
     "inverse_problems/behaviour_optimisation.md",
     "inverse_problems/structural_identifiability.md",
-    "inverse_problems/global_sensitivity_analysis.md"
-    #"Examples" => Any[
-    #    "inverse_problems/examples/ode_fitting_oscillation.md" # Throws and error due to https://github.com/JuliaDiff/ChainRules.jl/issues/830.
-    #]
+    "inverse_problems/global_sensitivity_analysis.md",
+    "Examples" => Any[
+        "inverse_problems/examples/ode_fitting_oscillation.md"
+    ]
 ],
 "Spatial modelling" => Any[
     "spatial_modelling/discrete_space_reaction_systems.md",
