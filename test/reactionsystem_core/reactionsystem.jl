@@ -779,6 +779,71 @@ let
     end
 end
 
+# Checks that correct bindings and initial conditiosn are stored and used in simulations.
+let
+    # Creates the model.
+    ps1 = @parameters d1_1 d2_1 d2_2 d3_1 d4_1 d4_2
+    ps2 = @parameters X1_1 X2_1 X2_2 X3_1 X4_1 X4_2
+    ps3 = @parameters d1 = d1_1 d2 = d2_1 + d2_2 d3 d4
+    ps4 = @parameters k3_1 k4_1 k4_2
+    ps5 = @parameters Y3_1 Y4_1 Y4_2
+    ps6 = @parameters k1 = 1.0 k2 = 2.0 k3 k4
+    us1 = @species X1(t) = X1_1 X2(t) = X2_1 + X2_2 X3(t) X4(t)
+    us2 = @species Y1(t) = 1.0 Y2(t) = 2.0 Y3(t) Y4(t)
+    rxs = [
+        Reaction(d1, [X1], []),
+        Reaction(d2, [X2], []),
+        Reaction(d3, [X3], []),
+        Reaction(d4, [X4], []),
+        Reaction(k1, [Y1], []),
+        Reaction(k2, [Y2], []),
+        Reaction(k3, [Y3], []),
+        Reaction(k4, [Y4], [])
+    ]
+    bindings = [d3 => d3_1, d4 => d4_1 + d4_2, X3 => X3_1, X4 => X4_1 + X4_2]
+    initial_conditions = [k3 => k3_1, k4 => k4_1 + k4_2, Y3 => Y3_1, Y4 => Y4_1 + Y4_2]
+    @mtkcomplete rs = ReactionSystem(rxs, t, [us1; us2], [ps1; ps2; ps3; ps4; ps5; ps6]; bindings, initial_conditions)
+
+    # Simulates the model as an ODE.
+    ps = [
+        d1_1 => 1.0, d2_1 => 0.5, d2_2 => 1.5, d3_1 => 3.0, d4_1 => 1.5, d4_2 => 2.5,
+        X1_1 => 1.0, X2_1 => 0.5, X2_2 => 1.5, X3_1 => 3.0, X4_1 => 1.5, X4_2 => 2.5,
+        k3_1 => 3.0, k4_1 => 1.5, k4_2 => 2.5,
+        Y3_1 => 3.0, Y4_1 => 1.5, Y4_2 => 2.5
+    ]
+    oprob = ODEProblem(rs, [], 10.0, ps)
+    osol = solve(oprob, Vern7(); saveat = 0.0:0.1:10.0, abstol = 1e-8, reltol = 1e-8)
+
+    # Checks that stored parameter values and initial conditions are correct.
+    @test oprob.ps[d1] == osol.ps[d1] == 1.0
+    @test oprob.ps[d2] == osol.ps[d2] == 2.0
+    @test oprob.ps[d3] == osol.ps[d3] == 3.0
+    @test oprob.ps[d4] == osol.ps[d4] == 4.0
+    @test oprob[X1] == osol[X1][1] == 1.0
+    @test oprob[X2] == osol[X2][1] == 2.0
+    @test oprob[X3] == osol[X3][1] == 3.0
+    @test oprob[X4] == osol[X4][1] == 4.0
+    @test oprob.ps[k1] == osol.ps[k1] == 1.0
+    @test oprob.ps[k2] == osol.ps[k2] == 2.0
+    @test oprob.ps[k3] == osol.ps[k3] == 3.0
+    @test oprob.ps[k4] == osol.ps[k4] == 4.0
+    @test oprob[Y1] == osol[Y1][1] == 1.0
+    @test oprob[Y2] == osol[Y2][1] == 2.0
+    @test oprob[Y3] == osol[Y3][1] == 3.0
+    @test oprob[Y4] == osol[Y4][1] == 4.0
+
+    # Checks that simulations are correct.
+    degradation_series(x0, d; range = 0.0:0.1:10.0) = x0 * exp.(-d .* range)
+    @test osol[X1] ≈ degradation_series(1.0, 1.0)
+    @test osol[X2] ≈ degradation_series(2.0, 2.0)
+    @test osol[X3] ≈ degradation_series(3.0, 3.0)
+    @test osol[X4] ≈ degradation_series(4.0, 4.0)
+    @test osol[Y1] ≈ degradation_series(1.0, 1.0)
+    @test osol[Y2] ≈ degradation_series(2.0, 2.0)
+    @test osol[Y3] ≈ degradation_series(3.0, 3.0)
+    @test osol[Y4] ≈ degradation_series(4.0, 4.0)
+end
+
 ### Other Tests ###
 
 # Test for https://github.com/SciML/ModelingToolkit.jl/issues/436.
