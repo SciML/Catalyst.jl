@@ -503,7 +503,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
     ps = get_ps(rs)
     initeqs = Equation[]
-    defs = MT.initial_conditions(rs)
+    ics = MT.initial_conditions(rs)
     obs = MT.observed(rs)
 
     # make dependent species observables and add conservation constants as parameters
@@ -545,7 +545,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
         append!(eqs, ceqs)
     end
 
-    eqs, sts, ps, obs, defs, initeqs
+    eqs, sts, ps, obs, ics, initeqs
 end
 
 ### Utility ###
@@ -894,19 +894,22 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
     ists, ispcs = get_indep_sts(fullrs, (remove_conserved && !include_cl_as_eqs))
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
         as_odes = false, include_zero_odes = false, expand_catalyst_funs)
-    eqs, us, ps, obs, defs, initeqs = addconstraints!(eqs, fullrs, ists, ispcs;
+    eqs, us, ps, obs, ics, initeqs = addconstraints!(eqs, fullrs, ists, ispcs;
         remove_conserved, compute_cl_initeqs = !include_cl_as_eqs, include_cl_as_eqs)
+
+    # Comoutes the correct initial conditions and bindings.
+    initial_conditions, bindings = MT.convert_bindings_for_time_independent_system(rs)
+    initial_conditions = merge(initial_conditions, ics)
 
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.
     all_differentials_permitted || nonlinear_convert_differentials_check(rs)
     eqs = Equation[remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
-
     System(eqs, us, ps;
         name,
         observed = obs, initialization_eqs = initeqs,
-        bindings = MT.get_bindings(rs),
-        initial_conditions = merge(initial_conditions, defs),
+        bindings,
+        initial_conditions,
         checks,
         metadata = MT.get_metadata(rs),
         kwargs...)
@@ -1003,13 +1006,13 @@ function sde_model(rs::ReactionSystem;
             remove_conserved, expand_catalyst_funs)
         noiseeqs = assemble_diffusion(flatrs, ists, ispcs; combinatoric_ratelaws,
             remove_conserved, expand_catalyst_funs)
-        eqs, us, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
+        eqs, us, ps, obs, ics = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
 
         return MT.System(eqs, get_iv(flatrs), us, ps;
             noise_eqs = noiseeqs,
             observed = obs,
             name,
-            initial_conditions = merge(initial_conditions, defs),
+            initial_conditions = merge(initial_conditions, ics),
             checks,
             continuous_events = MT.get_continuous_events(flatrs),
             discrete_events = MT.get_discrete_events(flatrs),
