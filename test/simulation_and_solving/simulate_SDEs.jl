@@ -523,48 +523,49 @@ let
     @test g_ode ≈ g_jump
 end
 
-# Test E: Statistical correctness test with a second-order degradation model.
+# Test E: Correctness test comparing Catalyst use_jump_ratelaws against hand-coded
+# drift and diffusion functions.
 # Model: k_prod, 0 --> X  and  k_deg, 2X --> 0
-# We verify that simulations with use_jump_ratelaws run and produce reasonable statistics.
+# Drift (same for both): dX/dt = k_prod - 2 * k_deg * X^2 / 2 = k_prod - k_deg * X^2
+# Noise with ODE ratelaws:
+#   reaction 1 (0 --> X):  +sqrt(k_prod) * dW1
+#   reaction 2 (2X --> 0): -2*sqrt(k_deg * X^2 / 2) * dW2
+# Noise with jump ratelaws:
+#   reaction 1 (0 --> X):  +sqrt(k_prod) * dW1
+#   reaction 2 (2X --> 0): -2*sqrt(k_deg * X * (X-1) / 2) * dW2
 let
     rn = @reaction_network begin
         k_prod, 0 --> X
         k_deg, 2X --> 0
     end
 
-    # Choose parameters so steady state is well away from zero.
-    # At steady state: k_prod = k_deg * X^2 (ODE), so X_ss = sqrt(k_prod / k_deg)
-    k_prod_val = 10000.0
-    k_deg_val = 0.1
-    X_ss = sqrt(k_prod_val / k_deg_val)  # ≈ 316.2
+    # Test at several state values well away from zero
+    for X_val in [50.0, 100.0, 200.0, 500.0]
+        u0 = [:X => X_val]
+        ps = [:k_prod => 100.0, :k_deg => 0.5]
+        k_prod_val = 100.0
+        k_deg_val = 0.5
 
-    u0 = [:X => X_ss]
-    ps = [:k_prod => k_prod_val, :k_deg => k_deg_val]
-    tspan = (0.0, 20.0)
+        # --- Check drift is the same for both settings ---
+        du_f_ode = f_eval(rn, u0, ps, 0.0)
+        # Drift = k_prod - 2 * (k_deg * X^2 / 2) = k_prod - k_deg * X^2
+        @test du_f_ode[1] ≈ k_prod_val - k_deg_val * X_val^2
 
-    N = 500
-    vals_ode = zeros(N)
-    vals_jump = zeros(N)
+        # --- Check diffusion with use_jump_ratelaws=false (ODE rate laws) ---
+        g_ode = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = false)
+        # Reaction 1: net stoich +1, rate = k_prod → noise coeff = +sqrt(k_prod)
+        @test g_ode[1, 1] ≈ sqrt(k_prod_val)
+        # Reaction 2: net stoich -2, rate = k_deg*X^2/2 → noise coeff = -2*sqrt(k_deg*X^2/2)
+        @test g_ode[1, 2] ≈ -2 * sqrt(k_deg_val * X_val^2 / 2)
 
-    for i in 1:N
-        seed = rand(rng, 1:100000)
-        sprob_ode = SDEProblem(rn, u0, tspan, ps; use_jump_ratelaws = false)
-        sol_ode = solve(sprob_ode, ImplicitEM(); dt = 0.01, saveat = [20.0], seed)
-        vals_ode[i] = sol_ode[:X][end]
+        # --- Check diffusion with use_jump_ratelaws=true (jump rate laws) ---
+        g_jump = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = true)
+        # Reaction 1: same (zero-order, no substrate dependence)
+        @test g_jump[1, 1] ≈ sqrt(k_prod_val)
+        # Reaction 2: rate = k_deg*X*(X-1)/2 → noise coeff = -2*sqrt(k_deg*X*(X-1)/2)
+        @test g_jump[1, 2] ≈ -2 * sqrt(k_deg_val * X_val * (X_val - 1) / 2)
 
-        sprob_jump = SDEProblem(rn, u0, tspan, ps; use_jump_ratelaws = true)
-        sol_jump = solve(sprob_jump, ImplicitEM(); dt = 0.01, saveat = [20.0], seed)
-        vals_jump[i] = sol_jump[:X][end]
+        # Verify the two differ for the second-order reaction
+        @test !(g_ode[1, 2] ≈ g_jump[1, 2])
     end
-
-    # Both should have mean near the ODE steady state
-    @test isapprox(mean(vals_ode), X_ss; rtol = 0.1)
-    @test isapprox(mean(vals_jump), X_ss; rtol = 0.1)
-
-    # The variances should differ (second-order reaction uses different noise intensity)
-    # We just check both are positive and finite
-    @test var(vals_ode) > 0
-    @test var(vals_jump) > 0
-    @test isfinite(var(vals_ode))
-    @test isfinite(var(vals_jump))
 end
