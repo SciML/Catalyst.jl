@@ -135,7 +135,7 @@ We now study the system as a Chemical Langevin Dynamics SDE model:
 u0 = [:V => 25.0, :G => 50.0, :Gᴾ => 0.0]
 tspan = (0.0, 20.0)
 ps = [:Vₘ => 50.0, :g => 0.3, :kₚ => 100.0, :kᵢ => 60.0, :σ => 0.5]
-sprob = SDEProblem(cell_model, u0, tspan, ps; mtkcompile = true)
+sprob = SDEProblem(cell_model, u0, tspan, ps)
 ```
 This problem encodes the following stochastic differential equation model:
 ```math

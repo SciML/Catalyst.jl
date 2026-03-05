@@ -239,6 +239,6 @@ edge_parameters(dsrs)
 ```
 
 ## [Spatial modelling limitations](@id spatial_dspace_modelling_intro_limitations)
-Many features which are supported for non-spatial `ReactionSystem`s are currently unsupported for [`DiscreteSpaceReactionSystem`](@ref)s. This includes [observables](@ref dsl_advanced_options_observables), [algebraic and differential equations](@ref constraint_equations), [hierarchical models](@ref compositional_modeling), and [events](@ref events). It is possible that these features will be supported in the future. Furthermore, [removal of conserved quantities](@ref conservation_laws) is not supported when creating spatial `ODEProblem`s.
+Many features which are supported for non-spatial `ReactionSystem`s are currently unsupported for [`DiscreteSpaceReactionSystem`](@ref)s. This includes [observables](@ref dsl_advanced_options_observables), [algebraic and differential equations](@ref coupled_models), [hierarchical models](@ref compositional_modeling), and [events](@ref events). It is possible that these features will be supported in the future. Furthermore, [removal of conserved quantities](@ref conservation_laws) is not supported when creating spatial `ODEProblem`s.
 
 If you are using Catalyst's features for spatial modelling, please give us feedback on how we can improve these features. Additionally, just letting us know that you use these features is useful, as it helps inform us whether continued development of spatial modelling features is worthwhile. 
