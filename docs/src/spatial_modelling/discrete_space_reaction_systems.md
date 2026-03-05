@@ -70,7 +70,7 @@ Spatial reactions describe reaction events which involve species across two conn
 - A rate at which the reaction occurs. As for non-spatial reactions, this can be any expression. However, currently, it may only consist of parameters and other constants. 
 - A single species which is transported from one compartment to an adjacent one.
 
-At the occurrence of a transport reaction, the specific species moves to the adjacent compartment. Many common spatial models can be represented using transport reactions only. These can model phenomena such as diffusion or constant flux. A transportation reaction can be created using the `@transportation_reaction` macro. E.g. above we used
+At the occurrence of a transport reaction, the specific species moves to the adjacent compartment. Many common spatial models can be represented using transport reactions only. These can model phenomena such as diffusion or constant flux. A transport reaction can be created using the `@transport_reaction` macro. E.g. above we used
 ```@example spatial_intro_spat_rxs
 using Catalyst # hide
 diffusion_rx = @transport_reaction D X1
@@ -84,7 +84,7 @@ nothing # hide
 ```
 
 !!! note
-    Any species which occurs is occurs in a transport reaction that is used to construct a [`DiscreteSpaceReactionSystem`](@ref) must also occur in the corresponding non-spatial [`ReactionSystem`](@ref).
+    Any species which occurs in a transport reaction that is used to construct a [`DiscreteSpaceReactionSystem`](@ref) must also occur in the corresponding non-spatial [`ReactionSystem`](@ref).
 
 ### [Creating transport reactions programmatically](@id spatial_dspace_modelling_intro_spatial_reactions_programmatic)
 If models are created [programmatically](@ref programmatic_CRN_construction) it is also possible to create transportation reactions programmatically. To do so, use the `TransportReaction` constructor, providing first the rate and then the transported species:
