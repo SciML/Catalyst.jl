@@ -49,6 +49,19 @@ let
     @test isapprox(hopf_bif_point.param, 1.5, atol=1e-5)
 
     # Tests that an error is thrown if information of conserved species is not fully provided.
+    # TEMPORARY DIAGNOSTIC: Debug CI failure on Julia 1.10 LTS Linux x86_64
+    println("=== DIAGNOSTIC: BifurcationProblem conservation law error check ===")
+    println("Julia version: ", VERSION)
+    println("Platform: ", Sys.MACHINE)
+    _diag_m = which(BifurcationProblem, Tuple{typeof(extended_brusselator), typeof(u0_guess), typeof(p_start), Symbol})
+    println("Method dispatch: ", _diag_m)
+    try
+        _diag_bprob = BifurcationProblem(extended_brusselator, u0_guess, p_start, :B; plot_var=:V, u0 = [])
+        println("NO EXCEPTION THROWN! typeof(result) = ", typeof(_diag_bprob))
+    catch e
+        println("Exception thrown: ", typeof(e), " - ", sprint(showerror, e))
+    end
+    println("=== END DIAGNOSTIC ===")
     @test_throws Exception BifurcationProblem(extended_brusselator, u0_guess, p_start, :B; plot_var=:V, u0 = [])
 end
 
@@ -179,6 +192,23 @@ let
     @test all(1 ./ k1s .* (1 .- xs) .≈ xs)
 
     # Checks that there is an error if information for conserved quantities computation is not provided.
+    # TEMPORARY DIAGNOSTIC: Debug CI failure on Julia 1.10 LTS Linux x86_64
+    println("=== DIAGNOSTIC 2: Nested model conservation law error check ===")
+    _diag_m2 = which(BifurcationProblem, Tuple{typeof(rn), typeof(u_guess), typeof(p_start), typeof(k1)})
+    println("Method dispatch: ", _diag_m2)
+    println("num_cons_laws: ", Catalyst.num_cons_laws(rn))
+    println("conslaw_species: ", Catalyst.conslaw_species(rn))
+    import ModelingToolkitBase as MT
+    for sp in Catalyst.conslaw_species(rn)
+        println("  $sp: hasdefault=$(MT.hasdefault(sp))")
+    end
+    try
+        _diag_bprob2 = BifurcationProblem(rn, u_guess, p_start, k1; plot_var = X1)
+        println("NO EXCEPTION THROWN! typeof(result) = ", typeof(_diag_bprob2))
+    catch e
+        println("Exception thrown: ", typeof(e), " - ", sprint(showerror, e))
+    end
+    println("=== END DIAGNOSTIC 2 ===")
     @test_throws Exception BifurcationProblem(rn, u_guess, p_start, k1; plot_var = X1)
 end
 
