@@ -432,3 +432,139 @@ let
         end
     end
 end
+
+### Tests for `use_jump_ratelaws` kwarg ###
+
+# Test A: Noise coefficient values for second-order reaction.
+# For `k, 2X --> Y`, ODE rate law = k*X^2/2, jump rate law = k*X*(X-1)/2.
+let
+    rn = @reaction_network begin
+        k, 2X --> Y
+    end
+    u0 = [:X => 100.0, :Y => 10.0]
+    ps = [:k => 1.0]
+
+    g_ode = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = false)
+    g_jump = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = true)
+
+    # Expected rate laws
+    ode_rl = 1.0 * 100.0^2 / 2   # 5000.0
+    jump_rl = 1.0 * 100.0 * 99.0 / 2  # 4950.0
+
+    # X has net stoichiometry -2, Y has +1
+    @test g_ode[1, 1] ≈ -2 * sqrt(ode_rl)
+    @test g_ode[2, 1] ≈ sqrt(ode_rl)
+    @test g_jump[1, 1] ≈ -2 * sqrt(jump_rl)
+    @test g_jump[2, 1] ≈ sqrt(jump_rl)
+
+    # They should differ
+    @test !(g_ode ≈ g_jump)
+end
+
+# Test B: First-order reactions are identical, higher-order differ.
+let
+    rn = @reaction_network begin
+        k1, X --> Y
+        k2, 2Y --> Z
+    end
+    u0 = [:X => 50.0, :Y => 80.0, :Z => 20.0]
+    ps = [:k1 => 1.0, :k2 => 0.5]
+
+    g_ode = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = false)
+    g_jump = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = true)
+
+    # First reaction column should be identical (first order)
+    @test g_ode[:, 1] ≈ g_jump[:, 1]
+
+    # Second reaction column should differ (second order)
+    @test !(g_ode[:, 2] ≈ g_jump[:, 2])
+end
+
+# Test C: Brownian (non-legacy) path also works with use_jump_ratelaws.
+let
+    rn = @reaction_network begin
+        k, 2X --> Y
+    end
+    u0 = [:X => 100.0, :Y => 10.0]
+    ps = [:k => 1.0]
+
+    # Use mtkcompile to force the Brownian-based path
+    prob_ode = SDEProblem(rn, u0, (0.0, 1.0), ps; mtkcompile = true, use_jump_ratelaws = false)
+    prob_jump = SDEProblem(rn, u0, (0.0, 1.0), ps; mtkcompile = true, use_jump_ratelaws = true)
+
+    # Evaluate the diffusion functions at initial conditions
+    du_ode = prob_ode.g(prob_ode.u0, prob_ode.p, 0.0)
+    du_jump = prob_jump.g(prob_jump.u0, prob_jump.p, 0.0)
+
+    # They should differ for this second-order reaction
+    @test !(du_ode ≈ du_jump)
+
+    # Expected rate laws
+    ode_rl = 1.0 * 100.0^2 / 2
+    jump_rl = 1.0 * 100.0 * 99.0 / 2
+
+    # Check magnitudes match expectations (signs may vary by path)
+    @test any(x -> abs(x) ≈ 2 * sqrt(ode_rl), du_ode)
+    @test any(x -> abs(x) ≈ 2 * sqrt(jump_rl), du_jump)
+end
+
+# Test D: `only_use_rate=true` reactions are unaffected by use_jump_ratelaws.
+let
+    rn = @reaction_network begin
+        k*X^2, X => Y
+    end
+    u0 = [:X => 50.0, :Y => 10.0]
+    ps = [:k => 1.0]
+
+    g_ode = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = false)
+    g_jump = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = true)
+
+    # Should be identical since only_use_rate=true
+    @test g_ode ≈ g_jump
+end
+
+# Test E: Statistical correctness test with a second-order degradation model.
+# Model: k_prod, 0 --> X  and  k_deg, 2X --> 0
+# We verify that simulations with use_jump_ratelaws run and produce reasonable statistics.
+let
+    rn = @reaction_network begin
+        k_prod, 0 --> X
+        k_deg, 2X --> 0
+    end
+
+    # Choose parameters so steady state is well away from zero.
+    # At steady state: k_prod = k_deg * X^2 (ODE), so X_ss = sqrt(k_prod / k_deg)
+    k_prod_val = 10000.0
+    k_deg_val = 0.1
+    X_ss = sqrt(k_prod_val / k_deg_val)  # ≈ 316.2
+
+    u0 = [:X => X_ss]
+    ps = [:k_prod => k_prod_val, :k_deg => k_deg_val]
+    tspan = (0.0, 20.0)
+
+    N = 500
+    vals_ode = zeros(N)
+    vals_jump = zeros(N)
+
+    for i in 1:N
+        seed = rand(rng, 1:100000)
+        sprob_ode = SDEProblem(rn, u0, tspan, ps; use_jump_ratelaws = false)
+        sol_ode = solve(sprob_ode, ImplicitEM(); dt = 0.01, saveat = [20.0], seed)
+        vals_ode[i] = sol_ode[:X][end]
+
+        sprob_jump = SDEProblem(rn, u0, tspan, ps; use_jump_ratelaws = true)
+        sol_jump = solve(sprob_jump, ImplicitEM(); dt = 0.01, saveat = [20.0], seed)
+        vals_jump[i] = sol_jump[:X][end]
+    end
+
+    # Both should have mean near the ODE steady state
+    @test isapprox(mean(vals_ode), X_ss; rtol = 0.1)
+    @test isapprox(mean(vals_jump), X_ss; rtol = 0.1)
+
+    # The variances should differ (second-order reaction uses different noise intensity)
+    # We just check both are positive and finite
+    @test var(vals_ode) > 0
+    @test var(vals_jump) > 0
+    @test isfinite(var(vals_ode))
+    @test isfinite(var(vals_jump))
+end
