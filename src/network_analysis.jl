@@ -969,14 +969,15 @@ function conservationlaw_errorcheck(rs, pre_varmap)
 end
 
 # Returns a vector with all species that are invovled in conservation laws.
+# Note: uses Symbolics.get_variables! instead of MT.collect_vars! because
+# the latter fails to extract variables on Julia 1.10 LTS (empty result
+# despite valid input expressions).
 function conslaw_species(rs::ReactionSystem)
     conservationlaws(rs)
     nps = get_networkproperties(rs)
     cl_sps = OrderedSet{SymbolicT}()
-    cl_ps = OrderedSet{SymbolicT}() # Unused, only an input.
-    iv = Catalyst.get_iv(rs)
     for cons_eq in nps.constantdefs
-        MT.collect_vars!(cl_sps, cl_ps, cons_eq.rhs, iv)
+        get_variables!(cl_sps, cons_eq.rhs)
     end
     return cl_sps
 end
