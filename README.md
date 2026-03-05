@@ -1,15 +1,14 @@
 # Catalyst.jl
 
 [![Latest Release (for users)](https://img.shields.io/badge/docs-latest_release_(for_users)-blue.svg)](https://docs.sciml.ai/Catalyst/stable/)
-[![API Latest Release (for users)](https://img.shields.io/badge/API-latest_release_(for_users)-blue.svg)](https://docs.sciml.ai/Catalyst/stable/api/)
 [![Master (for developers)](https://img.shields.io/badge/docs-master_branch_(for_devs)-blue.svg)](https://docs.sciml.ai/Catalyst/dev/)
+<!--[![API Latest Release (for users)](https://img.shields.io/badge/API-latest_release_(for_users)-blue.svg)](https://docs.sciml.ai/Catalyst/stable/api/)
 [![API Master (for developers](https://img.shields.io/badge/API-master_branch_(for_devs)-blue.svg)](https://docs.sciml.ai/Catalyst/dev/api/)
-<!--[![Join the chat at https://julialang.zulipchat.com #sciml-bridged](https://img.shields.io/static/v1?label=Zulip&message=chat&color=9558b2&labelColor=389826)](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged)-->
+[![Join the chat at https://julialang.zulipchat.com #sciml-bridged](https://img.shields.io/static/v1?label=Zulip&message=chat&color=9558b2&labelColor=389826)](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged)-->
 
 [![Tests](https://github.com/SciML/Catalyst.jl/actions/workflows/Test.yml/badge.svg)](https://github.com/SciML/Catalyst.jl/actions/workflows/Test.yml)
 [![Extensions Tests](https://github.com/SciML/Catalyst.jl/actions/workflows/TestExtensions.yml/badge.svg)](https://github.com/SciML/Catalyst.jl/actions/workflows/TestExtensions.yml)
-[![Documentation](https://github.com/SciML/Catalyst.jl/actions/workflows/Documentation.yml/badge.svg)](https://github.com/SciML/Catalyst.jl/actions/workflows/Documentation.yml)
-[![Codecov](https://codecov.io/gh/SciML/Catalyst.jl/graph/badge.svg?branch=master)](https://codecov.io/gh/SciML/Catalyst.jl)
+<!--[![Codecov](https://codecov.io/gh/SciML/Catalyst.jl/graph/badge.svg?branch=master)](https://codecov.io/gh/SciML/Catalyst.jl)-->
 
 [![ColPrac: Contributor's Guide on Collaborative Practices for Community Packages](https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet)](https://github.com/SciML/ColPrac)
 [![SciML Code Style](https://img.shields.io/static/v1?label=code%20style&message=SciML&color=9558b2&labelColor=389826)](https://github.com/SciML/SciMLStyle)

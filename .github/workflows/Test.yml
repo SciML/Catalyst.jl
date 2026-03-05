@@ -91,9 +91,12 @@ jobs:
           - Hybrid
           - Misc
           - Spatial
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
+    uses: "SciML/.github/.github/workflows/tests.yml@v1"
+    with:
+      julia-version: "${{ matrix.version }}"
+      group: "${{ matrix.group }}"
+      coverage: false
+    secrets: "inherit"
 
       - name: "Setup Julia ${{ matrix.version }}"
         uses: julia-actions/setup-julia@v2

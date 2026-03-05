@@ -45,7 +45,7 @@ jobs:
 
       - name: "Instantiate and precompile extensions environment"
         run: |
-          julia --code-coverage=user --check-bounds=yes --compiled-modules=yes --inline=yes \
+          julia --check-bounds=yes --compiled-modules=yes --inline=yes \
                 --project=test/extensions -e '
             using Pkg
             Pkg.develop(PackageSpec(path=pwd()))
@@ -55,18 +55,6 @@ jobs:
 
       - name: "Run Extensions tests"
         run: |
-          julia --code-coverage=user --check-bounds=yes --compiled-modules=yes --inline=yes \
+          julia --check-bounds=yes --compiled-modules=yes --inline=yes \
                 --project=test/extensions --color=yes \
                 test/runtests_extensions.jl
-
-      - uses: julia-actions/julia-processcoverage@v1
-        with:
-          directories: "src,ext"
-
-      - name: "Report Coverage with Codecov"
-        uses: codecov/codecov-action@v5
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        with:
-          files: lcov.info
-          token: "${{ secrets.CODECOV_TOKEN }}"
-          fail_ci_if_error: true
