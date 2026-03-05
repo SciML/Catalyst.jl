@@ -36,8 +36,6 @@ jobs:
       - name: "Cache Julia packages"
         uses: julia-actions/cache@v2
         with:
-          include-matrix: "false"
-          cache-name: "extensions-cache;julia=${{ matrix.version }}"
           token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: "Build main package"
