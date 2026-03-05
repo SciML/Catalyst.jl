@@ -360,7 +360,7 @@ let
 
     # Should create an SDEProblem (has brownians → SDE path).
     # Note: default_scale=ODE ensures the reaction is treated as ODE, not Jump.
-    prob = HybridProblem(rn, u0, tspan, ps; default_scale = PhysicalScale.ODE, structural_simplify = true)
+    prob = HybridProblem(rn, u0, tspan, ps; default_scale = PhysicalScale.ODE, mtkcompile = true)
     @test prob isa SDEProblem
 
     # Should be solvable.

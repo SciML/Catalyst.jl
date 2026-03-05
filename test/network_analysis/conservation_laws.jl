@@ -131,7 +131,7 @@ let
         nprob1 = NonlinearProblem{true}(nsys, merge(Dict(u0), Dict(p)))
         nprob1b = NonlinearProblem{true}(nsys_ss, merge(Dict(u0), Dict(p)))
         nprob2 = NonlinearProblem(rn, u0, p; remove_conserved = true)
-        nprob2b = NonlinearProblem(rn, u0, p; remove_conserved = true, structural_simplify = true)
+        nprob2b = NonlinearProblem(rn, u0, p; remove_conserved = true, strucmtkcompiletural_simplify = true)
         nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
         nsol1b = solve(nprob1b, NewtonRaphson(); abstol = 1e-8)
         nsol2 = solve(nprob2, NewtonRaphson(); abstol = 1e-8)
@@ -364,7 +364,7 @@ let
     sprob = SDEProblem(rn, ss, 1.0, ps; jac = true)
     sprob_rc = SDEProblem(rn, ss, 1.0, ps; jac = true, remove_conserved = true)
     nlprob = NonlinearProblem(rn, ss, ps; jac = true)
-    nlprob_rc = NonlinearProblem(rn, ss, ps; jac = true, remove_conserved = true, structural_simplify = true)
+    nlprob_rc = NonlinearProblem(rn, ss, ps; jac = true, remove_conserved = true, mtkcompile = true)
 
     # Checks that removing conservation laws generates non-singular Jacobian (and else that it is singular).
     @test is_singular(oprob) == true
@@ -533,7 +533,7 @@ let
     u0 = [:X1 => 1.0, :X2 => 2.0, :X3 => 3.0]
     ps = [:k1 => 0.1, :k2 => 0.2, :k3 => 0.3, :k4 => 0.4]
 
-    # WITHOUT structural_simplify
+    # WITHOUT mtkcompile
     nlsys = ss_ode_model(rn; remove_conserved = true)
     nlsys1 = complete(nlsys)
     nlprob1 = NonlinearProblem(nlsys1, [u0; ps])
@@ -570,7 +570,7 @@ let
     @test_broken integ1[:X3] == 3.0
     @test integ1.ps[:Γ][1] == 4.0
 
-    # WITH structural_simplify
+    # WITH mtkcompile
     nlsys2 = mtkcompile(nlsys)
     nlprob2 = NonlinearProblem(nlsys2, [u0; ps])
 
