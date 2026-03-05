@@ -220,6 +220,7 @@ substoichmat
 prodstoichmat
 netstoichmat
 reactionrates
+PhysicalScale
 ```
 
 ## [Reaction metadata](@id api_rx_metadata)
