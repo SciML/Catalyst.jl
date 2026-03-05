@@ -8,10 +8,10 @@ Built on [ModelingToolkitBase.jl](https://github.com/SciML/ModelingToolkit.jl/tr
 
 - [**DSL for reaction networks**](@ref dsl_description) — a readable, concise format for specifying models using chemical reaction notation.
 - [**Multiple simulation types**](@ref simulation_intro) — generate and simulate ODE, steady-state ODE, SDE, jump, and hybrid models from a single [`ReactionSystem`](@ref).
-- [**Coupled models**](@ref constraint_equations_coupling_constraints) — combine reactions with differential equations, [events](@ref events), Brownian noise (`@brownians`), and Poisson jumps (`@poissonians`).
+- [**Coupled models**](@ref coupled_models) — combine reactions with differential equations, [events](@ref events), Brownian noise (`@brownians`), and Poisson jumps (`@poissonians`).
 - [**Network analysis**](@ref network_analysis_structural_aspects) — compute linkage classes, deficiencies, reversibility, and other network properties.
 - [**Compositional modeling**](@ref compositional_modeling) — build models hierarchically using [`@network_component`](@ref), [`compose`](@ref), and [`extend`](@ref).
-- [**Spatial modeling**](@ref spatial_modelling) — simulate reaction networks on discrete spatial domains.
+- [**Spatial modeling**](@ref spatial_dspace_modelling_intro) — simulate reaction networks on discrete spatial domains.
 - [**Steady state analysis**](@ref homotopy_continuation) — find and analyze steady states, stability, and bifurcation diagrams.
 - [**Inverse problems**](@ref optimization_parameter_fitting) — parameter estimation, sensitivity analysis, and structural identifiability.
 - [**Model I/O**](@ref model_file_import_export) — import from SBML and BioNetGen `.net` files, export to LaTeX and other formats.
@@ -179,7 +179,7 @@ We now study the system as a Chemical Langevin Dynamics SDE model:
 u0 = [:V => 25.0, :G => 50.0, :Gᴾ => 0.0]
 tspan = (0.0, 20.0)
 ps = [:Vₘ => 50.0, :g => 0.3, :kₚ => 100.0, :kᵢ => 60.0, :σ => 0.5]
-sprob = SDEProblem(cell_model, u0, tspan, ps; mtkcompile = true)
+sprob = SDEProblem(cell_model, u0, tspan, ps)
 ```
 This problem encodes the following stochastic differential equation model:
 ```math

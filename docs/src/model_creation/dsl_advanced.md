@@ -104,7 +104,7 @@ Generally, there are four main reasons for specifying species/parameters using t
 4. To designate a species or parameters that do not occur in reactions, but are still part of the model (e.g a [parametric initial condition](@ref dsl_advanced_options_parametric_initial_conditions))
 
 !!! warning
-    Catalyst's DSL automatically infer species and parameters from the input. However, it only does so for *quantities that appear in reactions*. Until now this has not been relevant. However, this tutorial will demonstrate cases where species/parameters that are not part of reactions are used. These *must* be designated using either the `@species` or `@parameters` options (or the `@variables` option, which is described [later](@ref constraint_equations)).
+    Catalyst's DSL automatically infer species and parameters from the input. However, it only does so for *quantities that appear in reactions*. Until now this has not been relevant. However, this tutorial will demonstrate cases where species/parameters that are not part of reactions are used. These *must* be designated using either the `@species` or `@parameters` options (or the `@variables` option, which is described [later](@ref coupled_models)).
 
 ### [Setting default values for species and parameters](@id dsl_advanced_options_default_vals)
 When declaring species/parameters using the `@species` and `@parameters` options, one can also assign them default values (by appending them with `=` followed by the desired default value). E.g here we set `X`'s default initial condition value to $1.0$, and `p` and `d`'s default values to $1.0$ and $0.2$, respectively:
@@ -182,7 +182,7 @@ two_state_system = @reaction_network begin
     (ka,kD), Xᵢ <--> Xₐ
 end
 ```
-A metadata can be given to only a subset of a system's species/parameters, and a quantity can be given several metadata entries. To give several metadata, separate each by a `,`. Here we only provide a description for `kA`, for which we also provide a [`bounds` metadata](https://docs.sciml.ai/ModelingToolkit/dev/basics/Variable_metadata/#Bounds),
+A metadata can be given to only a subset of a system's species/parameters, and a quantity can be given several metadata entries. To give several metadata, separate each by a `,`. Here we only provide a description for `kA`, for which we also provide a [`bounds` metadata](https://docs.sciml.ai/ModelingToolkit/dev/API/variables/#Bounds),
 ```@example dsl_advanced_metadata
 two_state_system = @reaction_network begin
     @parameters kA [description="Activation rate", bounds=(0.01,10.0)]
@@ -374,7 +374,7 @@ plot!(ylimit = (minimum(sol[:Xtot])*0.95, maximum(sol[:Xtot])*1.05)) # hide
 ```
 to plot the observables (rather than the species).
 
-Observables can be defined using complicated expressions containing species, parameters, and [variables](@ref constraint_equations) (but not other observables). In the following example (which uses a [parametric stoichiometry](@ref dsl_description_stoichiometries_parameters)) `X` polymerises to form a complex `Xn` containing `n` copies of `X`. Here, we create an observable describing the total number of `X` molecules in the system:
+Observables can be defined using complicated expressions containing species, parameters, and [variables](@ref coupled_models) (but not other observables). In the following example (which uses a [parametric stoichiometry](@ref dsl_description_stoichiometries_parameters)) `X` polymerises to form a complex `Xn` containing `n` copies of `X`. Here, we create an observable describing the total number of `X` molecules in the system:
 ```@example dsl_advanced_observables
 rn = @reaction_network begin
     @observables Xtot ~ X + n*Xn
@@ -394,7 +394,7 @@ end
 nothing # hide
 ```
 
-Observables are by default considered [variables](@ref constraint_equations) (not species). To designate them as a species, they can be pre-declared using the `@species` option. I.e. Here `Xtot` becomes a species:
+Observables are by default considered [variables](@ref coupled_models) (not species). To designate them as a species, they can be pre-declared using the `@species` option. I.e. Here `Xtot` becomes a species:
 ```@example dsl_advanced_observables
 rn = @reaction_network begin
     @species Xtot(t)
@@ -602,6 +602,7 @@ generates a single term $-k*[X]$:
 ```@example dsl_advanced_disable_ma
 using Latexify
 latexify(rn; form = :ode)
+latexify(rn; form = :ode, math_delimiters = true) # hide
 ```
 
 It is possible to remove the substrate contribution by using any of the following non-filled arrows when declaring the reaction: `<=`, `⇐`, `⟽`, `=>`, `⇒`, `⟾`, `⇔`, `⟺`. This means that the reaction
@@ -610,6 +611,7 @@ rn = @reaction_network begin
   k, X => ∅
 end
 latexify(rn; form = :ode)
+latexify(rn; form = :ode, math_delimiters = true) # hide
 ```
 will occur at rate $d[X]/dt = -k$ (which might become a problem since $[X]$ will be degraded at a constant rate even when very small or equal to 0). This functionality allows the user to fully customise the ODEs generated by their models. 
 
@@ -619,6 +621,6 @@ rn = @reaction_network begin
   k, 2*X ⇒ ∅
 end
 latexify(rn; form = :ode)
+latexify(rn; form = :ode, math_delimiters = true) # hide
 ```
 has rate $d[X]/dt = -2 k$.
-
