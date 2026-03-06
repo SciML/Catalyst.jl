@@ -13,6 +13,7 @@ function activate_extensions_env()
 end
 
 ### Run Tests ###
+
 @time begin
     if GROUP == "All" || GROUP == "Modeling"
         # Tests the `ReactionSystem` structure and its properties.
