@@ -51,7 +51,7 @@ oprob = ODEProblem(brusselator, u0, tspan, p)
 function solve_brusselator(A, B, X0, Y0, prob = oprob)
     p = [:A => A, :B => B]
     u0 = [:X => X0, :Y => Y0]
-    newprob = remake(prob, p=p, u0=u0)
+    newprob = remake(prob; p, u0)
     solve(newprob, Tsit5(), saveat = 0.1) 
 end
 ```
