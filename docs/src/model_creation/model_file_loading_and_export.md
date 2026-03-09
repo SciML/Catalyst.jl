@@ -16,7 +16,7 @@ Pkg.add("SBMLImporter")
 </details>
 ```
   \
-  
+
 Catalyst stores chemical reaction network (CRN) models in `ReactionSystem` structures. This tutorial describes how to load such `ReactionSystem`s from, and save them to, files. This can be used to save models between Julia sessions, or transfer them from one session to another. Furthermore, to facilitate the computation modelling of CRNs, several standardised file formats have been created to represent CRN models (e.g. [SBML](https://sbml.org/)). This enables CRN models to be shared between different software and programming languages. While Catalyst itself does not have the functionality for loading such files, we will here (briefly) introduce a few packages that can load different file types to Catalyst `ReactionSystem`s.
 
 ## [Saving Catalyst models to, and loading them from, Julia files](@id model_file_import_export_crn_serialization)
@@ -117,27 +117,42 @@ A more detailed description of ReactionNetworkImporter's features can be found i
 ## [Loading SBML files using SBMLImporter.jl and SBMLToolkit.jl](@id model_file_import_export_sbml)
 The Systems Biology Markup Language (SBML) is the most widespread format for representing CRN models. Currently, there exist two different Julia packages, [SBMLImporter.jl](https://github.com/sebapersson/SBMLImporter.jl) and [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), that are able to load SBML files to Catalyst `ReactionSystem` structures. SBML is able to represent a *very* wide range of model features, with both packages supporting most features. However, there exist SBML files (typically containing obscure model features such as events with time delays) that currently cannot be loaded into Catalyst models.
 
-SBMLImporter's `load_SBML` function can be used to load SBML files. Here, we load a [Brusselator](@ref basic_CRN_library_brusselator) model stored in the "brusselator.xml" file:
+SBMLImporter's `load_SBML` function can be used to load SBML files. Here, we load a
+[Brusselator](@ref basic_CRN_library_brusselator) model stored in the "brusselator.xml"
+file:
+
 ```julia
 using SBMLImporter
-prn, cbs = load_SBML("brusselator.xml", massaction = true)
+rn, cbs = load_SBML("brusselator.xml", massaction = true)
 ```
-Here, while [ReactionNetworkImporters generates a `ParsedReactionSystem` only](@ref model_file_import_export_sbml_rni_net), SBMLImporter generates a `ParsedReactionSystem` (here stored in `prn`) and a [so-called `CallbackSet`](https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/#CallbackSet) (here stored in `cbs`). While `prn` can be used to create various problems, when we simulate them, we must also supply `cbs`. E.g. to simulate our brusselator we use:
+
+`load_SBML` returns two outputs: a `ReactionSystem` (`rn`) and a `CallbackSet` (`cbs`). The
+`CallbackSet` contains SBML events and callbacks generated from any SBML `piecewise`
+expressions. The `ReactionSystem` contains a map of species initial values
+(`u0`) and a map of parameter values (`ps`). While `rn` can be used to create
+problems, when we simulate them, we must also supply `cbs`. E.g. to simulate our
+brusselator we use:
+
 ```julia
 using Catalyst, OrdinaryDiffEqDefault, Plots
 tspan = (0.0, 50.0)
-oprob = ODEProblem(prn.rn, prn.u0, tspan, prn.p)
+u0 = get_u0_map(rn)
+ps = get_parameter_map(rn)
+oprob = ODEProblem(rn, u0, tspan, ps)
 sol = solve(oprob; callback = cbs)
 plot(sol)
 ```
+
 ![Brusselator Simulation](../assets/brusselator_sim_SBMLImporter.svg)
 
-Note that, while ReactionNetworkImporters adds initial condition and species values as default to the imported model, SBMLImporter does not do this. These must hence be provided to the `ODEProblem` directly.
+Note that, while ReactionNetworkImporters adds parameters (`ps`) and species values (`u0`)
+as default to the imported model, SBMLImporter does not do this. These must hence be
+provided to the `ODEProblem` directly.
 
 A more detailed description of SBMLImporter's features can be found in its [documentation](https://sebapersson.github.io/SBMLImporter.jl/stable/).
 
 !!! note
-    The `massaction = true` option informs the importer that the target model follows mass-action principles. When given, this enables SBMLImporter to make appropriate modifications to the model (which are important for e.g. jump simulation performance).
+    The `massaction = true` option informs the importer that the target model follows mass-action principles. When given, this enables SBMLImporter to make appropriate modifications to the model (which are important for jump simulation performance).
 
 ### [SBMLImporter and SBMLToolkit](@id model_file_import_export_package_alts)
 Above, we described how to use SBMLImporter to import SBML files. Alternatively, SBMLToolkit can be used instead. It has a slightly different syntax, which is described in its [documentation](https://github.com/SciML/SBMLToolkit.jl), and does not support as wide a range of SBML features as SBMLImporter. A short comparison of the two packages can be found [here](https://github.com/sebapersson/SBMLImporter.jl?tab=readme-ov-file#differences-compared-to-sbmltoolkit). Generally, while they both perform well, we note that for *jump simulations* SBMLImporter is preferable (its way for internally representing reaction event enables more performant jump simulations).
@@ -155,7 +170,7 @@ The advantage of these forms is that they offer a compact and very general way t
 ---
 ## [Citations](@id petab_citations)
 If you use any of this functionality in your research, [in addition to Catalyst](@ref doc_index_citation), please cite the paper(s) corresponding to whichever package(s) you used:
-```
+```bibtex
 @software{2022ReactionNetworkImporters,
   author       = {Isaacson, Samuel},
   title        = {{ReactionNetworkImporters.jl}},
@@ -163,15 +178,19 @@ If you use any of this functionality in your research, [in addition to Catalyst]
   year         = {2022}
 }
 ```
-```
-@software{2024SBMLImporter,
-  author       = {Persson, Sebastian},
-  title        = {{SBMLImporter.jl}},
-  howpublished = {\url{https://github.com/sebapersson/SBMLImporter.jl}},
-  year         = {2024}
+```bibtex
+@article{PEtabBioinformatics2025,
+  title={PEtab.jl: advancing the efficiency and utility of dynamic modelling},
+  author={Persson, Sebastian and Fr{\"o}hlich, Fabian and Grein, Stephan and Loman, Torkel and Ognissanti, Damiano and Hasselgren, Viktor and Hasenauer, Jan and Cvijovic, Marija},
+  journal={Bioinformatics},
+  volume={41},
+  number={9},
+  pages={btaf497},
+  year={2025},
+  publisher={Oxford University Press}
 }
 ```
-```
+```bibtex
 @article{LangJainRackauckas+2024,
     url = {https://doi.org/10.1515/jib-2024-0003},
     title = {SBMLToolkit.jl: a Julia package for importing SBML into the SciML ecosystem},
