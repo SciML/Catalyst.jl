@@ -432,3 +432,140 @@ let
         end
     end
 end
+
+### Tests for `use_jump_ratelaws` kwarg ###
+
+# Test A: Noise coefficient values for second-order reaction.
+# For `k, 2X --> Y`, ODE rate law = k*X^2/2, jump rate law = k*X*(X-1)/2.
+let
+    rn = @reaction_network begin
+        k, 2X --> Y
+    end
+    u0 = [:X => 100.0, :Y => 10.0]
+    ps = [:k => 1.0]
+
+    g_ode = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = false)
+    g_jump = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = true)
+
+    # Expected rate laws
+    ode_rl = 1.0 * 100.0^2 / 2   # 5000.0
+    jump_rl = 1.0 * 100.0 * 99.0 / 2  # 4950.0
+
+    # X has net stoichiometry -2, Y has +1
+    @test g_ode[1, 1] ≈ -2 * sqrt(ode_rl)
+    @test g_ode[2, 1] ≈ sqrt(ode_rl)
+    @test g_jump[1, 1] ≈ -2 * sqrt(jump_rl)
+    @test g_jump[2, 1] ≈ sqrt(jump_rl)
+
+    # They should differ
+    @test !(g_ode ≈ g_jump)
+end
+
+# Test B: First-order reactions are identical, higher-order differ.
+let
+    rn = @reaction_network begin
+        k1, X --> Y
+        k2, 2Y --> Z
+    end
+    u0 = [:X => 50.0, :Y => 80.0, :Z => 20.0]
+    ps = [:k1 => 1.0, :k2 => 0.5]
+
+    g_ode = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = false)
+    g_jump = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = true)
+
+    # First reaction column should be identical (first order)
+    @test g_ode[:, 1] ≈ g_jump[:, 1]
+
+    # Second reaction column should differ (second order)
+    @test !(g_ode[:, 2] ≈ g_jump[:, 2])
+end
+
+# Test C: Brownian (non-legacy) path also works with use_jump_ratelaws.
+let
+    rn = @reaction_network begin
+        k, 2X --> Y
+    end
+    u0 = [:X => 100.0, :Y => 10.0]
+    ps = [:k => 1.0]
+
+    # Use mtkcompile to force the Brownian-based path
+    prob_ode = SDEProblem(rn, u0, (0.0, 1.0), ps; mtkcompile = true, use_jump_ratelaws = false)
+    prob_jump = SDEProblem(rn, u0, (0.0, 1.0), ps; mtkcompile = true, use_jump_ratelaws = true)
+
+    # Evaluate the diffusion functions at initial conditions
+    du_ode = prob_ode.g(prob_ode.u0, prob_ode.p, 0.0)
+    du_jump = prob_jump.g(prob_jump.u0, prob_jump.p, 0.0)
+
+    # They should differ for this second-order reaction
+    @test !(du_ode ≈ du_jump)
+
+    # Expected rate laws
+    ode_rl = 1.0 * 100.0^2 / 2
+    jump_rl = 1.0 * 100.0 * 99.0 / 2
+
+    # Check magnitudes match expectations (signs may vary by path)
+    @test any(x -> abs(x) ≈ 2 * sqrt(ode_rl), du_ode)
+    @test any(x -> abs(x) ≈ 2 * sqrt(jump_rl), du_jump)
+end
+
+# Test D: `only_use_rate=true` reactions are unaffected by use_jump_ratelaws.
+let
+    rn = @reaction_network begin
+        k*X^2, X => Y
+    end
+    u0 = [:X => 50.0, :Y => 10.0]
+    ps = [:k => 1.0]
+
+    g_ode = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = false)
+    g_jump = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = true)
+
+    # Should be identical since only_use_rate=true
+    @test g_ode ≈ g_jump
+end
+
+# Test E: Correctness test comparing Catalyst use_jump_ratelaws against hand-coded
+# drift and diffusion functions.
+# Model: k_prod, 0 --> X  and  k_deg, 2X --> 0
+# Drift (same for both): dX/dt = k_prod - 2 * k_deg * X^2 / 2 = k_prod - k_deg * X^2
+# Noise with ODE ratelaws:
+#   reaction 1 (0 --> X):  +sqrt(k_prod) * dW1
+#   reaction 2 (2X --> 0): -2*sqrt(k_deg * X^2 / 2) * dW2
+# Noise with jump ratelaws:
+#   reaction 1 (0 --> X):  +sqrt(k_prod) * dW1
+#   reaction 2 (2X --> 0): -2*sqrt(k_deg * X * (X-1) / 2) * dW2
+let
+    rn = @reaction_network begin
+        k_prod, 0 --> X
+        k_deg, 2X --> 0
+    end
+
+    # Test at several state values well away from zero
+    for X_val in [50.0, 100.0, 200.0, 500.0]
+        u0 = [:X => X_val]
+        ps = [:k_prod => 100.0, :k_deg => 0.5]
+        k_prod_val = 100.0
+        k_deg_val = 0.5
+
+        # --- Check drift is the same for both settings ---
+        du_f_ode = f_eval(rn, u0, ps, 0.0)
+        # Drift = k_prod - 2 * (k_deg * X^2 / 2) = k_prod - k_deg * X^2
+        @test du_f_ode[1] ≈ k_prod_val - k_deg_val * X_val^2
+
+        # --- Check diffusion with use_jump_ratelaws=false (ODE rate laws) ---
+        g_ode = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = false)
+        # Reaction 1: net stoich +1, rate = k_prod → noise coeff = +sqrt(k_prod)
+        @test g_ode[1, 1] ≈ sqrt(k_prod_val)
+        # Reaction 2: net stoich -2, rate = k_deg*X^2/2 → noise coeff = -2*sqrt(k_deg*X^2/2)
+        @test g_ode[1, 2] ≈ -2 * sqrt(k_deg_val * X_val^2 / 2)
+
+        # --- Check diffusion with use_jump_ratelaws=true (jump rate laws) ---
+        g_jump = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = true)
+        # Reaction 1: same (zero-order, no substrate dependence)
+        @test g_jump[1, 1] ≈ sqrt(k_prod_val)
+        # Reaction 2: rate = k_deg*X*(X-1)/2 → noise coeff = -2*sqrt(k_deg*X*(X-1)/2)
+        @test g_jump[1, 2] ≈ -2 * sqrt(k_deg_val * X_val * (X_val - 1) / 2)
+
+        # Verify the two differ for the second-order reaction
+        @test !(g_ode[1, 2] ≈ g_jump[1, 2])
+    end
+end
