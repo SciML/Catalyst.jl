@@ -15,7 +15,7 @@ pages = Any[
     "model_creation/conservation_laws.md",
     "model_creation/parametric_stoichiometry.md",
     "model_creation/functional_parameters.md",
-    "model_creation/model_file_loading_and_export.md",
+    # "model_creation/model_file_loading_and_export.md", Wait for new SBMImporter and ReactionNetworkImporters versions
     "model_creation/model_visualisation.md",
     "model_creation/reactionsystem_content_accessing.md",
     "model_creation/chemistry_related_functionality.md",
@@ -65,9 +65,9 @@ pages = Any[
     "inverse_problems/structural_identifiability.md",
     "inverse_problems/global_sensitivity_analysis.md",
     "inverse_problems/turing_ode_param_fitting.md",
-    #"Examples" => Any[
-    #    "inverse_problems/examples/ode_fitting_oscillation.md" # Throws and error due to https://github.com/JuliaDiff/ChainRules.jl/issues/830.
-    #]
+    "Examples" => Any[
+        "inverse_problems/examples/ode_fitting_oscillation.md"
+    ]
 ],
 "Spatial modelling" => Any[
     "spatial_modelling/discrete_space_reaction_systems.md",

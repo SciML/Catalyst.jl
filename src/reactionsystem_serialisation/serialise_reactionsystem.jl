@@ -78,7 +78,8 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     file_text, has_reactions = push_field(file_text, rn, annotate, top_level, REACTIONS_FS)
     file_text, has_equations = push_field(file_text, rn, annotate, top_level, EQUATIONS_FS)
     file_text, has_observed = push_field(file_text, rn, annotate, top_level, OBSERVED_FS)
-    file_text, has_defaults = push_field(file_text, rn, annotate, top_level, DEFAULTS_FS)
+    file_text, has_bindings = push_field(file_text, rn, annotate, top_level, BINDINGS_FS)
+    file_text, has_initial_conditions = push_field(file_text, rn, annotate, top_level, INITIAL_CONDITIONS_FS)
     file_text, has_continuous_events = push_field(file_text, rn, annotate,
         top_level, CONTINUOUS_EVENTS_FS)
     file_text, has_discrete_events = push_field(file_text, rn, annotate,
@@ -94,7 +95,7 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     rs_creation_code = make_reaction_system_call(
         rn, annotate, top_level, has_sivs, has_species,
         has_variables, has_parameters, has_discretes, has_reactions,
-        has_equations, has_observed, has_defaults, has_continuous_events,
+        has_equations, has_observed, has_bindings, has_initial_conditions, has_continuous_events,
         has_discrete_events, has_brownians, has_jumps, has_systems)
     annotate || (@string_prepend! "\n" file_text)
     annotate && top_level &&
@@ -109,7 +110,7 @@ end
 # `has_` `Bool`s described which inputs are used. If the model is `complete`, this is handled here.
 function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_sivs,
         has_species, has_variables, has_parameters, has_discretes, has_reactions, has_equations,
-        has_observed, has_defaults, has_continuous_events, has_discrete_events, has_brownians, 
+        has_observed, has_bindings, has_initial_conditions, has_continuous_events, has_discrete_events, has_brownians, 
         has_jumps, has_systems)
 
     # Gets the independent variable input.
@@ -162,7 +163,8 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
     # Goes through various fields that might exists, and if so, adds them to the string.
     has_sivs && (@string_append! reaction_system_string ", spatial_ivs")
     has_observed && (@string_append! reaction_system_string ", observed")
-    has_defaults && (@string_append! reaction_system_string ", initial_conditions")
+    has_bindings && (@string_append! reaction_system_string ", bindings")
+    has_initial_conditions && (@string_append! reaction_system_string ", initial_conditions")
     has_continuous_events && (@string_append! reaction_system_string ", continuous_events")
     has_discrete_events && (@string_append! reaction_system_string ", discrete_events")
     has_brownians && (@string_append! reaction_system_string ", brownians")

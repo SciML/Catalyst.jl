@@ -238,8 +238,8 @@ let
         V(τ)
     end
     @parameters begin
-        a = G + D
-        e = U
+        a = b
+        e = f
     end
     @variables begin
         E(τ) = G + Z
@@ -248,7 +248,7 @@ let
     @species begin
         X(τ) = f + a
     end
-    @parameters d = X
+    @parameters d = e
     @species W(τ) = d + e
 
     # Creates model and checks it against serialised version.
@@ -518,4 +518,3 @@ let
     @test_throws Exception save_reactionsystem(testpath("test_serialisation.jl"), rs)
     rm(testpath("test_serialisation.jl"))
 end
-

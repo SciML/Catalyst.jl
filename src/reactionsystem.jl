@@ -101,7 +101,7 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: SymbolicT}
     """The definitions of the conserved constants in the form conserved_constant = dependent_species + ..."""
     constantdefs::Vector{Equation} = Equation[]
     """The conserved constant symbolic vector, or a default value if not yet initialized."""
-    conservedconst::SymbolicT = __UNINITIALIZED_CONSERVED_CONSTS 
+    conservedconst::SymbolicT = __UNINITIALIZED_CONSERVED_CONSTS
     """Map from symbolics for each species to their index in the species vector."""
     speciesmap::Dict{V, Int} = Dict{V, Int}()
     complextorxsmap::OrderedDict{ReactionComplex{Int}, Vector{Pair{Int, Int}}} = OrderedDict{ReactionComplex{Int},Vector{Pair{Int,Int}}}()
@@ -253,7 +253,7 @@ all such code and updating it appropriately (e.g. serialization). Please use a s
 # structure have been updated (in the `reactionsystem_uptodate_check` function).
 const reactionsystem_fields = (
     :eqs, :rxs, :iv, :sivs, :unknowns, :species, :ps, :var_to_name,
-    :observed, :name, :systems, :initial_conditions,
+    :observed, :name, :systems, :bindings, :initial_conditions,
     :networkproperties, :combinatoric_ratelaws, :continuous_events,
     :discrete_events, :tstops, :brownians, :poissonians, :jumps, :metadata, :complete, :parent)
 
@@ -326,6 +326,13 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """Internal sub-systems"""
     systems::Vector{ReactionSystem}
     """
+    Binding relations for variables/parameters. The bound variable (key) is completely
+    determined by the binding (value). Providing an initial condition for a bound variable
+    is an error. Bindings for variables (ones created via `@species`, `@variables`, and `@discretes`)
+    are treated as initial conditions.
+    """
+    bindings::MT.ROSymmapT
+    """
     The initial values to use when initial conditions and/or
     parameters are not supplied to problem constructors.
     """
@@ -373,7 +380,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
 
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
-            name, systems, defaults, nps, cls, cevs, devs, tstops,
+            name, systems, bindings, initial_conditions, nps, cls, cevs, devs, tstops,
             brownians, poissonians, jumps, metadata, complete = false, parent = nothing;
             checks::Bool = true, unit_checks::Bool = false)
 
@@ -395,7 +402,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
         end
         rs = new{typeof(nps)}(
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
-            name, systems, defaults, nps, cls, cevs,
+            name, systems, bindings, initial_conditions, nps, cls, cevs,
             devs, tstops, brownians, poissonians, jumps, metadata, complete, parent)
         unit_checks && assert_valid_units(rs; info = string("ReactionSystem constructor for ", name))
         rs
@@ -421,6 +428,7 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
         observed = Equation[],
         systems = [],
         name = nothing,
+        bindings = SymmapT(),
         initial_conditions = SymmapT(),
         checks = true,
         unit_checks = false,
@@ -446,14 +454,6 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
         sys isa ReactionSystem || error("ReactionSystem subsystems must be ReactionSystems. Got $(typeof(sys)).")
     end
 
-    # Process initial_conditions to unwrap Num wrappers.
-    initial_conditions = SymmapT(value(entry[1]) => value(entry[2]) for entry in initial_conditions)
-
-    # Bindings are auto-discovered by MTKBase from variable metadata when Systems are created.
-    # The 5-argument System constructor calls process_variables! which extracts bindings from
-    # variables with symbolic default values. No explicit Catalyst handling is needed.
-    bindings = MT.SymmapT()
-
     # Extracts independent variables (iv and sivs), dependent variables (species and variables)
     # and parameters. Sorts so that species comes before variables in unknowns vector.
     iv′ = unwrap(iv)
@@ -466,6 +466,17 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
     unknowns′ = isempty(unknowns) ? SymbolicT[] : sort!(unwrap.(unknowns), by = !isspecies)
     spcs = filter(isspecies, unknowns′)
     ps′ = isempty(ps) ? SymbolicT[] : unwrap.(ps)
+
+    # Process initial_conditions to unwrap Num wrappers.
+    initial_conditions = SymmapT(value(entry[1]) => value(entry[2]) for entry in initial_conditions)
+
+    # In addition to being supplied with the constructor, bindings are auto-discovered by
+    # MTKBase from variable metadata when Systems are created. The 5-argument System
+    # constructor calls process_variables! which extracts bindings from variables with
+    # symbolic default values. No explicit Catalyst handling is needed.
+    bindings = MT.defsdict(bindings)
+    filter!(!(Base.Fix1(===, MT.COMMON_NOTHING) ∘ last), bindings)
+    MT.check_bindings(ps′, bindings)
 
     # Checks that no (by Catalyst) forbidden symbols are used.
     if !disable_forbidden_symbol_check
@@ -530,7 +541,7 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
 
     ReactionSystem(
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
-        systems, initial_conditions, nps, combinatoric_ratelaws,
+        systems, bindings, initial_conditions, nps, combinatoric_ratelaws,
         continuous_events, discrete_events, tstops′, brownians′, poissonians′, jumps′, metadata;
         checks, unit_checks)
 end
@@ -759,6 +770,8 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
     debug_comparer(issetequal, get_species(rn1), get_species(rn2), "species"; debug) ||
         return false
     debug_comparer(issetequal, get_ps(rn1), get_ps(rn2), "ps"; debug) || return false
+    debug_comparer(issetequal, MT.get_bindings(rn1), MT.get_bindings(rn2), "bindings"; debug) ||
+        return false
     debug_comparer(
         issetequal, MT.get_initial_conditions(rn1), MT.get_initial_conditions(rn2), "defaults"; debug) ||
         return false
@@ -1076,7 +1089,7 @@ function MT.equations(sys::ReactionSystem)
     eqs = get_eqs(sys)
     systems = get_systems(sys)
     if !isempty(systems)
-        eqs = CatalystEqType[eqs; 
+        eqs = CatalystEqType[eqs;
             reduce(vcat, MT.namespace_equations.(systems); init = CatalystEqType[])]
         return sort!(eqs; by = eqsortby)
     end
@@ -1099,7 +1112,7 @@ function MT.complete(sys::ReactionSystem; flatten = true, kwargs...)
     newparams = OrderedSet{SymbolicT}()
     iv = get_iv(sys)
     MT.collect_scoped_vars!(newunknowns, newparams, sys, iv; depth = -1)
-    # don't update unknowns to not disturb `structural_simplify` order
+    # don't update unknowns to not disturb `mtkcompile` order
     # `GlobalScope`d unknowns will be picked up and added there
     @set! sys.ps = unique!(vcat(get_ps(sys), collect(newparams)))
     if flatten
@@ -1648,7 +1661,7 @@ end
 
 Check that all species in the [`ReactionSystem`](@ref) have the same units, and that the
 rate laws of all reactions reduce to units of (species units) / (time units). Also validates
-unit consistency of non-reaction equations. 
+unit consistency of non-reaction equations.
 
 Uses [`catalyst_get_unit`](@ref) for SymbolicDimensions-preserving unit inference, avoiding
 the floating-point precision loss that occurs with MTKBase's `get_unit` when using non-SI

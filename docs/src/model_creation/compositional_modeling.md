@@ -39,7 +39,7 @@ t = default_t()
 rx = Reaction(d, [X], nothing)
 @named degradation_component = ReactionSystem([rx], t)
 ```
-We can test whether a system is complete using the `ModelingToolkit.iscomplete` function:
+We can test whether a system is complete using the `ModelingToolkitBase.iscomplete` function:
 ```@example ex0
 ModelingToolkitBase.iscomplete(degradation_component)
 ```
@@ -51,7 +51,7 @@ ModelingToolkitBase.iscomplete(degradation_component_complete)
 ```
 
 ## Compositional modeling tooling
-Catalyst supports two ModelingToolkit interfaces for composing multiple
+Catalyst supports two ModelingToolkitBase interfaces for composing multiple
 [`ReactionSystem`](@ref)s together into a full model. The first mechanism allows
 for extending an existing system by merging in a second system via the `extend`
 command
