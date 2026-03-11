@@ -206,6 +206,12 @@ and which are now relevant for Catalyst users.
   falls back to object identity (`===`), consistent with ModelingToolkitBase's
   `System`.
 
+#### BREAKING: `structural_simplify` renamed `mtkcompile`
+
+- All instances of `structural_simplify` (whenever as arguments to `ODEProblem` or as a separate 
+function) have been replaced with `mtkcompile`, which serves an identical purpose (with exceptions 
+of the move from ModelingToolkit to ModelingToolkitBase, as described previously).
+
 #### BREAKING: Several functions no longer exported
 The following are now considered internal, no longer exported, and could be
 removed at any time:
@@ -550,9 +556,11 @@ for full details on these features.
   where SDE noise terms are embedded directly in the equation RHS as
   `stoich * sqrt(|ratelaw|) * B_j`.
 
-- **`SDEProblem(rs::ReactionSystem, ...)` calls `mtkcompile` only when
-  necessary** (when using Brownian-based noise or when the system has
-  constraints/algebraic equations).
+- **`SDEProblem(rs::ReactionSystem, ...)` calls `mtkcompile` automatically
+  when necessary** — including when the system has user-declared brownians,
+  when using Brownian-based noise (`use_legacy_noise = false`), or when the
+  system has constraints/algebraic equations. Users do not need to pass
+  `structural_simplify = true` in these cases.
 
 #### New: Stoichiometric parameters automatically typed as `Int64` in DSL
 

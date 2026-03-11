@@ -1056,7 +1056,7 @@ let
     # Checks that drift and diffusion terms are evaluated identically.
     u0 = rnd_u0(rs_dsl, rng)
     ps = rnd_ps(rs_dsl, rng)
-    @test g_eval(rs_dsl, u0, ps, 0.0; structural_simplify = true) == g_eval(rs_prog, u0, ps, 0.0; structural_simplify = true)
+    @test g_eval(rs_dsl, u0, ps, 0.0; mtkcompile = true) == g_eval(rs_prog, u0, ps, 0.0; mtkcompile = true)
 end
 
 # Compare CLE simulations generated via Catalyst and manual implementation of the SDE.
@@ -1084,8 +1084,8 @@ let
     u0 = [:X1 => 100.0, :X2 => 200.0]
     tend = 10000.0
     ps = [:k1 => 0.1, :k2 => 0.2]
-    sprob_catalyst = SDEProblem(cle_catalyst, u0, tend, ps; structural_simplify = true)
-    sprob_manual = SDEProblem(cle_manual, u0,  tend, ps; structural_simplify = true)
+    sprob_catalyst = SDEProblem(cle_catalyst, u0, tend, ps; mtkcompile = true)
+    sprob_manual = SDEProblem(cle_manual, u0,  tend, ps; mtkcompile = true)
     @time ssol_catalyst = solve(sprob_catalyst, ImplicitEM())
     @time ssol_manual = solve(sprob_manual, ImplicitEM())
 
@@ -1123,6 +1123,44 @@ let
     @test !Catalyst.isequivalent(rs1, rs3)
     @test !Catalyst.isequivalent(rs1, rs3)
     @test Catalyst.isequivalent(rs2, rs3)
+end
+
+# Checks that SDEProblem auto-detects user brownians and routes through mtkcompile
+# without requiring structural_simplify = true.
+let
+    # Model with @brownians + @equations.
+    rn = @reaction_network begin
+        @parameters η
+        @brownians B
+        @equations D(V) ~ X - V + η * B
+        (p, d), 0 <--> X
+    end
+    u0 = [:X => 10.0, :V => 0.0]
+    tspan = (0.0, 10.0)
+    ps = [:p => 10.0, :d => 1.0, :η => 0.5]
+
+    # SDEProblem should work without structural_simplify = true.
+    sprob = SDEProblem(rn, u0, tspan, ps)
+    @test sprob isa SDEProblem
+    sol = solve(sprob, EM(); dt = 0.01)
+    @test SciMLBase.successful_retcode(sol)
+
+    # Model with @brownians + @equations + @continuous_events.
+    rn2 = @reaction_network begin
+        @parameters η Vₘ
+        @brownians B
+        @equations D(V) ~ X - V + η * B
+        @continuous_events begin
+            [V ~ Vₘ] => [V => V / 2]
+        end
+        (p, d), 0 <--> X
+    end
+    u0_2 = [:X => 10.0, :V => 0.0]
+    ps_2 = [:p => 10.0, :d => 1.0, :η => 0.5, :Vₘ => 15.0]
+    sprob2 = SDEProblem(rn2, u0_2, tspan, ps_2)
+    @test sprob2 isa SDEProblem
+    sol2 = solve(sprob2, EM(); dt = 0.01)
+    @test SciMLBase.successful_retcode(sol2)
 end
 
 ### Poissonians ###
@@ -1394,7 +1432,7 @@ let
     # Checks that simulations has the correct output
     u0 = Dict([S => 1 + rand(rng)])
     ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
-    oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify = true, guesses = [X => 1 + rand(rng), Y => 1 + rand(rng)])
+    oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; mtkcompile = true, guesses = [X => 1 + rand(rng), Y => 1 + rand(rng)])
     sol = solve(oprob, Rosenbrock23(); abstol = 1e-9, reltol = 1e-9)
     @test sol[S][end] ≈ sol.ps[p]/sol.ps[d]
     @test sol[X] .+ 5 ≈ sol.ps[k] .*sol[S]
@@ -1430,7 +1468,7 @@ let
         @variables X(t)
         @equations 2X ~ $c - X
     end)
-    oprob = ODEProblem(rn, [], (0.0, 100.0), []; structural_simplify = true, guesses = [rn.X => 1.0])
+    oprob = ODEProblem(rn, [], (0.0, 100.0), []; mtkcompile = true, guesses = [rn.X => 1.0])
     sol = solve(oprob, Rosenbrock23(); abstol = 1e-9, reltol = 1e-9)
     @test sol[rn.X][end] ≈ 2.0
 end
@@ -1458,7 +1496,7 @@ let
 
     u0 = [X => 3.0, internal_rn.X => 4.0]
     ps = [p => 1.0, d => 0.2, internal_rn.p => 2.0, internal_rn.d => 0.5]
-    oprob = ODEProblem(rn, u0, (0.0, 1000.0), ps; structural_simplify=true, guesses = [V1 => 1.0, internal_rn.V2 => 2.0])
+    oprob = ODEProblem(rn, u0, (0.0, 1000.0), ps; mtkcompile = true, guesses = [V1 => 1.0, internal_rn.V2 => 2.0])
     sol = solve(oprob, Rosenbrock23(); abstol=1e-9, reltol=1e-9)
 
     @test sol[X][end] ≈ 5.0
@@ -1501,7 +1539,7 @@ let
     # Checks that simulations has the correct output
     u0 = Dict([S => 1 + rand(rng), Y => 1 + rand(rng)])
     ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
-    oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify = true, guesses = [X => 1 + rand(rng)])
+    oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; mtkcompile = true, guesses = [X => 1 + rand(rng)])
     sol = solve(oprob, Rosenbrock23(); abstol=1e-9, reltol=1e-9)
     @test sol[:S][end] ≈ sol.ps[:p]/sol.ps[:d]
     @test sol[:X] .+ 5 ≈ sol.ps[:k] .*sol[:S]

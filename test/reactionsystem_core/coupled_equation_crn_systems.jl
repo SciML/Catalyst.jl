@@ -126,7 +126,7 @@ end
 
 # Tests coupled CRN/algebraic equation. Checks that known steady state is reached using ODE solve.
 # Check that steady state can be found using NonlinearSolve and SteadyStateDiffEq.
-# Checks that errors are given if `structural_simplify = true` argument is not given.
+# Checks that errors are given if `mtkcompile = true` argument is not given.
 let
     # Creates a simple coupled model with an algebraic equation.
     @parameters p d a b
@@ -154,25 +154,25 @@ let
     tspan = (0.0, 1000.0)
     ps = [p => 1.0, d => 0.5, a => 2.0, b => 16.0]
 
-    # Checks not using `structural_simplify` argument yields an error.
+    # Checks not using `mtkcompile` argument yields an error.
     @test_throws Exception ODEProblem(coupled_rs, u0, tspan, ps)
     @test_throws Exception SteadyStateProblem(coupled_rs, u0, ps)
 
     # Checks that the correct steady state is found through ODEProblem.
-    oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true,
+    oprob = ODEProblem(coupled_rs, u0, tspan, ps; mtkcompile = true,
         guesses = [A => 1.0])
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
     @test osol[[X,A]][end] ≈ [2.0, 3.0]
 
     # Checks that the correct steady state is found through NonlinearProblem.
     u0 = [X => 0.1, A => 16.1/2]
-    nlprob = NonlinearProblem(coupled_rs, u0, ps, structural_simplify = true)
+    nlprob = NonlinearProblem(coupled_rs, u0, ps, mtkcompile = true)
     nlsol = solve(nlprob)
     @test nlsol[[X,A]] ≈ [2.0, 3.0]
 
     # Checks that the correct steady state is found through SteadyStateProblem.
     u0 = [X => 0.1, A => 1.0]
-    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
+    ssprob = SteadyStateProblem(coupled_rs, u0, ps; mtkcompile = true)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
     @test_broken sssol[[X,A]] ≈ [2.0, 3.0] # The previous lines fails to solve. Issue at: https://github.com/SciML/ModelingToolkit.jl/issues/4174. This currently also yields a warning.
 end
@@ -206,11 +206,11 @@ let
 
     # Creates and solves a ODE, SteadyState, and Nonlinear problems.
     # Success is tested by checking that the same steady state solution is found.
-    oprob = ODEProblem(coupled_rs, u0, (0.0, 1000.0), ps; structural_simplify = true,
+    oprob = ODEProblem(coupled_rs, u0, (0.0, 1000.0), ps; mtkcompile = true,
         warn_initialize_determined = false)
-    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true,
+    ssprob = SteadyStateProblem(coupled_rs, u0, ps; mtkcompile = true,
         warn_initialize_determined = false)
-    nlprob = NonlinearProblem(coupled_rs, u0, ps; structural_simplify = true)
+    nlprob = NonlinearProblem(coupled_rs, u0, ps; mtkcompile = true)
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
     nlsol = solve(nlprob; abstol = 1e-8, reltol = 1e-8)
@@ -379,17 +379,17 @@ let
     ps = [a1 => 0.1, a2 => 2//10, b1 => 1.0, b2 => 2, c1 => 10.0, c2 => 20.0]
 
     # Create ODE structures.
-    oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
+    oprob = ODEProblem(coupled_rs, u0, tspan, ps; mtkcompile = true, warn_initialize_determined = false)
     oint = init(oprob, Rosenbrock23())
     osol = solve(oprob, Rosenbrock23())
 
     # Create SDE structures.
-    sprob = SDEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true, warn_initialize_determined = false)
+    sprob = SDEProblem(coupled_rs, u0, tspan, ps; mtkcompile = true, warn_initialize_determined = false)
     sint = init(sprob, ImplicitEM())
     ssol = solve(sprob, ImplicitEM())
 
     # Creates Nonlinear structures.
-    nlprob = NonlinearProblem(coupled_rs, u0_nlp, ps; structural_simplify = true, warn_initialize_determined = false)
+    nlprob = NonlinearProblem(coupled_rs, u0_nlp, ps; mtkcompile = true, warn_initialize_determined = false)
     nlint = init(nlprob, NewtonRaphson())
     nlsol = solve(nlprob, NewtonRaphson())
 
@@ -481,7 +481,7 @@ let
 end
 
 # Checks that a coupled SDE + algebraic equations works.
-# Checks that structural_simplify is required to simulate coupled SDE + algebraic equations.
+# Checks that mtkcompile is required to simulate coupled SDE + algebraic equations.
 let
     # Creates coupled reactions system.
     @parameters p d k1 k2
@@ -500,11 +500,11 @@ let
     tspan = (0.0, 1000.0)
     ps = Dict([p => 1.0, d => 0.01, k1 => 3.0, k2 => 4.0])
 
-    # Check that the structural_simplify argument is required.
+    # Check that the mtkcompile argument is required.
     @test_throws Exception SDEProblem(coupled_rs, u0, tspan, ps)
 
     # Checks the algebraic equation holds.
-    sprob = SDEProblem(coupled_rs, u0, tspan, ps; guesses = [A => 1.0], structural_simplify = true, warn_initialize_determined = false)
+    sprob = SDEProblem(coupled_rs, u0, tspan, ps; guesses = [A => 1.0], mtkcompile = true, warn_initialize_determined = false)
     ssol = solve(sprob, ImplicitEM(); abstol = 1e-5, reltol = 1e-5)
     @test (2 .+ ps[k1] * ssol[:A]) ≈ (3 .+ ps[k2] * ssol[:X]) atol = 1e-1 rtol = 1e-1
 end
@@ -577,7 +577,7 @@ end
     ps = [p => 2.0, d => 1.0, ω => 0.5, k => 2.0]
 
     # Checks that ODE an simulation of the system achieves the correct steady state.
-    oprob = ODEProblem(coupled_rs, u0, (0.0, 1000.0), ps; structural_simplify = true)
+    oprob = ODEProblem(coupled_rs, u0, (0.0, 1000.0), ps; mtkcompile = true)
     osol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
     @test osol[X][end] ≈ 2.0
     @test osol[A][end] ≈ 0.0 atol = 1e-8
@@ -585,7 +585,7 @@ end
     @test osol[B][end] ≈ 1.0
 
     # Checks that SteadyState simulation of the system achieves the correct steady state.
-    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
+    ssprob = SteadyStateProblem(coupled_rs, u0, ps; mtkcompile = true)
     sssol = solve(ssprob, DynamicSS(Vern7()); abstol = 1e-8, reltol = 1e-8)
     @test sssol[X][end] ≈ 2.0
     @test sssol[A][end] ≈ 0.0 atol = 1e-8
@@ -596,7 +596,7 @@ end
     # Here `B => 0.1` has to be provided as well (and it shouldn't for the 2nd order ODE), hence the
     # separate `u0` declaration.
     u0 = [X => 1.0, A => 2.0, D(A) => 1.0, B => 0.1]
-    nlprob = NonlinearProblem(coupled_rs, u0, ps; structural_simplify = true, all_differentials_permitted = true)
+    nlprob = NonlinearProblem(coupled_rs, u0, ps; mtkcompile = true, all_differentials_permitted = true)
     nlsol = solve(nlprob)
     @test nlsol[X][end] ≈ 2.0
     @test nlsol[A][end] ≈ 0.0
@@ -662,8 +662,8 @@ let
     # Test most likely redundant, but seem useful to have one test like this to be sure.
     u0 = [X1 => 0.1, X2 => 0.2, X3 => 0.2, X_tot => 0.6, N => 10.0, X_conc => 10.0]
     ps = [p => 1.0, k1 => 1.2, k2 => 1.5, d => 2.0, v => 0.2, n => 0.5, x_scale => 2.0]
-    oprob_prog = ODEProblem(rs_prog, u0, (0.0, 10.0), ps; structural_simplify = true, warn_initialize_determined = false)
-    oprob_dsl = ODEProblem(rs_dsl, u0, (0.0, 10.0), ps; structural_simplify = true, warn_initialize_determined = false)
+    oprob_prog = ODEProblem(rs_prog, u0, (0.0, 10.0), ps; mtkcompile = true, warn_initialize_determined = false)
+    oprob_dsl = ODEProblem(rs_dsl, u0, (0.0, 10.0), ps; mtkcompile = true, warn_initialize_determined = false)
     @test solve(oprob_prog, Rosenbrock23()) == solve(oprob_dsl, Rosenbrock23())
 end
 
@@ -947,7 +947,7 @@ let
     rs = complete(rs)
     u0 = [S1 => 1.0, S2 => 2.0, V1 => 0.1]
     ps = [p1 => 2.0, p2 => 3.0]
-    @test_throws Exception ODEProblem(rs, u0, (0.0, 1.0), ps; structural_simplify = true)
+    @test_throws Exception ODEProblem(rs, u0, (0.0, 1.0), ps; mtkcompile = true)
 end
 
 # Checks that equations cannot contain differentials with respect to species.

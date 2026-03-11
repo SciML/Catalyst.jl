@@ -14,7 +14,6 @@ dsrs = DiscreteSpaceReactionSystem(bd_model, [diffusion_rx], space)
 u0 = [:X => 0]
 tspan = (0.0, 200.0)
 ps = [:p => 10.0, :d => 1.0, :D => 0.1]
-dprob = DiscreteProblem(dsrs, u0, tspan, ps)
 jprob = JumpProblem(dsrs, u0, tspan, ps)
 sol = solve(jprob, SSAStepper())
 nothing # hide

@@ -1,6 +1,6 @@
 name = "Catalyst"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
-version = "15.0.11"
+version = "16.0.0"
 
 [deps]
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
@@ -65,12 +65,14 @@ MacroTools = "0.5.5"
 Makie = "0.22.1, 0.23, 0.24"
 ModelingToolkitBase = "1.17"
 NetworkLayout = "0.4.7"
+OrdinaryDiffEqCore = "=3.12"
 Parameters = "0.12"
 Reexport = "1.0"
 RuntimeGeneratedFunctions = "0.5.12"
 SciMLBase = "2.84"
 SciMLPublic = "1"
 Setfield = "1"
+StochasticDiffEq = "=6.95"
 StructuralIdentifiability = "0.5.11"
 SymbolicIndexingInterface = "0.3"
 SymbolicUtils = "4.9.1"
@@ -79,14 +81,15 @@ julia = "1.10"
 
 [extras]
 DataInterpolations = "82cc6244-b520-54b8-b5a6-8a565e85f1d0"
-ExplicitImports = "7d51a73a-1435-4ff3-83d9-f097790105c7"
 DiffEqCallbacks = "459566f4-90b8-5000-8ac3-15dfb0a30def"
 DiffEqNoiseProcess = "77a26b50-5914-5dd7-bc55-306e6241c503"
 DomainSets = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
+ExplicitImports = "7d51a73a-1435-4ff3-83d9-f097790105c7"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
 OrdinaryDiffEqBDF = "6ad6398a-0878-4a85-9266-38940aa047c8"
+OrdinaryDiffEqCore = "bbf590c4-e513-4bbe-9b18-05decba2e5d8"
 OrdinaryDiffEqDefault = "50262376-6c5a-4cf5-baba-aaf4f84d72d7"
 OrdinaryDiffEqRosenbrock = "43230ef6-c299-4910-a778-202eb28ce4ce"
 OrdinaryDiffEqTsit5 = "b1df2697-797e-41e3-8120-5422d3b24e4a"
@@ -104,7 +107,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["DataInterpolations", "DiffEqCallbacks", "DiffEqNoiseProcess", "DomainSets",
-    "ExplicitImports", "Logging", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqDefault",
+    "ExplicitImports", "Logging", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqCore", "OrdinaryDiffEqDefault",
     "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner",
     "Pkg", "Plots", "Random", "SafeTestsets", "StableRNGs",
     "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test"]
