@@ -390,26 +390,47 @@ end
 # Combines the 3 -related functions in a constant tuple.
 const OBSERVED_FS = (seri_has_observed, get_observed_string, get_observed_annotation)
 
-### Handles Observables ###
+### Handles Bindings ###
 
-# Checks if the reaction system has any defaults.
-function seri_has_defaults(rn::ReactionSystem)
-    return !isempty(initial_conditions(rn))
+# Checks if the reaction system has any bindings.
+function seri_has_bindings(rn::ReactionSystem)
+    return !isempty(MT.get_bindings(rn))
 end
 
-# Extract a string which declares the system's defaults.
-function get_defaults_string(rn::ReactionSystem)
-    defaults_string = "initial_conditions = " * x_2_string(MT.get_initial_conditions(rn))
-    return defaults_string
+# Extract a string which declares the system's bindings.
+function get_bindings_string(rn::ReactionSystem)
+    bindings_string = "bindings = " * x_2_string(convert(Dict, MT.get_bindings(rn)))
+    return bindings_string
 end
 
-# Creates an annotation for the system's defaults.
-function get_defaults_annotation(rn::ReactionSystem)
-    return "Defaults:"
+# Creates an annotation for the system's bindings.
+function get_bindings_annotation(rn::ReactionSystem)
+    return "Bindings:"
 end
 
-# Combines the 3 defaults-related functions in a constant tuple.
-const DEFAULTS_FS = (seri_has_defaults, get_defaults_string, get_defaults_annotation)
+# Combines the 3 bindings-related functions in a constant tuple.
+const BINDINGS_FS = (seri_has_bindings, get_bindings_string, get_bindings_annotation)
+
+### Handles (Default) Initial Conditions) ###
+
+# Checks if the reaction system has any (default) initial conditions.
+function seri_has_initial_conditions(rn::ReactionSystem)
+    return !isempty(MT.get_initial_conditions(rn))
+end
+
+# Extract a string which declares the system's (default) initial conditions.
+function get_initial_conditions_string(rn::ReactionSystem)
+    initial_conditions_string = "initial_conditions = " * x_2_string(MT.get_initial_conditions(rn))
+    return initial_conditions_string
+end
+
+# Creates an annotation for the system's (default) initial conditions.
+function get_initial_conditions_annotation(rn::ReactionSystem)
+    return "Initial conditions:"
+end
+
+# Combines the 3 (default) initial_conditions-related functions in a constant tuple.
+const INITIAL_CONDITIONS_FS = (seri_has_initial_conditions, get_initial_conditions_string, get_initial_conditions_annotation)
 
 ### Handles Continuous Events ###
 
@@ -632,4 +653,3 @@ end
 
 # Combines the 3 systems-related functions in a constant tuple.
 const SYSTEMS_FS = (seri_has_systems, get_systems_string, get_systems_annotation)
-

@@ -37,8 +37,8 @@ end
 
 # Evaluates the the drift function of the ODE corresponding to a reaction network.
 # Also checks that in place and out of place evaluations are identical.
-function f_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, structural_simplify = false)
-    prob = ODEProblem(rs, u, 0.0, p; combinatoric_ratelaws, structural_simplify)
+function f_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, mtkcompile = false)
+    prob = ODEProblem(rs, u, 0.0, p; combinatoric_ratelaws, mtkcompile)
     du = zeros(length(u))
     prob.f(du, prob.u0, prob.p, t)
     @test du == prob.f(prob.u0, prob.p, t)
@@ -47,8 +47,8 @@ end
 
 # Evaluates the the Jacobian of the drift function of the ODE corresponding to a reaction network.
 # Also checks that in place and out of place evaluations are identical.
-function jac_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, sparse = false, structural_simplify = false)
-    prob = ODEProblem(rs, u, 0.0, p; jac = true, combinatoric_ratelaws, sparse, structural_simplify)
+function jac_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, sparse = false, mtkcompile = false)
+    prob = ODEProblem(rs, u, 0.0, p; jac = true, combinatoric_ratelaws, sparse, mtkcompile)
     J = sparse ? deepcopy(prob.f.jac_prototype) : zeros(length(u), length(u))
     prob.f.jac(J, prob.u0, prob.p, t)
     @test J ≈ prob.f.jac(prob.u0, prob.p, t) atol = 1e-14 rtol = 1e-14
@@ -57,8 +57,8 @@ end
 
 # Evaluates the the diffusion function of the SDE corresponding to a reaction network.
 # Also checks that in place and out of place evaluations are identical.
-function g_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, structural_simplify = false)
-    prob = SDEProblem(rs, u, 0.0, p; combinatoric_ratelaws, structural_simplify)
+function g_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, mtkcompile = false)
+    prob = SDEProblem(rs, u, 0.0, p; combinatoric_ratelaws, mtkcompile)
     dW = zeros(length(u), numreactions(rs) + length(ModelingToolkitBase.get_brownians(rs)))
     prob.g(dW, prob.u0, prob.p, t)
     @test dW == prob.g(prob.u0, prob.p, t)

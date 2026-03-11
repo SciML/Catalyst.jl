@@ -200,13 +200,13 @@ hhmodel2 = complete(hhmodel2)
 ```
 Let's again solve the system starting from the previously calculated resting
 state, using the same applied current as above (to verify we get the same
-figure). Note, we now run `structural_simplify` from ModelingToolkit to
+figure). Note, we now run `mtkcompile` from ModelingToolkit to
 eliminate the algebraic equations for the ionic currents when constructing the
 `ODEProblem`:
 
 ```@example hh1
 @unpack I₀,V = hhmodel2
-oprob = ODEProblem(hhmodel2, u_ss, tspan, [I₀ => 10.0]; structural_simplify = true)
+oprob = ODEProblem(hhmodel2, u_ss, tspan, [I₀ => 10.0]; mtkcompile = true)
 sol = solve(oprob)
 plot(sol, idxs = V, legend = :outerright)
 ```

@@ -503,13 +503,13 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
     ps = get_ps(rs)
     initeqs = Equation[]
-    defs = MT.initial_conditions(rs)
+    ics = MT.initial_conditions(rs)
     obs = MT.observed(rs)
 
     # make dependent species observables and add conservation constants as parameters
     if remove_conserved && !isempty(conservedequations(rs))
         nps = get_networkproperties(rs)
-        
+
         # add the conservation constants as parameters and set their values
         ps = copy(ps)
         push!(ps, nps.conservedconst)
@@ -523,7 +523,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
             append!(eqs, [0 ~ ceq.rhs - ceq.lhs for ceq in conservedequations(rs)])
         end
 
-        # create initialization equations (only used for nonlinear systems)        
+        # create initialization equations (only used for nonlinear systems)
         if compute_cl_initeqs && !include_cl_as_eqs
             initialmap = Dict(u => Initial(u) for u in species(rs))
             conseqs = conservationlaw_constants(rs)
@@ -545,7 +545,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
         append!(eqs, ceqs)
     end
 
-    eqs, sts, ps, obs, defs, initeqs
+    eqs, sts, ps, obs, ics, initeqs
 end
 
 ### Utility ###
@@ -704,7 +704,7 @@ function hybrid_model(rs::ReactionSystem;
 
     # --- Add constraints (BC species, constraint equations, conserved species) ---
     if has_continuous
-        eqs, us, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
+        eqs, us, ps, obs, ics = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
     else
         # Pure jump case.
         any(isbc, get_unknowns(flatrs)) &&
@@ -712,7 +712,7 @@ function hybrid_model(rs::ReactionSystem;
         us = ists
         ps = get_ps(flatrs)
         obs = MT.observed(flatrs)
-        defs = MT.initial_conditions(flatrs)
+        ics = MT.initial_conditions(flatrs)
     end
 
     # --- Construct unified System ---
@@ -722,7 +722,8 @@ function hybrid_model(rs::ReactionSystem;
         jumps,
         observed = obs,
         name,
-        initial_conditions = merge(initial_conditions, defs),
+        bindings = MT.get_bindings(flatrs),
+        initial_conditions = merge(initial_conditions, ics),
         checks,
         continuous_events = MT.get_continuous_events(flatrs),
         discrete_events = MT.get_discrete_events(flatrs),
@@ -825,6 +826,7 @@ function system_to_reactionsystem(sys::MT.AbstractSystem;
     devs = MT.get_discrete_events(sys)
     tstps = MT.get_tstops(sys)
     meta = MT.get_metadata(sys)
+    binds = MT.get_bindings(sys)
     ics = MT.initial_conditions(sys)
 
     # Mark non-BC species as BC species so D(species) is allowed in equations.
@@ -842,6 +844,7 @@ function system_to_reactionsystem(sys::MT.AbstractSystem;
         observed = obs,
         name,
         combinatoric_ratelaws,
+        bindings = binds,
         initial_conditions = ics,
         continuous_events = cevs,
         discrete_events = devs,
@@ -878,31 +881,35 @@ Keyword args and default values:
 function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, checks = false, initial_conditions = Dict(),
-        all_differentials_permitted = false, expand_catalyst_funs = true, 
+        all_differentials_permitted = false, expand_catalyst_funs = true,
         include_cl_as_eqs = false, kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, System)
     isautonomous(rs) || error(is_autonomous_error(get_iv(rs)))
-    
+
     # Generates system equations.
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, (remove_conserved && !include_cl_as_eqs))
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
         as_odes = false, include_zero_odes = false, expand_catalyst_funs)
-    eqs, us, ps, obs, defs, initeqs = addconstraints!(eqs, fullrs, ists, ispcs;
+    eqs, us, ps, obs, ics, initeqs = addconstraints!(eqs, fullrs, ists, ispcs;
         remove_conserved, compute_cl_initeqs = !include_cl_as_eqs, include_cl_as_eqs)
+
+    # Comoutes the correct initial conditions and bindings.
+    initial_conditions, bindings = MT.convert_bindings_for_time_independent_system(rs)
+    initial_conditions = merge(initial_conditions, ics)
 
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.
     all_differentials_permitted || nonlinear_convert_differentials_check(rs)
     eqs = Equation[remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
-
     System(eqs, us, ps;
         name,
         observed = obs, initialization_eqs = initeqs,
-        initial_conditions = merge(initial_conditions, defs),
+        bindings,
+        initial_conditions,
         checks,
         metadata = MT.get_metadata(rs),
         kwargs...)
@@ -999,13 +1006,13 @@ function sde_model(rs::ReactionSystem;
             remove_conserved, expand_catalyst_funs)
         noiseeqs = assemble_diffusion(flatrs, ists, ispcs; combinatoric_ratelaws,
             remove_conserved, expand_catalyst_funs)
-        eqs, us, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
+        eqs, us, ps, obs, ics = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
 
         return MT.System(eqs, get_iv(flatrs), us, ps;
             noise_eqs = noiseeqs,
             observed = obs,
             name,
-            initial_conditions = merge(initial_conditions, defs),
+            initial_conditions = merge(initial_conditions, ics),
             checks,
             continuous_events = MT.get_continuous_events(flatrs),
             discrete_events = MT.get_discrete_events(flatrs),
@@ -1150,15 +1157,15 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
         check_length = false, name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
-        expand_catalyst_funs = true, structural_simplify = false, kwargs...)
+        expand_catalyst_funs = true, mtkcompile = false, kwargs...)
     osys = ode_model(rs; name, combinatoric_ratelaws, include_zero_odes, checks,
         remove_conserved, expand_catalyst_funs)
 
-    # Handles potential differential algebraic equations (which requires `structural_simplify`).
-    if structural_simplify
+    # Handles potential differential algebraic equations (which requires `mtkcompile`).
+    if mtkcompile
         osys = MT.mtkcompile(osys)
     elseif has_alg_equations(rs)
-        error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
+        error("The input ReactionSystem has algebraic equations. This requires setting `mtkcompile = true` within `ODEProblem` call.")
     else
         osys = complete(osys)
     end
@@ -1173,7 +1180,7 @@ DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         p = DiffEqBase.NullParameters(), args...;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, checks = false, check_length = false,
-        structural_simplify = remove_conserved, all_differentials_permitted = false,
+        mtkcompile = remove_conserved, all_differentials_permitted = false,
         kwargs...)
 ```
 
@@ -1190,7 +1197,7 @@ Keyword args and default values:
   underlying set of reactions (ignoring coupled ODE or algebraic equations). For each
   conservation law one steady-state equation is eliminated, and replaced with the
   conservation law. This ensures a non-singular Jacobian. When using this option, it is
-  recommended to call `ModelingToolkitBase.structural_simplify` on the converted system to then
+  recommended to call `ModelingToolkitBase.mtkcompile` on the converted system to then
   eliminate the conservation laws from the system equations.
 - `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
   with their rational function representation when converting to another system type. Set to
@@ -1200,10 +1207,10 @@ function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         p = DiffEqBase.NullParameters(), args...;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false,  checks = false, check_length = false, expand_catalyst_funs = true,
-        structural_simplify = false, all_differentials_permitted = false, kwargs...)
+        mtkcompile = false, all_differentials_permitted = false, kwargs...)
     nlsys = ss_ode_model(rs; name, combinatoric_ratelaws, checks, all_differentials_permitted,
         remove_conserved, expand_catalyst_funs)
-    nlsys = structural_simplify ? MT.mtkcompile(nlsys) : complete(nlsys)
+    nlsys = mtkcompile ? MT.mtkcompile(nlsys) : complete(nlsys)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any,Any}(u0), Dict{Any,Any}(p))
     return NonlinearProblem(nlsys, prob_cond, args...; check_length,
         kwargs...)
@@ -1214,7 +1221,7 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         p = DiffEqBase.NullParameters(), args...;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, checks = false, check_length = false,
-        remove_conserved = false, structural_simplify = false,
+        remove_conserved = false, mtkcompile = false,
         expand_catalyst_funs = true, use_legacy_noise = true, kwargs...)
 
     # Flatten once upfront and pass to sde_model.
@@ -1223,20 +1230,23 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         include_zero_odes, checks, remove_conserved, use_legacy_noise)
 
     # Determine if we need mtkcompile:
+    # - If user brownians are present, sde_model routes through hybrid_model which requires mtkcompile
     # - If using Brownian-based approach (not legacy), mtkcompile extracts the noise matrix
     # - If there are algebraic equations, mtkcompile handles structural simplification
-    # - If structural_simplify is requested explicitly
+    # - If mtkcompile is requested explicitly
     has_constraints = has_alg_equations(flatrs) || any(isbc, get_unknowns(flatrs))
-    needs_mtkcompile = structural_simplify ||
+    has_user_brownians = !isempty(MT.brownians(flatrs))
+    needs_mtkcompile = mtkcompile ||
                        has_alg_equations(flatrs) ||
                        !use_legacy_noise ||
+                       has_user_brownians ||
                        has_constraints
 
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any,Any}(u0), Dict{Any,Any}(p))
 
     if needs_mtkcompile
-        if !structural_simplify && has_alg_equations(flatrs)
-            error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `SDEProblem` call.")
+        if !mtkcompile && has_alg_equations(flatrs)
+            error("The input ReactionSystem has algebraic equations. This requires setting `mtkcompile = true` within `SDEProblem` call.")
         end
         sde_sys = MT.mtkcompile(sde_sys)
         return SDEProblem(sde_sys, prob_cond, tspan, args...; check_length, kwargs...)
@@ -1336,7 +1346,7 @@ For SDE+Jump combinations, the returned `JumpProblem` wraps an `SDEProblem` inte
   Defaults to `Jump` so that only reactions explicitly tagged as ODE/SDE are treated as continuous.
 - `combinatoric_ratelaws = get_combinatoric_ratelaws(rs)`: Use factorial/binomial scaling.
 - `save_positions = (true, true)`: For VariableRateJumps, save before/after jump.
-- `structural_simplify = false`: Apply structural simplification (required for algebraic equations).
+- `mtkcompile = false`: Apply structural simplification (required for algebraic equations).
 - Other kwargs passed to the underlying problem constructor.
 
 # Returns
@@ -1378,7 +1388,7 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
         expand_catalyst_funs = true,
         save_positions = (true, true),
         checks = false,
-        structural_simplify = false,
+        mtkcompile = false,
         kwargs...)
     # Determine which scale types are present.
     flatrs = Catalyst.flatten(rs)
@@ -1427,10 +1437,10 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
 
     else
         # Pure ODE → ODEProblem
-        if structural_simplify
+        if mtkcompile
             sys = MT.mtkcompile(sys)
         elseif has_alg_equations(flatrs)
-            error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `HybridProblem` call.")
+            error("The input ReactionSystem has algebraic equations. This requires setting `mtkcompile = true` within `HybridProblem` call.")
         else
             sys = complete(sys)
         end
@@ -1444,15 +1454,15 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
         check_length = false, name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, include_zero_odes = true, checks = false,
-        expand_catalyst_funs = true, structural_simplify = false, kwargs...)
+        expand_catalyst_funs = true, mtkcompile = false, kwargs...)
     osys = ode_model(rs; name, combinatoric_ratelaws, include_zero_odes, checks,
         remove_conserved, expand_catalyst_funs)
 
-    # Handles potential differential algebraic equations (which requires `structural_simplify`).
-    if structural_simplify
+    # Handles potential differential algebraic equations (which requires `mtkcompile`).
+    if mtkcompile
         (osys = MT.mtkcompile(osys))
     elseif has_alg_equations(rs)
-        error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
+        error("The input ReactionSystem has algebraic equations. This requires setting `mtkcompile = true` within `ODEProblem` call.")
     else
         osys = complete(osys)
     end

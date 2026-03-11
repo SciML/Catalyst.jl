@@ -9,7 +9,7 @@ on:
       - master
     paths-ignore:
       - 'docs/**'
-      
+
 concurrency:
   # Skip intermediate builds: always, but for the master branch.
   # Cancel intermediate builds: always, but for the master branch.
@@ -36,4 +36,5 @@ jobs:
     with:
       julia-version: "${{ matrix.version }}"
       group: "${{ matrix.group }}"
+      coverage: false
     secrets: "inherit"
