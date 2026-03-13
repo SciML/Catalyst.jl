@@ -148,6 +148,7 @@ end
 ```
 Here, we will simulate it using the ODE and jump approaches, and do so across three different scales of population sizes. 
 ```@example crn_library_logistic_growth
+using OrdinaryDiffEqDefault, JumpProcesses, Plots
 tspan = (0.0, 10.0)
 oprob_1 = ODEProblem(logistic_growth, [:u => 1], tspan, [:r => 1.0, :K => 10.0])
 oprob_2 = ODEProblem(logistic_growth, [:u => 10*1], tspan, [:r => 1.0, :K => 10*10.0])
