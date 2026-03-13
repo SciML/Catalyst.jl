@@ -205,7 +205,7 @@ plot(sol)
 
 ## [Coupled reaction networks with algebraic equations](@id coupled_models_algeqs)
 Catalyst also permits the coupling*algebraic equations* (equations not containing differentials). In practice, these are handled similarly to how differential equations are handled, but with the following differences:
-- The `structural_simplify = true` option must be provided to any `ODEProblem` (or other problem) generated from a model containing algebraic equations.
+- The `mtkcompile = true` option must be provided to any `ODEProblem` (or other problem) generated from a model containing algebraic equations.
 - For variables involved in algebraic equations, a *guess* is provided, rather than an initial condition.
 
 A special case of algebraic equations (where a new variable is trivially produced by an algebraic expression) is *observables*. These are described in a separate section [here](@ref dsl_advanced_options_observables).
@@ -231,7 +231,7 @@ nothing # hide
 Next, we provide `guesses` to our `ODEProblem` as an additional argument. Furthermore, we will use the `mtkcompile = true` argument, which is always required when simulating models containing algebraic equations. With these modifcations, the model can be simulated using standard workflows.
 ```@example coupled_eqs_alg_eq
 using OrdinaryDiffEqDefault, Plots
-oprob = ODEProblem(algebraic_crn, u0, 10.0, ps; structural_simplify = true, guesses)
+oprob = ODEProblem(algebraic_crn, u0, 10.0, ps; mtkcompile = true, guesses)
 sol = solve(oprob)
 plot(sol)
 ```
@@ -240,7 +240,7 @@ There is no requirement on which values are provided as guesses and which as ini
 ```@example coupled_eqs_alg_eq
 u0 = [:X2 => 1.0]
 guesses = [:X => 1.0]
-oprob = ODEProblem(algebraic_crn, u0, 10.0, ps; structural_simplify = true, guesses)
+oprob = ODEProblem(algebraic_crn, u0, 10.0, ps; mtkcompile = true, guesses)
 nothing # hide
 ```
 
@@ -256,7 +256,7 @@ Here, $X2$ can be fully eliminated from the system when the equations are genera
 ```@example coupled_eqs_alg_eq
 u0 = [:X => 1.0]
 ps = [:v => 2.0, :K => 1.0, :d => 0.2, :kB => 0.1, :kD => 0.4]
-oprob = ODEProblem(algebraic_crn_alt, u0, 10.0, ps; structural_simplify = true, guesses)
+oprob = ODEProblem(algebraic_crn_alt, u0, 10.0, ps; mtkcompile = true, guesses)
 sol = solve(oprob)
 nothing # hide
 ```

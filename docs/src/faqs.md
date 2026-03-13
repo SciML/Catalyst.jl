@@ -365,7 +365,7 @@ However, it is possible to specify different symbols as differential operators. 
 Non-default differentials can be declared using the `@differentials` option. E.g. here we declare the previous model, but call our differential `Δ` instead of `D`:
 ```@example faq_custom_differentials
 rn = @reaction_network begin
-    @differential Δ = Differential(t)
+    @differentials Δ = Differential(t)
     @equations Δ(V) ~ X - λ * V
     (p*V,d), 0 <--> X
 end
@@ -382,6 +382,6 @@ However, we can assign it to any other symbol:
 ```
 or declare it manually using a similar syntax as in the DSL:
 ```@example faq_custom_differentials
-t = default_time()
+t = default_t()
 Dt = Differential(t)
 ```
