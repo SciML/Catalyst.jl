@@ -170,7 +170,7 @@ Finally, we can estimate the posterior distributions of all parameters. First we
 n_steps = 1000
 n_chains = 4
 sir_model = sir_likelihood(I_observed, oprob_true, setp_oop, t_measurement)
-chain = sample(sir_model, NUTS(), MCMCThreads(), n_steps, n_chains; progress = false)
+chain = sample(sir_model, NUTS(), MCMCThreads(), n_steps, n_chains; progress = false, verbose = false)
 nothing # hide
 ```
 Here, `sample`'s input is:
