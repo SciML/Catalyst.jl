@@ -354,6 +354,7 @@ end
 ## [How do I designating custom differential operators when creating coupled differential equation models](@id faq_custom_differentials)
 When [coupling differential equations to reaction network models](@ref coupled_models_dsl), by default, `D` designates the differential operator:
 ```@example faq_custom_differentials
+using Catalyst
 rn = @reaction_network begin
     @equations D(V) ~ X - λ * V
     (p*V,d), 0 <--> X
