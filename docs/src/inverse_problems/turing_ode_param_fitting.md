@@ -20,7 +20,7 @@ Pkg.add("Turing")
 ```@raw html
 <details><summary><strong>Quick-start example</strong></summary>
 ```
-The following code provides a minimal example of how to infer parameter posteriors from data usings the [Turing.jl](https://github.com/TuringLang/Turing.jl) package.
+The following code provides a minimal example of how to infer parameter posteriors from data using the [Turing.jl](https://github.com/TuringLang/Turing.jl) package.
 ```julia
 # Create reaction network model (an SIR model).
 using Catalyst
@@ -70,7 +70,7 @@ using Turing
     end
 end
 
-# Estimates parameter priors through Markov Chain Monte Carlo.
+# Estimates parameter posteriors through Markov Chain Monte Carlo.
 import SymbolicIndexingInterface # Required for `setp_oop`.
 n_steps = 1000
 n_chains = 4
@@ -87,11 +87,11 @@ plot(chain)
 ```
   \
 
-In [previous](@ref petab_parameter_fitting) [sections](@ref optimization_parameter_fitting) we have described how to fit parameter values to data. These sections demonstrated so-called [*frequentist approaches*](https://en.wikipedia.org/wiki/Frequentist_inference), i.e. where we attempt to find the single solution which fits the data best. An alternative is to instead use a [*Bayesian approach*](https://en.wikipedia.org/wiki/Bayesian_statistics)[^1]. Here, we recognise that we cannot plausibly find the true parameter set, and instead attempts to accurate quantify our knowledge of the true parameter set as *probability distributions*. Another hallmark of Bayesian approaches is the incorporation of *prior knowledge*, i.e., we assume that we have some prior "guess" of what the parameter set solution might be, which is incorporated in the inference of the output distribution (also known as the *posterior distribution*). Generally, posterior distributions cannot be computed directly, however, so called *Markov Chain Monte Carlo* (MCMC) methods can be used to generate samples from them. Here, a correctly constructed MCMC that is run for enough steps should provide a good estimate of the posterior distribution. Bayesian inference is advantageous in that it provides more information of the solution (as opposed to frequentist approaches), which also can be used as some form of [identifiability analysis](@ref structural_identifiability). On the flips side, these methods are often more complicated and computationally intensive.
+In the [previous](@ref petab_parameter_fitting) [sections](@ref optimization_parameter_fitting), we described how to fit parameter values to data. These sections demonstrated so-called [*frequentist approaches*](https://en.wikipedia.org/wiki/Frequentist_inference), i.e. approaches where we attempt to find the single solution that fits the data best. An alternative is to instead use a [*Bayesian approach*](https://en.wikipedia.org/wiki/Bayesian_statistics)[^1]. Here, we recognise that we cannot plausibly find the true parameter set, and instead attempt to accurately quantify our knowledge of the true parameter set as *probability distributions*. Another hallmark of Bayesian approaches is the incorporation of *prior knowledge*, i.e. we assume that we have some prior "guess" of what the parameter solution might be, which is incorporated into the inferred output distribution (also known as the *posterior distribution*). Generally, posterior distributions cannot be computed directly. However, so-called *Markov Chain Monte Carlo* (MCMC) methods can be used to generate samples from them. A correctly constructed MCMC method that is run for enough steps should provide a good estimate of the posterior distribution. Bayesian inference is advantageous in that it provides more information about the solution than frequentist approaches, which can also be used as a form of [identifiability analysis](@ref structural_identifiability). On the flip side, these methods are often more complicated and computationally intensive.
 
-In Julia, Bayesian inference is primarily carried out using the [Turing.jl](https://github.com/TuringLang/Turing.jl) package. In this tutorial, we will give a brief introduction on Turing, and how to combine it with Catalyst to perform Bayesian inference on model parameters to data. A more throughout introduction to Turing can be found in its [documentation](https://turinglang.org/docs/getting-started/index.html). Finally, we note that PEtab (the primary package for fitting the parameters of ODEs) offer [direct support for Bayesian inference](https://sebapersson.github.io/PEtab.jl/stable/inference/). However, if you have an inverse problem that cannot be encoded using PEtab, using a Turing-based workflow (as described below) is an alternative approach.
+In Julia, Bayesian inference is primarily carried out using the [Turing.jl](https://github.com/TuringLang/Turing.jl) package. In this tutorial, we give a brief introduction to Turing and show how to combine it with Catalyst to perform Bayesian inference for model parameters from data. A more thorough introduction to Turing can be found in its [documentation](https://turinglang.org/docs/getting-started/index.html). Finally, we note that PEtab (the primary package for fitting the parameters of ODEs) offers [direct support for Bayesian inference](https://sebapersson.github.io/PEtab.jl/stable/inference/). However, if you have an inverse problem that cannot be encoded using PEtab, a Turing-based workflow (as described below) is an alternative approach.
 
-While in frequentist parameter fitting, we can use a cost function based on likelihoods (as created by e.g. [PEtab.jl](@ref petab_parameter_fitting)) or something else (e.g. sum of square distances), Bayesian inference is heavily associated with likelihoods. Here, we will assign each unknown parameter a prior distribution. Next, we will assign each observed quantity an observation likelihood. Using these, the probability of observing our given data can be computed for any potential parameter set. Next, the posterior distribution of the true parameter set can be computed.
+In frequentist parameter fitting, we can use a cost function based on likelihoods (as created by e.g. [PEtab.jl](@ref petab_parameter_fitting)) or something else (e.g. a sum of squared distances). Bayesian inference is more explicitly likelihood-based. Here, we assign each unknown parameter a prior distribution. Next, we assign each observed quantity an observation likelihood. Using these, the probability of observing our data can be computed for any potential parameter set, which in turn lets us infer the posterior distribution of the true parameter set.
 
 ## [Inferring parameter posterior distributions for an ODE model using Turing](@id turing_parameter_fitting_basic_example)
 For this example, we will consider a simple [SIR model of an infectious disease](@ref basic_CRN_library_sir).
@@ -121,15 +121,15 @@ I_observed = [rand(Normal(I, σI)) for I in I_observed]
 plot!(t_measurement, I_observed; label = "I (measured)", color = 2, seriestype = :scatter)
 ```
 
-Next, we are ready to create a Turing model/likelihood function (from which posteriors can be estimated). The Turing model have similarities to [the loss function utilised for normal parameter fitting workflows](@ref optimization_parameter_fitting_basics), but with a few differences:
+Next, we are ready to create a Turing model/likelihood function (from which posteriors can be estimated). The Turing model has similarities to [the loss function utilised for normal parameter fitting workflows](@ref optimization_parameter_fitting_basics), but with a few differences:
 - The declaration is prepended with the `@model` macro (which enables some specialised notation).
-- The function have no input parameter values. However, its input should contain all observed quantities (and also other potential structures used within the likelihood function).
-- All quantities which posteriors we wish to infer (in our case the parameters) are declared within the function (together with their priors).
-- The function does not return a loss value. Instead it uses a special notation to compute likelihood of any observables (and from these Turing can compute a total likelihood of each parameter set).
+- The function has no input parameter values. However, its input should contain all observed quantities (and also any other structures used within the likelihood function).
+- All quantities whose posteriors we wish to infer (in our case the parameters) are declared within the function, together with their priors.
+- The function does not return a loss value. Instead it uses a special notation to compute the likelihood of the observables, from which Turing can compute a total likelihood for each parameter set.
 
-Here, we declare our parameters on the form `p ~ Distribution(...)` where the left-hand side is the parameter and the right-hand side is its prior distribution (any distribution defined within the [Distributions.jl](https://github.com/JuliaStats/Distributions.jl) package can be used). The likelihood of observing each observable is defined in a similar manner, i.e `o ~ Distribution(...)`. The only difference is that the observables have their value already declared at the time of the `o ~ Distribution(...)` notation, while parameters are declared through* the `p ~ Distribution(...)` notation.
+Here, we declare our parameters on the form `p ~ Distribution(...)` where the left-hand side is the parameter and the right-hand side is its prior distribution (any distribution defined within the [Distributions.jl](https://github.com/JuliaStats/Distributions.jl) package can be used). The likelihood of observing each observable is defined in a similar manner, i.e. `o ~ Distribution(...)`. The only difference is that the observables already have their values declared at the time of the `o ~ Distribution(...)` statement, while parameters are declared through the `p ~ Distribution(...)` notation.
 
-In our case, we first declare each parameter and their priors. Next we simulate the SIR model for a specific parameter set. Then, we compute the likelihood of observing out observables given the simulation.
+In our case, we first declare each parameter and its prior. Next, we simulate the SIR model for a specific parameter set. Then, we compute the likelihood of observing our observables given the simulation.
 ```@example turing_paramfit
 using Turing, SymbolicIndexingInterface
 setp_oop = SymbolicIndexingInterface.setp_oop(oprob_true, [:γ, :ν])
@@ -159,10 +159,10 @@ nothing # hide
 ```
 
 Some specific comments regarding how we have declared the model above:
-- Like for [normal parameter fitting](@ref optimization_parameter_fitting_basics), we use the `maxiters = 10000` (to prevent spending long time simulating unfeasible parameter sets) and `verbose = false` (to prevent unnecessary printing of warning messages) arguments to `solve`.
-- Again, we need to handle parameter sets where the model cannot be successfully simulated. Here, we use `Turing.@addlogprob! -Inf` to set an non-existent likelihood, and `return nothing` to finish further evaluation of the specific parameter set.
-- Just like for normal parameter fitting we wish to [fit parameters on a log scale](@ref optimization_parameter_fitting_log_scale). Here we do so by declaring log-scaled prior distributions.
-- Here we assume that we (correctly) know that the noise is normally distributed. However, we assume that we *do not know the standard deviation*. Instead, we make the standard deviation a third parameter (which value we infer as part of the inference process). More complicated noise formulas can be used (and is sometimes even advisable[^2]).
+- Like for [normal parameter fitting](@ref optimization_parameter_fitting_basics), we use the `maxiters = 10000` (to prevent spending a long time simulating unfeasible parameter sets) and `verbose = false` (to prevent unnecessary printing of warning messages) arguments to `solve`.
+- Again, we need to handle parameter sets where the model cannot be successfully simulated. Here, we use `Turing.@addlogprob! -Inf` to set a non-existent likelihood, and `return nothing` to stop further evaluation of the specific parameter set.
+- Just like for normal parameter fitting, we wish to [fit parameters on a log scale](@ref optimization_parameter_fitting_log_scale). Here we do so by declaring log-scaled prior distributions.
+- Here we assume that we (correctly) know that the noise is normally distributed. However, we assume that we *do not know the standard deviation*. Instead, we make the standard deviation a third parameter whose value we infer as part of the inference process. More complicated noise formulas can be used (and are sometimes even advisable[^2]).
 - Like for normal parameter fitting, we use [SymbolicIndexingInterface](https://github.com/SciML/SymbolicIndexingInterface.jl)'s `setp_oop` function to update the parameter values in each step (as this works well with [*automatic differentiation*](@ref optimization_parameter_fitting_AD)).
 
 Finally, we can estimate the posterior distributions of all parameters. First we generate a Turing model from the likelihood function declared above. Here, we also provide the likelihood's input values (the observables and all other required inputs, such as the base `ODEProblem`). Next, we use Turing's `sample` function to compute the posteriors.
@@ -177,25 +177,25 @@ Here, `sample`'s input is:
 - The Turing model.
 - The sampling method (here we use the [*No U-Turn Sampler*](https://www.jmlr.org/papers/volume15/hoffman14a/hoffman14a.pdf), a type of [*Hamiltonian Monte Carlo sampler*](https://en.wikipedia.org/wiki/Hamiltonian_Monte_Carlo))
 - The parallelisation approach (here we use `MCMCThreads`, which parallelises through [*multithreading*](https://en.wikipedia.org/wiki/Multithreading_(computer_architecture))).
-- The number of steps to take in each chain
-- The number of parallel chain.
-- An optional argument disabling the printing of updates through the MCMC computation. 
+- The number of steps to take in each chain.
+- The number of parallel chains.
+- Optional arguments disabling the printing of updates during the MCMC computation.
 
-Additional options are discussed [here](@ref turing_parameter_fitting_other_options) and in [Turing's documentation](@ref https://turinglang.org/).
+Additional options are discussed in [Turing's documentation](https://turinglang.org/).
 
-Turing contain a plotting interface for plotting the results:
+Turing contains a plotting interface for plotting the results:
 ```@example turing_paramfit
 using StatsPlots
 plot(chain)
 ```
-Here, for each parameter, the left-hand side is shows the MCMC chains, and the right-hand side plot the posterior distributions (one for each of the four chains).
+Here, for each parameter, the left-hand side shows the MCMC chains, and the right-hand side plots the posterior distributions (one for each of the four chains).
 
 ### [Encoding non-negativity in observables formulas](@id turing_parameter_fitting_nonnegative_observables)
 In biology, most quantities are non-negative, which is information that we wish to incorporate in our inference problem. This holds both for priors (i.e. we know that the inferred parameters are non-negative) and observables (i.e. we know that the observed quantities are non-negative). This can be encoded either by:
 - Using a prior/observation formula where the distribution is strictly non-negative.
 - Truncating the prior/observation formula distribution at zero.
 
-In the previous example we used the former approach for our parameter priors - i.e. `γ ~ LogUniform(0.00001, 0.001)` is a strictly non-negative distribution, implying the information that `γ` is non-negative. However, for our observations we used `I_observed[idx] ~ Normal(sol[:I][idx], σI)`. Here, `Normal(sol[:I][idx], σI)` suggests that negative number of infected cases can be observed. While the way with which we generated our synthetic data mean that this actually could happen, for real applications, we might want to encode non-negativity in the distribution. A simple alternative is to truncate the distribution at zero using the [`truncated`](https://juliastats.org/Distributions.jl/stable/truncate/#Distributions.truncated) function. Here we can use
+In the previous example we used the former approach for our parameter priors, i.e. `γ ~ LogUniform(0.00001, 0.001)` is a strictly non-negative distribution, implying that `γ` is non-negative. However, for our observations we used `I_observed[idx] ~ Normal(sol[:I][idx], σI)`. Here, `Normal(sol[:I][idx], σI)` suggests that a negative number of infected cases can be observed. While the way in which we generated our synthetic data means that this actually could happen, for real applications we might want to encode non-negativity in the distribution. A simple alternative is to truncate the distribution at zero using the [`truncated`](https://juliastats.org/Distributions.jl/stable/truncate/#Distributions.truncated) function. Here we can use
 ```julia
 I_observed[idx] ~ truncated(Normal(sol[:I][idx], σI), 0.0, Inf)
 ```
@@ -207,7 +207,7 @@ Say that we want to sample a parameter set from the computed posterior distribut
 collect(chain.value[rand(1:n_steps), 1:3, rand(1:n_chains)])
 ```
 
-We can use this to e.g. draw $10$ random parameter sets from the posterior distribution, simulate the model for these parameter sets, and plot the resulting ensemble simulation. For this, we will create an `EnsembleProblem` from our `ODEProblem` using the approach described [here](@ref @id ensemble_simulations_varying_conditions).
+We can use this to e.g. draw $10$ random parameter sets from the posterior distribution, simulate the model for these parameter sets, and plot the resulting ensemble simulation. For this, we will create an `EnsembleProblem` from our `ODEProblem` using the approach described [here](@ref ensemble_simulations_varying_conditions).
 ```@example turing_paramfit
 function prob_func(prob, _, _)
     γ, ν = collect(chain.value[rand(1:n_steps), 1:2, rand(1:n_chains)])
@@ -217,7 +217,7 @@ eprob = EnsembleProblem(oprob_true; prob_func)
 sols = solve(eprob; trajectories = 10)
 plot(sols; color = [1 2 3], la = 0.5)
 ```
-Here, we can see that all parameter sets sampled from the posterior yields very similar simulations.
+Here, we can see that all parameter sets sampled from the posterior yield very similar simulations.
 
 
 ---
