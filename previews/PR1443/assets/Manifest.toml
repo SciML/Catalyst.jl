@@ -4434,9 +4434,9 @@ version = "1.4.0"
 
 [[deps.Turing]]
 deps = ["ADTypes", "AbstractMCMC", "AbstractPPL", "Accessors", "AdvancedHMC", "AdvancedMH", "AdvancedPS", "AdvancedVI", "BangBang", "Bijectors", "Compat", "DataStructures", "DifferentiationInterface", "Distributions", "DocStringExtensions", "DynamicPPL", "EllipticalSliceSampling", "ForwardDiff", "Libtask", "LinearAlgebra", "LogDensityProblems", "MCMCChains", "Optimization", "OptimizationOptimJL", "OrderedCollections", "Printf", "Random", "Reexport", "SciMLBase", "SpecialFunctions", "Statistics", "StatsAPI", "StatsBase", "StatsFuns"]
-git-tree-sha1 = "9ece6aebbdf69503559aed230b3b10c9b07714af"
+git-tree-sha1 = "05e4dd6cfcaaa38e423c054a82aa3a43abd9a5b3"
 uuid = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
-version = "0.43.1"
+version = "0.43.2"
 
     [deps.Turing.extensions]
     TuringDynamicHMCExt = "DynamicHMC"
