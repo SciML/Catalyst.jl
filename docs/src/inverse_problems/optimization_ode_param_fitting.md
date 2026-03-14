@@ -38,7 +38,7 @@ p_setter = setp_oop(oprob_base, [:p, :d])
 
 # A loss function measuring the sum-of-square distance between a simulation and the data.
 function loss(p, (oprob_base, p_setter, t_samples, X_samples))
-    # Updates the ODEProblem with teh proposed parameter set.
+    # Updates the ODEProblem with the proposed parameter set.
     p = p_setter(oprob_base, p)
     oprob = remake(oprob_base; p)
 
@@ -133,7 +133,7 @@ optprob = OptimizationProblem(objective_function, p_guess)
 nothing # hide
 ```
 !!! note
-    `OptimizationProblem`s cannot currently accept parameter values in the form of a map (e.g. `[:kB => 1.0, :kD => 1.0, :kP => 1.0]`). These must be provided as individual values (using the same order as the parameters occur in in the `parameters(rs)` vector). This should hopefully be remedied in future Optimization releases.
+    `OptimizationProblem`s cannot currently accept parameter values in the form of a map (e.g. `[:kB => 1.0, :kD => 1.0, :kP => 1.0]`). These must be provided as individual values (using the same order as the parameters occur in the `parameters(rs)` vector). This should hopefully be remedied in future Optimization releases.
 
 !!! note
     Especially if you check Optimization.jl's documentation, you will note that objective functions have the `f(u,p)` form. This is because `OptimizationProblem`s (like e.g. `ODEProblem`s) can take both variables (which are varied during the optimisation procedure), but also parameters that are fixed. In our case, the *optimisation variables* correspond to our *model parameters*. Hence, our model parameter values (`p`) are the first argument (`u`). This is also why we find the optimisation solution (our optimised parameter set) in `opt_sol`'s `u` field. Our optimisation problem does not actually have any parameters, hence, the second argument of `objective_function` is unused (that is why we call it `_`, a name commonly indicating unused function arguments).

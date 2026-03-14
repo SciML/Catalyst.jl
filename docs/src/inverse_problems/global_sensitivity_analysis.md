@@ -35,7 +35,7 @@ p_setter = setp_oop(oprob_base, [:β, :γ])
 
 # Creates a function that simulates the model an returns the peak number of cases.
 function peak_cases(p)
-    # Updates the ODEProblem with teh proposed parameter set.
+    # Updates the ODEProblem with the proposed parameter set.
     p = p_setter(oprob_base, p)
     oprob = remake(oprob_base; p)
     sol = solve(oprob; maxiters = 100000, verbose = false)
