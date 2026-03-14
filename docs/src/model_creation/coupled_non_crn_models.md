@@ -282,7 +282,7 @@ Furthermore, species and variables as declared using different syntax. Either wh
 using Catalyst # hide
 rs = @reaction_network begin
     @parameters d
-    @variables N = 1.0
+    @variables N(t) = 1.0
     @equations D(N) ~ -d*Xₐ*N
     (kₐ*N, kᵢ), Xᵢ <--> Xₐ
 end
