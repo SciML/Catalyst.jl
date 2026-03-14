@@ -22,7 +22,7 @@ Pkg.add("Turing")
 ```
 The following code provides a minimal example of how to infer parameter posteriors from data usings the [Turing.jl](https://github.com/TuringLang/Turing.jl) package.
 ```julia
-# Create reaction network model (a bistable switch).
+# Create reaction network model (an SIR model).
 using Catalyst
 sir = @reaction_network begin
     γ, S + I --> 2I
@@ -40,10 +40,10 @@ I_observed = sol_true(t_measurement; idxs = :I)
 σI = 10.0
 I_observed = [rand(Normal(I, σI)) for I in I_observed]
 plot(sol_true; label = ["S (true)" "I (true)" "R (true)"])
-plot!(t_measurement, I_observed; label = "I (measured)", color = 1, seriestype = :scatter)
+plot!(t_measurement, I_observed; label = "I (measured)", color = 2, seriestype = :scatter)
 
-# Create a Turing modelThe `x ~ Distribution(...)` notation both defines priors on the parameters
-# which posterior we wish to infer, and the likelihoods of the observables (which are function arguments).
+# Create a Turing model. The `x ~ Distribution(...)` notation both defines priors on the parameters
+# which posterior we wish to infer, and the likelihoods of the observables.
 # If `x` is an undefined parameter, `x` becomes a prior for an estimated parameter, else,
 # it is interpreted as an observable likelihood.
 using Turing
@@ -87,9 +87,9 @@ plot(chain)
 ```
   \
 
-In [previous](@ref petab_parameter_fitting) [sections](@ref optimization_parameter_fitting) we have described how to fit parameter values to data. These sections demonstrated so-called [*frequentist approaches*](https://en.wikipedia.org/wiki/Frequentist_inference), i.e. where we attempt to find the single solution which fits the data best. An alternative is to instead use a [*Bayesian approach*](https://en.wikipedia.org/wiki/Bayesian_statistics)[^1]. Here, we recognise that we cannot plausibly find the true solution, and instead attempts to accurate quantify our knowledge of the true solution as a *probability distribution* in solution space. Another hallmark of Bayesian approaches is the incorporation of *prior knowledge*, i.e., we assume that we have some prior "guess" of what the solution might be, which is incorporated in the inference of the solution distribution (also known as the *posterior distribution*). Generally, the posterior distribution cannot be computed directly, however, so called *Markov Chain Monte Carlo* (MCMC) methods can be used to generate samples from them. Here, a correctly constructed MCMC that is run for enough steps should provide a good estimate of the posterior distribution. Bayesian inference is advantageous in that it provides more information of the solution (as opposed to frequentist approaches), which also can be used as some form of identifiability analysis (@ref structural_identifiability). On the flips side, these methods are often more complicated and computationally intensive.
+In [previous](@ref petab_parameter_fitting) [sections](@ref optimization_parameter_fitting) we have described how to fit parameter values to data. These sections demonstrated so-called [*frequentist approaches*](https://en.wikipedia.org/wiki/Frequentist_inference), i.e. where we attempt to find the single solution which fits the data best. An alternative is to instead use a [*Bayesian approach*](https://en.wikipedia.org/wiki/Bayesian_statistics)[^1]. Here, we recognise that we cannot plausibly find the true parameter set, and instead attempts to accurate quantify our knowledge of the true parameter set as *probability distributions*. Another hallmark of Bayesian approaches is the incorporation of *prior knowledge*, i.e., we assume that we have some prior "guess" of what the parameter set solution might be, which is incorporated in the inference of the output distribution (also known as the *posterior distribution*). Generally, posterior distributions cannot be computed directly, however, so called *Markov Chain Monte Carlo* (MCMC) methods can be used to generate samples from them. Here, a correctly constructed MCMC that is run for enough steps should provide a good estimate of the posterior distribution. Bayesian inference is advantageous in that it provides more information of the solution (as opposed to frequentist approaches), which also can be used as some form of [identifiability analysis](@ref structural_identifiability). On the flips side, these methods are often more complicated and computationally intensive.
 
-In Julia, Bayesian inference is primarily carried out using the [Turing.jl](https://github.com/TuringLang/Turing.jl) package. In this tutorial, we will give a brief introduction on Turing, and how to combine it with Catalyst to perform Bayesian inference on model parameters to data. A more through introduction to Turing can be found in its [documentation](https://turinglang.org/docs/getting-started/index.html). Finally, we note that PEtab (the primary package for fitting the parameters of ODEs) offer [direct support for Bayesian inference](https://sebapersson.github.io/PEtab.jl/stable/inference/). However, if you have an inverse problem that cannot be encoded using PEtab, using a Turing-based workflow (as described below) is an alternative approach.
+In Julia, Bayesian inference is primarily carried out using the [Turing.jl](https://github.com/TuringLang/Turing.jl) package. In this tutorial, we will give a brief introduction on Turing, and how to combine it with Catalyst to perform Bayesian inference on model parameters to data. A more throughout introduction to Turing can be found in its [documentation](https://turinglang.org/docs/getting-started/index.html). Finally, we note that PEtab (the primary package for fitting the parameters of ODEs) offer [direct support for Bayesian inference](https://sebapersson.github.io/PEtab.jl/stable/inference/). However, if you have an inverse problem that cannot be encoded using PEtab, using a Turing-based workflow (as described below) is an alternative approach.
 
 While in frequentist parameter fitting, we can use a cost function based on likelihoods (as created by e.g. [PEtab.jl](@ref petab_parameter_fitting)) or something else (e.g. sum of square distances), Bayesian inference is heavily associated with likelihoods. Here, we will assign each unknown parameter a prior distribution. Next, we will assign each observed quantity an observation likelihood. Using these, the probability of observing our given data can be computed for any potential parameter set. Next, the posterior distribution of the true parameter set can be computed.
 
@@ -163,7 +163,7 @@ Some specific comments regarding how we have declared the model above:
 - Again, we need to handle parameter sets where the model cannot be successfully simulated. Here, we use `Turing.@addlogprob! -Inf` to set an non-existent likelihood, and `return nothing` to finish further evaluation of the specific parameter set.
 - Just like for normal parameter fitting we wish to [fit parameters on a log scale](@ref optimization_parameter_fitting_log_scale). Here we do so by declaring log-scaled prior distributions.
 - Here we assume that we (correctly) know that the noise is normally distributed. However, we assume that we *do not know the standard deviation*. Instead, we make the standard deviation a third parameter (which value we infer as part of the inference process). More complicated noise formulas can be used (and is sometimes even advisable[^2]).
-- Like for normal parameter fitting, we use [SymbolicIndexingInterface](https://github.com/SciML/SymbolicIndexingInterface.jl)'s`setp_oop` function to update the parameter values in each step (as this works well with [*automatic differentiation*](@ref optimization_parameter_fitting_AD)).
+- Like for normal parameter fitting, we use [SymbolicIndexingInterface](https://github.com/SciML/SymbolicIndexingInterface.jl)'s `setp_oop` function to update the parameter values in each step (as this works well with [*automatic differentiation*](@ref optimization_parameter_fitting_AD)).
 
 Finally, we can estimate the posterior distributions of all parameters. First we generate a Turing model from the likelihood function declared above. Here, we also provide the likelihood's input values (the observables and all other required inputs, such as the base `ODEProblem`). Next, we use Turing's `sample` function to compute the posteriors.
 ```@example turing_paramfit
@@ -175,7 +175,7 @@ nothing # hide
 ```
 Here, `sample`'s input is:
 - The Turing model.
-- The sampling method (here we use the [*No U-Turn Sampler*](https://www.jmlr.org/papers/volume15/hoffman14a/hoffman14a.pdf), a type of *Hamiltonian Monte Carlo sampler*(https://en.wikipedia.org/wiki/Hamiltonian_Monte_Carlo))
+- The sampling method (here we use the [*No U-Turn Sampler*](https://www.jmlr.org/papers/volume15/hoffman14a/hoffman14a.pdf), a type of [*Hamiltonian Monte Carlo sampler*](https://en.wikipedia.org/wiki/Hamiltonian_Monte_Carlo))
 - The parallelisation approach (here we use `MCMCThreads`, which parallelises through [*multithreading*](https://en.wikipedia.org/wiki/Multithreading_(computer_architecture))).
 - The number of steps to take in each chain
 - The number of parallel chain.
@@ -215,7 +215,7 @@ function prob_func(prob, _, _)
 end
 eprob = EnsembleProblem(oprob_true; prob_func)
 sols = solve(eprob; trajectories = 10)
-plot(sols; color = [1 2 3])
+plot(sols; color = [1 2 3], la = 0.5)
 ```
 Here, we can see that all parameter sets sampled from the posterior yields very similar simulations.
 
