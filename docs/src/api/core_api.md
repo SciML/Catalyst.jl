@@ -109,7 +109,7 @@ Below we overview these components.
 There are three basic sets of convenience accessors that will return information
 either from a top-level system, the top-level system and all sub-systems that
 are also `ReactionSystem`s (i.e. the full reaction-network), or the top-level
-system, all subs-systems, and all constraint systems (i.e. the full model). To
+system, all sub-systems, and all constraint systems (i.e. the full model). To
 retrieve info from just a base [`ReactionSystem`](@ref) `rn`, ignoring
 sub-systems of `rn`, one can use the ModelingToolkit accessors (these provide
 direct access to the corresponding internal fields of the `ReactionSystem`)
@@ -194,7 +194,7 @@ ModelingToolkitBase.diff_equations
 ```
 
 ## Basic species properties
-The following functions permits the querying of species properties.
+The following functions permit the querying of species properties.
 ```@docs
 isspecies
 Catalyst.isconstant
