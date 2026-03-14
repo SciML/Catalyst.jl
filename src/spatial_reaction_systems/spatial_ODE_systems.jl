@@ -8,7 +8,7 @@ struct LatticeTransportODEFunction{P, Q, R, S, T}
     LatticeTransportODEFunction instance.
     """
     ofunc::P
-    """The spaces's number of vertices."""
+    """The space's number of vertices."""
     num_verts::Int64
     """The system's number of species."""
     num_species::Int64

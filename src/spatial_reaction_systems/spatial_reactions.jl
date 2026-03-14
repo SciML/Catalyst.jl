@@ -28,7 +28,7 @@ end
 # A transport reaction. These are simple to handle, and should cover most types of spatial reactions.
 # Only permit constant rates (possibly consisting of several parameters).
 struct TransportReaction <: AbstractSpatialReaction
-    """The rate function (excluding mass action terms). Currently, only constants supported"""
+    """The rate function (excluding mass action terms). Currently, only constants are supported"""
     rate::Any
     """The species that is subject to diffusion."""
     species::SymbolicT
