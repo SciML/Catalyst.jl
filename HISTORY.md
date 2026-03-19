@@ -2,6 +2,8 @@
 
 ## Unreleased (on master)
 
+## Catalyst 16.1
+
 - Added `use_jump_ratelaws` keyword argument to `ode_model`, `sde_model`, `hybrid_model`,
   `ODEProblem`, `SDEProblem`, and `HybridProblem`. When set to `true`, both drift and
   diffusion terms use the jump/stochastic rate law (binomial propensities) instead of the
