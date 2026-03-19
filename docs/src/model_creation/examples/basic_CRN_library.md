@@ -137,6 +137,42 @@ fullplt = plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1), fmt = :
 Catalyst.PNG(fullplt) # hide
 ```
 
+## [Logistic growth](@id basic_CRN_library_logistic_growth)
+The [logistic growth model](https://en.wikipedia.org/wiki/Logistic_function) is a simple and well-known model within population dynamics. It describes a single-species population ($u$) which experiences linear growth but also competition for resources. It consists of the following two reactions:
+```@example crn_library_logistic_growth
+using Catalyst
+logistic_growth = @reaction_network begin
+    r, u --> 2u
+    r/K, 2u --> u
+end
+```
+Here, we will simulate it using the ODE and jump approaches, and do so across three different scales of population sizes. 
+```@example crn_library_logistic_growth
+using OrdinaryDiffEqDefault, JumpProcesses, Plots
+tspan = (0.0, 10.0)
+oprob_1 = ODEProblem(logistic_growth, [:u => 1], tspan, [:r => 1.0, :K => 10.0])
+oprob_2 = ODEProblem(logistic_growth, [:u => 10*1], tspan, [:r => 1.0, :K => 10*10.0])
+oprob_3 = ODEProblem(logistic_growth, [:u => 100*1], tspan, [:r => 1.0, :K => 100*10.0])
+jprob_1 = JumpProblem(logistic_growth, [:u => 1], tspan, [:r => 1.0, :K => 10.0])
+jprob_2 = JumpProblem(logistic_growth, [:u => 10*1], tspan, [:r => 1.0, :K => 10*10.0])
+jprob_3 = JumpProblem(logistic_growth, [:u => 100*1], tspan, [:r => 1.0, :K => 100*10.0])
+
+plot(solve(oprob_1); label = "ODE")
+p1 = plot!(solve(jprob_1); label = "Jump")
+plot(solve(oprob_2); label = "ODE")
+p2 = plot!(solve(jprob_2); label = "Jump")
+plot(solve(oprob_3); label = "ODE")
+p3 = plot!(solve(jprob_3); label = "Jump")
+plot(solve(oprob_1); label = "ODE") # hide
+p1 = plot!(solve(jprob_1); label = "Jump", seed = 1) # hide
+plot(solve(oprob_2); label = "ODE") # hide
+p2 = plot!(solve(jprob_2); label = "Jump", seed = 1) # hide
+plot(solve(oprob_3); label = "ODE") # hide
+p3 = plot!(solve(jprob_3); label = "Jump", seed = 1) # hide
+plot(p1, p2, p3; lw = 3, size=(800,700), layout = (3,1))
+```
+In the results, we can see that the overall dynamics are similar for all three cases. However, while the jump simulation exhibits clear stochasticity for low copy numbers, in the high-copy number case, the stochastic simulation converges to the deterministic one.
+
 ## [SIR infection model](@id basic_CRN_library_sir)
 The [SIR model](https://en.wikipedia.org/wiki/Compartmental_models_in_epidemiology#The_SIR_model) is the simplest model of the spread of an infectious disease. While the real system is very different from the chemical and cellular processes typically modelled with CRNs, it (and several other epidemiological systems) can be modelled using the same CRN formalism. The SIR model consists of three species: susceptible ($S$), infected ($I$), and removed ($R$) individuals, and two reaction events: infection and recovery.
 ```@example crn_library_sir

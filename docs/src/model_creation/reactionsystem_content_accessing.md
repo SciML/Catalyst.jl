@@ -118,7 +118,7 @@ reactionrates(sir)
 ```
 
 ### [Accessing content of models coupled to equations](@id model_accessing_basics_reactions)
-Previously, we have shown how to [couple equations to a chemical reaction network model](@ref constraint_equations_coupling_constraints), creating models containing [non-species unknowns (variables)](@ref constraint_equations_coupling_constraints). Here we create a birth-death model where some nutrient supply (modelled through the variable $N$) is depleted in the presence of $X$:
+Previously, we have shown how to [couple equations to a chemical reaction network model](@ref coupled_models_dsl), creating models containing [non-species unknowns (variables)](@ref coupled_models_dsl). Here we create a birth-death model where some nutrient supply (modelled through the variable $N$) is depleted in the presence of $X$:
 ```@example model_accessing_basics
 using Catalyst # hide
 coupled_crn = @reaction_network begin

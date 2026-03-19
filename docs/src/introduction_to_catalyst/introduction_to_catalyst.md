@@ -60,7 +60,7 @@ showing that we've created a new network model named `Repressilator` with the
 listed chemical species and unknowns. [`@reaction_network`](@ref) returns a
 [`ReactionSystem`](@ref), which we saved in the `rn` variable. It can
 be converted to a variety of other mathematical models represented as
-`ModelingToolkit.AbstractSystem`s, or analyzed in various ways using the
+`ModelingToolkitBase.AbstractSystem`s, or analyzed in various ways using the
 [Catalyst.jl API](@ref api). For example, to see the chemical species, parameters,
 and reactions we can use
 ```@example tut1
@@ -334,10 +334,9 @@ giving the ODE model
 \frac{dZ}{dt} &= k \frac{X^2}{2!} \frac{Y^3}{3!}.
 \end{align*}
 ```
-This implicit rescaling of rate constants can be disabled through explicit
-conversion of a [`ReactionSystem`](@ref) to another system via
-[`Base.convert`](@ref) using the `combinatoric_ratelaws=false` keyword
-argument, i.e.
+This implicit rescaling of rate constants can be disabled during conversion of a
+[`ReactionSystem`](@ref) to `System`, for example via [`ode_model`](@ref), using
+the `combinatoric_ratelaws=false` keyword argument, i.e.
 ```julia
 rn = @reaction_network ...
 ode_model(rn; combinatoric_ratelaws=false)
@@ -363,14 +362,13 @@ A more detailed summary of the precise mathematical equations Catalyst can gener
 1. For each of the preceding models we converted the `ReactionSystem` to, i.e.,
    ODEs, jumps, or SDEs, we had two paths for conversion:
 
-    a. Convert to the corresponding ModelingToolkit system and then use it in
-       creating the corresponding problem.
+    a. Convert to the a ModelingToolkitBase `System` and then use it in creating the corresponding problem.
 
     b. Directly create the desired problem type from the `ReactionSystem`.
 
    The latter is more convenient, however, the former will be more efficient if
    one needs to repeatedly create the associated `Problem`.
-2. ModelingToolkit offers many options for optimizing the generated ODEs and
+2. ModelingToolkitBase offers many options for optimizing the generated ODEs and
    SDEs, including options to build functions for evaluating Jacobians and/or
    multithreaded versions of derivative evaluation functions. See the options
    for
