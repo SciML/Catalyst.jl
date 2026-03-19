@@ -59,7 +59,8 @@ function _signed_stoich_term(stoich, expr)
 end
 
 function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserved = false,
-        physical_scales = nothing, expand_catalyst_funs = true)
+        physical_scales = nothing, expand_catalyst_funs = true,
+        use_jump_ratelaws = false)
     nps = get_networkproperties(rs)
     species_to_idx = Dict(x => i for (i, x) in enumerate(ispcs))
     rhsvec = Any[0 for _ in ispcs]
@@ -70,12 +71,17 @@ function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserv
     end
 
     for (rxidx, rx) in enumerate(get_rxs(rs))
-        # check this reaction should be treated as an ODE
+        # check this reaction should contribute to drift (ODE and SDE reactions do)
         !((physical_scales === nothing) ||
-            (physical_scales[rxidx] == PhysicalScale.ODE)) && continue
+            (physical_scales[rxidx] in (PhysicalScale.ODE, PhysicalScale.SDE))) && continue
 
-        rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws,
-            expand_catalyst_funs)
+        rl = if use_jump_ratelaws
+            jumpratelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws,
+                expand_catalyst_funs)
+        else
+            oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws,
+                expand_catalyst_funs)
+        end
         remove_conserved && (rl = substitute(rl, depspec_submap))
         for (spec, stoich) in rx.netstoich
             # dependent species don't get an ODE, so are skipped
@@ -109,9 +115,9 @@ end
 
 function assemble_drift(rs, ispcs; combinatoric_ratelaws = true, as_odes = true,
         include_zero_odes = true, remove_conserved = false, physical_scales = nothing,
-        expand_catalyst_funs = true)
+        expand_catalyst_funs = true, use_jump_ratelaws = false)
     rhsvec = assemble_oderhs(rs, ispcs; combinatoric_ratelaws, remove_conserved,
-        physical_scales, expand_catalyst_funs)
+        physical_scales, expand_catalyst_funs, use_jump_ratelaws)
     if as_odes
         D = Differential(get_iv(rs))
         eqs = [Equation(D(x), rhs)
@@ -133,8 +139,12 @@ This is a shared helper used by both `assemble_diffusion` (legacy noise matrix p
 """
 function foreach_noise_coeff(f, rx, species_to_idx, nps, depspec_submap;
         combinatoric_ratelaws = true, remove_conserved = false,
-        expand_catalyst_funs = true)
-    rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws, expand_catalyst_funs)
+        expand_catalyst_funs = true, use_jump_ratelaws = false)
+    rl = if use_jump_ratelaws
+        jumpratelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws, expand_catalyst_funs)
+    else
+        oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws, expand_catalyst_funs)
+    end
     rlsqrt = sqrt(abs(rl))
     hasnoisescaling(rx) && (rlsqrt *= getnoisescaling(rx))
     remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
@@ -154,7 +164,8 @@ end
 
 # this doesn't work with constraint equations currently
 function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
-        remove_conserved = false, expand_catalyst_funs = true)
+        remove_conserved = false, expand_catalyst_funs = true,
+        use_jump_ratelaws = false)
     # as BC species should ultimately get an equation, we include them in the noise matrix
     num_bcsts = count(isbc, get_unknowns(rs))
 
@@ -171,7 +182,8 @@ function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
 
     for (j, rx) in enumerate(get_rxs(rs))
         foreach_noise_coeff(rx, species_to_idx, nps, depspec_submap;
-                combinatoric_ratelaws, remove_conserved, expand_catalyst_funs) do i, coef
+                combinatoric_ratelaws, remove_conserved, expand_catalyst_funs,
+                use_jump_ratelaws) do i, coef
             eqs[i, j] = coef
         end
     end
@@ -210,7 +222,7 @@ to the corresponding species' RHS entry.
 """
 function add_noise_to_rhs!(rhsvec, rs, ispcs, brownian_map;
         combinatoric_ratelaws = true, remove_conserved = false,
-        expand_catalyst_funs = true)
+        expand_catalyst_funs = true, use_jump_ratelaws = false)
     nps = get_networkproperties(rs)
     species_to_idx = Dict(x => i for (i, x) in enumerate(ispcs))
     depspec_submap = if remove_conserved
@@ -222,7 +234,8 @@ function add_noise_to_rhs!(rhsvec, rs, ispcs, brownian_map;
     for (rx_idx, B_j) in brownian_map
         rx = get_rxs(rs)[rx_idx]
         foreach_noise_coeff(rx, species_to_idx, nps, depspec_submap;
-                combinatoric_ratelaws, remove_conserved, expand_catalyst_funs) do i, coef
+                combinatoric_ratelaws, remove_conserved, expand_catalyst_funs,
+                use_jump_ratelaws) do i, coef
             rhsvec[i] += coef * B_j
         end
     end
@@ -594,6 +607,10 @@ reaction's assigned [`PhysicalScale`](@ref).
   before and/or after the jump.
 - `checks = false`: whether to run `System` constructor checks.
 - `initial_conditions = Dict()`: additional initial conditions to merge into the system defaults.
+- `use_jump_ratelaws = false`: if `true`, both drift and diffusion use the jump/stochastic
+  rate law (binomials) instead of the ODE rate law (powers). This gives the mathematically
+  correct CLE derived from the CME when species populations are integers. Applies to all
+  ODE-scale and SDE-scale reactions; jump-scale reactions are unaffected.
 
 # Scale Resolution Order
 1. `physical_scales` kwarg (user override per reaction index)
@@ -613,6 +630,7 @@ function hybrid_model(rs::ReactionSystem;
         save_positions = (true, true),
         checks = false,
         initial_conditions = Dict(),
+        use_jump_ratelaws = false,
         kwargs...)
 
     # Error checks.
@@ -664,21 +682,15 @@ function hybrid_model(rs::ReactionSystem;
     brownian_vars = SymbolicT[]
 
     if has_continuous
-        # Both ODE and SDE reactions contribute to drift; remap SDE→ODE for filtering
-        # so that assemble_oderhs includes SDE reactions in the drift.
-        drift_scales = copy(scales)
-        for i in eachindex(drift_scales)
-            drift_scales[i] == PhysicalScale.SDE && (drift_scales[i] = PhysicalScale.ODE)
-        end
-
         rhsvec = assemble_oderhs(flatrs, ispcs; combinatoric_ratelaws, remove_conserved,
-            physical_scales = drift_scales, expand_catalyst_funs)
+            physical_scales = scales, expand_catalyst_funs, use_jump_ratelaws)
 
         # Add Brownian noise terms for SDE-scale reactions.
         if has_rxn_sde
             rxn_brownian_vars, brownian_map = create_sde_brownians(scales)
             add_noise_to_rhs!(rhsvec, flatrs, ispcs, brownian_map;
-                combinatoric_ratelaws, remove_conserved, expand_catalyst_funs)
+                combinatoric_ratelaws, remove_conserved, expand_catalyst_funs,
+                use_jump_ratelaws)
             # Merge reaction-generated brownians with user-provided brownians.
             brownian_vars = unique(vcat(rxn_brownian_vars, user_brownians))
         else
@@ -751,11 +763,15 @@ Keyword args and default values:
 - `expand_catalyst_funs = true`, replaces Catalyst defined functions like `hill(A,B,C,D)`
   with their rational function representation when converting to another system type. Set to
   `false` to disable.
+- `use_jump_ratelaws = false`, if set to `true` the drift uses the jump/stochastic rate law
+  (binomials) instead of the ODE rate law (powers). This gives the mathematically correct
+  propensities from the CME when species populations are integers.
 """
 function ode_model(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
         initial_conditions = Dict(), expand_catalyst_funs = true,
+        use_jump_ratelaws = false,
         kwargs...)
     # Error if ReactionSystem has coupled brownians or jumps.
     flatrs = Catalyst.flatten(rs)
@@ -779,7 +795,7 @@ function ode_model(rs::ReactionSystem; name = nameof(rs),
         _override_all_scales = PhysicalScale.ODE,
         name, combinatoric_ratelaws, include_zero_odes,
         remove_conserved, checks, initial_conditions,
-        expand_catalyst_funs, kwargs...)
+        expand_catalyst_funs, use_jump_ratelaws, kwargs...)
 end
 
 function is_autonomous_error(iv)
@@ -966,12 +982,16 @@ Keyword args and default values:
 - `use_legacy_noise = true`, for simple SDE systems without constraints (no algebraic
   equations, no BC species), use the traditional `noise_eqs` matrix approach which avoids
   the need for `mtkcompile`. Set to `false` to use the Brownian-based approach.
+- `use_jump_ratelaws = false`, if set to `true` both drift and diffusion use the
+  jump/stochastic rate law (binomials) instead of the ODE rate law (powers). This gives the
+  mathematically correct CLE derived from the CME when species populations are integers.
 """
 function sde_model(rs::ReactionSystem;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, checks = false, remove_conserved = false,
         initial_conditions = Dict(), expand_catalyst_funs = true,
         use_legacy_noise = true,
+        use_jump_ratelaws = false,
         kwargs...)
 
     # Flatten once upfront and check for constraints.
@@ -1003,9 +1023,9 @@ function sde_model(rs::ReactionSystem;
         ists, ispcs = get_indep_sts(flatrs, remove_conserved)
 
         eqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws, include_zero_odes,
-            remove_conserved, expand_catalyst_funs)
+            remove_conserved, expand_catalyst_funs, use_jump_ratelaws)
         noiseeqs = assemble_diffusion(flatrs, ists, ispcs; combinatoric_ratelaws,
-            remove_conserved, expand_catalyst_funs)
+            remove_conserved, expand_catalyst_funs, use_jump_ratelaws)
         eqs, us, ps, obs, ics = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
 
         return MT.System(eqs, get_iv(flatrs), us, ps;
@@ -1025,7 +1045,7 @@ function sde_model(rs::ReactionSystem;
             _override_all_scales = PhysicalScale.SDE,
             name, combinatoric_ratelaws, include_zero_odes,
             remove_conserved, checks, initial_conditions,
-            expand_catalyst_funs, kwargs...)
+            expand_catalyst_funs, use_jump_ratelaws, kwargs...)
     end
 end
 
@@ -1157,9 +1177,10 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
         check_length = false, name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
-        expand_catalyst_funs = true, mtkcompile = false, kwargs...)
+        expand_catalyst_funs = true, mtkcompile = false,
+        use_jump_ratelaws = false, kwargs...)
     osys = ode_model(rs; name, combinatoric_ratelaws, include_zero_odes, checks,
-        remove_conserved, expand_catalyst_funs)
+        remove_conserved, expand_catalyst_funs, use_jump_ratelaws)
 
     # Handles potential differential algebraic equations (which requires `mtkcompile`).
     if mtkcompile
@@ -1222,12 +1243,13 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, checks = false, check_length = false,
         remove_conserved = false, mtkcompile = false,
-        expand_catalyst_funs = true, use_legacy_noise = true, kwargs...)
+        expand_catalyst_funs = true, use_legacy_noise = true,
+        use_jump_ratelaws = false, kwargs...)
 
     # Flatten once upfront and pass to sde_model.
     flatrs = Catalyst.flatten(rs)
     sde_sys = sde_model(flatrs; name, combinatoric_ratelaws, expand_catalyst_funs,
-        include_zero_odes, checks, remove_conserved, use_legacy_noise)
+        include_zero_odes, checks, remove_conserved, use_legacy_noise, use_jump_ratelaws)
 
     # Determine if we need mtkcompile:
     # - If user brownians are present, sde_model routes through hybrid_model which requires mtkcompile
@@ -1347,6 +1369,10 @@ For SDE+Jump combinations, the returned `JumpProblem` wraps an `SDEProblem` inte
 - `combinatoric_ratelaws = get_combinatoric_ratelaws(rs)`: Use factorial/binomial scaling.
 - `save_positions = (true, true)`: For VariableRateJumps, save before/after jump.
 - `mtkcompile = false`: Apply structural simplification (required for algebraic equations).
+- `use_jump_ratelaws = false`: if `true`, both drift and diffusion use the jump/stochastic
+  rate law (binomials) instead of the ODE rate law (powers). This gives the mathematically
+  correct CLE derived from the CME when species populations are integers. Applies to all
+  ODE-scale and SDE-scale reactions; jump-scale reactions are unaffected.
 - Other kwargs passed to the underlying problem constructor.
 
 # Returns
@@ -1389,6 +1415,7 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
         save_positions = (true, true),
         checks = false,
         mtkcompile = false,
+        use_jump_ratelaws = false,
         kwargs...)
     # Determine which scale types are present.
     flatrs = Catalyst.flatten(rs)
@@ -1406,7 +1433,8 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
 
     # Build the unified System from the flattened ReactionSystem.
     sys = hybrid_model(flatrs; name, physical_scales, default_scale,
-        combinatoric_ratelaws, expand_catalyst_funs, save_positions, checks)
+        combinatoric_ratelaws, expand_catalyst_funs, save_positions, checks,
+        use_jump_ratelaws)
 
     # Build problem conditions (u0 + p merged).
     # Use Dict{Any,Any} to prevent type promotion during merge (MTK converts to this anyway).

@@ -37,8 +37,9 @@ end
 
 # Evaluates the the drift function of the ODE corresponding to a reaction network.
 # Also checks that in place and out of place evaluations are identical.
-function f_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, mtkcompile = false)
-    prob = ODEProblem(rs, u, 0.0, p; combinatoric_ratelaws, mtkcompile)
+function f_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, mtkcompile = false,
+        use_jump_ratelaws = false)
+    prob = ODEProblem(rs, u, 0.0, p; combinatoric_ratelaws, mtkcompile, use_jump_ratelaws)
     du = zeros(length(u))
     prob.f(du, prob.u0, prob.p, t)
     @test du == prob.f(prob.u0, prob.p, t)
@@ -57,10 +58,12 @@ end
 
 # Evaluates the the diffusion function of the SDE corresponding to a reaction network.
 # Also checks that in place and out of place evaluations are identical.
-function g_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, mtkcompile = false)
-    prob = SDEProblem(rs, u, 0.0, p; combinatoric_ratelaws, mtkcompile)
+function g_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, mtkcompile = false,
+        use_jump_ratelaws = false)
+    prob = SDEProblem(rs, u, 0.0, p; combinatoric_ratelaws, mtkcompile, use_jump_ratelaws)
     dW = zeros(length(u), numreactions(rs) + length(ModelingToolkitBase.get_brownians(rs)))
     prob.g(dW, prob.u0, prob.p, t)
-    @test dW == prob.g(prob.u0, prob.p, t)
+    dW_oop = prob.g(prob.u0, prob.p, t)
+    @test vec(dW) == vec(dW_oop)
     return dW
 end

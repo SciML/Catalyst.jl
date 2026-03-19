@@ -1,5 +1,13 @@
 # Breaking updates and feature summaries across releases
 
+## Unreleased (on master)
+
+- Added `use_jump_ratelaws` keyword argument to `ode_model`, `sde_model`, `hybrid_model`,
+  `ODEProblem`, `SDEProblem`, and `HybridProblem`. When set to `true`, both drift and
+  diffusion terms use the jump/stochastic rate law (binomial propensities) instead of the
+  ODE rate law (power-based). This gives the mathematically correct CLE derived from the CME
+  when species populations are integers. Defaults to `false` for backward compatibility.
+
 ## Catalyst 16.0
 
 Catalyst 16 is a major release that transitions from ModelingToolkit (MT) v9 to
