@@ -526,13 +526,10 @@ end
 # Test E: Correctness test comparing Catalyst use_jump_ratelaws against hand-coded
 # drift and diffusion functions.
 # Model: k_prod, 0 --> X  and  k_deg, 2X --> 0
-# Drift (same for both): dX/dt = k_prod - 2 * k_deg * X^2 / 2 = k_prod - k_deg * X^2
-# Noise with ODE ratelaws:
-#   reaction 1 (0 --> X):  +sqrt(k_prod) * dW1
-#   reaction 2 (2X --> 0): -2*sqrt(k_deg * X^2 / 2) * dW2
-# Noise with jump ratelaws:
-#   reaction 1 (0 --> X):  +sqrt(k_prod) * dW1
-#   reaction 2 (2X --> 0): -2*sqrt(k_deg * X * (X-1) / 2) * dW2
+# ODE drift:  k_prod - k_deg * X^2   (combinatoric: k_deg * X^2 / 2, net stoich -2)
+# Jump drift: k_prod - k_deg * X*(X-1)  (combinatoric: k_deg * X*(X-1) / 2, net stoich -2)
+# ODE noise:  [+sqrt(k_prod), -2*sqrt(k_deg*X^2/2)]
+# Jump noise: [+sqrt(k_prod), -2*sqrt(k_deg*X*(X-1)/2)]
 let
     rn = @reaction_network begin
         k_prod, 0 --> X
@@ -546,10 +543,18 @@ let
         k_prod_val = 100.0
         k_deg_val = 0.5
 
-        # --- Check drift is the same for both settings ---
-        du_f_ode = f_eval(rn, u0, ps, 0.0)
+        # --- Check drift with use_jump_ratelaws=false (ODE rate laws) ---
+        du_f_ode = f_eval(rn, u0, ps, 0.0; use_jump_ratelaws = false)
         # Drift = k_prod - 2 * (k_deg * X^2 / 2) = k_prod - k_deg * X^2
         @test du_f_ode[1] ≈ k_prod_val - k_deg_val * X_val^2
+
+        # --- Check drift with use_jump_ratelaws=true (jump rate laws) ---
+        du_f_jump = f_eval(rn, u0, ps, 0.0; use_jump_ratelaws = true)
+        # Drift = k_prod - 2 * (k_deg * X*(X-1) / 2) = k_prod - k_deg * X*(X-1)
+        @test du_f_jump[1] ≈ k_prod_val - k_deg_val * X_val * (X_val - 1)
+
+        # Verify drift differs between the two for second-order
+        @test !(du_f_ode[1] ≈ du_f_jump[1])
 
         # --- Check diffusion with use_jump_ratelaws=false (ODE rate laws) ---
         g_ode = g_eval(rn, u0, ps, 0.0; use_jump_ratelaws = false)
@@ -565,7 +570,63 @@ let
         # Reaction 2: rate = k_deg*X*(X-1)/2 → noise coeff = -2*sqrt(k_deg*X*(X-1)/2)
         @test g_jump[1, 2] ≈ -2 * sqrt(k_deg_val * X_val * (X_val - 1) / 2)
 
-        # Verify the two differ for the second-order reaction
+        # Verify diffusion differs for the second-order reaction
         @test !(g_ode[1, 2] ≈ g_jump[1, 2])
     end
+end
+
+# Test F: Statistical comparison of Catalyst SDEProblem (use_jump_ratelaws=true) against
+# a hand-coded SDEProblem with jump-rate-law drift and diffusion.
+# Model: k_prod, 0 --> X  and  k_deg, 2X --> 0
+# With jump rate laws:
+#   f(X) = k_prod - k_deg * X * (X - 1)
+#   g(X) = [sqrt(k_prod),  -2 * sqrt(k_deg * X * (X - 1) / 2)]
+let
+    rn = @reaction_network begin
+        k_prod, 0 --> X
+        k_deg, 2X --> 0
+    end
+
+    k_prod_val = 500.0
+    k_deg_val = 0.01
+    u0_val = [50.0]  # initial X
+    tspan = (0.0, 20.0)
+
+    # Build Catalyst SDEProblem with jump rate laws
+    cat_prob = SDEProblem(rn, [:X => u0_val[1]], tspan,
+        [:k_prod => k_prod_val, :k_deg => k_deg_val]; use_jump_ratelaws = true)
+
+    # Hand-coded SDE with jump rate laws
+    function handcoded_f!(du, u, p, t)
+        X = u[1]
+        k_prod, k_deg = p
+        du[1] = k_prod - k_deg * X * (X - 1)
+    end
+    function handcoded_g!(du, u, p, t)
+        X = u[1]
+        k_prod, k_deg = p
+        du[1, 1] = sqrt(k_prod)
+        du[1, 2] = -2 * sqrt(k_deg * X * (X - 1) / 2)
+    end
+    hand_prob = SDEProblem(handcoded_f!, handcoded_g!, u0_val, tspan,
+        [k_prod_val, k_deg_val]; noise_rate_prototype = zeros(1, 2))
+
+    # Run ensembles and compare statistics
+    N = 2000
+    cat_ensemble = EnsembleProblem(cat_prob)
+    hand_ensemble = EnsembleProblem(hand_prob)
+    cat_sol = solve(cat_ensemble, EM(); dt = 0.001, trajectories = N, saveat = 20.0)
+    hand_sol = solve(hand_ensemble, EM(); dt = 0.001, trajectories = N, saveat = 20.0)
+
+    cat_endpoints = [sol[1, end] for sol in cat_sol]
+    hand_endpoints = [sol[1, end] for sol in hand_sol]
+
+    cat_mean = mean(cat_endpoints)
+    hand_mean = mean(hand_endpoints)
+    cat_var = var(cat_endpoints)
+    hand_var = var(hand_endpoints)
+
+    # Both should produce similar statistics (same underlying SDE)
+    @test isapprox(cat_mean, hand_mean; rtol = 0.1)
+    @test isapprox(cat_var, hand_var; rtol = 0.3)
 end

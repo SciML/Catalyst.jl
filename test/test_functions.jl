@@ -37,8 +37,9 @@ end
 
 # Evaluates the the drift function of the ODE corresponding to a reaction network.
 # Also checks that in place and out of place evaluations are identical.
-function f_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, mtkcompile = false)
-    prob = ODEProblem(rs, u, 0.0, p; combinatoric_ratelaws, mtkcompile)
+function f_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, mtkcompile = false,
+        use_jump_ratelaws = false)
+    prob = ODEProblem(rs, u, 0.0, p; combinatoric_ratelaws, mtkcompile, use_jump_ratelaws)
     du = zeros(length(u))
     prob.f(du, prob.u0, prob.p, t)
     @test du == prob.f(prob.u0, prob.p, t)
