@@ -570,17 +570,6 @@ for full details on these features.
   system has constraints/algebraic equations. Users do not need to pass
   `structural_simplify = true` in these cases.
 
-#### New: `use_jump_ratelaws` kwarg for CLE noise terms
-
-- **`sde_model`, `hybrid_model`, `SDEProblem`, and `HybridProblem` now accept
-  `use_jump_ratelaws = false`**. When set to `true`, the Chemical Langevin
-  Equation (CLE) noise (diffusion) coefficients use the jump/stochastic rate
-  law (binomials, e.g. `k * X * (X-1) / 2` for `2X → ...`) instead of the
-  ODE rate law (powers, e.g. `k * X^2 / 2`) inside `sqrt(|ratelaw|)`. This
-  gives the more mathematically correct noise intensity when species
-  populations are integers. Only noise terms are affected; drift always uses
-  the ODE rate law. For first-order reactions the two forms are identical.
-
 #### New: Stoichiometric parameters automatically typed as `Int64` in DSL
 
 - **Parameters that appear in stoichiometric positions** within the
