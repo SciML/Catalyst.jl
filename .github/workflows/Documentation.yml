@@ -44,7 +44,7 @@ jobs:
           version: '1.12'
 
       # Cache to speed up subsequent runs
-      - uses: julia-actions/cache@v2
+      - uses: julia-actions/cache@v3
         with:
           cache-name: docs-cache
 
