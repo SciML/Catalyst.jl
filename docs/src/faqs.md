@@ -350,3 +350,38 @@ rn = @reaction_network begin
     (k1, k2), A <--> B
 end
 ```
+
+## [How do I designating custom differential operators when creating coupled differential equation models](@id faq_custom_differentials)
+When [coupling differential equations to reaction network models](@ref coupled_models_dsl), by default, `D` designates the differential operator:
+```@example faq_custom_differentials
+using Catalyst
+rn = @reaction_network begin
+    @equations D(V) ~ X - λ * V
+    (p*V,d), 0 <--> X
+end
+```
+However, it is possible to specify different symbols as differential operators. Potential reasons include that the symbol `D` is already used for a different purpose, a different differential symbol is preferred, or that multiple differentials with respect to multiple independent variables are needed.
+
+Non-default differentials can be declared using the `@differentials` option. E.g. here we declare the previous model, but call our differential `Δ` instead of `D`:
+```@example faq_custom_differentials
+rn = @reaction_network begin
+    @differentials Δ = Differential(t)
+    @equations Δ(V) ~ X - λ * V
+    (p*V,d), 0 <--> X
+end
+```
+Here, the left-hand side of the differential contains the differential's name only. The right-hand side is `Differential(t)`, where `t` is the default [time independent variable](@ref ref) used within Catalyst. If you wish to declare a differential with respect to another independent variable, replace `t` with its symbol. If you need to declare multiple differentials, this can be done by providing a `begin ... end` block (with one differential declaration on each line) to the `@differential` option.
+
+In [programmatic modelling](@ref programmatic_CRN_construction), we typically assign the default time differential to the symbol `D`:
+```@example faq_custom_differentials
+D = default_time_deriv()
+```
+However, we can assign it to any other symbol:
+```@example faq_custom_differentials
+Δ = default_time_deriv()
+```
+or declare it manually using a similar syntax as in the DSL:
+```@example faq_custom_differentials
+t = default_t()
+Dt = Differential(t)
+```
