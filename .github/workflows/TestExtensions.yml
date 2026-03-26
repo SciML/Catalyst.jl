@@ -34,7 +34,7 @@ jobs:
           version: "${{ matrix.version }}"
 
       - name: "Cache Julia packages"
-        uses: julia-actions/cache@v2
+        uses: julia-actions/cache@v3
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
 
