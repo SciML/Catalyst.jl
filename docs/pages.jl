@@ -64,6 +64,7 @@ pages = Any[
     "inverse_problems/behaviour_optimisation.md",
     "inverse_problems/structural_identifiability.md",
     "inverse_problems/global_sensitivity_analysis.md",
+    "inverse_problems/turing_ode_param_fitting.md",
     "Examples" => Any[
         "inverse_problems/examples/ode_fitting_oscillation.md"
     ]
