@@ -188,7 +188,7 @@ Turing contains a plotting interface for plotting the results:
 using StatsPlots
 plot(chain)
 ```
-Here, for each parameter, the left-hand side shows the MCMC chains, and the right-hand side plots the posterior distributions (one for each of the four chains).
+Here, for each parameter, the left-hand side shows the MCMC chains, and the right-hand side plots the posterior distributions (one for each of the four chains). Note that, due to the low number of data points, the posterior for `σI` does not necessarily center around the true value of $20$.
 
 ### [Encoding non-negativity in observables formulas](@id turing_parameter_fitting_nonnegative_observables)
 In biology, most quantities are non-negative, which is information that we wish to incorporate in our inference problem. This holds both for priors (i.e. we know that the inferred parameters are non-negative) and observables (i.e. we know that the observed quantities are non-negative). This can be encoded either by:
