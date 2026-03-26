@@ -46,25 +46,26 @@ cc_loaded # hide
 Here, `include` is used to execute the Julia code from any file. This means that `save_reactionsystem` actually saves the model as executable code which re-generates the exact model which was saved (this is the reason why we use the ".jl" extension for the saved file). Indeed, we can confirm this if we check what is printed in the file:
 ```
 let
+# Serialised using Catalyst version v1.12.5.
 
 # Independent variable:
-@parameters t
+@independent_variables t
 
 # Parameters:
-ps = @parameters kB kD kP
+ps = @parameters k₁ k₂ k₃
 
 # Species:
-sps = @species S(t) E(t) SE(t) P(t)
+sps = @species S₁(t) C(t) S₁C(t) S₂(t) CP(t) P(t)
 
 # Reactions:
 rxs = [
-    Reaction(kB, [S, E], [SE], [1, 1], [1]),
-    Reaction(kD, [SE], [S, E], [1], [1, 1]),
-    Reaction(kP, [SE], [P, E], [1], [1, 1])
+	Reaction(k₁, [S₁, C], [S₁C], [1, 1], [1]),
+	Reaction(k₂, [S₁C, S₂], [CP], [1, 1], [1]),
+	Reaction(k₃, [CP], [C, P], [1], [1, 1])
 ]
 
 # Declares ReactionSystem model:
-rs = ReactionSystem(rxs, t, sps, ps; name = Symbol("##ReactionSystem#12592"))
+rs = ReactionSystem(rxs, t, sps, ps; name = Symbol("##ReactionSystem#288"))
 complete(rs)
 
 end
@@ -72,7 +73,7 @@ end
 !!! note
     The code that `save_reactionsystem` prints uses [programmatic modelling](@ref programmatic_CRN_construction) to generate the written model.
 
-In addition to transferring models between Julia sessions, the `save_reactionsystem` function can also be used or print a model to a text file where you can easily inspect its components.
+In addition to transferring models between Julia sessions, the `save_reactionsystem` function can also be used to print a model to a text file where you can easily inspect its components.
 
 ## [Loading and saving arbitrary Julia variables using Serialization.jl](@id model_file_import_export_julia_serialisation)
 Julia provides a general and lightweight interface for loading and saving Julia structures to and from files that it can be good to be aware of. It is called [Serialization.jl](https://docs.julialang.org/en/v1/stdlib/Serialization/) and provides two functions, `serialize` and `deserialize`. The first allows us to write a Julia structure to a file. E.g. if we wish to save a parameter set associated with our model, we can use
@@ -94,7 +95,7 @@ A general-purpose format for storing CRN models is so-called .net files. These c
 using ReactionNetworkImporters
 rn = loadrxnetwork(BNGNetwork(), "repressilator.net")
 ```
-Here, .net files not only contain information regarding the reaction network itself, but also the numeric values (initial conditions and parameter values) required for simulating it. The `loadrxnetwork` function load the model as a normal `ReactionSystem` structure, but saves the initial conditions and parameter values as [*default* values](@ref dsl_advanced_options_default_vals) that are automatically accounted for in simulations. The loaded model can be provided to various problem types for simulation. E.g. here we perform an ODE simulation of our repressilator model:
+Here, .net files not only contain information regarding the reaction network itself, but also the numeric values (initial conditions and parameter values) required for simulating it. The `loadrxnetwork` function loads the model as a normal `ReactionSystem` structure, but saves the initial conditions and parameter values as [*default* values](@ref dsl_advanced_options_default_vals) that are automatically accounted for in simulations. The loaded model can be provided to various problem types for simulation. E.g. here we perform an ODE simulation of our repressilator model:
 ```julia
 using Catalyst, OrdinaryDiffEqDefault, Plots
 tspan = (0.0, 10000.0)
@@ -112,7 +113,7 @@ Note that, as all initial conditions and parameters have default values, we can 
 A more detailed description of ReactionNetworkImporter's features can be found in its [documentation](https://docs.sciml.ai/ReactionNetworkImporters/stable/).
 
 ## [Loading SBML files using SBMLImporter.jl](@id model_file_import_export_sbml)
-The Systems Biology Markup Language (SBML) is the most widespread format for representing CRN models. Here, the [SBMLImporter.jl](https://github.com/sebapersson/SBMLImporter.jl) package is able to load SBML files to Catalyst `ReactionSystem` structures. SBML is able to represent a *very* wide range of model features, with both packages supporting most features. However, there exist SBML files (typically containing obscure model features such as events with time delays) that currently cannot be loaded into Catalyst models.
+The Systems Biology Markup Language (SBML) is the most widespread format for representing CRN models. Here, the [SBMLImporter.jl](https://github.com/sebapersson/SBMLImporter.jl) package is able to load SBML files to Catalyst `ReactionSystem` structures. SBML is able to represent a *very* wide range of model features, with SBMLImporter supporting most features. However, there exist SBML files (typically containing obscure model features such as events with time delays) that currently cannot be loaded into Catalyst models.
 
 SBMLImporter's `load_SBML` function can be used to load SBML files. Here, we load a
 [Brusselator](@ref basic_CRN_library_brusselator) model stored in the "brusselator.xml"
@@ -136,7 +137,7 @@ plot(sol)
 ![Brusselator Simulation](../assets/brusselator_sim_SBMLImporter.svg)
 
 !!! note 
-    While ReactionNetworkImporters saves parameters (`ps`) and species values (`u0`) as default to the imported model, SBMLImporter does not do this. These must hence be explicitly be loaded through `get_u0_map` and `get_parameter_map` and then provided to the `ODEProblem`.
+    While ReactionNetworkImporters saves parameters (`ps`) and species values (`u0`) as default to the imported model, SBMLImporter does not do this. These must hence be explicitly loaded through `get_u0_map` and `get_parameter_map` and then provided to the `ODEProblem`.
 
 A more detailed description of SBMLImporter's features can be found in its [documentation](https://sebapersson.github.io/SBMLImporter.jl/stable/).
 
@@ -174,18 +175,5 @@ If you use any of this functionality in your research, [in addition to Catalyst]
   pages={btaf497},
   year={2025},
   publisher={Oxford University Press}
-}
-```
-```bibtex
-@article{LangJainRackauckas+2024,
-    url = {https://doi.org/10.1515/jib-2024-0003},
-    title = {SBMLToolkit.jl: a Julia package for importing SBML into the SciML ecosystem},
-    title = {},
-    author = {Paul F. Lang and Anand Jain and Christopher Rackauckas},
-    pages = {20240003},
-    journal = {Journal of Integrative Bioinformatics},
-    doi = {doi:10.1515/jib-2024-0003},
-    year = {2024},
-    lastchecked = {2024-06-02}
 }
 ```
