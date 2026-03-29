@@ -108,6 +108,7 @@ const CatalystEqType = Union{Reaction, Equation}
 include("reactionsystem.jl")
 export ReactionSystem, isspatial
 export species, nonspecies, reactions, nonreactions, speciesmap, paramsmap
+export aliases, has_aliases
 export numspecies, numreactions, numparams
 export make_empty_network
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
@@ -125,6 +126,10 @@ include("reactionsystem_metadata.jl")
 @public U0Map, ParameterMap
 @public has_u0_map, get_u0_map, set_u0_map
 @public has_parameter_map, get_parameter_map, set_parameter_map
+
+# Alias classification, validation, resolution, and elimination.
+include("alias_elimination.jl")
+export AliasClass
 
 # Conversions of the `ReactionSystem` structure.
 include("reactionsystem_conversions.jl")
