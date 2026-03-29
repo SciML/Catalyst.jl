@@ -78,8 +78,9 @@
     applies to the `*Problem(::ReactionSystem, ...)` path.
   - Substitution is unconditional per-expression (no expression-level early-exit guard);
     mitigated by category-level fast paths when alias submaps are empty
-  - `system_to_reactionsystem` reverse conversion loses aliases (expected, since the
-    intermediate `MT.System` is flattened)
+  - `system_to_reactionsystem` reverse conversion produces an empty `aliases` field
+    (the original alias declarations are cleared after elimination, though the
+    substitution maps survive in metadata for `remap_alias_inputs`)
 
 ## Catalyst 16.1
 
