@@ -933,13 +933,13 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
     eqs, us, ps, obs, ics, initeqs = addconstraints!(eqs, fullrs, ists, ispcs;
         remove_conserved, compute_cl_initeqs = !include_cl_as_eqs, include_cl_as_eqs)
 
-    # Comoutes the correct initial conditions and bindings.
-    initial_conditions, bindings = MT.convert_bindings_for_time_independent_system(rs)
+    # Computes the correct initial conditions and bindings.
+    initial_conditions, bindings = MT.convert_bindings_for_time_independent_system(fullrs)
     initial_conditions = merge(initial_conditions, ics)
 
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.
-    all_differentials_permitted || nonlinear_convert_differentials_check(rs)
+    all_differentials_permitted || nonlinear_convert_differentials_check(fullrs)
     eqs = Equation[remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
     System(eqs, us, ps;
         name,
@@ -1041,8 +1041,8 @@ function sde_model(rs::ReactionSystem;
     # use legacy noise_eqs matrix approach (avoids mtkcompile overhead).
     # If user brownians are present, use the new Brownian-based path.
     if use_legacy_noise && !has_constraints && !has_user_brownians
-        iscomplete(rs) || error(COMPLETENESS_ERROR)
-        spatial_convert_err(rs, MT.System)
+        iscomplete(flatrs) || error(COMPLETENESS_ERROR)
+        spatial_convert_err(flatrs, MT.System)
 
         remove_conserved && conservationlaws(flatrs)
         ists, ispcs = get_indep_sts(flatrs, remove_conserved)
@@ -1152,7 +1152,7 @@ function jump_model(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = nothing, checks = false, initial_conditions = Dict(),
         expand_catalyst_funs = true, save_positions = (true, true),
-        physical_scales = nothing, kwargs...)
+        physical_scales = nothing, eliminate_aliases = true, kwargs...)
     (remove_conserved !== nothing) &&
         throw(ArgumentError("Catalyst does not support removing conserved species when converting to jump Systems."))
 
@@ -1168,8 +1168,7 @@ function jump_model(rs::ReactionSystem; name = nameof(rs),
 
     # Handle aliases before checking equations or computing scales.
     # Jump systems cannot carry algebraic constraints, so allow_constraints=false.
-    flatrs = prepare_aliases_for_conversion(flatrs;
-        eliminate_aliases = get(kwargs, :eliminate_aliases, true),
+    flatrs = prepare_aliases_for_conversion(flatrs; eliminate_aliases,
         allow_constraints = false)
 
     # Error on non-reaction ODE/algebraic/SDE equations (pure Jump only supports reactions).
