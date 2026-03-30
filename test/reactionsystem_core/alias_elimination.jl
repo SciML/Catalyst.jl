@@ -473,3 +473,35 @@ end
     @test !any(isequal(k1), affect_vars)
     @test any(isequal(k2), affect_vars)
 end
+
+### Alias Autodiscovery Tests ###
+
+@testset "Autodiscovery of species from aliases" begin
+    # B only appears in the alias, not in any reaction or the explicit species list.
+    # It should be autodiscovered as a species from the alias equation.
+    @species A(t) B(t) C(t)
+    @parameters k
+    @named rn = ReactionSystem(
+        [Reaction(k, [A], [C])];
+        aliases = [A ~ B])
+    rn = complete(Catalyst.flatten(rn))
+    @test any(isequal(B), Catalyst.get_species(rn))
+    elim = Catalyst.eliminate_aliases(rn)
+    @test !any(isequal(A), Catalyst.get_species(elim))
+    @test any(isequal(B), Catalyst.get_species(elim))
+end
+
+@testset "Autodiscovery of parameters from aliases" begin
+    # k2 only appears in the alias, not in any reaction or the explicit parameter list.
+    # It should be autodiscovered as a parameter from the alias equation.
+    @species A(t) B(t)
+    @parameters k1 k2
+    @named rn = ReactionSystem(
+        [Reaction(k1, [A], [B])];
+        aliases = [k1 ~ k2])
+    rn = complete(Catalyst.flatten(rn))
+    @test any(isequal(k2), parameters(rn))
+    elim = Catalyst.eliminate_aliases(rn)
+    @test !any(isequal(k1), parameters(elim))
+    @test any(isequal(k2), parameters(elim))
+end

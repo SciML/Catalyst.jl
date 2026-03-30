@@ -677,6 +677,11 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in, bro
         MT.collect_vars!(us, ps, eq.rhs, t)
     end
 
+    # Discover parameters/unknowns from alias equations.
+    for eq in aliases
+        MT.collect_vars!(us, ps, eq, t)
+    end
+
     # Converts the found unknowns and parameters to vectors.
     usv = collect(us)
 
