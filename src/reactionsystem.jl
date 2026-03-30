@@ -907,9 +907,16 @@ end
 """
     has_aliases(sys::ReactionSystem)
 
-Return `true` if the system (including subsystems) has any alias equations.
+Return `true` if the system type supports alias equations. Always `true` for `ReactionSystem`.
 """
-has_aliases(sys::ReactionSystem) = !isempty(get_aliases(sys)) || any(has_aliases, get_systems(sys))
+has_aliases(sys::ReactionSystem) = true
+
+"""
+    aliases_present(sys::ReactionSystem)
+
+Return `true` if the system or any of its subsystems contains alias equations.
+"""
+aliases_present(sys::ReactionSystem) = !isempty(get_aliases(sys)) || any(aliases_present, get_systems(sys))
 
 """
     get_sivs(sys::ReactionSystem)

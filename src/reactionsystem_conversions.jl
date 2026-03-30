@@ -646,7 +646,7 @@ function hybrid_model(rs::ReactionSystem;
         allow_constraints = true)
 
     # Conservation law interaction: must eliminate aliases first.
-    if remove_conserved && has_aliases(flatrs)
+    if remove_conserved && aliases_present(flatrs)
         error("Cannot remove conserved species on a system with uneliminated aliases. " *
               "Call `eliminate_aliases` first or use `eliminate_aliases=true`.")
     end
@@ -922,7 +922,7 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
     # Alias handling.
     fullrs = prepare_aliases_for_conversion(fullrs; eliminate_aliases,
         allow_constraints = true)
-    if remove_conserved && has_aliases(fullrs)
+    if remove_conserved && aliases_present(fullrs)
         error("Cannot remove conserved species on a system with uneliminated aliases. " *
               "Call `eliminate_aliases` first or use `eliminate_aliases=true`.")
     end

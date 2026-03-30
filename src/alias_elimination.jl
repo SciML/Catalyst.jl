@@ -794,7 +794,7 @@ When `eliminate_aliases=false` and `allow_constraints=false` (jump path): errors
 function prepare_aliases_for_conversion(flatrs::ReactionSystem;
         eliminate_aliases::Bool = true,
         allow_constraints::Bool = false)
-    !has_aliases(flatrs) && return flatrs
+    !aliases_present(flatrs) && return flatrs
 
     if eliminate_aliases
         return Catalyst.eliminate_aliases(flatrs)

@@ -178,7 +178,7 @@ end
         k, A --> C
         k, B --> C
     end
-    @test has_aliases(rn)
+    @test aliases_present(rn)
     @test length(Catalyst.get_aliases(rn)) == 1
 
     rn2 = @reaction_network begin

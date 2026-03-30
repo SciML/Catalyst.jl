@@ -34,7 +34,7 @@ function save_reactionsystem(filename::String, rn::ReactionSystem;
         annotate = true, safety_check = true)
     # Error and warning checks.
     reactionsystem_uptodate_check()
-    if !isempty(get_aliases(rn)) || (!isempty(get_systems(rn)) && has_aliases(rn))
+    if aliases_present(rn)
         error("Serialization of ReactionSystems with aliases is not yet supported. " *
               "Please eliminate aliases before saving, or track " *
               "https://github.com/SciML/Catalyst.jl/issues for updates.")
