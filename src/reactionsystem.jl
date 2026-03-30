@@ -893,8 +893,10 @@ get_aliases(sys::ReactionSystem) = getfield(sys, :aliases)
 Return all alias equations, recursively collecting from subsystems with namespacing.
 """
 function aliases(sys::ReactionSystem)
+    systems = get_systems(sys)
+    isempty(systems) && return get_aliases(sys)
     alias_eqs = copy(get_aliases(sys))
-    for subsys in get_systems(sys)
+    for subsys in systems
         for eq in aliases(subsys)
             push!(alias_eqs, MT.renamespace(nameof(subsys), eq.lhs) ~ MT.renamespace(nameof(subsys), eq.rhs))
         end
