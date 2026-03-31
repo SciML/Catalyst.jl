@@ -1283,33 +1283,17 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         expand_catalyst_funs = true, use_legacy_noise = true,
         use_jump_ratelaws = false, eliminate_aliases = true, kwargs...)
 
-    # Flatten once upfront, handle aliases, and pass to sde_model.
-    flatrs = Catalyst.flatten(rs)
-    flatrs = prepare_aliases_for_conversion(flatrs; eliminate_aliases,
-        allow_constraints = true)
-    sde_sys = sde_model(flatrs; name, combinatoric_ratelaws, expand_catalyst_funs,
+    sde_sys = sde_model(rs; name, combinatoric_ratelaws, expand_catalyst_funs,
         include_zero_odes, checks, remove_conserved, use_legacy_noise, use_jump_ratelaws,
-        eliminate_aliases = false)  # already handled
-
-    # Determine if we need mtkcompile:
-    # - If user brownians are present, sde_model routes through hybrid_model which requires mtkcompile
-    # - If using Brownian-based approach (not legacy), mtkcompile extracts the noise matrix
-    # - If there are algebraic equations, mtkcompile handles structural simplification
-    # - If mtkcompile is requested explicitly
-    has_constraints = has_alg_equations(flatrs) || any(isbc, get_unknowns(flatrs))
-    has_user_brownians = !isempty(MT.brownians(flatrs))
-    needs_mtkcompile = mtkcompile ||
-                       has_alg_equations(flatrs) ||
-                       !use_legacy_noise ||
-                       has_user_brownians ||
-                       has_constraints
+        eliminate_aliases)
 
     u0 = remap_alias_inputs(u0, sde_sys)
     p = remap_alias_inputs(p, sde_sys)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any,Any}(u0), Dict{Any,Any}(p))
 
+    needs_mtkcompile = mtkcompile || (get_noise_eqs(sde_sys) === nothing)
     if needs_mtkcompile
-        if !mtkcompile && has_alg_equations(flatrs)
+        if !mtkcompile && has_alg_equations(sde_sys)
             error("The input ReactionSystem has algebraic equations. This requires setting `mtkcompile = true` within `SDEProblem` call.")
         end
         sde_sys = MT.mtkcompile(sde_sys)
@@ -1317,7 +1301,7 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
     else
         # Legacy path: complete + noise_rate_prototype
         sde_sys = complete(sde_sys)
-        p_matrix = zeros(length(get_unknowns(sde_sys)), numreactions(flatrs))
+        p_matrix = zeros(size(get_noise_eqs(sde_sys))...)
         return SDEProblem(sde_sys, prob_cond, tspan, args...; check_length,
             noise_rate_prototype = p_matrix, kwargs...)
     end
