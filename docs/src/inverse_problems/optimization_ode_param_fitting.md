@@ -62,11 +62,11 @@ sol_fitted = solve(oprob_fitted)
 </details>
 ```
   \
-  
+
 
 Fitting parameters to data involves solving an optimisation problem (that is, finding the parameter set that optimally fits your model to your data, typically by minimising an objective function)[^1]. The SciML ecosystem's primary package for solving optimisation problems is [Optimization.jl](https://github.com/SciML/Optimization.jl). It provides access to a variety of solvers via a single common interface by wrapping a large number of optimisation libraries that have been implemented in Julia.
 
-This tutorial demonstrates how to 
+This tutorial demonstrates how to
 1. Create a custom objective function which minimiser corresponds to the parameter set optimally fitting the data.
 2. Use Optimization.jl to minimize this objective function and find the parameter set providing the optimal fit.
 
@@ -75,7 +75,7 @@ For simple parameter fitting problems (such as the one outlined below), [PEtab.j
 ## [Basic example](@id optimization_parameter_fitting_basics)
 
 Let us consider a [Michaelis-Menten enzyme kinetics model](@ref basic_CRN_library_mm), where an enzyme ($E$) converts a substrate ($S$) into a product ($P$):
-```@example optimization_paramfit_1 
+```@example optimization_paramfit_1
 using Catalyst
 rn = @reaction_network begin
     kB, S + E --> SE
@@ -84,7 +84,7 @@ rn = @reaction_network begin
 end
 ```
 From some known initial condition, and a true parameter set (which we later want to recover from the data) we generate synthetic data (on which we will demonstrate the fitting process).
-```@example optimization_paramfit_1 
+```@example optimization_paramfit_1
 # Define initial conditions and parameters.
 u0 = [:S => 1.0, :E => 1.0, :SE => 0.0, :P => 0.0]
 ps_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
@@ -107,7 +107,7 @@ Catalyst.PNG(plot(plt; fmt = :png, dpi = 200)) # hide
 ```
 
 Next, we will formulate an objective function which, for a single parameter set, simulates our model and computes the sum-of-square distance between the data and the simulation (non-sum-of-square approaches can be used, but this is the most straightforward one).
-```@example optimization_paramfit_1 
+```@example optimization_paramfit_1
 ps_init = [:kB => 1.0, :kD => 1.0, :kP => 1.0]
 oprob_base = ODEProblem(rn, u0, (0.0, 10.0), ps_init)
 function objective_function(p, _)
@@ -141,14 +141,14 @@ nothing # hide
     There are several modifications to our problem where it would actually have parameters. E.g. we might want to run the optimisation where one parameter has a known fixed value. If we then would like to rerun this for alternative fixed values, this value could be encoded as an `OptimizationProblem` parameter.
 
 Finally, we can solve `optprob` to find the parameter set that best fits our data. Optimization.jl only provides a few optimisation methods natively. However, for each supported optimisation package, it provides a corresponding wrapper package to import that optimisation package for use with Optimization.jl. E.g., if we wish to use [NLopt.jl](https://github.com/JuliaOpt/NLopt.jl)'s [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) method, we must install and import the OptimizationNLopt package. A summary of all, by Optimization.jl supported, optimisation packages can be found [here](https://docs.sciml.ai/Optimization/stable/#Overview-of-the-Optimizers). Here, we import the NLopt.jl package and uses it to minimise our objective function (thus finding a parameter set that fits the data):
-```@example optimization_paramfit_1 
+```@example optimization_paramfit_1
 using OptimizationNLopt
 optsol = solve(optprob, NLopt.LN_NELDERMEAD())
 nothing # hide
 ```
 
 We can now simulate our model for the found parameter set (stored in `optsol.u`), checking that it fits our data.
-```@example optimization_paramfit_1 
+```@example optimization_paramfit_1
 oprob_fitted = remake(oprob_base; p = Pair.([:kB, :kD, :kP], optsol.u))
 fitted_sol = solve(oprob_fitted)
 plot!(fitted_sol; idxs = :P, label = "Fitted solution", linestyle = :dash, lw = 6, color = :lightblue)
@@ -158,14 +158,6 @@ Catalyst.PNG(plot(plt; fmt = :png, dpi = 200)) # hide
 
 !!! note
     Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. Identifiability is a concept that studies how to deal with this problem.<!--NTS: re-add ref when identifiablity works again-->
-
-Say that we instead would like to use a [genetic algorithm](https://en.wikipedia.org/wiki/Genetic_algorithm) approach, as implemented by the [Evolutionary.jl](https://github.com/wildart/Evolutionary.jl) package. In this case we can run:
-```@example optimization_paramfit_1 
-using OptimizationEvolutionary
-sol = solve(optprob, Evolutionary.GA())
-nothing # hide
-```
-to solve `optprob` for this combination of solve and implementation.
 
 ## [Utilising automatic differentiation](@id optimization_parameter_fitting_AD)
 Optimisation methods can be divided into differentiation-free and differentiation-based optimisation methods. E.g. consider finding the minimum of the function $f(x) = x^2$, given some initial guess of $x$. Here, we can simply compute the differential and descend along it until we find $x=0$ (admittedly, for this simple problem the minimum can be computed directly). This principle forms the basis of optimisation methods such as [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent), which utilises information of a function's differential to minimise it. When attempting to find a global minimum, to avoid getting stuck in local minimums, these methods are often augmented by additional routines. While the differentiation of most algebraic functions is trivial, it turns out that even complicated functions (such as the one we used above) can be differentiated computationally through the use of [*automatic differentiation* (AD)](https://en.wikipedia.org/wiki/Automatic_differentiation).
@@ -184,7 +176,7 @@ opt_sol = solve(opt_prob, OptimizationOptimJL.BFGS())
 
 ## [Optimisation problems with data for multiple species](@id optimization_parameter_fitting_multiple_species)
 Imagine that, in our previous example, we had measurements of the concentration of both $S$ and $P$:
-```@example optimization_paramfit_1 
+```@example optimization_paramfit_1
 data_vals_S = (0.8 .+ 0.4*rand(10)) .* data_sol[:S][2:end]
 data_vals_P = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 
@@ -198,7 +190,7 @@ Catalyst.PNG(plot(plt2; fmt = :png, dpi = 200)) # hide
 ```
 
 In this case we simply modify our objective function to take this into account:
-```@example optimization_paramfit_1 
+```@example optimization_paramfit_1
 function objective_function_S_P(p, _)
     p = Pair.([:kB, :kD, :kP], p)
     oprob = remake(oprob_base; p)
@@ -210,7 +202,7 @@ end
 Here we do not normalise the contribution from each species to the objective function. However, if species are present at different concentration levels this might be necessary (or you might essentially only take the highest concentration species(s) into account).
 
 We can now fit our model to data and plot the results:
-```@example optimization_paramfit_1 
+```@example optimization_paramfit_1
 optprob_S_P = OptimizationProblem(objective_function_S_P, p_guess)
 optsol_S_P = solve(optprob_S_P, NLopt.LN_NELDERMEAD())
 p = Pair.([:kB, :kD, :kP], optsol_S_P.u)
@@ -223,7 +215,7 @@ Catalyst.PNG(plot(plt2; fmt = :png, dpi = 200)) # hide
 
 ## [Setting parameter constraints and boundaries](@id optimization_parameter_fitting_constraints)
 Sometimes, it is desirable to set boundaries on parameter values. Indeed, this can speed up the optimisation process (by preventing searching through unfeasible parts of parameter space), and can also be a requirement for some optimisation methods. This can be done by passing the `lb` (lower bounds) and `up` (upper bounds) arguments to `OptimizationProblem`. These are vectors (of the same length as the number of parameters), with each argument corresponding to the boundary value of the parameter with the same index. If we wish to constrain each parameter to the interval $(0.1, 10.0)$ this can be done through:
-```@example optimization_paramfit_1 
+```@example optimization_paramfit_1
 optprob = OptimizationProblem(objective_function, [1.0, 1.0, 1.0]; lb = [1e-1, 1e-1, 1e-1], ub = [1e1, 1e1, 1e1])
 nothing # hide
 ```
@@ -232,7 +224,7 @@ In addition to boundaries, Optimization.jl also supports setting [linear and non
 
 ## [Parameter fitting with known parameters](@id optimization_parameter_fitting_known_parameters)
 If we from previous knowledge know that $kD = 0.1$, and only want to fit the values of $kB$ and $kP$, this can be achieved by making corresponding changes to our objective function.
-```@example optimization_paramfit_1 
+```@example optimization_paramfit_1
 function objective_function_known_kD(p, _)
     p = Pair.([:kB, :kD, :kP], [p[1], 0.1, p[2]])
     oprob = remake(oprob_base; p)
@@ -242,7 +234,7 @@ function objective_function_known_kD(p, _)
 end
 ```
 We can now create and solve the corresponding `OptimizationProblem`, but with only two parameters in the initial guess.
-```@example optimization_paramfit_1 
+```@example optimization_paramfit_1
 optprob_known_kD = OptimizationProblem(objective_function_known_kD, [1.0, 1.0])
 optsol_known_kD = solve(optprob_known_kD, NLopt.LN_NELDERMEAD())
 nothing # hide
@@ -250,7 +242,7 @@ nothing # hide
 
 ## [Optimisation solver options](@id optimization_parameter_fitting_solver_options)
 Optimization.jl supports various [optimisation solver options](https://docs.sciml.ai/Optimization/stable/API/solve/) that can be supplied to the `solve` command. For example, to set a maximum number of seconds (after which the optimisation process is terminated), you can use the `maxtime` argument:
-```@example optimization_paramfit_1 
+```@example optimization_paramfit_1
 optsol_fixed_kD = solve(optprob, NLopt.LN_NELDERMEAD(); maxtime = 100)
 nothing # hide
 ```
@@ -272,7 +264,7 @@ p_true = [:kB => 0.0, :kD => -1.0, :kP => 10^(0.5)]
 nothing # hide
 ```
 corresponds to the same true parameter values as used previously (`[:kB => 1.0, :kD => 0.1, :kP => 0.5]`). Alternatively, we can provide the log-transform in the objective function:
-```@example optimization_paramfit_1 
+```@example optimization_paramfit_1
 function objective_function_logtransformed(p, _)
     p = Pair.([:kB, :kD, :kP], 10.0 .^ p)
     oprob = remake(oprob_base; p)
