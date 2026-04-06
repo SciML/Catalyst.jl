@@ -552,8 +552,7 @@ params = [par_kB, par_kD, par_kP, par_S0, par_E0]
 
 using DataFrames
 measurements = DataFrame(obs_id = "obs_P", time = data_ts, measurement = data_vals)
-
-petab_model = PEtabModel(rn, observables, measurements, params; speciemap = u0)
+petab_model = PEtabModel(rn, obs_P, measurements, params; speciemap = u0)
 nothing # hide
 ```
 
