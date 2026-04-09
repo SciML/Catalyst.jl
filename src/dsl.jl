@@ -10,7 +10,8 @@ const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔
 # Declares the keys used for various options.
 const option_keys = (:species, :parameters, :variables, :discretes, :ivs, :compounds, :observables,
     :default_noise_scaling, :differentials, :equations, :continuous_events, :discrete_events,
-    :tstops, :brownians, :poissonians, :combinatoric_ratelaws, :require_declaration, :unit_checks)
+    :tstops, :brownians, :poissonians, :combinatoric_ratelaws, :require_declaration, :unit_checks,
+    :aliases)
 
 ### `@species` Macro ###
 
@@ -291,6 +292,7 @@ function make_reaction_system(ex::Expr, name)
     default_reaction_metadata = read_default_noise_scaling_option(options)
     combinatoric_ratelaws = read_combinatoric_ratelaws_option(options)
     unit_checks = read_unit_checks_option(options)
+    aliases_expr = read_aliases_option(options)
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     psexpr_init = get_psexpr(ps_inferred, stoich_ps, options)
@@ -334,13 +336,14 @@ function make_reaction_system(ex::Expr, name)
         _tstops = $tstops_expr
         _combinatoric_ratelaws = $combinatoric_ratelaws
         _default_reaction_metadata = $default_reaction_metadata
+        _aliases = $aliases_expr
 
         remake_ReactionSystem_internal(
             make_ReactionSystem_internal(rx_eq_vec, $tiv, us, ps, $brownsvar; poissonians = $poissvar,
                 name, spatial_ivs, observed = _observed, continuous_events = _continuous_events,
                 discrete_events = _discrete_events, tstops = _tstops,
                 combinatoric_ratelaws = _combinatoric_ratelaws,
-                unit_checks = _unit_checks);
+                unit_checks = _unit_checks, aliases = _aliases);
             default_reaction_metadata = _default_reaction_metadata)
     end))
 end
@@ -1064,6 +1067,26 @@ function read_unit_checks_option(options)
         (unit_checks_val isa Bool) || error("@unit_checks must evaluate to `true` or `false`, got $(unit_checks_val) of type $(typeof(unit_checks_val)).")
         unit_checks_val
     end
+end
+
+# Reads the `@aliases` option. Parses `A ~ B` equations and generates an expression
+# that creates a vector of Equation objects at runtime.
+function read_aliases_option(options)
+    !haskey(options, :aliases) && return :(Equation[])
+    block = option_block_form(get_block_option(options[:aliases]))
+    alias_exprs = Expr[]
+    for line in block.args
+        line isa LineNumberNode && continue
+        # Each alias must be a binary ~ expression
+        if line isa Expr && line.head == :call && length(line.args) == 3 && line.args[1] == :(~)
+            lhs = line.args[2]
+            rhs = line.args[3]
+            push!(alias_exprs, :($lhs ~ $rhs))
+        else
+            error("Invalid alias syntax: `$line`. Expected form: `A ~ B`.")
+        end
+    end
+    return :(Equation[$(alias_exprs...)])
 end
 
 ### `@reaction` Macro & its Internals ###

@@ -2,6 +2,86 @@
 
 ## Unreleased (on master)
 
+#### New: Alias elimination for `ReactionSystem`s
+
+- **New `aliases` field on `ReactionSystem`** for declaring symbol equivalences
+  (`lhs ~ rhs` means lhs is eliminated in favor of rhs). Aliases are automatically
+  eliminated during model conversion (`ode_model`, `sde_model`, `jump_model`,
+  `hybrid_model`, `ss_ode_model`) and problem construction (`ODEProblem`, `SDEProblem`,
+  `JumpProblem`, `HybridProblem`, `NonlinearProblem`, `SteadyStateProblem`).
+
+  Supported alias types (v1):
+  - Ordinary species to ordinary species
+  - BC-species to BC-species
+  - Constant species to constant species
+  - Non-species unknowns (variables) to non-species unknowns
+  - Parameters to parameters (with strict metadata matching)
+
+  Not supported in v1: Brownian, Poissonian, compound species, binding key, and
+  observable aliasing. Cross-category aliasing (e.g. species to parameter) is rejected.
+
+- **New `@aliases` DSL option** for declaring aliases in `@reaction_network` and
+  `@network_component`:
+  ```julia
+  rn = @reaction_network begin
+      @aliases begin
+          A ~ B           # Species alias: A eliminated, B survives
+          k1 ~ k2         # Parameter alias: k1 eliminated, k2 survives
+      end
+      k1, A + C --> D
+      k2, B --> E
+  end
+  ```
+
+- **New `eliminate_aliases` keyword argument** (`true` by default) on all model
+  conversion functions and problem constructors. Set to `false` to keep aliases as
+  algebraic constraints (ODE/SDE paths only; jump systems require elimination).
+
+- **New `remap_alias_inputs` function** for remapping user-provided `u0`/`p` maps
+  when using the `*_model` → `*Problem(::System, ...)` workflow. Works on any
+  `AbstractSystem` with alias maps in metadata.
+
+- **Aliases are handled through composition**: `compose(...; aliases=...)` accepts
+  cross-subsystem aliases, `extend` unions aliases from both systems, and `flatten`
+  collects aliases from subsystems with namespacing.
+
+- **`isequivalent` compares aliases** (set equality).
+
+- **Serialization of aliases is not yet supported** and will error if attempted.
+
+- **Non-symbolic (function-based) jumps** (`ConstantRateJump`/`VariableRateJump` with
+  plain Julia functions for rate/affect) are now rejected at `ReactionSystem`
+  construction time with an informative error. These were never supported by MTKBase.
+
+  **Known limitations (v1):**
+
+  The following alias types are rejected with an informative error:
+  - Brownian ↔ Brownian aliasing
+  - Poissonian ↔ Poissonian aliasing
+  - Compound species aliasing (either side)
+  - Aliases involving binding keys (either side)
+  - Aliases involving observable symbols directly
+  - Cross-category aliasing (e.g. species ↔ parameter, BC ↔ ordinary species)
+  - `MassActionJump` in systems with aliases (stoichiometry remapping deferred)
+
+  The following metadata mismatches are rejected:
+  - Parameter type mismatch (e.g. `Int64` ↔ `Float64`)
+  - Parameter or species/variable unit mismatch
+  - Time-dependent ↔ non-time-dependent parameter mismatch
+
+  Other known limitations:
+  - Serialization of systems with aliases errors (deferred alongside tstops/brownians/poissonians)
+  - `eliminate_aliases=false` is not supported for jump systems (algebraic constraints
+    cannot be carried by jump systems)
+  - When using the `*_model` → `*Problem(::System, ...)` workflow, users must call
+    `remap_alias_inputs` manually on `u0`/`p` maps. The automatic remapping only
+    applies to the `*Problem(::ReactionSystem, ...)` path.
+  - Substitution is unconditional per-expression (no expression-level early-exit guard);
+    mitigated by category-level fast paths when alias submaps are empty
+  - `system_to_reactionsystem` reverse conversion produces an empty `aliases` field
+    (the original alias declarations are cleared after elimination, though the
+    substitution maps survive in metadata for `remap_alias_inputs`)
+
 ## Catalyst 16.1
 
 - Added `use_jump_ratelaws` keyword argument to `ode_model`, `sde_model`, `hybrid_model`,

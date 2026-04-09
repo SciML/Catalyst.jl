@@ -253,7 +253,7 @@ all such code and updating it appropriately (e.g. serialization). Please use a s
 # structure have been updated (in the `reactionsystem_uptodate_check` function).
 const reactionsystem_fields = (
     :eqs, :rxs, :iv, :sivs, :unknowns, :species, :ps, :var_to_name,
-    :observed, :name, :systems, :bindings, :initial_conditions,
+    :observed, :aliases, :name, :systems, :bindings, :initial_conditions,
     :networkproperties, :combinatoric_ratelaws, :continuous_events,
     :discrete_events, :tstops, :brownians, :poissonians, :jumps, :metadata, :complete, :parent)
 
@@ -321,6 +321,8 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     var_to_name::Dict{Symbol, SymbolicT}
     """Equations for observed variables."""
     observed::Vector{Equation}
+    """Alias equations declaring symbol equivalences. `lhs ~ rhs` means lhs is eliminated in favor of rhs."""
+    aliases::Vector{Equation}
     """The name of the system"""
     name::Symbol
     """Internal sub-systems"""
@@ -380,9 +382,9 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
 
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
-            name, systems, bindings, initial_conditions, nps, cls, cevs, devs, tstops,
-            brownians, poissonians, jumps, metadata, complete = false, parent = nothing;
-            checks::Bool = true, unit_checks::Bool = false)
+            aliases, name, systems, bindings, initial_conditions, nps, cls, cevs, devs,
+            tstops, brownians, poissonians, jumps, metadata, complete = false,
+            parent = nothing; checks::Bool = true, unit_checks::Bool = false)
 
         # Structural checks (fast, always on by default).
         if checks && isempty(sivs)
@@ -400,9 +402,25 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
             (hasnode(is_species_diff, eq.lhs) || hasnode(is_species_diff, eq.rhs)) &&
                 error("An equation ($eq) contains a differential with respect to a species. This is currently not supported. If this is a functionality you require, please raise an issue on the Catalyst GitHub page and we can consider the best way to implement it.")
         end
+        # Cheap structural alias checks (no symbol lookups — full validation deferred to elimination).
+        if checks && !isempty(aliases)
+            check_aliases(aliases)
+        end
+
+        # Reject non-symbolic (imperative/function-based) jumps — not supported by MTKBase.
+        if checks && !isempty(jumps)
+            for j in jumps
+                if (j isa ConstantRateJump || j isa VariableRateJump) &&
+                        (j.rate isa Function || j.affect! isa Function)
+                    error("Non-symbolic (function-based) jumps are not supported in ReactionSystem. " *
+                          "Use symbolic rate and affect expressions for ConstantRateJump/VariableRateJump.")
+                end
+            end
+        end
+
         rs = new{typeof(nps)}(
             eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
-            name, systems, bindings, initial_conditions, nps, cls, cevs,
+            aliases, name, systems, bindings, initial_conditions, nps, cls, cevs,
             devs, tstops, brownians, poissonians, jumps, metadata, complete, parent)
         unit_checks && assert_valid_units(rs; info = string("ReactionSystem constructor for ", name))
         rs
@@ -426,6 +444,7 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
         poissonians = SymbolicT[],
         jumps = JumpType[],
         observed = Equation[],
+        aliases = Equation[],
         systems = [],
         name = nothing,
         bindings = SymmapT(),
@@ -540,8 +559,8 @@ function ReactionSystem(eqs, iv, unknowns, ps, brownians = SymbolicT[];
     tstops′ = Any[Symbolics.value(ts) for ts in tstops]
 
     ReactionSystem(
-        eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
-        systems, bindings, initial_conditions, nps, combinatoric_ratelaws,
+        eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, aliases,
+        name, systems, bindings, initial_conditions, nps, combinatoric_ratelaws,
         continuous_events, discrete_events, tstops′, brownians′, poissonians′, jumps′, metadata;
         checks, unit_checks)
 end
@@ -591,7 +610,8 @@ end
 # but carried out at a later stage.
 function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in, brownians = SymbolicT[];
         poissonians = SymbolicT[], spatial_ivs = nothing, continuous_events = [],
-        discrete_events = [], tstops = [], observed = [], jumps = JumpType[], kwargs...)
+        discrete_events = [], tstops = [], observed = [], jumps = JumpType[],
+        aliases = Equation[], kwargs...)
 
     # Error if any observables have been declared a species or variable
     obs_vars = Set(obs_eq.lhs for obs_eq in observed)
@@ -657,6 +677,11 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in, bro
         MT.collect_vars!(us, ps, eq.rhs, t)
     end
 
+    # Discover parameters/unknowns from alias equations.
+    for eq in aliases
+        MT.collect_vars!(us, ps, eq, t)
+    end
+
     # Converts the found unknowns and parameters to vectors.
     usv = collect(us)
 
@@ -679,7 +704,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in, bro
     # Passes the processed input into the next `ReactionSystem` call.
     # Note: brownians are passed as the 5th positional argument.
     ReactionSystem(fulleqs, t, usv, psv, brownians; poissonians, spatial_ivs,
-        continuous_events, discrete_events, tstops, observed, jumps, kwargs...)
+        continuous_events, discrete_events, tstops, observed, jumps, aliases, kwargs...)
 end
 
 ### Base Function Dispatches ###
@@ -780,6 +805,8 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
     debug_comparer(
         issetequal, MT.get_observed(rn1), MT.get_observed(rn2), "observed"; debug) ||
         return false
+    debug_comparer(issetequal, get_aliases(rn1), get_aliases(rn2), "aliases"; debug) ||
+        return false
     debug_comparer(issetequal, get_eqs(rn1), get_eqs(rn2), "eqs"; debug) || return false
     # Use custom event comparison functions to work around MTK issue #3907
     debug_comparer(continuous_events_equal, MT.get_continuous_events(rn1),
@@ -852,6 +879,44 @@ Return the system's `Reaction` vector (toplevel system only).
 """
 get_rxs(sys::ReactionSystem) = getfield(sys, :rxs)
 has_rxs(sys::ReactionSystem) = isdefined(sys, :rxs)
+
+"""
+    get_aliases(sys::ReactionSystem)
+
+Return the alias equations for the toplevel system only.
+"""
+get_aliases(sys::ReactionSystem) = getfield(sys, :aliases)
+
+"""
+    aliases(sys::ReactionSystem)
+
+Return all alias equations, recursively collecting from subsystems with namespacing.
+"""
+function aliases(sys::ReactionSystem)
+    systems = get_systems(sys)
+    isempty(systems) && return get_aliases(sys)
+    alias_eqs = copy(get_aliases(sys))
+    for subsys in systems
+        for eq in aliases(subsys)
+            push!(alias_eqs, MT.renamespace(nameof(subsys), eq.lhs) ~ MT.renamespace(nameof(subsys), eq.rhs))
+        end
+    end
+    alias_eqs
+end
+
+"""
+    has_aliases(sys::ReactionSystem)
+
+Return `true` if the system type supports alias equations. Always `true` for `ReactionSystem`.
+"""
+has_aliases(sys::ReactionSystem) = true
+
+"""
+    aliases_present(sys::ReactionSystem)
+
+Return `true` if the system or any of its subsystems contains alias equations.
+"""
+aliases_present(sys::ReactionSystem) = !isempty(get_aliases(sys)) || any(aliases_present, get_systems(sys))
 
 """
     get_sivs(sys::ReactionSystem)
@@ -1535,6 +1600,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
         poissonians = MT.poissonians(rs),
         jumps = MT.jumps(rs),
         observed = MT.observed(rs),
+        aliases = aliases(rs),
         name,
         initial_conditions = MT.initial_conditions(rs),
         checks = false,
@@ -1565,7 +1631,8 @@ Notes:
 - By default, the new `ReactionSystem` will have the same name as `sys`.
 - Brownians and jumps from subsystems are collected at flatten time via recursive accessors.
 """
-function MT.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys))
+function MT.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys),
+        aliases = Equation[])
     complete_check(sys, "MT.compose")
     foreach(s -> complete_check(s, "MT.compose"), systems)
 
@@ -1593,6 +1660,11 @@ function MT.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(s
 
     if !isempty(newparams)
         @set! sys.ps = union(get_ps(sys), newparams)
+    end
+
+    # Merge aliases (provided at composed-system namespace level, no renamespacing).
+    if !isempty(aliases)
+        @set! sys.aliases = [get_aliases(sys); aliases]
     end
 
     return sys
@@ -1633,15 +1705,17 @@ function MT.extend(sys::ReactionSystem, rs::ReactionSystem;
                             Catalyst.get_combinatoric_ratelaws(rs)
     sivs = union(get_sivs(sys), get_sivs(rs))
 
-    # Union brownians, poissonians, and jumps from both systems
+    # Union brownians, poissonians, jumps, and aliases from both systems
     new_brownians = union(MT.get_brownians(rs), MT.get_brownians(sys))
     new_poissonians = union(MT.get_poissonians(rs), MT.get_poissonians(sys))
     new_jumps = union(MT.get_jumps(rs), MT.get_jumps(sys))
+    new_aliases = union(get_aliases(rs), get_aliases(sys))
 
     ReactionSystem(eqs, t, sts, ps, collect(new_brownians);
         poissonians = collect(new_poissonians),
         jumps = collect(new_jumps),
         observed = obs,
+        aliases = collect(new_aliases),
         systems = syss,
         name,
         initial_conditions = defs,
