@@ -55,15 +55,15 @@ integrator.ps[:k₂]</code></pre><pre class="documenter-example-output"><code cl
  0.004746921986536083
  0.008678361994276141
  ⋮
- 0.37712925169200623
- 0.43760387417106783
- 0.49736491137651606
- 0.5525966822537661
- 0.6046370951042669
- 0.6515260172306893
- 0.6944615345712648
- 0.7327579380575537
- 0.7534904419081634</code></pre><p>Parameter values can also be accessed (however, here we only get a single value):</p><pre><code class="language-julia hljs">sol.ps[:k₃]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">100.0</code></pre><p>Unlike for problems and integrators, species or parameter values of solutions cannot be changed. </p><p>A vector with the time values for all simulation time steps can be retrieved using</p><pre><code class="language-julia hljs">sol.t</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">40-element Vector{Float64}:
+ 0.37712922823517026
+ 0.43760383802013014
+ 0.4973648753950214
+ 0.5525966384228482
+ 0.6046370494374956
+ 0.6515259746875317
+ 0.6944614955154168
+ 0.732757902280356
+ 0.7534904418828967</code></pre><p>Parameter values can also be accessed (however, here we only get a single value):</p><pre><code class="language-julia hljs">sol.ps[:k₃]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">100.0</code></pre><p>Unlike for problems and integrators, species or parameter values of solutions cannot be changed. </p><p>A vector with the time values for all simulation time steps can be retrieved using</p><pre><code class="language-julia hljs">sol.t</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">40-element Vector{Float64}:
   0.0
   0.006877636354249612
   0.012703347894275383
@@ -75,14 +75,14 @@ integrator.ps[:k₂]</code></pre><pre class="documenter-example-output"><code cl
   0.10349955221968685
   0.14515621694908853
   ⋮
-  3.6234782200472635
-  4.3618409306873485
-  5.164359864261959
-  5.984929612332965
-  6.844006558266158
-  7.707244130432259
-  8.591129516012423
-  9.475014901592587
+  3.623477946395219
+  4.361840468821343
+  5.164359356424794
+  5.984928926912461
+  6.844005762496507
+  7.707243303020658
+  8.591128664974244
+  9.47501402692783
  10.0</code></pre><p>To find simulation values at a specific time point, simply use this time point as input to your solution object (treating it as a function). I.e. here we get our simulation&#39;s values at time <span>$t = 1.0$</span></p><pre><code class="language-julia hljs">sol(1.0)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">6-element Vector{Float64}:
  0.8649253941888153
  0.027156866135925217
@@ -114,4 +114,4 @@ ps = [k1 =&gt; 1.0, k2 =&gt; 2.0]
 oprob = ODEProblem(two_state_model, u0, tspan, ps)
 
 oprob = remake(oprob; u0 = [X1 =&gt; 5.0])
-oprob[X1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.0</code></pre><p>Symbolic variables can be used to access or update species or parameters for all the cases when <code>Symbol</code>s can (including when using <code>remake</code> or e.g. <code>getu</code>).</p><p>An advantage when quantities are represented as symbolic variables is that symbolic expressions can be formed and used to index a structure. E.g. here we check the combined initial concentration of <span>$X$</span> (<span>$X1 + X2$</span>) in our two-state problem:</p><pre><code class="language-julia hljs">oprob[X1 + X2]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.0</code></pre><p>Just like symbolic variables can be used to directly interface with a structure, symbolic variables stored in <code>ReactionSystem</code> models can be used:</p><pre><code class="language-julia hljs">oprob[two_state_model.X1 + two_state_model.X2]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.0</code></pre><p>This can be used to form symbolic expressions using model quantities when a model has been created using the DSL (as an alternative to @unpack). Alternatively, <a href="../../model_creation/dsl_advanced/#dsl_advanced_options_observables">creating an observable</a>, and then interface using its <code>Symbol</code> representation, is also possible.</p><div class="admonition is-warning" id="Warning-24e321fa32d59cce"><header class="admonition-header">Warning<a class="admonition-anchor" href="#Warning-24e321fa32d59cce" title="Permalink"></a></header><div class="admonition-body"><p>When accessing a simulation structure using symbolic variables from a <code>ReactionSystem</code> model, such as <code>rn.A</code> for <code>rn</code> a <code>ReactionSystem</code> and <code>A</code> a species within it, ensure that the model is complete.</p></div></div></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../simulation_plotting/">« Simulation Plotting</a><a class="docs-footer-nextpage" href="../ensemble_simulations/">Ensemble/Monte Carlo Simulations »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Tuesday 7 April 2026 14:31">Tuesday 7 April 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+oprob[X1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.0</code></pre><p>Symbolic variables can be used to access or update species or parameters for all the cases when <code>Symbol</code>s can (including when using <code>remake</code> or e.g. <code>getu</code>).</p><p>An advantage when quantities are represented as symbolic variables is that symbolic expressions can be formed and used to index a structure. E.g. here we check the combined initial concentration of <span>$X$</span> (<span>$X1 + X2$</span>) in our two-state problem:</p><pre><code class="language-julia hljs">oprob[X1 + X2]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.0</code></pre><p>Just like symbolic variables can be used to directly interface with a structure, symbolic variables stored in <code>ReactionSystem</code> models can be used:</p><pre><code class="language-julia hljs">oprob[two_state_model.X1 + two_state_model.X2]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.0</code></pre><p>This can be used to form symbolic expressions using model quantities when a model has been created using the DSL (as an alternative to @unpack). Alternatively, <a href="../../model_creation/dsl_advanced/#dsl_advanced_options_observables">creating an observable</a>, and then interface using its <code>Symbol</code> representation, is also possible.</p><div class="admonition is-warning" id="Warning-24e321fa32d59cce"><header class="admonition-header">Warning<a class="admonition-anchor" href="#Warning-24e321fa32d59cce" title="Permalink"></a></header><div class="admonition-body"><p>When accessing a simulation structure using symbolic variables from a <code>ReactionSystem</code> model, such as <code>rn.A</code> for <code>rn</code> a <code>ReactionSystem</code> and <code>A</code> a species within it, ensure that the model is complete.</p></div></div></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../simulation_plotting/">« Simulation Plotting</a><a class="docs-footer-nextpage" href="../ensemble_simulations/">Ensemble/Monte Carlo Simulations »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 9 April 2026 13:18">Thursday 9 April 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
