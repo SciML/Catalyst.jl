@@ -1,6 +1,6 @@
 name = "Catalyst"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
-version = "16.1.1"
+version = "16.1.2"
 
 [deps]
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
@@ -69,7 +69,7 @@ OrdinaryDiffEqCore = "3.22"
 Parameters = "0.12"
 Reexport = "1.0"
 RuntimeGeneratedFunctions = "0.5.12"
-SciMLBase = "2.84"
+SciMLBase = "2.84, 3.1"
 SciMLPublic = "1"
 Setfield = "1"
 StochasticDiffEq = "6.101"
