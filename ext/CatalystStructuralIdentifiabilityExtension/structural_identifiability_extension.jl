@@ -171,7 +171,10 @@ function make_osys(rs::ReactionSystem; remove_conserved = true, mtkcompile::Bool
         error("Identifiability should only be computed for complete systems. A ReactionSystem can be marked as complete using the `complete` function.")
     end
     rs = complete(Catalyst.expand_registered_functions(flatten(rs)))
-    osys = ode_model(rs; remove_conserved)
+    # SI treats Γ as a free parameter and works purely symbolically, so we skip
+    # the conservation law bindings (Γ => missing) that are only needed for
+    # numerical initialization.
+    osys = ode_model(rs; remove_conserved, add_cl_bindings = false)
     if mtkcompile
         osys = ModelingToolkitBase.mtkcompile(osys)
     elseif ModelingToolkitBase.has_alg_equations(rs)
