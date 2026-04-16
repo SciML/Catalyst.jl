@@ -15,7 +15,7 @@ function sym_dict(dict_in)
         sym_key = Symbol(key)
         sym_key = Symbol(replace(String(sym_key), "(t)" => ""))
         dict_out[sym_key] = dict_in[key]
-    end    
+    end
     return dict_out
 end
 
@@ -24,7 +24,7 @@ end
 
 # Tests for Goodwin model (model with both global, local, and non identifiable components).
 # Tests for system using Catalyst function (in this case, Michaelis-Menten function)
-let 
+@testset "Goodwin oscillator (Michaelis-Menten)" begin
     # Identifiability analysis for Catalyst model.
     goodwind_oscillator_catalyst = @reaction_network begin
         (mmr(P,pₘ,1), dₘ), 0 <--> M
@@ -61,13 +61,13 @@ let
     @test isequal(collect(keys(gi_1)), [unknowns(goodwind_oscillator_catalyst); parameters(goodwind_oscillator_catalyst)])
     @test isequal(collect(values(gi_1)), [:globally, :nonidentifiable, :globally, :globally, :globally, :nonidentifiable, :locally, :nonidentifiable, :locally])
     @test isequal(collect(keys(li_1)), [unknowns(goodwind_oscillator_catalyst); parameters(goodwind_oscillator_catalyst)])
-    @test isequal(collect(values(li_1)), [1, 0, 1, 1, 1, 0, 1, 0, 1]) 
+    @test isequal(collect(values(li_1)), [1, 0, 1, 1, 1, 0, 1, 0, 1])
 end
 
 # Tests on a made-up reaction network with mix of identifiable and non-identifiable components.
 # Tests for symbolics input.
 # Tests using known_p argument.
-let 
+@testset "Chain network with known_p and symbolic measured quantities" begin
     # Identifiability analysis for Catalyst model.
     rs_catalyst = @reaction_network begin
         (p1, d), 0 <--> X1
@@ -110,14 +110,14 @@ let
     @test isequal(collect(keys(gi_1)),[unknowns(rs_catalyst); parameters(rs_catalyst)])
     @test isequal(collect(values(gi_1)),[:nonidentifiable, :globally, :globally, :nonidentifiable, :nonidentifiable, :nonidentifiable, :nonidentifiable, :globally, :globally, :globally])
     @test isequal(collect(keys(li_1)),[unknowns(rs_catalyst); parameters(rs_catalyst)])
-    @test isequal(collect(values(li_1)),[0, 1, 1, 0, 0, 0, 0, 1, 1, 1])  
+    @test isequal(collect(values(li_1)),[0, 1, 1, 0, 0, 0, 0, 1, 1, 1])
 end
 
 # Tests on a made-up reaction network with mix of identifiable and non-identifiable components.
 # Tests for system with conserved quantity.
 # Tests for symbolics known_p
 # Tests using an equation for measured quantity.
-let 
+@testset "Conserved binding pair (composite measured quantity)" begin
     # Identifiability analysis for Catalyst model.
     rs_catalyst = @reaction_network begin
         p, 0 --> X1
@@ -170,7 +170,7 @@ let
 end
 
 # Tests that various inputs types work.
-let 
+@testset "Input type variations (Symbol vs symbolic)" begin
     goodwind_oscillator_catalyst = @reaction_network begin
         (mmr(P,pₘ,1), dₘ), 0 <--> M
         (pₑ*M,dₑ), 0 <--> E
@@ -205,7 +205,7 @@ let
 end
 
 # Tests for hierarchical model with conservation laws at both top and internal levels.
-let
+@testset "Hierarchical system with nested conservation laws" begin
     # Identifiability analysis for Catalyst model.
     rs1 = @network_component rs1 begin
         (k1, k2), X1 <--> X2
@@ -259,7 +259,7 @@ end
 
 # Tests directly on reaction systems with known identifiability structures.
 # Test provided by Alexander Demin.
-let
+@testset "Direct tests on small networks" begin
     rs = @reaction_network begin
         k1, x1 --> x2
     end
@@ -316,8 +316,8 @@ end
 ### Other Tests ###
 
 # Checks that identifiability can be assessed for coupled CRN/DAE systems.
-# `remove_conserved = false` is used to remove info print statement from log.
-let
+# DAE systems (with algebraic equations) require `mtkcompile = true`.
+@testset "Coupled CRN/DAE" begin
     rs = @reaction_network begin
         @parameters k c1 c2
         @variables C(t)
@@ -327,39 +327,106 @@ let
         end
         (p/V,d/V), 0 <--> X
     end
-    @unpack p, d, k, c1, c2 = rs
-    
+    @unpack X, V, p, d, k, c1, c2 = rs
+
+    # After `mtkcompile`, the algebraic variable C becomes an observed equation
+    # and is no longer a state. SI.jl currently cannot handle observed variables
+    # in `funcs_to_check` (KeyError in eval_at_nemo). We pass explicit
+    # `funcs_to_check` excluding C to work around this upstream limitation.
+    ftc = [X, V, p, d, k, c1, c2]
+
     # Tests identifiability assessment when all unknowns are measured.
-    remove_conserved = false
-    gi_1 = assess_identifiability(rs; measured_quantities = [:X, :V, :C], loglevel, remove_conserved)
-    li_1 = assess_local_identifiability(rs; measured_quantities = [:X, :V, :C], loglevel, remove_conserved)
-    ifs_1 = find_identifiable_functions(rs; measured_quantities = [:X, :V, :C], loglevel, remove_conserved)
-    @test sym_dict(gi_1) == Dict([:X => :globally, :C => :globally, :V => :globally, :k => :globally, 
+    gi_1 = assess_identifiability(rs; measured_quantities = [:X, :V, :C], funcs_to_check = ftc, loglevel, remove_conserved = false, mtkcompile = true)
+    li_1 = assess_local_identifiability(rs; measured_quantities = [:X, :V, :C], funcs_to_check = ftc, loglevel, remove_conserved = false, mtkcompile = true)
+    ifs_1 = find_identifiable_functions(rs; measured_quantities = [:X, :V, :C], loglevel, remove_conserved = false, mtkcompile = true)
+    @test sym_dict(gi_1) == Dict([:X => :globally, :V => :globally, :k => :globally,
                       :c1 => :nonidentifiable, :c2 => :nonidentifiable, :p => :globally, :d => :globally])
-    @test sym_dict(li_1) == Dict([:X => 1, :C => 1, :V => 1, :k => 1, :c1 => 0, :c2 => 0, :p => 1, :d => 1])
+    @test sym_dict(li_1) == Dict([:X => 1, :V => 1, :k => 1, :c1 => 0, :c2 => 0, :p => 1, :d => 1])
     @test issetequal(ifs_1, [d, p, k, c1 + c2])
-    
-    # Tests identifiability assessment when only variables are measured. 
+
+    # Tests identifiability assessment when only variables are measured.
     # Checks that a parameter in an equation can be set as known.
-    gi_2 = assess_identifiability(rs; measured_quantities = [:V, :C], known_p = [:c1], loglevel, remove_conserved)
-    li_2 = assess_local_identifiability(rs; measured_quantities = [:V, :C], known_p = [:c1], loglevel, remove_conserved)
-    ifs_2 = find_identifiable_functions(rs; measured_quantities = [:V, :C], known_p = [:c1], loglevel, remove_conserved)
-    @test sym_dict(gi_2) == Dict([:X => :nonidentifiable, :C => :globally, :V => :globally, :k => :nonidentifiable, 
+    gi_2 = assess_identifiability(rs; measured_quantities = [:V, :C], known_p = [:c1], funcs_to_check = ftc, loglevel, remove_conserved = false, mtkcompile = true)
+    li_2 = assess_local_identifiability(rs; measured_quantities = [:V, :C], known_p = [:c1], funcs_to_check = ftc, loglevel, remove_conserved = false, mtkcompile = true)
+    ifs_2 = find_identifiable_functions(rs; measured_quantities = [:V, :C], known_p = [:c1], loglevel, remove_conserved = false, mtkcompile = true)
+    @test sym_dict(gi_2) == Dict([:X => :nonidentifiable, :V => :globally, :k => :nonidentifiable,
                       :c1 => :globally, :c2 => :nonidentifiable, :p => :nonidentifiable, :d => :globally])
-    @test sym_dict(li_2) == Dict([:X => 0, :C => 1, :V => 1, :k => 0, :c1 => 1, :c2 => 0, :p => 0, :d => 1])
+    @test sym_dict(li_2) == Dict([:X => 0, :V => 1, :k => 0, :c1 => 1, :c2 => 0, :p => 0, :d => 1])
     @test issetequal(ifs_2, [d, c1, k*p, c1*p + c2*p])
 end
 
 # Checks that identifiability functions cannot be applied to non-complete `ReactionSystems`s.
-let 
+@testset "Incomplete ReactionSystems raise" begin
     # Create model.
     incomplete_network = @network_component begin
         (p, d), 0 <--> X
     end
     measured_quantities = [:X]
-    
+
     # Computes bifurcation diagram.
     @test_throws Exception assess_identifiability(incomplete_network; measured_quantities, loglevel)
     @test_throws Exception assess_local_identifiability(incomplete_network; measured_quantities, loglevel)
     @test_throws Exception find_identifiable_functions(incomplete_network; measured_quantities, loglevel)
+end
+
+# Covers the `funcs_to_check` kwarg: when the caller passes a custom vector of
+# expressions, the extension must route them through `make_ftc` and return an
+# identifiability verdict keyed on exactly those expressions (and no others).
+@testset "funcs_to_check kwarg" begin
+    rs = complete(@reaction_network begin
+        p, 0 --> X           # open network: no conservation law
+        d, X --> 0
+    end)
+    @unpack p, d = rs
+    out = assess_identifiability(rs; measured_quantities = [:X],
+                                 funcs_to_check = [p, d, p / d], loglevel)
+    @test length(out) == 3
+    @test all(v -> v == :globally, values(out))
+end
+
+# Covers the `ignore_no_measured_warn` kwarg and the corresponding @warn path.
+# `known_p` is passed so SI has something non-empty to feed mtk_to_si; the
+# warning path only cares that the explicit `measured_quantities` kwarg is
+# empty.
+@testset "measured_quantities warning" begin
+    rs = complete(@reaction_network begin
+        p, 0 --> X           # open network; picked to avoid upstream Issue 1
+        d, X --> 0
+    end)
+    # Default: warning fires when `measured_quantities` is empty.
+    @test_logs (:warn, r"No measured quantity") match_mode=:any make_si_ode(rs; known_p = [:p])
+    # Opt-out: no warning when `ignore_no_measured_warn = true`.
+    @test_logs min_level=Logging.Warn make_si_ode(rs; known_p = [:p],
+                                                 ignore_no_measured_warn = true)
+end
+
+# Regression: `make_osys` must return `Vector{Pair{Any, Any}}` for `conseqs` and
+# `consconsts` in every branch, matching the type guarantee stated in the comment
+# above the branch. Previously the empty-branch path produced
+# `Vector{Vector{Pair{Any, Any}}}` (a nested empty vector) which silently leaked
+# into downstream callers that inspect or append to the vector.
+@testset "make_osys return type invariants" begin
+    ext = Base.get_extension(Catalyst, :CatalystStructuralIdentifiabilityExtension)
+
+    # Network with no conservation laws.
+    rs_open = complete(@reaction_network begin
+        p, 0 --> X
+        d, X --> 0
+    end)
+    for rc in (true, false)
+        _, conseqs, consconsts, _ = ext.make_osys(rs_open; remove_conserved = rc)
+        @test conseqs    isa Vector{Pair{Any, Any}}
+        @test consconsts isa Vector{Pair{Any, Any}}
+    end
+
+    # Network with a conservation law. The type invariant must hold regardless
+    # of whether conservation laws were removed.
+    rs_closed = complete(@reaction_network begin
+        k1, x1 --> x2
+    end)
+    for rc in (true, false)
+        _, conseqs, consconsts, _ = ext.make_osys(rs_closed; remove_conserved = rc)
+        @test conseqs    isa Vector{Pair{Any, Any}}
+        @test consconsts isa Vector{Pair{Any, Any}}
+    end
 end
