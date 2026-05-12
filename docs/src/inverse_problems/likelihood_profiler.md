@@ -87,7 +87,7 @@ end
 ```
 We generate two synthetic datasets, one of higher quality than the other:
 ```@example likelihood_profiler_pract_ident
-using Distributions, OrdinaryDiffEq
+using Distributions, OrdinaryDiffEqDefault
 function generate_data(u0, σ, tend)
     t_measurement = range(1.0, tend; length = 50)
     p_true = Dict([:r => 0.1, :K => 100.0])
