@@ -32,6 +32,7 @@ pages = Any[
     "model_simulation/simulation_plotting.md",
     "model_simulation/simulation_structure_interfacing.md",
     "model_simulation/ensemble_simulations.md",
+    "model_simulation/hybrid_simulations.md",
     "model_simulation/ode_simulation_performance.md",
     "model_simulation/sde_simulation_performance.md",
     # "model_simulation/finite_state_projection_simulation.md", # Wait for update with new version.
