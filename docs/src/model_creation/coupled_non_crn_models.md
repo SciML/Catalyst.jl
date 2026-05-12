@@ -316,7 +316,7 @@ end
 ```
 We can now create an `SDEProblem` from the model and simulate it using standard syntax.
 ```@example coupled_eqs_noise
-using StochasticDiffEq
+using Plots, StochasticDiffEq
 u0 = [:X => 0.1, :V => 0.5]
 ps = [:p => 2.0, :d => 0.5]
 sprob = SDEProblem(noisy_cell, u0, 10.0, ps)
@@ -325,7 +325,6 @@ plot(sol)
 ```
 Brownians can also be subject to more complex algebraic expressions (e.g. scaled by parameters). Multiple brownians can be declared in a single `@brownians` block and added freely to coupled equations. Here we modify the previous model so that `V` is subject to two brownians, each scaled by a different parameter.
 ```@example coupled_eqs_noise
-using Catalyst # hide
 noisy_cell = @reaction_network begin
     @parameters η1 η2
     @brownians B1 B2
@@ -337,22 +336,22 @@ end
 Models containing brownian processes can only be used to generate `SDEProblem`s and `HybridProblem`s, however, other problem types are not supported. Finally, brownians can also be used in [programmatic modelling](@ref programmatic_CRN_construction) with the same syntax as above (but `@brownians` being a freely usable macro, similar to e.g. `@species`).
 
 ### [Coupled poissonian processes](@id coupled_models_noise_poissonian)
-While brownians model continuous noise, poissonians model discrete noise events. Brownians are associated with `SDEProblem`s, while poissonians are associated with `JumpProblem`s. Consider the previous model, but where the volume fluctuates due to discrete noisy events (such as the absorption of vesicles at random time points). The rate/intensity of the poissonian process must be specified explicitly; here we declare it as a parameter `λ`.
+While brownians model continuous noise, poissonians model discrete noise events. While brownians are associated with stochastic differential processes, poissonians are associated with jump processes. Consider the previous model, but where the volume fluctuates due to discrete noisy events (such as the absorption of vesicles at random time points). The rate/intensity of the poissonian process must be specified explicitly; here we declare it as a parameter `λ`.
 ```@example coupled_eqs_noise
 noisy_cell = @reaction_network begin
     @parameters λ
-    @poissonian dN(λ)
+    @poissonians dN(λ)
     @equations D(V) ~ X - V + dN
     (p,d), 0 <--> X
 end
 ```
-The model can be simulated using standard syntax. Now, however, only `JumpProblem`s and `HybridProblem`s are supported.
+The model can be simulated using standard syntax. However, poissonians can only be simulated through `HybridProblem`s. The reason is that the variable subject to the poissonian is both governed by a differential equation and discrete jump process. Below, we perform a hybrid simulation for our model, where the $X$'s reactions and the poissonian are simulated as jumps, while $V$'s governing equation is simulated as an ODE.
 ```@example coupled_eqs_noise
-using StochasticDiffEq
-u0 = [:X => 0.1, :V => 0.5]
-ps = [:p => 2.0, :d => 0.5, :λ => 0.2]
-jprob = JumpProblem(noisy_cell, u0, 10.0, ps)
-sol = solve(jprob)
+using JumpProcesses, OrdinaryDiffEqTsit5
+u0 = [:X => 2.0, :V => 4.0]
+ps = [:p => 1.2, :d => 0.1, :λ => 2.0]
+jprob = HybridProblem(noisy_cell, u0, (0.0, 10.0), ps)
+sol = solve(jprob, Tsit5())
 plot(sol)
 ```
 
@@ -360,8 +359,8 @@ Multiple poissonians can be declared and added to one or more equations. Their i
 ```@example coupled_eqs_noise
 noisy_cell = @reaction_network begin
     @parameters λ
-    @poissonian dN1(λ) dN2(λ*X)
-    @equations D(V) ~ X - V + V*dN1 + dN2
+    @poissonians dN1(λ) dN2(λ*X)
+    @equations D(V) ~ X - V + 5dN1 + dN2
     (p,d), 0 <--> X
 end
 ```
