@@ -317,7 +317,7 @@ end
 This model,will be converted to the following SDE
 ```math
 \begin{align*}
-dX(t) &=  - \left( p - d X(t) \right) dt - \sqrt{p} \, dW_1(t) + \sqrt{d X(t)} \, dW_2(t) \\
+dX(t) &=  \left( p - d X(t) \right) dt + \sqrt{p} \, dW_1(t) - \sqrt{d X(t)} \, dW_2(t) \\
 dV(t) &= \left(X(t) - V(t)\right) dt + \, dB(t)
 \end{align*}
 ```
