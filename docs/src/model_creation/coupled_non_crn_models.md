@@ -314,6 +314,15 @@ noisy_cell = @reaction_network begin
     (p,d), 0 <--> X
 end
 ```
+This model,will be converted to the following SDE
+```math
+\begin{align*}
+dX(t) &=  - \left( p - d X(t) \right) dt - \sqrt{p} \, dW_1(t) + \sqrt{d X(t)} \, dW_2(t) \\
+dV(t) &= \left(X(t) - V(t)\right) dt + \, dB(t)
+\end{align*}
+```
+where $dW_1(t)$ and $dW_2(t)$ are the chemical Langevin equation-generated noise terms from the reactions, and $B(t)$ the brownian motion added manually.
+
 We can now create an `SDEProblem` from the model and simulate it using standard syntax.
 ```@example coupled_eqs_noise
 using Plots, StochasticDiffEq
@@ -345,7 +354,7 @@ noisy_cell = @reaction_network begin
     (p,d), 0 <--> X
 end
 ```
-The model can be simulated using standard syntax. However, poissonians can only be simulated through `HybridProblem`s. The reason is that the variable subject to the poissonian is both governed by a differential equation and discrete jump process. Below, we perform a hybrid simulation for our model, where the $X$'s reactions and the poissonian are simulated as jumps, while $V$'s governing equation is simulated as an ODE.
+The model can be simulated using standard syntax. However, poissonians can only be simulated through `HybridProblem`s. The reason is that the variable subject to the poissonian is both governed by a differential equation and discrete jump process. Below, we perform a hybrid simulation for our model, where the $X$'s reactions and the poissonian are simulated as jumps, while $V$'s governing dynamics are simulated as a *piecewise deterministic markov process*.
 ```@example coupled_eqs_noise
 using JumpProcesses, OrdinaryDiffEqTsit5
 u0 = [:X => 2.0, :V => 4.0]
