@@ -299,3 +299,79 @@ nonspecies(rs)
 ```@example coupled_eqs_variables
 unknowns(rs)
 ```
+
+## [Modelling noise for coupled non-species variables](@id coupled_models_noise)
+
+For pure reaction network models, Catalyst can automatically model noise when creating `SDEProblem`s (through the [*chemical Langevin equations*](@ref math_models_in_catalyst_cle_sdes)) or `JumpProblem`s (through [*stochastic chemical kinetics*](@ref math_models_in_catalyst_sck_jumps)). While these models can still contain coupled equations, non-species variables will not be directly subject to noise (though this is possible indirectly, if their dynamics are affected by noisy species). Catalyst, however, also implements `@brownians` and `@poissonians` options to directly inject noise into differential equations governing variables.
+
+### [Coupled brownian processes](@id coupled_models_noise_brownians)
+Brownian processes are continuous noise processes; variables subject to them experience constant fluctuations (in a similar manner to how species behave in `SDEProblem`s). To add a brownian to the model, declare it using the `@brownians` option and then add it to the differential equations for the relevant variables. Below we model a cell containing a simple birth-death process, where the cell's volume (a [coupled differential equation](@ref coupled_models_diffeqs)) is also subject to a brownian process.
+```@example coupled_eqs_noise
+using Catalyst # hide
+noisy_cell = @reaction_network begin
+    @brownians B
+    @equations D(V) ~ X - V + B
+    (p,d), 0 <--> X
+end
+```
+This model,will be converted to the following SDE
+```math
+\begin{align*}
+dX(t) &=  \left( p - d X(t) \right) dt + \sqrt{p} \, dW_1(t) - \sqrt{d X(t)} \, dW_2(t) \\
+dV(t) &= \left(X(t) - V(t)\right) dt + \, dB(t)
+\end{align*}
+```
+where $dW_1(t)$ and $dW_2(t)$ are the chemical Langevin equation-generated noise terms from the reactions, and $B(t)$ the brownian motion added manually.
+
+We can now create an `SDEProblem` from the model and simulate it using standard syntax.
+```@example coupled_eqs_noise
+using Plots, StochasticDiffEq
+u0 = [:X => 0.1, :V => 0.5]
+ps = [:p => 2.0, :d => 0.5]
+sprob = SDEProblem(noisy_cell, u0, 10.0, ps)
+sol = solve(sprob)
+plot(sol)
+```
+Brownians can also be subject to more complex algebraic expressions (e.g. scaled by parameters). Multiple brownians can be declared in a single `@brownians` block and added freely to coupled equations. Here we modify the previous model so that `V` is subject to two brownians, each scaled by a different parameter.
+```@example coupled_eqs_noise
+noisy_cell = @reaction_network begin
+    @parameters η1 η2
+    @brownians B1 B2
+    @equations D(V) ~ X - V + B1*η1 + B2*η2
+    (p,d), 0 <--> X
+end
+```
+
+Models containing brownian processes can only be used to generate `SDEProblem`s and `HybridProblem`s, however, other problem types are not supported. Finally, brownians can also be used in [programmatic modelling](@ref programmatic_CRN_construction) with the same syntax as above (but `@brownians` being a freely usable macro, similar to e.g. `@species`).
+
+### [Coupled poissonian processes](@id coupled_models_noise_poissonian)
+While brownians model continuous noise, poissonians model discrete noise events. While brownians are associated with stochastic differential processes, poissonians are associated with jump processes. Consider the previous model, but where the volume fluctuates due to discrete noisy events (such as the absorption of vesicles at random time points). The rate/intensity of the poissonian process must be specified explicitly; here we declare it as a parameter `λ`.
+```@example coupled_eqs_noise
+noisy_cell = @reaction_network begin
+    @parameters λ
+    @poissonians dN(λ)
+    @equations D(V) ~ X - V + dN
+    (p,d), 0 <--> X
+end
+```
+The model can be simulated using standard syntax. However, poissonians can only be simulated through `HybridProblem`s. The reason is that the variable subject to the poissonian is both governed by a differential equation and discrete jump process. Below, we perform a hybrid simulation for our model, where the $X$'s reactions and the poissonian are simulated as jumps, while $V$'s governing dynamics are simulated as a *piecewise deterministic markov process*.
+```@example coupled_eqs_noise
+using JumpProcesses, OrdinaryDiffEqTsit5
+u0 = [:X => 2.0, :V => 4.0]
+ps = [:p => 1.2, :d => 0.1, :λ => 2.0]
+jprob = HybridProblem(noisy_cell, u0, (0.0, 10.0), ps)
+sol = solve(jprob, Tsit5())
+plot(sol)
+```
+
+Multiple poissonians can be declared and added to one or more equations. Their intensities can also be composed with other symbolic expressions, such as making them depend on system variables:
+```@example coupled_eqs_noise
+noisy_cell = @reaction_network begin
+    @parameters λ
+    @poissonians dN1(λ) dN2(λ*X)
+    @equations D(V) ~ X - V + 5dN1 + dN2
+    (p,d), 0 <--> X
+end
+```
+
+Finally, like brownians, poissonians can also be used in [programmatic modelling](@ref programmatic_CRN_construction).
