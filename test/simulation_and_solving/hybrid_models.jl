@@ -188,7 +188,7 @@ let
 
     # Solves and checks values of solution (do this before integrator mutation test
     # since integrator mutation affects shared parameter state).
-    sol = solve(prob, Tsit5(); maxiters = 10, verbose = false)
+    sol = solve(prob, Tsit5(); maxiters = 10)
     @test sol[:X][1] == 1.0
     @test sol[:X2][1] == 0.0
     @test sol[:Y][1] == 0.0
@@ -215,7 +215,7 @@ let
     @test prob2.ps[:d] == 0.5   # not changed
 
     # Test that we can solve the remade problem and verify solution values.
-    sol2 = solve(prob2, Tsit5(); maxiters = 10, verbose = false)
+    sol2 = solve(prob2, Tsit5(); maxiters = 10)
     @test sol2[:X][1] == 3.0
     @test sol2[:X2][1] == 2.0
     @test sol2[:Y][1] == 1.0

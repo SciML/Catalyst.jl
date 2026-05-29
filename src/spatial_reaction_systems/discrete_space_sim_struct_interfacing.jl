@@ -412,12 +412,14 @@ rebuild_spat_internals!(oprob)
 ```
 """
 function rebuild_spat_internals!(oprob::ODEProblem)
-    rebuild_spat_internals!(oprob.f.f, oprob.p, oprob.f.f.dsrs)
+    lt_ofun = SciMLBase.unwrapped_f(oprob.f.f)
+    rebuild_spat_internals!(lt_ofun, oprob.p, lt_ofun.dsrs)
 end
 
 # Function for rebuilding a `DiscreteSpaceReactionSystem` integrator after it has been updated.
 function rebuild_spat_internals!(integrator::SciMLBase.AbstractODEIntegrator)
-    rebuild_spat_internals!(integrator.f.f, integrator.p, integrator.f.f.dsrs)
+    lt_ofun = SciMLBase.unwrapped_f(integrator.f.f)
+    rebuild_spat_internals!(lt_ofun, integrator.p, lt_ofun.dsrs)
 end
 
 # Function which rebuilds a `LatticeTransportODEFunction` functor for a new parameter set.
