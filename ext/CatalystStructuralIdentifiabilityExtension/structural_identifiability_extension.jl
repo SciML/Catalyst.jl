@@ -27,10 +27,10 @@ Notes:
 - `measured_quantities` and `known_p` input may also be symbolic (e.g. measured_quantities = [rs.X])
 """
 function Catalyst.make_si_ode(rs::ReactionSystem; measured_quantities = [], known_p = [],
-        ignore_no_measured_warn = false, remove_conserved = true)
+        ignore_no_measured_warn = false, remove_conserved = true, mtkcompile::Bool = false)
     # Creates a MTK ODE System, and a list of measured quantities (there are equations).
     # Gives these to SI to create an SI ode model of its preferred form.
-    osys, conseqs, _, _ = make_osys(rs; remove_conserved)
+    osys, conseqs, _, _ = make_osys(rs; remove_conserved, mtkcompile)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
         conseqs; ignore_no_measured_warn)
     return SI.mtk_to_si(osys, measured_quantities)[1]
@@ -65,9 +65,10 @@ Notes:
 """
 function SI.assess_local_identifiability(rs::ReactionSystem, args...;
         measured_quantities = [], known_p = [], funcs_to_check = Vector(),
-        remove_conserved = true, ignore_no_measured_warn = false, kwargs...)
+        remove_conserved = true, ignore_no_measured_warn = false,
+        mtkcompile::Bool = false, kwargs...)
     # Creates an ODE System, list of measured quantities, and functions to check, of SI's preferred form.
-    osys, conseqs, consconsts, vars = make_osys(rs; remove_conserved)
+    osys, conseqs, consconsts, vars = make_osys(rs; remove_conserved, mtkcompile)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
         conseqs; ignore_no_measured_warn)
     funcs_to_check = make_ftc(funcs_to_check, conseqs, vars)
@@ -105,9 +106,10 @@ Notes:
 """
 function SI.assess_identifiability(rs::ReactionSystem, args...;
         measured_quantities = [], known_p = [], funcs_to_check = Vector(),
-        remove_conserved = true, ignore_no_measured_warn = false, kwargs...)
+        remove_conserved = true, ignore_no_measured_warn = false,
+        mtkcompile::Bool = false, kwargs...)
     # Creates an ODE System, list of measured quantities, and functions to check, of SI's preferred form.
-    osys, conseqs, consconsts, vars = make_osys(rs; remove_conserved)
+    osys, conseqs, consconsts, vars = make_osys(rs; remove_conserved, mtkcompile)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
         conseqs; ignore_no_measured_warn)
     funcs_to_check = make_ftc(funcs_to_check, conseqs, vars)
@@ -147,9 +149,9 @@ Notes:
 """
 function SI.find_identifiable_functions(rs::ReactionSystem, args...;
         measured_quantities = [], known_p = [], remove_conserved = true,
-        ignore_no_measured_warn = false, kwargs...)
+        ignore_no_measured_warn = false, mtkcompile::Bool = false, kwargs...)
     # Creates an ODE System, and list of measured quantities, of SI's preferred form.
-    osys, conseqs, consconsts, _ = make_osys(rs; remove_conserved)
+    osys, conseqs, consconsts, _ = make_osys(rs; remove_conserved, mtkcompile)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
         conseqs; ignore_no_measured_warn)
 
@@ -162,26 +164,38 @@ end
 
 # From a reaction system, creates the corresponding MTK-style ODE System for SI application
 # Also compute the, later needed, conservation law equations and list of system symbols (unknowns and parameters).
-function make_osys(rs::ReactionSystem; remove_conserved = true)
+function make_osys(rs::ReactionSystem; remove_conserved = true, mtkcompile::Bool = false)
     # Creates the ODE System corresponding to the ReactionSystem (expanding functions and flattening it).
     # Creates a list of the systems all symbols (unknowns and parameters).
     if !ModelingToolkitBase.iscomplete(rs)
         error("Identifiability should only be computed for complete systems. A ReactionSystem can be marked as complete using the `complete` function.")
     end
     rs = complete(Catalyst.expand_registered_functions(flatten(rs)))
-    osys = complete(ode_model(rs; remove_conserved))
+    # SI treats Γ as a free parameter and works purely symbolically, so we skip
+    # the conservation law bindings (Γ => missing) that are only needed for
+    # numerical initialization.
+    osys = ode_model(rs; remove_conserved, add_cl_bindings = false)
+    if mtkcompile
+        osys = ModelingToolkitBase.mtkcompile(osys)
+    elseif ModelingToolkitBase.has_alg_equations(rs)
+        error("The input ReactionSystem has algebraic equations. This requires setting `mtkcompile = true`.")
+    else
+        osys = complete(osys)
+    end
     vars = [unknowns(rs); parameters(rs)]
 
     # Computes equations for system conservation laws.
-    # If there are no conserved equations, the `conseqs` variable must still have the `Vector{Pair{Any, Any}}` type.
+    # The element-typed comprehensions guarantee `Vector{Pair{Any, Any}}` even
+    # when the iterable is empty (empty list comprehensions otherwise infer as
+    # `Vector{Any}`, and the previous fix-up `Vector{Pair{Any, Any}}[]` was a
+    # typo that produced `Vector{Vector{Pair{Any, Any}}}`).
     if remove_conserved
-        conseqs = [ceq.lhs => ceq.rhs for ceq in conservedequations(rs)]
-        consconsts = [cconst.lhs => cconst.rhs for cconst in conservationlaw_constants(rs)]
-        isempty(conseqs) && (conseqs = Vector{Pair{Any, Any}}[])
-        isempty(consconsts) && (consconsts = Vector{Pair{Any, Any}}[])
+        conseqs = Pair{Any, Any}[ceq.lhs => ceq.rhs for ceq in conservedequations(rs)]
+        consconsts = Pair{Any, Any}[cconst.lhs => cconst.rhs
+                                    for cconst in conservationlaw_constants(rs)]
     else
-        conseqs = Vector{Pair{Any, Any}}[]
-        consconsts = Vector{Pair{Any, Any}}[]
+        conseqs = Pair{Any, Any}[]
+        consconsts = Pair{Any, Any}[]
     end
 
     return osys, conseqs, consconsts, vars
