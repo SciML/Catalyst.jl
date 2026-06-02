@@ -245,6 +245,25 @@ const SKIPPED_METADATA = [
     Symbolics.VariableDefaultValue,
     Symbolics.VariableSource]
 
+# List of metadata keys in an `AbstractSystem` which shouldn't be serialized.
+const SKIPPED_SYSTEM_METADATA = [MT.MutableCacheKey]
+
+function system_has_serializable_metadata(sys::MT.AbstractSystem)
+    any(!in(SKIPPED_SYSTEM_METADATA), keys(MT.get_metadata(sys)))
+end
+
+function system_metadata_to_string(meta::Base.ImmutableDict)
+    output = "Dict(["
+    saved_keys = 0
+    for key in keys(meta)
+        key in SKIPPED_SYSTEM_METADATA && continue
+        saved_keys += 1
+        @string_append! output x_2_string(key) " => " x_2_string(meta[key]) ", "
+    end
+    output = iszero(saved_keys) ? output : Catalyst.get_substring_end(output, 1, -2)
+    return output * "])"
+end
+
 ### Generic Expression Handling ###
 
 # Potentially strips the call for a symbolics. E.g. X(t) becomes X (but p remains p). This is used
