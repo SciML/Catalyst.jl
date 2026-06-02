@@ -2,6 +2,7 @@
 
 # Fetch packages.
 using Catalyst, JumpProcesses, ModelingToolkitBase, OrdinaryDiffEqTsit5, Statistics, Test
+using SymbolicIndexingInterface: setp
 
 # Sets stable rng number.
 using StableRNGs
@@ -447,8 +448,9 @@ end
     jprob_cb = JumpProblem(rn, u0, (0.0, 200.0), ps;
         aggregator = Direct(), save_positions = (false, false))
     condit(u, t, integrator) = t == 100.0
+    setk! = setp(jprob_cb, :k)
     function affect_cb!(integrator)
-        integrator.ps[:k] = 24.0
+        setk!(integrator, 24.0)
         reset_aggregated_jumps!(integrator)
     end
     cb = DiscreteCallback(condit, affect_cb!)
@@ -496,8 +498,9 @@ end
     jprob_cb = JumpProblem(rn, u0, (0.0, 200.0), ps;
         aggregator = Direct(), save_positions = (false, false))
     condit(u, t, integrator) = t == 100.0
+    setk! = setp(jprob_cb, :k)
     function affect_cb!(integrator)
-        integrator.ps[:k] = 24.0
+        setk!(integrator, 24.0)
         reset_aggregated_jumps!(integrator)
     end
     cb = DiscreteCallback(condit, affect_cb!)
@@ -541,8 +544,9 @@ end
     jprob_cb = JumpProblem(rn, u0, (0.0, 200.0), ps;
         aggregator = Direct(), save_positions = (false, false))
     condit(u, t, integrator) = t == 100.0
+    setk1! = setp(jprob_cb, :k1)
     function affect_cb!(integrator)
-        integrator.ps[:k1] = 24.0
+        setk1!(integrator, 24.0)
         reset_aggregated_jumps!(integrator)
     end
     cb = DiscreteCallback(condit, affect_cb!)
@@ -641,8 +645,10 @@ end
             aggregator = Direct(), save_positions = (false, false))
         condit(u, t, integrator) = t == 100.0
         new_k_true = 24.0
+        new_k_val = rn === rn_true ? new_k_true : new_k_true / factorial(3)
+        setk! = setp(jp, :k)
         function affect_equiv!(integrator)
-            integrator.ps[:k] = rn === rn_true ? new_k_true : new_k_true / factorial(3)
+            setk!(integrator, new_k_val)
             reset_aggregated_jumps!(integrator)
         end
         cb = DiscreteCallback(condit, affect_equiv!)

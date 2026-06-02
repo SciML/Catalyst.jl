@@ -618,8 +618,8 @@ let
     cat_sol = solve(cat_ensemble, EM(); dt = 0.001, trajectories = N, saveat = 20.0)
     hand_sol = solve(hand_ensemble, EM(); dt = 0.001, trajectories = N, saveat = 20.0)
 
-    cat_endpoints = [sol[1, end] for sol in cat_sol]
-    hand_endpoints = [sol[1, end] for sol in hand_sol]
+    cat_endpoints = [sol[1, end] for sol in cat_sol.u]
+    hand_endpoints = [sol[1, end] for sol in hand_sol.u]
 
     cat_mean = mean(cat_endpoints)
     hand_mean = mean(hand_endpoints)
