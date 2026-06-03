@@ -32,28 +32,20 @@ include("pages.jl")
 #          clean = true,
 #          pages = pages)
 
-makedocs(
-    sitename = "Catalyst.jl",
+makedocs(sitename = "Catalyst.jl",
     authors = "Samuel Isaacson",
-    format = Documenter.HTML(;
-        analytics = "UA-90474609-3",
+    format = Documenter.HTML(; analytics = "UA-90474609-3",
         prettyurls = (get(ENV, "CI", nothing) == "true"),
         collapselevel = 1,
         assets = ["assets/favicon.ico"],
-        canonical = "https://docs.sciml.ai/Catalyst/stable/"
-    ),
-    modules = [
-        Catalyst, ModelingToolkitBase, SymbolicIndexingInterface,
-        Base.get_extension(Catalyst, :CatalystGraphMakieExtension),
-    ],
+        canonical = "https://docs.sciml.ai/Catalyst/stable/"),
+    modules = [Catalyst, ModelingToolkitBase, SymbolicIndexingInterface,
+        Base.get_extension(Catalyst, :CatalystGraphMakieExtension)],
     doctest = false,
     clean = true,
     pages = pages,
     pagesonly = true,
-    warnonly = [:missing_docs, :cross_references]
-) # `:cross_references` here temporarily while getting docs to work on v16.
+    warnonly = [:missing_docs, :cross_references]) # `:cross_references` here temporarily while getting docs to work on v16.
 
-deploydocs(
-    repo = "github.com/SciML/Catalyst.jl.git";
-    push_preview = true
-)
+deploydocs(repo = "github.com/SciML/Catalyst.jl.git";
+    push_preview = true)

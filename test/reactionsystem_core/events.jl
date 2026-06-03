@@ -19,7 +19,7 @@ D = default_time_deriv()
 # Test discrete event is propagated to ODE solver correctly.
 let
     # Creates model (essentially a jagged oscillation, where `V` is reset to 1.0 every 1.0 time units).
-    @variables V(t) = 1.0
+    @variables V(t)=1.0
     eqs = [D(V) ~ V]
     discrete_events = [1.0 => [V ~ 1.0]]
     rxs = [
@@ -36,17 +36,17 @@ let
     @test length(ModelingToolkitBase.discrete_events(osys)) == 1
     oprob = ODEProblem(osys, [osys.A => 0.0], (0.0, 20.0))
     sol = solve(oprob, Tsit5())
-    @test sol(10 + 10 * eps(), idxs = V) ≈ 1.0
+    @test sol(10 + 10*eps(), idxs = V) ≈ 1.0
 end
 
 # Test continuous event is propagated to the ODE solver.
 let
     # Creates model (a production/degradation system, but both reactions stop at `t=2.5`).
-    @discretes α(t) = 5.0 β(t) = 1.0
-    @species V(t) = 0.0
+    @discretes α(t)=5.0 β(t)=1.0
+    @species V(t)=0.0
     rxs = [
         Reaction(α, nothing, [V]),
-        Reaction(β, [V], nothing),
+        Reaction(β, [V], nothing)
     ]
     continuous_events = SymbolicContinuousCallback([V ~ 2.5] => [α ~ 0, β ~ 0]; discrete_parameters = [α, β])
     @named rs = ReactionSystem(rxs, t; continuous_events)
@@ -68,10 +68,10 @@ end
 let
     # Creates model.
     @parameters p d α::Int64 = 1
-    @species X(t) A(t) = 2 [description = "A species"] a(t) = 3
+    @species X(t) A(t) = 2 [description="A species"] a(t) = 3
     rxs = [
         Reaction(p, nothing, [X]),
-        Reaction(d, [X], nothing),
+        Reaction(d, [X], nothing)
     ]
     continuous_events = [α ~ t] => [A ~ Pre(A + a)]
     discrete_events = [2.0 => [A ~ Pre(α + a)]]
@@ -134,7 +134,7 @@ let
     @species X(t)
     rxs = [
         Reaction(p, nothing, [X]),
-        Reaction(d, [X], nothing),
+        Reaction(d, [X], nothing)
     ]
     ce = [X ~ 1.0] => [X ~ 0.5]
     de = [2.0] => [p ~ 1.0]
@@ -153,11 +153,11 @@ let
     @species X(t)
     rxs = [
         Reaction(p, nothing, [X]),
-        Reaction(d, [X], nothing),
+        Reaction(d, [X], nothing)
     ]
 
     # Declares various misformatted events .
-    @test_broken false # Some miss-formatted events don't yield errors, but should (https://github.com/SciML/ModelingToolkit.jl/issues/4167). These are commented out.
+    @test_broken false # Some miss-formatted events don't yield errors, but should (https://github.com/SciML/ModelingToolkit.jl/issues/4167). These are commented out. 
     continuous_events_bad = [
         X ~ 1.0 => [X ~ 0.5],       # Scalar condition.
         [X ~ 1.0] => X ~ 0.5,       # Scalar affect.
@@ -170,7 +170,7 @@ let
         [2.0] => p ~ 1.0,       # Scalar affect.
         #[2.0] => (p ~ 1.0, ),    # Tuple affect. # Should not work, potentially bad for performance as compared to vectors (https://github.com/SciML/ModelingToolkit.jl/issues/4167).
         [X > 2.0] => [p ~ 1.0], # Vector conditions.
-        (1.0, 2.0) => [p ~ 1.0], # Tuple condition.
+        (1.0, 2.0) => [p ~ 1.0] # Tuple condition.
     ]
 
     # Checks that errors are produced.
@@ -192,7 +192,7 @@ end
 # Tests event affecting non-species components.
 let
     rn_dsl = @reaction_network rn begin
-        @parameters thres = 7.0 dY_up
+        @parameters thres=7.0 dY_up
         @continuous_events begin
             [t ~ 2.5] => [p => p + 0.2]
             [X ~ thres, Y ~ X] => [X => X - 0.5, Z => Z + 0.1]
@@ -204,21 +204,21 @@ let
         end
 
         (p, dX), 0 <--> X
-        (1.1 * p, dY), 0 <--> Y
+        (1.1*p, dY), 0 <--> Y
         d, Z --> 0
     end
 
     # Creates model programmatically.
     t = default_t()
     @species X(t) Y(t) Z(t)
-    @parameters thres = 7.0 dY_up d
+    @parameters thres=7.0 dY_up d
     @discretes p(t) dX(t) dY(t)
     rxs = [
         Reaction(p, nothing, [X], nothing, [1]),
         Reaction(dX, [X], nothing, [1], nothing),
-        Reaction(1.1 * p, nothing, [Y], nothing, [1]),
+        Reaction(1.1*p, nothing, [Y], nothing, [1]),
         Reaction(dY, [Y], nothing, [1], nothing),
-        Reaction(d, [Z], nothing, [1], nothing),
+        Reaction(d, [Z], nothing, [1], nothing)
     ]
     continuous_events = [
         SymbolicContinuousCallback([t ~ 2.5] => [p ~ Pre(p) + 0.2]; discrete_parameters = [p])
@@ -305,7 +305,7 @@ let
     # Tuple affect (discrete events).
     @test_throws Exception @eval @reaction_network begin
         @species X(t)
-        @discrete_events 1.0 => (X => X + 1,)
+        @discrete_events 1.0 => (X => X + 1, )
     end
 
     # Equation condition (discrete events).
@@ -323,17 +323,17 @@ end
 let
     # Creates model with all types of events. The `e` parameters track whether events are triggered.
     rn = @reaction_network begin
-        @discretes e1(t) = 0 e2(t) = 0 e3(t) = 0 e4(t) = 0
+        @discretes e1(t)=0 e2(t)=0 e3(t)=0 e4(t)=0
         @continuous_events begin
             [X ~ 1000.0] => [e1 => 1]
         end
         @discrete_events begin
             [1.0] => [e2 => 1]
             1.0 => [e3 => 1]
-            (Y > 1000.0) & (e4 == 0) => [e4 => 1]
+            (Y > 1000.0) & (e4==0) => [e4 => 1]
         end
-        (p, d), 0 <--> X
-        (p, d), 0 <--> Y
+        (p,d), 0 <--> X
+        (p,d), 0 <--> Y
     end
 
     # Simulates the model for conditions where it *definitely* will cross `X = 1000.0`
@@ -354,13 +354,13 @@ end
 let
     # Creates model with all types of events. The `e` parameters track whether events are triggered.
     rn = @reaction_network begin
-        @discretes e1(t) = 0 e2(t) = 0 e3(t) = 0
+        @discretes e1(t)=0 e2(t)=0 e3(t)=0
         @discrete_events begin
             [1.0] => [e1 => 1]
             1.0 => [e2 => 1]
-            (X > 1000.0) & (e3 == 0) => [e3 => 1]
+            (X > 1000.0) & (e3==0) => [e3 => 1]
         end
-        (p, d), 0 <--> X
+        (p,d), 0 <--> X
     end
 
     # Simulates the model for conditions where it *definitely* will cross `X = 1000.0`
@@ -384,8 +384,8 @@ let
     rn = @reaction_network begin
         @default_noise_scaling 0.0
         @parameters add::Int64
-        (p, d), 0 <--> X
-        (p, d), 0 <--> Y
+        (p,d), 0 <--> X
+        (p,d), 0 <--> Y
     end
     rn_events = @reaction_network begin
         @default_noise_scaling 0.0
@@ -398,8 +398,8 @@ let
             20.0 => [X => X + add]
             (Y < X) => [Y => Y + add]
         end
-        (p, d), 0 <--> X
-        (p, d), 0 <--> Y
+        (p,d), 0 <--> X
+        (p,d), 0 <--> Y
     end
     rn_dics_events = @reaction_network begin
         @parameters add::Int64
@@ -408,8 +408,8 @@ let
             20.0 => [X => X + add]
             (Y < X) => [Y => Y + add]
         end
-        (p, d), 0 <--> X
-        (p, d), 0 <--> Y
+        (p,d), 0 <--> X
+        (p,d), 0 <--> Y
     end
 
     # Sets simulation inputs.
@@ -419,9 +419,9 @@ let
 
     # Create callbacks
     cb_cont = ContinuousCallback((u, t, int) -> (int[:X] - 90.0), int -> (int[:X] += 10.0))
-    cb_disc_1 = PresetTimeCallback([5.0, 10.0], int -> (int[:X] += int.ps[:add]; int[:Y] += int.ps[:add]))
+    cb_disc_1 = PresetTimeCallback([5.0, 10.0], int -> (int[:X] += int.ps[:add]; int[:Y] += int.ps[:add];))
     cb_disc_2 = PresetTimeCallback(20.0:20.0:tspan[end], int -> (int[:X] += int.ps[:add]))
-    cb_disc_3 = DiscreteCallback((u, t, i) -> i[:Y] < i[:X], int -> (int[:Y] += int.ps[:add]))
+    cb_disc_3 = DiscreteCallback((u,t,i) -> i[:Y] < i[:X], int -> (int[:Y] += int.ps[:add]))
     callback = CallbackSet(cb_cont, cb_disc_1, cb_disc_2, cb_disc_3)
 
     # Checks for ODE simulations.
@@ -456,7 +456,7 @@ let
     @species X(t) A(t) a(t)
     rxs = [
         Reaction(p, nothing, [X]),
-        Reaction(d, [X], nothing),
+        Reaction(d, [X], nothing)
     ]
     continuous_events = [α ~ t] => [A ~ A + a]
     @named rs = ReactionSystem(rxs, t; continuous_events)
@@ -606,19 +606,15 @@ end
 # tstops field is needed to ensure the solver steps to exactly t_switch.
 # Note: SDE/Jump/Hybrid solvers also support SymbolicTstops (tested separately below).
 let
-    @variables V(t) = 10.0
-    @parameters t_switch = 3.0
+    @variables V(t)=10.0
+    @parameters t_switch=3.0
     D = default_time_deriv()
     eqs = [D(V) ~ -V]
     # Generic symbolic condition — NOT a numeric PresetTimeCallback.
     # The tstop forces the solver to step to exactly t_switch so the equality holds.
     discrete_events = [(t == t_switch) => [V ~ 100.0]]
-    rs = complete(
-        ReactionSystem(
-            eqs, t; discrete_events,
-            tstops = [t_switch], name = :rs
-        )
-    )
+    rs = complete(ReactionSystem(eqs, t; discrete_events,
+        tstops = [t_switch], name = :rs))
 
     osys = complete(ode_model(rs))
     oprob = ODEProblem(osys, [], (0.0, 8.0))
@@ -626,7 +622,7 @@ let
 
     # Without the tstop the solver would likely step over t_switch=3.0;
     # with it, V is reset to 100.0 at exactly that time.
-    @test sol(3.0 + 0.01, idxs = V) ≈ 100.0 atol = 1.0
+    @test sol(3.0 + 0.01, idxs = V) ≈ 100.0 atol=1.0
 
     # Verify the symbolic tstop was forwarded to the System.
     @test issetequal(ModelingToolkitBase.get_tstops(osys), [t_switch])
@@ -635,7 +631,7 @@ end
 # Tests that symbolic tstops are forwarded through sde_model to the converted System.
 let
     rn = @reaction_network begin
-        @parameters t_event = 3.0
+        @parameters t_event=3.0
         @tstops begin
             t_event
             2 * t_event
@@ -643,16 +639,14 @@ let
         (10.0, 0.01), 0 <--> X
     end
     ssys = sde_model(rn)
-    @test issetequal(
-        ModelingToolkitBase.get_tstops(ssys),
-        ModelingToolkitBase.get_tstops(rn)
-    )
+    @test issetequal(ModelingToolkitBase.get_tstops(ssys),
+        ModelingToolkitBase.get_tstops(rn))
 end
 
 # Tests that symbolic tstops are forwarded through jump_model to the converted System.
 let
     rn = @reaction_network begin
-        @parameters t_event = 2.0
+        @parameters t_event=2.0
         @tstops begin
             t_event
             2 * t_event
@@ -660,32 +654,28 @@ let
         (10.0, 0.01), 0 <--> X
     end
     jsys = jump_model(rn)
-    @test issetequal(
-        ModelingToolkitBase.get_tstops(jsys),
-        ModelingToolkitBase.get_tstops(rn)
-    )
+    @test issetequal(ModelingToolkitBase.get_tstops(jsys),
+        ModelingToolkitBase.get_tstops(rn))
 end
 
 # Tests that symbolic tstops are forwarded through hybrid_model to the converted System.
 let
     rn = @reaction_network begin
-        @parameters t_event = 4.0
+        @parameters t_event=4.0
         @tstops t_event
         (10.0, 0.01), 0 <--> X
         1.0, X --> 0, [physical_scale = Catalyst.PhysicalScale.Jump]
     end
     hsys = hybrid_model(rn; default_scale = Catalyst.PhysicalScale.ODE)
-    @test issetequal(
-        ModelingToolkitBase.get_tstops(hsys),
-        ModelingToolkitBase.get_tstops(rn)
-    )
+    @test issetequal(ModelingToolkitBase.get_tstops(hsys),
+        ModelingToolkitBase.get_tstops(rn))
 end
 
 # Integration test: solve JumpProblem with symbolic tstops and a discrete event.
 # The discrete event at t_event adds a large number of molecules, verifiable in the solution.
 let
     rn = @reaction_network begin
-        @parameters t_event = 3.0
+        @parameters t_event=3.0
         @tstops t_event
         @discrete_events (t == t_event) => [X => X + 10000]
         (10.0, 0.01), 0 <--> X
@@ -703,7 +693,7 @@ end
 # Integration test: solve SDEProblem with symbolic tstops and a discrete event.
 let
     rn = @reaction_network begin
-        @parameters t_event = 3.0
+        @parameters t_event=3.0
         @tstops t_event
         @discrete_events (t == t_event) => [X => X + 10000.0]
         (10.0, 0.01), 0 <--> X
@@ -721,7 +711,7 @@ end
 # Uses ODE-scale production/degradation + a Jump-scale degradation to ensure a true hybrid.
 let
     rn = @reaction_network begin
-        @parameters t_event = 3.0
+        @parameters t_event=3.0
         @tstops t_event
         @discrete_events (t == t_event) => [X => X + 10000.0]
         10.0, 0 --> X, [physical_scale = Catalyst.PhysicalScale.ODE]
@@ -748,17 +738,13 @@ let
     # Species in tstops (5-arg constructor).
     @test_throws ArgumentError ReactionSystem(rxs, t, [X], [k]; tstops = [X], name = :rs)
     # Variable in tstops (5-arg constructor).
-    @test_throws ArgumentError ReactionSystem(
-        [rxs; D(V) ~ -V], t, [X, V], [k];
-        tstops = [V], name = :rs
-    )
+    @test_throws ArgumentError ReactionSystem([rxs; D(V) ~ -V], t, [X, V], [k];
+        tstops = [V], name = :rs)
     # Species in tstops (short-form constructor).
     @test_throws ArgumentError ReactionSystem(rxs, t; tstops = [X], name = :rs)
     # Variable in tstops (short-form constructor).
-    @test_throws ArgumentError ReactionSystem(
-        [rxs; D(V) ~ -V], t;
-        tstops = [V], name = :rs
-    )
+    @test_throws ArgumentError ReactionSystem([rxs; D(V) ~ -V], t;
+        tstops = [V], name = :rs)
     # Species/variable in tstops via the DSL.
     @test_throws ArgumentError @eval @reaction_network begin
         @tstops X

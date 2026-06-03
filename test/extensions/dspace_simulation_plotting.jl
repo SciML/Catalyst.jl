@@ -14,7 +14,7 @@ using JumpProcesses, OrdinaryDiffEqTsit5, Test
 let
     # Creates the `DiscreteSpaceReactionSystem` model.
     rs = @reaction_network begin
-        (p, d), 0 <--> X
+        (p,d), 0 <--> X
     end
     diffusion_rx = @transport_reaction D X
     for space in [CartesianGrid(3), [true, true, false]]
@@ -41,7 +41,7 @@ let
 
             # Plots the kymograph and checks that a stored value is correct.
             fig, ax, hm = dspace_kymograph(sol, :X, dsrs)
-            @test_broken hm[3].val[end, 1] ≈ sol.u[end][1] # Interface for accessing internals in makie plots have changed. Need to update test.
+            @test_broken hm[3].val[end,1] ≈ sol.u[end][1] # Interface for accessing internals in makie plots have changed. Need to update test.
         end
     end
 end
@@ -53,10 +53,10 @@ end
 let
     # Creates the `DiscreteSpaceReactionSystem` model.
     rs = @reaction_network begin
-        (p, d), 0 <--> X
+        (p,d), 0 <--> X
     end
     diffusion_rx = @transport_reaction D X
-    for space in [CartesianGrid((2, 2)), [true true; false true]]
+    for space in [CartesianGrid((2,2)), [true true; false true]]
         dsrs = DiscreteSpaceReactionSystem(rs, [diffusion_rx], space)
 
         # Simulates the model (using ODE and jumps).
@@ -87,7 +87,7 @@ let
         d, X --> 0
     end
     diffusion_rx = @transport_reaction D X
-    space = CartesianGrid((2, 2, 2))
+    space = CartesianGrid((2,2,2))
     dsrs = DiscreteSpaceReactionSystem(rs, [diffusion_rx], space)
     oprob = ODEProblem(dsrs, [:X => 1.0], 1.0, [:d => 1.0, :D => 0.2])
     osol = solve(oprob, Tsit5())
@@ -103,7 +103,7 @@ end
 let
     # Creates the `DiscreteSpaceReactionSystem` model.
     rs = @reaction_network begin
-        (p, d), 0 <--> X
+        (p,d), 0 <--> X
     end
     diffusion_rx = @transport_reaction D X
     space = Graphs.SimpleGraphs.cycle_graph(4)

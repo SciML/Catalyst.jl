@@ -34,7 +34,7 @@ bd_model = @reaction_network begin
     d, X --> 0
 end
 
-# Finally we simulate the model normally, but using `spline` as the `pIn` parameter's value.
+# Finally we simualte the model normally, but using `spline` as the `pIn` parameter's value.
 u0 = [:X => 0.5]
 ps = [:d => 2.0, :pIn => spline]
 oprob = ODEProblem(bd_model, u0, tend, ps)

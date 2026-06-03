@@ -20,7 +20,7 @@ function isedgeparameter(x, default = false)
     if iscall(x) && operation(x) === getindex
         x = first(arguments(x))
     end
-    return Symbolics.getmetadata(x, EdgeParameter, default)
+    Symbolics.getmetadata(x, EdgeParameter, default)
 end
 
 ### Transport Reaction Structures ###
@@ -38,13 +38,13 @@ struct TransportReaction <: AbstractSpatialReaction
         if any(!MT.isparameter(var) for var in MT.get_variables(rate))
             error("TransportReaction rate contains variables: $(filter(var -> !MT.isparameter(var), MT.get_variables(rate))). The rate must consist of parameters only.")
         end
-        return new(rate, species.val)
+        new(rate, species.val)
     end
 end
 
 # Macro for creating a `TransportReaction`.
 macro transport_reaction(rateex::ExprValues, species::ExprValues)
-    return make_transport_reaction(striplines(rateex), species)
+    make_transport_reaction(striplines(rateex), species)
 end
 function make_transport_reaction(rateex, species)
     # Handle interpolation of variables
@@ -69,7 +69,7 @@ function make_transport_reaction(rateex, species)
         insert!(pexprs.args, idx, :([edgeparameter = true]))
     end
 
-    return quote
+    quote
         $pexprs
         $iv
         $sexprs
@@ -84,10 +84,8 @@ MT.parameters(tr::TransportReaction) = collect(Symbolics.get_variables(tr.rate))
 spatial_species(tr::TransportReaction) = [tr.species]
 
 # Checks that a `TransportReaction` is valid for a given reaction system.
-function check_spatial_reaction_validity(
-        rs::ReactionSystem, tr::TransportReaction;
-        edge_parameters = []
-    )
+function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReaction;
+        edge_parameters = [])
     # Checks that the species exist in the reaction system.
     # (ODE simulation code becomes difficult if this is not required,
     # as non-spatial jacobian and f function generated from rs are of the wrong size).
@@ -105,18 +103,14 @@ function check_spatial_reaction_validity(
     if any(isequal(tr.species, s) && !isequivalent(tr.species, s) for s in species(rs))
         error("A transport reaction used a species, $(tr.species), with metadata not matching its discrete space reaction system. Please fetch this species from the reaction system and use it during transport reaction creation.")
     end
-    if any(
-            isequal(rs_p, tr_p) && !isequivalent(rs_p, tr_p)
-                for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate)
-        )
+    if any(isequal(rs_p, tr_p) && !isequivalent(rs_p, tr_p)
+    for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate))
         error("A transport reaction used a parameter with metadata not matching its discrete space reaction system. Please fetch this parameter from the reaction system and use it during transport reaction creation.")
     end
 
     # Checks that no edge parameter occurs among rates of non-spatial reactions.
-    return if any(
-            !isempty(intersect(Symbolics.get_variables(r.rate), edge_parameters))
-                for r in reactions(rs)
-        )
+    if any(!isempty(intersect(Symbolics.get_variables(r.rate), edge_parameters))
+    for r in reactions(rs))
         error("Edge parameter(s) were found as a rate of a non-spatial reaction.")
     end
 end
@@ -130,15 +124,11 @@ end
 const ep_metadata = Catalyst.EdgeParameter => true
 function isequivalent(sym1, sym2; ignored_metadata = [MT.SymScope])
     isequal(sym1, sym2) || (return false)
-    if any(
-            (md1 != ep_metadata) && (md1[1] ∉ ignored_metadata) && (md1 ∉ sym2.metadata)
-                for md1 in sym1.metadata
-        )
+    if any((md1 != ep_metadata) && (md1[1] ∉ ignored_metadata) && (md1 ∉ sym2.metadata)
+    for md1 in sym1.metadata)
         return false
-    elseif any(
-            (md2 != ep_metadata) && (md2[1] ∉ ignored_metadata) && (md2 ∉ sym1.metadata)
-                for md2 in sym2.metadata
-        )
+    elseif any((md2 != ep_metadata) && (md2[1] ∉ ignored_metadata) && (md2 ∉ sym1.metadata)
+    for md2 in sym2.metadata)
         return false
     elseif typeof(sym1) != typeof(sym2)
         return false
@@ -161,7 +151,7 @@ end
 # Implements custom `hash`.
 function hash(tr::TransportReaction, h::UInt)
     h = Base.hash(tr.rate, h)
-    return Base.hash(tr.species, h)
+    Base.hash(tr.species, h)
 end
 
 ### Utility ###

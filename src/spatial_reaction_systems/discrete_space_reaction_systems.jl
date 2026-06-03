@@ -102,11 +102,9 @@ struct DiscreteSpaceReactionSystem{Q, R, S, T} <: MT.AbstractSystem
     "The name of the discrete space reaction system. Typically taken directly from the base `ReactionSystem`."
     name::Symbol
 
-    function DiscreteSpaceReactionSystem(
-            rs::ReactionSystem{Q}, spatial_reactions::Vector{R},
+    function DiscreteSpaceReactionSystem(rs::ReactionSystem{Q}, spatial_reactions::Vector{R},
             dspace::S, num_verts::Int64, num_edges::Int64, edge_iterator::T;
-            name::Symbol = MT.nameof(rs)
-        ) where {Q, R, S, T}
+            name::Symbol = MT.nameof(rs)) where {Q, R, S, T}
         # Error checks.
         if !(R <: AbstractSpatialReaction)
             throw(ArgumentError("The second argument must be a vector of AbstractSpatialReaction subtypes."))
@@ -135,12 +133,8 @@ struct DiscreteSpaceReactionSystem{Q, R, S, T} <: MT.AbstractSystem
         if isempty(spatial_reactions)
             spat_species = SymbolicT[]
         else
-            spat_species = unique(
-                reduce(
-                    vcat,
-                    [spatial_species(sr) for sr in spatial_reactions]
-                )
-            )
+            spat_species = unique(reduce(vcat,
+                [spatial_species(sr) for sr in spatial_reactions]))
         end
         num_species = length(unique([species(rs); spat_species]))
 
@@ -150,8 +144,7 @@ struct DiscreteSpaceReactionSystem{Q, R, S, T} <: MT.AbstractSystem
             srs_edge_parameters = SymbolicT[]
         else
             srs_edge_parameters = setdiff(
-                reduce(vcat, [parameters(sr) for sr in spatial_reactions]), parameters(rs)
-            )
+                reduce(vcat, [parameters(sr) for sr in spatial_reactions]), parameters(rs))
         end
         edge_parameters = unique([rs_edge_parameters; srs_edge_parameters])
         vertex_parameters = filter(!isedgeparameter, parameters(rs))
@@ -162,8 +155,7 @@ struct DiscreteSpaceReactionSystem{Q, R, S, T} <: MT.AbstractSystem
         # Checks that all spatial reactions are valid for this reaction system.
         foreach(
             sr -> check_spatial_reaction_validity(rs, sr; edge_parameters = edge_parameters),
-            spatial_reactions
-        )
+            spatial_reactions)
 
         # Additional error checks.
         if any(is_array_symvar(symvar) for symvar in [ps; species(rs)])
@@ -172,8 +164,7 @@ struct DiscreteSpaceReactionSystem{Q, R, S, T} <: MT.AbstractSystem
 
         return new{Q, R, S, T}(
             rs, spatial_reactions, dspace, num_verts, num_edges, num_species,
-            spat_species, ps, vertex_parameters, edge_parameters, edge_iterator
-        )
+            spat_species, ps, vertex_parameters, edge_parameters, edge_iterator)
     end
 end
 
@@ -189,15 +180,13 @@ function DiscreteSpaceReactionSystem(rs, srs, dspace::DiGraph; kwargs...)
 end
 # Creates a DiscreteSpaceReactionSystem from a (undirected) Graph dspace (graph grid).
 function DiscreteSpaceReactionSystem(rs, srs, dspace::SimpleGraph; kwargs...)
-    return DiscreteSpaceReactionSystem(rs, srs, DiGraph(dspace); kwargs...)
+    DiscreteSpaceReactionSystem(rs, srs, DiGraph(dspace); kwargs...)
 end
 
 # Creates a DiscreteSpaceReactionSystem from a CartesianGrid dspace (cartesian grid) or a Boolean Array
 # dspace (masked grid). These two are quite similar, so much code can be reused in a single interface.
-function DiscreteSpaceReactionSystem(
-        rs, srs, dspace::GridLattice{N, T};
-        diagonal_connections = false, kwargs...
-    ) where {N, T}
+function DiscreteSpaceReactionSystem(rs, srs, dspace::GridLattice{N, T};
+        diagonal_connections = false, kwargs...) where {N, T}
     # Error checks.
     (N > 3) && error("Grids of higher dimension than 3 is currently not supported.")
 
@@ -218,10 +207,8 @@ function DiscreteSpaceReactionSystem(
     g_size = grid_size(dspace)
     edge_iterator = Vector{Pair{Int64, Int64}}(undef, num_edges)
     for (fspat_idx, grid_idx) in enumerate(fspat_to_grid_idx)
-        for neighbour_grid_idx in get_neighbours(
-                dspace, grid_idx, g_size;
-                diagonal_connections
-            )
+        for neighbour_grid_idx in get_neighbours(dspace, grid_idx, g_size;
+            diagonal_connections)
             cur_vert += 1
             edge_iterator[cur_vert] = fspat_idx => grid_to_fspat_idx[neighbour_grid_idx...]
         end
@@ -240,16 +227,14 @@ count_verts(grid::Array{Bool, N}) where {N} = count(grid)
 # Counts and edges on a Cartesian grid. The formula counts the number of internal, side, edge, and
 # corner vertices (on the grid). `l,m,n = grid_dims(grid),1,1` ensures that "extra" dimensions get
 # length 1. The formula holds even if one or more of l, m, and n are 1.
-function count_edges(
-        grid::CartesianGridRej{N, T};
-        diagonal_connections = false
-    ) where {N, T}
+function count_edges(grid::CartesianGridRej{N, T};
+        diagonal_connections = false) where {N, T}
     l, m, n = grid_size(grid)..., 1, 1
     (ni, ns, ne, nc) = diagonal_connections ? (26, 17, 11, 7) : (6, 5, 4, 3)
     num_edges = ni * (l - 2) * (m - 2) * (n - 2) +                            # Edges from internal vertices.
-        ns * (2(l - 2) * (m - 2) + 2(l - 2) * (n - 2) + 2(m - 2) * (n - 2)) + # Edges from side vertices.
-        ne * (4(l - 2) + 4(m - 2) + 4(n - 2)) +                   # Edges from edge vertices.
-        nc * 8                                              # Edges from corner vertices.
+                ns * (2(l - 2) * (m - 2) + 2(l - 2) * (n - 2) + 2(m - 2) * (n - 2)) + # Edges from side vertices.
+                ne * (4(l - 2) + 4(m - 2) + 4(n - 2)) +                   # Edges from edge vertices.
+                nc * 8                                              # Edges from corner vertices.
     return num_edges
 end
 
@@ -260,12 +245,8 @@ function count_edges(grid::Array{Bool, N}; diagonal_connections = false) where {
     num_edges = 0
     for grid_idx in get_grid_indices(grid)
         grid[grid_idx] || continue
-        num_edges += length(
-            get_neighbours(
-                grid, Tuple(grid_idx), g_size;
-                diagonal_connections
-            )
-        )
+        num_edges += length(get_neighbours(grid, Tuple(grid_idx), g_size;
+            diagonal_connections))
     end
     return num_edges
 end
@@ -291,30 +272,24 @@ function get_index_converters(grid::GridLattice{N, T}, num_verts) where {N, T}
 end
 
 # For a vertex's grid index, and a dspace, returns the grid indices of all its (valid) neighbours.
-function get_neighbours(
-        grid::GridLattice{N, T}, grid_idx, g_size;
-        diagonal_connections = false
-    ) where {N, T}
+function get_neighbours(grid::GridLattice{N, T}, grid_idx, g_size;
+        diagonal_connections = false) where {N, T}
     # Depending on the grid's dimension, find all potential neighbours.
     if grid_dims(grid) == 1
         potential_neighbours = [grid_idx .+ (i) for i in -1:1]
     elseif grid_dims(grid) == 2
         potential_neighbours = [grid_idx .+ (i, j) for i in -1:1 for j in -1:1]
     else
-        potential_neighbours = [
-            grid_idx .+ (i, j, k) for i in -1:1 for j in -1:1
-                for k in -1:1
-        ]
+        potential_neighbours = [grid_idx .+ (i, j, k) for i in -1:1 for j in -1:1
+                                for k in -1:1]
     end
 
     # Depending on whether diagonal connections are used or not, find valid neighbours.
     if diagonal_connections
         filter!(n_idx -> n_idx !== grid_idx, potential_neighbours)
     else
-        filter!(
-            n_idx -> count(n_idx .== grid_idx) == (length(g_size) - 1),
-            potential_neighbours
-        )
+        filter!(n_idx -> count(n_idx .== grid_idx) == (length(g_size) - 1),
+            potential_neighbours)
     end
 
     # Removes neighbours outside of the grid, and returns the full list.
@@ -333,7 +308,7 @@ end
 # Gets an iterator over a grid's grid indices. Separate function so we can handle the two grid types
 # separately (i.e. not calling `CartesianIndices(ones(grid_size(grid)))` unnecessarily for masked grids).
 function get_grid_indices(grid::CartesianGridRej{N, T}) where {N, T}
-    return CartesianIndices(ones(grid_size(grid)))
+    CartesianIndices(ones(grid_size(grid)))
 end
 get_grid_indices(grid::Array{Bool, N}) where {N} = CartesianIndices(grid)
 
@@ -433,7 +408,7 @@ Returns `true` if `dsrs` was created using a cartesian grid discrete space (e.g.
 Otherwise, returns `false`.
 """
 function has_cartesian_dspace(dsrs::DiscreteSpaceReactionSystem)
-    return dspace(dsrs) isa CartesianGridRej{N, T} where {N, T}
+    dspace(dsrs) isa CartesianGridRej{N, T} where {N, T}
 end
 
 """
@@ -493,17 +468,15 @@ Returns dsrs's discrete space as a graph. Currently does not work for Cartesian 
 """
 function get_dspace_graph(dsrs::DiscreteSpaceReactionSystem)
     has_graph_dspace(dsrs) && return dspace(dsrs)
-    return Graphs.SimpleGraphFromIterator(
-        Graphs.SimpleEdge(e[1], e[2])
-            for e in edge_iterator(dsrs)
-    )
+    return Graphs.SimpleGraphFromIterator(Graphs.SimpleEdge(e[1], e[2])
+    for e in edge_iterator(dsrs))
 end
 
 ### Catalyst-based Getters ###
 
 # Get all species.
 function species(dsrs::DiscreteSpaceReactionSystem)
-    return unique([species(reactionsystem(dsrs)); spatial_species(dsrs)])
+    unique([species(reactionsystem(dsrs)); spatial_species(dsrs)])
 end
 
 # Generic ones (simply forwards call to the non-spatial system).
@@ -522,13 +495,13 @@ MT.get_metadata(dsrs::DiscreteSpaceReactionSystem) = MT.get_metadata(reactionsys
 # Lattice reaction systems should not be combined with compositional modelling.
 # Maybe these should be allowed anyway? Still feel a bit weird
 function MT.get_eqs(dsrs::DiscreteSpaceReactionSystem)
-    return MT.get_eqs(reactionsystem(dsrs))
+    MT.get_eqs(reactionsystem(dsrs))
 end
 function MT.get_unknowns(dsrs::DiscreteSpaceReactionSystem)
-    return MT.get_unknowns(reactionsystem(dsrs))
+    MT.get_unknowns(reactionsystem(dsrs))
 end
 function MT.get_ps(dsrs::DiscreteSpaceReactionSystem)
-    return MT.get_ps(reactionsystem(dsrs))
+    MT.get_ps(reactionsystem(dsrs))
 end
 
 # Technically should not be used, but has to be declared for the `show` function to work.
@@ -538,7 +511,7 @@ end
 
 # Other non-relevant getters.
 function MT.independent_variables(dsrs::DiscreteSpaceReactionSystem)
-    return MT.independent_variables(reactionsystem(dsrs))
+    MT.independent_variables(reactionsystem(dsrs))
 end
 
 ### Edge Parameter Value Generators ###
@@ -600,10 +573,8 @@ function make_edge_p_values(dsrs::DiscreteSpaceReactionSystem, make_edge_p_value
         # If not, then the sparse matrix simply becomes empty in that position.
         values[e[1], e[2]] = eps()
 
-        values[e[1], e[2]] = make_edge_p_value(
-            fspat_to_grid_idx[e[1]],
-            fspat_to_grid_idx[e[2]]
-        )
+        values[e[1], e[2]] = make_edge_p_value(fspat_to_grid_idx[e[1]],
+            fspat_to_grid_idx[e[2]])
     end
 
     return values
@@ -652,11 +623,9 @@ D_vals = make_directed_edge_values(dsrs, (0.1, 0.1), (0.1, 0.0))
 ```
 Here, since we have a 2d grid, we only provide the first two Tuples to `make_directed_edge_values`.
 """
-function make_directed_edge_values(
-        dsrs::DiscreteSpaceReactionSystem, x_vals::Tuple{T, T},
+function make_directed_edge_values(dsrs::DiscreteSpaceReactionSystem, x_vals::Tuple{T, T},
         y_vals::Union{Nothing, Tuple{T, T}} = nothing,
-        z_vals::Union{Nothing, Tuple{T, T}} = nothing
-    ) where {T}
+        z_vals::Union{Nothing, Tuple{T, T}} = nothing) where {T}
     # Error checks.
     if has_graph_dspace(dsrs)
         error("The `make_directed_edge_values` function is only meant for discrete spaces with (Cartesian or masked) grid structures. It cannot be applied to graph discrete spaces.")

@@ -20,8 +20,7 @@ include("../test_functions.jl")
 # Create the network.
 @parameters k[1:20]
 @species A(t) B(t) C(t) D(t)
-rxs = [
-    Reaction(k[1], nothing, [A]),            # 0 -> A
+rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
     Reaction(k[2], [B], nothing),            # B -> 0
     Reaction(k[3], [A], [C]),                  # A -> C
     Reaction(k[4], [C], [A, B]),              # C -> A + B
@@ -56,18 +55,18 @@ function oderhs(u, kv, t)
     k = kv[1]
     du = zeros(eltype(u), 4)
     du[1] = k[1] - k[3] * A + k[4] * C + 2 * k[5] * C - k[6] * A * B + k[7] * B^2 / 2 -
-        k[9] * A * B - k[10] * A^2 - k[11] * A^2 / 2 - k[12] * A * B^3 * C^4 / 144 -
-        3 * k[13] * A^3 * B / 6 + 2 * k[14] - k[15] * A / (2 + A) - k[16] -
-        k[19] * t * A
+            k[9] * A * B - k[10] * A^2 - k[11] * A^2 / 2 - k[12] * A * B^3 * C^4 / 144 -
+            3 * k[13] * A^3 * B / 6 + 2 * k[14] - k[15] * A / (2 + A) - k[16] -
+            k[19] * t * A
     du[2] = -k[2] * B + k[4] * C - k[6] * A * B - k[7] * B^2 - k[8] * A * B - k[9] * A * B +
-        k[11] * A^2 / 2 - 3 * k[12] * A * B^3 * C^4 / 144 - k[13] * A^3 * B / 6 +
-        k[16] + 2 * k[18] * B + k[19] * t * A - 2 * k[20] * t * A * B^2 * C
+            k[11] * A^2 / 2 - 3 * k[12] * A * B^3 * C^4 / 144 - k[13] * A^3 * B / 6 +
+            k[16] + 2 * k[18] * B + k[19] * t * A - 2 * k[20] * t * A * B^2 * C
     du[3] = k[3] * A - k[4] * C - k[5] * C + k[6] * A * B + k[8] * A * B + k[9] * A * B +
-        k[10] * A^2 / 2 - 2 * k[12] * A * B^3 * C^4 / 144 -
-        2 * k[17] * A * exp(B) * C^2 / 2 - k[20] * t * A * B^2 * C
+            k[10] * A^2 / 2 - 2 * k[12] * A * B^3 * C^4 / 144 -
+            2 * k[17] * A * exp(B) * C^2 / 2 - k[20] * t * A * B^2 * C
     du[4] = k[9] * A * B + k[10] * A^2 / 2 + 3 * k[12] * A * B^3 * C^4 / 144 +
-        k[17] * A * exp(B) * C^2 / 2 + 2 * k[20] * t * A * B^2 * C
-    return du
+            k[17] * A * exp(B) * C^2 / 2 + 2 * k[20] * t * A * B^2 * C
+    du
 end
 
 # SDE noise coefs.
@@ -80,28 +79,26 @@ function sdenoise(u, kv, t)
     G = zeros(eltype(u), length(k), length(u))
     z = zero(eltype(u))
 
-    G = [
-        sqrt(k[1]) z z z;
-        z -sqrt(k[2] * B) z z;
-        -sqrt(k[3] * A) z sqrt(k[3] * A) z;
-        sqrt(k[4] * C) sqrt(k[4] * C) -sqrt(k[4] * C) z;
-        2 * sqrt(k[5] * C) z -sqrt(k[5] * C) z;
-        -sqrt(k[6] * A * B) -sqrt(k[6] * A * B) sqrt(k[6] * A * B) z;
-        sqrt(k[7] * B^2 / 2) -2 * sqrt(k[7] * B^2 / 2) z z;
-        z -sqrt(k[8] * A * B) sqrt(k[8] * A * B) z;
-        -sqrt(k[9] * A * B) -sqrt(k[9] * A * B) sqrt(k[9] * A * B) sqrt(k[9] * A * B);
-        -2 * sqrt(k[10] * A^2 / 2) z sqrt(k[10] * A^2 / 2) sqrt(k[10] * A^2 / 2);
-        -sqrt(k[11] * A^2 / 2) sqrt(k[11] * A^2 / 2) z z;
-        -sqrt(k[12] * A * B^3 * C^4 / 144) -3 * sqrt(k[12] * A * B^3 * C^4 / 144) -2 * sqrt(k[12] * A * B^3 * C^4 / 144) 3 * sqrt(k[12] * A * B^3 * C^4 / 144);
-        -3 * sqrt(k[13] * A^3 * B / 6) -sqrt(k[13] * A^3 * B / 6) z z;
-        2 * sqrt(k[14]) z z z;
-        -sqrt(k[15] * A / (2 + A)) z z z;
-        -sqrt(k[16]) sqrt(k[16]) z z;
-        z z -2 * sqrt(k[17] * A * exp(B) * C^2 / 2) sqrt(k[17] * A * exp(B) * C^2 / 2);
-        z 2 * sqrt(k[18] * B) z z;
-        -sqrt(k[19] * t * A) sqrt(k[19] * t * A) z z;
-        z -2 * sqrt(k[20] * t * A * B^2 * C) -sqrt(k[20] * t * A * B^2 * C) +2 * sqrt(k[20] * t * A * B^2 * C)
-    ]'
+    G = [sqrt(k[1]) z z z;
+         z -sqrt(k[2] * B) z z;
+         -sqrt(k[3] * A) z sqrt(k[3] * A) z;
+         sqrt(k[4] * C) sqrt(k[4] * C) -sqrt(k[4] * C) z;
+         2*sqrt(k[5] * C) z -sqrt(k[5] * C) z;
+         -sqrt(k[6] * A * B) -sqrt(k[6] * A * B) sqrt(k[6] * A * B) z;
+         sqrt(k[7] * B^2 / 2) -2*sqrt(k[7] * B^2 / 2) z z;
+         z -sqrt(k[8] * A * B) sqrt(k[8] * A * B) z;
+         -sqrt(k[9] * A * B) -sqrt(k[9] * A * B) sqrt(k[9] * A * B) sqrt(k[9] * A * B);
+         -2*sqrt(k[10] * A^2 / 2) z sqrt(k[10] * A^2 / 2) sqrt(k[10] * A^2 / 2);
+         -sqrt(k[11] * A^2 / 2) sqrt(k[11] * A^2 / 2) z z;
+         -sqrt(k[12] * A * B^3 * C^4 / 144) -3*sqrt(k[12] * A * B^3 * C^4 / 144) -2*sqrt(k[12] * A * B^3 * C^4 / 144) 3*sqrt(k[12] * A * B^3 * C^4 / 144);
+         -3*sqrt(k[13] * A^3 * B / 6) -sqrt(k[13] * A^3 * B / 6) z z;
+         2*sqrt(k[14]) z z z;
+         -sqrt(k[15] * A / (2 + A)) z z z;
+         -sqrt(k[16]) sqrt(k[16]) z z;
+         z z -2*sqrt(k[17] * A * exp(B) * C^2 / 2) sqrt(k[17] * A * exp(B) * C^2 / 2);
+         z 2*sqrt(k[18] * B) z z;
+         -sqrt(k[19] * t * A) sqrt(k[19] * t * A) z z;
+         z -2*sqrt(k[20] * t * A * B^2 * C) -sqrt(k[20] * t * A * B^2 * C) +2*sqrt(k[20] * t * A * B^2 * C)]'
     return G
 end
 
@@ -123,7 +120,7 @@ let
     def_p = [k => kvals]
     def_u0 = [A => 0.5, B => 1.0, C => 1.5, D => 2.0]
     defs = merge(Dict(def_p), Dict(def_u0))
-    defs_typed = convert(Dict{Symbolics.SymbolicT, Symbolics.SymbolicT}, defs)
+    defs_typed = convert(Dict{Symbolics.SymbolicT,Symbolics.SymbolicT}, defs)
 
     @named rs = ReactionSystem(rxs, t, [A, B, C, D], [k]; initial_conditions = defs)
     rs = complete(rs)
@@ -169,8 +166,7 @@ end
 # Test with jump System.
 let
     @species A(t) B(t) C(t) D(t) E(t) F(t)
-    rxs = [
-        Reaction(k[1], nothing, [A]),            # 0 -> A
+    rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
         Reaction(k[2], [B], nothing),            # B -> 0
         Reaction(k[3], [A], [C]),                  # A -> C
         Reaction(k[4], [C], [A, B]),              # C -> A + B
@@ -207,10 +203,8 @@ let
     u0 = rand(rng, 2:10, 6)
     u0map = unknowns(js) .=> u0
     ttt = rand(rng)
-    jumps = Vector{Union{ConstantRateJump, MassActionJump, VariableRateJump}}(
-        undef,
-        length(rxs)
-    )
+    jumps = Vector{Union{ConstantRateJump, MassActionJump, VariableRateJump}}(undef,
+                                                                              length(rxs))
 
     let
         jumps[1] = MassActionJump(p[1], Vector{Pair{Int, Int}}(), [1 => 1])
@@ -224,38 +218,24 @@ let
         jumps[9] = MassActionJump(p[9], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1, 4 => 1])
         jumps[10] = MassActionJump(p[10], [1 => 2], [1 => -2, 3 => 1, 4 => 1])
         jumps[11] = MassActionJump(p[11], [1 => 2], [1 => -1, 2 => 1])
-        jumps[12] = MassActionJump(
-            p[12], [1 => 1, 2 => 3, 3 => 4],
-            [1 => -1, 2 => -3, 3 => -2, 4 => 3]
-        )
+        jumps[12] = MassActionJump(p[12], [1 => 1, 2 => 3, 3 => 4],
+                                [1 => -1, 2 => -3, 3 => -2, 4 => 3])
         jumps[13] = MassActionJump(p[13], [1 => 3, 2 => 1], [1 => -3, 2 => -1])
         jumps[14] = MassActionJump(p[14], Vector{Pair{Int, Int}}(), [1 => 2])
 
-        jumps[15] = ConstantRateJump(
-            (u, p, t) -> p[15] * u[1] / (2 + u[1]),
-            integrator -> (integrator.u[1] -= 1)
-        )
-        jumps[16] = ConstantRateJump(
-            (u, p, t) -> p[16],
-            integrator -> (integrator.u[1] -= 1; integrator.u[2] += 1)
-        )
-        jumps[17] = ConstantRateJump(
-            (u, p, t) -> p[17] * u[1] * exp(u[2]) * binomial(u[3], 2),
-            integrator -> (integrator.u[3] -= 2; integrator.u[4] += 1)
-        )
-        jumps[18] = ConstantRateJump(
-            (u, p, t) -> p[18] * u[2],
-            integrator -> (integrator.u[2] += 2)
-        )
+        jumps[15] = ConstantRateJump((u, p, t) -> p[15] * u[1] / (2 + u[1]),
+                                    integrator -> (integrator.u[1] -= 1))
+        jumps[16] = ConstantRateJump((u, p, t) -> p[16],
+                                    integrator -> (integrator.u[1] -= 1; integrator.u[2] += 1))
+        jumps[17] = ConstantRateJump((u, p, t) -> p[17] * u[1] * exp(u[2]) * binomial(u[3], 2),
+                                    integrator -> (integrator.u[3] -= 2; integrator.u[4] += 1))
+        jumps[18] = ConstantRateJump((u, p, t) -> p[18] * u[2],
+                                    integrator -> (integrator.u[2] += 2))
 
-        jumps[19] = VariableRateJump(
-            (u, p, t) -> p[19] * u[4] * t,
-            integrator -> (integrator.u[4] -= 1; integrator.u[5] += 1)
-        )
-        jumps[20] = VariableRateJump(
-            (u, p, t) -> p[20] * t * u[1] * binomial(u[4], 2) * u[5],
-            integrator -> (integrator.u[4] -= 2; integrator.u[5] -= 1; integrator.u[6] += 2)
-        )
+        jumps[19] = VariableRateJump((u, p, t) -> p[19] * u[4] * t,
+                                    integrator -> (integrator.u[4] -= 1; integrator.u[5] += 1))
+        jumps[20] = VariableRateJump((u, p, t) -> p[20] * t * u[1] * binomial(u[4], 2) * u[5],
+                                    integrator -> (integrator.u[4] -= 2; integrator.u[5] -= 1; integrator.u[6] += 2))
 
         unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(js)))
         jprob = JumpProblem(js, merge(Dict(u0map), Dict(pmap)), (0.0, 1.0))
@@ -263,10 +243,8 @@ let
         jspmapper = MT.JumpSysMajParamMapper(js, mtkpars)
         symbolic_majs = MassActionJump[MT.jumps(js)[i] for i in midxs]
         symmaj = MT.assemble_maj(symbolic_majs, unknownoid, jspmapper)
-        maj = MassActionJump(
-            symmaj.param_mapper(mtkpars), symmaj.reactant_stoch, symmaj.net_stoch,
-            symmaj.param_mapper, scale_rates = false
-        )
+        maj = MassActionJump(symmaj.param_mapper(mtkpars), symmaj.reactant_stoch, symmaj.net_stoch,
+                            symmaj.param_mapper, scale_rates = false)
         for i in midxs
             @test abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100 * eps()
             @test jumps[i].reactant_stoch == maj.reactant_stoch[i]
@@ -317,9 +295,9 @@ let
     rs_dsl = @reaction_network rs begin
         @parameters p[1:2] k d1 d2
         @species (X(t))[1:2] Y1(t) Y2(t)
-        (p[1], p[2]), 0 --> (X[1], X[2])
-        k, (X[1], X[2]) --> (Y1, Y2)
-        (d1, d2), (Y1, Y2) --> 0
+        (p[1],p[2]), 0 --> (X[1],X[2])
+        k, (X[1],X[2]) --> (Y1,Y2)
+        (d1,d2), (Y1,Y2) --> 0
     end
 
     # Checks equivalence.
@@ -331,12 +309,12 @@ let
         [X[1] => 2.0, X[2] => 5.0, Y1 => 0.2, Y2 => 0.5],
         [rs_dsl.X => [2.0, 5.0], rs_dsl.Y1 => 0.2, rs_dsl.Y2 => 0.5],
         [rs_dsl.X[1] => 2.0, X[2] => 5.0, rs_dsl.Y1 => 0.2, rs_dsl.Y2 => 0.5],
-        [:X => [2.0, 5.0], :Y1 => 0.2, :Y2 => 0.5],
+        [:X => [2.0, 5.0], :Y1 => 0.2, :Y2 => 0.5]
     ]
     ps_alts = [
         [p => [1.0, 10.0], d1 => 5.0, d2 => 4.0, k => 2.0],
         [rs_dsl.p => [1.0, 10.0], rs_dsl.d1 => 5.0, rs_dsl.d2 => 4.0, rs_dsl.k => 2.0],
-        [:p => [1.0, 10.0], :d1 => 5.0, :d2 => 4.0, :k => 2.0],
+        [:p => [1.0, 10.0], :d1 => 5.0, :d2 => 4.0, :k => 2.0]
     ]
 
     # Loops through all inputs and check that the correct steady state is reached
@@ -344,11 +322,11 @@ let
     # Technically only one model needs to be check. However, "equivalent" models in MTK can still
     # have slight differences, so checking for both here to be certain.
     for rs in [rs_prog, rs_dsl]
-        oprob = ODEProblem(rs, u0_alts[1], (0.0, 10000.0), ps_alts[1])
+        oprob = ODEProblem(rs, u0_alts[1], (0.0, 10000.), ps_alts[1])
         for rs in [rs_prog, rs_dsl], u0 in u0_alts, p in ps_alts
             oprob_remade = remake(oprob; u0, p)
-            sol = solve(oprob_remade, Vern7(); abstol = 1.0e-8, reltol = 1.0e-8)
-            @test sol[[X[1], X[2], Y1, Y2]][end] ≈ [0.5, 5.0, 0.2, 2.5]
+            sol = solve(oprob_remade, Vern7(); abstol = 1e-8, reltol = 1e-8)
+            @test sol[[X[1], X[2], Y1 ,Y2]][end] ≈ [0.5, 5.0, 0.2, 2.5]
         end
     end
 end
@@ -360,7 +338,7 @@ let
     # Creates a `ReactionSystem`.
     @parameters x
     @parameters p d
-    @species S(t, x)
+    @species S(t,x)
     rxs = [
         Reaction(p, [], [S]),
         Reaction(d, [S], []),
@@ -385,7 +363,7 @@ let
     # Creates a reaction system with subsystems.
     sub_rxs = [
         Reaction(k1, [X1], []),
-        Reaction(k2, [X2], []),
+        Reaction(k2, [X2], [])
     ]
     @named sub_rs = ReactionSystem(sub_rxs, t)
     sub_eqs = [
@@ -396,7 +374,7 @@ let
     @named sub_osys = ReactionSystem(sub_eqs, t)
     rxs = [
         Reaction(k2, [X2], []),
-        Reaction(k3, [X3], []),
+        Reaction(k3, [X3], [])
     ]
     @named rs = ReactionSystem(rxs, t; systems = [sub_rs, sub_osys])
 
@@ -444,7 +422,7 @@ function f!(du, u, p, t)
     du[2] = -k1 * C * D + k2 * C * E
     du[3] = k1 * C * D - k2 * C * E
     du[4] = -C
-    return nothing
+    nothing
 end
 function fs!(du, u, p, t)
     A = p[1]
@@ -457,7 +435,7 @@ function fs!(du, u, p, t)
     du[1] = k1 * A - k2 * B
     du[2] = -k1 * C * D + k2 * C * E
     du[3] = k1 * C * D - k2 * C * E
-    return nothing
+    nothing
 end
 function gs!(dg, u, p, t)
     A = p[1]
@@ -474,7 +452,7 @@ function gs!(dg, u, p, t)
     dg[2, 4] = sqrt(k2 * C * E)
     dg[3, 3] = -dg[2, 3]
     dg[3, 4] = -dg[2, 4]
-    return nothing
+    nothing
 end
 
 # Tests for BC and constant species.
@@ -482,13 +460,11 @@ let
     @parameters k1 k2 A [isconstantspecies = true]
     @species B(t) C(t) [isbcspecies = true] D(t) E(t)
     Dt = default_time_deriv()
-    eqs = [
-        (@reaction k1, $A --> B),
+    eqs = [(@reaction k1, $A --> B),
         (@reaction k2, B --> $A),
         (@reaction k1, $C + D --> E + $C),
         Dt(C) ~ -C,
-        (@reaction k2, E + $C --> $C + D)
-    ]
+        (@reaction k2, E + $C --> $C + D)]
     @named rs = ReactionSystem(eqs, t)
     rs = complete(rs)
     @test all(eq -> eq isa Reaction, MT.get_eqs(rs)[1:4])
@@ -509,8 +485,8 @@ let
     ofun = ODEFunction(f!; sys = MT.SymbolCache(syms))
     oprob2 = ODEProblem(ofun, u0, tspan, p)
     saveat = tspan[2] / 50
-    abstol = 1.0e-10
-    reltol = 1.0e-10
+    abstol = 1e-10
+    reltol = 1e-10
     sol1 = solve(oprob1, Tsit5(); saveat, abstol, reltol)
     sol2 = solve(oprob2, Tsit5(); saveat, abstol, reltol)
     for i in eachindex(sts)
@@ -520,13 +496,11 @@ let
     # Test sde systems.
     # BC species require a constraint equation to define their dynamics in SDE Systems.
     let
-        eqs = [
-            (@reaction k1, $A --> B),
+        eqs = [(@reaction k1, $A --> B),
             (@reaction k2, B --> $A),
             (@reaction k1, $C + D --> E + $C),
             (@reaction k2, E + $C --> $C + D),
-            Dt(C) ~ 0,
-        ]  # Constraint equation for BC species (constant in time)
+            Dt(C) ~ 0]  # Constraint equation for BC species (constant in time)
         @named rs = ReactionSystem(eqs, t)
         rs = complete(rs)
         ssys = complete(sde_model(rs))
@@ -549,14 +523,12 @@ let
 
     let
         # Test jump systems.
-        rxs = [
-            (@reaction k1, $A --> B),
+        rxs = [(@reaction k1, $A --> B),
             (@reaction k2, B --> $A),
             (@reaction k1, $C + D --> E + $C),
             (@reaction k2, $C + E --> $C + D),
             (@reaction k1 * t, $A + $C --> B + $C),
-            (@reaction k1 * B, 2 * $A + $C --> $C + B)
-        ]
+            (@reaction k1 * B, 2 * $A + $C --> $C + B)]
         @named rs = ReactionSystem(rxs, t)
         rs = complete(rs)
         jsys = complete(jump_model(rs))
@@ -590,18 +562,12 @@ end
 let
     @parameters k1 A [isconstantspecies = true]
     @species C(t) [isbcspecies = true] B1(t) B2(t) B3(t)
-    @named rn = ReactionSystem(
-        [
-            (@reaction k1, $C --> B1 + $C),
-            (@reaction k1, $A --> B2),
-            (@reaction 10 * k1, ∅ --> B3)
-        ], t
-    )
+    @named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
+                                   (@reaction k1, $A --> B2),
+                                   (@reaction 10 * k1, ∅ --> B3)], t)
     rn = complete(rn)
-    jprob = JumpProblem(
-        rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
-        [k1 => 1.0]; rng, save_positions = (false, false)
-    )
+    jprob = JumpProblem(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
+                        [k1 => 1.0]; rng, save_positions = (false, false))
     umean = zeros(4)
     Nsims = 40000
     for i in 1:Nsims
@@ -609,8 +575,8 @@ let
         umean += sol(10.0, idxs = [B1, B2, B3, C])
     end
     umean /= Nsims
-    @test isapprox(umean[1], umean[2]; rtol = 1.0e-2)
-    @test isapprox(umean[1], umean[3]; rtol = 1.0e-2)
+    @test isapprox(umean[1], umean[2]; rtol = 1e-2)
+    @test isapprox(umean[1], umean[3]; rtol = 1e-2)
     @test umean[4] == 10
 end
 
@@ -619,9 +585,9 @@ end
 # Test various species related checker functions.
 let
     # Creates species and parameters.
-    @species X(t) Y(t) [isbcspecies = true]
-    @parameters x y [isconstantspecies = true]
-    @discretes xt(t) yt(t) [isconstantspecies = true]
+    @species X(t) Y(t) [isbcspecies=true]
+    @parameters x y [isconstantspecies=true]
+    @discretes xt(t) yt(t) [isconstantspecies=true]
 
     # Tests properties.
     @test !isspecies(x)
@@ -650,7 +616,7 @@ end
 # Tests various erroneous `ReactionSystem` creations.
 let
     # Prepare model inputs.
-    @parameters k1 k2 x [isconstantspecies = true] Γ
+    @parameters k1 k2 x [isconstantspecies=true] Γ
     @species X1(t) X2(t)
     @variables V(t)
 
@@ -674,13 +640,13 @@ end
 let
     # Conversion of non-autonomous `ReactionSystem` to nonlinear `System`.
     rs = @reaction_network begin
-        (p / (1 + t), d), 0 <--> X
+        (p/(1+t),d), 0 <--> X
     end
     @test_throws Exception ss_ode_model(rs)
 
     # Conversion of non-complete system to various system types.
     nc = @network_component begin
-        (p, d), 0 <--> X
+        (p,d), 0 <--> X
     end
     @test_throws Exception ode_model(nc)
     @test_throws Exception sde_model(nc)
@@ -713,7 +679,7 @@ end
 
 ### Specialised ReactionSystem Fields ###
 
-# Checks that correct bindings and (default) initial conditions are created and stored in various ways and conversions.
+# Checks that correct bindings and (default) iniital conditions are created and stored in various ways and conversions.
 let
     # Declare time differential.
     D = default_time_deriv()
@@ -724,16 +690,16 @@ let
     @parameters ψ1 ψ2 ψ3 ψ4 ψ5
     @parameters χ1 χ2 χ3 χ4 χ5 χ6 χ7 χ8
     @parameters a1 a2 a3 a4
-    @parameters b1 = 1.0 b2 = 2.0 b3 = 3.0 b4 = 4.0
-    @parameters c1 = θ1 c2 = θ1 + θ2 c3 = log(1 + θ3) c4 = θ4 * θ5^2
+    @parameters b1=1.0 b2=2.0 b3=3.0 b4=4.0
+    @parameters c1=θ1 c2=θ1+θ2 c3=log(1+θ3) c4=θ4 * θ5^2
     @parameters d1 d2 d3 d4
     @species X1(t) X2(t) X3(t) X4(t)
-    @species Y1(t) = 0.1 Y2(t) = 0.2 Y3(t) = 0.3 Y4(t) = 0.4
-    @species Z1(t) = ϕ1 Z2(t) = ϕ1 + ϕ2 Z3(t) = log(1 + ϕ3) Z4(t) = ϕ5 * ϕ4^2
+    @species Y1(t)=0.1 Y2(t)=0.2 Y3(t)=0.3 Y4(t)=0.4
+    @species Z1(t)=ϕ1 Z2(t)=ϕ1+ϕ2 Z3(t)=log(1+ϕ3) Z4(t)=ϕ5 * ϕ4^2
     @species U1(t) U2(t) U3(t) U4(t)
     @variables K1(t) K2(t) K3(t) K4(t)
-    @variables L1(t) = 10.0 L2(t) = 20.0 L3(t) = 30.0 L4(t) = 40.0
-    @variables M1(t) = ψ1 M2(t) = ψ1 + ψ2 M3(t) = log(1 + ψ3) M4(t) = ψ4 * ψ5^2
+    @variables L1(t)=10.0 L2(t)=20.0 L3(t)=30.0 L4(t)=40.0
+    @variables M1(t)=ψ1 M2(t)=ψ1+ψ2 M3(t)=log(1+ψ3) M4(t)=ψ4 * ψ5^2
     @variables N1(t) N2(t) N3(t) N4(t)
     ps = [θ1, θ2, θ3, θ4, θ5, ϕ1, ϕ2, ϕ3, ϕ4, ϕ5, ψ1, ψ2, ψ3, ψ4, ψ5, χ1, χ2, χ3, χ4, χ5, χ6, χ7, χ8, a1, a2, a3, a4, b1, b2, b3, b4, c1, c2, c3, c4, d1, d2, d3, d4]
     us = [X1, X2, X3, X4, Y1, Y2, Y3, Y4, Z1, Z2, Z3, Z4, U1, U2, U3, U4, K1, K2, K3, K4, L1, L2, L3, L4, M1, M2, M3, M4, N1, N2, N3, N4]
@@ -752,10 +718,10 @@ let
         D(K2) ~ a4 - K2,
         D(K3) ~ d1 - K3,
         D(K4) ~ d2 - K4,
-        L1^2 + X1 ~ b4^2 + K1^2,
-        L2^2 + X2 ~ c4^2 + K2^2,
-        L3^2 + X3 ~ 1^2 + K3^2,
-        L4^2 + X4 ~ 1^2 + K4^2,
+        L1^2 + X1 ~ b4 ^ 2 + K1^2,
+        L2^2 + X2 ~ c4 ^ 2 + K2^2,
+        L3^2 + X3 ~ 1 ^ 2 + K3^2,
+        L4^2 + X4 ~ 1 ^ 2 + K4^2,
         D(M1) ~ d3 - M1,
         D(M2) ~ d4 - M2,
         D(M3) ~ 1 - M3,
@@ -768,12 +734,12 @@ let
     initial_conditions = [
         d1 => 100.0, d2 => χ1,
         U1 => 200.0, U2 => χ2^3,
-        N1 => 300.0, N2 => χ3 + log(χ4 + 1),
+        N1 => 300.0, N2 => χ3 + log(χ4+ 1),
     ]
     bindings = [
         d3 => 1000.0, d4 => χ5,
         U3 => 2000.0, U4 => χ6^3,
-        N3 => 3000.0, N4 => χ7 + log(χ8 + 1),
+        N3 => 3000.0, N4 => χ7 + log(χ8+ 1),
     ]
     @named rs = ReactionSystem(rxs, t, us, ps; initial_conditions, bindings)
     rs_complete = complete(rs)
@@ -784,7 +750,7 @@ let
         rs, rs_complete,
         ode_model(rs_complete), complete(ode_model(rs_complete)), mtkcompile(ode_model(rs_complete)),
         sde_model(rs_complete), complete(sde_model(rs_complete)), mtkcompile(sde_model(rs_complete)),
-        hybrid_model(rs_complete; default_scale), complete(hybrid_model(rs_complete; default_scale)), mtkcompile(hybrid_model(rs_complete; default_scale)),
+        hybrid_model(rs_complete; default_scale), complete(hybrid_model(rs_complete; default_scale)), mtkcompile(hybrid_model(rs_complete; default_scale))
     ]
 
     # Checks that all stored bindings and initial conditions are correct.
@@ -795,15 +761,15 @@ let
         unwrap(L1) => tosym(10.0), unwrap(L2) => tosym(20.0), unwrap(L3) => tosym(30.0), unwrap(L4) => tosym(40.0),
         unwrap(d1) => tosym(100.0), unwrap(d2) => unwrap(χ1),
         unwrap(U1) => tosym(200.0), unwrap(U2) => unwrap(χ2^3),
-        unwrap(N1) => tosym(300.0), unwrap(N2) => unwrap(χ3 + log(χ4 + 1)),
+        unwrap(N1) => tosym(300.0), unwrap(N2) => unwrap(χ3 + log(χ4+ 1)),
     ]
     binds = [
-        unwrap(c1) => unwrap(θ1), unwrap(c2) => unwrap(θ1 + θ2), unwrap(c3) => unwrap(log(1 + θ3)), unwrap(c4) => unwrap(θ4 * θ5^2),
-        unwrap(Z1) => unwrap(ϕ1), unwrap(Z2) => unwrap(ϕ1 + ϕ2), unwrap(Z3) => unwrap(log(1 + ϕ3)), unwrap(Z4) => unwrap(ϕ5 * ϕ4^2),
-        unwrap(M1) => unwrap(ψ1), unwrap(M2) => unwrap(ψ1 + ψ2), unwrap(M3) => unwrap(log(1 + ψ3)), unwrap(M4) => unwrap(ψ4 * ψ5^2),
+        unwrap(c1) => unwrap(θ1), unwrap(c2) => unwrap(θ1 + θ2), unwrap(c3) => unwrap(log(1+θ3)), unwrap(c4) => unwrap(θ4 * θ5^2),
+        unwrap(Z1) => unwrap(ϕ1), unwrap(Z2) => unwrap(ϕ1+ϕ2), unwrap(Z3) => unwrap(log(1+ϕ3)), unwrap(Z4) => unwrap(ϕ5 * ϕ4^2),
+        unwrap(M1) => unwrap(ψ1), unwrap(M2) => unwrap(ψ1+ψ2), unwrap(M3) => unwrap(log(1+ψ3)), unwrap(M4) => unwrap(ψ4 * ψ5^2),
         unwrap(d3) => tosym(1000.0), unwrap(d4) => unwrap(χ5),
         unwrap(U3) => tosym(2000.0), unwrap(U4) => unwrap(χ6^3),
-        unwrap(N3) => tosym(3000.0), unwrap(N4) => unwrap(χ7 + log(χ8 + 1)),
+        unwrap(N3) => tosym(3000.0), unwrap(N4) => unwrap(χ7 + log(χ8+ 1)),
     ]
     for sys in all_sys
         @test issetequal((collect(ModelingToolkitBase.get_initial_conditions(sys))), ics)
@@ -832,7 +798,7 @@ let
         Reaction(k1, [Y1], []),
         Reaction(k2, [Y2], []),
         Reaction(k3, [Y3], []),
-        Reaction(k4, [Y4], []),
+        Reaction(k4, [Y4], [])
     ]
     bindings = [d3 => d3_1, d4 => d4_1 + d4_2, X3 => X3_1, X4 => X4_1 + X4_2]
     initial_conditions = [k3 => k3_1, k4 => k4_1 + k4_2, Y3 => Y3_1, Y4 => Y4_1 + Y4_2]
@@ -843,10 +809,10 @@ let
         d1_1 => 1.0, d2_1 => 0.5, d2_2 => 1.5, d3_1 => 3.0, d4_1 => 1.5, d4_2 => 2.5,
         X1_1 => 1.0, X2_1 => 0.5, X2_2 => 1.5, X3_1 => 3.0, X4_1 => 1.5, X4_2 => 2.5,
         k3_1 => 3.0, k4_1 => 1.5, k4_2 => 2.5,
-        Y3_1 => 3.0, Y4_1 => 1.5, Y4_2 => 2.5,
+        Y3_1 => 3.0, Y4_1 => 1.5, Y4_2 => 2.5
     ]
     oprob = ODEProblem(rs, [], 10.0, ps)
-    osol = solve(oprob, Vern7(); saveat = 0.0:0.1:10.0, abstol = 1.0e-8, reltol = 1.0e-8)
+    osol = solve(oprob, Vern7(); saveat = 0.0:0.1:10.0, abstol = 1e-8, reltol = 1e-8)
 
     # Checks that stored parameter values and initial conditions are correct.
     @test oprob.ps[d1] == osol.ps[d1] == 1.0
@@ -895,20 +861,14 @@ let
 
     @parameters k1 k2
     @species R(t)
-    rxs = [
-        Reaction(k1 * S, [S, I], [I], [2, 3], [2]),
-        Reaction(k2 * R, [I], [R]),
-    ]
+    rxs = [Reaction(k1 * S, [S, I], [I], [2, 3], [2]),
+        Reaction(k2 * R, [I], [R])]
     @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
     rs = complete(rs)
-    @test isequal(
-        oderatelaw(equations(rs)[1]),
-        k1 * S * S^2 * I^3 / (factorial(2) * factorial(3))
-    )
-    @test_skip isequal(
-        jumpratelaw(equations(eqs)[1]),
-        k1 * S * binomial(S, 2) * binomial(I, 3)
-    )
+    @test isequal(oderatelaw(equations(rs)[1]),
+                  k1 * S * S^2 * I^3 / (factorial(2) * factorial(3)))
+    @test_skip isequal(jumpratelaw(equations(eqs)[1]),
+                       k1 * S * binomial(S, 2) * binomial(I, 3))
     dep = Set()
     MT.get_variables!(dep, rxs[2], Set(unknowns(rs)))
     dep2 = Set([R, I])
@@ -920,10 +880,8 @@ let
     isequal2(a, b) = isequal(simplify(a), simplify(b))
 
     @test isequal2(jumpratelaw(rxs[1]), k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
-    @test isequal2(
-        jumpratelaw(rxs[1]; combinatoric_ratelaw = false),
-        k1 * S * S * (S - 1) * I * (I - 1) * (I - 2)
-    )
+    @test isequal2(jumpratelaw(rxs[1]; combinatoric_ratelaw = false),
+                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
     @test isequal2(oderatelaw(rxs[1]), k1 * S * S^2 * I^3 / 12)
     @test isequal2(oderatelaw(rxs[1]; combinatoric_ratelaw = false), k1 * S * S^2 * I^3)
 
@@ -942,25 +900,19 @@ let
 
     # Test ConstantRateJump rate scaling.
     js = complete(jump_model(rs))
-    @test isequal2(
-        MT.jumps(js)[1].rate,
-        k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12
-    )
+    @test isequal2(MT.jumps(js)[1].rate,
+                    k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
     js = complete(jump_model(rs; combinatoric_ratelaws = false))
     @test isequal2(MT.jumps(js)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
     js2 = complete(jump_model(rs2))
     @test isequal2(MT.jumps(js2)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
     js3 = complete(jump_model(rs2; combinatoric_ratelaws = true))
-    @test isequal2(
-        MT.jumps(js3)[1].rate,
-        k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12
-    )
+    @test isequal2(MT.jumps(js3)[1].rate,
+                    k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
 
     # Test MassActionJump rate scaling.
-    rxs = [
-        Reaction(k1, [S, I], [I], [2, 3], [2]),
-        Reaction(k2, [I], [R]),
-    ]
+    rxs = [Reaction(k1, [S, I], [I], [2, 3], [2]),
+        Reaction(k2, [I], [R])]
     @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
     rs = complete(rs)
     js = complete(jump_model(rs))
@@ -1054,10 +1006,10 @@ let
     @test issetequal(parameters(rs), [k, b])
 end
 
-# Test parametric initial conditions.
+# Test parameteric initial conditions.
 let
     @parameters d X0
-    @species X(t) = X0
+    @species X(t)=X0
     rx = Reaction(d, [X], nothing, [1], nothing)
     @named rs = ReactionSystem([rx], t)
     rs = complete(rs)
@@ -1145,9 +1097,7 @@ end
 
 # Additional unsorted tests.
 let
-    rn = @reaction_network begin
-        k, X --> 0
-    end
+    rn = @reaction_network begin k, X --> 0 end
     isspecies(species(rn)[1])
     @test Catalyst.has_species(rn)
     @test Catalyst.has_rxs(rn)
@@ -1191,7 +1141,7 @@ let
     @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs1))), MiscSystemData, nothing) == nothing
     @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs2))), MiscSystemData, nothing) == π
 
-    # Check metadata for `ReactionSystem`s where metadata has been updated
+    # Check metadata for `ReactionSystem`s where metadata has been udpated
     rs1 = ModelingToolkitBase.setmetadata(rs1, MiscSystemData, "Metadata")
     rs2 = ModelingToolkitBase.setmetadata(rs2, MiscSystemData, ones(2, 3))
     @test ModelingToolkitBase.getmetadata(rs1, MiscSystemData, nothing) == "Metadata"
@@ -1216,10 +1166,8 @@ let
     @test Catalyst.get_parameter_map(rs_plain) === nothing
 
     # System with metadata via constructor.
-    @named rs = ReactionSystem(
-        [Reaction(k1, [X], [Y])], t;
-        metadata = [Catalyst.U0Map => u0map, Catalyst.ParameterMap => pmap]
-    )
+    @named rs = ReactionSystem([Reaction(k1, [X], [Y])], t;
+        metadata = [Catalyst.U0Map => u0map, Catalyst.ParameterMap => pmap])
     @test Catalyst.has_u0_map(rs)
     @test Catalyst.has_parameter_map(rs)
     @test isequal(Catalyst.get_u0_map(rs), u0map)
@@ -1244,10 +1192,8 @@ let
 
     # Preservation through flatten (hierarchical system).
     @named sub = ReactionSystem([Reaction(k2, [Y], [X])], t)
-    @named parent_rs = ReactionSystem(
-        [Reaction(k1, [X], [Y])], t;
-        systems = [sub], metadata = [Catalyst.U0Map => u0map, Catalyst.ParameterMap => pmap]
-    )
+    @named parent_rs = ReactionSystem([Reaction(k1, [X], [Y])], t;
+        systems = [sub], metadata = [Catalyst.U0Map => u0map, Catalyst.ParameterMap => pmap])
     flat = Catalyst.flatten(parent_rs)
     @test isequal(Catalyst.get_u0_map(flat), u0map)
     @test isequal(Catalyst.get_parameter_map(flat), pmap)
@@ -1283,7 +1229,7 @@ end
 # there are several places in the code where the `reactionsystem_uptodate` function is called, here
 # the code might need adaptation to take the updated reaction system into account.
 let
-    @test_nowarn Catalyst.reactionsystem_uptodate_check() # Will fix this once most things are actually working.
+    @test_nowarn Catalyst.reactionsystem_uptodate_check() # Will fix this once most things are actually workin.
 end
 
 # Test that functions using the incidence matrix properly cache it
@@ -1298,31 +1244,31 @@ let
     @test isempty(nps.incidencemat) == true
 
     img = incidencematgraph(rn)
-    @test size(nps.incidencemat) == (3, 3)
+    @test size(nps.incidencemat) == (3,3)
 
     Catalyst.reset!(nps)
     lcs = linkageclasses(rn)
-    @test size(nps.incidencemat) == (3, 3)
+    @test size(nps.incidencemat) == (3,3)
 
     Catalyst.reset!(nps)
     sns = subnetworks(rn)
-    @test size(nps.incidencemat) == (3, 3)
+    @test size(nps.incidencemat) == (3,3)
 
     Catalyst.reset!(nps)
     δ = deficiency(rn)
-    @test size(nps.incidencemat) == (3, 3)
+    @test size(nps.incidencemat) == (3,3)
 
     Catalyst.reset!(nps)
     δ_l = linkagedeficiencies(rn)
-    @test size(nps.incidencemat) == (3, 3)
+    @test size(nps.incidencemat) == (3,3)
 
     Catalyst.reset!(nps)
     rev = isreversible(rn)
-    @test size(nps.incidencemat) == (3, 3)
+    @test size(nps.incidencemat) == (3,3)
 
     Catalyst.reset!(nps)
     weakrev = isweaklyreversible(rn, sns)
-    @test size(nps.incidencemat) == (3, 3)
+    @test size(nps.incidencemat) == (3,3)
 end
 
 ########## tests related to hybrid systems ##########
@@ -1342,12 +1288,10 @@ let
         @parameters λ k
         @variables V(t)
         @species A(t) B(t) C(t)
-        rxs = [
-            Reaction(k * V, [], [A]), Reaction(λ * A, [B], nothing),
-            Reaction(k, [A, B], nothing), Reaction(λ, [C], [A]),
-        ]
-        eqs = [D(V) ~ λ * V * C]
-        cevents = [[V ~ 2.0] => [V ~ V / 2, A ~ A / 2]]
+        rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing),
+            Reaction(k, [A, B], nothing), Reaction(λ, [C], [A])]
+        eqs = [D(V) ~ λ*V*C]
+        cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
         @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
         rs = complete(rs)
         @test_throws ErrorException jump_model(rs)
@@ -1360,12 +1304,10 @@ let
         @variables V(t)
         @species A(t) B(t) C(t)
         metadata = [:physical_scale => PhysicalScale.ODE]
-        rxs = [
-            Reaction(k * V, [], [A]), Reaction(λ * A, [B], nothing; metadata),
-            Reaction(k, [A, B], nothing), Reaction(λ, [C], [A]),
-        ]
-        eqs = [D(V) ~ λ * V * C]
-        cevents = [[V ~ 2.0] => [V ~ V / 2, A ~ A / 2]]
+        rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing; metadata),
+            Reaction(k, [A, B], nothing), Reaction(λ, [C], [A])]
+        eqs = [D(V) ~ λ*V*C]
+        cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
         @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
         rs = complete(rs)
         sys = complete(hybrid_model(rs; default_scale = PhysicalScale.Jump))
@@ -1375,7 +1317,7 @@ let
         @test isempty(constantratejumps(sys))
         @test length(variableratejumps(sys)) == 2
         @test length(odeeqs(sys)) == 4
-        odes = union(eqs, [D(A) ~ 0, D(B) ~ -λ * A * B, D(C) ~ 0])
+        odes = union(eqs, [D(A) ~ 0, D(B) ~ -λ*A*B, D(C) ~ 0])
         @test issetequal(odes, odeeqs(sys))
         @test length(continuous_events(sys)) == 1
     end
@@ -1388,12 +1330,10 @@ let
         @species A(t) B(t) C(t)
         md1 = [:physical_scale => PhysicalScale.ODE]
         md2 = [:physical_scale => PhysicalScale.VariableRateJump]
-        rxs = [
-            Reaction(k * V, [], [A]), Reaction(λ * A, [B], nothing; metadata = md1),
-            Reaction(k, [A, B], nothing), Reaction(λ, [C], [A]; metadata = md2),
-        ]
-        eqs = [D(V) ~ λ * V * C]
-        cevents = [[V ~ 2.0] => [V ~ V / 2, A ~ A / 2]]
+        rxs = [Reaction(k*V, [], [A]), Reaction(λ*A, [B], nothing; metadata = md1),
+            Reaction(k, [A, B], nothing), Reaction(λ, [C], [A]; metadata = md2)]
+        eqs = [D(V) ~ λ*V*C]
+        cevents = [[V ~ 2.0] => [V ~ V/2, A ~ A/2]]
         @named rs = ReactionSystem(vcat(rxs, eqs), t; continuous_events = cevents)
         rs = complete(rs)
         sys = complete(hybrid_model(rs; default_scale = PhysicalScale.Jump))
@@ -1403,7 +1343,7 @@ let
         @test isempty(constantratejumps(sys))
         @test length(variableratejumps(sys)) == 3
         @test length(odeeqs(sys)) == 4
-        odes = union(eqs, [D(A) ~ 0, D(B) ~ -λ * A * B, D(C) ~ 0])
+        odes = union(eqs, [D(A) ~ 0, D(B) ~ -λ*A*B, D(C) ~ 0])
         @test issetequal(odes, odeeqs(sys))
         @test length(continuous_events(sys)) == 1
     end
@@ -1428,7 +1368,7 @@ let
 
     # Define events
     continuous_events = [[X ~ 0] => [X ~ -X]]
-    discrete_events = (X == 1) => [V ~ V / 2]
+    discrete_events = (X == 1) => [V ~ V/2]
 
     # Define metadata
     metadata = [MiscSystemData => "Comprehensive test system"]
@@ -1446,19 +1386,15 @@ let
     @named sub_rs = ReactionSystem([sub_rx], t)
 
     # Create the first reaction system
-    @named rs1 = ReactionSystem(
-        [rx1, rx2, rx3, rx4, eq], t;
+    @named rs1 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t;
         continuous_events, discrete_events,
-        metadata, observed = obs, initial_conditions = defs, systems = [sub_rs]
-    )
+        metadata, observed = obs, initial_conditions = defs, systems = [sub_rs])
     rs1 = complete(rs1)
 
     # Create the second reaction system with the same components
-    rs2 = ReactionSystem(
-        [rx1, rx2, rx3, rx4, eq], t;
+    rs2 = ReactionSystem([rx1, rx2, rx3, rx4, eq], t;
         continuous_events, discrete_events,
-        metadata, observed = obs, initial_conditions = defs, systems = [sub_rs], name = :rs1
-    )
+        metadata, observed = obs, initial_conditions = defs, systems = [sub_rs], name = :rs1)
     rs2 = complete(rs2)
 
     # Check equivalence

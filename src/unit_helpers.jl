@@ -80,7 +80,6 @@ function Base.showerror(io::IO, err::UnitValidationError)
         (issue.rhs_unit === nothing) || print(io, "\nrhs unit: ", issue.rhs_unit)
         isempty(issue.detail) || print(io, "\ndetail: ", issue.detail)
     end
-    return
 end
 
 # Emit @warn messages for a vector of UnitValidationIssues.
@@ -88,77 +87,41 @@ end
 function _warn_unit_issues(issues::Vector{UnitValidationIssue})
     for issue in issues
         if issue.kind == :species_unit_mismatch
-            @warn(
-                string(
-                    "Species are expected to have units of ", issue.lhs_unit,
-                    " however, species ", issue.context, " has units ", issue.rhs_unit, "."
-                )
-            )
+            @warn(string("Species are expected to have units of ", issue.lhs_unit,
+                " however, species ", issue.context, " has units ", issue.rhs_unit, "."))
         elseif issue.kind == :reaction_species_unit_mismatch
             @warn(string("In ", issue.context, " the ", issue.detail, "."))
         elseif issue.kind == :reaction_rate_unit_mismatch
-            @warn(
-                string(
-                    "Reaction rate laws are expected to have units of ", issue.lhs_unit,
-                    " however, ", issue.context, " has units of ", issue.rhs_unit, "."
-                )
-            )
+            @warn(string(
+                "Reaction rate laws are expected to have units of ", issue.lhs_unit,
+                " however, ", issue.context, " has units of ", issue.rhs_unit, "."))
         elseif issue.kind == :reaction_side_unit_mismatch
-            @warn(
-                string(
-                    "in ", issue.context,
-                    " the substrate units are not consistent with the product units."
-                )
-            )
+            @warn(string("in ", issue.context,
+                " the substrate units are not consistent with the product units."))
         elseif issue.kind == :additive_term_unit_mismatch
-            @warn(
-                string(
-                    issue.context, ": additive terms have mismatched units [",
-                    issue.lhs_unit, "] and [", issue.rhs_unit, "]."
-                )
-            )
+            @warn(string(issue.context, ": additive terms have mismatched units [",
+                issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
         elseif issue.kind == :equation_unit_mismatch
-            @warn(
-                string(
-                    "Equation unit mismatch in ", issue.context,
-                    ": lhs has units ", issue.lhs_unit, ", rhs has units ", issue.rhs_unit, "."
-                )
-            )
+            @warn(string("Equation unit mismatch in ", issue.context,
+                ": lhs has units ", issue.lhs_unit, ", rhs has units ", issue.rhs_unit, "."))
         elseif issue.kind == :comparison_unit_mismatch
-            @warn(
-                string(
-                    issue.context, ": comparison operands have mismatched units [",
-                    issue.lhs_unit, "] and [", issue.rhs_unit, "]."
-                )
-            )
+            @warn(string(issue.context, ": comparison operands have mismatched units [",
+                issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
         elseif issue.kind == :conditional_condition_unit_mismatch
-            @warn(
-                string(
-                    issue.context, ": ifelse condition must be unitless, got [",
-                    issue.rhs_unit, "]."
-                )
-            )
+            @warn(string(issue.context, ": ifelse condition must be unitless, got [",
+                issue.rhs_unit, "]."))
         elseif issue.kind == :conditional_branch_unit_mismatch
-            @warn(
-                string(
-                    issue.context, ": ifelse branches have mismatched units [",
-                    issue.lhs_unit, "] and [", issue.rhs_unit, "]."
-                )
-            )
+            @warn(string(issue.context, ": ifelse branches have mismatched units [",
+                issue.lhs_unit, "] and [", issue.rhs_unit, "]."))
         elseif issue.kind == :exponent_unit_mismatch
-            @warn(
-                string(
-                    issue.context, ": exponent must be unitless, got [",
-                    issue.rhs_unit, "]."
-                )
-            )
+            @warn(string(issue.context, ": exponent must be unitless, got [",
+                issue.rhs_unit, "]."))
         elseif issue.kind == :symbolic_stoichiometry
             @warn(string(issue.context, ": ", issue.detail, "."))
         elseif issue.kind == :symbolic_exponent
             @warn(string(issue.context, ": ", issue.detail, "."))
         end
     end
-    return
 end
 
 _validation_push!(issues, issue::UnitValidationIssue) = isnothing(issues) ? nothing : push!(issues, issue)
@@ -180,7 +143,7 @@ from the system's brownian and poissonian variables:
 - Brownians get units `time^(-1/2)` (from the Wiener process derivative `dW/dt`).
 - Poissonians get units from their associated rate parameter (via `getpoissonianrate`).
 """
-function catalyst_get_unit(x, noise_units = nothing)
+function catalyst_get_unit(x, noise_units=nothing)
     # Unwrap Symbolics wrappers (Num, CallAndWrap, etc.) to the underlying symbolic
     x = Symbolics.unwrap(x)
     if x isa DQ.AbstractQuantity
@@ -197,12 +160,9 @@ end
 # lose precision in compound arithmetic, leading to silent unit-check failures.
 function _check_symbolic_dims(u::DQ.AbstractQuantity, x)
     if !(DQ.dimension(u) isa DQ.SymbolicDimensions)
-        throw(
-            ArgumentError(
-                "Unit metadata on $x uses concrete Dimensions (from u\"...\"). " *
-                    "Catalyst requires SymbolicDimensions — use us\"...\" instead."
-            )
-        )
+        throw(ArgumentError(
+            "Unit metadata on $x uses concrete Dimensions (from u\"...\"). " *
+            "Catalyst requires SymbolicDimensions — use us\"...\" instead."))
     end
     return u
 end
@@ -246,7 +206,7 @@ function _cgu_symbolic(x, noise_units)
         _is_unitless(exp_u) || return SYM_UNITLESS
         exp_val = pargs[2]
         if SymbolicUtils.isconst(exp_val)
-            return base_u^value(exp_val)
+            return base_u ^ value(exp_val)
         else
             # Symbolic exponent on unitful base — unit is indeterminate.
             # Validation code pre-checks via _has_symbolic_unitful_pow before
@@ -350,8 +310,8 @@ function _has_symbolic_unitful_pow(x)
         # Only match unitful base with unitless symbolic exponent (e.g. A^n).
         # Unitful exponents (e.g. V^t) are separately caught as :exponent_unit_mismatch.
         if !_is_unitless(catalyst_get_unit(args[1])) &&
-                !SymbolicUtils.isconst(args[2]) &&
-                _is_unitless(catalyst_get_unit(args[2]))
+           !SymbolicUtils.isconst(args[2]) &&
+           _is_unitless(catalyst_get_unit(args[2]))
             return true
         end
     end
@@ -368,13 +328,13 @@ Walk a symbolic expression tree and check that all additive terms have consisten
 units. Returns `true` if valid, `false` if any addition has terms with mismatched
 units. Issues warnings for each mismatch found.
 """
-function _validate_unit_expr(expr, label, noise_units = nothing; issues = nothing, warn::Bool = true)
+function _validate_unit_expr(expr, label, noise_units=nothing; issues=nothing, warn::Bool = true)
     x = expr isa Symbolics.Num ? Symbolics.unwrap(expr) : expr
     x isa SymbolicT || return true
     return _vue_walk(x, label, noise_units; issues, warn)
 end
 
-function _vue_walk(x, label, noise_units; issues = nothing, warn::Bool = true)
+function _vue_walk(x, label, noise_units; issues=nothing, warn::Bool = true)
     valid = true
     if SymbolicUtils.isadd(x)
         args = SymbolicUtils.arguments(x)
@@ -383,10 +343,8 @@ function _vue_walk(x, label, noise_units; issues = nothing, warn::Bool = true)
             other_unit = catalyst_get_unit(args[i], noise_units)
             if !_units_match(first_unit, other_unit)
                 valid = false
-                issue = UnitValidationIssue(
-                    :additive_term_unit_mismatch, string(label),
-                    first_unit, other_unit, "Additive terms have mismatched units."
-                )
+                issue = UnitValidationIssue(:additive_term_unit_mismatch, string(label),
+                    first_unit, other_unit, "Additive terms have mismatched units.")
                 _validation_push!(issues, issue)
                 warn && @warn("$label: additive terms have mismatched units [$first_unit] and [$other_unit] in $x.")
             end
@@ -404,10 +362,8 @@ function _vue_walk(x, label, noise_units; issues = nothing, warn::Bool = true)
         exp_unit = catalyst_get_unit(args[2], noise_units)
         if !_is_unitless(exp_unit)
             valid = false
-            issue = UnitValidationIssue(
-                :exponent_unit_mismatch, string(label), SYM_UNITLESS,
-                exp_unit, "Exponent must be unitless."
-            )
+            issue = UnitValidationIssue(:exponent_unit_mismatch, string(label), SYM_UNITLESS,
+                exp_unit, "Exponent must be unitless.")
             _validation_push!(issues, issue)
             warn && @warn("$label: exponent has non-unitless unit [$exp_unit] in $x.")
         end
@@ -427,10 +383,8 @@ function _vue_walk(x, label, noise_units; issues = nothing, warn::Bool = true)
             rhs_unit = catalyst_get_unit(args[2], noise_units)
             if !_units_match(lhs_unit, rhs_unit)
                 valid = false
-                issue = UnitValidationIssue(
-                    :comparison_unit_mismatch, string(label), lhs_unit,
-                    rhs_unit, "Comparison operands must have matching units."
-                )
+                issue = UnitValidationIssue(:comparison_unit_mismatch, string(label), lhs_unit,
+                    rhs_unit, "Comparison operands must have matching units.")
                 _validation_push!(issues, issue)
                 warn && @warn("$label: comparison operands have mismatched units [$lhs_unit] and [$rhs_unit] in $x.")
             end
@@ -439,10 +393,8 @@ function _vue_walk(x, label, noise_units; issues = nothing, warn::Bool = true)
             cond_unit = catalyst_get_unit(args[1], noise_units)
             if !_is_unitless(cond_unit)
                 valid = false
-                issue = UnitValidationIssue(
-                    :conditional_condition_unit_mismatch, string(label),
-                    SYM_UNITLESS, cond_unit, "ifelse condition must be unitless."
-                )
+                issue = UnitValidationIssue(:conditional_condition_unit_mismatch, string(label),
+                    SYM_UNITLESS, cond_unit, "ifelse condition must be unitless.")
                 _validation_push!(issues, issue)
                 warn && @warn("$label: ifelse condition is not unitless [$cond_unit] in $x.")
             end
@@ -450,10 +402,8 @@ function _vue_walk(x, label, noise_units; issues = nothing, warn::Bool = true)
             false_unit = catalyst_get_unit(args[3], noise_units)
             if !_units_match(true_unit, false_unit)
                 valid = false
-                issue = UnitValidationIssue(
-                    :conditional_branch_unit_mismatch, string(label),
-                    true_unit, false_unit, "ifelse branches must have matching units."
-                )
+                issue = UnitValidationIssue(:conditional_branch_unit_mismatch, string(label),
+                    true_unit, false_unit, "ifelse branches must have matching units.")
                 _validation_push!(issues, issue)
                 warn && @warn("$label: ifelse branches have mismatched units [$true_unit] and [$false_unit] in $x.")
             end
@@ -479,22 +429,16 @@ Validate units in an `Equation`. Checks:
 The optional `noise_units` keyword is a `Dict` mapping noise variable symbols
 to their effective units (built by `_build_noise_units` during system validation).
 """
-function _validate_equation(eq::Equation; noise_units = nothing, issues = nothing, warn::Bool = true)
+function _validate_equation(eq::Equation; noise_units=nothing, issues=nothing, warn::Bool = true)
     valid = true
     eq_str = string(eq)
     if _has_symbolic_unitful_pow(eq.lhs) || _has_symbolic_unitful_pow(eq.rhs)
         valid = false
-        issue = UnitValidationIssue(
-            :symbolic_exponent, eq_str, nothing, nothing,
-            "Symbolic exponent on unitful base is not supported for unit validation"
-        )
+        issue = UnitValidationIssue(:symbolic_exponent, eq_str, nothing, nothing,
+            "Symbolic exponent on unitful base is not supported for unit validation")
         _validation_push!(issues, issue)
-        warn && @warn(
-            string(
-                eq_str, ": symbolic exponent on unitful base, ",
-                "cannot validate units."
-            )
-        )
+        warn && @warn(string(eq_str, ": symbolic exponent on unitful base, ",
+            "cannot validate units."))
         return valid
     end
     valid &= _validate_unit_expr(eq.lhs, string(eq_str, ": lhs"), noise_units; issues, warn)
@@ -503,17 +447,11 @@ function _validate_equation(eq::Equation; noise_units = nothing, issues = nothin
     rhs_unit = catalyst_get_unit(eq.rhs, noise_units)
     if !_units_match(lhs_unit, rhs_unit)
         valid = false
-        issue = UnitValidationIssue(
-            :equation_unit_mismatch, string(eq), lhs_unit,
-            rhs_unit, "LHS and RHS units do not match."
-        )
+        issue = UnitValidationIssue(:equation_unit_mismatch, string(eq), lhs_unit,
+            rhs_unit, "LHS and RHS units do not match.")
         _validation_push!(issues, issue)
-        warn && @warn(
-            string(
-                "Equation unit mismatch in ", eq,
-                ": lhs has units ", lhs_unit, ", rhs has units ", rhs_unit, "."
-            )
-        )
+        warn && @warn(string("Equation unit mismatch in ", eq,
+            ": lhs has units ", lhs_unit, ", rhs has units ", rhs_unit, "."))
     end
     return valid
 end
@@ -532,7 +470,7 @@ function _build_noise_units(rs)
     timeunit = catalyst_get_unit(get_iv(rs))
     noise_units = Dict{Any, Any}()
     for b in MT.get_brownians(rs)
-        noise_units[Symbolics.unwrap(b)] = timeunit^(-1 // 2)
+        noise_units[Symbolics.unwrap(b)] = timeunit^(-1//2)
     end
     for p in MT.get_poissonians(rs)
         rate = MT.getpoissonianrate(p)

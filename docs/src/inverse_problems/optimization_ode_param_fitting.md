@@ -38,11 +38,11 @@ p_setter = setp_oop(oprob_base, [:p, :d])
 
 # A loss function measuring the sum-of-square distance between a simulation and the data.
 function loss(p, (oprob_base, p_setter, t_samples, X_samples))
-    # Updates the ODEProblem with the proposed parameter set.
+    # Updates the ODEProblem with teh proposed parameter set.
     p = p_setter(oprob_base, p)
     oprob = remake(oprob_base; p)
 
-    # Simulate the model. If successful, return sum-of-squares distance as loss.
+    # Simulate the model. If sucesfull, return sum-of-squares distance as loss.
     sol = solve(oprob; saveat = t_samples, verbose = false, maxiters = 10000)
     SciMLBase.successful_retcode(sol) || return Inf
     return sum(abs2, sol[:X] .- X_samples)

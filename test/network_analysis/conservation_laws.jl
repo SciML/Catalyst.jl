@@ -33,11 +33,9 @@ let
 
     # For the A + B <--> C subsystem one of these must occur
     # as a conservation law.
-    D = [
-        1 -1 0 0 0 0 0 0 0 0;
-        -1 1 0 0 0 0 0 0 0 0
-        0 1 1 0 0 0 0 0 0 0
-    ]
+    D = [1 -1 0 0 0 0 0 0 0 0;
+         -1 1 0 0 0 0 0 0 0 0
+         0 1 1 0 0 0 0 0 0 0]
     @test any(D[j, :] == C[i, :] for i in 1:size(C, 1), j in 1:size(D, 1))
 
     C = conservationlaws(rn)
@@ -57,7 +55,7 @@ let
 
     # Networks for which there are known conservation laws (stored in `reaction_network_conslaws`).
     function consequiv(A, B)
-        return rank([A; B]) == rank(A) == rank(B)
+        rank([A; B]) == rank(A) == rank(B)
     end
     Cs_constraint = map(conservationlaws, reaction_networks_conserved)
     @test all(consequiv.(Matrix{Int}.(Cs_constraint), reaction_network_conslaws))
@@ -86,7 +84,7 @@ end
 let
     # Creates network with/without cached conservation laws.
     rn = @reaction_network rn begin
-        (k1, k2), X1 <--> X2
+        (k1,k2), X1 <--> X2
     end
     rn_cached = deepcopy(rn)
     conservationlaws(rn_cached)
@@ -110,10 +108,8 @@ let
     end
     @unpack A, B, C, D, E, F1, F2, F3, k1, k2, m1, m2, b12, b23, b31 = rn
     sps = species(rn)
-    u0 = [
-        A => 10.0, B => 10.0, C => 0.0, D => 10.0, E => 0.0, F1 => 8.0, F2 => 0.0,
-        F3 => 0.0,
-    ]
+    u0 = [A => 10.0, B => 10.0, C => 0.0, D => 10.0, E => 0.0, F1 => 8.0, F2 => 0.0,
+        F3 => 0.0]
     p = [k1 => 1.0, k2 => 0.1, m1 => 1.0, m2 => 2.0, b12 => 1.0, b23 => 2.0, b31 => 0.1]
     tspan = (0.0, 20.0)
 
@@ -122,9 +118,9 @@ let
     oprob1 = ODEProblem(osys, [u0; p], tspan)
     oprob2 = ODEProblem(rn, u0, tspan, p)
     oprob3 = ODEProblem(rn, u0, tspan, p; remove_conserved = true)
-    osol1 = solve(oprob1, Tsit5(); abstol = 1.0e-8, reltol = 1.0e-8, saveat = 0.2)
-    osol2 = solve(oprob2, Tsit5(); abstol = 1.0e-8, reltol = 1.0e-8, saveat = 0.2)
-    osol3 = solve(oprob3, Tsit5(); abstol = 1.0e-8, reltol = 1.0e-8, saveat = 0.2)
+    osol1 = solve(oprob1, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat = 0.2)
+    osol2 = solve(oprob2, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat = 0.2)
+    osol3 = solve(oprob3, Tsit5(); abstol = 1e-8, reltol = 1e-8, saveat = 0.2)
     @test osol1[sps] ≈ osol2[sps] ≈ osol3[sps]
 
     let # SteadyStateProblem issue from MTK #4177 is now fixed.
@@ -136,18 +132,18 @@ let
         nprob1b = NonlinearProblem{true}(nsys_ss, merge(Dict(u0), Dict(p)))
         nprob2 = NonlinearProblem(rn, u0, p; remove_conserved = true)
         nprob2b = NonlinearProblem(rn, u0, p; remove_conserved = true, strucmtkcompiletural_simplify = true)
-        nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1.0e-8)
-        nsol1b = solve(nprob1b, NewtonRaphson(); abstol = 1.0e-8)
-        nsol2 = solve(nprob2, NewtonRaphson(); abstol = 1.0e-8)
-        nsol2b = solve(nprob2b, NewtonRaphson(); abstol = 1.0e-8)
+        nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
+        nsol1b = solve(nprob1b, NewtonRaphson(); abstol = 1e-8)
+        nsol2 = solve(nprob2, NewtonRaphson(); abstol = 1e-8)
+        nsol2b = solve(nprob2b, NewtonRaphson(); abstol = 1e-8)
         # Nonlinear problems cannot find steady states properly without removing conserved species.
 
         ssprob1 = SteadyStateProblem{true}(osys, merge(Dict(u0), Dict(p)))
         ssprob2 = SteadyStateProblem(rn, u0, p)
         ssprob3 = SteadyStateProblem(rn, u0, p; remove_conserved = true)
-        sssol1 = solve(ssprob1, DynamicSS(Tsit5()); abstol = 1.0e-8, reltol = 1.0e-8)
-        sssol2 = solve(ssprob2, DynamicSS(Tsit5()); abstol = 1.0e-8, reltol = 1.0e-8)
-        sssol3 = solve(ssprob3, DynamicSS(Tsit5()); abstol = 1.0e-8, reltol = 1.0e-8)
+        sssol1 = solve(ssprob1, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
+        sssol2 = solve(ssprob2, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
+        sssol3 = solve(ssprob3, DynamicSS(Tsit5()); abstol = 1e-8, reltol = 1e-8)
         @test nsol1[sps] ≈ nsol1b[sps]
         @test nsol1[sps] ≈ nsol2[sps]
         @test nsol1[sps] ≈ nsol2b[sps]
@@ -157,10 +153,8 @@ let
     end
 
     # Creates SDEProblems using various approaches.
-    u0_sde = [
-        A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
-        F3 => 20.0,
-    ]
+    u0_sde = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
+        F3 => 20.0]
     ssys = complete(sde_model(rn; remove_conserved = true))
     sprob1 = SDEProblem(ssys, [u0_sde; p], tspan)
     sprob2 = SDEProblem(rn, u0_sde, tspan, p)
@@ -195,7 +189,7 @@ let
     # Prepares the model.
     rn = @reaction_network rn begin
         @parameters kB::Int64
-        (kB, kD), X + Y <--> XY
+        (kB,kD), X + Y <--> XY
     end
     sps = species(rn)
     @unpack kB, kD, X, Y, XY = rn
@@ -215,7 +209,7 @@ end
 let
     # Creates `SDEProblem`s.
     rn = @reaction_network begin
-        (k1, k2), X1 <--> X2
+        (k1,k2), X1 <--> X2
     end
     u0 = Dict([:X1 => 100.0, :X2 => 120.0])
     ps = [:k1 => 0.2, :k2 => 0.15]
@@ -230,7 +224,7 @@ end
 let
     # Prepares `ODEProblem`s.
     rn = @reaction_network begin
-        (k1, k2), X1 <--> X2
+        (k1,k2), X1 <--> X2
     end
     osys = complete(ode_model(rn; remove_conserved = true))
     u0_1 = [osys.X1 => 1.0, osys.X2 => 1.0]
@@ -250,18 +244,18 @@ end
 # Checks `num_cons_laws` function.
 let
     rn1 = @reaction_network begin
-        (p, d), 0 <--> X
+        (p,d), 0 <--> X
     end
     @test Catalyst.num_cons_laws(rn1) == 0
 
     rn2 = @reaction_network begin
-        (k1, k2), X1 <--> X2
+        (k1,k2), X1 <--> X2
     end
     @test Catalyst.num_cons_laws(rn2) == 1
 
     rn3 = @reaction_network begin
-        (k1, k2), X1 <--> X2
-        (k1, k2), Y1 <--> Y2
+        (k1,k2), X1 <--> X2
+        (k1,k2), Y1 <--> Y2
     end
     @test Catalyst.num_cons_laws(rn3) == 2
 end
@@ -277,7 +271,7 @@ let
     @species X1(t) X2(t)
     rxs = [
         Reaction(k1, [X1], [X2]),
-        Reaction(k2, [X2], [X1]),
+        Reaction(k2, [X2], [X1])
     ]
     @named rs = ReactionSystem(rxs, t)
     osys = complete(ode_model(complete(rs); remove_conserved = true))
@@ -314,9 +308,9 @@ let
 end
 
 # Additional test checking that correct values are stored in systems of various types after conservation law removal.
-let
-    rn = @reaction_network begin
-        (kB, kD), 2X <--> X2
+    let
+        rn = @reaction_network begin
+        (kB,kD), 2X <--> X2
     end
     u0 = [:X => 2.0, :X2 => 3.0]
     ps = [:kB => 0.1, :kD => 0.2]
@@ -343,10 +337,10 @@ end
 let
     # Creates the model (contains both conserved and non-conserved species).
     rn = @reaction_network begin
-        (p, d), 0 <--> X
+        (p,d), 0 <--> X
         d, XY --> Y
-        (k1, k2), X + Y <--> XY
-        (k3, k4), 2Y <--> Y2
+        (k1,k2), X + Y <--> XY
+        (k3,k4), 2Y <--> Y2
     end
 
     # Finds a steady state at which we will compute the Jacobian.
@@ -358,7 +352,7 @@ let
 
     # Creates a function which evaluates whether the Jacobian is singular.
     # Singularity means infinite condition number (here it is about 1e17).
-    function is_singular(prob; infthres = 1.0e12)
+    function is_singular(prob; infthres = 1e12)
         J = zeros(length(prob.u0), length(prob.u0))
         ModelingToolkitBase.is_time_dependent(prob) ? prob.f.jac(J, prob.u0, prob.p, 0.0) : prob.f.jac(J, prob.u0, prob.p)
         return cond(J) > infthres
@@ -390,8 +384,8 @@ end
 let
     # Prepares the problem inputs and computes the conservation equation.
     rn = @reaction_network begin
-        (k1, k2), 2X1 <--> X2
-        (k3, k4), X1 + X2 <--> X3
+        (k1,k2), 2X1 <--> X2
+        (k3,k4), X1 + X2 <--> X3
     end
     @unpack X1, X2, X3 = rn
     u0 = [X1 => 1.0, X2 => 1.0, X3 => 1.0]
@@ -410,8 +404,8 @@ let
         # computed after initialization. Hence, comparisons are made for the integrators.
         # StochasticDiffEq defaults to abstol=reltol=0.01, which gets inherited by the
         # initialization NonlinearSolve. We pass tight tolerances to get precise initialization.
-        init_kwargs = solver isa ImplicitEM ? (; abstol = 1.0e-8, reltol = 1.0e-8) : (;)
-        for _ in 1:3
+        init_kwargs = solver isa ImplicitEM ? (; abstol = 1e-8, reltol = 1e-8) : (;)
+        for _ = 1:3
             integ_old = init(prob_old, solver; init_kwargs...)
             # Updates X2, checks the values of all species and Γ, then resets `prob_old`.
             X2_new = rand(rng, 1.0:10.0)
@@ -485,7 +479,7 @@ end
 # Checks that jump `System`s with conservation laws cannot be generated.
 let
     rn = @reaction_network begin
-        (k1, k2), X1 <--> X2
+        (k1,k2), X1 <--> X2
     end
     @test_throws ArgumentError jump_model(rn; remove_conserved = true)
 end
@@ -495,8 +489,8 @@ end
 let
     # Creates ODE System with conserved quantities.
     rs = @reaction_network begin
-        (k1, k2), X1 <--> X2
-        (k1, k2), Y1 <--> Y2
+        (k1,k2), X1 <--> X2
+        (k1,k2), Y1 <--> Y2
     end
     osys = ode_model(rs; remove_conserved = true)
 
@@ -515,7 +509,7 @@ let
     @parameters k[1:2]
     rxs = [
         Reaction(k[1], [X[1]], [X[2]]),
-        Reaction(k[2], [X[2]], [X[1]]),
+        Reaction(k[2], [X[2]], [X[1]])
     ]
     @named rs = ReactionSystem(rxs, t)
     rs = complete(rs)
@@ -524,7 +518,7 @@ let
     u0 = [X => [3.0, 9.0]]
     ps = [k => [1.0, 2.0]]
     oprob = ODEProblem(rs, u0, (0.0, 1000.0), ps; remove_conserved = true)
-    sol = solve(oprob, Vern7(); abstol = 1.0e-8, reltol = 1.0e-8)
+    sol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
     @test sol[X[1]][end] ≈ 8.0
     @test sol[X[2]][end] ≈ 4.0
 end
@@ -533,8 +527,8 @@ end
 let
     # Create models.
     rn = @reaction_network begin
-        (k1, k2), X1 <--> X2
-        (k3, k4), X1 + X2 <--> 2X3
+        (k1,k2), X1 <--> X2
+        (k3,k4), X1 + X2 <--> 2X3
     end
     u0 = [:X1 => 1.0, :X2 => 2.0, :X3 => 3.0]
     ps = [:k1 => 0.1, :k2 => 0.2, :k3 => 0.3, :k4 => 0.4]

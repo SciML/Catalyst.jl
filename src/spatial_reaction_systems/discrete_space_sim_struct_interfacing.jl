@@ -46,13 +46,13 @@ function spat_setp!(sim_struct, p, dsrs::DiscreteSpaceReactionSystem, p_vals)
 
     # Reshapes the values to a vector of the correct form, and calls spat_setp! on the input structure.
     p_vals_reshaped = vertex_value_form(p_vals, dsrs, p)
-    return spat_setp!(sim_struct, p_idx, p_vals_reshaped, num_verts(dsrs))
+    spat_setp!(sim_struct, p_idx, p_vals_reshaped, num_verts(dsrs))
 end
 
 # Note: currently, `spat_setp!(oprob::ODEProblem, ...`) and `spat_setp!(SciMLBase.AbstractODEIntegrator, ...`)
 # are identical and could be merged to a single function.
 function spat_setp!(oprob::ODEProblem, p_idx::Int64, p_vals, num_verts)
-    return if length(p_vals) == 1
+    if length(p_vals) == 1
         foreach(idx -> (oprob.p[p_idx][idx] = p_vals[1]), 1:num_verts)
     elseif length(p_vals) == length(oprob.p[p_idx])
         foreach(idx -> (oprob.p[p_idx][idx] = p_vals[idx]), 1:num_verts)
@@ -65,7 +65,7 @@ function spat_setp!(jprob::JumpProblem, p_idx::Int64, p_vals, num_verts)
     error("The `spat_setp!` function is currently not supported for `JumpProblem`s.")
 end
 function spat_setp!(oint::SciMLBase.AbstractODEIntegrator, p_idx::Int64, p_vals, num_verts)
-    return if length(p_vals) == 1
+    if length(p_vals) == 1
         foreach(idx -> (oint.p[p_idx][idx] = p_vals[1]), 1:num_verts)
     elseif length(p_vals) == length(oint.p[p_idx])
         foreach(idx -> (oint.p[p_idx][idx] = p_vals[idx]), 1:num_verts)
@@ -120,7 +120,7 @@ spat_getp(oprob, :k1, dsrs) # Retrieves the value of `k1`.
 function spat_getp(sim_struct, p, dsrs::DiscreteSpaceReactionSystem)
     edge_param_check(p, dsrs)
     p_idx, _ = get_p_idxs(p, dsrs)
-    return spat_getp(sim_struct, p_idx, extract_dspace(dsrs), num_verts(dsrs))
+    spat_getp(sim_struct, p_idx, extract_dspace(dsrs), num_verts(dsrs))
 end
 
 # Retrieves the discrete space values for problem or integrator structures.
@@ -186,38 +186,34 @@ function spat_setu!(sim_struct, sp, dsrs::DiscreteSpaceReactionSystem, u)
 
     # Reshapes the values to a vector of the correct form, and calls spat_setu! on the input structure.
     u_reshaped = vertex_value_form(u, dsrs, sp)
-    return spat_setu!(sim_struct, sp_idx, sp_tot, u_reshaped, num_verts(dsrs))
+    spat_setu!(sim_struct, sp_idx, sp_tot, u_reshaped, num_verts(dsrs))
 end
 
 function spat_setu!(oprob::ODEProblem, sp_idx::Int64, sp_tot::Int64, u, num_verts)
-    return if length(u) == 1
+    if length(u) == 1
         foreach(idx -> (oprob.u0[sp_idx + (idx - 1) * sp_tot] = u[1]), 1:num_verts)
     else
         foreach(idx -> (oprob.u0[sp_idx + (idx - 1) * sp_tot] = u[idx]), 1:num_verts)
     end
 end
 function spat_setu!(jprob::JumpProblem, sp_idx::Int64, sp_tot::Int64, u, num_verts)
-    return if length(u) == 1
+    if length(u) == 1
         foreach(idx -> (jprob.prob.u0[sp_idx, idx] = u[1]), 1:num_verts)
     else
         foreach(idx -> (jprob.prob.u0[sp_idx, idx] = u[idx]), 1:num_verts)
     end
 end
-function spat_setu!(
-        oint::SciMLBase.AbstractODEIntegrator, sp_idx::Int64, sp_tot::Int64,
-        u, num_verts
-    )
-    return if length(u) == 1
+function spat_setu!(oint::SciMLBase.AbstractODEIntegrator, sp_idx::Int64, sp_tot::Int64,
+        u, num_verts)
+    if length(u) == 1
         foreach(idx -> (oint.u[sp_idx + (idx - 1) * sp_tot] = u[1]), 1:num_verts)
     else
         foreach(idx -> (oint.u[sp_idx + (idx - 1) * sp_tot] = u[idx]), 1:num_verts)
     end
 end
-function spat_setu!(
-        jint::JumpProcesses.SSAIntegrator, sp_idx::Int64, sp_tot::Int64,
-        u, num_verts
-    )
-    return if length(u) == 1
+function spat_setu!(jint::JumpProcesses.SSAIntegrator, sp_idx::Int64, sp_tot::Int64,
+        u, num_verts)
+    if length(u) == 1
         foreach(idx -> (jint.u[sp_idx, idx] = u[1]), 1:num_verts)
     else
         foreach(idx -> (jint.u[sp_idx, idx] = u[idx]), 1:num_verts)
@@ -264,7 +260,7 @@ spat_getu(oprob, :X1, dsrs) # Retrieves the value of `X1`.
 """
 function spat_getu(sim_struct, sp, dsrs::DiscreteSpaceReactionSystem)
     sp_idx, sp_tot = get_sp_idxs(sp, dsrs)
-    return spat_getu(sim_struct, sp_idx, sp_tot, extract_dspace(dsrs))
+    spat_getu(sim_struct, sp_idx, sp_tot, extract_dspace(dsrs))
 end
 
 # Retrieves the discrete space values for problem or integrator structures.
@@ -334,7 +330,7 @@ spat_getu(osol, :X1, dsrs; t = 0.0:10.0) # Returns the value of X1 at times 0.0,
 function spat_getu(sol::ODESolution, sp, dsrs::DiscreteSpaceReactionSystem; t = nothing)
     (t isa Number) && error("The input `t` to `spat_getu` must be a `AbstractVector`.")
     sp_idx, sp_tot = get_sp_idxs(sp, dsrs)
-    return spat_getu(sol, extract_dspace(dsrs), t, sp_idx, sp_tot)
+    spat_getu(sol, extract_dspace(dsrs), t, sp_idx, sp_tot)
 end
 
 # Function which handles the input in the case where `t` is `nothing` (i.e. return `sp`s value
@@ -354,10 +350,8 @@ end
 
 # Function which handles the input in the case where `t` is a range of values (i.e. return `sp`s
 # value at all designated time points.
-function spat_getu(
-        sol::ODESolution, dspace, t::AbstractVector{T}, sp_idx::Int64,
-        sp_tot::Int64
-    ) where {T <: Number}
+function spat_getu(sol::ODESolution, dspace, t::AbstractVector{T}, sp_idx::Int64,
+        sp_tot::Int64) where {T <: Number}
     # Checks that an appropriate `t` is provided (however, DiffEq does permit out-of-range `t`s).
     if (minimum(t) < sol.t[1]) || (maximum(t) > sol.t[end])
         error("The range of the t values provided for sampling, ($(minimum(t)),$(maximum(t))) is not fully within the range of the simulation time span ($(sol.t[1]),$(sol.t[end])).")
@@ -419,20 +413,18 @@ rebuild_spat_internals!(oprob)
 """
 function rebuild_spat_internals!(oprob::ODEProblem)
     lt_ofun = SciMLBase.unwrapped_f(oprob.f.f)
-    return rebuild_spat_internals!(lt_ofun, oprob.p, lt_ofun.dsrs)
+    rebuild_spat_internals!(lt_ofun, oprob.p, lt_ofun.dsrs)
 end
 
 # Function for rebuilding a `DiscreteSpaceReactionSystem` integrator after it has been updated.
 function rebuild_spat_internals!(integrator::SciMLBase.AbstractODEIntegrator)
     lt_ofun = SciMLBase.unwrapped_f(integrator.f.f)
-    return rebuild_spat_internals!(lt_ofun, integrator.p, lt_ofun.dsrs)
+    rebuild_spat_internals!(lt_ofun, integrator.p, lt_ofun.dsrs)
 end
 
 # Function which rebuilds a `LatticeTransportODEFunction` functor for a new parameter set.
-function rebuild_spat_internals!(
-        lt_ofun::LatticeTransportODEFunction, ps_new,
-        dsrs::DiscreteSpaceReactionSystem
-    )
+function rebuild_spat_internals!(lt_ofun::LatticeTransportODEFunction, ps_new,
+        dsrs::DiscreteSpaceReactionSystem)
     # Computes Jacobian properties.
     jac = !isnothing(lt_ofun.jac_transport)
     sparse = lt_ofun.sparse
@@ -441,10 +433,8 @@ function rebuild_spat_internals!(
     ps_new = [(length(p) == 1) ? p[1] : p for p in deepcopy(ps_new)]
     ps_new = [p => p_val for (p, p_val) in zip(parameters(dsrs), deepcopy(ps_new))]
     vert_ps,
-        edge_ps = dspace_process_p(
-        ps_new, vertex_parameters(dsrs),
-        edge_parameters(dsrs), dsrs
-    )
+    edge_ps = dspace_process_p(ps_new, vertex_parameters(dsrs),
+        edge_parameters(dsrs), dsrs)
     ps_new = [vert_ps; edge_ps]
 
     # Creates the new transport rates and transport Jacobian part.
@@ -487,7 +477,7 @@ function replace_vec!(vec1, vec2)
         vec1[i] = v
     end
     foreach(idx -> deleteat!(vec1, idx), l1:-1:(l2 + 1))
-    return foreach(val -> push!(vec1, val), vec2[(l1 + 1):l2])
+    foreach(val -> push!(vec1, val), vec2[(l1 + 1):l2])
 end
 
 # Currently not implemented.
@@ -551,26 +541,26 @@ end
 function check_dspace_format(dspace::CartesianGridRej, u)
     (u isa AbstractArray) ||
         error("The input u should be an AbstractArray. It is a $(typeof(u)).")
-    return (size(u) == dspace.dims) ||
+    (size(u) == dspace.dims) ||
         error("The input u should have size $(dspace.dims), but has size $(size(u)).")
 end
 function check_dspace_format(dspace::AbstractSparseArray, u)
     (u isa AbstractArray) ||
         error("The input u should be an AbstractArray. It is a $(typeof(u)).")
-    return (size(u) == size(dspace)) ||
+    (size(u) == size(dspace)) ||
         error("The input u should have size $(size(dspace)), but has size $(size(u)).")
 end
 function check_dspace_format(dspace::DiGraph, u)
     (u isa AbstractArray) ||
         error("The input u should be an AbstractVector. It is a $(typeof(u)).")
-    return (length(u) == nv(dspace)) ||
+    (length(u) == nv(dspace)) ||
         error("The input u should have length $(nv(dspace)), but has length $(length(u)).")
 end
 
 # Throws an error when interfacing with an edge parameter.
 function edge_param_check(p, dsrs)
     (p isa Symbol) && (p = _symbol_to_var(dsrs, p))
-    return if isedgeparameter(p)
+    if isedgeparameter(p)
         throw(ArgumentError("The `spat_getp` and `spat_setp!` functions currently does not support edge parameter updating. If you require this functionality, please raise an issue on the Catalyst GitHub page and we can add this feature."))
     end
 end

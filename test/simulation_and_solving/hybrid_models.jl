@@ -12,9 +12,9 @@ seed = rand(rng, 1:100)
 let
     # Time-dependent rate -> VariableRateJump (needs ODE solver)
     rn = @reaction_network begin
-        k * (1 + sin(t)), 0 --> A
+        k*(1 + sin(t)), 0 --> A
     end
-    jprob = JumpProblem(rn, [:A => 0], (0.0, 10.0), [:k => 0.5]; rng)
+    jprob = JumpProblem(rn, [:A => 0], (0.0, 10.0), [:k => .5]; rng)
     sol = solve(jprob, Tsit5())
     @test sol(10.0; idxs = :A) > 0
 
@@ -22,21 +22,21 @@ let
     rn = @reaction_network begin
         k, 0 --> A
     end
-    jprob = JumpProblem(rn, [:A => 0], (0.0, 10.0), [:k => 0.5]; rng)
+    jprob = JumpProblem(rn, [:A => 0], (0.0, 10.0), [:k => .5]; rng)
     sol = solve(jprob, SSAStepper())
     @test sol(10.0; idxs = :A) > 0
 
     # Hybrid model with ODE equations and events - requires HybridProblem
     rn = @reaction_network begin
         @parameters λ
-        k * V, 0 --> A
-        @equations D(V) ~ λ * V
+        k*V, 0 --> A
+        @equations D(V) ~ λ*V
         @continuous_events begin
-            [V ~ 2.0] => [V => V / 2, A => A / 2]
+            [V ~ 2.0] => [V => V/2, A => A/2]
         end
     end
     # JumpProblem no longer supports ODE equations - use HybridProblem instead
-    jprob = HybridProblem(rn, [:A => 0, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => 0.4]; rng)
+    jprob = HybridProblem(rn, [:A => 0, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4]; rng)
     sol = solve(jprob, Tsit5())
 end
 
@@ -75,7 +75,7 @@ let
     function Xf(t, p)
         local α, β, X₀, Y₀ = p
         return (α / β) + (α^2 / β^2) + α * (Y₀ - α / β) * t * exp(-β * t) +
-            (X₀ - α / β - α^2 / β^2) * exp(-β * t)
+               (X₀ - α / β - α^2 / β^2) * exp(-β * t)
     end
     Xact = [Xf(t, p) for t in times]
     Yact = [Yf(t, p) for t in times]
@@ -122,16 +122,16 @@ let
         1, X → ∅
     end
     rn_jump = @reaction_network begin
-        (p, d), 0 <--> V
-        (k1, k2), V + W <--> VW
+        (p,d), 0 <--> V
+        (k1,k2), V + W <--> VW
     end
     rn_hybrid = @reaction_network begin
         A, ∅ → X, [physical_scale = PhysicalScale.ODE]
         1, 2X + Y → 3X, [physical_scale = PhysicalScale.ODE]
         B, X → Y, [physical_scale = PhysicalScale.ODE]
         1, X → ∅, [physical_scale = PhysicalScale.ODE]
-        (p, d), 0 <--> V
-        (k1, k2), V + W <--> VW
+        (p,d), 0 <--> V
+        (k1,k2), V + W <--> VW
     end
 
     # Sets simulation conditions and creates problems corresponding to the different models.
@@ -147,13 +147,13 @@ let
     hybrid_prob = HybridProblem(rn_hybrid, u0_hybrid, tspan, ps_hybrid; save_positions = (false, false), rng)
 
     # Performs simulations. Checks that ODE parts are identical. Check that jump parts have similar statistics.
-    ode_sol = solve(ode_prob, Tsit5(); saveat = 1.0, abstol = 1.0e-10, reltol = 1.0e-10)
+    ode_sol = solve(ode_prob, Tsit5(); saveat = 1.0, abstol = 1e-10, reltol = 1e-10)
     jump_sol = solve(jump_prob, SSAStepper(); saveat = 1.0)
-    hybrid_sol = solve(hybrid_prob, Tsit5(); saveat = 1.0, abstol = 1.0e-10, reltol = 1.0e-10)
-    @test ode_sol[:Y] ≈ hybrid_sol[:Y] atol = 1.0e-4 rtol = 1.0e-4
-    @test mean(jump_sol[:V]) ≈ mean(hybrid_sol[:V]) atol = 1.0e-1 rtol = 1.0e-1
-    @test mean(jump_sol[:W]) ≈ mean(hybrid_sol[:W]) atol = 1.0e-1 rtol = 1.0e-1
-    @test mean(jump_sol[:VW]) ≈ mean(hybrid_sol[:VW]) atol = 1.0e-1 rtol = 1.0e-1
+    hybrid_sol = solve(hybrid_prob, Tsit5(); saveat = 1.0, abstol = 1e-10, reltol = 1e-10)
+    @test ode_sol[:Y] ≈ hybrid_sol[:Y] atol = 1e-4 rtol = 1e-4
+    @test mean(jump_sol[:V]) ≈ mean(hybrid_sol[:V]) atol = 1e-1 rtol = 1e-1
+    @test mean(jump_sol[:W]) ≈ mean(hybrid_sol[:W]) atol = 1e-1 rtol = 1e-1
+    @test mean(jump_sol[:VW]) ≈ mean(hybrid_sol[:VW]) atol = 1e-1 rtol = 1e-1
 end
 
 ### Other Tests ###
@@ -166,9 +166,9 @@ let
         @species X(t) = 1.0
         @parameters p = 1.0
         p, 0 --> X, [physical_scale = PhysicalScale.ODE]
-        (kB, kD), 2X <--> X2
+        (kB,kD), 2X <--> X2
         k, X2 --> Y2, [physical_scale = PhysicalScale.ODE]
-        (kB, kD), 2Y <--> Y2
+        (kB,kD), 2Y <--> Y2
         d, Y --> 0, [physical_scale = PhysicalScale.ODE]
     end
     u0 = [:X2 => 0.0, :Y => 0.0, :Y2 => 0.0]
@@ -286,9 +286,9 @@ let
         @discrete_events [1.0] => [Z1 => Z1 + 1.0]
         @continuous_events [Y ~ 1.0] => [Y => 5.0]
         @equations Δ(V) ~ Z1 + X^2 - V
-        (p, d), 0 <--> X
+        (p,d), 0 <--> X
         d, Y --> 0, [physical_scale = PhysicalScale.ODE]
-        (k * X, k * Y), Z1 <--> Z2, ([physical_scale = PhysicalScale.ODE], [physical_scale = PhysicalScale.Jump])
+        (k*X, k*Y), Z1 <--> Z2, ([physical_scale = PhysicalScale.ODE], [physical_scale = PhysicalScale.Jump])
     end
 
     # Simulates the model.
@@ -305,7 +305,7 @@ let
     @test sol[:V][1] == 1.5
     @test sol[:Ztot] ≈ sol[rn.Z1 + rn.Z2]
     @test minimum(sol[:Y]) ≈ 1.0
-    @test maximum(sol[:Y]) ≈ 5.0 atol = 1.0e-1 rtol = 1.0e-1
+    @test maximum(sol[:Y]) ≈ 5.0 atol = 1e-1 rtol = 1e-1
     @test all(isequal([rn.τ], Symbolics.arguments(Symbolics.value(u))) for u in unknowns(rn))
     @test sol(1.0 - eps(); idxs = :Z1) + 1 ≈ sol(1.0 + eps(); idxs = :Z1)
 end
@@ -624,7 +624,7 @@ let
     sys_hybrid_sde = hybrid_model(rn; default_scale = PhysicalScale.SDE)
     @test length(equations(sys_sde)) == length(equations(sys_hybrid_sde))
     @test length(ModelingToolkitBase.get_brownians(sys_sde)) ==
-        length(ModelingToolkitBase.get_brownians(sys_hybrid_sde))
+          length(ModelingToolkitBase.get_brownians(sys_hybrid_sde))
 
     # sde_model with use_legacy_noise=true (default) should use noise_eqs matrix, not brownians.
     sys_sde_legacy = sde_model(rn; use_legacy_noise = true)
@@ -635,7 +635,7 @@ let
     sys_jump = jump_model(rn)
     sys_hybrid_jump = hybrid_model(rn; default_scale = PhysicalScale.Jump)
     @test length(ModelingToolkitBase.get_jumps(sys_jump)) ==
-        length(ModelingToolkitBase.get_jumps(sys_hybrid_jump))
+          length(ModelingToolkitBase.get_jumps(sys_hybrid_jump))
 end
 
 # Tests that the Brownian noise matrix extracted by mtkcompile matches assemble_diffusion.
@@ -653,10 +653,8 @@ let
     # Build the old-style noise matrix via assemble_diffusion for comparison.
     flatrs = Catalyst.flatten(rn)
     ists, ispcs = Catalyst.get_indep_sts(flatrs, false)
-    noise_matrix_old = Catalyst.assemble_diffusion(
-        flatrs, ists, ispcs;
-        combinatoric_ratelaws = true, remove_conserved = false, expand_catalyst_funs = true
-    )
+    noise_matrix_old = Catalyst.assemble_diffusion(flatrs, ists, ispcs;
+        combinatoric_ratelaws = true, remove_conserved = false, expand_catalyst_funs = true)
 
     # Both should be 2×2 matrices. Verify they are symbolically equivalent.
     @test size(noise_matrix_brownian) == size(noise_matrix_old)
@@ -696,10 +694,8 @@ let
         k2, P --> S
     end
 
-    @test_throws ArgumentError hybrid_model(
-        rn;
-        default_scale = PhysicalScale.Jump, remove_conserved = true
-    )
+    @test_throws ArgumentError hybrid_model(rn;
+        default_scale = PhysicalScale.Jump, remove_conserved = true)
 end
 
 # Tests that events pass through to the hybrid system.
@@ -810,26 +806,20 @@ let
     end
 
     # Pure ODE → ODEProblem
-    prob_ode = HybridProblem(
-        rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5];
-        default_scale = PhysicalScale.ODE
-    )
+    prob_ode = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5];
+        default_scale = PhysicalScale.ODE)
     @test prob_ode isa ODEProblem
     sol = solve(prob_ode, Tsit5())
     @test SciMLBase.successful_retcode(sol)
 
     # Pure SDE → SDEProblem
-    prob_sde = HybridProblem(
-        rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5];
-        default_scale = PhysicalScale.SDE
-    )
+    prob_sde = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5];
+        default_scale = PhysicalScale.SDE)
     @test prob_sde isa SDEProblem
 
     # Pure Jump → JumpProblem
-    prob_jump = HybridProblem(
-        rn, [:S => 100, :P => 0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5];
-        default_scale = PhysicalScale.Jump
-    )
+    prob_jump = HybridProblem(rn, [:S => 100, :P => 0], (0.0, 1.0), [:k1 => 1.0, :k2 => 0.5];
+        default_scale = PhysicalScale.Jump)
     @test prob_jump isa JumpProcesses.JumpProblem
     sol = solve(prob_jump, SSAStepper())
     @test SciMLBase.successful_retcode(sol)
@@ -883,10 +873,8 @@ let
         k3, S --> 0, [physical_scale = PhysicalScale.Jump]
     end
 
-    prob = HybridProblem(
-        rn, [:S => 100.0, :P => 0.0], (0.0, 1.0),
-        [:k1 => 1.0, :k2 => 0.5, :k3 => 0.1]
-    )
+    prob = HybridProblem(rn, [:S => 100.0, :P => 0.0], (0.0, 1.0),
+        [:k1 => 1.0, :k2 => 0.5, :k3 => 0.1])
     @test prob isa JumpProcesses.JumpProblem
     @test prob.prob isa SciMLBase.SDEProblem
 
@@ -913,10 +901,8 @@ let
         k1, 0 --> X, [physical_scale = PhysicalScale.SDE]
         k2, X --> 0, [physical_scale = PhysicalScale.Jump]
     end
-    cat_prob = HybridProblem(
-        rn, [:X => X0], tspan, [:k1 => k1, :k2 => k2];
-        save_positions = (false, false), rng
-    )
+    cat_prob = HybridProblem(rn, [:X => X0], tspan, [:k1 => k1, :k2 => k2];
+        save_positions = (false, false), rng)
 
     # --- Manually coded version using JumpProcesses + StochasticDiffEq ---
     f_manual!(du, u, p, t) = (du[1] = p[1])  # drift: k1
@@ -968,10 +954,8 @@ let
         k2, P --> 0, [physical_scale = PhysicalScale.Jump]
     end
 
-    prob = HybridProblem(
-        rn, [:S => 1.0, :P => P0], tspan, [:k1 => k1, :k2 => k2];
-        save_positions = (false, false), rng
-    )
+    prob = HybridProblem(rn, [:S => 1.0, :P => P0], tspan, [:k1 => k1, :k2 => k2];
+        save_positions = (false, false), rng)
 
     # Run simulations and collect values at all time points
     Pv = zeros(length(times))
@@ -1018,11 +1002,9 @@ let
         k4, A --> 0, [physical_scale = PhysicalScale.Jump]
         k5, D --> 0, [physical_scale = PhysicalScale.Jump]
     end
-    cat_prob = HybridProblem(
-        rn, [:A => A0, :B => B0, :C => C0, :D => D0], tspan,
+    cat_prob = HybridProblem(rn, [:A => A0, :B => B0, :C => C0, :D => D0], tspan,
         [:k1 => k1, :k2 => k2, :k3 => k3, :k4 => k4, :k5 => k5];
-        save_positions = (false, false), rng
-    )
+        save_positions = (false, false), rng)
 
     # --- Manually coded version ---
     # Species order: [A, B, C, D]
@@ -1031,13 +1013,13 @@ let
         du[1] = p[1]  # k1 (A production drift)
         du[2] = 0.0
         du[3] = 0.0
-        return du[4] = 0.0
+        du[4] = 0.0
     end
     function g_manual!(du, u, p, t)
         du[1] = sqrt(p[1])  # sqrt(k1) (A production diffusion)
         du[2] = 0.0
         du[3] = 0.0
-        return du[4] = 0.0
+        du[4] = 0.0
     end
 
     # Jump 1: A + B -> C at rate k2*A*B
@@ -1045,7 +1027,7 @@ let
     function affect1!(integrator)
         integrator.u[1] -= 1  # A -= 1
         integrator.u[2] -= 1  # B -= 1
-        return integrator.u[3] += 1  # C += 1
+        integrator.u[3] += 1  # C += 1
     end
     jump1 = VariableRateJump(rate1, affect1!; save_positions = (false, false))
 
@@ -1054,7 +1036,7 @@ let
     function affect2!(integrator)
         integrator.u[3] -= 1  # C -= 1
         integrator.u[2] += 1  # B += 1
-        return integrator.u[4] += 1  # D += 1
+        integrator.u[4] += 1  # D += 1
     end
     jump2 = VariableRateJump(rate2, affect2!; save_positions = (false, false))
 
@@ -1068,14 +1050,10 @@ let
     affect4!(integrator) = (integrator.u[4] -= 1)
     jump4 = VariableRateJump(rate4, affect4!; save_positions = (false, false))
 
-    sde_prob = SciMLBase.SDEProblem(
-        f_manual!, g_manual!, [A0, B0, C0, D0], tspan,
-        [k1, k2, k3, k4, k5]
-    )
-    manual_prob = JumpProblem(
-        sde_prob, Direct(), jump1, jump2, jump3, jump4; rng,
-        save_positions = (false, false)
-    )
+    sde_prob = SciMLBase.SDEProblem(f_manual!, g_manual!, [A0, B0, C0, D0], tspan,
+        [k1, k2, k3, k4, k5])
+    manual_prob = JumpProblem(sde_prob, Direct(), jump1, jump2, jump3, jump4; rng,
+        save_positions = (false, false))
 
     # Run simulations and collect values
     cat_A = zeros(N, length(times))
@@ -1248,10 +1226,8 @@ let
     n_trials = 500
 
     # Create problem once; the RNG state advances across solves giving different trajectories.
-    prob = HybridProblem(
-        rn, [:X => 0.0], (0.0, T), [:λ => λ_val];
-        save_positions = (false, false), rng = StableRNG(12345)
-    )
+    prob = HybridProblem(rn, [:X => 0.0], (0.0, T), [:λ => λ_val];
+        save_positions = (false, false), rng = StableRNG(12345))
     # Pure poissonian system: D(X) ~ dN becomes D(X) ~ 0 after extraction,
     # mtkcompile reduces to DiscreteProblem → use SSAStepper.
     final_vals = [solve(prob, SSAStepper(); saveat = T)[X, end] for _ in 1:n_trials]
@@ -1284,11 +1260,9 @@ let
     n_trials = 500
 
     # Create problem once; the RNG state advances across solves.
-    prob = HybridProblem(
-        rn, [:S => 10.0, :X => 0.0], (0.0, T),
+    prob = HybridProblem(rn, [:S => 10.0, :X => 0.0], (0.0, T),
         [:λ => λ_val, :k => 1.0, :d => 0.1];
-        save_positions = (false, false), rng = StableRNG(12345)
-    )
+        save_positions = (false, false), rng = StableRNG(12345))
     @test prob isa JumpProblem
 
     # Has ODE equations (reactions + D(X) ~ 0 after extraction), so needs ODE solver.
@@ -1323,11 +1297,9 @@ let
     n_trials = 500
 
     # Create problem once; the RNG state advances across solves.
-    prob = HybridProblem(
-        rn, [:X => 0.0], (0.0, T),
+    prob = HybridProblem(rn, [:X => 0.0], (0.0, T),
         [:λ => λ_val, :σ => σ_val];
-        save_positions = (false, false), rng = StableRNG(12345)
-    )
+        save_positions = (false, false), rng = StableRNG(12345))
     @test prob isa JumpProblem
 
     final_vals = [solve(prob, SRIW1(); saveat = T)[X, end] for _ in 1:n_trials]
@@ -1360,10 +1332,8 @@ let
 
     # State-dependent rate → VariableRateJump → needs ODE solver.
     # Create problem once; the RNG state advances across solves.
-    prob = HybridProblem(
-        rn, [:X => X0], (0.0, T), [:k => k_val];
-        save_positions = (false, false), rng = StableRNG(12345)
-    )
+    prob = HybridProblem(rn, [:X => X0], (0.0, T), [:k => k_val];
+        save_positions = (false, false), rng = StableRNG(12345))
     @test prob isa JumpProblem
 
     final_vals = [solve(prob, Tsit5(); saveat = T)[X, end] for _ in 1:n_trials]
@@ -1393,10 +1363,8 @@ let
     n_trials = 500
 
     # Create problem once; the RNG state advances across solves.
-    prob = HybridProblem(
-        rn, [:X => 0.0], (0.0, T), [:λ => λ_val];
-        save_positions = (false, false), rng = StableRNG(12345)
-    )
+    prob = HybridProblem(rn, [:X => 0.0], (0.0, T), [:λ => λ_val];
+        save_positions = (false, false), rng = StableRNG(12345))
     @test prob isa JumpProblem
 
     # Pure poissonian: D(X) ~ dN becomes D(X) ~ 0 → DiscreteProblem → SSAStepper.

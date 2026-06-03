@@ -131,7 +131,7 @@ end
 function testreversibility(rn, B, rev, weak_rev)
     @test isreversible(rn) == rev
     subrn = subnetworks(rn)
-    return @test isweaklyreversible(rn, subrn) == weak_rev
+    @test isweaklyreversible(rn, subrn) == weak_rev
 end
 
 # Tests reversibility for networks with known reversibility.
@@ -256,9 +256,7 @@ let
 end
 
 let
-    rn = @reaction_network begin
-        (k2, k1), A + B <--> 2A
-    end
+    rn = @reaction_network begin (k2, k1), A + B <--> 2A end
     rev = true
     weak_rev = true
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
@@ -443,9 +441,9 @@ let
     end
 
     rcs, D = reactioncomplexes(rn)
-    rates1 = [:k1 => 1.0, :k2 => 1.0, :k3 => 1.0, :k4 => 1.0, :k5 => 1.0, :k6 => 1.0]
+    rates1 = [:k1=>1.0, :k2=>1.0, :k3=>1.0, :k4=>1.0, :k5=>1.0, :k6=>1.0]
     @test Catalyst.isdetailedbalanced(rn, rates1) == true
-    rates2 = [:k1 => 2.0, :k2 => 1.0, :k3 => 1.0, :k4 => 1.0, :k5 => 1.0, :k6 => 1.0]
+    rates2 = [:k1=>2.0, :k2=>1.0, :k3=>1.0, :k4=>1.0, :k5=>1.0, :k6=>1.0]
     @test Catalyst.isdetailedbalanced(rn, rates2) == false
 end
 
@@ -470,9 +468,9 @@ let
     @test Catalyst.isdetailedbalanced(rn, rates) == false
 
     # Adjust rate constants to obey the independent cycle conditions.
-    rates[p[6]] = rates[p[1]] * rates[p[4]] * rates[p[5]] / (rates[p[2]] * rates[p[3]])
-    rates[p[14]] = rates[p[13]] * rates[p[11]] * rates[p[8]] / (rates[p[12]] * rates[p[7]])
-    rates[p[16]] = rates[p[8]] * rates[p[15]] * rates[p[9]] * rates[p[11]] / (rates[p[7]] * rates[p[12]] * rates[p[10]])
+    rates[p[6]] = rates[p[1]]*rates[p[4]]*rates[p[5]] / (rates[p[2]]*rates[p[3]])
+    rates[p[14]] = rates[p[13]]*rates[p[11]]*rates[p[8]] / (rates[p[12]]*rates[p[7]])
+    rates[p[16]] = rates[p[8]]*rates[p[15]]*rates[p[9]]*rates[p[11]] / (rates[p[7]]*rates[p[12]]*rates[p[10]])
     @test Catalyst.isdetailedbalanced(rn, rates) == true
 end
 
@@ -495,16 +493,16 @@ let
     @test Catalyst.isdetailedbalanced(rn, rates) == false
 
     # Adjust rate constants to fulfill independent cycle conditions.
-    rates[p[8]] = rates[p[7]] * rates[p[5]] * rates[p[9]] / (rates[p[6]] * rates[p[10]])
-    rates[p[3]] = rates[p[2]] * rates[p[4]] * rates[p[9]] / (rates[p[1]] * rates[p[10]])
+    rates[p[8]] = rates[p[7]]*rates[p[5]]*rates[p[9]] / (rates[p[6]]*rates[p[10]])
+    rates[p[3]] = rates[p[2]]*rates[p[4]]*rates[p[9]] / (rates[p[1]]*rates[p[10]])
     @test Catalyst.isdetailedbalanced(rn, rates) == false
     # Should still fail - doesn't satisfy spanning forest conditions.
 
     # Adjust rate constants to fulfill spanning forest conditions.
     cons = rates[p[6]] / rates[p[5]]
     rates[p[1]] = rates[p[2]] * cons
-    rates[p[9]] = rates[p[10]] * cons^(3 / 2)
-    rates[p[8]] = rates[p[7]] * rates[p[5]] * rates[p[9]] / (rates[p[6]] * rates[p[10]])
-    rates[p[3]] = rates[p[2]] * rates[p[4]] * rates[p[9]] / (rates[p[1]] * rates[p[10]])
+    rates[p[9]] = rates[p[10]] * cons^(3/2)
+    rates[p[8]] = rates[p[7]]*rates[p[5]]*rates[p[9]] / (rates[p[6]]*rates[p[10]])
+    rates[p[3]] = rates[p[2]]*rates[p[4]]*rates[p[9]] / (rates[p[1]]*rates[p[10]])
     @test Catalyst.isdetailedbalanced(rn, rates) == true
 end

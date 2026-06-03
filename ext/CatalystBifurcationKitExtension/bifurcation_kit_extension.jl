@@ -1,10 +1,8 @@
 ### Dispatch for BifurcationKit BifurcationProblems ###
 
 # Creates a BifurcationProblem, using a ReactionSystem as an input.
-function BK.BifurcationProblem(
-        rs::ReactionSystem, u0_bif, ps, bif_par, args...;
-        plot_var = nothing, record_from_solution = BK.record_sol_default, jac = true, u0 = [], kwargs...
-    )
+function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
+        plot_var = nothing, record_from_solution = BK.record_sol_default, jac = true, u0 = [], kwargs...)
     if !isautonomous(rs)
         error("Attempting to create a `BifurcationProblem` for a non-autonomous system (e.g. where some rate depend on $(get_iv(rs))). This is not possible.")
     end
@@ -22,21 +20,19 @@ function BK.BifurcationProblem(
         u0 = Catalyst.symmap_to_varmap(rs, u0)
     end
 
-    # Creates nonlinear System. If there are conservation laws, these are manually added as
+    # Creates nonlinear System. If there are conservation laws, these are manually added as 
     # equations, and the conservationlaw parameter values are manually computed and added to `ps`.
     Catalyst.conservationlaw_errorcheck(rs, merge(Dict(ps), Dict(u0)))
     nsys = if Catalyst.num_cons_laws(rs) == 0
         complete(ss_ode_model(rs))
     else
-        Γ_vals = Catalyst.get_networkproperties(rs).conservedconst =>
+        Γ_vals = Catalyst.get_networkproperties(rs).conservedconst => 
             [Symbolics.substitute(ceq.rhs, u0) for ceq in conservationlaw_constants(rs)]
         ps = merge(Dict(ps), Dict(Γ_vals))
         complete(ss_ode_model(rs; remove_conserved = true, include_cl_as_eqs = true))
     end
 
     # Makes BifurcationProblem (this call goes through the ModelingToolkit-based BifurcationKit extension).
-    return BK.BifurcationProblem(
-        nsys, u0_bif, ps, bif_par, args...; plot_var,
-        record_from_solution, jac, kwargs...
-    )
+    return BK.BifurcationProblem(nsys, u0_bif, ps, bif_par, args...; plot_var,
+        record_from_solution, jac, kwargs...)
 end

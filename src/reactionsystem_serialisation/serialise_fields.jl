@@ -43,10 +43,8 @@ const SIVS_FS = (seri_has_sivs, get_sivs_string, get_sivs_annotation)
 
 # Function which handles the addition of species, variable, and parameter declarations to the file
 # text. These must be handled as a unity in case there are default value dependencies between these.
-function handle_us_n_ps(
-        file_text::String, rn::ReactionSystem, annotate::Bool,
-        top_level::Bool
-    )
+function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool,
+        top_level::Bool)
     # Fetches the system's parameters, species, and variables. Computes the `has_` `Bool`s.
     ps_all = filter(!_is_discrete, get_ps(rn))
     discs_all = filter(_is_discrete, get_ps(rn))
@@ -180,7 +178,7 @@ end
 function seri_has_discretes(rn::ReactionSystem)
     return any(_is_discrete(p) for p in get_ps(rn))
 end
-# Temporary function, replace with better after reply from Aayush.
+# Temporary function, repalce with better after reply from Aayush.
 _is_discrete(param) = occursin('(', "$(param)")
 
 # Extract a string which declares the system's discretes. Uses multiline declaration (a
@@ -263,7 +261,7 @@ function get_reactions_string(rn::ReactionSystem)
     # Creates the string corresponding to the code which generates the system's reactions.
     rxs_string = "rxs = ["
     for rx in get_rxs(rn)
-        @string_append! rxs_string "\n\t" * reaction_string(rx, strip_call_dict) ","
+        @string_append! rxs_string "\n\t"*reaction_string(rx, strip_call_dict) ","
     end
 
     # Updates the string (including removing the last `,`) and returns it.
@@ -455,8 +453,7 @@ function get_continuous_events_string(rn::ReactionSystem)
     continuous_events_string = "continuous_events = ["
     for continuous_event in MT.get_continuous_events(rn)
         @string_append! continuous_events_string "\n\t" continuous_event_string(
-            continuous_event, strip_call_dict
-        ) ","
+            continuous_event, strip_call_dict) ","
     end
 
     # Updates the string (including removing the last `,`) and returns it.
@@ -520,8 +517,7 @@ function get_discrete_events_string(rn::ReactionSystem)
     discrete_events_string = "discrete_events = ["
     for discrete_event in MT.get_discrete_events(rn)
         @string_append! discrete_events_string "\n\t" discrete_event_string(
-            discrete_event, strip_call_dict
-        ) ","
+            discrete_event, strip_call_dict) ","
     end
 
     # Updates the string (including removing the last `,`) and returns it.
@@ -572,12 +568,12 @@ end
 
 # Extract a string which declares the system's brownian types.
 function get_brownian_type_string(rn::ReactionSystem)
-    return get_unsupported_comp_string("brownian types")
+    get_unsupported_comp_string("brownian types")
 end
 
 # Creates an annotation for the system's brownian types.
 function get_brownian_type_annotation(rn::ReactionSystem)
-    return get_unsupported_comp_annotation("Brownian types:")
+    get_unsupported_comp_annotation("Brownian types:")
 end
 
 # Combines the 3 brownian types-related functions in a constant tuple.
@@ -592,12 +588,12 @@ end
 
 # Extract a string which declares the system's jump types.
 function get_jump_type_string(rn::ReactionSystem)
-    return get_unsupported_comp_string("jump types")
+    get_unsupported_comp_string("jump types")
 end
 
 # Creates an annotation for the system's jump types.
 function get_jump_type_annotation(rn::ReactionSystem)
-    return get_unsupported_comp_annotation("Jump types:")
+    get_unsupported_comp_annotation("Jump types:")
 end
 
 # Combines the 3 jump types-related functions in a constant tuple.
@@ -608,10 +604,8 @@ const JUMP_TYPE_FS = (seri_has_jump_type, get_jump_type_string, get_jump_type_an
 # Specific `push_field` function, which is used for the system field (where the annotation option
 # must be passed to the `get_component_string` function). Since non-ReactionSystem systems cannot be
 # written to file, this function throws an error if any such systems are encountered.
-function push_systems_field(
-        file_text::String, rn::ReactionSystem, annotate::Bool,
-        top_level::Bool
-    )
+function push_systems_field(file_text::String, rn::ReactionSystem, annotate::Bool,
+        top_level::Bool)
     # Checks whether there are any subsystems, and if these are ReactionSystems.
     seri_has_systems(rn) || (return (file_text, false))
     if any(!(system isa ReactionSystem) for system in MT.get_systems(rn))
