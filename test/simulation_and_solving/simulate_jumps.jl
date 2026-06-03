@@ -53,8 +53,10 @@ let
     jump_1_6 = ConstantRateJump(rate_1_6, affect_1_6!)
     jump_1_7 = ConstantRateJump(rate_1_7, affect_1_7!)
     jump_1_8 = ConstantRateJump(rate_1_8, affect_1_8!)
-    jumps_1 = (jump_1_1, jump_1_2, jump_1_3, jump_1_4, jump_1_5, jump_1_6, jump_1_7,
-                jump_1_8)
+    jumps_1 = (
+        jump_1_1, jump_1_2, jump_1_3, jump_1_4, jump_1_5, jump_1_6, jump_1_7,
+        jump_1_8,
+    )
     push!(catalyst_networks, reaction_networks_standard[5])
     push!(manual_networks, jumps_1)
     push!(u0_syms, [:X1, :X2, :X3, :X4])
@@ -128,7 +130,7 @@ let
 
     # Loops through all cases, checks that identical simulations are generated with/without Catalyst.
     for (rn_catalyst, rn_manual, u0_sym, ps_sym, u0_1, ps_1, sp) in
-            zip(catalyst_networks, manual_networks, u0_syms, ps_syms, u0s, ps, sps)
+        zip(catalyst_networks, manual_networks, u0_syms, ps_syms, u0s, ps, sps)
 
         # Simulates the Catalyst-created model.
         jprob_1 = JumpProblem(rn_catalyst, u0_1, (0.0, 10000.0), ps_1; aggregator = Direct(), rng)
@@ -137,7 +139,7 @@ let
         # simulate using auto-alg
         jprob_1b = JumpProblem(rn_catalyst, u0_1, (0.0, 10000.0), ps_1; rng)
         sol1b = solve(jprob_1; seed, saveat = 1.0)
-        @test mean(sol1[sp]) ≈ mean(sol1b[sp]) rtol = 1e-1
+        @test mean(sol1[sp]) ≈ mean(sol1b[sp]) rtol = 1.0e-1
 
         # Simulates the manually written model
         u0_2 = map_to_vec(u0_1, u0_sym)
@@ -148,7 +150,7 @@ let
 
         # Checks that the means are similar (the test have been check that it holds across a large
         # number of simulates, even without seed).
-        @test mean(sol1[sp]) ≈ mean(sol2[findfirst(u0_sym .== sp),:]) rtol = 1e-1
+        @test mean(sol1[sp]) ≈ mean(sol2[findfirst(u0_sym .== sp), :]) rtol = 1.0e-1
     end
 end
 
@@ -177,25 +179,27 @@ end
 # this should also help with indirectly testing dep graphs are setup ok
 let
     rn = @reaction_network gene_model begin
-        α*(1 + sin(t)), D --> D + P
-        μ*(1 + cos(t)), P --> ∅
+        α * (1 + sin(t)), D --> D + P
+        μ * (1 + cos(t)), P --> ∅
         k₊, D + P --> D⁻
         k₋, D⁻ --> D + P
         α, D2 --> D2 + P2
         μ, P2 --> P3
     end
-    u0map = [rn.D => 1.0, rn.P => 0.0, rn.D⁻ => 0.0, rn.D2 => 1.0, rn.P2 => 0.0,
-             rn.P3 => 0.0]
+    u0map = [
+        rn.D => 1.0, rn.P => 0.0, rn.D⁻ => 0.0, rn.D2 => 1.0, rn.P2 => 0.0,
+        rn.P3 => 0.0,
+    ]
     pmap = [rn.α => 10.0, rn.μ => 1.0, rn.k₊ => 1.0, rn.k₋ => 2.0]
     tspan = (0.0, 25.0)
 
     # the direct method needs no dep graphs so is good as a baseline for comparison
     jprobdm = JumpProblem(rn, u0map, tspan, pmap; aggregator = Direct(), save_positions = (false, false), rng)
     jprobsd = JumpProblem(rn, u0map, tspan, pmap; aggregator = SortingDirect(), save_positions = (false, false), rng)
-    @test issetequal(jprobsd.discrete_jump_aggregation.dep_gr, [[1,2],[2]])
+    @test issetequal(jprobsd.discrete_jump_aggregation.dep_gr, [[1, 2], [2]])
     jprobrssa = JumpProblem(rn, u0map, tspan, pmap; aggregator = RSSA(), save_positions = (false, false), rng)
-    @test issetequal(jprobrssa.discrete_jump_aggregation.vartojumps_map, [[],[],[],[1],[2],[]])
-    @test issetequal(jprobrssa.discrete_jump_aggregation.jumptovars_map, [[5],[5,6]])
+    @test issetequal(jprobrssa.discrete_jump_aggregation.vartojumps_map, [[], [], [], [1], [2], []])
+    @test issetequal(jprobrssa.discrete_jump_aggregation.jumptovars_map, [[5], [5, 6]])
     N = 4000  # number of simulations to run
     function getmean(N, prob)
         m1 = 0.0
@@ -215,11 +219,11 @@ let
     # See: https://github.com/SciML/JumpProcesses.jl/issues/545
     means1 = zeros(2)
     means2 = zeros(2)
-    for (i,prob) in enumerate((jprobdm, jprobsd))
-        means1[i],means2[i] = getmean(N, prob)
+    for (i, prob) in enumerate((jprobdm, jprobsd))
+        means1[i], means2[i] = getmean(N, prob)
     end
-    @test abs(means1[1] - means1[2]) < .1 * means1[1]
-    @test abs(means2[1] - means2[2]) < .1 * means2[1]
+    @test abs(means1[1] - means1[2]) < 0.1 * means1[1]
+    @test abs(means2[1] - means2[2]) < 0.1 * means2[1]
     # RSSA simulation tests are broken - see comment above
     # @test_broken abs(means1[1] - means1[3]) < .1 * means1[1]
     # @test_broken abs(means2[1] - means2[3]) < .1 * means2[1]
@@ -233,7 +237,7 @@ end
 let
     # Create model. Checks when input type is `Float64` the produced values are also `Float64`.
     rn = @reaction_network begin
-        (k1,k2), X1 <--> X2
+        (k1, k2), X1 <--> X2
     end
     u0 = [:X1 => 1.0, :X2 => 3.0]
     ps = [:k1 => 2.0, :k2 => 3.0]
@@ -445,8 +449,10 @@ end
     @test jprob3.massaction_jump.scaled_rates[1] ≈ 6.0 / factorial(3)
 
     # callback + reset_aggregated_jumps!
-    jprob_cb = JumpProblem(rn, u0, (0.0, 200.0), ps;
-        aggregator = Direct(), save_positions = (false, false))
+    jprob_cb = JumpProblem(
+        rn, u0, (0.0, 200.0), ps;
+        aggregator = Direct(), save_positions = (false, false)
+    )
     condit(u, t, integrator) = t == 100.0
     setk! = setp(jprob_cb, :k)
     function affect_cb!(integrator)
@@ -495,8 +501,10 @@ end
     @test jprob3.massaction_jump.scaled_rates[1] ≈ 6.0
 
     # callback + reset_aggregated_jumps!
-    jprob_cb = JumpProblem(rn, u0, (0.0, 200.0), ps;
-        aggregator = Direct(), save_positions = (false, false))
+    jprob_cb = JumpProblem(
+        rn, u0, (0.0, 200.0), ps;
+        aggregator = Direct(), save_positions = (false, false)
+    )
     condit(u, t, integrator) = t == 100.0
     setk! = setp(jprob_cb, :k)
     function affect_cb!(integrator)
@@ -541,8 +549,10 @@ end
     @test jprob2.massaction_jump.scaled_rates[2] ≈ 3.0
 
     # callback changing only the higher-order rate.
-    jprob_cb = JumpProblem(rn, u0, (0.0, 200.0), ps;
-        aggregator = Direct(), save_positions = (false, false))
+    jprob_cb = JumpProblem(
+        rn, u0, (0.0, 200.0), ps;
+        aggregator = Direct(), save_positions = (false, false)
+    )
     condit(u, t, integrator) = t == 100.0
     setk1! = setp(jprob_cb, :k1)
     function affect_cb!(integrator)
@@ -641,8 +651,10 @@ end
 
     # After callback — both should still agree.
     for (rn, ps) in [(rn_true, [:k => k_val]), (rn_false, [:k => k_val / factorial(3)])]
-        jp = JumpProblem(rn, u0, (0.0, 200.0), ps;
-            aggregator = Direct(), save_positions = (false, false))
+        jp = JumpProblem(
+            rn, u0, (0.0, 200.0), ps;
+            aggregator = Direct(), save_positions = (false, false)
+        )
         condit(u, t, integrator) = t == 100.0
         new_k_true = 24.0
         new_k_val = rn === rn_true ? new_k_true : new_k_true / factorial(3)

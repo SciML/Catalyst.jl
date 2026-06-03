@@ -47,14 +47,16 @@ function processsym(s)
         var = value(Symbolics.variable(MT.getname(s), idxs...))
     end
     _has_latex_wrapper(var) || (var = _set_latex_wrapper(var, string))
-    var
+    return var
 end
 
-function chemical_arrows(rn::ReactionSystem;
+function chemical_arrows(
+        rn::ReactionSystem;
         double_linebreak = LATEX_DEFS.double_linebreak,
         starred = LATEX_DEFS.starred, mathrm = true,
         mathjax = LATEX_DEFS.mathjax, math_delimiters = false,
-        show_time_arg = false, kwargs...)
+        show_time_arg = false, kwargs...
+    )
     any_nonrx_subsys(rn) &&
         (@warn "Latexify currently ignores non-ReactionSystem subsystems. Please call `flatsys = flatten(sys)` to obtain a flattened version of your system before trying to Latexify it.")
 
@@ -74,8 +76,10 @@ function chemical_arrows(rn::ReactionSystem;
 
     # test if in IJulia since their mathjax is outdated...
     # VSCODE uses Katex and doesn't have this issue.
-    if mathjax || (isdefined(Main, :IJulia) && Main.IJulia.inited &&
-        !any(s -> occursin("VSCODE", s), collect(keys(ENV))))
+    if mathjax || (
+            isdefined(Main, :IJulia) && Main.IJulia.inited &&
+                !any(s -> occursin("VSCODE", s), collect(keys(ENV)))
+        )
         str *= "\\require{mhchem} \n"
     end
 
@@ -97,19 +101,23 @@ function chemical_arrows(rn::ReactionSystem;
         rate = (r.rate isa SymbolicT && !show_time_arg) ? subber(r.rate) : r.rate
 
         ### Generate formatted string of substrates
-        substrates = [make_stoich_str(substrate[1], substrate[2], subber; mathrm,
-                          kwargs...)
-                      for substrate in zip(r.substrates, r.substoich)]
+        substrates = [
+            make_stoich_str(
+                    substrate[1], substrate[2], subber; mathrm,
+                    kwargs...
+                )
+                for substrate in zip(r.substrates, r.substoich)
+        ]
         isempty(substrates) && (substrates = ["\\varnothing"])
 
         str *= join(substrates, " + ")
 
         ### Generate reaction arrows
         if i + 1 <= length(rxs) && issetequal(r.products, rxs[i + 1].substrates) &&
-           issetequal(r.substrates, rxs[i + 1].products)
+                issetequal(r.substrates, rxs[i + 1].products)
             ### Bi-directional arrows
             rate_backwards = (rxs[i + 1].rate isa SymbolicT && !show_time_arg) ? subber(rxs[i + 1].rate) :
-                             rxs[i + 1].rate
+                rxs[i + 1].rate
             str *= " &" * rev_arrow
             str *= "[" * latexraw(rate_backwards; kwargs...) * "]"
             str *= "{" * latexraw(rate; kwargs...) * "} "
@@ -120,14 +128,20 @@ function chemical_arrows(rn::ReactionSystem;
         end
 
         ### Generate formatted string of products
-        products = [make_stoich_str(product[1], product[2], subber; mathrm = true,
-                        kwargs...)
-                    for product in zip(r.products, r.prodstoich)]
+        products = [
+            make_stoich_str(
+                    product[1], product[2], subber; mathrm = true,
+                    kwargs...
+                )
+                for product in zip(r.products, r.prodstoich)
+        ]
         isempty(products) && (products = ["\\varnothing"])
         str *= join(products, " + ")
-        if ((i == lastidx) ||
-            (((i + 1) == lastidx) && (backwards_reaction == true))) &&
-           isempty(nonrxs)
+        if (
+                (i == lastidx) ||
+                    (((i + 1) == lastidx) && (backwards_reaction == true))
+            ) &&
+                isempty(nonrxs)
             str *= "  \n "
         else
             str *= " $eol"
@@ -169,7 +183,7 @@ function any_nonrx_subsys(rn::MT.AbstractSystem)
     for subsys in get_systems(rn)
         any_nonrx_subsys(subsys) && (return true)
     end
-    false
+    return false
 end
 
 function make_stoich_str(spec, stoich, subber; mathrm = true, kwargs...)
@@ -181,17 +195,17 @@ function make_stoich_str(spec, stoich, subber; mathrm = true, kwargs...)
         poststr = ""
     end
 
-    if isequal(stoich, one(stoich))
+    return if isequal(stoich, one(stoich))
         prestr * latexraw(subber(spec); kwargs...) * poststr
     else
         if (stoich isa SymbolicT) && iscall(stoich)
             LaTeXString("(") *
-            latexraw(subber(stoich); kwargs...) *
-            LaTeXString(")") *
-            prestr * latexraw(subber(spec); kwargs...) * poststr
+                latexraw(subber(stoich); kwargs...) *
+                LaTeXString(")") *
+                prestr * latexraw(subber(spec); kwargs...) * poststr
         else
             latexraw(subber(stoich); kwargs...) * LaTeXString(" ") *
-            prestr * latexraw(subber(spec); kwargs...) * poststr
+                prestr * latexraw(subber(spec); kwargs...) * poststr
         end
     end
 end

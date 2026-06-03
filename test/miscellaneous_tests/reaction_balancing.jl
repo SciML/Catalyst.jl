@@ -18,12 +18,12 @@ let
         H2O ~ 2H + 1O
     end
 
-    rx = Reaction(k,[H2,O2],[H2O])
+    rx = Reaction(k, [H2, O2], [H2O])
 
-    @test isequal(Catalyst.create_matrix(rx),[2 0 -2; 0 2 -1;])
-    @test isequal(Catalyst.get_balanced_stoich(rx),[[2, 1, 2]])
+    @test isequal(Catalyst.create_matrix(rx), [2 0 -2; 0 2 -1;])
+    @test isequal(Catalyst.get_balanced_stoich(rx), [[2, 1, 2]])
 
-    balanced_rx = Reaction(k,[H2,O2],[H2O],[2,1],[2])
+    balanced_rx = Reaction(k, [H2, O2], [H2O], [2, 1], [2])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -42,12 +42,12 @@ let
     @compound H2O ~ 2H + 1O
     @compound C6H12O6 ~ 6C + 12H + 6O
 
-    rx = Reaction(k,[CO2,H2O],[C6H12O6,O2])
+    rx = Reaction(k, [CO2, H2O], [C6H12O6, O2])
 
-    @test isequal(Catalyst.create_matrix(rx),[ 1 0 -6 0; 2 1 -6 -2; 0 2 -12 0;])
-    @test isequal(Catalyst.get_balanced_stoich(rx),[[6, 6, 1, 6]])
+    @test isequal(Catalyst.create_matrix(rx), [ 1 0 -6 0; 2 1 -6 -2; 0 2 -12 0;])
+    @test isequal(Catalyst.get_balanced_stoich(rx), [[6, 6, 1, 6]])
 
-    balanced_rx = Reaction(k,[CO2,H2O],[C6H12O6,O2],[6, 6], [1, 6])
+    balanced_rx = Reaction(k, [CO2, H2O], [C6H12O6, O2], [6, 6], [1, 6])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -80,7 +80,7 @@ let
 
     rx = Reaction(1.0, [H, O], [H2O], [23, 1], [7])
 
-    balanced_rx = Reaction(1.0, [H,O], [H2O], [2, 1], [1])
+    balanced_rx = Reaction(1.0, [H, O], [H2O], [2, 1], [1])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -113,7 +113,7 @@ let
 
     rx = Reaction(1.0, [N2, H2], [NH3])
 
-    balanced_rx = Reaction(1.0, [N2, H2], [NH3], [1 ,3], [2])
+    balanced_rx = Reaction(1.0, [N2, H2], [NH3], [1, 3], [2])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -174,9 +174,9 @@ let
     @compound Na2SO4 ~ 2Na + 1S + 4O
     @compound H2O ~ 2H + O
 
-    rx = Reaction(1.0, [NaOH,H2SO4], [Na2SO4,H2O])
+    rx = Reaction(1.0, [NaOH, H2SO4], [Na2SO4, H2O])
 
-    balanced_rx = Reaction(1.0, [NaOH,H2SO4], [Na2SO4,H2O], [2, 1], [1, 2])
+    balanced_rx = Reaction(1.0, [NaOH, H2SO4], [Na2SO4, H2O], [2, 1], [1, 2])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -205,8 +205,8 @@ let
     @compound HCl ~ 1H + 1Cl
     @compound CaCl2 ~ 1Ca + 2Cl
 
-    rx = Reaction(1.0,[CaCO3,HCl],[CaCl2,CO2,H2O])
-    balanced_rx = Reaction(1.0,[CaCO3,HCl],[CaCl2,CO2,H2O], [1, 2], [1, 1, 1])
+    rx = Reaction(1.0, [CaCO3, HCl], [CaCl2, CO2, H2O])
+    balanced_rx = Reaction(1.0, [CaCO3, HCl], [CaCl2, CO2, H2O], [1, 2], [1, 1, 1])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -220,8 +220,8 @@ let
     @compound H4SiO4 ~ 4H + Si + 4O
     @compound HCl ~ H + Cl
 
-    rx = Reaction(1.0,[SiCl4,H2O],[H4SiO4,HCl])
-    balanced_rx = Reaction(1.0,[SiCl4,H2O],[H4SiO4,HCl], [1,4], [1,4])
+    rx = Reaction(1.0, [SiCl4, H2O], [H4SiO4, HCl])
+    balanced_rx = Reaction(1.0, [SiCl4, H2O], [H4SiO4, HCl], [1, 4], [1, 4])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -234,8 +234,8 @@ let
     @compound AlCl3 ~ Al + 3Cl
     @compound H2 ~ 2H
 
-    rx = Reaction(1.0,[Al,HCl],[AlCl3,H2])
-    balanced_rx = Reaction(1.0,[Al,HCl],[AlCl3,H2],[2,6], [2,3])
+    rx = Reaction(1.0, [Al, HCl], [AlCl3, H2])
+    balanced_rx = Reaction(1.0, [Al, HCl], [AlCl3, H2], [2, 6], [2, 3])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -250,8 +250,8 @@ let
     @compound H2O ~ 2H + O
     @compound CO2 ~ C + 2O
 
-    rx = Reaction(1.0,[Na2CO3,HCl],[NaCl,H2O,CO2])
-    balanced_rx = Reaction(1.0,[Na2CO3,HCl],[NaCl,H2O,CO2], [1,2], [2,1,1])
+    rx = Reaction(1.0, [Na2CO3, HCl], [NaCl, H2O, CO2])
+    balanced_rx = Reaction(1.0, [Na2CO3, HCl], [NaCl, H2O, CO2], [1, 2], [2, 1, 1])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -265,8 +265,8 @@ let
     @compound CO2 ~ C + 2O
     @compound H2O ~ 2H + O
 
-    rx = Reaction(1.0,[C7H6O2,O2],[CO2,H2O])
-    balanced_rx = Reaction(1.0,[C7H6O2,O2],[CO2,H2O], [2,15], [14,6])
+    rx = Reaction(1.0, [C7H6O2, O2], [CO2, H2O])
+    balanced_rx = Reaction(1.0, [C7H6O2, O2], [CO2, H2O], [2, 15], [14, 6])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -280,8 +280,8 @@ let
     @compound K2SO4 ~ 2K + S + 4O
     @compound FeO3H3 ~ Fe + 3O + 3H
 
-    rx = Reaction(1.0,[Fe2S3O12,KOH],[K2SO4,FeO3H3]) #5x4 matrix
-    balanced_rx = Reaction(1.0,[Fe2S3O12,KOH],[K2SO4,FeO3H3], [1,6], [3,2])
+    rx = Reaction(1.0, [Fe2S3O12, KOH], [K2SO4, FeO3H3]) #5x4 matrix
+    balanced_rx = Reaction(1.0, [Fe2S3O12, KOH], [K2SO4, FeO3H3], [1, 6], [3, 2])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -295,8 +295,8 @@ let
     @compound P4O10 ~ 4P + 10O
     @compound CaSiO3 ~ Ca + Si + 3O
 
-    rx = Reaction(1.0,[Ca3P2O8,SiO2],[P4O10,CaSiO3]) #5x4 matrix
-    balanced_rx = Reaction(1.0,[Ca3P2O8,SiO2],[P4O10,CaSiO3], [2,6] , [1,6])
+    rx = Reaction(1.0, [Ca3P2O8, SiO2], [P4O10, CaSiO3]) #5x4 matrix
+    balanced_rx = Reaction(1.0, [Ca3P2O8, SiO2], [P4O10, CaSiO3], [2, 6], [1, 6])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -309,8 +309,8 @@ let
     @compound KClO4 ~ K + Cl + 4O
     @compound KCl ~ K + Cl
 
-    rx = Reaction(1.0,[KClO3],[KClO4,KCl])
-    balanced_rx = Reaction(1.0,[KClO3],[KClO4,KCl], [4], [3,1])
+    rx = Reaction(1.0, [KClO3], [KClO4, KCl])
+    balanced_rx = Reaction(1.0, [KClO3], [KClO4, KCl], [4], [3, 1])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -324,8 +324,8 @@ let
     @compound AlO3H3 ~ Al + 3O + 3H
     @compound CaSO4 ~ Ca + S + 4O
 
-    rx = Reaction(1.0,[Al2S3O12,CaO2H2],[AlO3H3,CaSO4])
-    balanced_rx = Reaction(1.0,[Al2S3O12,CaO2H2],[AlO3H3,CaSO4], [1,3], [2,3])
+    rx = Reaction(1.0, [Al2S3O12, CaO2H2], [AlO3H3, CaSO4])
+    balanced_rx = Reaction(1.0, [Al2S3O12, CaO2H2], [AlO3H3, CaSO4], [1, 3], [2, 3])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -340,8 +340,8 @@ let
     @compound I2 ~ 2I
     @compound H2O ~ 2H + O
 
-    rx = Reaction(1.0,[H2SO4,HI],[H2S,I2,H2O])
-    balanced_rx = Reaction(1.0,[H2SO4,HI],[H2S,I2,H2O], [1,8], [1,4,4])
+    rx = Reaction(1.0, [H2SO4, HI], [H2S, I2, H2O])
+    balanced_rx = Reaction(1.0, [H2SO4, HI], [H2S, I2, H2O], [1, 8], [1, 4, 4])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -355,8 +355,8 @@ let
     @compound CO2 ~ C + 2O
     @compound H2O ~ 2H + O
 
-    rx = Reaction(1.0,[C2H4,O2],[CO2,H2O])
-    balanced_rx = Reaction(1.0,[C2H4,O2],[CO2,H2O],[1,3],[2,2])
+    rx = Reaction(1.0, [C2H4, O2], [CO2, H2O])
+    balanced_rx = Reaction(1.0, [C2H4, O2], [CO2, H2O], [1, 3], [2, 2])
     brxs = balance_reaction(rx)
     @test length(brxs) == 1
     @test isequal(balanced_rx, first(brxs))
@@ -373,9 +373,9 @@ let
     @compound CH4 ~ C + 4H
     @compound H2O ~ 2H + O
 
-    rx = Reaction(1.0,[CO,CO2,H2],[CH4,H2O])
+    rx = Reaction(1.0, [CO, CO2, H2], [CH4, H2O])
     brxs = balance_reaction(rx)
-    @test_logs (:warn, r"The space of possible balanced *") match_mode=:any balance_reaction(rx)
+    @test_logs (:warn, r"The space of possible balanced *") match_mode = :any balance_reaction(rx)
     @test length(brxs) == 2
 end
 
@@ -389,9 +389,9 @@ let
     @compound NO ~ N + O
     @compound H2SO4 ~ 2H + S + 4O
 
-    rx = Reaction(1.0,[FeS2,HNO3],[Fe2S3O12,NO,H2SO4])
+    rx = Reaction(1.0, [FeS2, HNO3], [Fe2S3O12, NO, H2SO4])
     brxs = balance_reaction(rx)
-    @test_logs (:warn, "Unable to balance reaction.") match_mode=:any balance_reaction(rx)
+    @test_logs (:warn, "Unable to balance reaction.") match_mode = :any balance_reaction(rx)
     @test isempty(brxs)
 end
 
@@ -418,14 +418,14 @@ let
         end
         k, CO2 + H2O --> C6H12O6 + O2
     end
-    
+
     brxs = balance_reaction(reactions(rn)[1])[1]
-    
+
     @test isequal(rn.k, brxs.rate)
-    @test isequal([rn.CO2,  rn.H2O], brxs.substrates)
-    @test isequal([rn.C6H12O6,  rn.O2], brxs.products)
+    @test isequal([rn.CO2, rn.H2O], brxs.substrates)
+    @test isequal([rn.C6H12O6, rn.O2], brxs.products)
     @test isequal([6, 6], brxs.substoich)
-    @test isequal([1, 6], brxs.prodstoich)    
+    @test isequal([1, 6], brxs.prodstoich)
 end
 
 
@@ -496,7 +496,7 @@ let
         k, CO + CO2 + H2 --> CH4 + H20
     end
     @test_throws Exception balance_system(rs1)
-    
+
     # Check system with reaction without any balanced versions.
     rs2 = @reaction_network begin
         @species Fe(t) S(t) O(t) H(t) N(t)

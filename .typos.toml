@@ -2,6 +2,8 @@
 # Catalyst specific
 systemes = "systemes"
 Hass = "Hass"
+oint = "oint"           # ODEIntegrator variable name used in tests
+Lamba = "Lamba"         # LambaEM/LambaEulerHeun SDE solvers (StochasticDiffEq)
 
 # Julia-specific functions
 indexin = "indexin"

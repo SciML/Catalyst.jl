@@ -35,8 +35,10 @@ Notes:
 - Homotopy-based steady state finding only works when all rates are rational polynomials (e.g. constant, linear, mm, or hill functions).
 ```
   """
-function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative = true,
-        neg_thres = -1e-15, u0 = [], kwargs...)
+function Catalyst.hc_steady_states(
+        rs::ReactionSystem, ps; filter_negative = true,
+        neg_thres = -1.0e-15, u0 = [], kwargs...
+    )
     if !isautonomous(rs)
         error("Attempting to compute steady state for a non-autonomous system (e.g. where some rate depend on $(get_iv(rs))). This is not possible.")
     end
@@ -55,20 +57,20 @@ function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     pre_varmap = merge(Dict(Catalyst.symmap_to_varmap(rs, u0)), Dict(Catalyst.symmap_to_varmap(rs, ps)))
     Catalyst.conservationlaw_errorcheck(rs, pre_varmap)
     for u in setdiff(unknowns(rs), Catalyst.conslaw_species(rs))
-        haskey(pre_varmap, u) || (pre_varmap[u] = -1.0)        
+        haskey(pre_varmap, u) || (pre_varmap[u] = -1.0)
     end
     nprob_dummy = NonlinearProblem(ns, pre_varmap)
     p_dict_pre = Dict(p => nprob_dummy.ps[p] for p in parameters(ns))
 
     # Expands vector variable stored in the dictionary so they can be substituted into the polynomial (e.g. from `Γ` to `Γ[1]` and `Γ[2]`)
     p_dict = typeof(p_dict_pre)()
-    for (k,v) in p_dict_pre
+    for (k, v) in p_dict_pre
         if v isa AbstractArray
-            for i = 1:length(v)
+            for i in 1:length(v)
                 p_dict[k[i]] = v[i]
             end
         else
-        p_dict[k] = v
+            p_dict[k] = v
         end
     end
 
@@ -106,11 +108,11 @@ end
 
 # Parses and expression and return a version where any exponents that are Float64 (but an int, like 2.0) are turned into Int64s.
 function make_int_exps(expr)
-    wrap(Rewriters.Postwalk(Rewriters.PassThrough(___make_int_exps))(unwrap(expr))).val
+    return wrap(Rewriters.Postwalk(Rewriters.PassThrough(___make_int_exps))(unwrap(expr))).val
 end
 function ___make_int_exps(expr)
     !iscall(expr) && return expr
-    if (operation(expr) == ^)
+    return if (operation(expr) == ^)
         if _isinteger(sorted_arguments(expr)[2])
             return sorted_arguments(expr)[1]^Int64(Symbolics.value(sorted_arguments(expr)[2]))
         else
@@ -179,11 +181,11 @@ function reorder_sols!(sols, ss_poly, rs::ReactionSystem)
     var_names_extended = String.(Symbol.(HC.variables(ss_poly)))
     var_names = [Symbol(s[1:prevind(s, findlast('_', s))]) for s in var_names_extended]
     sort_pattern = indexin(MT.getname.(unknowns(rs)), var_names)
-    foreach(sol -> permute!(sol, sort_pattern), sols)
+    return foreach(sol -> permute!(sol, sort_pattern), sols)
 end
 
 # Filters away solutions with negative species concentrations (and for neg_thres < val < 0.0, sets val=0.0).
-function filter_negative_f(sols; neg_thres = -1e-15)
+function filter_negative_f(sols; neg_thres = -1.0e-15)
     for sol in sols, idx in 1:length(sol)
 
         (neg_thres < sol[idx] < 0) && (sol[idx] = 0)
@@ -193,29 +195,36 @@ end
 
 # Sometimes (when polynomials are created from coupled CRN/DAEs), the steady state polynomial have the wrong type.
 # This converts it to the correct type, which homotopy continuation can handle.
-const WRONG_POLY_TYPE = Vector{DynamicPolynomials.Polynomial{
-    DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder},
-    DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}}}
-const CORRECT_POLY_TYPE = Vector{DynamicPolynomials.Polynomial{
-    DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder},
-    DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}, Float64}}
+const WRONG_POLY_TYPE = Vector{
+    DynamicPolynomials.Polynomial{
+        DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder},
+        DynamicPolynomials.Graded{DynamicPolynomials.LexOrder},
+    },
+}
+const CORRECT_POLY_TYPE = Vector{
+    DynamicPolynomials.Polynomial{
+        DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder},
+        DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}, Float64,
+    },
+}
 function poly_type_convert(ss_poly)
     (typeof(ss_poly) == WRONG_POLY_TYPE) && return convert(CORRECT_POLY_TYPE, ss_poly)
     return ss_poly
 end
 
 
-
 ### SAVED ARCHIVED MTK FUNCTION - REMOVE SOME TIME ###
 # pre-v10 version of function
-function varmap_to_vars_mtkv9(varmap, varlist; defaults = Dict(), check = true,
+function varmap_to_vars_mtkv9(
+        varmap, varlist; defaults = Dict(), check = true,
         toterm = MT.default_toterm, promotetoconcrete = nothing,
-        tofloat = true, use_union = true)
+        tofloat = true, use_union = true
+    )
     varlist = collect(map(unwrap, varlist))
 
     # Edge cases where one of the arguments is effectively empty.
     is_incomplete_initialization = varmap isa DiffEqBase.NullParameters ||
-                                   varmap === nothing
+        varmap === nothing
     if is_incomplete_initialization || isempty(varmap)
         if isempty(defaults)
             if !is_incomplete_initialization && check
@@ -238,8 +247,10 @@ function varmap_to_vars_mtkv9(varmap, varlist; defaults = Dict(), check = true,
 
     vals = if eltype(varmap) <: Pair # `varmap` is a dict or an array of pairs
         varmap = MT.todict(varmap)
-        _varmap_to_vars_mtkv9(varmap, varlist; defaults = defaults, check = check,
-            toterm = toterm)
+        _varmap_to_vars_mtkv9(
+            varmap, varlist; defaults = defaults, check = check,
+            toterm = toterm
+        )
     else # plain array-like initialization
         varmap
     end
@@ -254,13 +265,17 @@ function varmap_to_vars_mtkv9(varmap, varlist; defaults = Dict(), check = true,
     elseif container_type <: Tuple
         (vals...,)
     else
-        SymbolicUtils.Code.create_array(container_type, eltype(vals), Val{1}(),
-            Val(length(vals)), vals...)
+        SymbolicUtils.Code.create_array(
+            container_type, eltype(vals), Val{1}(),
+            Val(length(vals)), vals...
+        )
     end
 end
 
-function _varmap_to_vars_mtkv9(varmap::Dict, varlist; defaults = Dict(), check = false,
-        toterm = Symbolics.diff2term, initialization_phase = false)
+function _varmap_to_vars_mtkv9(
+        varmap::Dict, varlist; defaults = Dict(), check = false,
+        toterm = Symbolics.diff2term, initialization_phase = false
+    )
     varmap = canonicalize_varmap_mtkv9(varmap; toterm)
     defaults = canonicalize_varmap_mtkv9(defaults; toterm)
     varmap = merge(defaults, varmap)

@@ -17,7 +17,7 @@ end
 
 # Generates a random parameter set (in the form of a map). Each value is a Float64.
 function rnd_ps(sys, rng; factor = 1.0, min = 0.0)
-    return [p => ( min .+ factor .* rand(rng, size(p)...)) for p in parameters(sys)]
+    return [p => (min .+ factor .* rand(rng, size(p)...)) for p in parameters(sys)]
 end
 
 # Generates a random parameter set (in the form of a map). Each value is a Float64.
@@ -37,8 +37,10 @@ end
 
 # Evaluates the the drift function of the ODE corresponding to a reaction network.
 # Also checks that in place and out of place evaluations are identical.
-function f_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, mtkcompile = false,
-        use_jump_ratelaws = false)
+function f_eval(
+        rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, mtkcompile = false,
+        use_jump_ratelaws = false
+    )
     prob = ODEProblem(rs, u, 0.0, p; combinatoric_ratelaws, mtkcompile, use_jump_ratelaws)
     du = zeros(length(u))
     prob.f(du, prob.u0, prob.p, t)
@@ -52,14 +54,16 @@ function jac_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, spa
     prob = ODEProblem(rs, u, 0.0, p; jac = true, combinatoric_ratelaws, sparse, mtkcompile)
     J = sparse ? deepcopy(prob.f.jac_prototype) : zeros(length(u), length(u))
     prob.f.jac(J, prob.u0, prob.p, t)
-    @test J ≈ prob.f.jac(prob.u0, prob.p, t) atol = 1e-14 rtol = 1e-14
+    @test J ≈ prob.f.jac(prob.u0, prob.p, t) atol = 1.0e-14 rtol = 1.0e-14
     return J
 end
 
 # Evaluates the the diffusion function of the SDE corresponding to a reaction network.
 # Also checks that in place and out of place evaluations are identical.
-function g_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, mtkcompile = false,
-        use_jump_ratelaws = false)
+function g_eval(
+        rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true, mtkcompile = false,
+        use_jump_ratelaws = false
+    )
     prob = SDEProblem(rs, u, 0.0, p; combinatoric_ratelaws, mtkcompile, use_jump_ratelaws)
     dW = zeros(length(u), numreactions(rs) + length(ModelingToolkitBase.get_brownians(rs)))
     prob.g(dW, prob.u0, prob.p, t)

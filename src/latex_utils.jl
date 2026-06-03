@@ -32,5 +32,5 @@ as plain math italic instead of `\\mathtt{}` in LaTeX. No-op if already set.
 """
 function _add_latex_wrapper(s)
     _has_latex_wrapper(s) && return s
-    _set_latex_wrapper(s, string)
+    return _set_latex_wrapper(s, string)
 end

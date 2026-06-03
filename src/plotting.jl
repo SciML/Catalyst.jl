@@ -58,13 +58,16 @@ end
 
 for (_, mime) in _showables
     MIMEType = typeof(MIME(mime))
-    @eval Base.show(io::IO, ::$MIMEType, s::Showable{>:$MIMEType};
-        options...) = show(
-        io, $MIMEType(), s.content; s.options..., options...)
+    @eval Base.show(
+        io::IO, ::$MIMEType, s::Showable{>:$MIMEType};
+        options...
+    ) = show(
+        io, $MIMEType(), s.content; s.options..., options...
+    )
 end
 
 macro mime_str(s)
-    :(Showable{MIME{Symbol($s)}})
+    return :(Showable{MIME{Symbol($s)}})
 end
 
 for (name, mime) in _showables

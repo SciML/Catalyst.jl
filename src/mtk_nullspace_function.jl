@@ -12,13 +12,15 @@ using SparseArrays
 using SparseArrays: AbstractSparseMatrixCSC, getcolptr
 
 macro swap(a, b)
-    esc(:(($a, $b) = ($b, $a)))
+    return esc(:(($a, $b) = ($b, $a)))
 end
 
 import Base: swaprows!
 
-function bareiss_update!(zero!, M::StridedMatrix, k, swapto, pivot,
-        prev_pivot::Base.BitInteger)
+function bareiss_update!(
+        zero!, M::StridedMatrix, k, swapto, pivot,
+        prev_pivot::Base.BitInteger
+    )
     flag = zero(prev_pivot)
     prev_pivot = Base.MultiplicativeInverses.SignedMultiplicativeInverse(prev_pivot)
     @inbounds for i in (k + 1):size(M, 2)
@@ -29,14 +31,14 @@ function bareiss_update!(zero!, M::StridedMatrix, k, swapto, pivot,
         end
     end
     iszero(flag) || error("Overflow occurred")
-    zero!(M, (k + 1):size(M, 1), k)
+    return zero!(M, (k + 1):size(M, 1), k)
 end
 
 function bareiss_update!(zero!, M::StridedMatrix, k, swapto, pivot, prev_pivot)
     @inbounds for i in (k + 1):size(M, 2), j in (k + 1):size(M, 1)
         M[j, i] = exactdiv(M[j, i] * pivot - M[j, k] * M[k, i], prev_pivot)
     end
-    zero!(M, (k + 1):size(M, 1), k)
+    return zero!(M, (k + 1):size(M, 1), k)
 end
 
 @views function bareiss_update!(zero!, M::AbstractMatrix, k, swapto, pivot, prev_pivot)
@@ -51,14 +53,16 @@ end
     end
 end
 
-function bareiss_update_virtual_colswap!(zero!, M::AbstractMatrix, k, swapto, pivot,
-        prev_pivot)
+function bareiss_update_virtual_colswap!(
+        zero!, M::AbstractMatrix, k, swapto, pivot,
+        prev_pivot
+    )
     if prev_pivot isa Base.BitInteger
         prev_pivot = Base.MultiplicativeInverses.SignedMultiplicativeInverse(prev_pivot)
     end
     V = @view M[(k + 1):end, :]
     V .= @views exactdiv.(V .* pivot .- M[(k + 1):end, swapto[2]] * M[k, :]', prev_pivot)
-    zero!(M, (k + 1):size(M, 1), swapto[2])
+    return zero!(M, (k + 1):size(M, 1), swapto[2])
 end
 
 bareiss_zero!(M, i, j) = M[i, j] .= zero(eltype(M))
@@ -67,19 +71,21 @@ function find_pivot_col(M, i)
     p = findfirst(!iszero, @view M[i, i:end])
     p === nothing && return nothing
     idx = CartesianIndex(i, p + i - 1)
-    (idx, M[idx])
+    return (idx, M[idx])
 end
 
 function find_pivot_any(M, i)
     p = findfirst(!iszero, @view M[i:end, i:end])
     p === nothing && return nothing
     idx = p + CartesianIndex(i - 1, i - 1)
-    (idx, M[idx])
+    return (idx, M[idx])
 end
 
 const bareiss_colswap = (Base.swapcols!, swaprows!, bareiss_update!, bareiss_zero!)
-const bareiss_virtcolswap = ((M, i, j) -> nothing, swaprows!,
-    bareiss_update_virtual_colswap!, bareiss_zero!)
+const bareiss_virtcolswap = (
+    (M, i, j) -> nothing, swaprows!,
+    bareiss_update_virtual_colswap!, bareiss_zero!,
+)
 
 """
     bareiss!(M, [swap_strategy])
@@ -91,8 +97,10 @@ swap_strategy is an optional argument that determines how the swapping of rows a
 bareiss_colswap (the default) swaps the columns and rows normally.
 bareiss_virtcolswap pretends to swap the columns which can be faster for sparse matrices.
 """
-function bareiss!(M::AbstractMatrix{T}, swap_strategy = bareiss_colswap;
-        find_pivot = find_pivot_any, column_pivots = nothing) where {T}
+function bareiss!(
+        M::AbstractMatrix{T}, swap_strategy = bareiss_colswap;
+        find_pivot = find_pivot_any, column_pivots = nothing
+    ) where {T}
     swapcols!, swaprows!, update!, zero! = swap_strategy
     prev = one(eltype(M))
     n = size(M, 1)
@@ -139,25 +147,27 @@ function nullspace(A; col_order = nothing)
     end
 
     fill!(pivots_cache, 0)
-    
+
     # Modified: Was `N = ModelingToolkit.reduced_echelon_nullspace(rank, B, pivots_cache)`.
-    N = reduced_echelon_nullspace(rank, B, pivots_cache) 
-    apply_inv_pivot_rows!(N, column_pivots)
+    N = reduced_echelon_nullspace(rank, B, pivots_cache)
+    return apply_inv_pivot_rows!(N, column_pivots)
 end
 
 function apply_inv_pivot_rows!(M, ipiv)
     for i in size(M, 1):-1:1
         swaprows!(M, i, ipiv[i])
     end
-    M
+    return M
 end
 
 ###
 ### Modified from AbstractAlgebra.jl
 ###
 ### https://github.com/Nemocas/AbstractAlgebra.jl/blob/4803548c7a945f3f7bd8c63f8bb7c79fac92b11a/LICENSE.md
-function reduce_echelon!(A::AbstractMatrix{T}, rank, d,
-        pivots_cache = zeros(Int, size(A, 2))) where {T}
+function reduce_echelon!(
+        A::AbstractMatrix{T}, rank, d,
+        pivots_cache = zeros(Int, size(A, 2))
+    ) where {T}
     m, n = size(A)
     isreduced = true
     @inbounds for i in 1:rank
@@ -222,8 +232,10 @@ function reduce_echelon!(A::AbstractMatrix{T}, rank, d,
     return A
 end
 
-function reduced_echelon_nullspace(rank, A::AbstractMatrix{T},
-        pivots_cache = zeros(Int, size(A, 2))) where {T}
+function reduced_echelon_nullspace(
+        rank, A::AbstractMatrix{T},
+        pivots_cache = zeros(Int, size(A, 2))
+    ) where {T}
     n = size(A, 2)
     nullity = n - rank
     U = zeros(T, n, nullity)

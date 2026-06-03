@@ -14,7 +14,7 @@ include("../spatial_test_networks.jl")
 # Checks for symbol and symbolic variables input.
 let
     # Declares various types of spaces and corresponding initial values of `X`.
-    dspace_cartesian = CartesianGrid((2,2,2))
+    dspace_cartesian = CartesianGrid((2, 2, 2))
     dspace_masked = [true true; false true]
     dspace_graph = cycle_graph(5)
     val0_cartesian = fill(1.0, 2, 2, 2)
@@ -35,13 +35,13 @@ let
         jprob = JumpProblem(dsrs, deepcopy(u0), (0.0, 1.0), ps)
         oint = init(deepcopy(oprob), Tsit5())
         jint = init(deepcopy(jprob), SSAStepper())
-        
+
         # Check that `spat_getu` retrieves the correct values.
         @test spat_getu(oprob, :X, dsrs) == spat_getu(oprob, X, dsrs) == spat_getu(oprob, brusselator_system.X, dsrs) == val0
         @test spat_getu(oint, :X, dsrs) == spat_getu(oint, X, dsrs) == spat_getu(oint, brusselator_system.X, dsrs) == val0
         @test spat_getu(jprob, :X, dsrs) == spat_getu(jprob, X, dsrs) == spat_getu(jprob, brusselator_system.X, dsrs) == val0
         @test spat_getu(jint, :X, dsrs) == spat_getu(jint, X, dsrs) == spat_getu(jint, brusselator_system.X, dsrs) == val0
-        
+
         # Updates Y and checks its content.
         spat_setu!(oprob, :Y, dsrs, val0)
         @test spat_getu(oprob, :Y, dsrs) == spat_getu(oprob, Y, dsrs) == spat_getu(oprob, brusselator_system.Y, dsrs) == val0
@@ -70,7 +70,7 @@ end
 # Checks for symbol and symbolic variables input.
 let
     # Declares various types of spaces and corresponding initial values of `A`.
-    dspace_cartesian = CartesianGrid((2,2,2))
+    dspace_cartesian = CartesianGrid((2, 2, 2))
     dspace_masked = [true true; false true]
     dspace_graph = cycle_graph(5)
     val0_cartesian = fill(1.0, 2, 2, 2)
@@ -89,11 +89,11 @@ let
         ps = [:A => val0, :B => 2.0, :dX => 0.1]
         oprob = ODEProblem(dsrs, u0, (0.0, 1.0), deepcopy(ps))
         oint = init(deepcopy(oprob), Tsit5())
-        
+
         # Check that `spat_getp` retrieves the correct values.
         @test spat_getp(oprob, :A, dsrs) == spat_getp(oprob, A, dsrs) == spat_getp(oprob, brusselator_system.A, dsrs) == val0
         @test spat_getp(oint, :A, dsrs) == spat_getp(oint, A, dsrs) == spat_getp(oint, brusselator_system.A, dsrs) == val0
-        
+
         # Updates Y and checks its content.
         spat_setp!(oprob, :B, dsrs, val0)
         @test spat_getp(oprob, :B, dsrs) == spat_getp(oprob, B, dsrs) == spat_getp(oprob, brusselator_system.B, dsrs) == val0
@@ -137,19 +137,19 @@ end
 ### Simulation `spat_getu` Tests ###
 
 # Basic test. For simulations without change in system, check that the solution corresponds to known
-# initial condition throughout the solution. 
+# initial condition throughout the solution.
 # Checks using both `t` sampling` and normal time step sampling.
 # Checks for both ODE and jump simulations.
 # Checks for all discrete space types.
-let 
+let
     # Prepare `DiscreteSpaceReactionSystem`s.
     rs = @reaction_network begin
-        (k1,k2), X1 <--> X2
+        (k1, k2), X1 <--> X2
     end
     tr = @transport_reaction D X1
     dsrs1 = DiscreteSpaceReactionSystem(rs, [tr], CartesianGrid((2,)))
-    dsrs2 = DiscreteSpaceReactionSystem(rs, [tr], CartesianGrid((2,3)))
-    dsrs3 = DiscreteSpaceReactionSystem(rs, [tr], CartesianGrid((2,3,2)))
+    dsrs2 = DiscreteSpaceReactionSystem(rs, [tr], CartesianGrid((2, 3)))
+    dsrs3 = DiscreteSpaceReactionSystem(rs, [tr], CartesianGrid((2, 3, 2)))
     dsrs4 = DiscreteSpaceReactionSystem(rs, [tr], [true, true, false, true])
     dsrs5 = DiscreteSpaceReactionSystem(rs, [tr], [true false; true true])
     dsrs6 = DiscreteSpaceReactionSystem(rs, [tr], cycle_graph(4))
@@ -165,7 +165,7 @@ let
     ps = [:k1 => 0.0, :k2 => 0.0, :D => 0.0]
 
     # Loops through all discrete space cases and check that they are correct.
-    for (u0,dsrs) in zip([u0_1, u0_2, u0_3, u0_4, u0_5, u0_6], [dsrs1, dsrs2, dsrs3, dsrs4, dsrs5, dsrs6])
+    for (u0, dsrs) in zip([u0_1, u0_2, u0_3, u0_4, u0_5, u0_6], [dsrs1, dsrs2, dsrs3, dsrs4, dsrs5, dsrs6])
         # Simulates ODE version and checks `spat_getu` on its solution.
         oprob = ODEProblem(dsrs, u0, tspan, ps)
         osol = solve(oprob, Tsit5(), saveat = 0.5)
@@ -188,7 +188,7 @@ end
 let
     # Prepare `DiscreteSpaceReactionSystem`s.
     rs = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     tr = @transport_reaction D X
     dsrs = DiscreteSpaceReactionSystem(rs, [tr], CartesianGrid((2,)))
@@ -200,26 +200,26 @@ let
     oprob = ODEProblem(dsrs, u0, tspan, ps)
 
     # Simulates the ODE. Checks that the start/end points are correct.
-    # Check that the first vertex is monotonously increasing in values, and that the second one is 
+    # Check that the first vertex is monotonously increasing in values, and that the second one is
     # monotonously decreasing. The non evenly spaced `saveat` is so that non-monotonicity is
     # not produced due to numeric errors.
     saveat = [0.0, 1.0, 5.0, 10.0, 50.0]
-    sol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
+    sol = solve(oprob, Vern7(); abstol = 1.0e-8, reltol = 1.0e-8)
     vals = spat_getu(sol, :X, dsrs)
     @test vals[1] == [1.0, 3.0]
     @test vals[end] ≈ [2.0, 2.0]
-    for i = 1:(length(saveat) - 1)
+    for i in 1:(length(saveat) - 1)
         @test vals[i][1] < vals[i + 1][1]
         @test vals[i][2] > vals[i + 1][2]
     end
 end
 
-# Checks interpolation when sampling at time point. Check that values at `t` is in between the 
+# Checks interpolation when sampling at time point. Check that values at `t` is in between the
 # sample points. Does so by checking that in simulation which is monotonously decreasing/increasing.
 let
     # Prepare `DiscreteSpaceReactionSystem`s.
     rs = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     tr = @transport_reaction D X
     dsrs = DiscreteSpaceReactionSystem(rs, [tr], CartesianGrid((2,)))
@@ -241,7 +241,7 @@ end
 let
     # Prepare `DiscreteSpaceReactionSystem`s.
     rs = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     tr = @transport_reaction D X
     dsrs = DiscreteSpaceReactionSystem(rs, [tr], CartesianGrid((2,)))
@@ -262,7 +262,7 @@ end
 let
     # Prepare `DiscreteSpaceReactionSystem`s.
     rs = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     tr = @transport_reaction D X
     dsrs = DiscreteSpaceReactionSystem(rs, [tr], CartesianGrid((2,)))
@@ -283,7 +283,7 @@ end
 let
     # Prepare `DiscreteSpaceReactionSystem`s.
     rs = @reaction_network begin
-        (p,d), 0 <--> X
+        (p, d), 0 <--> X
     end
     tr = @transport_reaction D X
     dsrs = DiscreteSpaceReactionSystem(rs, [tr], rand([false, true], 2, 3, 4))
@@ -307,7 +307,7 @@ let
     @named rs = ReactionSystem([Reaction(d, [X], [])], t)
     rs = complete(rs)
     tr = @transport_reaction D X
-    dsrs = DiscreteSpaceReactionSystem(rs, [tr], CartesianGrid(2,))
+    dsrs = DiscreteSpaceReactionSystem(rs, [tr], CartesianGrid(2))
 
     # Solved a corresponding ODEProblem.
     u0 = [:X => 1.0]
@@ -332,20 +332,20 @@ let
     for jac in [false, true], sparse in [false, true]
         # Creates an initial ODEProblem.
         u0 = [:X => 1.0, :Y => [1.0 2.0; 3.0 4.0]]
-        dY_vals = spzeros(4,4)
-        dY_vals[1,2] = 0.1; dY_vals[2,1] = 0.1; 
-        dY_vals[1,3] = 0.2; dY_vals[3,1] = 0.2; 
-        dY_vals[2,4] = 0.3; dY_vals[4,2] = 0.3; 
-        dY_vals[3,4] = 0.4; dY_vals[4,3] = 0.4; 
+        dY_vals = spzeros(4, 4)
+        dY_vals[1, 2] = 0.1; dY_vals[2, 1] = 0.1
+        dY_vals[1, 3] = 0.2; dY_vals[3, 1] = 0.2
+        dY_vals[2, 4] = 0.3; dY_vals[4, 2] = 0.3
+        dY_vals[3, 4] = 0.4; dY_vals[4, 3] = 0.4
         ps = [:A => 1.0, :B => [4.0 5.0; 6.0 7.0], :dX => 0.1, :dY => dY_vals]
         oprob_1 = ODEProblem(dsrs, u0, (0.0, 10.0), ps; jac, sparse)
 
         # Creates an alternative version of the ODEProblem.
-        dX_vals = spzeros(4,4)
-        dX_vals[1,2] = 0.01; dX_vals[2,1] = 0.01; 
-        dX_vals[1,3] = 0.02; dX_vals[3,1] = 0.02; 
-        dX_vals[2,4] = 0.03; dX_vals[4,2] = 0.03; 
-        dX_vals[3,4] = 0.04; dX_vals[4,3] = 0.04; 
+        dX_vals = spzeros(4, 4)
+        dX_vals[1, 2] = 0.01; dX_vals[2, 1] = 0.01
+        dX_vals[1, 3] = 0.02; dX_vals[3, 1] = 0.02
+        dX_vals[2, 4] = 0.03; dX_vals[4, 2] = 0.03
+        dX_vals[3, 4] = 0.04; dX_vals[4, 3] = 0.04
         ps = [:A => [1.1 1.2; 1.3 1.4], :B => 5.0, :dX => dX_vals, :dY => 0.01]
         oprob_2 = ODEProblem(dsrs, u0, (0.0, 10.0), ps; jac, sparse)
 
@@ -372,16 +372,16 @@ let
     B1 = [4.0 5.0; 6.0 7.0]
     A2 = [1.1 1.2; 1.3 1.4]
     B2 = 5.0
-    dY_vals = spzeros(4,4)
-    dY_vals[1,2] = 0.1; dY_vals[2,1] = 0.1; 
-    dY_vals[1,3] = 0.2; dY_vals[3,1] = 0.2; 
-    dY_vals[2,4] = 0.3; dY_vals[4,2] = 0.3; 
-    dY_vals[3,4] = 0.4; dY_vals[4,3] = 0.4; 
-    dX_vals = spzeros(4,4)
-    dX_vals[1,2] = 0.01; dX_vals[2,1] = 0.01; 
-    dX_vals[1,3] = 0.02; dX_vals[3,1] = 0.02; 
-    dX_vals[2,4] = 0.03; dX_vals[4,2] = 0.03; 
-    dX_vals[3,4] = 0.04; dX_vals[4,3] = 0.04; 
+    dY_vals = spzeros(4, 4)
+    dY_vals[1, 2] = 0.1; dY_vals[2, 1] = 0.1
+    dY_vals[1, 3] = 0.2; dY_vals[3, 1] = 0.2
+    dY_vals[2, 4] = 0.3; dY_vals[4, 2] = 0.3
+    dY_vals[3, 4] = 0.4; dY_vals[4, 3] = 0.4
+    dX_vals = spzeros(4, 4)
+    dX_vals[1, 2] = 0.01; dX_vals[2, 1] = 0.01
+    dX_vals[1, 3] = 0.02; dX_vals[3, 1] = 0.02
+    dX_vals[2, 4] = 0.03; dX_vals[4, 2] = 0.03
+    dX_vals[3, 4] = 0.04; dX_vals[4, 3] = 0.04
     dX1 = 0.1
     dY1 = dY_vals
     dX2 = dX_vals
@@ -391,10 +391,10 @@ let
 
     # Creates simulation through two different separate simulations.
     oprob_1_1 = ODEProblem(dsrs, u0, (0.0, 5.0), ps_1; jac = true, sparse = true)
-    sol_1_1 = solve(oprob_1_1, Rosenbrock23(); saveat = 1.0, abstol = 1e-8, reltol = 1e-8)
+    sol_1_1 = solve(oprob_1_1, Rosenbrock23(); saveat = 1.0, abstol = 1.0e-8, reltol = 1.0e-8)
     u0_1_2 = [:X => sol_1_1.u[end][1:2:end], :Y => sol_1_1.u[end][2:2:end]]
     oprob_1_2 = ODEProblem(dsrs, u0_1_2, (0.0, 5.0), ps_2; jac = true, sparse = true)
-    sol_1_2 = solve(oprob_1_2, Rosenbrock23(); saveat = 1.0, abstol = 1e-8, reltol = 1e-8)
+    sol_1_2 = solve(oprob_1_2, Rosenbrock23(); saveat = 1.0, abstol = 1.0e-8, reltol = 1.0e-8)
 
     # Creates simulation through a single simulation with a callback
     oprob_2 = ODEProblem(dsrs, u0, (0.0, 10.0), ps_1; jac = true, sparse = true)
@@ -404,10 +404,10 @@ let
         spat_setp!(integrator, :B, dsrs, B2)
         integrator.ps[:dX] = dX2
         integrator.ps[:dY] = [dY2]
-        rebuild_spat_internals!(integrator)
+        return rebuild_spat_internals!(integrator)
     end
     callback = DiscreteCallback(condition, affect!)
-    sol_2 = solve(oprob_2, Rosenbrock23(); saveat = 1.0, tstops = [5.0], callback, abstol = 1e-8, reltol = 1e-8)
+    sol_2 = solve(oprob_2, Rosenbrock23(); saveat = 1.0, tstops = [5.0], callback, abstol = 1.0e-8, reltol = 1.0e-8)
 
     # Check that trajectories are equivalent.
     @test [sol_1_1.u; sol_1_2.u] ≈ sol_2.u
@@ -417,10 +417,10 @@ end
 let
     # Prepare `DiscreteSpaceReactionSystem`.
     rs = @reaction_network begin
-        (k1,k2), X1 <--> X2
+        (k1, k2), X1 <--> X2
     end
-    tr = @transport_reaction D X1 
-    grid = CartesianGrid((2,2))
+    tr = @transport_reaction D X1
+    grid = CartesianGrid((2, 2))
     dsrs = DiscreteSpaceReactionSystem(rs, [tr], grid)
 
     # Create problems.

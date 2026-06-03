@@ -19,7 +19,7 @@ function isconstant(s)
     if iscall(s) && operation(s) === getindex
         s = first(arguments(s))
     end
-    MT.getmetadata(s, ParameterConstantSpecies, false)
+    return MT.getmetadata(s, ParameterConstantSpecies, false)
 end
 
 """
@@ -29,7 +29,7 @@ Tests if the given symbolic variable corresponds to a boundary condition species
 """
 isbc(s::Num) = isbc(value(s))
 function isbc(s)
-    MT.getmetadata(s, VariableBCSpecies, false)
+    return MT.getmetadata(s, VariableBCSpecies, false)
 end
 
 """
@@ -56,9 +56,9 @@ Notes:
 function tospecies(s)
     MT.isparameter(s) &&
         throw(ArgumentError("Parameters, including isconstantspecies parameters, can not be converted to species. Please pass a variable."))
-    MT.getmetadata(unwrap(s), ParameterConstantSpecies, false) && 
-        throw(ArgumentError("isconstantspecies metadata can only be used with parameters."))    
-    MT.setmetadata(s, VariableSpecies, true)
+    MT.getmetadata(unwrap(s), ParameterConstantSpecies, false) &&
+        throw(ArgumentError("isconstantspecies metadata can only be used with parameters."))
+    return MT.setmetadata(s, VariableSpecies, true)
 end
 
 # Other species functions.
@@ -89,7 +89,7 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     end
 
     # stoichiometry as a vector
-    [el for el in nsdict if !_iszero(el[2])]
+    return [el for el in nsdict if !_iszero(el[2])]
 end
 
 # Get the net stoichiometries' type.
@@ -170,10 +170,12 @@ struct Reaction{S, T}
 end
 
 # Five-argument constructor accepting rate, substrates, and products, and their stoichiometries.
-function Reaction(rate, subs, prods, substoich, prodstoich;
+function Reaction(
+        rate, subs, prods, substoich, prodstoich;
         netstoich = nothing, metadata = Pair{Symbol, Any}[],
         only_use_rate = metadata_only_use_rate_check(metadata),
-        unit_checks::Bool = false, kwargs...)
+        unit_checks::Bool = false, kwargs...
+    )
     # Handles empty/nothing vectors.
     isnothing(subs) || isempty(subs) && (subs = nothing)
     isnothing(prods) || isempty(prods) && (prods = nothing)
@@ -230,7 +232,7 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
         get_netstoich(subs, prods, substoich′, prodstoich′)
     else
         (netstoich_stoichtype(netstoich) != stoich_type) ?
-        convert.(stoich_type, netstoich) : netstoich
+            convert.(stoich_type, netstoich) : netstoich
     end
 
     # Check that all metadata entries are unique. (cannot use `in` since some entries may be symbolics).
@@ -248,14 +250,14 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
 
     rx = Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate, metadata)
     unit_checks && assert_valid_units(rx)
-    rx
+    return rx
 end
 
 # Three argument constructor assumes stoichiometric coefs are one and integers.
 function Reaction(rate, subs, prods; kwargs...)
     sstoich = isnothing(subs) ? nothing : ones(Int, length(subs))
     pstoich = isnothing(prods) ? nothing : ones(Int, length(prods))
-    Reaction(rate, subs, prods, sstoich, pstoich; kwargs...)
+    return Reaction(rate, subs, prods, sstoich, pstoich; kwargs...)
 end
 
 ### Base Function Dispatches ###
@@ -268,7 +270,7 @@ function print_rxside(io::IO, specs, stoich)
     else
         for (i, spec) in enumerate(specs)
             prspec = (MT.isparameter(spec) || (MT.operation(spec) == getindex)) ?
-                     spec : MT.operation(spec)
+                spec : MT.operation(spec)
             if isequal(stoich[i], one(stoich[i]))
                 print(io, prspec)
             elseif iscall(stoich[i])
@@ -280,7 +282,7 @@ function print_rxside(io::IO, specs, stoich)
             (i < length(specs)) && print(io, " + ")
         end
     end
-    nothing
+    return nothing
 end
 
 # Show function for `Reaction`s.
@@ -289,7 +291,7 @@ function Base.show(io::IO, rx::Reaction)
     print_rxside(io, rx.substrates, rx.substoich)
     arrow = rx.only_use_rate ? "⇒" : "-->"
     print(io, " ", arrow, " ")
-    print_rxside(io, rx.products, rx.prodstoich)
+    return print_rxside(io, rx.products, rx.prodstoich)
 end
 
 """
@@ -309,7 +311,7 @@ function (==)(rx1::Reaction, rx2::Reaction)
     issetequal(zip(rx1.products, rx1.prodstoich), zip(rx2.products, rx2.prodstoich)) ||
         return false
     issetequal(rx1.netstoich, rx2.netstoich) || return false
-    rx1.only_use_rate == rx2.only_use_rate
+    return rx1.only_use_rate == rx2.only_use_rate
 end
 
 # Hash function.
@@ -324,7 +326,7 @@ function hash(rx::Reaction, h::UInt)
     for s in rx.netstoich
         h ⊻= hash(s)
     end
-    Base.hash(rx.only_use_rate, h)
+    return Base.hash(rx.only_use_rate, h)
 end
 
 ### ModelingToolkit Function Dispatches ###
@@ -334,7 +336,7 @@ function apply_if_nonempty(f, v)
     isempty(v) && return v
     s = similar(v)
     map!(f, s, v)
-    s
+    return s
 end
 
 # Returns a name-spaced version of a reaction.
@@ -351,8 +353,10 @@ function MT.namespace_equation(rx::Reaction, name; kw...)
         ns = similar(rx.netstoich)
         map!(n -> f(n[1]) => f(n[2]), ns, rx.netstoich)
     end
-    Reaction(rate, subs, prods, substoich, prodstoich, netstoich,
-        rx.only_use_rate, rx.metadata)
+    return Reaction(
+        rate, subs, prods, substoich, prodstoich, netstoich,
+        rx.only_use_rate, rx.metadata
+    )
 end
 
 # Overwrites equation-type functions to give the correct input for `Reaction`s.
@@ -361,9 +365,11 @@ MT.is_alg_equation(rx::Reaction) = false
 
 # MTK functions for extracting variables within equation type object
 MT.eqtype_supports_collect_vars(rx::Reaction) = true
-function MT.collect_vars!(unknowns::OrderedSet{SymbolicT}, parameters::OrderedSet{SymbolicT},
+function MT.collect_vars!(
+        unknowns::OrderedSet{SymbolicT}, parameters::OrderedSet{SymbolicT},
         rx::Reaction, iv::Union{SymbolicT, Nothing}, ::Type{op} = Symbolics.Operator;
-        depth = 0) where {op}
+        depth = 0
+    ) where {op}
     MT.collect_vars!(unknowns, parameters, rx.rate, iv, op; depth)
 
     for items in (rx.substrates, rx.products, rx.substoich, rx.prodstoich)
@@ -427,7 +433,7 @@ function MT.get_variables!(deps::Set, rx::Reaction, variables)
         # parametric stoichiometry means may have a parameter as a substrate
         any(isequal(s), variables) && push!(deps, s)
     end
-    deps
+    return deps
 end
 
 # determine which species a reaction modifies
@@ -435,14 +441,14 @@ function MT.modified_unknowns!(munknowns, rx::Reaction, sts::Set)
     for (species, stoich) in rx.netstoich
         (species in sts) && push!(munknowns, species)
     end
-    munknowns
+    return munknowns
 end
 
 function MT.modified_unknowns!(munknowns, rx::Reaction, sts::AbstractVector)
     for (species, stoich) in rx.netstoich
         any(isequal(species), sts) && push!(munknowns, species)
     end
-    munknowns
+    return munknowns
 end
 
 ### `Reaction`-specific Functions ###
@@ -469,7 +475,7 @@ function isbcbalanced(rx::Reaction)
         end
     end
 
-    true
+    return true
 end
 
 ### Reaction Metadata Implementation ###
@@ -556,7 +562,7 @@ function SymbolicUtils.setmetadata(rx::Reaction, key::Symbol, val)
     else
         mdvec[idx] = key => val
     end
-    nothing
+    return nothing
 end
 
 ### Catalyst Defined Reaction Metadata ###
@@ -763,9 +769,13 @@ function unit_validation_report(rx::Reaction; info::String = "")
 
     # Symbolic exponents on unitful bases have indeterminate units.
     if _has_symbolic_unitful_pow(rx.rate)
-        push!(issues, UnitValidationIssue(:symbolic_exponent,
-            string(rx), nothing, nothing,
-            "Symbolic exponent on unitful base is not supported for unit validation"))
+        push!(
+            issues, UnitValidationIssue(
+                :symbolic_exponent,
+                string(rx), nothing, nothing,
+                "Symbolic exponent on unitful base is not supported for unit validation"
+            )
+        )
         return UnitValidationReport(false, issues)
     end
 
@@ -775,8 +785,12 @@ function unit_validation_report(rx::Reaction; info::String = "")
     for i in 2:length(rx.substrates)
         if !_units_match(catalyst_get_unit(rx.substrates[i]), subunits)
             valid = false
-            push!(issues, UnitValidationIssue(:reaction_species_unit_mismatch, string(rx), subunits,
-                catalyst_get_unit(rx.substrates[i]), "substrates have differing units"))
+            push!(
+                issues, UnitValidationIssue(
+                    :reaction_species_unit_mismatch, string(rx), subunits,
+                    catalyst_get_unit(rx.substrates[i]), "substrates have differing units"
+                )
+            )
         end
     end
 
@@ -784,18 +798,26 @@ function unit_validation_report(rx::Reaction; info::String = "")
     for i in 2:length(rx.products)
         if !_units_match(catalyst_get_unit(rx.products[i]), produnits)
             valid = false
-            push!(issues, UnitValidationIssue(:reaction_species_unit_mismatch, string(rx), produnits,
-                catalyst_get_unit(rx.products[i]), "products have differing units"))
+            push!(
+                issues, UnitValidationIssue(
+                    :reaction_species_unit_mismatch, string(rx), produnits,
+                    catalyst_get_unit(rx.products[i]), "products have differing units"
+                )
+            )
         end
     end
 
     if (subunits !== nothing) && (produnits !== nothing) && !_units_match(subunits, produnits)
         valid = false
-        push!(issues, UnitValidationIssue(:reaction_side_unit_mismatch, string(rx), subunits,
-            produnits, "Substrate units are not consistent with product units."))
+        push!(
+            issues, UnitValidationIssue(
+                :reaction_side_unit_mismatch, string(rx), subunits,
+                produnits, "Substrate units are not consistent with product units."
+            )
+        )
     end
 
-    UnitValidationReport(valid, issues)
+    return UnitValidationReport(valid, issues)
 end
 
 """

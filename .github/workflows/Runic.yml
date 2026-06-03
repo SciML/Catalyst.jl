@@ -1,0 +1,15 @@
+name: "Runic Formatting"
+
+on:
+  push:
+    branches:
+      - 'master'
+      - 'release-'
+    tags: '*'
+  pull_request:
+
+jobs:
+  runic:
+    name: "Runic Format Check"
+    uses: "SciML/.github/.github/workflows/runic.yml@v1"
+    secrets: "inherit"

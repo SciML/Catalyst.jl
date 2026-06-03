@@ -12,17 +12,21 @@ let
 
     srg = Catalyst.species_reaction_graph(brusselator)
     s = length(species(brusselator))
-    edgel = Graphs.Edge.([(s+1, 1),
-                   (1, s+2),
-                   (2, s+2),
-                   (s+2, 1),
-                   (s+3, 2),
-                   (1, s+3),
-                   (1, s+4)])
+    edgel = Graphs.Edge.(
+        [
+            (s + 1, 1),
+            (1, s + 2),
+            (2, s + 2),
+            (s + 2, 1),
+            (s + 3, 2),
+            (1, s + 3),
+            (1, s + 4),
+        ]
+    )
     @test all(∈(collect(Graphs.edges(srg))), edgel)
 
     MAPK = @reaction_network MAPK begin
-        (k₁, k₂),KKK + E1 <--> KKKE1
+        (k₁, k₂), KKK + E1 <--> KKKE1
         k₃, KKKE1 --> KKK_ + E1
         (k₄, k₅), KKK_ + E2 <--> KKKE2
         k₆, KKKE2 --> KKK + E2
@@ -32,7 +36,7 @@ let
         k₁₂, KKPKKK_ --> KKPP + KKK_
         (k₁₃, k₁₄), KKP + KKPase <--> KKPKKPase
         k₁₅, KKPPKKPase --> KKP + KKPase
-        k₁₆,KKPKKPase --> KK + KKPase
+        k₁₆, KKPKKPase --> KK + KKPase
         (k₁₇, k₁₈), KKPP + KKPase <--> KKPPKKPase
         (k₁₉, k₂₀), KKPP + K <--> KKPPK
         k₂₁, KKPPK --> KKPP + KP
@@ -77,9 +81,9 @@ let
     srg = CGME.SRGraphWrap(rn)
     s = length(species(rn))
     @test ne(srg) == 8
-    @test Graphs.Edge(2, s+3) ∈ srg.multiedges
+    @test Graphs.Edge(2, s + 3) ∈ srg.multiedges
     # Since B is both a dep and a reactant
-    @test count(==(Graphs.Edge(2, s+3)), edges(srg)) == 2
+    @test count(==(Graphs.Edge(2, s + 3)), edges(srg)) == 2
 
     f = plot_network(rn)
     save("fig.png", f)
@@ -99,13 +103,13 @@ let
     s = length(species(rn))
     @test ne(srg) == 8
     # Since A, B is both a dep and a reactant
-    @test count(==(Graphs.Edge(1, s+2)), edges(srg)) == 2
-    @test count(==(Graphs.Edge(2, s+3)), edges(srg)) == 2
+    @test count(==(Graphs.Edge(1, s + 2)), edges(srg)) == 2
+    @test count(==(Graphs.Edge(2, s + 3)), edges(srg)) == 2
 end
 
 function test_edgeorder(rn)
     # The initial edgelabels in `plot_complexes` is given by the order of reactions in reactions(rn).
-    D = incidencemat(rn; sparse=true)
+    D = incidencemat(rn; sparse = true)
     rxs = reactions(rn)
     edgelist = Vector{Graphs.SimpleEdge{Int}}()
     rows = rowvals(D)
@@ -146,7 +150,7 @@ let
         (k2, k3), C <--> D
         k4, A --> B
         hillr(D, α, K, n), C --> D
-        k5*B, A --> B
+        k5 * B, A --> B
     end
     rxorder = test_edgeorder(rn)
     edgelabels = [repr(rx.rate) for rx in reactions(rn)]
