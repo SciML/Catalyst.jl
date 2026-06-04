@@ -46,7 +46,7 @@ plot!(t_measurement, I_observed; label = "I (measured)", color = 2, seriestype =
 # which posterior we wish to infer, and the likelihoods of the observables.
 # If `x` is an undefined parameter, `x` becomes a prior for an estimated parameter, else,
 # it is interpreted as an observable likelihood.
-using Turing
+using Turing, MCMCChains
 @model function sir_model(I_observed, oprob_base, setp_oop, saveat)
     # Defines the parameters we wish to estimate and their prior distributions.
     γ ~ LogUniform(0.00001, 0.001)
@@ -76,7 +76,7 @@ n_steps = 1000
 n_chains = 4
 setp_oop = SymbolicIndexingInterface.setp_oop(oprob_true, [:γ, :ν])
 model = sir_model(I_observed, oprob_true, setp_oop, t_measurement)
-chain = sample(model, NUTS(), MCMCThreads(), n_steps, n_chains; progress = false)
+chain = sample(model, NUTS(), MCMCThreads(), n_steps, n_chains; progress = false, chain_type = MCMCChains.Chains)
 
 # Plots the resulting chains and posteriors.
 using StatsPlots
@@ -131,7 +131,7 @@ Here, we declare our parameters on the form `p ~ Distribution(...)` where the le
 
 In our case, we first declare each parameter and its prior. Next, we simulate the SIR model for a specific parameter set. Then, we compute the likelihood of observing our observables given the simulation.
 ```@example turing_paramfit
-using Turing, SymbolicIndexingInterface
+using Turing, MCMCChains, SymbolicIndexingInterface
 setp_oop = SymbolicIndexingInterface.setp_oop(oprob_true, [:γ, :ν])
 @model function sir_likelihood(I_observed, oprob_base, setp_oop, saveat)
     # Defines the parameters we wish to estimate and their prior distributions.
@@ -170,7 +170,7 @@ Finally, we can estimate the posterior distributions of all parameters. First we
 n_steps = 1000
 n_chains = 4
 sir_model = sir_likelihood(I_observed, oprob_true, setp_oop, t_measurement)
-chain = sample(sir_model, NUTS(), MCMCThreads(), n_steps, n_chains; progress = false, verbose = false)
+chain = sample(sir_model, NUTS(), MCMCThreads(), n_steps, n_chains; progress = false, verbose = false, chain_type = MCMCChains.Chains)
 nothing # hide
 ```
 Here, `sample`'s input is:
