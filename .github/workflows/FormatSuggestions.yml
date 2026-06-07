@@ -1,9 +1,0 @@
-name: "Format Suggestions"
-on: pull_request
-permissions:
-  contents: read
-  pull-requests: write
-jobs:
-  format-suggestions:
-    uses: "SciML/.github/.github/workflows/format-suggestions-on-pr.yml@v1"
-    secrets: "inherit"
