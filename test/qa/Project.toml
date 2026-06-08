@@ -1,0 +1,11 @@
+[deps]
+Catalyst = "479239e8-5488-4da2-87a7-35f2df7eef83"
+ExplicitImports = "7d51a73a-1435-4ff3-83d9-f097790105c7"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[sources]
+Catalyst = { path = "../.." }
+
+[compat]
+ExplicitImports = "1.15"
+julia = "1.10"
