@@ -510,7 +510,7 @@ end
 # merge constraint components with the ReactionSystem components
 # also handles removing BC and constant species
 function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved = false,
-        compute_cl_initeqs = false, include_cl_as_eqs = false)
+        include_cl_as_eqs = false)
     # if there are BC species, put them after the independent species
     rssts = get_unknowns(rs)
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
@@ -518,6 +518,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
     initeqs = Equation[]
     ics = MT.initial_conditions(rs)
     obs = MT.observed(rs)
+    cl_bindings = Dict{Any, Any}()
 
     # make dependent species observables and add conservation constants as parameters
     if remove_conserved && !isempty(conservedequations(rs))
@@ -527,6 +528,18 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
         ps = copy(ps)
         push!(ps, nps.conservedconst)
 
+        # Bind Γ => missing and provide initialization equations so MTK solves for Γ
+        # during initialization (see MTK docs on parameter initialization).
+        # The binding is placed at the System level (not as a variable metadata default)
+        # so that SI.jl doesn't encounter Missing in the parameter symtype.
+        cl_bindings[nps.conservedconst] = missing
+        if !include_cl_as_eqs
+            initialmap = Dict(u => Initial(u) for u in species(rs))
+            for eq in nps.constantdefs
+                push!(initeqs, Symbolics.substitute(eq, initialmap))
+            end
+        end
+
         # add the dependent species as observed. If `include_cl_as_eqs = true` add them as
         # algebraic equations instead.
         if !include_cl_as_eqs
@@ -534,13 +547,6 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
             append!(obs, conservedequations(rs))
         else
             append!(eqs, [0 ~ ceq.rhs - ceq.lhs for ceq in conservedequations(rs)])
-        end
-
-        # create initialization equations (only used for nonlinear systems)
-        if compute_cl_initeqs && !include_cl_as_eqs
-            initialmap = Dict(u => Initial(u) for u in species(rs))
-            conseqs = conservationlaw_constants(rs)
-            initeqs = [Symbolics.substitute(conseq, initialmap) for conseq in conseqs]
         end
     end
 
@@ -558,7 +564,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
         append!(eqs, ceqs)
     end
 
-    eqs, sts, ps, obs, ics, initeqs
+    eqs, sts, ps, obs, ics, initeqs, cl_bindings
 end
 
 ### Utility ###
@@ -626,6 +632,7 @@ function hybrid_model(rs::ReactionSystem;
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true,
         remove_conserved = false,
+        add_cl_bindings = true,
         expand_catalyst_funs = true,
         save_positions = (true, true),
         checks = false,
@@ -715,8 +722,10 @@ function hybrid_model(rs::ReactionSystem;
     jumps = vcat(rxn_jumps, user_jumps)
 
     # --- Add constraints (BC species, constraint equations, conserved species) ---
+    initeqs = Equation[]
+    cl_bindings = Dict{Any, Any}()
     if has_continuous
-        eqs, us, ps, obs, ics = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
+        eqs, us, ps, obs, ics, initeqs, cl_bindings = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
     else
         # Pure jump case.
         any(isbc, get_unknowns(flatrs)) &&
@@ -729,12 +738,16 @@ function hybrid_model(rs::ReactionSystem;
 
     # --- Construct unified System ---
     # Note: brownians is a positional arg (5th) in the System constructor.
+    all_bindings = add_cl_bindings ? merge(MT.get_bindings(flatrs), cl_bindings) :
+                                     MT.get_bindings(flatrs)
+    all_initeqs = add_cl_bindings ? initeqs : Equation[]
     MT.System(eqs, get_iv(flatrs), us, ps, brownian_vars;
         poissonians = user_poissonians,
         jumps,
         observed = obs,
         name,
-        bindings = MT.get_bindings(flatrs),
+        initialization_eqs = all_initeqs,
+        bindings = all_bindings,
         initial_conditions = merge(initial_conditions, ics),
         checks,
         continuous_events = MT.get_continuous_events(flatrs),
@@ -910,8 +923,8 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
     ists, ispcs = get_indep_sts(fullrs, (remove_conserved && !include_cl_as_eqs))
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
         as_odes = false, include_zero_odes = false, expand_catalyst_funs)
-    eqs, us, ps, obs, ics, initeqs = addconstraints!(eqs, fullrs, ists, ispcs;
-        remove_conserved, compute_cl_initeqs = !include_cl_as_eqs, include_cl_as_eqs)
+    eqs, us, ps, obs, ics, initeqs, cl_bindings = addconstraints!(eqs, fullrs, ists, ispcs;
+        remove_conserved, include_cl_as_eqs)
 
     # Comoutes the correct initial conditions and bindings.
     initial_conditions, bindings = MT.convert_bindings_for_time_independent_system(rs)
@@ -924,7 +937,7 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
     System(eqs, us, ps;
         name,
         observed = obs, initialization_eqs = initeqs,
-        bindings,
+        bindings = merge(bindings, cl_bindings),
         initial_conditions,
         checks,
         metadata = MT.get_metadata(rs),
@@ -1026,12 +1039,14 @@ function sde_model(rs::ReactionSystem;
             remove_conserved, expand_catalyst_funs, use_jump_ratelaws)
         noiseeqs = assemble_diffusion(flatrs, ists, ispcs; combinatoric_ratelaws,
             remove_conserved, expand_catalyst_funs, use_jump_ratelaws)
-        eqs, us, ps, obs, ics = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
+        eqs, us, ps, obs, ics, initeqs, cl_bindings = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
 
         return MT.System(eqs, get_iv(flatrs), us, ps;
             noise_eqs = noiseeqs,
             observed = obs,
             name,
+            initialization_eqs = initeqs,
+            bindings = cl_bindings,
             initial_conditions = merge(initial_conditions, ics),
             checks,
             continuous_events = MT.get_continuous_events(flatrs),
