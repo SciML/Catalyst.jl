@@ -112,6 +112,9 @@ function SI.assess_identifiability(rs::ReactionSystem, args...;
         conseqs; ignore_no_measured_warn)
     funcs_to_check = make_ftc(funcs_to_check, conseqs, vars)
 
+    # Due to MTK changes, an yet to be implemented update is required to handle coupled algebraic equations (https://github.com/SciML/Catalyst.jl/issues/1485).
+    ModelingToolkitBase.has_alg_equations(osys) && error("Structural identifiability analysis is currently no supported for `ReactionSystem`s coupled with algebraic equations. If this feature is useful to you, please raise an issue at https://github.com/SciML/Catalyst.jl/issues.")
+    
     # Computes identifiability and converts it to a easy to read form.
     # The `::System` designation fixes: https://github.com/SciML/StructuralIdentifiability.jl/issues/360,
     # however, the exact mechanisms of this is still not fully clear.
