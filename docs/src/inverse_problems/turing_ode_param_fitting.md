@@ -10,7 +10,7 @@ Pkg.add("Catalyst")
 Pkg.add("Distributions")
 Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
-Pkg.add("SciMLLogging")
+Pkg.add("DiffEqBase")
 Pkg.add("StatsPlots")
 Pkg.add("SymbolicIndexingInterface")
 Pkg.add("Turing")
@@ -31,7 +31,7 @@ sir = @reaction_network begin
 end
 
 # Generate some (synthetic) data for the fitting procedure.
-using Distributions, OrdinaryDiffEq, Plots, SciMLLogging
+using Distributions, OrdinaryDiffEq, Plots, DiffEqBase
 t_measurement = 1.0:100.0
 u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
 p_true = [:γ => 0.0003, :ν => 0.1]
@@ -57,7 +57,7 @@ using Turing, MCMCChains
     # Simulate the model for parameter values γ, ν. Saves the solution at the measurement times.
     p = setp_oop(oprob_base, [γ, ν])
     oprob_base = remake(oprob_base; p)
-    sol = solve(oprob_base; saveat, verbose = SciMLLogging.None(), maxiters = 10000)
+    sol = solve(oprob_base; saveat, verbose = DiffEqBase.SciMLLogging.None(), maxiters = 10000)
 
     # If simulation was unsuccessful, the likelihood is -Inf.
     if !SciMLBase.successful_retcode(sol)
@@ -105,7 +105,7 @@ end
 ```
 From an initial condition where only a small fraction of the population is in the infected state, the model exhibits a peak of infections, after which the epidemic subsides.
 ```@example turing_paramfit
-using OrdinaryDiffEq, Plots, SciMLLogging
+using OrdinaryDiffEq, Plots, DiffEqBase
 u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
 p_true = [:γ => 0.0005, :ν => 0.1]
 oprob_true = ODEProblem(sir, u0, 100.0, p_true)
@@ -143,7 +143,7 @@ setp_oop = SymbolicIndexingInterface.setp_oop(oprob_true, [:γ, :ν])
     # Simulate the model for parameter values γ, ν. Saves the solution at the measurement times.
     p = setp_oop(oprob_base, [γ, ν])
     oprob_base = remake(oprob_base; p)
-    sol = solve(oprob_base; saveat, verbose = SciMLLogging.None(), maxiters = 10000)
+    sol = solve(oprob_base; saveat, verbose = DiffEqBase.SciMLLogging.None(), maxiters = 10000)
 
     # If simulation was unsuccessful, the likelihood is -Inf.
     if !SciMLBase.successful_retcode(sol)
@@ -160,7 +160,7 @@ nothing # hide
 ```
 
 Some specific comments regarding how we have declared the model above:
-- Like for [normal parameter fitting](@ref optimization_parameter_fitting_basics), we use the `maxiters = 10000` (to prevent spending a long time simulating unfeasible parameter sets) and `verbose = SciMLLogging.None()` (to prevent unnecessary printing of warning messages) arguments to `solve`.
+- Like for [normal parameter fitting](@ref optimization_parameter_fitting_basics), we use the `maxiters = 10000` (to prevent spending a long time simulating unfeasible parameter sets) and `verbose = DiffEqBase.SciMLLogging.None()` (to prevent unnecessary printing of warning messages) arguments to `solve`.
 - Again, we need to handle parameter sets where the model cannot be successfully simulated. Here, we use `Turing.@addlogprob! -Inf` to set a non-existent likelihood, and `return nothing` to stop further evaluation of the specific parameter set.
 - Just like for normal parameter fitting, we wish to [fit parameters on a log scale](@ref optimization_parameter_fitting_log_scale). Here we do so by declaring log-scaled prior distributions.
 - Here we assume that we (correctly) know that the noise is normally distributed. However, we assume that we *do not know the standard deviation*. Instead, we make the standard deviation a third parameter whose value we infer as part of the inference process. More complicated noise formulas can be used (and are sometimes even advisable[^2]).
