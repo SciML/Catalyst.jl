@@ -9,7 +9,7 @@ Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted 
 Pkg.add("CairoMakie")
 Pkg.add("Catalyst")
 Pkg.add("GLMakie")
-Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("OrdinaryDiffEq")
 ```
 ```@raw html
 </details>
@@ -24,7 +24,7 @@ Catalyst can utilize the [GLMakie.jl](https://github.com/JuliaPlots/GLMakie.jl) 
 Let's again use the oscillating Brusselator model, extending the basic simulation [plotting](@ref simulation_plotting) workflow we saw earlier. 
 ```@example interactive_brusselator
 using Catalyst
-using OrdinaryDiffEqTsit5
+using OrdinaryDiffEq
 ```
 ```julia
 using GLMakie

@@ -40,7 +40,7 @@ u0 = [:S => 1.0, :E => 1.0, :SE => 0.0, :P => 0.0]
 p_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
 
 # Generate synthetic data.
-using OrdinaryDiffEqDefault
+using OrdinaryDiffEq
 oprob_true = ODEProblem(rn, u0, (0.0, 10.0), p_true)
 true_sol = solve(oprob_true)
 data_sol = solve(oprob_true; saveat = 1.0)
@@ -380,7 +380,7 @@ u0 = [:E => 1.0, :SE => 0.0, :P => 0.0]
 p_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
 
 # Simulate data.
-using OrdinaryDiffEqDefault
+using OrdinaryDiffEq
 t1, d1 = let
     oprob_true = ODEProblem(rn, [:S => 1.0; u0], (0.0, 10.0), p_true)
     data_sol = solve(oprob_true; saveat = 1.0)
@@ -533,7 +533,7 @@ end
 u0 = [:SE => 0.0, :P => 0.0]
 p_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5, :S0=>1.0, :E0 => 1.0]
 
-using OrdinaryDiffEqDefault
+using OrdinaryDiffEq
 oprob_true = ODEProblem(rn, u0, (0.0, 10.0), p_true)
 true_sol = solve(oprob_true)
 data_sol = solve(oprob_true; saveat = 1.0)
@@ -570,7 +570,7 @@ Here is an example, adapted from the
 [more detailed PEtab.jl documentation](https://sebapersson.github.io/PEtab.jl/stable/configuration/default_options)
 
 ```@example petab1
-using OrdinaryDiffEqRosenbrock
+using OrdinaryDiffEq
 PEtabODEProblem(
     petab_model,
     odesolver = ODESolver(Rodas5P(), abstol = 1e-8, reltol = 1e-8),

@@ -9,7 +9,7 @@ Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted 
 Pkg.add("Catalyst")
 Pkg.add("JumpProcesses")
 Pkg.add("DiffEqNoiseProcess")
-Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 Pkg.add("StochasticDiffEq")
 ```
@@ -21,7 +21,7 @@ Pkg.add("StochasticDiffEq")
 ```
 The following code provides a brief example of a hybrid simulation (ODE/jump).
 ```julia
-using Catalyst, JumpProcesses, OrdinaryDiffEqTsit5, Plots
+using Catalyst, JumpProcesses, OrdinaryDiffEq, Plots
 
 # A gene switching between inactive (Gi) and active (Ga) states.
 # When active, it produces protein X. Gene switching is simulated as a jump process;
@@ -65,9 +65,9 @@ rn = @reaction_network begin
     d, X --> 0, [physical_scale = PhysicalScale.ODE]
 end
 ```
-Next, we simulate the model by constructing a `HybridProblem`. ODE/jump systems require both `OrdinaryDiffEqTsit5` and `JumpProcesses`, and are solved with an ODE solver (here `Tsit5`).
+Next, we simulate the model by constructing a `HybridProblem`. ODE/jump systems require both `OrdinaryDiffEq` and `JumpProcesses`, and are solved with an ODE solver (here `Tsit5`).
 ```@example hybrid_simulations_basic
-using JumpProcesses, OrdinaryDiffEqTsit5, Plots
+using JumpProcesses, OrdinaryDiffEq, Plots
 u0 = [:X => 100.0, :Ga => 0.0, :Gi => 1.0]
 ps = [:p => 50.0, :d => 0.25, :kOn => 5.0, :kOff => 5.0]
 hprob = HybridProblem(rn, u0, (0.0, 10.0), ps)

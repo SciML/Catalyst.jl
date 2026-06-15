@@ -14,7 +14,7 @@ Pkg.add("Plots")
 Pkg.add("PEtab")
 Pkg.add("Optim")
 Pkg.add("OptimizationLBFGSB")
-Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("OrdinaryDiffEq")
 ```
 ```@raw html
 </details>
@@ -32,7 +32,7 @@ log_growth = @reaction_network begin
 end
 
 # Generate some (synthetic) data for the fitting procedure.
-using Distributions, OrdinaryDiffEqDefault, Plots
+using Distributions, OrdinaryDiffEq, Plots
 t_measurement = 1.0:5:150.0
 u0 = [:X => 1.0]
 p_true = [:r => 0.1, :K => 100.0]
@@ -87,7 +87,7 @@ end
 ```
 We generate two synthetic datasets, one of higher quality than the other:
 ```@example likelihood_profiler_pract_ident
-using Distributions, OrdinaryDiffEqDefault
+using Distributions, OrdinaryDiffEq
 function generate_data(u0, σ, tend)
     t_measurement = range(1.0, tend; length = 50)
     p_true = Dict([:r => 0.1, :K => 100.0])
@@ -165,7 +165,7 @@ log_growth = @reaction_network begin
 end
 
 # Generate synthetic data.
-using Distributions, OrdinaryDiffEqDefault, Plots
+using Distributions, OrdinaryDiffEq, Plots
 t_measurement = 1.0:5:150.0
 u0 = [:X => 1.0]
 p_true = [:r => 0.1, :K => 100.0]

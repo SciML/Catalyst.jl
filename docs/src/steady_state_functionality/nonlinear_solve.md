@@ -8,7 +8,7 @@ using Pkg
 Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("Catalyst")
 Pkg.add("NonlinearSolve")
-Pkg.add("OrdinaryDiffEqRosenbrock")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("SteadyStateDiffEq")
 ```
 ```@raw html
@@ -136,11 +136,11 @@ Next, we provide these as an input to a `SteadyStateProblem`
 ssprob = SteadyStateProblem(dimer_production, u0, p)
 nothing # hide
 ```
-Finally, we can find the steady states using the `solver` command. Since `SteadyStateProblem`s are solved through forward ODE simulation, we must load the sublibrary of the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package that corresponds to the [selected ODE solver](@ref simulation_intro_solver_options). Any available ODE solver can be used, however, it has to be encapsulated by the `DynamicSS()` function. E.g. here we use the `Rodas5P` solver which is loaded from the `OrdinaryDiffEqRosenbrock` sublibrary:
+Finally, we can find the steady states using the `solver` command. Since `SteadyStateProblem`s are solved through forward ODE simulation, we must load [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) for the [selected ODE solver](@ref simulation_intro_solver_options). Any available ODE solver can be used, however, it has to be encapsulated by the `DynamicSS()` function. E.g. here we use the `Rodas5P` solver:
 
 (which requires loading the SteadyStateDiffEq package).
 ```@example steady_state_solving_simulation
-using SteadyStateDiffEq, OrdinaryDiffEqRosenbrock
+using SteadyStateDiffEq, OrdinaryDiffEq
 solve(ssprob, DynamicSS(Rodas5P()))
 ```
 Note that, unlike for nonlinear system solving, `u0` is not just an initial guess of the solution, but the initial conditions from which the steady state simulation is carried out. This means that, for a system with multiple steady states, we can determine the steady states associated with specific initial conditions (which is not possible when the nonlinear solving approach is used). This also permits us to easily [handle the presence of conservation laws](@ref steady_state_solving_nonlinear_conservation_laws). The forward ODE simulation approach (unlike homotopy continuation and nonlinear solving) cannot find unstable steady states.

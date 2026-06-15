@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, OrdinaryDiffEqRosenbrock, OrdinaryDiffEqTsit5, OrdinaryDiffEqVerner, Test
+using Catalyst, OrdinaryDiffEq, Test
 
 # Sets stable rng number.
 using StableRNGs

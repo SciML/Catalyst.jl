@@ -9,8 +9,9 @@ Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted 
 Pkg.add("Catalyst")
 Pkg.add("OptimizationBase")
 Pkg.add("OptimizationOptimisers")
-Pkg.add("OrdinaryDiffEqRosenbrock")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
+Pkg.add("SciMLLogging")
 Pkg.add("SciMLSensitivity")
 ```
 ```@raw html
@@ -23,9 +24,10 @@ In this example we will use [Optimization.jl](https://github.com/SciML/Optimizat
 First, we fetch the required packages.
 ```@example pe_osc_example
 using Catalyst
-using OrdinaryDiffEqRosenbrock
+using OrdinaryDiffEq
 using OptimizationBase
 using OptimizationOptimisers # Required for the ADAM optimizer.
+using SciMLLogging
 using SciMLSensitivity # Required for the `AutoZygote()` automatic differentiation option.
 ```
 
@@ -78,7 +80,7 @@ function optimize_p(pinit, tend,
         p = set_p(prob, p)
         newtimes = filter(<=(tend), sample_times)
         newprob = remake(prob; p)
-        sol = Array(solve(newprob, Rosenbrock23(); saveat = newtimes, verbose = false, maxiters = 10000))
+        sol = Array(solve(newprob, Rosenbrock23(); saveat = newtimes, verbose = SciMLLogging.None(), maxiters = 10000))
         loss = sum(abs2, sol .- sample_vals[:, 1:size(sol,2)])
         return loss
     end

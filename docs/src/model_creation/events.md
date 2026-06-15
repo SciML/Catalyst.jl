@@ -7,7 +7,7 @@ The following code sets up an environment for running the code on this page.
 using Pkg
 Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("Catalyst")
-Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 ```
 ```@raw html
@@ -18,7 +18,7 @@ Pkg.add("Plots")
 ```
 In this quick-start example we show how to add a "continuous event" directly to a model declared through the DSL.
 ```julia
-using Catalyst, OrdinaryDiffEqDefault, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 
 # The `@continuous_events option is used to declare events.
 # When the condition on the event left hold, the effect on the right is triggered.
@@ -66,7 +66,7 @@ lower-level approach for creating events via the DifferentialEquations.jl
 callback interface is illustrated [here](https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/) tutorial.
 
 ```@example events1
-using Catalyst, OrdinaryDiffEqTsit5, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 
 rn = @reaction_network growing_cell begin
     # the growth rate
@@ -142,7 +142,7 @@ on event handling using callbacks.
 Let's repeat the previous two models using the symbolic interface. We first
 create our equations and unknowns/species again
 ```@example events2
-using Catalyst, OrdinaryDiffEqTsit5, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 t = default_t()
 D = default_time_deriv()
 

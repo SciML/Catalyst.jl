@@ -7,7 +7,7 @@ The following code sets up an environment for running the code on this page.
 using Pkg
 Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("Catalyst")
-Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 ```
 ```@raw html
@@ -17,7 +17,7 @@ Pkg.add("Plots")
 
 Non-reaction model components can be inserted directly in a Catalyst model. Here we will briefly describe the simplest case: adding an ODE to a model declared through the `@reaction_network` DSL. The equation is added using the `@equations` option, after which the equation is written (with `D(V)` denoting differential with respect to time).
 ```julia
-using Catalyst, OrdinaryDiffEqDefault, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 
 # Create model with a ODE for the variable `V` (e.g. denoting Volume).
 rn = @reaction_network begin
@@ -56,7 +56,7 @@ The easiest way to include ODEs and algebraic equations is to just include them
 when using the DSL to specify a model. Here we include an ODE for $V(t)$ along
 with degradation and production reactions for $P(t)$:
 ```@example ceq1
-using Catalyst, OrdinaryDiffEqTsit5, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 
 rn = @reaction_network growing_cell begin
     # the growth rate
@@ -90,7 +90,7 @@ plot(sol)
 As an alternative to the previous approach, we could have also constructed our
 `ReactionSystem` all at once using the symbolic interface:
 ```@example ceq2
-using Catalyst, OrdinaryDiffEqTsit5, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 
 t = default_t()
 D = default_time_deriv()
@@ -123,7 +123,7 @@ this through `D = default_time_deriv()`. Here, `D(V)` denotes the differential
 of the variable `V` with respect to time.
 
 ```@example ceq2b
-using Catalyst, OrdinaryDiffEqTsit5, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 
 t = default_t()
 D = default_time_deriv()
@@ -188,7 +188,7 @@ Here we note that:
 
 The model can be simulated and plotted using normal syntax, providing an initial condition for `N` and a value for `d` through the normal initial condition and parameter value vectors.
 ```@example coupled_diff_eqs
-using OrdinaryDiffEqDefault, Plots
+using OrdinaryDiffEq, Plots
 u0 = [:Xᵢ => 1.0, :Xₐ => 0.0, :N => 1.0]
 ps = [:kₐ => 2.0, :kᵢ => 0.5, :d => 1.0]
 oprob = ODEProblem(rs, u0, 10.0, ps)
@@ -230,7 +230,7 @@ nothing # hide
 ```
 Next, we provide `guesses` to our `ODEProblem` as an additional argument. Furthermore, we will use the `mtkcompile = true` argument, which is always required when simulating models containing algebraic equations. With these modifications, the model can be simulated using standard workflows.
 ```@example coupled_eqs_alg_eq
-using OrdinaryDiffEqDefault, Plots
+using OrdinaryDiffEq, Plots
 oprob = ODEProblem(algebraic_crn, u0, 10.0, ps; mtkcompile = true, guesses)
 sol = solve(oprob)
 plot(sol)
@@ -356,7 +356,7 @@ end
 ```
 The model can be simulated using standard syntax. However, poissonians can only be simulated through `HybridProblem`s. The reason is that the variable subject to the poissonian is both governed by a differential equation and discrete jump process. Below, we perform a hybrid simulation for our model, where the $X$'s reactions and the poissonian are simulated as jumps, while $V$'s governing dynamics are simulated as a *piecewise deterministic markov process*.
 ```@example coupled_eqs_noise
-using JumpProcesses, OrdinaryDiffEqTsit5
+using JumpProcesses, OrdinaryDiffEq
 u0 = [:X => 2.0, :V => 4.0]
 ps = [:p => 1.2, :d => 0.1, :λ => 2.0]
 jprob = HybridProblem(noisy_cell, u0, (0.0, 10.0), ps)

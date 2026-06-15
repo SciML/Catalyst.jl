@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, ModelingToolkitBase, OrdinaryDiffEqRosenbrock
+using Catalyst, ModelingToolkitBase, OrdinaryDiffEq
 
 # Set creates the `t` independent variable.
 t = default_t()

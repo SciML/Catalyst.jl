@@ -11,8 +11,9 @@ Pkg.add("OptimizationBase")
 Pkg.add("OptimizationNLopt")
 Pkg.add("OptimizationEvolutionary")
 Pkg.add("OptimizationOptimJL")
-Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
+Pkg.add("SciMLLogging")
 ```
 ```@raw html
 </details>
@@ -22,7 +23,7 @@ Pkg.add("Plots")
 ```
 The following code provides a brief example of how to perform parameter fitting using the [Optimization.jl](https://github.com/SciML/Optimization.jl) package.
 ```julia
-using Catalyst, OrdinaryDiffEqDefault, OptimizationBase, OptimizationNLopt, SymbolicIndexingInterface
+using Catalyst, OrdinaryDiffEq, OptimizationBase, OptimizationNLopt, SciMLLogging, SymbolicIndexingInterface
 
 # What we know: A model, an initial condition, and sampled datapoints.
 rn = @reaction_network begin
@@ -43,7 +44,7 @@ function loss(p, (oprob_base, p_setter, t_samples, X_samples))
     oprob = remake(oprob_base; p)
 
     # Simulate the model. If sucesfull, return sum-of-squares distance as loss.
-    sol = solve(oprob; saveat = t_samples, verbose = false, maxiters = 10000)
+    sol = solve(oprob; saveat = t_samples, verbose = SciMLLogging.None(), maxiters = 10000)
     SciMLBase.successful_retcode(sol) || return Inf
     return sum(abs2, sol[:X] .- X_samples)
 end
@@ -90,7 +91,7 @@ u0 = [:S => 1.0, :E => 1.0, :SE => 0.0, :P => 0.0]
 ps_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
 
 # Generate synthetic data.
-using OrdinaryDiffEqDefault
+using OrdinaryDiffEq, SciMLLogging
 oprob_true = ODEProblem(rn, u0, (0.0, 10.0), ps_true)
 true_sol = solve(oprob_true)
 data_sol = solve(oprob_true; saveat = 1.0)
@@ -113,14 +114,14 @@ oprob_base = ODEProblem(rn, u0, (0.0, 10.0), ps_init)
 function objective_function(p, _)
     p = Pair.([:kB, :kD, :kP], p)
     oprob = remake(oprob_base; p)
-    sol = solve(oprob; saveat = data_ts, save_idxs = :P, verbose = false, maxiters = 10000)
+    sol = solve(oprob; saveat = data_ts, save_idxs = :P, verbose = SciMLLogging.None(), maxiters = 10000)
     SciMLBase.successful_retcode(sol) || return Inf
     return sum((sol .- data_vals) .^2)
 end
 ```
 When our optimisation algorithm searches parameter space it will likely consider many highly non-plausible parameter sets. To better handle this we:
 1. Add `maxiters = 10000` to our `solve` command. As most well-behaved ODEs can be solved in relatively few timesteps, this speeds up the optimisation procedure by preventing us from spending too much time trying to simulate (for the model) unsuitable parameter sets.
-2. Add `verbose = false` to our `solve` command. This prevents (potentially a very large number of) warnings from being printed to our output as unsuitable parameter sets are simulated.
+2. Add `verbose = SciMLLogging.None()` to our `solve` command. This prevents (potentially a very large number of) warnings from being printed to our output as unsuitable parameter sets are simulated.
 3. Add the line `SciMLBase.successful_retcode(sol) || return Inf`, which returns an infinite value for parameter sets which does not lead to successful simulations.
 
 To improve optimisation performance, rather than creating a new `ODEProblem` in each iteration, we pre-declare one which we [apply `remake` to](@ref simulation_structure_interfacing_problems_remake). We also use the `saveat = data_ts, save_idxs = :P` arguments to only save the values of the measured species at the measured time points.
@@ -194,7 +195,7 @@ In this case we simply modify our objective function to take this into account:
 function objective_function_S_P(p, _)
     p = Pair.([:kB, :kD, :kP], p)
     oprob = remake(oprob_base; p)
-    sol = solve(oprob; saveat = data_ts, save_idxs = [:S, :P], verbose = false, maxiters = 10000)
+    sol = solve(oprob; saveat = data_ts, save_idxs = [:S, :P], verbose = SciMLLogging.None(), maxiters = 10000)
     SciMLBase.successful_retcode(sol) || return Inf
     return sum((sol[:S] .- data_vals_S) .^2 + (sol[:P] .- data_vals_P) .^2)
 end
@@ -228,7 +229,7 @@ If we from previous knowledge know that $kD = 0.1$, and only want to fit the val
 function objective_function_known_kD(p, _)
     p = Pair.([:kB, :kD, :kP], [p[1], 0.1, p[2]])
     oprob = remake(oprob_base; p)
-    sol = solve(oprob; saveat = data_ts, save_idxs = :P, verbose = false, maxiters = 10000)
+    sol = solve(oprob; saveat = data_ts, save_idxs = :P, verbose = SciMLLogging.None(), maxiters = 10000)
     SciMLBase.successful_retcode(sol) || return Inf
     return sum((sol .- data_vals) .^2)
 end
@@ -268,7 +269,7 @@ corresponds to the same true parameter values as used previously (`[:kB => 1.0, 
 function objective_function_logtransformed(p, _)
     p = Pair.([:kB, :kD, :kP], 10.0 .^ p)
     oprob = remake(oprob_base; p)
-    sol = solve(oprob; saveat = data_ts, save_idxs = :P, verbose = false, maxiters = 10000)
+    sol = solve(oprob; saveat = data_ts, save_idxs = :P, verbose = SciMLLogging.None(), maxiters = 10000)
     SciMLBase.successful_retcode(sol) || return Inf
     return sum((sol .- data_vals) .^2)
 end

@@ -11,10 +11,7 @@ Pkg.add("Catalyst")
 Pkg.add("CUDA")
 Pkg.add("DiffEqGPU")
 Pkg.add("IncompleteLU")
-Pkg.add("OrdinaryDiffEqBDF")
-Pkg.add("OrdinaryDiffEqRosenbrock")
-Pkg.add("OrdinaryDiffEqTsit5")
-Pkg.add("OrdinaryDiffEqVerner")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 Pkg.add("StaticArrays")
 ```
@@ -39,7 +36,7 @@ Generally, ODE problems can be categorised into [*stiff ODEs* and *non-stiff ODE
 
 Here we simulate the (stiff) [Brusselator](@ref basic_CRN_library_brusselator) model using the `Tsit5` solver (which is designed for non-stiff ODEs):
 ```@example ode_simulation_performance_1
-using Catalyst, OrdinaryDiffEqTsit5, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 
 brusselator = @reaction_network begin
     A, ∅ --> X
@@ -64,7 +61,7 @@ sol1.retcode
 ```
 Next, we instead try the `Rodas5P` solver (which is designed for stiff problems):
 ```@example ode_simulation_performance_1
-using OrdinaryDiffEqRosenbrock
+using OrdinaryDiffEq
 sol2 = solve(oprob, Rodas5P())
 plot(sol2)
 ```
@@ -81,7 +78,7 @@ Finally, we should note that stiffness is not tied to the model equations only. 
 ## [ODE solver selection](@id ode_simulation_performance_solvers)
 OrdinaryDiffEq implements an unusually large number of ODE solvers, with the performance of the simulation heavily depending on which one is chosen. These are provided as the second argument to the `solve` command, e.g. here we use the `Tsit5` solver to simulate a simple [birth-death process](@ref basic_CRN_library_bd):
 ```@example ode_simulation_performance_2
-using Catalyst, OrdinaryDiffEqTsit5
+using Catalyst, OrdinaryDiffEq
 
 bd_model = @reaction_network begin
     (p,d), 0 <--> X
@@ -94,9 +91,9 @@ oprob = ODEProblem(bd_model, u0, tspan, ps)
 solve(oprob, Tsit5())
 nothing # hide
 ```
-If no solver argument is provided to `solve`, and the `OrdinaryDiffEqDefault` sub-library or meta `OrdinaryDiffEq` library are loaded, then one is automatically selected:
+If no solver argument is provided to `solve`, and `OrdinaryDiffEq` is loaded, then one is automatically selected:
 ```@example ode_simulation_performance_2
-using OrdinaryDiffEqDefault
+using OrdinaryDiffEq
 solve(oprob)
 nothing # hide
 ```
@@ -106,7 +103,7 @@ While the default choice is typically enough for most single simulations, if per
 The most important part of solver selection is to select one appropriate for [the problem's stiffness](@ref ode_simulation_performance_stiffness). Generally, the `Tsit5` solver is good for non-stiff problems, and `Rodas5P` for stiff problems. For large stiff problems (with many species), `FBDF` can be a good choice. We can illustrate the impact of these choices by simulating our birth-death process using the `Tsit5`, `Vern7` (an explicit solver yielding [low error in the solution](@ref ode_simulation_performance_error)), `Rodas5P`, and `FBDF` solvers (benchmarking their respective performance using [BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl)):
 ```julia
 using BenchmarkTools 
-using OrdinaryDiffEqTsit5, OrdinaryDiffEqRosenbrock, OrdinaryDiffEqVerner, OrdinaryDiffEqBDF
+using OrdinaryDiffEq
 @btime solve(oprob, Tsit5())
 @btime solve(oprob, Vern7())
 @btime solve(oprob, Rodas5P())
@@ -134,7 +131,7 @@ By default, OrdinaryDiffEq computes the Jacobian using [*automatic differentiati
 
 To use this option, simply set `jac = true` when constructing an `ODEProblem`:
 ```@example ode_simulation_performance_3
-using Catalyst, OrdinaryDiffEqDefault
+using Catalyst, OrdinaryDiffEq
 
 brusselator = @reaction_network begin
     A, ∅ --> X
@@ -160,7 +157,7 @@ nothing # hide
 ### [Linear solver selection](@id ode_simulation_performance_symbolic_jacobian_linear_solver)
 When implicit solvers use e.g. the Newton-Raphson method to (at each simulation time step) solve a (typically non-linear) equation, they actually solve a linearised version of this equation. For this, they use a linear solver, the choice of which can impact performance. To specify one, we use the `linsolve` option (given to the solver function, *not* the `solve` command). E.g. to use the `KLUFactorization` linear solver (which requires loading the [LinearSolve.jl](https://github.com/SciML/LinearSolve.jl) package) we run
 ```@example ode_simulation_performance_3
-using LinearSolve, OrdinaryDiffEqRosenbrock
+using LinearSolve
 solve(oprob, Rodas5P(linsolve = KLUFactorization()))
 nothing # hide
 ```
@@ -176,22 +173,18 @@ Since these methods do not depend on a Jacobian, certain Jacobian options (such 
 ### [Designating preconditioners for Jacobian-free linear solvers](@id ode_simulation_performance_preconditioners)
 When an implicit method solves a linear equation through an (iterative) matrix-free Newton-Krylov method, the rate of convergence depends on the numerical properties of the matrix defining the linear system. To speed up convergence, a [*preconditioner*](https://en.wikipedia.org/wiki/Preconditioner) can be applied to both sides of the linear equation, attempting to create an equation that converges faster. Preconditioners are only relevant when using matrix-free Newton-Krylov methods.
 
-In practice, preconditioners are implemented as functions with a specific set of arguments. How to implement these is non-trivial, and we recommend reading OrdinaryDiffEq's documentation pages [here](https://docs.sciml.ai/DiffEqDocs/stable/features/linear_nonlinear/#Preconditioners:-precs-Specification) and [here](https://docs.sciml.ai/DiffEqDocs/stable/tutorials/advanced_ode_example/#Adding-a-Preconditioner). In this example, we will define an [Incomplete LU](https://en.wikipedia.org/wiki/Incomplete_LU_factorization) preconditioner (which requires the [IncompleteLU.jl](https://github.com/haampie/IncompleteLU.jl) package):
+In practice, preconditioners are implemented as functions with a specific set of arguments and configured on the `LinearSolve` algorithm used by the ODE solver. How to implement these is non-trivial, and we recommend reading OrdinaryDiffEq's documentation pages [here](https://docs.sciml.ai/DiffEqDocs/stable/features/linear_nonlinear/#Preconditioners:-precs-Specification) and [here](https://docs.sciml.ai/DiffEqDocs/stable/tutorials/advanced_ode_example/#Adding-a-Preconditioner). In this example, we will define an [Incomplete LU](https://en.wikipedia.org/wiki/Incomplete_LU_factorization) preconditioner (which requires the [IncompleteLU.jl](https://github.com/haampie/IncompleteLU.jl) package):
 ```@example ode_simulation_performance_3
 using IncompleteLU
-function incompletelu(W, du, u, p, t, newW, Plprev, Prprev, solverdata)
-    if newW === nothing || newW
-        Pl = ilu(convert(AbstractMatrix, W), τ = 50.0)
-    else
-        Pl = Plprev
-    end
+function incompletelu(A, p)
+    Pl = ilu(convert(AbstractMatrix, A), τ = 50.0)
     Pl, nothing
 end
 nothing # hide
 ```
-Next, `incompletelu` can be supplied to our solver using the `precs` argument:
+Next, `incompletelu` can be supplied to the `KrylovJL_GMRES` linear solver using the `precs` argument:
 ```@example ode_simulation_performance_3
-solve(oprob, Rodas5P(linsolve = KrylovJL_GMRES(), precs = incompletelu, concrete_jac = true))
+solve(oprob, Rodas5P(linsolve = KrylovJL_GMRES(precs = incompletelu), concrete_jac = true))
 nothing # hide
 ```
 Finally, we note that when using preconditioners with a matrix-free method (like `KrylovJL_GMRES`, which is also the only case when these are relevant), the `concrete_jac = true` argument is required.
@@ -202,7 +195,7 @@ Generally, the use of preconditioners is only recommended for advanced users who
 ## [Elimination of system conservation laws](@id ode_simulation_performance_conservation_laws)
 Previously, we have described how Catalyst, when it generates ODEs, is able to [detect and eliminate conserved quantities](@ref conservation_laws). In certain cases, doing this can improve performance. E.g. in the following example we will eliminate the single conserved quantity in a [two-state model](@ref basic_CRN_library_two_states). This results in a differential algebraic equation with a single differential equation and a single algebraic equation (as opposed to two differential equations). However, as the algebraic equation is fully determined by the ODE solution, Catalyst moves it to be an observable and our new system therefore only contains one ODE that must be solved numerically. Conservation laws can be eliminated by providing the `remove_conserved = true` option to `ODEProblem`:
 ```@example ode_simulation_performance_conservation_laws
-using Catalyst, OrdinaryDiffEqTsit5
+using Catalyst, OrdinaryDiffEq
 
 # Declare model.
 rs = @reaction_network begin
@@ -237,7 +230,7 @@ end
 ```
 The model can be simulated, showing how $P$ is produced from $S$:
 ```@example ode_simulation_performance_4
-using OrdinaryDiffEqTsit5, Plots
+using OrdinaryDiffEq, Plots
 u0 = [:S => 1.0, :E => 1.0, :SE => 0.0, :P => 0.0]
 tspan = (0.0, 50.0)
 ps = [:kB => 1.0, :kD => 0.1, :kP => 0.5, :d => 0.1]
@@ -324,7 +317,7 @@ Which backend package you should use depends on your available hardware, with th
 
 Next, we declare our model and `ODEProblem`. However, we make all values `Float64` (by appending `f0` to them) and all vectors static (by adding `@SVector` before their declaration, something which requires the [StaticArrays](https://github.com/JuliaArrays/StaticArrays.jl) package).
 ```@example ode_simulation_performance_5
-using Catalyst, OrdinaryDiffEqDefault, StaticArrays
+using Catalyst, OrdinaryDiffEq, StaticArrays
 
 mm_model = @reaction_network begin
     kB, S + E --> SE
@@ -334,7 +327,7 @@ mm_model = @reaction_network begin
 end
 @unpack S, E, SE, P, kB, kD, kP, d = mm_model
 
-using OrdinaryDiffEqDefault, Plots
+using OrdinaryDiffEq, Plots
 u0 = @SVector [S => 1.0f0, E => 1.0f0, SE => 0.0f0, P => 0.0f0]
 tspan = (0.0f0, 50.0f0)
 p = @SVector [kB => 1.0f0, kD => 0.1f0, kP => 0.5f0, d => 0.1f0]

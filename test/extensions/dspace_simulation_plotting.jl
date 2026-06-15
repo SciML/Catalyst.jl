@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using Catalyst, CairoMakie, GraphMakie, Graphs
-using JumpProcesses, OrdinaryDiffEqTsit5, Test
+using JumpProcesses, OrdinaryDiffEq, Test
 
 
 ### Checks Basic Plot Cases ###

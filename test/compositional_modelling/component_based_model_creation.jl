@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, LinearAlgebra, OrdinaryDiffEqTsit5, NonlinearSolve, Test
+using Catalyst, LinearAlgebra, OrdinaryDiffEq, NonlinearSolve, Test
 using ModelingToolkitBase: nameof, getname
 const MT = ModelingToolkitBase
 
