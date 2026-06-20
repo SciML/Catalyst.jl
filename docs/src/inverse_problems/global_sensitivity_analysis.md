@@ -19,7 +19,7 @@ Pkg.add("OrdinaryDiffEqDefault")
 ```
 The following code provides a brief example of how to perform global sensitivity analysis using the [GlobalSensitivity.jl](https://github.com/SciML/GlobalSensitivity.jl) package.
 ```julia
-using Catalyst, GlobalSensitivity, OrdinaryDiffEqDefault, SymbolicIndexingInterface
+using Catalyst, GlobalSensitivity, OrdinaryDiffEqDefault, SymbolicIndexingInterface, SciMLLogging
 
 # Designates a model, parameter set, and set of initial conditions.
 # For this infectious disease model we will determine the peak number of cases's sensitivity to the parameters.
@@ -38,7 +38,7 @@ function peak_cases(p)
     # Updates the ODEProblem with teh proposed parameter set.
     p = p_setter(oprob_base, p)
     oprob = remake(oprob_base; p)
-    sol = solve(oprob; maxiters = 100000, verbose = false)
+    sol = solve(oprob; maxiters = 100000, verbose = SciMLLogging.None())
     return maximum(sol[:I])
 end
 
@@ -65,7 +65,7 @@ While local sensitivities are primarily used as a subroutine of other methodolog
 ## [Basic example](@id global_sensitivity_analysis_basic_example)
 We will consider a simple [SEIR model of an infectious disease](https://en.wikipedia.org/wiki/Compartmental_models_in_epidemiology). This is an expansion of the classic [SIR model](@ref basic_CRN_library_sir) with an additional *exposed* state, $E$, denoting individuals who are latently infected but currently unable to transmit their infection to others.
 ```@example gsa_1
-using Catalyst
+using Catalyst, SciMLLogging
 seir_model = @reaction_network begin
     10^β, S + I --> E + I
     10^a, E --> I
@@ -83,7 +83,7 @@ oprob_base = ODEProblem(seir_model, u0, (0.0, 10000.0), p_dummy)
 function peak_cases(p)
     ps = [:β => p[1], :a => p[2], :γ => p[3]]
     oprob = remake(oprob_base; p = ps)
-    sol = solve(oprob; maxiters = 100000, verbose = false)
+    sol = solve(oprob; maxiters = 100000, verbose = SciMLLogging.None())
     SciMLBase.successful_retcode(sol) || return Inf
     return maximum(sol[:I])
 end
@@ -106,7 +106,7 @@ on the domain $10^β ∈ (-3.0,-1.0)$, $10^a ∈ (-2.0,0.0)$, $10^γ ∈ (-2.0,0
     We should make a couple of notes about the example above:
     - Here, we write our parameters on the forms $10^β$, $10^a$, and $10^γ$, which transforms them into log-space. As [previously described](@ref optimization_parameter_fitting_log_scale), this is advantageous in the context of inverse problems such as this one.
     - For GSA, where a function is evaluated a large number of times, it is ideal to write it as performant as possible. Hence, we initially create a base `ODEProblem`, and then apply the [`remake`](@ref simulation_structure_interfacing_problems_remake) function to it in each evaluation of `peak_cases` to generate a problem which is solved for that specific parameter set.
-    - Again, as [previously described in other inverse problem tutorials](@ref optimization_parameter_fitting_basics), when exploring a function over large parameter spaces, we will likely simulate our model for unsuitable parameter sets. To reduce time spent on these, and to avoid excessive warning messages, we provide the `maxiters = 100000` and `verbose = false` arguments to `solve`.
+    - Again, as [previously described in other inverse problem tutorials](@ref optimization_parameter_fitting_basics), when exploring a function over large parameter spaces, we will likely simulate our model for unsuitable parameter sets. To reduce time spent on these, and to avoid excessive warning messages, we provide the `maxiters = 100000` and `verbose = SciMLLogging.None()` arguments to `solve`.
     - As we have encountered in [a few other cases](@ref optimization_parameter_fitting_basics), the `gsa` function is not able to take parameter inputs of the map form usually used for Catalyst. Hence, as a first step in `peak_cases` we convert the parameter vector to this form. Next, we remember that the order of the parameters when we e.g. evaluate the GSA output, or set the parameter bounds, corresponds to the order used in `ps = [:β => p[1], :a => p[2], :γ => p[3]]`.
 
 
@@ -174,7 +174,7 @@ Previously, we have demonstrated GSA on functions with scalar outputs. However, 
 function peak_cases_2(p)
     ps = [:β => p[1], :a => p[2], :γ => p[3]]
     oprob = remake(oprob_base; p = ps)
-    sol = solve(oprob; maxiters = 100000, verbose = false)
+    sol = solve(oprob; maxiters = 100000, verbose = SciMLLogging.None())
     SciMLBase.successful_retcode(sol) || return Inf
     return [maximum(sol[:E]), maximum(sol[:I])]
 end

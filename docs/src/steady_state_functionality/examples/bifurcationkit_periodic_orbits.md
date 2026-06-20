@@ -72,9 +72,9 @@ First, we set the options for the continuation. Just like for bifurcation diagra
 opts_po = ContinuationPar(opts_br)
 nothing # hide
 ```
-During the continuation we will compute the periodic orbit using the [Collocation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/#Collocation-method) method (however, the [Trapezoid](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/#Trapezoid-method) and [Shooting](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/#Shooting-method) method also exist, with each having their advantages and disadvantages). For this, we create a [`PeriodicOrbitOCollProblem`](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/library/#BifurcationKit.PeriodicOrbitOCollProblem) which we will supply to our continuation computation.
+During the continuation we will compute the periodic orbit using the [Collocation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/#Collocation-method) method (however, the [Trapezoid](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/#Trapezoid-method) and [Shooting](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/#Shooting-method) method also exist, with each having their advantages and disadvantages). For this, we create a [`Collocation`](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/library/#BifurcationKit.Collocation) problem which we will supply to our continuation computation.
 ```@example bifurcationkit_periodic_orbits
-poprob = PeriodicOrbitOCollProblem(50, 4)
+poprob = Collocation(50, 4)
 nothing # hide
 ```
 Finally, we will also create a `record_from_solution` function. This is a function which records information of the solution at each step of the continuation (which we can later plot or investigate using other means).

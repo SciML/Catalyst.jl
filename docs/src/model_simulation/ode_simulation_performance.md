@@ -178,20 +178,16 @@ When an implicit method solves a linear equation through an (iterative) matrix-f
 
 In practice, preconditioners are implemented as functions with a specific set of arguments. How to implement these is non-trivial, and we recommend reading OrdinaryDiffEq's documentation pages [here](https://docs.sciml.ai/DiffEqDocs/stable/features/linear_nonlinear/#Preconditioners:-precs-Specification) and [here](https://docs.sciml.ai/DiffEqDocs/stable/tutorials/advanced_ode_example/#Adding-a-Preconditioner). In this example, we will define an [Incomplete LU](https://en.wikipedia.org/wiki/Incomplete_LU_factorization) preconditioner (which requires the [IncompleteLU.jl](https://github.com/haampie/IncompleteLU.jl) package):
 ```@example ode_simulation_performance_3
-using IncompleteLU
-function incompletelu(W, du, u, p, t, newW, Plprev, Prprev, solverdata)
-    if newW === nothing || newW
-        Pl = ilu(convert(AbstractMatrix, W), τ = 50.0)
-    else
-        Pl = Plprev
-    end
-    Pl, nothing
+using IncompleteLU, LinearAlgebra
+function incompletelu(A, p)
+    Pl = ilu(convert(AbstractMatrix, A), τ = 50.0)
+    return (Pl, I)
 end
 nothing # hide
 ```
-Next, `incompletelu` can be supplied to our solver using the `precs` argument:
+A preconditioner function takes the linear system's matrix (`A`) and the parameters (`p`), and returns a tuple with the left and right preconditioners (here we use no right preconditioner, hence we return the identity operator `I`). Next, `incompletelu` can be supplied to our matrix-free linear solver using its `precs` argument:
 ```@example ode_simulation_performance_3
-solve(oprob, Rodas5P(linsolve = KrylovJL_GMRES(), precs = incompletelu, concrete_jac = true))
+solve(oprob, Rodas5P(linsolve = KrylovJL_GMRES(precs = incompletelu), concrete_jac = true))
 nothing # hide
 ```
 Finally, we note that when using preconditioners with a matrix-free method (like `KrylovJL_GMRES`, which is also the only case when these are relevant), the `concrete_jac = true` argument is required.
@@ -251,17 +247,16 @@ To parallelise our simulations, we first need to create an `EnsembleProblem`. Th
 - The `ODEProblem` corresponds to the model simulation (`SDEProblem` and `JumpProblem`s can also be supplied, enabling the parallelisation of these problem types).
 - A function, `prob_func`, describing how to modify the problem for each simulation. If we wish to simulate the same, unmodified problem, in each simulation (primarily relevant for stochastic simulations), this argument is not required.
 
-Here, `prob_func` takes 3 arguments:
+Here, `prob_func` takes 2 arguments:
 - `prob`: The problem that it modifies at the start of each individual run (which will be the same as `EnsembleProblem`'s first argument).
-- `i`: The index of the specific simulation (in the array of all simulations that are performed).
-- `repeat`: The repeat of a specific simulation in the array. We will not use this option in this example, however, it is discussed in more detail [here](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#Building-a-Problem).
+- `ctx`: An `EnsembleContext` carrying information about the current simulation. Its `ctx.sim_id` field gives the index of the specific simulation (in the array of all simulations that are performed). Further fields (such as `ctx.repeat`) are described [here](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#Building-a-Problem).
 
-and output the `ODEProblem` simulated in the i'th simulation.
+and output the `ODEProblem` simulated in the `ctx.sim_id`'th simulation.
 
 Let us assume that we wish to simulate our model 100 times, for $kP = 0.01, 0.02, ..., 0.99, 1.0$. We define our `prob_func` using [`remake`](@ref simulation_structure_interfacing_problems_remake):
 ```@example ode_simulation_performance_4
-function prob_func(prob, i, repeat)
-    return remake(prob; p = [:kP => 0.01*i])
+function prob_func(prob, ctx)
+    return remake(prob; p = [:kP => 0.01*ctx.sim_id])
 end
 nothing # hide
 ```
@@ -343,8 +338,8 @@ nothing # hide
 ```
 When we declare our `prob_func` and `EnsembleProblem` we need to ensure that the updated `ODEProblem` uses `Float32`:
 ```@example ode_simulation_performance_5
-function prob_func(prob, i, repeat)
-    return remake(prob; p = [:kP => 0.0001f0*i])
+function prob_func(prob, ctx)
+    return remake(prob; p = [:kP => 0.0001f0*ctx.sim_id])
 end
 eprob = EnsembleProblem(oprob; prob_func = prob_func)
 nothing # hide

@@ -100,11 +100,11 @@ plot(sol; idxs=(:X, :Y, :Z))
 ```
 Next, like when we [computed basins of attraction](@ref dynamical_systems_basins_of_attraction), we create a `CoupledODEs` corresponding to the model and state for which we wish to compute our Lyapunov spectrum. Like previously, `tspan` must provide some small interval (at least `(0.0, 1.0)` is recommended), but else have no impact on the computed Lyapunov spectrum.
 ```@example dynamical_systems_lyapunov
-using DynamicalSystems
-ds = CoupledODEs(oprob, (alg = Rodas5P(autodiff = false),))
+using DynamicalSystems, ADTypes
+ds = CoupledODEs(oprob, (alg = Rodas5P(autodiff = AutoFiniteDiff()),))
 nothing # hide
 ```
-Here, the `autodiff = false` argument is required when Lyapunov spectrums are computed. We can now provide our `CoupledODEs` (`ds`) to `lyapunovspectrum` to compute the lyapunov spectrum. This function requires a second argument (here set to `100`). Generally setting this to a higher value will increase accuracy, but also increase runtime (since `lyapunovspectrum` is fast for most systems, setting this to a large value is recommended).
+Here, the `autodiff = AutoFiniteDiff()` argument is required when Lyapunov spectrums are computed. We can now provide our `CoupledODEs` (`ds`) to `lyapunovspectrum` to compute the lyapunov spectrum. This function requires a second argument (here set to `100`). Generally setting this to a higher value will increase accuracy, but also increase runtime (since `lyapunovspectrum` is fast for most systems, setting this to a large value is recommended).
 ```@example dynamical_systems_lyapunov
 lyapunovspectrum(ds, 100)
 ```
@@ -134,7 +134,7 @@ plot!(osol2; idxs = (:X, :Y))
 ```
 Next, we compute the Lyapunov spectrum at one of the initial conditions:
 ```@example dynamical_systems_lyapunov
-ds = CoupledODEs(oprob1, (alg = Rodas5P(autodiff = false),))
+ds = CoupledODEs(oprob1, (alg = Rodas5P(autodiff = AutoFiniteDiff()),))
 lyapunovspectrum(ds, 100)
 ```
 Here, all Lyapunov exponents are negative, confirming that the brusselator is non-chaotic.

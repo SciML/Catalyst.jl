@@ -24,7 +24,7 @@ Incoherent feedforward loops (network motifs where a single component both activ
 
 Our model consists of 3 species: $X$ (the input node), $Y$ (an intermediary), and $Z$ (the output node). In it, $X$ activates the production of both $Y$ and $Z$, with $Y$ also deactivating $Z$. When $X$ is activated, there will be a brief time window where $Y$ is still inactive, and $Z$ is activated. However, as $Y$ becomes active, it will turn $Z$ off. This creates a pulse of $Z$ activity. To trigger the system, we create [an event](@ref events), which increases the production rate of $X$ ($pX$) by a factor of $10$ at time $t = 10$.
 ```@example behaviour_optimization
-using Catalyst
+using Catalyst, SciMLLogging
 incoherent_feed_forward = @reaction_network begin
     @discrete_events [10.0] => [pX => 10*pX]
     pX, 0 --> X
@@ -52,7 +52,7 @@ function pulse_amplitude(p, _)
     p = Dict([:pX => p[1], :pY => p[2], :pZ => p[2]])
     u0 = [:X => p[:pX], :Y => p[:pX]*p[:pY], :Z => p[:pZ]/p[:pY]^2]
     oprob_local = remake(oprob; u0, p)
-    sol = solve(oprob_local; verbose = false, maxiters = 10000)
+    sol = solve(oprob_local; verbose = SciMLLogging.None(), maxiters = 10000)
     SciMLBase.successful_retcode(sol) || return Inf
     return -(maximum(sol[:Z]) - sol[:Z][1])
 end
@@ -60,7 +60,7 @@ nothing # hide
 ```
 This objective function takes two arguments (a parameter value `p`, and an additional one which we will ignore but is discussed in a note [here](@ref optimization_parameter_fitting_basics)). It first calculates the new initial steady state concentration for the given parameter set. Next, it creates an updated `ODEProblem` using the steady state as initial conditions and the, to the objective function provided, input parameter set.  Finally, Optimization.jl finds the function's *minimum value*, so to find the *maximum* relative pulse amplitude, we make our objective function return the negative pulse amplitude.
 
-As described [in our tutorial on parameter fitting using Optimization.jl](@ref optimization_parameter_fitting_basics) we use `remake`, `verbose = false`, `maxiters = 10000`, and a check on the simulations return code, all providing various advantages to the optimisation procedure (as explained in that tutorial).
+As described [in our tutorial on parameter fitting using Optimization.jl](@ref optimization_parameter_fitting_basics) we use `remake`, `verbose = SciMLLogging.None()`, `maxiters = 10000`, and a check on the simulations return code, all providing various advantages to the optimisation procedure (as explained in that tutorial).
 
 Just like for [parameter fitting](@ref optimization_parameter_fitting_basics), we create an `OptimizationProblem` using our objective function, and some initial guess of the parameter values. We also [set upper and lower bounds](@ref optimization_parameter_fitting_constraints) for each parameter using the `lb` and `ub` optional arguments (in this case limiting each parameter's value to the interval $(0.1,10.0)$).
 ```@example behaviour_optimization

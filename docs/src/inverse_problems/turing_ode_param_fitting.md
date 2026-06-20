@@ -23,7 +23,7 @@ Pkg.add("Turing")
 The following code provides a minimal example of how to infer parameter posteriors from data using the [Turing.jl](https://github.com/TuringLang/Turing.jl) package.
 ```julia
 # Create reaction network model (an SIR model).
-using Catalyst
+using Catalyst, SciMLLogging
 sir = @reaction_network begin
     γ, S + I --> 2I
     ν, I --> R
@@ -56,7 +56,7 @@ using Turing, MCMCChains
     # Simulate the model for parameter values γ, ν. Saves the solution at the measurement times.
     p = setp_oop(oprob_base, [γ, ν])
     oprob_base = remake(oprob_base; p)
-    sol = solve(oprob_base; saveat, verbose = false, maxiters = 10000)
+    sol = solve(oprob_base; saveat, verbose = SciMLLogging.None(), maxiters = 10000)
 
     # If simulation was unsuccessful, the likelihood is -Inf.
     if !SciMLBase.successful_retcode(sol)
@@ -96,7 +96,7 @@ In frequentist parameter fitting, we can use a cost function based on likelihood
 ## [Inferring parameter posterior distributions for an ODE model using Turing](@id turing_parameter_fitting_basic_example)
 For this example, we will consider a simple [SIR model of an infectious disease](@ref basic_CRN_library_sir).
 ```@example turing_paramfit
-using Catalyst
+using Catalyst, SciMLLogging
 sir = @reaction_network begin
     γ, S + I --> 2I
     ν, I --> R
@@ -142,7 +142,7 @@ setp_oop = SymbolicIndexingInterface.setp_oop(oprob_true, [:γ, :ν])
     # Simulate the model for parameter values γ, ν. Saves the solution at the measurement times.
     p = setp_oop(oprob_base, [γ, ν])
     oprob_base = remake(oprob_base; p)
-    sol = solve(oprob_base; saveat, verbose = false, maxiters = 10000)
+    sol = solve(oprob_base; saveat, verbose = SciMLLogging.None(), maxiters = 10000)
 
     # If simulation was unsuccessful, the likelihood is -Inf.
     if !SciMLBase.successful_retcode(sol)
@@ -159,7 +159,7 @@ nothing # hide
 ```
 
 Some specific comments regarding how we have declared the model above:
-- Like for [normal parameter fitting](@ref optimization_parameter_fitting_basics), we use the `maxiters = 10000` (to prevent spending a long time simulating unfeasible parameter sets) and `verbose = false` (to prevent unnecessary printing of warning messages) arguments to `solve`.
+- Like for [normal parameter fitting](@ref optimization_parameter_fitting_basics), we use the `maxiters = 10000` (to prevent spending a long time simulating unfeasible parameter sets) and `verbose = SciMLLogging.None()` (to prevent unnecessary printing of warning messages) arguments to `solve`.
 - Again, we need to handle parameter sets where the model cannot be successfully simulated. Here, we use `Turing.@addlogprob! -Inf` to set a non-existent likelihood, and `return nothing` to stop further evaluation of the specific parameter set.
 - Just like for normal parameter fitting, we wish to [fit parameters on a log scale](@ref optimization_parameter_fitting_log_scale). Here we do so by declaring log-scaled prior distributions.
 - Here we assume that we (correctly) know that the noise is normally distributed. However, we assume that we *do not know the standard deviation*. Instead, we make the standard deviation a third parameter whose value we infer as part of the inference process. More complicated noise formulas can be used (and are sometimes even advisable[^2]).
@@ -209,7 +209,7 @@ collect(chain.value[rand(1:n_steps), 1:3, rand(1:n_chains)])
 
 We can use this to e.g. draw $10$ random parameter sets from the posterior distribution, simulate the model for these parameter sets, and plot the resulting ensemble simulation. For this, we will create an `EnsembleProblem` from our `ODEProblem` using the approach described [here](@ref ensemble_simulations_varying_conditions).
 ```@example turing_paramfit
-function prob_func(prob, _, _)
+function prob_func(prob, ctx)
     γ, ν = collect(chain.value[rand(1:n_steps), 1:2, rand(1:n_chains)])
     remake(prob; p = [:γ => γ, :ν => ν])
 end

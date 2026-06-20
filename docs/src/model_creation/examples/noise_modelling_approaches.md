@@ -66,7 +66,7 @@ Again we will perform ensemble simulation. Instead of creating an `SDEProblem`, 
 ```@example noise_modelling_approaches
 using Distributions
 p_dists = Dict([:v => Normal(10.0, 2.0), :K => Normal(20.0, 5.0), :n => Normal(3, 0.2), :d => Normal(0.1, 0.02)])
-function prob_func(prob, i, repeat)
+function prob_func(prob, ctx)
     p = [par => rand(p_dists[par]) for par in keys(p_dists)]
     return remake(prob; p)
 end
@@ -112,7 +112,7 @@ nothing # hide
 ```
 Finally, we will again perform ensemble simulations of our model. This time, at the beginning of each simulation, we will use `make_K_series` to generate a new $K$, and set this as the `K_in` parameter's value.
 ```@example noise_modelling_approaches
-function prob_func_Kin(prob, i, repeat)
+function prob_func_Kin(prob, ctx)
     p = [ps; :K_in => make_K_series()]    
     return remake(prob; p)
 end

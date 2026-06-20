@@ -96,13 +96,12 @@ nothing # hide
 ```
 Next, we wish to simulate the model for a range of initial conditions of $X$`. To do this we create a problem function, which takes the following arguments:
 - `prob`: The problem given to our `EnsembleProblem` (which is the problem that `prob_func` modifies in each iteration).
-- `i`: The number of this specific Monte Carlo iteration in the interval `1:trajectories`.
-- `repeat`: The iteration of the repeat of the simulation. Typically `1`, but potentially higher if [the simulation re-running option](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#Building-a-Problem) is used.
+- `ctx`: An `EnsembleContext` carrying information about the current simulation. Its `ctx.sim_id` field gives the number of this specific Monte Carlo iteration in the interval `1:trajectories`. Further fields (such as `ctx.repeat`, the repeat iteration of the simulation) are described [here](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#Building-a-Problem).
 
 Here we will use the following problem function (utilising [remake](@ref simulation_structure_interfacing_problems_remake)), which will provide a uniform range of initial concentrations of $X$:
 ```@example ensemble
-function prob_func(prob, i, repeat)
-    remake(prob; u0 = [:X => i * 5.0])
+function prob_func(prob, ctx)
+    remake(prob; u0 = [:X => ctx.sim_id * 5.0])
 end
 nothing # hide
 ```
