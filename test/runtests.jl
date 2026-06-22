@@ -6,6 +6,10 @@ using SafeTestsets, Test, Pkg
 # Required for running parallel test groups (copied from ModelingToolkit).
 const GROUP = get(ENV, "GROUP", "All")
 
+# `Core` runs the full functional suite; the fine-grained names remain usable for
+# local runs. `All` (the default) additionally runs the extension tests.
+const RUN_ALL = GROUP == "All" || GROUP == "Core"
+
 function activate_extensions_env()
     Pkg.activate("extensions")
     Pkg.develop(PackageSpec(path = dirname(@__DIR__)))
@@ -13,8 +17,16 @@ function activate_extensions_env()
 end
 
 ### Run Tests ###
+
+# QA checks (import hygiene) run in an isolated environment.
+if GROUP == "QA"
+    Pkg.activate(joinpath(@__DIR__, "qa"))
+    Pkg.develop(PackageSpec(path = dirname(@__DIR__)))
+    Pkg.instantiate()
+    include("qa/qa.jl")
+else
 @time begin
-    if GROUP == "All" || GROUP == "Modeling"
+    if RUN_ALL || GROUP == "Modeling"
         # Tests the `ReactionSystem` structure and its properties.
         @time @safetestset "Reaction Structure" begin include("reactionsystem_core/reaction.jl") end
         @time @safetestset "ReactionSystem Structure" begin include("reactionsystem_core/reactionsystem.jl") end
@@ -47,7 +59,7 @@ end
         @time @safetestset "CRN Theory" begin include("network_analysis/crn_theory.jl") end
     end
 
-    if GROUP == "All" || GROUP == "Simulation"
+    if RUN_ALL || GROUP == "Simulation"
         # Tests ODE, SDE, jump simulations, nonlinear solving, and steady state simulations.
         @time @safetestset "ODE System Simulations" begin include("simulation_and_solving/simulate_ODEs.jl") end
         @time @safetestset "Automatic Jacobian Construction" begin include("simulation_and_solving/jacobian_construction.jl") end
@@ -60,18 +72,17 @@ end
         @time @safetestset "MTK Problem Inputs" begin include("upstream/mtk_problem_inputs.jl") end # Required to fix lots of these: https://github.com/SciML/ModelingToolkit.jl/issues/4098
     end
 
-    if GROUP == "All" || GROUP == "Hybrid"
+    if RUN_ALL || GROUP == "Hybrid"
         @time @safetestset "ReactionSystem Hybrid Solvers" begin include("simulation_and_solving/hybrid_models.jl") end
     end
 
-    if GROUP == "All" || GROUP == "Misc"
+    if RUN_ALL || GROUP == "Misc"
         @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
-        @time @safetestset "Explicit Imports" begin include("miscellaneous_tests/explicit_imports.jl") end
         # BROKEN
         #@time @safetestset "Latexify" begin include("visualisation/latexify.jl") end # https://github.com/SciML/Catalyst.jl/issues/1352
     end
 
-    if GROUP == "All" || GROUP == "Spatial"
+    if RUN_ALL || GROUP == "Spatial"
         # Tests spatial modelling and simulations.
         @time @safetestset "PDE Systems Simulations" begin include("spatial_modelling/simulate_PDEs.jl") end
         @time @safetestset "Spatial Reactions" begin include("spatial_modelling/spatial_reactions.jl") end
@@ -89,3 +100,4 @@ end
     end
 
 end # @time
+end

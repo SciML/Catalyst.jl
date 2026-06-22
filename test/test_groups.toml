@@ -1,0 +1,20 @@
+[Modeling]
+versions = ["lts", "1", "pre"]
+
+[Simulation]
+versions = ["lts", "1", "pre"]
+
+[Hybrid]
+versions = ["lts", "1", "pre"]
+
+[Misc]
+versions = ["lts", "1", "pre"]
+
+[Spatial]
+versions = ["lts", "1", "pre"]
+
+[Extensions]
+versions = ["lts", "1", "pre"]
+
+[QA]
+versions = ["lts", "1"]
