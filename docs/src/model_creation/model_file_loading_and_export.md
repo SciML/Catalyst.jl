@@ -7,7 +7,7 @@ The following code sets up an environment for running the code on this page.
 using Pkg
 Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("Catalyst")
-Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 Pkg.add("ReactionNetworkImporters")
 Pkg.add("SBMLImporter")
@@ -97,7 +97,7 @@ rn = loadrxnetwork(BNGNetwork(), "repressilator.net")
 ```
 Here, .net files not only contain information regarding the reaction network itself, but also the numeric values (initial conditions and parameter values) required for simulating it. The `loadrxnetwork` function loads the model as a normal `ReactionSystem` structure, but saves the initial conditions and parameter values as [*default* values](@ref dsl_advanced_options_default_vals) that are automatically accounted for in simulations. The loaded model can be provided to various problem types for simulation. E.g. here we perform an ODE simulation of our repressilator model:
 ```julia
-using Catalyst, OrdinaryDiffEqDefault, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 tspan = (0.0, 10000.0)
 oprob = ODEProblem(rn, Float64[], tspan, Float64[])
 sol = solve(oprob)
@@ -125,7 +125,7 @@ rn, cbs = load_SBML("brusselator.xml", massaction = true)
 
 `load_SBML` returns two outputs: a `ReactionSystem` (`rn`) and a `CallbackSet` (`cbs`). The `CallbackSet` contains SBML events and callbacks generated from any SBML `piecewise` expressions. While `rn` can be used to create problems, when we simulate them, we must also supply `cbs`. The SBML file also contains simulation initial condition and parameter values. These are saved within the `rn` and can be extracted using the `get_u0_map` and `get_parameter_map` functions. Here we simulate the loaded brusselator model, providing `u0`, `ps`, and `cb` as described.
 ```julia
-using Catalyst, OrdinaryDiffEqDefault, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 tspan = (0.0, 50.0)
 u0 = get_u0_map(rn)
 ps = get_parameter_map(rn)

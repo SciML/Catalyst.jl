@@ -17,7 +17,7 @@ Furthermore, there are some cases of interfacing which are currently not support
 ## [Retrieving values from space simulations](@id dspace_simulation_structure_interaction_simulation_species)
 Let us consider a simulation of a [`DiscreteSpaceReactionSystem`](@ref):
 ```@example dspace_struct_interaction_sims
-using Catalyst, OrdinaryDiffEqDefault
+using Catalyst, OrdinaryDiffEq
 two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
@@ -57,7 +57,7 @@ spat_getu(sol, :X1, dsrs; t = [0.5, 0.75])
 ## [Retrieving and updating species values in problems and integrators](@id dspace_simulation_structure_interaction_prob_int_species)
 Let us consider a spatial `ODEProblem`
 ```@example dspace_struct_interaction_prob_ints
-using Catalyst, OrdinaryDiffEqDefault
+using Catalyst, OrdinaryDiffEq
 two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end

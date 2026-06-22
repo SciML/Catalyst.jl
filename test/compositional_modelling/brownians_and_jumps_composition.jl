@@ -3,7 +3,7 @@
 ### Fetch Packages and Set Global Variables ###
 
 # Fetch packages.
-using Catalyst, JumpProcesses, OrdinaryDiffEqTsit5, StochasticDiffEq, Test
+using Catalyst, JumpProcesses, OrdinaryDiffEq, StochasticDiffEq, Test
 using Catalyst: isequivalent
 using ModelingToolkitBase: get_brownians, get_poissonians, get_jumps, Pre
 import ModelingToolkitBase as MT

@@ -1,5 +1,5 @@
 # Fetch packages.
-using Catalyst, JumpProcesses, ModelingToolkitBase, OrdinaryDiffEqTsit5, Statistics, Test, Random
+using Catalyst, JumpProcesses, ModelingToolkitBase, OrdinaryDiffEq, Statistics, Test, Random
 using StochasticDiffEq: SRIW1  # For SDE+Jump hybrid problems
 import DiffEqNoiseProcess  # Required for SDEProblem via mtkcompile
 

@@ -9,8 +9,7 @@ Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted 
 Pkg.add("CairoMakie")
 Pkg.add("Catalyst")
 Pkg.add("DynamicalSystems")
-Pkg.add("OrdinaryDiffEqRosenbrock")
-Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 ```
 ```@raw html
@@ -41,7 +40,7 @@ nothing # hide
 ```
 Next, for any application of DynamicalSystems.jl, our `ODEProblem` must be converted into a so-called `CoupledODEs` structure. This is done by combining the ODE with the solver (and potential solver options) with which we wish to simulate it (just like when it is simulated using `solve`). Here, we will simply designate the `Tsit5` numeric solver (but provide no other options).
 ```@example dynamical_systems_basins
-using DynamicalSystems, OrdinaryDiffEqTsit5
+using DynamicalSystems, OrdinaryDiffEq
 ds = CoupledODEs(oprob, (alg = Tsit5(),))
 ```
 We can now compute the basins of attraction. This is done by first creating a grid that designates which subspace of phase-space we wish to investigate (here, the corresponding basin of attraction is found for every point on the grid). Next, we create a `AttractorsViaRecurrences` struct, that maps initial conditions to attractors, and then use that as input to the `basins_of_attraction` function.
@@ -88,7 +87,7 @@ end
 ```
 We can simulate the model, noting that its behaviour seems chaotic.
 ```@example dynamical_systems_lyapunov
-using OrdinaryDiffEqRosenbrock, Plots
+using OrdinaryDiffEq, Plots
 
 u0 = [:X => 1.5, :Y => 1.5, :Z => 1.5]
 tspan = (0.0, 100.0)
@@ -101,10 +100,10 @@ plot(sol; idxs=(:X, :Y, :Z))
 Next, like when we [computed basins of attraction](@ref dynamical_systems_basins_of_attraction), we create a `CoupledODEs` corresponding to the model and state for which we wish to compute our Lyapunov spectrum. Like previously, `tspan` must provide some small interval (at least `(0.0, 1.0)` is recommended), but else have no impact on the computed Lyapunov spectrum.
 ```@example dynamical_systems_lyapunov
 using DynamicalSystems
-ds = CoupledODEs(oprob, (alg = Rodas5P(autodiff = false),))
+ds = CoupledODEs(oprob, (alg = Rodas5P(autodiff = AutoFiniteDiff()),))
 nothing # hide
 ```
-Here, the `autodiff = false` argument is required when Lyapunov spectrums are computed. We can now provide our `CoupledODEs` (`ds`) to `lyapunovspectrum` to compute the lyapunov spectrum. This function requires a second argument (here set to `100`). Generally setting this to a higher value will increase accuracy, but also increase runtime (since `lyapunovspectrum` is fast for most systems, setting this to a large value is recommended).
+Here, the `autodiff = AutoFiniteDiff()` argument requests finite-difference derivatives when Lyapunov spectrums are computed. We can now provide our `CoupledODEs` (`ds`) to `lyapunovspectrum` to compute the lyapunov spectrum. This function requires a second argument (here set to `100`). Generally setting this to a higher value will increase accuracy, but also increase runtime (since `lyapunovspectrum` is fast for most systems, setting this to a large value is recommended).
 ```@example dynamical_systems_lyapunov
 lyapunovspectrum(ds, 100)
 ```
@@ -112,7 +111,7 @@ Here, the largest exponent is positive, suggesting that the model is chaotic (or
 
 Next, we consider the [Brusselator] model. First we simulate the model for two similar initial conditions, confirming that they converge to the same limit cycle:
 ```@example dynamical_systems_lyapunov
-using OrdinaryDiffEqTsit5
+using OrdinaryDiffEq
 brusselator = @reaction_network begin
     A, ∅ --> X
     1, 2X + Y --> 3X
@@ -134,7 +133,7 @@ plot!(osol2; idxs = (:X, :Y))
 ```
 Next, we compute the Lyapunov spectrum at one of the initial conditions:
 ```@example dynamical_systems_lyapunov
-ds = CoupledODEs(oprob1, (alg = Rodas5P(autodiff = false),))
+ds = CoupledODEs(oprob1, (alg = Rodas5P(autodiff = AutoFiniteDiff()),))
 lyapunovspectrum(ds, 100)
 ```
 Here, all Lyapunov exponents are negative, confirming that the brusselator is non-chaotic.

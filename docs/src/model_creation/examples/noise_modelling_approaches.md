@@ -9,7 +9,7 @@ Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted 
 Pkg.add("Catalyst")
 Pkg.add("DataInterpolations")
 Pkg.add("Distributions")
-Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 Pkg.add("StochasticDiffEq")
 ```
@@ -74,7 +74,7 @@ nothing # hide
 ```
 Next, we again perform 4 simulations. While the individual trajectories are performed using deterministic simulations, the randomised parameter values create heterogeneity across the ensemble.
 ```@example noise_modelling_approaches
-using OrdinaryDiffEqDefault
+using OrdinaryDiffEq
 oprob = ODEProblem(repressilator, u0, tend, ps)
 eprob_extrinsic = EnsembleProblem(oprob; prob_func)
 sol_extrinsic = solve(eprob_extrinsic; trajectories = 4)

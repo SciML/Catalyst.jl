@@ -7,7 +7,7 @@ The following code sets up an environment for running the code on this page.
 using Pkg
 Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("Catalyst")
-Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 Pkg.add("StochasticDiffEq")
 ```
@@ -90,7 +90,7 @@ Previously, we assumed that each simulation used the same initial conditions and
 
 Here, we first create an `ODEProblem` of our previous self-activation loop:
 ```@example ensemble
-using OrdinaryDiffEqTsit5
+using OrdinaryDiffEq
 oprob = ODEProblem(sa_model, u0, tspan, ps)
 nothing # hide
 ```

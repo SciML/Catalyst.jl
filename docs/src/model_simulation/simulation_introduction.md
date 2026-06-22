@@ -8,9 +8,7 @@ using Pkg
 Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("Catalyst")
 Pkg.add("JumpProcesses")
-Pkg.add("OrdinaryDiffEqDefault")
-Pkg.add("OrdinaryDiffEqRosenbrock")
-Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 Pkg.add("StochasticDiffEq")
 ```
@@ -22,7 +20,7 @@ Pkg.add("StochasticDiffEq")
 ```
 The following code provides brief examples of the three main types of simulation.
 ```julia
-using Catalyst, JumpProcesses, OrdinaryDiffEqDefault, StochasticDiffEq
+using Catalyst, JumpProcesses, OrdinaryDiffEq, StochasticDiffEq
 
 # First we designate our model, initial condition, time span, and parameter values.
 rn = @reaction_network begin
@@ -154,7 +152,7 @@ nothing # hide
 ```
 Next, we can simulate the model (requires loading the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package). Simulations are performed using the `solve` function.
 ```@example simulation_intro_ode
-using OrdinaryDiffEqDefault
+using OrdinaryDiffEq
 sol = solve(oprob)
 nothing # hide
 ```
@@ -173,14 +171,16 @@ Some additional considerations:
 ### [Designating solvers and solver options](@id simulation_intro_solver_options)
 While good defaults are generally selected, OrdinaryDiffEq enables the user to customise simulations through a long range of options that can be provided to the `solve` function. This includes specifying a [solver algorithm](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations), which can be provided as a second argument to `solve` (if none is provided, a suitable choice is automatically made). E.g. here we specify that the `Rodas5P` method should be used:
 ```@example simulation_intro_ode
-using OrdinaryDiffEqRosenbrock
+using OrdinaryDiffEq
 sol = solve(oprob, Rodas5P())
 nothing # hide
 ```
-A full list of available solvers is provided [here](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/), and a discussion on optimal solver choices [here](@ref ode_simulation_performance_solvers).
+A full list of available solvers is provided [here](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/), and a discussion on optimal solver choices [here](@ref ode_simulation_performance_solvers). By default, the OrdinaryDiffEq.jl package only export a small set of the most widely used solvers. To access an expanded set, a specialised solver library must be imported. E.g. 
+
+
 
 !!! note
-    Unlike most other libraries, OrdinaryDiffEq is split into multiple libraries. This is due to it implementing a large number of ODE solvers (most of which a user will not use). Splitting the library improves its loading times. At the highest level, there is OrdinaryDiffEq.jl (imported through `using OrdinaryDiffEq`). This exports all solvers, and is primarily useful if you want to try a wide range of different solvers for a specific problem. Next there is OrdinaryDiffEqDefault.jl (imported through `using OrdinaryDiffEq`). This exports the automated default solver (which selects a solver for the user). It is likely the best one to use for simple workflows. Then there are multiple solver-specific libraries, such as [OrdinaryDiffEqTsit5.jl](https://docs.sciml.ai/OrdinaryDiffEq/stable/explicit/Tsit5/) and [OrdinaryDiffEqRosenbrock.jl](https://docs.sciml.ai/OrdinaryDiffEq/stable/semiimplicit/Rosenbrock/) (a full list can be found [here](https://docs.sciml.ai/OrdinaryDiffEq/stable/)). Each of these exports a specific set of solvers, and are useful if you know in advance which solver you wish to use.
+    Loading OrdinaryDiffEq.jl through `using OrdinaryDiffEq` makes the default solver choice and the common solver families available. This is the simplest import for tutorials and exploratory workflows. Solver-specific packages still exist for users who want a smaller import surface, but the examples here use the main `OrdinaryDiffEq` package.
 
 Additional options can be provided as keyword arguments. E.g. the `maxiters` arguments determines the maximum number of simulation time steps (before the simulation is terminated). This defaults to `1e5`, but can be modified through:
 ```@example simulation_intro_ode
@@ -402,7 +402,7 @@ end
 ```
 This type of model will generate so called *variable rate jumps* (`VariableRateJump`s in JumpProcesses.jl). Such models can be simulated in Catalyst too, but note that now a method for time-stepping the solver must be provided to `solve`. Here ODE solvers should be given as they are used to handle integrating the explicitly time-dependent propensities for problems with variable rates, i.e. the proceeding example can be solved like
 ```@example simulation_intro_jumps
-using OrdinaryDiffEqTsit5
+using OrdinaryDiffEq
 u0map = [:P => 0]
 pmap = [:f => 1.0, :A => 2.0, :ϕ => 0.0, :d => 1.0]
 tspan = (0.0, 24.0)

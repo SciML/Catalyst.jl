@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, JumpProcesses, ModelingToolkitBase, OrdinaryDiffEqTsit5, Statistics, Test
+using Catalyst, JumpProcesses, ModelingToolkitBase, OrdinaryDiffEq, Statistics, Test
 using SymbolicIndexingInterface: setp
 
 # Sets stable rng number.

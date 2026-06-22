@@ -9,7 +9,7 @@ Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted 
 Pkg.add("Catalyst")
 Pkg.add("ModelingToolkitBase")
 Pkg.add("NonlinearSolveFirstOrder")
-Pkg.add("OrdinaryDiffEqRosenbrock")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 ```
 ```@raw html
@@ -35,7 +35,7 @@ complete model.
 
 We begin by importing some necessary packages:
 ```@example hh1
-using ModelingToolkitBase, Catalyst, NonlinearSolveFirstOrder, Plots, OrdinaryDiffEqRosenbrock
+using ModelingToolkitBase, Catalyst, NonlinearSolveFirstOrder, Plots, OrdinaryDiffEq
 ```
 
 ## Building the model via the Catalyst DSL
