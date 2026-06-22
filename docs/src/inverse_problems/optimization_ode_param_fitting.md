@@ -159,6 +159,14 @@ Catalyst.PNG(plot(plt; fmt = :png, dpi = 200)) # hide
 !!! note
     Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. Identifiability is a concept that studies how to deal with this problem.<!--NTS: re-add ref when identifiablity works again-->
 
+Say that we instead would like to use a [differential evolution](https://en.wikipedia.org/wiki/Differential_evolution) approach, as implemented by the [BlackBoxOptim.jl](https://github.com/SciML/BlackBoxOptim.jl) package. In this case we can run:
+```@example optimization_paramfit_1 
+using OptimizationBBO
+sol = solve(optprob, BBO_adaptive_de_rand_1_bin_radiuslimited())
+nothing # hide
+```
+to solve `optprob` for this combination of solve and implementation.
+
 ## [Utilising automatic differentiation](@id optimization_parameter_fitting_AD)
 Optimisation methods can be divided into differentiation-free and differentiation-based optimisation methods. E.g. consider finding the minimum of the function $f(x) = x^2$, given some initial guess of $x$. Here, we can simply compute the differential and descend along it until we find $x=0$ (admittedly, for this simple problem the minimum can be computed directly). This principle forms the basis of optimisation methods such as [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent), which utilises information of a function's differential to minimise it. When attempting to find a global minimum, to avoid getting stuck in local minimums, these methods are often augmented by additional routines. While the differentiation of most algebraic functions is trivial, it turns out that even complicated functions (such as the one we used above) can be differentiated computationally through the use of [*automatic differentiation* (AD)](https://en.wikipedia.org/wiki/Automatic_differentiation).
 
