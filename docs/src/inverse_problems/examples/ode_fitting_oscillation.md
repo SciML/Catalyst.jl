@@ -11,7 +11,6 @@ Pkg.add("OptimizationBase")
 Pkg.add("OptimizationOptimisers")
 Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
-Pkg.add("DiffEqBase")
 Pkg.add("SciMLSensitivity")
 ```
 ```@raw html
@@ -27,7 +26,6 @@ using Catalyst
 using OrdinaryDiffEq
 using OptimizationBase
 using OptimizationOptimisers # Required for the ADAM optimizer.
-using DiffEqBase
 using SciMLSensitivity # Required for the `AutoZygote()` automatic differentiation option.
 ```
 
@@ -80,7 +78,7 @@ function optimize_p(pinit, tend,
         p = set_p(prob, p)
         newtimes = filter(<=(tend), sample_times)
         newprob = remake(prob; p)
-        sol = Array(solve(newprob, Rosenbrock23(); saveat = newtimes, verbose = DiffEqBase.SciMLLogging.None(), maxiters = 10000))
+        sol = Array(solve(newprob, Rosenbrock23(); saveat = newtimes, verbose = SciMLLogging.None(), maxiters = 10000))
         loss = sum(abs2, sol .- sample_vals[:, 1:size(sol,2)])
         return loss
     end
