@@ -8,8 +8,8 @@ using Pkg
 Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("Catalyst")
 Pkg.add("OptimizationBase")
+Pkg.add("OptimizationBBO")
 Pkg.add("OptimizationNLopt")
-Pkg.add("OptimizationEvolutionary")
 Pkg.add("OptimizationOptimJL")
 Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
