@@ -631,6 +631,7 @@ function hybrid_model(rs::ReactionSystem;
         checks = false,
         initial_conditions = Dict(),
         use_jump_ratelaws = false,
+        eliminate_aliases = true,
         kwargs...)
 
     # Error checks.
@@ -638,6 +639,17 @@ function hybrid_model(rs::ReactionSystem;
     spatial_convert_err(rs, MT.System)
 
     flatrs = Catalyst.flatten(rs)
+
+    # Alias handling: eliminate or materialize as constraints.
+    # Hot path: returns immediately when no aliases present.
+    flatrs = prepare_aliases_for_conversion(flatrs; eliminate_aliases,
+        allow_constraints = true)
+
+    # Conservation law interaction: must eliminate aliases first.
+    if remove_conserved && aliases_present(flatrs)
+        error("Cannot remove conserved species on a system with uneliminated aliases. " *
+              "Call `eliminate_aliases` first or use `eliminate_aliases=true`.")
+    end
 
     # Resolve scales: _override_all_scales (internal) takes precedence over everything.
     if _override_all_scales !== nothing
@@ -740,7 +752,7 @@ function hybrid_model(rs::ReactionSystem;
         continuous_events = MT.get_continuous_events(flatrs),
         discrete_events = MT.get_discrete_events(flatrs),
         tstops = MT.get_tstops(flatrs),
-        metadata = MT.get_metadata(rs),
+        metadata = MT.get_metadata(flatrs),
         kwargs...)
 end
 
@@ -898,7 +910,7 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, checks = false, initial_conditions = Dict(),
         all_differentials_permitted = false, expand_catalyst_funs = true,
-        include_cl_as_eqs = false, kwargs...)
+        include_cl_as_eqs = false, eliminate_aliases = true, kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, System)
@@ -906,6 +918,14 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
 
     # Generates system equations.
     fullrs = Catalyst.flatten(rs)
+
+    # Alias handling.
+    fullrs = prepare_aliases_for_conversion(fullrs; eliminate_aliases,
+        allow_constraints = true)
+    if remove_conserved && aliases_present(fullrs)
+        error("Cannot remove conserved species on a system with uneliminated aliases. " *
+              "Call `eliminate_aliases` first or use `eliminate_aliases=true`.")
+    end
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, (remove_conserved && !include_cl_as_eqs))
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
@@ -913,13 +933,13 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
     eqs, us, ps, obs, ics, initeqs = addconstraints!(eqs, fullrs, ists, ispcs;
         remove_conserved, compute_cl_initeqs = !include_cl_as_eqs, include_cl_as_eqs)
 
-    # Comoutes the correct initial conditions and bindings.
-    initial_conditions, bindings = MT.convert_bindings_for_time_independent_system(rs)
+    # Computes the correct initial conditions and bindings.
+    initial_conditions, bindings = MT.convert_bindings_for_time_independent_system(fullrs)
     initial_conditions = merge(initial_conditions, ics)
 
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.
-    all_differentials_permitted || nonlinear_convert_differentials_check(rs)
+    all_differentials_permitted || nonlinear_convert_differentials_check(fullrs)
     eqs = Equation[remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
     System(eqs, us, ps;
         name,
@@ -927,7 +947,7 @@ function ss_ode_model(rs::ReactionSystem; name = nameof(rs),
         bindings,
         initial_conditions,
         checks,
-        metadata = MT.get_metadata(rs),
+        metadata = MT.get_metadata(fullrs),
         kwargs...)
 end
 
@@ -992,10 +1012,15 @@ function sde_model(rs::ReactionSystem;
         initial_conditions = Dict(), expand_catalyst_funs = true,
         use_legacy_noise = true,
         use_jump_ratelaws = false,
+        eliminate_aliases = true,
         kwargs...)
 
     # Flatten once upfront and check for constraints.
     flatrs = Catalyst.flatten(rs)
+
+    # Alias handling.
+    flatrs = prepare_aliases_for_conversion(flatrs; eliminate_aliases,
+        allow_constraints = true)
 
     # Error if ReactionSystem has coupled jumps or poissonians (SDE + jumps hybrid not supported yet).
     if !isempty(MT.jumps(flatrs))
@@ -1016,8 +1041,8 @@ function sde_model(rs::ReactionSystem;
     # use legacy noise_eqs matrix approach (avoids mtkcompile overhead).
     # If user brownians are present, use the new Brownian-based path.
     if use_legacy_noise && !has_constraints && !has_user_brownians
-        iscomplete(rs) || error(COMPLETENESS_ERROR)
-        spatial_convert_err(rs, MT.System)
+        iscomplete(flatrs) || error(COMPLETENESS_ERROR)
+        spatial_convert_err(flatrs, MT.System)
 
         remove_conserved && conservationlaws(flatrs)
         ists, ispcs = get_indep_sts(flatrs, remove_conserved)
@@ -1037,7 +1062,7 @@ function sde_model(rs::ReactionSystem;
             continuous_events = MT.get_continuous_events(flatrs),
             discrete_events = MT.get_discrete_events(flatrs),
             tstops = MT.get_tstops(flatrs),
-            metadata = MT.get_metadata(rs),
+            metadata = MT.get_metadata(flatrs),
             kwargs...)
     else
         # New path: Brownians via hybrid_model (requires mtkcompile for SDEProblem).
@@ -1127,7 +1152,7 @@ function jump_model(rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = nothing, checks = false, initial_conditions = Dict(),
         expand_catalyst_funs = true, save_positions = (true, true),
-        physical_scales = nothing, kwargs...)
+        physical_scales = nothing, eliminate_aliases = true, kwargs...)
     (remove_conserved !== nothing) &&
         throw(ArgumentError("Catalyst does not support removing conserved species when converting to jump Systems."))
 
@@ -1140,6 +1165,11 @@ function jump_model(rs::ReactionSystem; name = nameof(rs),
         error("""Cannot convert ReactionSystem with unprocessed poissonians to a pure Jump system via jump_model.
         Use `HybridProblem` instead, which will process poissonians via mtkcompile.""")
     end
+
+    # Handle aliases before checking equations or computing scales.
+    # Jump systems cannot carry algebraic constraints, so allow_constraints=false.
+    flatrs = prepare_aliases_for_conversion(flatrs; eliminate_aliases,
+        allow_constraints = false)
 
     # Error on non-reaction ODE/algebraic/SDE equations (pure Jump only supports reactions).
     # This also catches brownians since they appear in SDE equations.
@@ -1178,19 +1208,23 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
         expand_catalyst_funs = true, mtkcompile = false,
-        use_jump_ratelaws = false, kwargs...)
+        use_jump_ratelaws = false, eliminate_aliases = true, kwargs...)
     osys = ode_model(rs; name, combinatoric_ratelaws, include_zero_odes, checks,
-        remove_conserved, expand_catalyst_funs, use_jump_ratelaws)
+        remove_conserved, expand_catalyst_funs, use_jump_ratelaws, eliminate_aliases)
 
     # Handles potential differential algebraic equations (which requires `mtkcompile`).
+    # Check the processed osys (not the original rs) so alias-generated constraints are detected.
     if mtkcompile
         osys = MT.mtkcompile(osys)
-    elseif has_alg_equations(rs)
-        error("The input ReactionSystem has algebraic equations. This requires setting `mtkcompile = true` within `ODEProblem` call.")
+    elseif has_alg_equations(osys)
+        error("The system has algebraic equations (possibly from uneliminated aliases). " *
+              "This requires setting `mtkcompile = true` within the `ODEProblem` call.")
     else
         osys = complete(osys)
     end
 
+    u0 = remap_alias_inputs(u0, osys)
+    p = remap_alias_inputs(p, osys)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any,Any}(u0), Dict{Any,Any}(p))
     return ODEProblem(osys, prob_cond, tspan, args...; check_length, kwargs...)
 end
@@ -1228,10 +1262,13 @@ function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         p = DiffEqBase.NullParameters(), args...;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false,  checks = false, check_length = false, expand_catalyst_funs = true,
-        mtkcompile = false, all_differentials_permitted = false, kwargs...)
+        mtkcompile = false, all_differentials_permitted = false,
+        eliminate_aliases = true, kwargs...)
     nlsys = ss_ode_model(rs; name, combinatoric_ratelaws, checks, all_differentials_permitted,
-        remove_conserved, expand_catalyst_funs)
+        remove_conserved, expand_catalyst_funs, eliminate_aliases)
     nlsys = mtkcompile ? MT.mtkcompile(nlsys) : complete(nlsys)
+    u0 = remap_alias_inputs(u0, nlsys)
+    p = remap_alias_inputs(p, nlsys)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any,Any}(u0), Dict{Any,Any}(p))
     return NonlinearProblem(nlsys, prob_cond, args...; check_length,
         kwargs...)
@@ -1244,30 +1281,19 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         include_zero_odes = true, checks = false, check_length = false,
         remove_conserved = false, mtkcompile = false,
         expand_catalyst_funs = true, use_legacy_noise = true,
-        use_jump_ratelaws = false, kwargs...)
+        use_jump_ratelaws = false, eliminate_aliases = true, kwargs...)
 
-    # Flatten once upfront and pass to sde_model.
-    flatrs = Catalyst.flatten(rs)
-    sde_sys = sde_model(flatrs; name, combinatoric_ratelaws, expand_catalyst_funs,
-        include_zero_odes, checks, remove_conserved, use_legacy_noise, use_jump_ratelaws)
+    sde_sys = sde_model(rs; name, combinatoric_ratelaws, expand_catalyst_funs,
+        include_zero_odes, checks, remove_conserved, use_legacy_noise, use_jump_ratelaws,
+        eliminate_aliases)
 
-    # Determine if we need mtkcompile:
-    # - If user brownians are present, sde_model routes through hybrid_model which requires mtkcompile
-    # - If using Brownian-based approach (not legacy), mtkcompile extracts the noise matrix
-    # - If there are algebraic equations, mtkcompile handles structural simplification
-    # - If mtkcompile is requested explicitly
-    has_constraints = has_alg_equations(flatrs) || any(isbc, get_unknowns(flatrs))
-    has_user_brownians = !isempty(MT.brownians(flatrs))
-    needs_mtkcompile = mtkcompile ||
-                       has_alg_equations(flatrs) ||
-                       !use_legacy_noise ||
-                       has_user_brownians ||
-                       has_constraints
-
+    u0 = remap_alias_inputs(u0, sde_sys)
+    p = remap_alias_inputs(p, sde_sys)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any,Any}(u0), Dict{Any,Any}(p))
 
+    needs_mtkcompile = mtkcompile || (get_noise_eqs(sde_sys) === nothing)
     if needs_mtkcompile
-        if !mtkcompile && has_alg_equations(flatrs)
+        if !mtkcompile && has_alg_equations(sde_sys)
             error("The input ReactionSystem has algebraic equations. This requires setting `mtkcompile = true` within `SDEProblem` call.")
         end
         sde_sys = MT.mtkcompile(sde_sys)
@@ -1275,7 +1301,7 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
     else
         # Legacy path: complete + noise_rate_prototype
         sde_sys = complete(sde_sys)
-        p_matrix = zeros(length(get_unknowns(sde_sys)), numreactions(flatrs))
+        p_matrix = zeros(size(get_noise_eqs(sde_sys))...)
         return SDEProblem(sde_sys, prob_cond, tspan, args...; check_length,
             noise_rate_prototype = p_matrix, kwargs...)
     end
@@ -1321,10 +1347,14 @@ function JumpProcesses.JumpProblem(rs::ReactionSystem, u0, tspan,
         expand_catalyst_funs = true,
         save_positions = (true, true),
         checks = false,
+        eliminate_aliases = true,
         kwargs...)
     # Pure jump system - use HybridProblem for hybrid ODE+SDE+Jump systems.
     jsys = complete(jump_model(rs; name, combinatoric_ratelaws, checks,
-        expand_catalyst_funs, save_positions))
+        expand_catalyst_funs, save_positions, eliminate_aliases))
+    # Remap eliminated symbols in user inputs.
+    u0 = remap_alias_inputs(u0, jsys)
+    p = remap_alias_inputs(p, jsys)
     # Use Dict{Any,Any} to prevent type promotion during merge (MTK converts to this anyway).
     op = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any,Any}(u0), Dict{Any,Any}(p))
 
@@ -1416,9 +1446,13 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
         checks = false,
         mtkcompile = false,
         use_jump_ratelaws = false,
+        eliminate_aliases = true,
         kwargs...)
     # Determine which scale types are present.
     flatrs = Catalyst.flatten(rs)
+    # Handle aliases before scale resolution (alias elimination may change reaction count).
+    flatrs = prepare_aliases_for_conversion(flatrs; eliminate_aliases,
+        allow_constraints = true)
     resolved_scales = merge_physical_scales(reactions(flatrs), physical_scales, default_scale)
     has_ode, has_sde, has_jump = detect_scale_types(resolved_scales)
 
@@ -1434,8 +1468,11 @@ function HybridProblem(rs::ReactionSystem, u0, tspan,
     # Build the unified System from the flattened ReactionSystem.
     sys = hybrid_model(flatrs; name, physical_scales, default_scale,
         combinatoric_ratelaws, expand_catalyst_funs, save_positions, checks,
-        use_jump_ratelaws)
+        use_jump_ratelaws, eliminate_aliases)
 
+    # Remap eliminated symbols in user inputs.
+    u0 = remap_alias_inputs(u0, sys)
+    p = remap_alias_inputs(p, sys)
     # Build problem conditions (u0 + p merged).
     # Use Dict{Any,Any} to prevent type promotion during merge (MTK converts to this anyway).
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any,Any}(u0), Dict{Any,Any}(p))
@@ -1482,19 +1519,24 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
         check_length = false, name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = false, include_zero_odes = true, checks = false,
-        expand_catalyst_funs = true, mtkcompile = false, kwargs...)
+        expand_catalyst_funs = true, mtkcompile = false,
+        eliminate_aliases = true, kwargs...)
     osys = ode_model(rs; name, combinatoric_ratelaws, include_zero_odes, checks,
-        remove_conserved, expand_catalyst_funs)
+        remove_conserved, expand_catalyst_funs, eliminate_aliases)
 
     # Handles potential differential algebraic equations (which requires `mtkcompile`).
+    # Check the processed osys (not the original rs) so alias-generated constraints are detected.
     if mtkcompile
         (osys = MT.mtkcompile(osys))
-    elseif has_alg_equations(rs)
-        error("The input ReactionSystem has algebraic equations. This requires setting `mtkcompile = true` within `ODEProblem` call.")
+    elseif has_alg_equations(osys)
+        error("The system has algebraic equations (possibly from uneliminated aliases). " *
+              "This requires setting `mtkcompile = true` within the `SteadyStateProblem` call.")
     else
         osys = complete(osys)
     end
 
+    u0 = remap_alias_inputs(u0, osys)
+    p = remap_alias_inputs(p, osys)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any,Any}(u0), Dict{Any,Any}(p))
     return SteadyStateProblem(osys, prob_cond, args...; check_length, kwargs...)
 end

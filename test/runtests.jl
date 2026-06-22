@@ -34,6 +34,7 @@ end
         # Tests compositional and hierarchical modelling.
         @time @safetestset "ReactionSystem Components Based Creation" begin include("compositional_modelling/component_based_model_creation.jl") end # hierarchical modelling broken due to https://github.com/SciML/ModelingToolkit.jl/pull/4101
         @time @safetestset "Brownians, Jumps, and Poissonians Composition" begin include("compositional_modelling/brownians_and_jumps_composition.jl") end
+        @time @safetestset "Alias Elimination" begin include("reactionsystem_core/alias_elimination.jl") end
 
         # Tests various miscellaneous features.
         @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
