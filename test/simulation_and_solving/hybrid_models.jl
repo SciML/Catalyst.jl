@@ -970,8 +970,12 @@ let
     Pf(t) = k1 / k2 + (P0 - k1 / k2) * exp(-k2 * t)
     Pact = [Pf(t) for t in times]
 
-    # Skip t=0 where Pact=0 (would give division issues in relative tolerance)
-    @test all(abs.(Pv[2:end] .- Pact[2:end]) .<= 0.05 .* Pact[2:end])
+    # Skip the early transient (t < 2 ≈ one settling time, τ = 1/k2 = 2) where the
+    # analytic mean is small and the relative-tolerance band is correspondingly tiny,
+    # making the Monte Carlo estimate statistically unstable. This matches the
+    # `findfirst(t -> t >= 2.0, times)` convention used by the multi-species test below.
+    start_idx = findfirst(t -> t >= 2.0, times)
+    @test all(abs.(Pv[start_idx:end] .- Pact[start_idx:end]) .<= 0.05 .* Pact[start_idx:end])
 end
 
 # Mathematical correctness test: Complex non-linear multi-species system.
