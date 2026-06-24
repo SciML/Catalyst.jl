@@ -57,7 +57,7 @@ petab_sol = calibrate_multistart(petab_prob, Optim.IPNewton(), 3)
 # Compute and plot the likelihood profiles.
 using LikelihoodProfiler, OptimizationLBFGSB
 pl_prob = ProfileLikelihoodProblem(petab_sol, petab_prob)
-pl_method = OptimizationProfiler(optimizer = LBFGSB(), stepper = FixedStep(; initial_step = 5e-3))
+pl_method = OptimizationProfiler(optimizer = OptimizationLBFGSB.LBFGSB(), stepper = FixedStep(; initial_step = 5e-3))
 pl_sol = LikelihoodProfiler.solve(pl_prob, pl_method)
 plot(pl_sol) # Parameters are plotted on a log scale by default.
 ```
@@ -193,7 +193,7 @@ Profile likelihood computation with LikelihoodProfiler consists of three steps: 
 ```@example likelihood_profiler_basics
 using LikelihoodProfiler, OptimizationLBFGSB
 pl_prob = ProfileLikelihoodProblem(petab_sol, petab_prob)
-pl_method = OptimizationProfiler(optimizer = LBFGSB(), stepper = FixedStep(; initial_step = 1e-2))
+pl_method = OptimizationProfiler(optimizer = OptimizationLBFGSB.LBFGSB(), stepper = FixedStep(; initial_step = 1e-2))
 pl_sol = LikelihoodProfiler.solve(pl_prob, pl_method)
 nothing # hide
 ```

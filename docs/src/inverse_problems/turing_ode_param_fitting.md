@@ -46,7 +46,7 @@ plot!(t_measurement, I_observed; label = "I (measured)", color = 2, seriestype =
 # which posterior we wish to infer, and the likelihoods of the observables.
 # If `x` is an undefined parameter, `x` becomes a prior for an estimated parameter, else,
 # it is interpreted as an observable likelihood.
-using Turing, MCMCChains
+using Turing
 @model function sir_model(I_observed, oprob_base, setp_oop, saveat)
     # Defines the parameters we wish to estimate and their prior distributions.
     γ ~ LogUniform(0.00001, 0.001)
@@ -76,7 +76,7 @@ n_steps = 1000
 n_chains = 4
 setp_oop = SymbolicIndexingInterface.setp_oop(oprob_true, [:γ, :ν])
 model = sir_model(I_observed, oprob_true, setp_oop, t_measurement)
-chain = sample(model, NUTS(), MCMCThreads(), n_steps, n_chains; progress = false, chain_type = MCMCChains.Chains)
+chain = sample(model, NUTS(), MCMCThreads(), n_steps, n_chains; progress = false)
 
 # Plots the resulting chains and posteriors.
 using StatsPlots
@@ -131,7 +131,7 @@ Here, we declare our parameters on the form `p ~ Distribution(...)` where the le
 
 In our case, we first declare each parameter and its prior. Next, we simulate the SIR model for a specific parameter set. Then, we compute the likelihood of observing our observables given the simulation.
 ```@example turing_paramfit
-using Turing, MCMCChains, SymbolicIndexingInterface
+using Turing, SymbolicIndexingInterface
 setp_oop = SymbolicIndexingInterface.setp_oop(oprob_true, [:γ, :ν])
 @model function sir_likelihood(I_observed, oprob_base, setp_oop, saveat)
     # Defines the parameters we wish to estimate and their prior distributions.
@@ -170,7 +170,7 @@ Finally, we can estimate the posterior distributions of all parameters. First we
 n_steps = 1000
 n_chains = 4
 sir_model = sir_likelihood(I_observed, oprob_true, setp_oop, t_measurement)
-chain = sample(sir_model, NUTS(), MCMCThreads(), n_steps, n_chains; progress = false, verbose = false, chain_type = MCMCChains.Chains)
+chain = sample(sir_model, NUTS(), MCMCThreads(), n_steps, n_chains; progress = false, verbose = false)
 nothing # hide
 ```
 Here, `sample`'s input is:
@@ -202,16 +202,17 @@ I_observed[idx] ~ truncated(Normal(sol[:I][idx], σI), 0.0, Inf)
 to create a version of our normal distribution that is truncated at *0* and infinity.
 
 ### [Accessing posterior information](@id turing_parameter_fitting_basic_example_output_interfacing)
-Say that we want to sample a parameter set from the computed posterior distribution. Here, we can use the following syntax to sample a single vector with the values of `γ`, `ν`, and `σI` (in that order):
+Say that we want to sample a parameter set from the computed posterior distribution. Here, we first use `draw = rand(chain; parameters_only = true)` to sample a random parameter set from teh posterior. next, we can use e.g. `draw[@varname(γ)]` to access the parameter $γ$'s value from that sample.
 ```@example turing_paramfit
-collect(chain.value[rand(1:n_steps), 1:3, rand(1:n_chains)])
+draw = rand(chain; parameters_only = true)
+draw[@varname(γ)]
 ```
 
 We can use this to e.g. draw $10$ random parameter sets from the posterior distribution, simulate the model for these parameter sets, and plot the resulting ensemble simulation. For this, we will create an `EnsembleProblem` from our `ODEProblem` using the approach described [here](@ref ensemble_simulations_varying_conditions).
 ```@example turing_paramfit
 function prob_func(prob, _, _)
-    γ, ν = collect(chain.value[rand(1:n_steps), 1:2, rand(1:n_chains)])
-    remake(prob; p = [:γ => γ, :ν => ν])
+    draw = rand(chain; parameters_only = true)
+    remake(prob; p = [:γ => draw[@varname(γ)], :ν => draw[@varname(ν)]])
 end
 eprob = EnsembleProblem(oprob_true; prob_func)
 sols = solve(eprob; trajectories = 10)
