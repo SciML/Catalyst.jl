@@ -193,7 +193,7 @@ Profile likelihood computation with LikelihoodProfiler consists of three steps: 
 ```@example likelihood_profiler_basics
 using LikelihoodProfiler, OptimizationLBFGSB
 pl_prob = ProfileLikelihoodProblem(petab_sol, petab_prob)
-pl_method = OptimizationProfiler(optimizer = LBFGSB(), stepper = FixedStep(; initial_step = 1e-2))
+pl_method = OptimizationProfiler(optimizer = OptimizationLBFGSB.LBFGSB(), stepper = FixedStep(; initial_step = 1e-2))
 pl_sol = LikelihoodProfiler.solve(pl_prob, pl_method)
 nothing # hide
 ```
