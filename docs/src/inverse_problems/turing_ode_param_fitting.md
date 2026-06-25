@@ -210,7 +210,7 @@ draw[@varname(γ)]
 
 We can use this to e.g. draw $10$ random parameter sets from the posterior distribution, simulate the model for these parameter sets, and plot the resulting ensemble simulation. For this, we will create an `EnsembleProblem` from our `ODEProblem` using the approach described [here](@ref ensemble_simulations_varying_conditions).
 ```@example turing_paramfit
-function prob_func(prob, _, _)
+function prob_func(prob, _)
     draw = rand(chain; parameters_only = true)
     remake(prob; p = [:γ => draw[@varname(γ)], :ν => draw[@varname(ν)]])
 end
