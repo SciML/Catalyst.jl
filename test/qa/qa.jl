@@ -1,5 +1,13 @@
 using SciMLTesting, Catalyst, Test
-using JET
+
+# JET is a SciMLTesting weak dependency: `using JET` registers it and turns the JET
+# check on. JET 0.11 crashes (UndefRefError in `collect_callee_reports!`) when run
+# under the Julia 1.13 prerelease `Compiler.jl`, so only load it on the Julia versions
+# JET supports. Aqua and ExplicitImports still run on every version. Re-enable JET on
+# 1.13 once a JET release analyses cleanly there. Tracked in SciML/Catalyst.jl#1496.
+@static if VERSION < v"1.13-"
+    using JET
+end
 
 # ExplicitImports cannot fully analyze `Catalyst` (the `PhysicalScale` EnumX enum
 # parses as an unanalyzable submodule), so the per-module checks are told to allow it.
