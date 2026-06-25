@@ -1147,7 +1147,7 @@ let
     @test ModelingToolkitBase.getmetadata(rs1, MiscSystemData, nothing) == "Metadata"
     @test ModelingToolkitBase.getmetadata(rs2, MiscSystemData, nothing) == ones(2, 3)
     @test ModelingToolkitBase.getmetadata(complete(rs1), MiscSystemData, nothing) == "Metadata"
-    @test_broken ModelingToolkitBase.getmetadata(complete(rs2), MiscSystemData, nothing) == ones(2, 3) # Weird and obscure Catalyst bug: https://github.com/SciML/Catalyst.jl/issues/1353.
+    @test ModelingToolkitBase.getmetadata(complete(rs2), MiscSystemData, nothing) == ones(2, 3)
 end
 
 # Tests u0_map and parameter_map system-level metadata.
