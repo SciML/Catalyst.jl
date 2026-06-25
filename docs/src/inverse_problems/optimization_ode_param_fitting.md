@@ -8,7 +8,7 @@ using Pkg
 Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("Catalyst")
 Pkg.add("OptimizationBase")
-Pkg.add("OptimizationBBO")
+Pkg.add("OptimizationEvolutionary")
 Pkg.add("OptimizationNLopt")
 Pkg.add("OptimizationOptimJL")
 Pkg.add("OrdinaryDiffEq")
@@ -159,10 +159,10 @@ Catalyst.PNG(plot(plt; fmt = :png, dpi = 200)) # hide
 !!! note
     Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. Identifiability is a concept that studies how to deal with this problem.<!--NTS: re-add ref when identifiablity works again-->
 
-Say that we instead would like to use a [differential evolution](https://en.wikipedia.org/wiki/Differential_evolution) approach, as implemented by the [BlackBoxOptim.jl](https://github.com/SciML/BlackBoxOptim.jl) package. In this case we can run:
+Say that we instead would like to use a [genetic algorithm](https://en.wikipedia.org/wiki/Genetic_algorithm) approach, as implemented by the [Evolutionary.jl](https://github.com/wildart/Evolutionary.jl) package. In this case we can run:
 ```@example optimization_paramfit_1 
-using OptimizationBBO
-sol = solve(optprob, BBO_adaptive_de_rand_1_bin_radiuslimited())
+using OptimizationEvolutionary
+sol = solve(optprob, Evolutionary.GA())
 nothing # hide
 ```
 to solve `optprob` for this combination of solve and implementation.
