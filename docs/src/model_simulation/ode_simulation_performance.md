@@ -246,14 +246,14 @@ To parallelise our simulations, we first need to create an `EnsembleProblem`. Th
 
 Here, `prob_func` takes two arguments:
 - `prob`: The problem that it modifies at the start of each individual run (which will be the same as `EnsembleProblem`'s first argument).
-- `ctx`: An `EnsembleContext` structure, carrying context of the individual run's context in the ensemble. Here, `ctx.i` is the specific Monte Carlo run's iteration in the interval `1:trajectories`, while `ctx.repeat` is the iteration of the repeat of the simulation (typically `1`, but potentially higher if [the simulation re-running option](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#Building-a-Problem) is used).
+- `ctx`: An `EnsembleContext` structure, carrying context of the individual run's context in the ensemble. Here, `ctx.sim_id` is the specific Monte Carlo run's iteration in the interval `1:trajectories`, while `ctx.repeat` is the iteration of the repeat of the simulation (typically `1`, but potentially higher if [the simulation re-running option](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#Building-a-Problem) is used).
 
 and output the `ODEProblem` simulated in the i'th simulation.
 
 Let us assume that we wish to simulate our model 100 times, for $kP = 0.01, 0.02, ..., 0.99, 1.0$. We define our `prob_func` using [`remake`](@ref simulation_structure_interfacing_problems_remake):
 ```@example ode_simulation_performance_4
 function prob_func(prob, ctx)
-    return remake(prob; p = [:kP => 0.01*ctx.i])
+    return remake(prob; p = [:kP => 0.01*ctx.sim_id])
 end
 nothing # hide
 ```
