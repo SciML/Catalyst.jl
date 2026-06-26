@@ -244,17 +244,16 @@ To parallelise our simulations, we first need to create an `EnsembleProblem`. Th
 - The `ODEProblem` corresponds to the model simulation (`SDEProblem` and `JumpProblem`s can also be supplied, enabling the parallelisation of these problem types).
 - A function, `prob_func`, describing how to modify the problem for each simulation. If we wish to simulate the same, unmodified problem, in each simulation (primarily relevant for stochastic simulations), this argument is not required.
 
-Here, `prob_func` takes 3 arguments:
+Here, `prob_func` takes two arguments:
 - `prob`: The problem that it modifies at the start of each individual run (which will be the same as `EnsembleProblem`'s first argument).
-- `i`: The index of the specific simulation (in the array of all simulations that are performed).
-- `repeat`: The repeat of a specific simulation in the array. We will not use this option in this example, however, it is discussed in more detail [here](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#Building-a-Problem).
+- `ctx`: An `EnsembleContext` structure, carrying context of the individual run's context in the ensemble. Here, `ctx.i` is the specific Monte Carlo run's iteration in the interval `1:trajectories`, while `ctx.repeat` is the iteration of the repeat of the simulation (typically `1`, but potentially higher if [the simulation re-running option](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#Building-a-Problem) is used).
 
 and output the `ODEProblem` simulated in the i'th simulation.
 
 Let us assume that we wish to simulate our model 100 times, for $kP = 0.01, 0.02, ..., 0.99, 1.0$. We define our `prob_func` using [`remake`](@ref simulation_structure_interfacing_problems_remake):
 ```@example ode_simulation_performance_4
-function prob_func(prob, i, repeat)
-    return remake(prob; p = [:kP => 0.01*i])
+function prob_func(prob, ctx)
+    return remake(prob; p = [:kP => 0.01*ctx.i])
 end
 nothing # hide
 ```
@@ -339,7 +338,7 @@ When we declare our `prob_func` and `EnsembleProblem` we need to ensure that the
 function prob_func(prob, i, repeat)
     return remake(prob; p = [:kP => 0.0001f0*i])
 end
-eprob = EnsembleProblem(oprob; prob_func = prob_func)
+eprob = EnsembleProblem(oprob; prob_func)
 nothing # hide
 ```
 Here have we increased the number of simulations to 10,000, since this is a more appropriate number for GPU parallelisation (as compared to the 100 simulations we performed in our CPU example).
