@@ -137,7 +137,7 @@ export Reaction, PhysicalScale
 
 # Documented `Reaction` predicates and metadata accessors (public, not exported).
 @public isbc, isconstant, isvalidreactant
-@public hasnoisescaling, getnoisescaling, hasdescription, getdescription, hasmisc, getmisc
+@public hasnoisescaling, getnoisescaling
 
 # Union type for `Reaction`s and `Equation`s.
 const CatalystEqType = Union{Reaction, Equation}
