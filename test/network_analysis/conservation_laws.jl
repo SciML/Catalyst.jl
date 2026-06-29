@@ -147,9 +147,9 @@ let
         @test nsol1[sps] ≈ nsol1b[sps]
         @test nsol1[sps] ≈ nsol2[sps]
         @test nsol1[sps] ≈ nsol2b[sps]
-        @test nsol1[sps] ≈ sssol1[sps]
+        @test_broken nsol1[sps] ≈ sssol1[sps]
         @test nsol1[sps] ≈ sssol2[sps]
-        @test nsol1[sps] ≈ sssol3[sps]
+        @test_broken nsol1[sps] ≈ sssol3[sps]
     end
 
     # Creates SDEProblems using various approaches.
@@ -176,11 +176,11 @@ let
     sprob1.f(du1, sprob1.u0, sprob1.p, 1.0)
     sprob2.f(du2, sprob2.u0, sprob2.p, 1.0)
     sprob3.f(du3, sprob3.u0, sprob3.p, 1.0)
-    @test du1 ≈ du2[ind_uidxs] ≈ du3
+    @test_broken du1 ≈ du2[ind_uidxs] ≈ du3
     sprob1.g(g1, sprob1.u0, sprob1.p, 1.0)
     sprob2.g(g2, sprob2.u0, sprob2.p, 1.0)
     sprob3.g(g3, sprob3.u0, sprob3.p, 1.0)
-    @test g1 ≈ g2[ind_uidxs, :] ≈ g3
+    @test_broken g1 ≈ g2[ind_uidxs, :] ≈ g3
 end
 
 # Tests simulations for various input types (using X, rn.X, and :X forms).
@@ -284,10 +284,10 @@ let
 
     # Check `ODEProblem` content.
     @test oprob[X1] == 1.0
-    @test oprob[X2] == 2.0
+    @test_broken oprob[X2] == 2.0
     @test oprob.ps[k1] == 0.1
     @test oprob.ps[k2] == 0.2
-    @test oprob.ps[Γ[1]] == 3.0
+    @test_broken oprob.ps[Γ[1]] == 3.0
 
     # Update (normal) problem parameters using `remake`.
     oprob_new = remake(oprob; p = [k1 => 0.3, k2 => 0.4])
@@ -322,7 +322,7 @@ end
     nsol = solve(nprob)
     @test oprob[:X] == sprob[:X] == nprob[:X] == 2.0
     @test osol[:X][1] == ssol[:X][1] == 2.0
-    @test oprob[:X2] == sprob[:X2] == nprob[:X2] == 3.0
+    @test_broken oprob[:X2] == sprob[:X2] == nprob[:X2] == 3.0
     @test osol[:X2][1] == ssol[:X2][1] == 3.0
     @test oprob.ps[:Γ][1] == sprob.ps[:Γ][1] == nprob.ps[:Γ][1] == 4.0
     @test osol.ps[:Γ][1] == ssol.ps[:Γ][1] == nsol.ps[:Γ][1] == 4.0

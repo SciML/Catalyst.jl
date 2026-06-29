@@ -37,7 +37,7 @@ pages = Any[
     "model_simulation/sde_simulation_performance.md",
     # "model_simulation/finite_state_projection_simulation.md", # Wait for update with new version.
     "Examples" => Any[
-        "model_simulation/examples/periodic_events_simulation.md",
+        #"model_simulation/examples/periodic_events_simulation.md",
         "model_simulation/examples/activation_time_distribution_measurement.md",
         "model_simulation/examples/interactive_brusselator_simulation.md"
     ]
