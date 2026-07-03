@@ -48,7 +48,7 @@ import ModelingToolkitBase: check_variables, check_parameters,
 # Import from owner module (SymbolicUtils) per ExplicitImports.jl audit
 import SymbolicUtils: _iszero, unwrap
 
-import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
+import Base: ==, hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
 using MacroTools: striplines
 import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne
@@ -200,7 +200,7 @@ export isedgeparameter
 include("spatial_reaction_systems/discrete_space_reaction_systems.jl")
 export DiscreteSpaceReactionSystem
 export spatial_species, vertex_parameters, edge_parameters
-export CartesianGrid, CartesianGridReJ # (Implemented in JumpProcesses)
+export CartesianGrid, CartesianGridRej # (Implemented in JumpProcesses)
 export has_cartesian_dspace, has_masked_dspace, has_grid_dspace, has_graph_dspace,
        grid_dims, grid_size
 export make_edge_p_values, make_directed_edge_values
