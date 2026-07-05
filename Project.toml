@@ -104,7 +104,6 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["DataInterpolations", "DiffEqCallbacks", "DiffEqNoiseProcess", "DomainSets",
-    "Logging", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqCore", "OrdinaryDiffEqDefault",
-    "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner",
+    "Logging", "NonlinearSolve", "OrdinaryDiffEq", "OrdinaryDiffEqCore",
     "Pkg", "Plots", "Random", "SafeTestsets", "StableRNGs",
     "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test"]
