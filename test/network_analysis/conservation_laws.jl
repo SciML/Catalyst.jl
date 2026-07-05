@@ -519,7 +519,7 @@ let
     ps = [k => [1.0, 2.0]]
     oprob = ODEProblem(rs, u0, (0.0, 1000.0), ps; remove_conserved = true)
     sol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
-    @test_broken sol[X[1]][end] ≈ 8.0
+    @test sol[X[1]][end] ≈ 8.0
     @test sol[X[2]][end] ≈ 4.0
 end
 
