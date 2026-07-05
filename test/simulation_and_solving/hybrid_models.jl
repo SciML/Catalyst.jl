@@ -1298,7 +1298,12 @@ let
     λ_val = 3.0
     σ_val = 1.0
     T = 10.0
-    n_trials = 500
+    # The Brownian noise process draws from the task RNG (not the jump `rng` above), so the
+    # σ²*T contribution to the variance is not seeded and the sample-variance estimator is
+    # genuinely noisy. At N=500 its relative std is ~7%, so a 15% rtol is only ~2σ and the
+    # check fails intermittently (~7% of runs). N=1500 drops the relative std to ~3%, making
+    # the 15% band a robust ~5σ margin without touching the (mathematically motivated) rtol.
+    n_trials = 1500
 
     # Create problem once; the RNG state advances across solves.
     prob = HybridProblem(rn, [:X => 0.0], (0.0, T),
