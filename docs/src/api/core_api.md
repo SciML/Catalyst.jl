@@ -70,12 +70,16 @@ Catalyst.PNG(plot(p1, p2, p3; layout = (3,1), fmt = :png, dpi = 200)) # hide
 ```
 
 ```@docs
+default_t
+default_time_deriv
 @reaction_network
 @network_component
 make_empty_network
 @reaction
+@species
 Reaction
 ReactionSystem
+isspatial
 ```
 
 ## [Options for the `@reaction_network` DSL](@id api_dsl_options)
@@ -281,6 +285,8 @@ Reaction networks can be plotted using the `GraphMakie` extension, which is load
 ```@docs
 plot_network(::ReactionSystem)
 plot_complexes(::ReactionSystem)
+plot_network
+plot_complexes
 ```
 
 ## [Rate laws](@id api_rate_laws)
@@ -304,6 +310,9 @@ ss_ode_model
 sde_model
 jump_model
 hybrid_model
+HybridProblem
+hc_steady_states
+make_si_ode
 ModelingToolkitBase.mtkcompile
 set_default_noise_scaling
 ```
@@ -317,6 +326,8 @@ iscompound
 components
 coefficients
 component_coefficients
+balance_reaction
+balance_system
 ```
 
 ## Unit validation
@@ -336,6 +347,8 @@ Catalyst.UnitValidationError
 The first step of spatial modelling is to create a so-called `DiscreteSpaceReactionSystem`:
 ```@docs
 DiscreteSpaceReactionSystem
+TransportReaction
+@transport_reaction
 ```
 
 The following functions can be used to querying the properties of `DiscreteSpaceReactionSystem`s:
@@ -351,6 +364,7 @@ Catalyst.vertex_parameters
 Catalyst.edge_parameters
 Catalyst.edge_iterator
 Catalyst.is_transport_system
+isedgeparameter
 has_cartesian_dspace
 has_masked_dspace
 has_grid_dspace
@@ -380,4 +394,9 @@ Finally, we provide the following helper functions to plot and animate spatial d
 dspace_plot
 dspace_animation
 dspace_kymograph
+```
+
+## Reaction system serialisation
+```@docs
+save_reactionsystem
 ```

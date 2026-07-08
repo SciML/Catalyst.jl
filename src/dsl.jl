@@ -14,7 +14,23 @@ const option_keys = (:species, :parameters, :variables, :discretes, :ivs, :compo
 
 ### `@species` Macro ###
 
-# The @species macro, basically a copy of the @variables macro.
+"""
+    @species xs...
+
+Declare symbolic variables as Catalyst species.
+
+`@species` accepts the same declaration syntax as ModelingToolkit's
+`@variables`, including defaults, metadata, and array declarations. Declared
+species carry Catalyst species metadata and can be used when programmatically
+constructing [`Reaction`](@ref)s or [`ReactionSystem`](@ref)s.
+
+# Examples
+```julia
+t = default_t()
+@species S(t) I(t) R(t)
+@species (X(t))[1:3] [description = "state vector"]
+```
+"""
 macro species(ex...)
     return Symbolics.parse_vars(:variables, Real, ex, tospecies)
 end

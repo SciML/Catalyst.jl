@@ -1077,7 +1077,10 @@ end
 """
     isspatial(rn::ReactionSystem)
 
-Returns whether `rn` has any spatial independent variables (i.e. is a spatial network).
+Return whether `rn` is a spatial reaction system.
+
+Returns `true` when `rn` has spatial independent variables, and `false`
+otherwise.
 """
 isspatial(rn::ReactionSystem) = !isempty(get_sivs(rn))
 

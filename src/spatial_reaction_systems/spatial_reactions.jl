@@ -13,7 +13,11 @@ Symbolics.option_to_metadata_type(::Val{:edgeparameter}) = EdgeParameter
 """
     isedgeparameter(p)
 
-Returns `true` if the parameter `p` is an edge parameter (else `false`).
+Return whether `p` is marked as an edge parameter.
+
+Edge parameters vary by edge in a [`DiscreteSpaceReactionSystem`](@ref).
+Returns `true` when the symbolic parameter carries edge-parameter metadata, and
+`false` otherwise.
 """
 isedgeparameter(x::Num, args...) = isedgeparameter(unwrap(x), args...)
 function isedgeparameter(x, default = false)
@@ -25,8 +29,23 @@ end
 
 ### Transport Reaction Structures ###
 
-# A transport reaction. These are simple to handle, and should cover most types of spatial reactions.
-# Only permit constant rates (possibly consisting of several parameters).
+"""
+    TransportReaction(rate, species)
+
+Create a spatial transport reaction for `species` with transport rate `rate`.
+
+`rate` may contain parameters but not species or other non-parameter symbolic
+variables. Transport reactions are used by [`DiscreteSpaceReactionSystem`](@ref)
+to move a species between neighboring compartments or graph vertices.
+
+# Examples
+```julia
+t = default_t()
+@species X(t)
+@parameters D
+tr = TransportReaction(D, X)
+```
+"""
 struct TransportReaction <: AbstractSpatialReaction
     """The rate function (excluding mass action terms). Currently, only constants supported"""
     rate::Any
@@ -42,7 +61,21 @@ struct TransportReaction <: AbstractSpatialReaction
     end
 end
 
-# Macro for creating a `TransportReaction`.
+"""
+    @transport_reaction rate species
+
+Create a [`TransportReaction`](@ref) and mark symbols in `rate` as edge parameters.
+
+The macro declares any parameter symbols appearing in `rate`, declares `species`
+as a Catalyst species using [`default_t`](@ref), and returns the resulting
+transport reaction.
+
+# Examples
+```julia
+tr = @transport_reaction D X
+tr2 = @transport_reaction D1 + D2 X
+```
+"""
 macro transport_reaction(rateex::ExprValues, species::ExprValues)
     make_transport_reaction(striplines(rateex), species)
 end

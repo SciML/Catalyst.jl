@@ -565,9 +565,22 @@ linkageclasses(incidencegraph) = Graphs.connected_components(incidencegraph)
 """
     stronglinkageclasses(rn::ReactionSystem)
 
-    Return the strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes such that every complex is reachable from every other one in the sub-group).
-"""
+Return the strongly connected components of a reaction network's incidence
+graph.
 
+Each returned vector contains the indices of reaction complexes for which every
+complex in the component is reachable from every other complex in that
+component.
+
+# Examples
+```julia
+rn = @reaction_network begin
+    (k1, k2), A <--> B
+    k3, B --> C
+end
+stronglinkageclasses(rn)
+```
+"""
 function stronglinkageclasses(rn::ReactionSystem)
     nps = get_networkproperties(rn)
     if isempty(nps.stronglinkageclasses)
@@ -581,9 +594,20 @@ stronglinkageclasses(incidencegraph) = Graphs.strongly_connected_components(inci
 """
     terminallinkageclasses(rn::ReactionSystem)
 
-    Return the terminal strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes that are 1) strongly connected and 2) every outgoing reaction from a complex in the component produces a complex also in the component).
-"""
+Return the terminal strong linkage classes of a reaction network.
 
+A terminal linkage class is strongly connected and has no outgoing reaction to a
+complex outside the class.
+
+# Examples
+```julia
+rn = @reaction_network begin
+    (k1, k2), A <--> B
+    k3, B --> C
+end
+terminallinkageclasses(rn)
+```
+"""
 function terminallinkageclasses(rn::ReactionSystem)
     nps = get_networkproperties(rn)
     if isempty(nps.terminallinkageclasses)

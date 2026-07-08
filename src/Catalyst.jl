@@ -61,9 +61,41 @@ import SymbolicUtils: getmetadata, hasmetadata, setmetadata
 import SciMLPublic: @public
 
 # globals for the modulate
+"""
+    default_time_deriv()
+
+Return Catalyst's default time derivative operator.
+
+This is the derivative with respect to [`default_t`](@ref), and is useful when
+programmatically constructing equations involving time derivatives.
+
+# Examples
+```julia
+t = default_t()
+D = default_time_deriv()
+@species X(t)
+eq = D(X) ~ -X
+```
+"""
 function default_time_deriv()
     return ModelingToolkitBase.D_nounits
 end
+
+"""
+    default_t()
+
+Return Catalyst's default independent time variable.
+
+Use this when programmatically declaring species or constructing
+[`ReactionSystem`](@ref)s so that the independent variable matches Catalyst's
+DSL defaults.
+
+# Examples
+```julia
+t = default_t()
+@species X(t)
+```
+"""
 function default_t()
     return ModelingToolkitBase.t_nounits
 end
@@ -177,15 +209,99 @@ export steady_state_stability, steady_state_jac
 ### Extensions ###
 
 # HomotopyContinuation
+"""
+    hc_steady_states(rs::ReactionSystem, ps; filter_negative = true, neg_thres = -1e-15, u0 = [], kwargs...)
+
+Find steady states of a [`ReactionSystem`](@ref) using HomotopyContinuation.jl.
+
+This extension function is available after loading HomotopyContinuation.jl.
+`ps` supplies parameter values, `u0` supplies initial conditions needed for
+systems with conservation laws, and extra keyword arguments are passed to
+HomotopyContinuation's solver.
+
+# Examples
+```julia
+using Catalyst, HomotopyContinuation
+
+rs = @reaction_network begin
+    k1, Y --> 2X
+    k2, 2X --> X + Y
+    k3, X + Y --> Y
+    k4, X --> 0
+end
+hc_steady_states(rs, [:k1 => 8.0, :k2 => 2.0, :k3 => 1.0, :k4 => 1.5])
+```
+"""
 function hc_steady_states end
 export hc_steady_states
 
 # StructuralIdentifiability
+"""
+    make_si_ode(rs::ReactionSystem; measured_quantities = [], known_p = [],
+        ignore_no_measured_warn = false, remove_conserved = true)
+
+Convert a [`ReactionSystem`](@ref) to the ODE representation used by
+StructuralIdentifiability.jl.
+
+This extension function is available after loading StructuralIdentifiability.jl.
+`measured_quantities` lists measured species or equations, `known_p` lists
+parameters treated as known, and `remove_conserved` controls conservation-law
+elimination before conversion.
+
+# Examples
+```julia
+using Catalyst, StructuralIdentifiability
+
+rs = @reaction_network begin
+    (p, d), 0 <--> X
+end
+make_si_ode(rs; measured_quantities = [:X], known_p = [:p])
+```
+"""
 function make_si_ode end
 export make_si_ode
 
 # GraphMakie: functionality for plotting species-reaction graphs and complexes
+"""
+    plot_network(rn::ReactionSystem; kwargs...)
+
+Plot the species-reaction graph of `rn`.
+
+This extension function is available after loading GraphMakie.jl and
+NetworkLayout.jl. Keyword arguments are forwarded to the GraphMakie plotting
+recipe.
+
+# Examples
+```julia
+using Catalyst, GraphMakie, CairoMakie
+
+rn = @reaction_network begin
+    k, A --> B
+end
+plot_network(rn)
+```
+"""
 function plot_network end
+
+"""
+    plot_complexes(rn::ReactionSystem; show_rate_labels = false, kwargs...)
+
+Plot the reaction-complex graph of `rn`.
+
+This extension function is available after loading GraphMakie.jl and
+NetworkLayout.jl. Set `show_rate_labels = true` to label graph edges by their
+reaction rates.
+
+# Examples
+```julia
+using Catalyst, GraphMakie, CairoMakie
+
+rn = @reaction_network begin
+    k, A --> B
+end
+plot_complexes(rn)
+```
+"""
 function plot_complexes end
 export plot_network, plot_complexes
 
