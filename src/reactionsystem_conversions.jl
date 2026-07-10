@@ -715,8 +715,12 @@ function hybrid_model(rs::ReactionSystem;
     jumps = vcat(rxn_jumps, user_jumps)
 
     # --- Add constraints (BC species, constraint equations, conserved species) ---
+    initeqs = Equation[]
     if has_continuous
-        eqs, us, ps, obs, ics = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
+        eqs, us, ps, obs, ics, initeqs = addconstraints!(
+            eqs, flatrs, ists, ispcs;
+            remove_conserved, compute_cl_initeqs = remove_conserved
+        )
     else
         # Pure jump case.
         any(isbc, get_unknowns(flatrs)) &&
@@ -729,10 +733,12 @@ function hybrid_model(rs::ReactionSystem;
 
     # --- Construct unified System ---
     # Note: brownians is a positional arg (5th) in the System constructor.
-    MT.System(eqs, get_iv(flatrs), us, ps, brownian_vars;
+    return MT.System(
+        eqs, get_iv(flatrs), us, ps, brownian_vars;
         poissonians = user_poissonians,
         jumps,
         observed = obs,
+        initialization_eqs = initeqs,
         name,
         bindings = MT.get_bindings(flatrs),
         initial_conditions = merge(initial_conditions, ics),
@@ -1022,15 +1028,24 @@ function sde_model(rs::ReactionSystem;
         remove_conserved && conservationlaws(flatrs)
         ists, ispcs = get_indep_sts(flatrs, remove_conserved)
 
-        eqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws, include_zero_odes,
-            remove_conserved, expand_catalyst_funs, use_jump_ratelaws)
-        noiseeqs = assemble_diffusion(flatrs, ists, ispcs; combinatoric_ratelaws,
-            remove_conserved, expand_catalyst_funs, use_jump_ratelaws)
-        eqs, us, ps, obs, ics = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
+        eqs = assemble_drift(
+            flatrs, ispcs; combinatoric_ratelaws, include_zero_odes,
+            remove_conserved, expand_catalyst_funs, use_jump_ratelaws
+        )
+        noiseeqs = assemble_diffusion(
+            flatrs, ists, ispcs; combinatoric_ratelaws,
+            remove_conserved, expand_catalyst_funs, use_jump_ratelaws
+        )
+        eqs, us, ps, obs, ics, initeqs = addconstraints!(
+            eqs, flatrs, ists, ispcs;
+            remove_conserved, compute_cl_initeqs = remove_conserved
+        )
 
-        return MT.System(eqs, get_iv(flatrs), us, ps;
+        return MT.System(
+            eqs, get_iv(flatrs), us, ps;
             noise_eqs = noiseeqs,
             observed = obs,
+            initialization_eqs = initeqs,
             name,
             initial_conditions = merge(initial_conditions, ics),
             checks,
