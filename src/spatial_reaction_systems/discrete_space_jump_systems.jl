@@ -1,11 +1,49 @@
 ### JumpProblem ###
 
-# Builds a spatial JumpProblem from a DiscreteProblem containing a `DiscreteSpaceReactionSystem`.
-function JumpProcesses.JumpProblem(dsrs::DiscreteSpaceReactionSystem, u0_in, tspan,
-        p_in = DiffEqBase.NullParameters(), args...; aggregator = JumpProcesses.NSM(),
+"""
+    JumpProblem(dsrs::DiscreteSpaceReactionSystem, u0, tspan,
+        p = NullParameters(), args...; aggregator = JumpProcesses.NSM(),
         combinatoric_ratelaws = get_combinatoric_ratelaws(reactionsystem(dsrs)),
         name = nameof(reactionsystem(dsrs)), kwargs...)
-    
+
+Create a spatial `JumpProblem` from a [`DiscreteSpaceReactionSystem`](@ref).
+
+This constructor supports transport-only discrete-space systems and builds the
+spatial jump representation used by JumpProcesses.
+
+# Arguments
+- `dsrs`: Discrete-space reaction system to simulate as jumps.
+- `u0`: Initial values for each spatial species.
+- `tspan`: Time span for the jump simulation.
+- `p`: Vertex and edge parameter values.
+
+# Keyword Arguments
+- `aggregator`: JumpProcesses aggregator used for the spatial jump problem.
+- `combinatoric_ratelaws`: Use combinatoric mass-action propensities.
+- `name`: Name for the generated internal problem.
+- `kwargs...`: Forwarded to the underlying `JumpProblem` constructor.
+
+# Returns
+A spatial `JumpProblem` with hopping constants and spatial mass-action jumps
+derived from `dsrs`.
+
+# Examples
+```julia
+tr = @transport_reaction D X
+rs = @reaction_network begin
+    k, X --> 0
+end
+dsrs = DiscreteSpaceReactionSystem(rs, [tr], CartesianGrid((2, 2)))
+jprob = JumpProblem(dsrs, [:X => 10], (0.0, 1.0), [:k => 0.1, :D => 0.01])
+```
+"""
+function JumpProcesses.JumpProblem(
+        dsrs::DiscreteSpaceReactionSystem, u0_in, tspan,
+        p_in = DiffEqBase.NullParameters(), args...; aggregator = JumpProcesses.NSM(),
+        combinatoric_ratelaws = get_combinatoric_ratelaws(reactionsystem(dsrs)),
+        name = nameof(reactionsystem(dsrs)), kwargs...
+    )
+
     # Creates a `DiscreteProblem` from the input, which is uses as the internal problem.
     dprob = DiffEqBase.DiscreteProblem(dsrs, u0_in, tspan, p_in)
 
@@ -16,18 +54,24 @@ function JumpProcesses.JumpProblem(dsrs::DiscreteSpaceReactionSystem, u0_in, tsp
     # The non-spatial DiscreteProblem have a u0 matrix with entries for all combinations of species and vertices.
     hopping_constants = make_hopping_constants(dprob, dsrs)
     sma_jumps = make_spatial_majumps(dprob, dsrs)
-    non_spat_dprob = DiscreteProblem(reshape(dprob.u0, num_species(dsrs), num_verts(dsrs)),
-        dprob.tspan, first.(dprob.p[1]))
+    non_spat_dprob = DiscreteProblem(
+        reshape(dprob.u0, num_species(dsrs), num_verts(dsrs)),
+        dprob.tspan, first.(dprob.p[1])
+    )
 
     # Creates and returns a spatial JumpProblem (masked spaces are not supported by these).
     spatial_system = has_masked_dspace(dsrs) ? get_dspace_graph(dsrs) : dspace(dsrs)
-    return JumpProblem(non_spat_dprob, aggregator, sma_jumps;
-        hopping_constants, spatial_system, name, kwargs...)
+    return JumpProblem(
+        non_spat_dprob, aggregator, sma_jumps;
+        hopping_constants, spatial_system, name, kwargs...
+    )
 end
 
 # Builds a spatial DiscreteProblem from a Lattice Reaction System.
-function DiffEqBase.DiscreteProblem(dsrs::DiscreteSpaceReactionSystem, u0_in, tspan,
-        p_in = DiffEqBase.NullParameters(), args...; kwargs...)
+function DiffEqBase.DiscreteProblem(
+        dsrs::DiscreteSpaceReactionSystem, u0_in, tspan,
+        p_in = DiffEqBase.NullParameters(), args...; kwargs...
+    )
     if !is_transport_system(dsrs)
         error("Currently discrete space Jump simulations only supported when all spatial reactions are transport reactions.")
     end
@@ -45,8 +89,10 @@ function DiffEqBase.DiscreteProblem(dsrs::DiscreteSpaceReactionSystem, u0_in, ts
     # edge_ps values are sparse matrices. Here, index (i,j) is a parameter's value in the edge from vertex i to vertex j.
     # Uniform vertex/edge parameters store only a single value (a length 1 vector, or size 1x1 sparse matrix).
     vert_ps,
-    edge_ps = dspace_process_p(p_in, vertex_parameters(dsrs),
-        edge_parameters(dsrs), dsrs)
+        edge_ps = dspace_process_p(
+        p_in, vertex_parameters(dsrs),
+        edge_parameters(dsrs), dsrs
+    )
 
     # Returns a DiscreteProblem (which basically just stores the processed input).
     return DiscreteProblem(u0, tspan, [vert_ps; edge_ps], args...; kwargs...)
@@ -57,8 +103,10 @@ function make_hopping_constants(dprob::DiscreteProblem, dsrs::DiscreteSpaceReact
     # Creates the all_diff_rates vector, containing for each species, its transport rate across all edges.
     # If the transport rate is uniform for one species, the vector has a single element, else one for each edge.
     spatial_rates_dict = Dict(compute_all_transport_rates(Dict(dprob.p), dsrs))
-    all_diff_rates = [haskey(spatial_rates_dict, s) ? spatial_rates_dict[s] : [0.0]
-                      for s in species(dsrs)]
+    all_diff_rates = [
+        haskey(spatial_rates_dict, s) ? spatial_rates_dict[s] : [0.0]
+            for s in species(dsrs)
+    ]
 
     # Creates an array (of the same size as the hopping constant array) containing all edges.
     # First the array is a NxM matrix (number of species x number of vertices). Each element is a
@@ -72,9 +120,13 @@ function make_hopping_constants(dprob::DiscreteProblem, dsrs::DiscreteSpaceReact
 
     # Creates the hopping constants array. It has the same shape as the edge array, but each
     # element is that species transportation rate along that edge
-    hopping_constants = [[Catalyst.get_edge_value(all_diff_rates[s_idx], e)
-                          for e in edge_array[s_idx, src_idx]]
-                         for s_idx in 1:num_species(dsrs), src_idx in 1:num_verts(dsrs)]
+    hopping_constants = [
+        [
+                Catalyst.get_edge_value(all_diff_rates[s_idx], e)
+                for e in edge_array[s_idx, src_idx]
+            ]
+            for s_idx in 1:num_species(dsrs), src_idx in 1:num_verts(dsrs)
+    ]
     return hopping_constants
 end
 
@@ -83,8 +135,10 @@ end
 # Not sure if there is any form of performance improvement from that though. Likely not the case.
 function make_spatial_majumps(dprob, dsrs::DiscreteSpaceReactionSystem)
     # Creates a vector, storing which reactions have spatial components.
-    is_spatials = [has_spatial_vertex_component(rx.rate, dprob.p)
-                   for rx in reactions(reactionsystem(dsrs))]
+    is_spatials = [
+        has_spatial_vertex_component(rx.rate, dprob.p)
+            for rx in reactions(reactionsystem(dsrs))
+    ]
 
     # Creates templates for the rates (uniform and spatial) and the stoichiometries.
     # We cannot fetch reactant_stoich and net_stoich from a (non-spatial) MassActionJump.
@@ -108,8 +162,10 @@ function make_spatial_majumps(dprob, dsrs::DiscreteSpaceReactionSystem)
     # Loops through reactions with spatial rates, computes their rates and stoichiometries.
     for (is_spat, rx) in zip(is_spatials, reactions(reactionsystem(dsrs)))
         is_spat || continue
-        s_rates[cur_rx - length(u_rates), :] .= compute_vertex_value(rx.rate, dsrs;
-            ps = dprob.p)
+        s_rates[cur_rx - length(u_rates), :] .= compute_vertex_value(
+            rx.rate, dsrs;
+            ps = dprob.p
+        )
         substoich_map = Pair.(rx.substrates, rx.substoich)
         reactant_stoich[cur_rx] = int_map(substoich_map, reactionsystem(dsrs))
         net_stoich[cur_rx] = int_map(rx.netstoich, reactionsystem(dsrs))

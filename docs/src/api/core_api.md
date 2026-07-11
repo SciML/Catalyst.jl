@@ -305,6 +305,11 @@ hillar
 
 ## Transformations and `ReactionSystem` Conversions
 ```@docs
+ODEProblem
+SDEProblem
+JumpProblem
+NonlinearProblem
+SteadyStateProblem
 ode_model
 ss_ode_model
 sde_model
@@ -349,6 +354,8 @@ The first step of spatial modelling is to create a so-called `DiscreteSpaceReact
 DiscreteSpaceReactionSystem
 TransportReaction
 @transport_reaction
+CartesianGrid
+CartesianGridRej
 ```
 
 The following functions can be used to querying the properties of `DiscreteSpaceReactionSystem`s:

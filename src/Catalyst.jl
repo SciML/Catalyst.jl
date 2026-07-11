@@ -9,8 +9,8 @@ import SciMLBase
 using LaTeXStrings, Latexify
 using LinearAlgebra, Combinatorics
 using JumpProcesses: JumpProcesses, JumpProblem,
-                     MassActionJump, ConstantRateJump, VariableRateJump,
-                     SpatialMassActionJump, CartesianGrid, CartesianGridRej
+    MassActionJump, ConstantRateJump, VariableRateJump,
+    SpatialMassActionJump, CartesianGrid, CartesianGridRej
 
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkitBase
@@ -26,14 +26,14 @@ RuntimeGeneratedFunctions.init(@__MODULE__)
 import Symbolics: SymbolicT
 using Symbolics: iscall, sorted_arguments, value
 using ModelingToolkitBase: get_unknowns, get_ps, get_iv, get_systems,
-                       get_eqs, toparam, get_var_to_name, get_observed,
-                       getvar, has_iv, JumpType
+    get_eqs, toparam, get_var_to_name, get_observed,
+    getvar, has_iv, JumpType
 
 import ModelingToolkitBase: get_variables, namespace_expr, namespace_equation,
-                        modified_unknowns!, namespace_variables,
-                        namespace_parameters, renamespace, flatten,
-                        is_alg_equation, is_diff_equation, collect_vars!,
-                        eqtype_supports_collect_vars
+    modified_unknowns!, namespace_variables,
+    namespace_parameters, renamespace, flatten,
+    is_alg_equation, is_diff_equation, collect_vars!,
+    eqtype_supports_collect_vars
 
 # Import from owner modules (not re-exporters) per ExplicitImports.jl audit
 import Symbolics: get_variables!, rename
@@ -43,7 +43,7 @@ import ModelingToolkitBase: SymmapT
 
 # internal but needed ModelingToolkit functions
 import ModelingToolkitBase: check_variables, check_parameters,
-                        check_equations, iscomplete
+    check_equations, iscomplete
 
 # Import from owner module (SymbolicUtils) per ExplicitImports.jl audit
 import SymbolicUtils: _iszero, unwrap
@@ -113,8 +113,10 @@ const CONSERVED_CONSTANT_SYMBOL = :Γ
 
 # Declares symbols which may neither be used as parameters nor unknowns.
 const forbidden_symbols_skip = Set([:ℯ, :pi, :π, :t, :∅, :Ø])
-const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
-    forbidden_symbols_skip)
+const forbidden_symbols_error = union(
+    Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
+    forbidden_symbols_skip
+)
 
 ### Unit Helpers ###
 
@@ -161,7 +163,7 @@ include("reactionsystem_metadata.jl")
 # Conversions of the `ReactionSystem` structure.
 include("reactionsystem_conversions.jl")
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem,
-       SteadyStateProblem, HybridProblem
+    SteadyStateProblem, HybridProblem
 export ismassaction, oderatelaw, jumpratelaw
 
 # reaction_network macro
@@ -173,9 +175,9 @@ export @reaction_network, @network_component, @reaction, @species
 include("network_analysis.jl")
 export reactioncomplexmap, reactioncomplexes, incidencemat
 export complexstoichmat, laplacianmat, fluxmat, massactionvector, complexoutgoingmat,
-       adjacencymat
+    adjacencymat
 export incidencematgraph, linkageclasses, stronglinkageclasses,
-       terminallinkageclasses, deficiency, subnetworks
+    terminallinkageclasses, deficiency, subnetworks
 export linkagedeficiencies, isreversible, isweaklyreversible
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
 export satisfiesdeficiencyone, satisfiesdeficiencyzero
@@ -316,9 +318,52 @@ export isedgeparameter
 include("spatial_reaction_systems/discrete_space_reaction_systems.jl")
 export DiscreteSpaceReactionSystem
 export spatial_species, vertex_parameters, edge_parameters
+"""
+    CartesianGrid(dims)
+    CartesianGrid(n)
+
+Create a regular Cartesian discrete space for spatial Catalyst models.
+
+`dims` gives the number of vertices along each grid dimension. Pass an integer
+for a one-dimensional grid or a tuple for higher-dimensional grids. The result
+can be supplied as the discrete space argument to
+[`DiscreteSpaceReactionSystem`](@ref).
+
+# Arguments
+- `dims`: Grid dimensions as an integer or tuple of integers.
+
+# Returns
+A `CartesianGridRej` value representing a regular Cartesian lattice.
+
+# Examples
+```julia
+line = CartesianGrid(5)
+plane = CartesianGrid((3, 4))
+```
+"""
+CartesianGrid
+
+"""
+    CartesianGridRej
+
+Concrete Cartesian-grid discrete-space type used by Catalyst spatial models.
+
+Values are usually constructed with [`CartesianGrid`](@ref), then passed to
+[`DiscreteSpaceReactionSystem`](@ref). Catalyst uses `CartesianGridRej` to
+query grid dimensions, edges, and vertex indexing for spatial ODE and jump
+problem generation.
+
+# Examples
+```julia
+grid = CartesianGrid((2, 3))
+grid isa CartesianGridRej
+```
+"""
+CartesianGridRej
+
 export CartesianGrid, CartesianGridRej # (Implemented in JumpProcesses)
 export has_cartesian_dspace, has_masked_dspace, has_grid_dspace, has_graph_dspace,
-       grid_dims, grid_size
+    grid_dims, grid_size
 export make_edge_p_values, make_directed_edge_values
 
 # Specific spatial problem types.

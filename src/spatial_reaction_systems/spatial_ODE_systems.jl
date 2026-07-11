@@ -64,22 +64,28 @@ struct LatticeTransportODEFunction{P, Q, R, S, T}
     """Remove when we add this as problem metadata"""
     dsrs::DiscreteSpaceReactionSystem
 
-    function LatticeTransportODEFunction(ofunc::P, ps::Vector{<:Pair},
+    function LatticeTransportODEFunction(
+            ofunc::P, ps::Vector{<:Pair},
             dsrs::DiscreteSpaceReactionSystem, sparse::Bool,
             jac_transport::Union{Nothing, Matrix{S}, SparseMatrixCSC{S, Int64}},
-            transport_rates::Vector{Pair{Int64, SparseMatrixCSC{S, Int64}}}) where {P, S}
+            transport_rates::Vector{Pair{Int64, SparseMatrixCSC{S, Int64}}}
+        ) where {P, S}
         # Computes `LatticeTransportODEFunction` functor fields.
         heterogeneous_vert_p_idxs = make_heterogeneous_vert_p_idxs(ps, dsrs)
         mtk_ps, p_setters = make_mtk_ps_structs(ps, dsrs, heterogeneous_vert_p_idxs)
         t_rate_idx_types,
-        leaving_rates = make_t_types_and_leaving_rates(transport_rates,
-            dsrs)
+            leaving_rates = make_t_types_and_leaving_rates(
+            transport_rates,
+            dsrs
+        )
 
         # Creates and returns the `LatticeTransportODEFunction` functor.
-        new{P, typeof(mtk_ps), typeof(p_setters), S, typeof(jac_transport)}(ofunc,
+        return new{P, typeof(mtk_ps), typeof(p_setters), S, typeof(jac_transport)}(
+            ofunc,
             num_verts(dsrs), num_species(dsrs), heterogeneous_vert_p_idxs, mtk_ps, p_setters,
             transport_rates, t_rate_idx_types, leaving_rates, Catalyst.edge_iterator(dsrs),
-            jac_transport, sparse, dsrs)
+            jac_transport, sparse, dsrs
+        )
     end
 end
 
@@ -88,8 +94,10 @@ end
 # Creates a vector with the heterogeneous vertex parameters' indexes in the full parameter vector.
 function make_heterogeneous_vert_p_idxs(ps, dsrs)
     p_dict = Dict(ps)
-    return findall((p_dict[p] isa Vector) && (length(p_dict[p]) > 1)
-    for p in parameters(dsrs))
+    return findall(
+        (p_dict[p] isa Vector) && (length(p_dict[p]) > 1)
+            for p in parameters(dsrs)
+    )
 end
 
 # Creates the MTKParameters structure and `p_setters` vector (which are used to manage
@@ -99,8 +107,10 @@ function make_mtk_ps_structs(ps, dsrs, heterogeneous_vert_p_idxs)
     nonspatial_osys = complete(ode_model(reactionsystem(dsrs)))
     p_init = [p => p_dict[p][1] for p in parameters(nonspatial_osys)]
     mtk_ps = MT.MTKParameters(nonspatial_osys, p_init)
-    p_setters = [MT.setp(nonspatial_osys, p)
-                 for p in parameters(dsrs)[heterogeneous_vert_p_idxs]]
+    p_setters = [
+        MT.setp(nonspatial_osys, p)
+            for p in parameters(dsrs)[heterogeneous_vert_p_idxs]
+    ]
     return mtk_ps, p_setters
 end
 
@@ -111,8 +121,10 @@ function make_t_types_and_leaving_rates(transport_rates, dsrs)
     for (s_idx, tr_pair) in enumerate(transport_rates)
         for e in Catalyst.edge_iterator(dsrs)
             # Updates the exit rate for species s_idx from vertex e.src.
-            leaving_rates[s_idx, e[1]] += get_transport_rate(tr_pair[2], e,
-                t_rate_idx_types[s_idx])
+            leaving_rates[s_idx, e[1]] += get_transport_rate(
+                tr_pair[2], e,
+                t_rate_idx_types[s_idx]
+            )
         end
     end
     return t_rate_idx_types, leaving_rates
@@ -146,9 +158,10 @@ function (lt_ofun::LatticeTransportODEFunction)(du::AbstractVector, u, p, t)
             idx_src = get_index(e[1], s, lt_ofun.num_species)
             idx_dst = get_index(e[2], s, lt_ofun.num_species)
             du[idx_dst] += get_transport_rate(rates, e, lt_ofun.t_rate_idx_types[s_idx]) *
-                           u[idx_src]
+                u[idx_src]
         end
     end
+    return
 end
 
 # Defines the functor's effect when applied as a Jacobian.
@@ -168,18 +181,61 @@ function (lt_ofun::LatticeTransportODEFunction)(J::AbstractMatrix, u, p, t)
     end
 
     # Updates for the spatial reactions (adds the Jacobian values from the transportation reactions).
-    J .+= lt_ofun.jac_transport
+    return J .+= lt_ofun.jac_transport
 end
 
 ### ODEProblem ###
 
-# Creates an ODEProblem from a DiscreteSpaceReactionSystem.
-function DiffEqBase.ODEProblem(dsrs::DiscreteSpaceReactionSystem, u0_in, tspan,
+"""
+    ODEProblem(dsrs::DiscreteSpaceReactionSystem, u0, tspan,
+        p = NullParameters(), args...; jac = false, sparse = false,
+        name = nameof(dsrs), include_zero_odes = true,
+        combinatoric_ratelaws = get_combinatoric_ratelaws(reactionsystem(dsrs)),
+        remove_conserved = false, checks = false, kwargs...)
+
+Create an `ODEProblem` from a [`DiscreteSpaceReactionSystem`](@ref).
+
+This constructor builds a spatial ODE function for transport-only discrete
+space systems. Species initial conditions and parameter values may be supplied
+as symbolic maps using the same species and parameter names as the underlying
+reaction system.
+
+# Arguments
+- `dsrs`: Discrete-space reaction system to simulate.
+- `u0`: Initial values for each spatial species, either as scalars or values
+  matching the discrete space.
+- `tspan`: Time span for the ODE problem.
+- `p`: Vertex and edge parameter values.
+
+# Keyword Arguments
+- `jac`: Build and attach a Jacobian to the generated ODE function.
+- `sparse`: Use a sparse Jacobian representation when `jac = true`.
+- `include_zero_odes`: Include zero right-hand-side equations.
+- `combinatoric_ratelaws`: Use combinatoric mass-action rate laws.
+- `kwargs...`: Forwarded to the underlying `ODEProblem` constructor.
+
+# Returns
+An `ODEProblem` whose state vector stores species values across the vertices of
+the discrete space.
+
+# Examples
+```julia
+tr = @transport_reaction D X
+rs = @reaction_network begin
+    k, X --> 0
+end
+dsrs = DiscreteSpaceReactionSystem(rs, [tr], CartesianGrid((2, 2)))
+oprob = ODEProblem(dsrs, [:X => 1.0], (0.0, 1.0), [:k => 0.1, :D => 0.01])
+```
+"""
+function DiffEqBase.ODEProblem(
+        dsrs::DiscreteSpaceReactionSystem, u0_in, tspan,
         p_in = DiffEqBase.NullParameters(), args...;
         jac = false, sparse = false,
         name = nameof(dsrs), include_zero_odes = true,
         combinatoric_ratelaws = get_combinatoric_ratelaws(reactionsystem(dsrs)),
-        remove_conserved = false, checks = false, kwargs...)
+        remove_conserved = false, checks = false, kwargs...
+    )
     if !is_transport_system(dsrs)
         error("Currently discrete space ODE simulations are only supported when all spatial reactions are `TransportReaction`s.")
     end
@@ -198,12 +254,16 @@ function DiffEqBase.ODEProblem(dsrs::DiscreteSpaceReactionSystem, u0_in, tspan,
     # Uniform vertex/edge parameters store only a single value (a length 1 vector, or size 1x1 sparse matrix).
     # In the `ODEProblem` vert_ps and edge_ps are merged (but for building the ODEFunction, they are separate).
     vert_ps,
-    edge_ps = dspace_process_p(p_in, vertex_parameters(dsrs),
-        edge_parameters(dsrs), dsrs)
+        edge_ps = dspace_process_p(
+        p_in, vertex_parameters(dsrs),
+        edge_parameters(dsrs), dsrs
+    )
 
     # Creates the ODEFunction.
-    ofun = build_odefunction(dsrs, vert_ps, edge_ps, jac, sparse, name, include_zero_odes,
-        combinatoric_ratelaws, remove_conserved, checks)
+    ofun = build_odefunction(
+        dsrs, vert_ps, edge_ps, jac, sparse, name, include_zero_odes,
+        combinatoric_ratelaws, remove_conserved, checks
+    )
 
     # Combines `vert_ps` and `edge_ps` to a single vector with values only (not a map). Creates ODEProblem.
     pval_dict = Dict([vert_ps; edge_ps])
@@ -212,18 +272,24 @@ function DiffEqBase.ODEProblem(dsrs::DiscreteSpaceReactionSystem, u0_in, tspan,
 end
 
 # Builds an ODEFunction for a spatial ODEProblem.
-function build_odefunction(dsrs::DiscreteSpaceReactionSystem, vert_ps::Vector{Pair{R, Vector{T}}},
+function build_odefunction(
+        dsrs::DiscreteSpaceReactionSystem, vert_ps::Vector{Pair{R, Vector{T}}},
         edge_ps::Vector{Pair{S, SparseMatrixCSC{T, Int64}}},
         jac::Bool, sparse::Bool, name, include_zero_odes, combinatoric_ratelaws,
-        remove_conserved, checks) where {R, S, T}
+        remove_conserved, checks
+    ) where {R, S, T}
     # Error check.
     if remove_conserved
         throw(ArgumentError("Removal of conserved quantities is currently not supported for `DiscreteSpaceReactionSystem`s"))
     end
 
     # Prepares the inputs to the `LatticeTransportODEFunction` functor.
-    osys = complete(ode_model(reactionsystem(dsrs);
-        name, combinatoric_ratelaws, include_zero_odes, checks))
+    osys = complete(
+        ode_model(
+            reactionsystem(dsrs);
+            name, combinatoric_ratelaws, include_zero_odes, checks
+        )
+    )
     ofunc_dense = ODEFunction(osys; jac = true, sparse = false)
     ofunc_sparse = ODEFunction(osys; jac = true, sparse = true)
     transport_rates = make_sidxs_to_transrate_map(vert_ps, edge_ps, dsrs)
@@ -233,16 +299,20 @@ function build_odefunction(dsrs::DiscreteSpaceReactionSystem, vert_ps::Vector{Pa
         jac_transport = nothing
         jac_prototype = nothing
     else
-        jac_sparse = build_jac_prototype(ofunc_sparse.jac_prototype, transport_rates, dsrs;
-            set_nonzero = jac)
+        jac_sparse = build_jac_prototype(
+            ofunc_sparse.jac_prototype, transport_rates, dsrs;
+            set_nonzero = jac
+        )
         jac_dense = Matrix(jac_sparse)
         jac_transport = (jac ? (sparse ? jac_sparse : jac_dense) : nothing)
         jac_prototype = (sparse ? jac_sparse : nothing)
     end
 
     # Creates the `LatticeTransportODEFunction` functor (if `jac`, sets it as the Jacobian as well).
-    f = LatticeTransportODEFunction(ofunc_dense, [vert_ps; edge_ps], dsrs, sparse,
-        jac_transport, transport_rates)
+    f = LatticeTransportODEFunction(
+        ofunc_dense, [vert_ps; edge_ps], dsrs, sparse,
+        jac_transport, transport_rates
+    )
     J = (jac ? f : nothing)
 
     # Extracts the `Symbol` form for parameters (but not species). Creates and returns the `ODEFunction`.
@@ -253,14 +323,18 @@ end
 
 # Builds a Jacobian prototype.
 # If requested, populate it with the constant values of the Jacobian's transportation part.
-function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64},
+function build_jac_prototype(
+        ns_jac_prototype::SparseMatrixCSC{Float64, Int64},
         transport_rates::Vector{Pair{Int64, SparseMatrixCSC{T, Int64}}},
-        dsrs::DiscreteSpaceReactionSystem; set_nonzero = false) where {T}
+        dsrs::DiscreteSpaceReactionSystem; set_nonzero = false
+    ) where {T}
     # Finds the indices of  both the transport species,
     # and the species with transport only (that is, with no non-spatial dynamics but with spatial dynamics).
     trans_species = [tr[1] for tr in transport_rates]
-    trans_only_species = filter(s_idx -> !Base.isstored(ns_jac_prototype, s_idx, s_idx),
-        trans_species)
+    trans_only_species = filter(
+        s_idx -> !Base.isstored(ns_jac_prototype, s_idx, s_idx),
+        trans_species
+    )
 
     # Finds the indices of all terms in the non-spatial jacobian.
     ns_jac_prototype_idxs = findnz(ns_jac_prototype)
@@ -270,7 +344,7 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64},
     # Prepares vectors to store i and j indices of Jacobian entries.
     idx = 1
     num_entries = num_verts(dsrs) * length(ns_i_idxs) +
-                  num_edges(dsrs) * (length(trans_only_species) + length(trans_species))
+        num_edges(dsrs) * (length(trans_only_species) + length(trans_species))
     i_idxs = Vector{Int}(undef, num_entries)
     j_idxs = Vector{Int}(undef, num_entries)
 
@@ -324,4 +398,5 @@ function set_jac_transport_values!(jac_prototype, transport_rates, dsrs)
         # Term due to species arriving to destination vertex.
         jac_prototype[idx_src, idx_dst] += val
     end
+    return
 end

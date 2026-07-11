@@ -7,4 +7,4 @@ SciMLTesting = "09d9d899-5365-40a9-917a-5f67fddea283"
 [compat]
 Aqua = "0.8"
 JET = "0.9, 0.10, 0.11"
-SciMLTesting = "1.6"
+SciMLTesting = "2.1"
