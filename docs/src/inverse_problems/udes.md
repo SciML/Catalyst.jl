@@ -279,7 +279,7 @@ nn_arch = Lux.Chain(
 @SymbolicNeuralNetwork U, θ = nn_arch
 f(x, y) = U(x, y, θ)[1]
 multi_input_ude = @reaction_network begin
-    d, (X, Y, Z)
+    d, (X, Y, Z) --> 0
     hill(X,v,K,n), 0 --> Y
     $f(X, Y), 0 --> Z
 end
@@ -296,7 +296,7 @@ nn_arch = Lux.Chain(
 f1(x) = U(x, θ)[1]
 f2(x) = U(x, θ)[2]
 rn_ude = @reaction_network begin
-    d, (X, Y, Z)
+    d, (X, Y, Z) --> 0
     $f1(X), 0 --> Y
     $f2(X), 0 --> Z
 end
