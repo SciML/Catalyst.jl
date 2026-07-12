@@ -186,7 +186,7 @@ parameters(rn_ude)
 ```
 In addition to the mechanistic parameter $d$, the neural network parameters $θ$ have also
 been incorporated into the model. The neural network architecture, $U$, is also represented
-as a parameter, but in practice this paraemter is fixed and can be ignored.
+as a parameter, but in practice this parameter is fixed and can be ignored.
 
 Now, we use PEtab to simultaneously fit $d$ and $θ$. The workflow is almost identical to
 the standard [PEtab parameter fitting workflow](@ref petab_parameter_fitting). The main
@@ -264,6 +264,42 @@ retrieve the fitted function, for example to evaluate it manually at selected va
 fitted_oprob = get_odeproblem(res, petab_prob)[1]
 fitted_f(z) = fitted_oprob.ps[U](z, fitted_oprob.ps[θ])[1]
 fitted_f(1.0)
+```
+
+### [Neural networks with multiple inputs or outputs](@id udes_nn_multi_ins_or_outs)
+
+It is possible to use neural networks with multiple inputs. To do this, simply list all inputs in the symbolic neural network function's arguments, while also ensuring that the declared Lux chain have the correct number of inputs in the first layer. Here we use this approach to declare a feedforward loop where the production rate of $Z$ is an unknown function of both $X$ and $Y$.
+```@example ude_multi_ins_or_outs
+using Catalyst, ModelingToolkitNeuralNets, Lux
+nn_arch = Lux.Chain(
+    Lux.Dense(2 => 3, Lux.softplus, use_bias = false),
+    Lux.Dense(3 => 3, Lux.softplus, use_bias = false),
+    Lux.Dense(3 => 1, Lux.softplus, use_bias = false),
+)
+@SymbolicNeuralNetwork U, θ = nn_arch
+f(x, y) = U(x, y, θ)[1]
+multi_input_ude = @reaction_network begin
+    d, (X, Y, Z)
+    hill(X,v,K,n), 0 --> Y
+    $f(X, Y), 0 --> Z
+end
+```
+
+It is also possible to declare neural networks with multiple output. Generally, this is equivalent to fitting two unknown functions, however, if the two fitted functions are expected to have similar forms, declaring them as a single neural network with multiple outputs can be numerically advantageous. Below, we use this approach to declare a model where a single species $X$ activates the production of two different species ($Y$ and $Z$) according to two different unknown functions that are approximated using a single, two-output, neural network.
+```@example ude_multi_ins_or_outs
+nn_arch = Lux.Chain(
+    Lux.Dense(1 => 3, Lux.softplus, use_bias = false),
+    Lux.Dense(3 => 3, Lux.softplus, use_bias = false),
+    Lux.Dense(3 => 2, Lux.softplus, use_bias = false),
+)
+@SymbolicNeuralNetwork U, θ = nn_arch
+f1(x) = U(x, θ)[1]
+f2(x) = U(x, θ)[2]
+rn_ude = @reaction_network begin
+    d, (X, Y, Z)
+    $f1(X), 0 --> Y
+    $f2(X), 0 --> Z
+end
 ```
 
 ## [Alternative approaches for incorporating neural networks into models](@id udes_alternative_forms)
