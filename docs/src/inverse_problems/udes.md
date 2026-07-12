@@ -213,7 +213,7 @@ tutorial](@ref petab_parameter_fitting), and in
 
 The UDE model can now be fitted to the data. Here, we use the Adam implementation from the
 [Optimisers.jl](https://github.com/FluxML/Optimisers.jl) package, running 5 independent starts 
-with 10,000 iterations each.
+with 10,000 iterations/epochs each.
 ```@example ude_rate_based
 using Optimisers
 options = OptimisersOptions(iterations = 10000)
@@ -366,7 +366,7 @@ function. An example of how this is done for an ODE-declared UDE can be found
 ### [Learning parameters or observables using neural networks](@id udes_parameters_n_observables)
 Throughout this tutorial, we have shown how neural networks can be incorporated into
 Catalyst models to learn unknown functions of system variables within the main model
-system. PEtab, however, also supports two additional ways to incorporate neural networks
+system. PEtab.jl, however, also supports two additional ways to incorporate neural networks
 that, due to how they are inserted, can be handled more efficiently:
 - Models where the neural network exists within the mapping between the model's *states* and
   its *observables*.
