@@ -198,15 +198,37 @@ function find_jump_vars!(ps, us, jumps::Vector, t)
     for jump in jumps
         MT.collect_vars!(us, ps, jump, t)
     end
+    return
+end
+
+function collect_symbolic_expression_vars!(us, ps, expr, t)
+    for var in Symbolics.get_variables(expr)
+        var = unwrap(var)
+        isequal(var, t) && continue
+        if MT.isparameter(var)
+            push!(ps, var)
+        else
+            push!(us, var)
+        end
+    end
+    return nothing
+end
+
+function find_poissonian_vars!(ps, us, poissonians::Vector, t)
+    for poissonian in poissonians
+        collect_symbolic_expression_vars!(us, ps, MT.getpoissonianrate(poissonian), t)
+    end
+    return
 end
 
 # Loops through all tstop expressions, adding encountered unknowns and parameters
 # to their respective vectors (`ps` and `us`). Unwraps each expression (Num → SymbolicT)
-# so that `collect_vars!` can traverse it.
+# before collecting symbolic variables from it.
 function find_tstop_vars!(ps, us, tstops::Vector, t)
     for ts in tstops
-        MT.collect_vars!(us, ps, unwrap(ts), t)
+        collect_symbolic_expression_vars!(us, ps, unwrap(ts), t)
     end
+    return
 end
 
 # Validates that tstop expressions only contain parameters and constants (no unknowns or
@@ -229,7 +251,7 @@ function check_tstops(tstops, unknowns, iv)
         # Check that no unknowns (species/variables) appear in the tstop expression.
         empty!(found_us)
         empty!(found_ps)
-        MT.collect_vars!(found_us, found_ps, tsu, iv)
+        collect_symbolic_expression_vars!(found_us, found_ps, tsu, iv)
         for v in found_us
             if v in unknowns_set
                 throw(ArgumentError("Tstop expression `$ts` contains unknown `$v`. Tstops must only depend on parameters and constants, not dynamic state."))
@@ -648,13 +670,16 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in, bro
     # Loops through all jumps, adding encountered quantities to the unknown and parameter vectors.
     find_jump_vars!(ps, us, jumps, t)
 
+    # Loops through all poissonians, adding encountered quantities in their rate expressions.
+    find_poissonian_vars!(ps, us, poissonians, t)
+
     # Loops through all tstop expressions, adding encountered quantities to the unknown and parameter vectors.
     find_tstop_vars!(ps, us, tstops, t)
 
     # Discover parameters/unknowns from observed equation RHS.
     # Only process RHS to avoid adding observable LHS to unknowns (observables stay observables).
     for eq in observed
-        MT.collect_vars!(us, ps, eq.rhs, t)
+        collect_symbolic_expression_vars!(us, ps, eq.rhs, t)
     end
 
     # Converts the found unknowns and parameters to vectors.

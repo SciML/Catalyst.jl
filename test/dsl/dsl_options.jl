@@ -789,6 +789,7 @@ let
     @named rs = ReactionSystem(rxs, t; observed)
     rs = complete(rs)
 
+    @info "DEBUG" parameters(rs) ModelingToolkitBase.get_ps(rs)
     # k_obs, k_ratio, eps_val should be discovered from observable RHS
     @test issetequal(parameters(rs), [k, k_obs, k_ratio, eps_val])
     # Observable LHS should NOT be in unknowns
