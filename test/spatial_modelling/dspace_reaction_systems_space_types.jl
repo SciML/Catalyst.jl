@@ -1,7 +1,7 @@
 ### Preparations ###
 
 # Fetch packages.
-using Catalyst, Graphs, OrdinaryDiffEqTsit5, OrdinaryDiffEqBDF, Test
+using Catalyst, Graphs, OrdinaryDiffEq, Test
 
 # Fetch test networks.
 include("../spatial_test_networks.jl")
@@ -10,13 +10,13 @@ include("../spatial_test_networks.jl")
 ### Run Tests ###
 
 # Test errors when attempting to create networks with dimensions > 3.
-let 
+let
     @test_throws Exception DiscreteSpaceReactionSystem(brusselator_system, brusselator_srs_1, CartesianGrid((5, 5, 5, 5)))
     @test_throws Exception DiscreteSpaceReactionSystem(brusselator_system, brusselator_srs_1, fill(true, 5, 5, 5, 5))
 end
 
 # Checks that getter functions give the correct output.
-let 
+let
     # Create DiscreteSpaceReactionSystems.
     cartesian_1d_dsrs = DiscreteSpaceReactionSystem(brusselator_system, brusselator_srs_1, small_1d_cartesian_grid)
     cartesian_2d_dsrs = DiscreteSpaceReactionSystem(brusselator_system, brusselator_srs_1, small_2d_cartesian_grid)
@@ -83,7 +83,7 @@ end
 
 # Checks that some grids, created using different approaches, generates the same spatial structures.
 # Checks that some grids, created using different approaches, generates the same simulation output.
-let 
+let
     # Create DiscreteSpaceReactionSystems.
     cartesian_grid = CartesianGrid((5, 5))
     masked_grid = fill(true, 5, 5)
@@ -100,8 +100,8 @@ let
     @test num_verts(cartesian_dsrs) == num_verts(masked_dsrs) == num_verts(graph_dsrs)
     @test num_edges(cartesian_dsrs) == num_edges(masked_dsrs) == num_edges(graph_dsrs)
     @test num_species(cartesian_dsrs) == num_species(masked_dsrs) == num_species(graph_dsrs)
-    @test isequal(spatial_species(cartesian_dsrs), spatial_species(masked_dsrs)) 
-    @test isequal(spatial_species(masked_dsrs), spatial_species(graph_dsrs)) 
+    @test isequal(spatial_species(cartesian_dsrs), spatial_species(masked_dsrs))
+    @test isequal(spatial_species(masked_dsrs), spatial_species(graph_dsrs))
     @test isequal(parameters(cartesian_dsrs), parameters(masked_dsrs))
     @test isequal(parameters(masked_dsrs), parameters(graph_dsrs))
     @test isequal(vertex_parameters(cartesian_dsrs), vertex_parameters(masked_dsrs))
@@ -147,27 +147,27 @@ let
 
     masked_dsrs = DiscreteSpaceReactionSystem(brusselator_system, brusselator_srs_1, masked_grid)
     graph_dsrs = DiscreteSpaceReactionSystem(brusselator_system, brusselator_srs_1, graph_grid)
-    
+
     # Check internal structures.
     @test num_verts(masked_dsrs) == num_verts(graph_dsrs)
     @test num_edges(masked_dsrs) == num_edges(graph_dsrs)
     @test issetequal(edge_iterator(masked_dsrs), edge_iterator(graph_dsrs))
-    
+
     # Checks that simulations yields the same output.
     u0_masked_grid = [:X => [1. 4. 6.; 2. 0. 7.; 3. 5. 8.], :Y => 2.0]
     u0_graph_grid = [:X => [1., 2., 3., 4., 5., 6., 7., 8.], :Y => 2.0]
     pV_masked_grid = [:A => 0.5 .+ [1. 4. 6.; 2. 0. 7.; 3. 5. 8.], :B => 4.0]
     pV_graph_grid = [:A => 0.5 .+ [1., 2., 3., 4., 5., 6., 7., 8.], :B => 4.0]
     pE = [:dX => 0.2]
-    
+
     base_oprob = ODEProblem(masked_dsrs, u0_masked_grid, (0.0, 100.0), [pV_masked_grid; pE])
-    base_osol = solve(base_oprob, QNDF(); saveat=0.1, abstol=1e-9, reltol=1e-9)
+    base_osol = solve(base_oprob, FBDF(); saveat=0.1, abstol=1e-9, reltol=1e-9)
 
     for jac in [false, true], sparse in [false, true]
         masked_oprob = ODEProblem(masked_dsrs, u0_masked_grid, (0.0, 100.0), [pV_masked_grid; pE]; jac, sparse)
         graph_oprob = ODEProblem(graph_dsrs, u0_graph_grid, (0.0, 100.0), [pV_graph_grid; pE]; jac, sparse)
-        masked_sol = solve(masked_oprob, QNDF(); saveat=0.1, abstol=1e-9, reltol=1e-9)
-        graph_sol = solve(graph_oprob, QNDF(); saveat=0.1, abstol=1e-9, reltol=1e-9)
+        masked_sol = solve(masked_oprob, FBDF(); saveat=0.1, abstol=1e-9, reltol=1e-9)
+        graph_sol = solve(graph_oprob, FBDF(); saveat=0.1, abstol=1e-9, reltol=1e-9)
         @test base_osol ≈ masked_sol atol = 1e-6 rtol = 1e-6
         @test base_osol ≈  graph_sol atol = 1e-6 rtol = 1e-6
         @test masked_sol ≈ graph_sol atol = 1e-6 rtol = 1e-6

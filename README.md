@@ -70,7 +70,7 @@ an ordinary differential equation.
 
 ```julia
 # Fetch required packages.
-using Catalyst, OrdinaryDiffEqDefault, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 
 # Create model.
 model = @reaction_network begin

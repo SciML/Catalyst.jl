@@ -7,7 +7,7 @@ The following code sets up an environment for running the code on this page.
 using Pkg
 Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("Catalyst")
-Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("SymbolicIndexingInterface")
 ```
 ```@raw html
@@ -18,7 +18,7 @@ Pkg.add("SymbolicIndexingInterface")
 ```
 Variable and species values stored in e.g. `ODEProblem`s and solution objects can be easily accessed, e.g. as in the following simple example:
 ```julia
-using Catalyst, OrdinaryDiffEqDefault
+using Catalyst, OrdinaryDiffEq
 
 # First we create a `ODEProblem` and find its solution.
 rs = @reaction_network begin
@@ -98,7 +98,7 @@ To modify a problem, the `remake` function should be used. It takes an already c
 
 Here we modify our problem to increase the initial condition concentrations of the two substrates ($S₁$ and $S₂$), and also confirm that the new problem is different from the old (unchanged) one:
 ```@example structure_indexing
-using OrdinaryDiffEqDefault
+using OrdinaryDiffEq
 oprob_new = remake(oprob; u0 = [:S₁ => 5.0, :S₂ => 2.5])
 oprob_new != oprob
 ```
@@ -197,7 +197,7 @@ get_S(oprob)
 ## [Interfacing using symbolic representations](@id simulation_structure_interfacing_symbolic_representation)
 When e.g. [programmatic modelling is used](@ref programmatic_CRN_construction), species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like symbol-based representations can. Here we create a simple [two-state model](@ref basic_CRN_library_two_states) programmatically, and use its symbolic variables to check, and update, an initial condition:
 ```@example structure_indexing_symbolic_variables
-using Catalyst, OrdinaryDiffEqDefault
+using Catalyst, OrdinaryDiffEq
 t = default_t()
 @species X1(t) X2(t)
 @parameters k1 k2

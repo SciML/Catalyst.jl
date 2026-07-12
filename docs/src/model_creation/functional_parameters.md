@@ -8,7 +8,7 @@ using Pkg
 Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("Catalyst")
 Pkg.add("DataInterpolations")
-Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 ```
 ```@raw html
@@ -19,7 +19,7 @@ Pkg.add("Plots")
 ```
 So called *functional parameters* have many uses. A primary one (shown in this example) is to interpolate some data points and uses as a functional value.
 ```julia
-using Catalyst, DataInterpolations, OrdinaryDiffEqDefault, Plots
+using Catalyst, DataInterpolations, OrdinaryDiffEq, Plots
 
 # Here we create an interpolated function from some values and plots it.
 tend = 10.0
@@ -70,7 +70,7 @@ end
 ```
 Finally, we can simulate our model as normal (but where we set the value of the `pIn` parameter to our interpolated data).
 ```@example functional_parameters_basic_example
-using OrdinaryDiffEqDefault
+using OrdinaryDiffEq
 u0 = [:X => 0.5]
 ps = [:d => 2.0, :pIn => spline]
 oprob = ODEProblem(bd_model, u0, tend, ps)
@@ -113,7 +113,7 @@ rs = complete(rs)
 ```
 Now we can simulate our model. Here, we use the interpolated data as the input parameter's value.
 ```@example functional_parameters_circ_rhythm
-using OrdinaryDiffEqDefault
+using OrdinaryDiffEq
 u0 = [Pᵢ => 1.0, Pₐ => 0.0]
 ps = [kA => 1.5, kD => 1.0, light_in => interpolated_light]
 oprob = ODEProblem(rs, u0, tend, ps)
@@ -169,7 +169,7 @@ nothing # hide
 ```
 Finally, we can simulate our model.
 ```@example functional_parameters_sir
-using OrdinaryDiffEqDefault
+using OrdinaryDiffEq
 u0 = [:S => 99.0, :I => 1.0, :R => 0.0]
 ps = [:k1 => 0.002, :k2 => 0.01, :inf_rate => I_rate]
 oprob = ODEProblem(sir, u0, 250.0, ps)

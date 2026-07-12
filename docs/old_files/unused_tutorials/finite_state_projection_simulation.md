@@ -9,8 +9,7 @@ Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted 
 Pkg.add("Catalyst")
 Pkg.add("FiniteStateProjection")
 Pkg.add("JumpProcesses")
-Pkg.add("OrdinaryDiffEqDefault")
-Pkg.add("OrdinaryDiffEqRosenbrock")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 Pkg.add("SteadyStateDiffEq")
 ```
@@ -44,7 +43,7 @@ oprob = ODEProblem(fsp_sys, u0, tspan, ps)
 
 # Simulate ODE (it can be quite large, so consider performance options).
 # Plot solution as a heatmap at a specific time point.
-using OrdinaryDiffEqRosenbrock, Plots
+using OrdinaryDiffEq, Plots
 osol = solve(oprob, Rodas5P())
 heatmap(0:19, 0:19, osol(50.0); xguide = "Y", yguide = "X")
 ```
@@ -110,7 +109,7 @@ We also plot the full distribution using the `bar` function. Finally, the initia
 
 Now, we can finally create an `ODEProblem` using our `FSPSystem`, initial conditions, and the parameters declared previously. We can simulate this `ODEProblem` like any other ODE.
 ```@example state_projection_one_species
-using OrdinaryDiffEqDefault
+using OrdinaryDiffEq
 oprob = ODEProblem(fsp_sys, u0, tspan, ps)
 osol = solve(oprob)
 nothing # hide
@@ -151,7 +150,7 @@ nothing # hide
 Finally, we can simulate the model just like in the 1-dimensional case. As we are simulating an ODE with $25⋅25 = 625$ states, we need to make some considerations regarding performance. In this case, we will simply specify the `Rodas5P()` ODE solver (more extensive advice on performance can be found [here](@ref ode_simulation_performance)). Here, we perform a simulation with a long time span ($t = 100.0$), aiming to find the system's steady state distribution. Next, we plot it using the `heatmap` function.
 ```@example state_projection_multi_species
 using Plots # hide
-using OrdinaryDiffEqRosenbrock
+using OrdinaryDiffEq
 oprob = ODEProblem(fsp_sys, u0, 100.0, ps)
 osol = solve(oprob, Rodas5P())
 heatmap(0:24, 0:24, osol[end]; xguide = "X₂", yguide = "X")
@@ -163,7 +162,7 @@ heatmap(0:24, 0:24, osol[end]; xguide = "X₂", yguide = "X")
 ## [Finite state projection steady state simulations](@id state_projection_steady_state_sim)
 Previously, we have shown how the [SteadyStateDiffEq.jl](https://github.com/SciML/SteadyStateDiffEq.jl) package can be used to [find an ODE's steady state through forward simulation](@ref steady_state_stability). The same interface can be used for ODEs generated through FiniteStateProjection. Below, we use this to find the steady state of the dimerisation example studied in the last example.
 ```@example state_projection_multi_species
-using SteadyStateDiffEq, OrdinaryDiffEqRosenbrock
+using SteadyStateDiffEq, OrdinaryDiffEq
 ssprob = SteadyStateProblem(fsp_sys, u0, ps)
 sssol = solve(ssprob, DynamicSS(Rodas5P()))
 heatmap(0:24, 0:24, sssol; xguide = "X₂", yguide = "X")

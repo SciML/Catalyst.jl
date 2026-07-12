@@ -9,7 +9,7 @@ Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted 
 Pkg.add("Catalyst")
 Pkg.add("DataInterpolations")
 Pkg.add("Distributions")
-Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 Pkg.add("StochasticDiffEq")
 ```
@@ -66,7 +66,7 @@ Again we will perform ensemble simulation. Instead of creating an `SDEProblem`, 
 ```@example noise_modelling_approaches
 using Distributions
 p_dists = Dict([:v => Normal(10.0, 2.0), :K => Normal(20.0, 5.0), :n => Normal(3, 0.2), :d => Normal(0.1, 0.02)])
-function prob_func(prob, i, repeat)
+function prob_func(prob, _)
     p = [par => rand(p_dists[par]) for par in keys(p_dists)]
     return remake(prob; p)
 end
@@ -74,7 +74,7 @@ nothing # hide
 ```
 Next, we again perform 4 simulations. While the individual trajectories are performed using deterministic simulations, the randomised parameter values create heterogeneity across the ensemble.
 ```@example noise_modelling_approaches
-using OrdinaryDiffEqDefault
+using OrdinaryDiffEq
 oprob = ODEProblem(repressilator, u0, tend, ps)
 eprob_extrinsic = EnsembleProblem(oprob; prob_func)
 sol_extrinsic = solve(eprob_extrinsic; trajectories = 4)
@@ -112,7 +112,7 @@ nothing # hide
 ```
 Finally, we will again perform ensemble simulations of our model. This time, at the beginning of each simulation, we will use `make_K_series` to generate a new $K$, and set this as the `K_in` parameter's value.
 ```@example noise_modelling_approaches
-function prob_func_Kin(prob, i, repeat)
+function prob_func_Kin(prob, _)
     p = [ps; :K_in => make_K_series()]    
     return remake(prob; p)
 end
