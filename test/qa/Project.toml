@@ -1,0 +1,10 @@
+[deps]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+Catalyst = "479239e8-5488-4da2-87a7-35f2df7eef83"
+JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
+SciMLTesting = "09d9d899-5365-40a9-917a-5f67fddea283"
+
+[compat]
+Aqua = "0.8"
+JET = "0.9, 0.10, 0.11"
+SciMLTesting = "1.6"

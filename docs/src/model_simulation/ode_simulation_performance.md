@@ -170,28 +170,6 @@ nothing # hide
 ```
 Since these methods do not depend on a Jacobian, certain Jacobian options (such as [computing it symbolically](@ref ode_simulation_performance_symbolic_jacobian)) are irrelevant to them.
 
-### [Designating preconditioners for Jacobian-free linear solvers](@id ode_simulation_performance_preconditioners)
-When an implicit method solves a linear equation through an (iterative) matrix-free Newton-Krylov method, the rate of convergence depends on the numerical properties of the matrix defining the linear system. To speed up convergence, a [*preconditioner*](https://en.wikipedia.org/wiki/Preconditioner) can be applied to both sides of the linear equation, attempting to create an equation that converges faster. Preconditioners are only relevant when using matrix-free Newton-Krylov methods.
-
-In practice, preconditioners are implemented as functions with a specific set of arguments and configured on the `LinearSolve` algorithm used by the ODE solver. How to implement these is non-trivial, and we recommend reading OrdinaryDiffEq's documentation pages [here](https://docs.sciml.ai/DiffEqDocs/stable/features/linear_nonlinear/#Preconditioners:-precs-Specification) and [here](https://docs.sciml.ai/DiffEqDocs/stable/tutorials/advanced_ode_example/#Adding-a-Preconditioner). In this example, we will define an [Incomplete LU](https://en.wikipedia.org/wiki/Incomplete_LU_factorization) preconditioner (which requires the [IncompleteLU.jl](https://github.com/haampie/IncompleteLU.jl) package):
-```@example ode_simulation_performance_3
-using IncompleteLU
-function incompletelu(A, p)
-    Pl = ilu(convert(AbstractMatrix, A), τ = 50.0)
-    Pl, nothing
-end
-nothing # hide
-```
-Next, `incompletelu` can be supplied to the `KrylovJL_GMRES` linear solver using the `precs` argument:
-```@example ode_simulation_performance_3
-solve(oprob, Rodas5P(linsolve = KrylovJL_GMRES(precs = incompletelu), concrete_jac = true))
-nothing # hide
-```
-Finally, we note that when using preconditioners with a matrix-free method (like `KrylovJL_GMRES`, which is also the only case when these are relevant), the `concrete_jac = true` argument is required.
-
-Generally, the use of preconditioners is only recommended for advanced users who are familiar with the concepts. However, for large systems, if performance is essential, they can be worth looking into.
-
-
 ## [Elimination of system conservation laws](@id ode_simulation_performance_conservation_laws)
 Previously, we have described how Catalyst, when it generates ODEs, is able to [detect and eliminate conserved quantities](@ref conservation_laws). In certain cases, doing this can improve performance. E.g. in the following example we will eliminate the single conserved quantity in a [two-state model](@ref basic_CRN_library_two_states). This results in a differential algebraic equation with a single differential equation and a single algebraic equation (as opposed to two differential equations). However, as the algebraic equation is fully determined by the ODE solution, Catalyst moves it to be an observable and our new system therefore only contains one ODE that must be solved numerically. Conservation laws can be eliminated by providing the `remove_conserved = true` option to `ODEProblem`:
 ```@example ode_simulation_performance_conservation_laws
@@ -244,17 +222,16 @@ To parallelise our simulations, we first need to create an `EnsembleProblem`. Th
 - The `ODEProblem` corresponds to the model simulation (`SDEProblem` and `JumpProblem`s can also be supplied, enabling the parallelisation of these problem types).
 - A function, `prob_func`, describing how to modify the problem for each simulation. If we wish to simulate the same, unmodified problem, in each simulation (primarily relevant for stochastic simulations), this argument is not required.
 
-Here, `prob_func` takes 3 arguments:
+Here, `prob_func` takes two arguments:
 - `prob`: The problem that it modifies at the start of each individual run (which will be the same as `EnsembleProblem`'s first argument).
-- `i`: The index of the specific simulation (in the array of all simulations that are performed).
-- `repeat`: The repeat of a specific simulation in the array. We will not use this option in this example, however, it is discussed in more detail [here](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#Building-a-Problem).
+- `ctx`: An `EnsembleContext` structure, carrying context of the individual run's context in the ensemble. Here, `ctx.sim_id` is the specific Monte Carlo run's iteration in the interval `1:trajectories`, while `ctx.repeat` is the iteration of the repeat of the simulation (typically `1`, but potentially higher if [the simulation re-running option](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#Building-a-Problem) is used).
 
 and output the `ODEProblem` simulated in the i'th simulation.
 
 Let us assume that we wish to simulate our model 100 times, for $kP = 0.01, 0.02, ..., 0.99, 1.0$. We define our `prob_func` using [`remake`](@ref simulation_structure_interfacing_problems_remake):
 ```@example ode_simulation_performance_4
-function prob_func(prob, i, repeat)
-    return remake(prob; p = [:kP => 0.01*i])
+function prob_func(prob, ctx)
+    return remake(prob; p = [:kP => 0.01*ctx.sim_id])
 end
 nothing # hide
 ```
@@ -339,7 +316,7 @@ When we declare our `prob_func` and `EnsembleProblem` we need to ensure that the
 function prob_func(prob, i, repeat)
     return remake(prob; p = [:kP => 0.0001f0*i])
 end
-eprob = EnsembleProblem(oprob; prob_func = prob_func)
+eprob = EnsembleProblem(oprob; prob_func)
 nothing # hide
 ```
 Here have we increased the number of simulations to 10,000, since this is a more appropriate number for GPU parallelisation (as compared to the 100 simulations we performed in our CPU example).
