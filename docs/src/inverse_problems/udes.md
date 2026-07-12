@@ -213,7 +213,7 @@ tutorial](@ref petab_parameter_fitting), and in
 
 The UDE model can now be fitted to the data. Here, we use the Adam implementation from the
 [Optimisers.jl](https://github.com/FluxML/Optimisers.jl) package, running 5 independent starts 
-with 10,000 iterations each.
+with 10,000 iterations/epochs each.
 ```@example ude_rate_based
 using Optimisers
 options = OptimisersOptions(iterations = 10000)
