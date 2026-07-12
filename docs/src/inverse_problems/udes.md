@@ -366,7 +366,7 @@ function. An example of how this is done for an ODE-declared UDE can be found
 ### [Learning parameters or observables using neural networks](@id udes_parameters_n_observables)
 Throughout this tutorial, we have shown how neural networks can be incorporated into
 Catalyst models to learn unknown functions of system variables within the main model
-system. PEtab, however, also supports two additional ways to incorporate neural networks
+system. PEtab.jl, however, also supports two additional ways to incorporate neural networks
 that, due to how they are inserted, can be handled more efficiently:
 - Models where the neural network exists within the mapping between the model's *states* and
   its *observables*.
