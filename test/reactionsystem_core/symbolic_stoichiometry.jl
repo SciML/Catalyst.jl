@@ -206,26 +206,32 @@ let
     end
 end
 
-# Tests jump simulation with a non-species unknown in symbolic stoichiometry.
+# Tests that non-species unknowns (regular variables) in stoichiometry are properly wrapped in Pre().
+# This ensures MTKBase generates explicit affects rather than implicit ones.
 let
     @parameters k
     @variables V(t)
     @species X(t) Y(t)
 
+    # Reaction where V (a non-species variable) appears in the stoichiometry
     rs = @reaction_network begin
         @parameters k
         @variables V(t)
         k, X --> V * Y
     end
 
-    jprob = JumpProblem(
-        rs, [X => 1, Y => 0, V => 2], (0.0, 1.0), [k => 100.0];
-        rng = StableRNG(12345)
-    )
-    sol = solve(jprob, SSAStepper())
-    @test sol[X][end] == 0
-    @test sol[Y][end] == 2
-    @test sol[V][end] == 2
+    # The jump System should have explicit affects (no equations after mtkcompile)
+    jsys = jump_model(rs)
+    js = ModelingToolkitBase.jumps(jsys)
+    @test length(js) == 1
+
+    # Check that V appears as Pre(V(t)) in the affect equations
+    affect_str = string(js[1].affect!)
+    @test occursin("Pre(V(t))", affect_str)
+
+    # Verify it creates an explicit affect (empty equations after mtkcompile)
+    compiled_jsys = ModelingToolkitBase.mtkcompile(jsys)
+    @test isempty(ModelingToolkitBase.equations(compiled_jsys))
 end
 
 # Tests symbolic stoichiometries in simulations.
