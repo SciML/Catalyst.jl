@@ -8,7 +8,7 @@ using Pkg
 Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("Catalyst")
 Pkg.add("JumpProcesses")
-Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 ```
 ```@raw html
@@ -31,7 +31,7 @@ end
 ```
 We can now simulate this model, observing how a 24-hour cycle is reached
 ```@example periodic_event_example
-using OrdinaryDiffEqDefault, Plots
+using OrdinaryDiffEq, Plots
 u0 = [:X => 150.0, :Xᴾ => 50.0]
 ps = [:kₚ => 0.1, :kᵢ => 0.1, :l => 1.0]
 tspan = (0.0, 100.0)

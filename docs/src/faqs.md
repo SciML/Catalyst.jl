@@ -5,7 +5,7 @@ One can directly use symbolic variables to index into SciML solution objects.
 Moreover, observables can also be evaluated in this way. For example,
 consider the system
 ```@example faq1
-using Catalyst, OrdinaryDiffEqNonlinearSolve, OrdinaryDiffEqTsit5, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 rn = @reaction_network ABtoC begin
   (k₊,k₋), A + B <--> C
 end
@@ -134,7 +134,7 @@ When directly constructing a `ReactionSystem`, we can set the symbolic values to
 have the desired default values, and this will automatically be propagated
 through to the equation solvers:
 ```@example faq3
-using Catalyst, Plots, OrdinaryDiffEqTsit5
+using Catalyst, Plots, OrdinaryDiffEq
 t = default_t()
 @parameters β=1e-4 ν=.01
 @species S(t)=999.0 I(t)=1.0 R(t)=0.0
@@ -166,7 +166,7 @@ Julia `Symbol`s corresponding to each variable/parameter to their values, or
 from ModelingToolkitBase symbolic variables/parameters to their values. Using
 `Symbol`s we have
 ```@example faq4
-using Catalyst, OrdinaryDiffEqTsit5
+using Catalyst, OrdinaryDiffEq
 rn = @reaction_network begin
     α, S + I --> 2I
     β, I --> R

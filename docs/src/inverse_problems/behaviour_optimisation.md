@@ -9,7 +9,7 @@ Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted 
 Pkg.add("Catalyst")
 Pkg.add("OptimizationBase")
 Pkg.add("OptimizationBBO")
-Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 ```
 ```@raw html
@@ -35,7 +35,7 @@ end
 ```
 To demonstrate this pulsing behaviour we will simulate the system for an example parameter set. We select an initial condition (`u0`) so the system begins in a steady state.
 ```@example behaviour_optimization
-using OrdinaryDiffEqDefault, Plots
+using OrdinaryDiffEq, Plots
 example_p = [:pX => 0.1, :pY => 1.0, :pZ => 1.0]
 tspan = (0.0, 50.0)
 example_u0 = [:X => 0.1, :Y => 0.1, :Z => 1.0]
@@ -52,7 +52,7 @@ function pulse_amplitude(p, _)
     p = Dict([:pX => p[1], :pY => p[2], :pZ => p[2]])
     u0 = [:X => p[:pX], :Y => p[:pX]*p[:pY], :Z => p[:pZ]/p[:pY]^2]
     oprob_local = remake(oprob; u0, p)
-    sol = solve(oprob_local; verbose = false, maxiters = 10000)
+    sol = solve(oprob_local; verbose = SciMLLogging.None(), maxiters = 10000)
     SciMLBase.successful_retcode(sol) || return Inf
     return -(maximum(sol[:Z]) - sol[:Z][1])
 end
@@ -60,7 +60,7 @@ nothing # hide
 ```
 This objective function takes two arguments (a parameter value `p`, and an additional one which we will ignore but is discussed in a note [here](@ref optimization_parameter_fitting_basics)). It first calculates the new initial steady state concentration for the given parameter set. Next, it creates an updated `ODEProblem` using the steady state as initial conditions and the, to the objective function provided, input parameter set.  Finally, Optimization.jl finds the function's *minimum value*, so to find the *maximum* relative pulse amplitude, we make our objective function return the negative pulse amplitude.
 
-As described [in our tutorial on parameter fitting using Optimization.jl](@ref optimization_parameter_fitting_basics) we use `remake`, `verbose = false`, `maxiters = 10000`, and a check on the simulations return code, all providing various advantages to the optimisation procedure (as explained in that tutorial).
+As described [in our tutorial on parameter fitting using Optimization.jl](@ref optimization_parameter_fitting_basics) we use `remake`, `verbose = SciMLLogging.None()`, `maxiters = 10000`, and a check on the simulations return code, all providing various advantages to the optimisation procedure (as explained in that tutorial).
 
 Just like for [parameter fitting](@ref optimization_parameter_fitting_basics), we create an `OptimizationProblem` using our objective function, and some initial guess of the parameter values. We also [set upper and lower bounds](@ref optimization_parameter_fitting_constraints) for each parameter using the `lb` and `ub` optional arguments (in this case limiting each parameter's value to the interval $(0.1,10.0)$).
 ```@example behaviour_optimization

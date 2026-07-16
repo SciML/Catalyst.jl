@@ -8,7 +8,7 @@ using Pkg
 Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("BifurcationKit")
 Pkg.add("Catalyst")
-Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 ```
 ```@raw html
@@ -54,13 +54,13 @@ plot(bifdia; xguide = bif_par, yguide = plot_var, xlimit = v_span, branchlabel =
 ```
 We note that for small values of $v$ the system's single steady state is stable (where the line is thicker). After a [Hopf](https://en.wikipedia.org/wiki/Hopf_bifurcation) bifurcation (the red point), the state turns unstable (where the line is thinner). For chemical reaction networks (which mostly are well-behaved) a single unstable steady state typically corresponds to an oscillation. We can confirm that the system oscillates in the unstable region (while it reaches a stable steady state in the stable region) using simulations:
 ```@example bifurcationkit_periodic_orbits
-using OrdinaryDiffEqDefault
+using OrdinaryDiffEq
 p_nosc = [:v => 5.0, :K => 15.0, :n => 3, :d => 0.2]
 p_osc = [:v => 15.0, :K => 15.0, :n => 3, :d => 0.2]
 prob_nosc = ODEProblem(repressilator, u_guess, 80.0, p_nosc)
 prob_osc = ODEProblem(repressilator, u_guess, 80.0, p_osc)
-sol_nosc = OrdinaryDiffEqDefault.solve(prob_nosc)
-sol_osc = OrdinaryDiffEqDefault.solve(prob_osc)
+sol_nosc = OrdinaryDiffEq.solve(prob_nosc)
+sol_osc = OrdinaryDiffEq.solve(prob_osc)
 plot(plot(sol_nosc; title = "v = 5"), plot(sol_osc; title = "v = 15"), size = (1000,400), lw = 4)
 ```
 
@@ -72,9 +72,9 @@ First, we set the options for the continuation. Just like for bifurcation diagra
 opts_po = ContinuationPar(opts_br)
 nothing # hide
 ```
-During the continuation we will compute the periodic orbit using the [Collocation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/#Collocation-method) method (however, the [Trapezoid](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/#Trapezoid-method) and [Shooting](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/#Shooting-method) method also exist, with each having their advantages and disadvantages). For this, we create a [`PeriodicOrbitOCollProblem`](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/library/#BifurcationKit.PeriodicOrbitOCollProblem) which we will supply to our continuation computation.
+During the continuation we will compute the periodic orbit using the [Collocation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/#Collocation-method) method (however, the [Trapezoid](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/#Trapezoid-method) and [Shooting](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/#Shooting-method) method also exist, with each having their advantages and disadvantages). For this, we create a [`Collocation`](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/library/#BifurcationKit.Collocation) structure, which we will supply to our continuation computation.
 ```@example bifurcationkit_periodic_orbits
-poprob = PeriodicOrbitOCollProblem(50, 4)
+poprob = Collocation(50, 4)
 nothing # hide
 ```
 Finally, we will also create a `record_from_solution` function. This is a function which records information of the solution at each step of the continuation (which we can later plot or investigate using other means).

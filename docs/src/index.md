@@ -73,7 +73,7 @@ Pkg.add("Catalyst")
 
 Many Catalyst features require the installation of additional packages. E.g. for ODE-solving and simulation plotting
 ```julia
-Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 ```
 is also needed.
@@ -116,7 +116,7 @@ an ordinary differential equation.
 
 ```@example home_simple_example
 # Fetch required packages.
-using Catalyst, OrdinaryDiffEqDefault, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 
 # Create model.
 model = @reaction_network begin

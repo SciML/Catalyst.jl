@@ -1,6 +1,6 @@
 name = "Catalyst"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
-version = "16.2.0"
+version = "16.2.2"
 
 [deps]
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
@@ -63,14 +63,10 @@ Latexify = "0.16.6"
 LinearAlgebra = "1.10"
 MacroTools = "0.5.5"
 Makie = "0.22.1, 0.23, 0.24"
-ModelingToolkitBase = "1.17"
+ModelingToolkitBase = "1.46"
 NetworkLayout = "0.4.7"
-OrdinaryDiffEqBDF = "1, 2"
 OrdinaryDiffEqCore = "3.22, 4"
-OrdinaryDiffEqDefault = "1, 2"
-OrdinaryDiffEqRosenbrock = "1, 2"
-OrdinaryDiffEqTsit5 = "1, 2"
-OrdinaryDiffEqVerner = "1, 2"
+OrdinaryDiffEq = "6, 7"
 Parameters = "0.12, 0.13"
 Reexport = "1.0"
 RuntimeGeneratedFunctions = "0.5.12"
@@ -93,12 +89,8 @@ DomainSets = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
-OrdinaryDiffEqBDF = "6ad6398a-0878-4a85-9266-38940aa047c8"
 OrdinaryDiffEqCore = "bbf590c4-e513-4bbe-9b18-05decba2e5d8"
-OrdinaryDiffEqDefault = "50262376-6c5a-4cf5-baba-aaf4f84d72d7"
-OrdinaryDiffEqRosenbrock = "43230ef6-c299-4910-a778-202eb28ce4ce"
-OrdinaryDiffEqTsit5 = "b1df2697-797e-41e3-8120-5422d3b24e4a"
-OrdinaryDiffEqVerner = "79d7bb75-1356-48c1-b8c0-6832512096c2"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -112,7 +104,6 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["DataInterpolations", "DiffEqCallbacks", "DiffEqNoiseProcess", "DomainSets",
-    "Logging", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqCore", "OrdinaryDiffEqDefault",
-    "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner",
+    "Logging", "NonlinearSolve", "OrdinaryDiffEq", "OrdinaryDiffEqCore",
     "Pkg", "Plots", "Random", "SafeTestsets", "StableRNGs",
     "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test"]

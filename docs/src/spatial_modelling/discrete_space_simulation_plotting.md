@@ -19,7 +19,7 @@ The first two functions can be applied to [graph](@ref spatial_dspace_modelling_
 ## [Animation and plotting of 1d Cartesian or masked discrete space simulations](@id dspace_simulation_plotting_1d_grids)
 Let us consider a spatial simulation on a 1d Cartesian grid space:
 ```@example dspace_plotting_1d
-using Catalyst, OrdinaryDiffEqDefault
+using Catalyst, OrdinaryDiffEq
 two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
@@ -62,7 +62,7 @@ For more information of either function, and additional optional arguments, plea
 ## [Animation and plotting of 2d Cartesian or masked space simulations](@id dspace_simulation_plotting_2d_grids)
 Two-dimensional discrete space simulations can be plotted in the same manner as one-dimensional ones. However, instead of displaying a species's value as a line plot, it is displayed as a heatmap. E.g. here we simulate a spatial [Brusselator](@ref basic_CRN_library_brusselator) model and display the value of $X$ at a designated time point.
 ```@example dspace_plotting_2d
-using Catalyst, OrdinaryDiffEqBDF
+using Catalyst, OrdinaryDiffEq
 brusselator = @reaction_network begin
     A, ∅ --> X
     1, 2X + Y --> 3X
@@ -95,7 +95,7 @@ Again, please check the API pages for the [`dspace_plot`](@ref) and [`dspace_ani
 ## [Animation and plotting of graph space simulations](@id dspace_simulation_plotting_graphs)
 Finally, we consider space simulations on graph spaces. We first simulate a simple [birth-death process](@ref basic_CRN_library_bd) on a (6-node cyclic) graph space.
 ```@example dspace_plotting_graphs
-using Catalyst, Graphs, OrdinaryDiffEqDefault
+using Catalyst, Graphs, OrdinaryDiffEq
 rs = @reaction_network begin
     (p,d), 0 <--> X
 end

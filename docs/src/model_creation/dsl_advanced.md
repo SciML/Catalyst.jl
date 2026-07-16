@@ -8,8 +8,7 @@ using Pkg
 Pkg.activate(; temp = true) # Creates a temporary environment, which is deleted when the Julia session ends.
 Pkg.add("Catalyst")
 Pkg.add("Latexify")
-Pkg.add("OrdinaryDiffEqDefault")
-Pkg.add("OrdinaryDiffEqTsit5")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 ```
 ```@raw html
@@ -118,7 +117,7 @@ end
 ```
 Next, if we simulate the model, we do not need to provide values for species or parameters that have default values. In this case all have default values, so both `u0` and `ps` can be empty vectors:
 ```@example dsl_advanced_defaults
-using OrdinaryDiffEqDefault, Plots
+using OrdinaryDiffEq, Plots
 u0 = []
 tspan = (0.0, 10.0)
 p = []
@@ -160,7 +159,7 @@ end
 ```
 Please note that as the parameter `X₀` does not occur as part of any reactions, Catalyst's DSL cannot infer whether it is a species or a parameter. This must hence be explicitly declared. We can now simulate our model while providing `X`'s value through the `X₀` parameter:
 ```@example dsl_advanced_defaults
-using OrdinaryDiffEqTsit5
+using OrdinaryDiffEq
 u0 = []
 p = [:X₀ => 1.0, :p => 1.0, :d => 0.5]
 oprob = ODEProblem(rn, u0, tspan, p)
@@ -273,7 +272,7 @@ end
 ```
 Now, we can also declare our initial conditions and parameter values as vectors as well:
 ```@example dsl_advanced_vector_variables
-using OrdinaryDiffEqDefault, Plots # hide
+using OrdinaryDiffEq, Plots # hide
 u0 = [:X => [0.0, 2.0]]
 tspan = (0.0, 1.0)
 ps = [:k => [1.0, 2.0]]
@@ -352,7 +351,7 @@ end
 ```
 We can now simulate our model using normal syntax (initial condition values for observables should not, and can not, be provided):
 ```@example dsl_advanced_observables
-using OrdinaryDiffEqTsit5
+using OrdinaryDiffEq
 u0 = [:X => 1.0, :Y => 2.0, :XY => 0.0]
 tspan = (0.0, 10.0)
 ps = [:kB => 1.0, :kD => 1.5]
@@ -499,7 +498,7 @@ X
 ```
 Next, we can now use these to e.g. designate initial conditions and parameter values for model simulations:
 ```@example dsl_advanced_programmatic_unpack
-using OrdinaryDiffEqDefault, Plots # hide
+using OrdinaryDiffEq, Plots # hide
 u0 = [X => 0.1]
 tspan = (0.0, 10.0)
 ps = [p => 1.0, d => 0.2]

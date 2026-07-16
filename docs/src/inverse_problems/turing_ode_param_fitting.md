@@ -8,7 +8,7 @@ using Pkg
 Pkg.activate(".")
 Pkg.add("Catalyst")
 Pkg.add("Distributions")
-Pkg.add("OrdinaryDiffEqDefault")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 Pkg.add("StatsPlots")
 Pkg.add("SymbolicIndexingInterface")
@@ -30,7 +30,7 @@ sir = @reaction_network begin
 end
 
 # Generate some (synthetic) data for the fitting procedure.
-using Distributions, OrdinaryDiffEqDefault, Plots
+using Distributions, OrdinaryDiffEq, Plots
 t_measurement = 1.0:100.0
 u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
 p_true = [:γ => 0.0003, :ν => 0.1]
@@ -46,7 +46,7 @@ plot!(t_measurement, I_observed; label = "I (measured)", color = 2, seriestype =
 # which posterior we wish to infer, and the likelihoods of the observables.
 # If `x` is an undefined parameter, `x` becomes a prior for an estimated parameter, else,
 # it is interpreted as an observable likelihood.
-using Turing, MCMCChains
+using Turing
 @model function sir_model(I_observed, oprob_base, setp_oop, saveat)
     # Defines the parameters we wish to estimate and their prior distributions.
     γ ~ LogUniform(0.00001, 0.001)
@@ -56,7 +56,7 @@ using Turing, MCMCChains
     # Simulate the model for parameter values γ, ν. Saves the solution at the measurement times.
     p = setp_oop(oprob_base, [γ, ν])
     oprob_base = remake(oprob_base; p)
-    sol = solve(oprob_base; saveat, verbose = false, maxiters = 10000)
+    sol = solve(oprob_base; saveat, verbose = SciMLLogging.None(), maxiters = 10000)
 
     # If simulation was unsuccessful, the likelihood is -Inf.
     if !SciMLBase.successful_retcode(sol)
@@ -76,7 +76,7 @@ n_steps = 1000
 n_chains = 4
 setp_oop = SymbolicIndexingInterface.setp_oop(oprob_true, [:γ, :ν])
 model = sir_model(I_observed, oprob_true, setp_oop, t_measurement)
-chain = sample(model, NUTS(), MCMCThreads(), n_steps, n_chains; progress = false, chain_type = MCMCChains.Chains)
+chain = sample(model, NUTS(), MCMCThreads(), n_steps, n_chains; progress = false)
 
 # Plots the resulting chains and posteriors.
 using StatsPlots
@@ -104,7 +104,7 @@ end
 ```
 From an initial condition where only a small fraction of the population is in the infected state, the model exhibits a peak of infections, after which the epidemic subsides.
 ```@example turing_paramfit
-using OrdinaryDiffEqDefault, Plots
+using OrdinaryDiffEq, Plots
 u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
 p_true = [:γ => 0.0005, :ν => 0.1]
 oprob_true = ODEProblem(sir, u0, 100.0, p_true)
@@ -131,7 +131,7 @@ Here, we declare our parameters on the form `p ~ Distribution(...)` where the le
 
 In our case, we first declare each parameter and its prior. Next, we simulate the SIR model for a specific parameter set. Then, we compute the likelihood of observing our observables given the simulation.
 ```@example turing_paramfit
-using Turing, MCMCChains, SymbolicIndexingInterface
+using Turing, SymbolicIndexingInterface
 setp_oop = SymbolicIndexingInterface.setp_oop(oprob_true, [:γ, :ν])
 @model function sir_likelihood(I_observed, oprob_base, setp_oop, saveat)
     # Defines the parameters we wish to estimate and their prior distributions.
@@ -142,7 +142,7 @@ setp_oop = SymbolicIndexingInterface.setp_oop(oprob_true, [:γ, :ν])
     # Simulate the model for parameter values γ, ν. Saves the solution at the measurement times.
     p = setp_oop(oprob_base, [γ, ν])
     oprob_base = remake(oprob_base; p)
-    sol = solve(oprob_base; saveat, verbose = false, maxiters = 10000)
+    sol = solve(oprob_base; saveat, verbose = SciMLLogging.None(), maxiters = 10000)
 
     # If simulation was unsuccessful, the likelihood is -Inf.
     if !SciMLBase.successful_retcode(sol)
@@ -159,7 +159,7 @@ nothing # hide
 ```
 
 Some specific comments regarding how we have declared the model above:
-- Like for [normal parameter fitting](@ref optimization_parameter_fitting_basics), we use the `maxiters = 10000` (to prevent spending a long time simulating unfeasible parameter sets) and `verbose = false` (to prevent unnecessary printing of warning messages) arguments to `solve`.
+- Like for [normal parameter fitting](@ref optimization_parameter_fitting_basics), we use the `maxiters = 10000` (to prevent spending a long time simulating unfeasible parameter sets) and `verbose = SciMLLogging.None()` (to prevent unnecessary printing of warning messages) arguments to `solve`.
 - Again, we need to handle parameter sets where the model cannot be successfully simulated. Here, we use `Turing.@addlogprob! -Inf` to set a non-existent likelihood, and `return nothing` to stop further evaluation of the specific parameter set.
 - Just like for normal parameter fitting, we wish to [fit parameters on a log scale](@ref optimization_parameter_fitting_log_scale). Here we do so by declaring log-scaled prior distributions.
 - Here we assume that we (correctly) know that the noise is normally distributed. However, we assume that we *do not know the standard deviation*. Instead, we make the standard deviation a third parameter whose value we infer as part of the inference process. More complicated noise formulas can be used (and are sometimes even advisable[^2]).
@@ -170,7 +170,7 @@ Finally, we can estimate the posterior distributions of all parameters. First we
 n_steps = 1000
 n_chains = 4
 sir_model = sir_likelihood(I_observed, oprob_true, setp_oop, t_measurement)
-chain = sample(sir_model, NUTS(), MCMCThreads(), n_steps, n_chains; progress = false, verbose = false, chain_type = MCMCChains.Chains)
+chain = sample(sir_model, NUTS(), MCMCThreads(), n_steps, n_chains; progress = false, verbose = false)
 nothing # hide
 ```
 Here, `sample`'s input is:
@@ -202,16 +202,17 @@ I_observed[idx] ~ truncated(Normal(sol[:I][idx], σI), 0.0, Inf)
 to create a version of our normal distribution that is truncated at *0* and infinity.
 
 ### [Accessing posterior information](@id turing_parameter_fitting_basic_example_output_interfacing)
-Say that we want to sample a parameter set from the computed posterior distribution. Here, we can use the following syntax to sample a single vector with the values of `γ`, `ν`, and `σI` (in that order):
+Say that we want to sample a parameter set from the computed posterior distribution. Here, we first use `draw = rand(chain; parameters_only = true)` to sample a random parameter set from teh posterior. next, we can use e.g. `draw[@varname(γ)]` to access the parameter $γ$'s value from that sample.
 ```@example turing_paramfit
-collect(chain.value[rand(1:n_steps), 1:3, rand(1:n_chains)])
+draw = rand(chain; parameters_only = true)
+draw[@varname(γ)]
 ```
 
 We can use this to e.g. draw $10$ random parameter sets from the posterior distribution, simulate the model for these parameter sets, and plot the resulting ensemble simulation. For this, we will create an `EnsembleProblem` from our `ODEProblem` using the approach described [here](@ref ensemble_simulations_varying_conditions).
 ```@example turing_paramfit
-function prob_func(prob, _, _)
-    γ, ν = collect(chain.value[rand(1:n_steps), 1:2, rand(1:n_chains)])
-    remake(prob; p = [:γ => γ, :ν => ν])
+function prob_func(prob, _)
+    draw = rand(chain; parameters_only = true)
+    remake(prob; p = [:γ => draw[@varname(γ)], :ν => draw[@varname(ν)]])
 end
 eprob = EnsembleProblem(oprob_true; prob_func)
 sols = solve(eprob; trajectories = 10)
