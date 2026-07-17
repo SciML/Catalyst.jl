@@ -2,6 +2,7 @@
 
 # Fetch packages.
 using JumpProcesses, Statistics, SparseArrays, Test
+using SciMLBase
 
 # Fetch test networks.
 include("../spatial_test_networks.jl")

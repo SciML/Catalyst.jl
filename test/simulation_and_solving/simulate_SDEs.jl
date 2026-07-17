@@ -3,6 +3,7 @@
 # Fetch packages.
 using Catalyst, Statistics, StochasticDiffEq, Test
 using Catalyst: getnoisescaling
+using SciMLBase
 
 # Sets stable rng number.
 using StableRNGs
