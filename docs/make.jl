@@ -4,22 +4,6 @@ using JumpProcesses, SciMLBase
 # Add packages for plotting
 using GraphMakie, CairoMakie
 
-const Symbolics = Catalyst.Symbolics
-const SymbolicUtils = Catalyst.SymbolicUtils
-const UnPack = Catalyst.UnPack
-
-function loaded_module(name::String)
-    loaded = Base.loaded_modules isa Function ? Base.loaded_modules() : Base.loaded_modules
-    for (pkgid, mod) in loaded
-        pkgid.name == name && return mod
-    end
-    error("Module $name was not loaded")
-end
-
-const BipartiteGraphs = loaded_module("BipartiteGraphs")
-const CommonSolve = loaded_module("CommonSolve")
-const TermInterface = loaded_module("TermInterface")
-
 docpath = Base.source_dir()
 assetpath = joinpath(docpath, "src", "assets")
 cp(joinpath(docpath, "Manifest.toml"), joinpath(assetpath, "Manifest.toml"), force = true)
@@ -63,9 +47,7 @@ makedocs(
     ),
     modules = [
         Catalyst, ModelingToolkitBase, SymbolicIndexingInterface,
-        BipartiteGraphs, CommonSolve,
         JumpProcesses, SciMLBase,
-        Symbolics, SymbolicUtils, SymbolicUtils.Code, TermInterface, UnPack,
         Base.get_extension(Catalyst, :CatalystGraphMakieExtension),
     ],
     doctest = false,

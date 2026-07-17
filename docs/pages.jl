@@ -81,8 +81,7 @@ pages = Any[
 "FAQs" => "faqs.md",
 "API" => Any[
     "api/core_api.md",
-    "api/network_analysis_api.md",
-    "api/reexports_api.md"
+    "api/network_analysis_api.md"
 ],
 "Developer Documentation" => "devdocs/dev_guide.md"
 ]

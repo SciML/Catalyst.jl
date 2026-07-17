@@ -22,39 +22,32 @@ const EI_ALLOW_UNANALYZABLE = (Catalyst, Catalyst.PhysicalScale)
 # compile-time `@static` choice that matches the JET-load gate above.
 const JET_BROKEN = VERSION >= v"1.12-"
 
-# Dependency-owned names re-exported through ModelingToolkitBase/Symbolics. Catalyst
-# does not define their source docstrings; the `SymbolicUtils` module binding also
-# cannot be inspected by `Base.Docs.Binding` because it is imported through multiple
-# upstream modules.
-const API_DOCS_IGNORE = (
-    :SymbolicUtils,
-    Symbol("@brownian"),
-    Symbol("@mtkbuild"),
-    Symbol("@symbolic_wrap"),
-    Symbol("@wrapped"),
-    :AbstractCollocation,
-    :DiscreteSystem,
-    :DynamicOptSolution,
-    :ImplicitDiscreteSystem,
-    :ODESystem,
-    :RuleSet,
-    :get_canonical_expr,
-    :independent_variable,
-    :infimum,
-    :irreducibles,
-    :is_derivative,
-    :istree,
-    :maybe_zeros,
-    :setnominal,
-    :solve_for,
-    :structural_simplify,
-    :supremum,
+function public_name_owner(name)
+    binding = try
+        getfield(Catalyst, name)
+    catch
+        return nothing
+    end
+    return try
+        parentmodule(binding)
+    catch
+        binding isa Module ? binding : nothing
+    end
+end
+
+const DEPENDENCY_OWNED_PUBLIC_NAMES = Tuple(
+    name for name in sort!(collect(public_api_names(Catalyst)); by = string)
+        if public_name_owner(name) !== Catalyst
 )
 
 run_qa(
     Catalyst;
     explicit_imports = true,
-    api_docs_kwargs = (; rendered = true, ignore = API_DOCS_IGNORE),
+    api_docs_kwargs = (;
+        rendered = true,
+        ignore = DEPENDENCY_OWNED_PUBLIC_NAMES,
+        rendered_ignore = DEPENDENCY_OWNED_PUBLIC_NAMES,
+    ),
     # Test-only [extras] in the root Project.toml intentionally carry no [compat]
     # entries (they are pinned via the resolver, not declared bounds).
     aqua_kwargs = (; deps_compat = (; check_extras = false)),
