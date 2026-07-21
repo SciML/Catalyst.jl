@@ -43,6 +43,7 @@ const DEPENDENCY_OWNED_PUBLIC_NAMES = Tuple(
 run_qa(
     Catalyst;
     explicit_imports = true,
+    reexports_allow = DEPENDENCY_OWNED_PUBLIC_NAMES,
     api_docs_kwargs = (;
         rendered = true,
         ignore = DEPENDENCY_OWNED_PUBLIC_NAMES,
