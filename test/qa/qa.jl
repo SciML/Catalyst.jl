@@ -22,32 +22,45 @@ const EI_ALLOW_UNANALYZABLE = (Catalyst, Catalyst.PhysicalScale)
 # compile-time `@static` choice that matches the JET-load gate above.
 const JET_BROKEN = VERSION >= v"1.12-"
 
-function public_name_owner(name)
-    binding = try
-        getfield(Catalyst, name)
-    catch
-        return nothing
-    end
-    return try
-        parentmodule(binding)
-    catch
-        binding isa Module ? binding : nothing
-    end
-end
-
-const DEPENDENCY_OWNED_PUBLIC_NAMES = Tuple(
-    name for name in sort!(collect(public_api_names(Catalyst)); by = string)
-        if public_name_owner(name) !== Catalyst
+# Legacy Catalyst releases expose this compatibility facade through
+# `@reexport using ModelingToolkitBase` and direct imports from its owner packages.
+# Keep the exact approved surface version-controlled: changing it is a public-API
+# decision, not a consequence of a dependency adding a new public binding.
+const LEGACY_DEPENDENCY_REEXPORTS = (
+    Symbol("@acrule"), Symbol("@arrayop"), Symbol("@brownian"), Symbol("@brownians"), Symbol("@component"), Symbol("@connector"), Symbol("@constants"), Symbol("@derivative_rule"), Symbol("@derivatives"), Symbol("@discretes"), Symbol("@independent_variables"), Symbol("@makearray"),
+    Symbol("@mtkbuild"), Symbol("@mtkcompile"), Symbol("@mtkcomplete"), Symbol("@named"), Symbol("@namespace"), Symbol("@nonamespace"), Symbol("@pack!"), Symbol("@parameters"), Symbol("@poissonians"), Symbol("@register_array_symbolic"), Symbol("@register_derivative"), Symbol("@register_discontinuity"),
+    Symbol("@register_inverse"), Symbol("@register_symbolic"), Symbol("@rule"), Symbol("@symbolic_wrap"), Symbol("@syms"), Symbol("@symstruct"), Symbol("@unpack"), Symbol("@variables"), Symbol("@wrapped"), :AbstractCollocation, :AbstractDynamicOptProblem, :AbstractNonlinearProblem,
+    :AnalysisPoint, :AssignmentAffect, :BS, :BipartiteGraph, :CartesianGrid, :CartesianGridRej, :CasADiCollocation, :CasADiDynamicOptProblem, :Clock, :CompilerOptions, :Connection, :Differential,
+    :DiscreteFunction, :DiscreteProblem, :DiscreteSystem, :DynamicOptSolution, :Equation, :EvalAt, :Flow, :Girsanov_transform, :GlobalScope, :Hold, :HomotopyContinuationProblem, :IRStructure,
+    :ImplicitDiscreteFunction, :ImplicitDiscreteProblem, :ImplicitDiscreteSystem, :Inequality, :InfiniteOptCollocation, :InfiniteOptDynamicOptProblem, :Initial, :InitializationProblem, :Integral, :IntervalNonlinearFunction, :IntervalNonlinearProblem, :JuMPCollocation,
+    :JuMPDynamicOptProblem, :JumpProblem, :JumpSystem, :LocalScope, :MTKParameters, :MiscSystemData, :MissingGuessValue, :ModelingToolkitBase, :NonlinearFunction, :NonlinearProblem, :NonlinearSystem, :Num,
+    :ODEFunction, :ODEProblem, :ODESystem, :OptimizationProblem, :OptimizationSystem, :PDESystem, :ParentScope, :Pre, :PyomoCollocation, :PyomoDynamicOptProblem, :Rewriters, :RuleSet,
+    :SDEFunction, :SDEProblem, :SDESystem, :SafeReal, :Sample, :SampleTime, :Shift, :ShiftIndex, :SolverStepClock, :SteadyStateProblem, :Stream, :SymReal,
+    :SymScope, :SymStruct, :SymbolicLinearODE, :SymbolicMassActionJump, :SymbolicUtils, :Symbolics, :SymbolicsSparsityDetector, :System, :Term, :TimeDomain, :TreeReal, :UnPack,
+    :add_accumulations, :alg_equations, :analytically_integrated, :approximation_function, :arguments, :asdigraph, :asgraph, :bindings, :bound_parameters, :brownians, :build_function, :calculate_control_jacobian,
+    :calculate_cost_gradient, :calculate_cost_hessian, :calculate_hessian, :calculate_jacobian, :calculate_massmatrix, :calculate_tgrad, :change_independent_variable, :change_of_variables, :complete, :compose, :connect, :constraints,
+    :continuous_events, :convert_system_indepvar, :cost, :debug_system, :diff_equations, :discrete_events, :domain_connect, :eqeq_dependencies, :equation_dependencies, :equations, :expand, :expand_connections,
+    :expand_derivatives, :extend, :factors, :flatten, :flatten_fractions, :fractional_to_ordinary, :full_equations, :gather_factor, :generate_W, :generate_control_jacobian, :generate_cost, :generate_cost_gradient,
+    :generate_cost_hessian, :generate_custom_function, :generate_diffusion_function, :generate_initializesystem, :generate_jacobian, :generate_rhs, :generate_tgrad, :get_alg_eqs, :get_canonical_expr, :get_diff_eqs, :get_reachability, :get_variables,
+    :getbounds, :getconnect, :getdist, :getguess, :getmetadata, :getnominal, :getunit, :groebner_basis, :guesses, :has_alg_eqs, :has_alg_equations, :has_diff_eqs,
+    :has_diff_equations, :has_inverse, :has_left_inverse, :has_right_inverse, :hasbounds, :hasconnect, :hasdist, :hasguess, :hasmetadata, :hasnominal, :hasunit, :hierarchy,
+    :homotopy, :ifelse_branching, :ifelse_eager, :independent_variable, :independent_variables, :infimum, :initial_conditions, :initialization_equations, :instream, :inverse, :irreducibles, :is_derivative,
+    :is_groebner_basis, :iscall, :isdisturbance, :isinitial, :isinput, :isirreducible, :isoutput, :istree, :istunable, :jumps, :left_continuous_function, :left_inverse,
+    :limit, :linear_fractional_to_ordinary, :liouville_transform, :majorization_function, :maybe_zeros, :minorization_function, :modelingtoolkitize, :mtkcompile, :noise_to_brownians, :observables, :observed, :open_loop,
+    :operation, :parameters, :parse_expr_to_symbolic, :polynomial_coeffs, :populate_ir!, :print_ir, :quick_cancel, :reorder_dimension_by_tunables, :reorder_dimension_by_tunables!, :respecialize, :right_continuous_function, :right_inverse,
+    :rootfunction, :semilinear_form, :semipolynomial_form, :semiquadratic_form, :series, :set_defaults, :setmetadata, :setnominal, :simplify, :simplify_fractions, :solve, :solve_for,
+    :solve_linear_ode_system, :solve_symbolic_IVP, :sorted_arguments, :state_priorities, :state_priority, :stochastic_integral_transform, :structural_simplify, :subset_tunables, :substitute, :substitute_in_deriv, :substitute_in_deriv_and_depvar, :supremum,
+    :symbolic_linear_solve, :symbolic_solve, :symbolic_solve_ode, :symbolics_to_sympy, :symbolics_to_sympy_pythoncall, :sympy_algebraic_solve, :sympy_integrate, :sympy_limit, :sympy_linear_solve, :sympy_ode_solve, :sympy_pythoncall_algebraic_solve, :sympy_pythoncall_integrate,
+    :sympy_pythoncall_limit, :sympy_pythoncall_linear_solve, :sympy_pythoncall_ode_solve, :sympy_pythoncall_simplify, :sympy_pythoncall_to_symbolics, :sympy_simplify, :sympy_to_symbolics, :taylor, :taylor_coeff, :term, :terms, :toexpr,
+    :toggle_namespacing, :tosymbol, :tunable_parameters, :unknowns, :unwrap_const, :variable_dependencies, :vartype, :varvar_dependencies, :≲, :≳,
 )
 
 run_qa(
     Catalyst;
-    explicit_imports = true,
-    reexports_allow = DEPENDENCY_OWNED_PUBLIC_NAMES,
+    reexports_allow = LEGACY_DEPENDENCY_REEXPORTS,
     api_docs_kwargs = (;
-        rendered = true,
-        ignore = DEPENDENCY_OWNED_PUBLIC_NAMES,
-        rendered_ignore = DEPENDENCY_OWNED_PUBLIC_NAMES,
+        ignore = LEGACY_DEPENDENCY_REEXPORTS,
+        rendered_ignore = LEGACY_DEPENDENCY_REEXPORTS,
     ),
     # Test-only [extras] in the root Project.toml intentionally carry no [compat]
     # entries (they are pinned via the resolver, not declared bounds).
