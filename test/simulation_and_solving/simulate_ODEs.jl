@@ -2,6 +2,7 @@
 
 # Fetch packages.
 using Catalyst, OrdinaryDiffEq, Test
+using SciMLBase
 
 # Sets stable rng number.
 using StableRNGs
