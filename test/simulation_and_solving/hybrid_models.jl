@@ -1295,7 +1295,8 @@ let
     λ_val = 3.0
     σ_val = 1.0
     T = 10.0
-    n_trials = 500
+    # Brownian trajectories use the task RNG, so use enough samples to stabilize their variance.
+    n_trials = 1500
 
     # Create problem once; the RNG state advances across solves.
     prob = HybridProblem(rn, [:X => 0.0], (0.0, T),
