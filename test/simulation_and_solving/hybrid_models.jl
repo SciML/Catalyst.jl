@@ -971,8 +971,12 @@ let
     Pf(t) = k1 / k2 + (P0 - k1 / k2) * exp(-k2 * t)
     Pact = [Pf(t) for t in times]
 
-    # Skip t=0 where Pact=0 (would give division issues in relative tolerance)
-    @test all(abs.(Pv[2:end] .- Pact[2:end]) .<= 0.05 .* Pact[2:end])
+    # Skip the early transient (t < 2 ≈ one settling time, τ = 1/k2 = 2) where the
+    # analytic mean is small and the relative-tolerance band is correspondingly tiny,
+    # making the Monte Carlo estimate statistically unstable. This matches the
+    # `findfirst(t -> t >= 2.0, times)` convention used by the multi-species test below.
+    start_idx = findfirst(t -> t >= 2.0, times)
+    @test all(abs.(Pv[start_idx:end] .- Pact[start_idx:end]) .<= 0.05 .* Pact[start_idx:end])
 end
 
 # Mathematical correctness test: Complex non-linear multi-species system.
@@ -1295,7 +1299,12 @@ let
     λ_val = 3.0
     σ_val = 1.0
     T = 10.0
-    n_trials = 500
+    # The Brownian noise process draws from the task RNG (not the jump `rng` above), so the
+    # σ²*T contribution to the variance is not seeded and the sample-variance estimator is
+    # genuinely noisy. At N=500 its relative std is ~7%, so a 15% rtol is only ~2σ and the
+    # check fails intermittently (~7% of runs). N=1500 drops the relative std to ~3%, making
+    # the 15% band a robust ~5σ margin without touching the (mathematically motivated) rtol.
+    n_trials = 1500
 
     # Create problem once; the RNG state advances across solves.
     prob = HybridProblem(rn, [:X => 0.0], (0.0, T),
