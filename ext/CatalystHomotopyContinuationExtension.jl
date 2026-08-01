@@ -6,7 +6,8 @@ using Catalyst: Catalyst, ReactionSystem, conservationlaw_constants, conservedeq
 using ModelingToolkitBase: ModelingToolkitBase, complete, equations, get_iv, parameters,
     unknowns, @parameters
 using SciMLBase: NonlinearProblem
-using SymbolicUtils: Rewriters, simplify_fractions, substitute, unwrap, unwrap_const
+using SymbolicUtils: SymbolicUtils, Rewriters, simplify_fractions, substitute, unwrap,
+    unwrap_const
 using Symbolics: Symbolics, SymbolicT, iscall, wrap, @variables
 using TermInterface: arguments, maketerm, metadata, operation, sorted_arguments
 import DiffEqBase
