@@ -37,7 +37,7 @@ function dspace_animation(
         node_attr = (colorrange = (plot_min, plot_max), colormap), node_size, axis_kwarg..., kwargs...)
 
     # Creates the animation.
-    GraphMakie.record(fig, filename, 1:1:nframes; framerate) do i
+    record(fig, filename, 1:1:nframes; framerate) do i
         frame[] = i
     end
     return nothing

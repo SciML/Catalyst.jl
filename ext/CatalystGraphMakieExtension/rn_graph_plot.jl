@@ -144,7 +144,7 @@ end
 # For regular species X(t), returns "X". For array species S(t)[1], returns "S[1]".
 function species_label(s)
     name = string(getname(s))
-    args = sorted_arguments(Symbolics.unwrap(s))
+    args = sorted_arguments(unwrap(s))
     if length(args) <= 1
         return name
     else

@@ -1,15 +1,18 @@
 module CatalystHomotopyContinuationExtension
 
 # Fetch packages.
-using Catalyst
+using Catalyst: Catalyst, ReactionSystem, conservationlaw_constants, conservedequations,
+    isautonomous, ss_ode_model
+using ModelingToolkitBase: ModelingToolkitBase, complete, equations, get_iv, parameters,
+    unknowns, @parameters
+using SciMLBase: NonlinearProblem
+using SymbolicUtils: Rewriters, simplify_fractions, substitute, unwrap, unwrap_const
+using Symbolics: Symbolics, SymbolicT, iscall, wrap, @variables
+using TermInterface: arguments, maketerm, metadata, operation, sorted_arguments
 import DiffEqBase
 import DynamicPolynomials
 import ModelingToolkitBase as MT
 import HomotopyContinuation as HC
-import Setfield: @set
-import Symbolics: unwrap, wrap, Rewriters, symtype, issym, maketerm, metadata
-using Symbolics: iscall, SymbolicT, @variables
-using ModelingToolkitBase: @parameters
 using DataStructures: OrderedSet
 
 # Workaround for Julia 1.10 precompilation bug (related to ModelingToolkit.jl#4211).
