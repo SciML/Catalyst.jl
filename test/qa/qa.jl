@@ -1,5 +1,13 @@
 using SciMLTesting, Catalyst, Test
 
+# ExplicitImports only checks an extension module once it exists, and an extension module
+# only exists once every one of its trigger weakdeps has been loaded. Without these
+# `using`s `Base.get_extension` returns `nothing` for all of them and QA scans no
+# extension code at all. Every Catalyst weakdep is loadable here, so all five extensions
+# are covered.
+using BifurcationKit, CairoMakie, DynamicPolynomials, GraphMakie, HomotopyContinuation,
+    Makie, NetworkLayout, StructuralIdentifiability, TermInterface
+
 # JET is a SciMLTesting weak dependency: `using JET` registers it and turns the JET
 # check on. JET 0.11 crashes (UndefRefError in `collect_callee_reports!`) when run
 # under the Julia 1.13 prerelease `Compiler.jl`, so only load it on the Julia versions
@@ -54,6 +62,20 @@ const LEGACY_DEPENDENCY_REEXPORTS = (
     :sympy_pythoncall_limit, :sympy_pythoncall_linear_solve, :sympy_pythoncall_ode_solve, :sympy_pythoncall_simplify, :sympy_pythoncall_to_symbolics, :sympy_simplify, :sympy_to_symbolics, :taylor, :taylor_coeff, :term, :terms, :toexpr,
     :toggle_namespacing, :tosymbol, :tunable_parameters, :unknowns, :unwrap_const, :variable_dependencies, :vartype, :varvar_dependencies, :≲, :≳,
 )
+
+# ExplicitImports silently skips an extension that fails to load, so assert the
+# extension modules actually exist rather than trusting a green `run_qa`.
+@testset "Extensions loaded" begin
+    for ext in (
+            :CatalystBifurcationKitExtension,
+            :CatalystCairoMakieExtension,
+            :CatalystGraphMakieExtension,
+            :CatalystHomotopyContinuationExtension,
+            :CatalystStructuralIdentifiabilityExtension,
+        )
+        @test Base.get_extension(Catalyst, ext) !== nothing
+    end
+end
 
 run_qa(
     Catalyst;

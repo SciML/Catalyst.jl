@@ -1,7 +1,12 @@
 module CatalystStructuralIdentifiabilityExtension
 
 # Fetch packages.
-using Catalyst
+using Catalyst: Catalyst, ReactionSystem, conservationlaw_constants, conservedequations,
+    ode_model
+using ModelingToolkitBase: ModelingToolkitBase, System, complete, flatten, parameters,
+    unknowns
+using SymbolicUtils: substitute
+using Symbolics: Equation, @variables
 import DataStructures.OrderedDict
 import StructuralIdentifiability as SI
 
