@@ -36,8 +36,16 @@ const JET_BROKEN = VERSION >= v"1.12-"
 # exposing something that reexport does not account for.
 const MTKBASE = Catalyst.ModelingToolkitBase
 
+# `Base.ispublic` is 1.11+. On the lts lane there is no `public` keyword, so exported
+# and public coincide.
+@static if isdefined(Base, :ispublic)
+    _ispublic(mod, name) = Base.ispublic(mod, name)
+else
+    _ispublic(mod, name) = Base.isexported(mod, name)
+end
+
 function _from_mtkbase(name)
-    Base.ispublic(MTKBASE, name) || return false
+    _ispublic(MTKBASE, name) || return false
     isdefined(MTKBASE, name) || return false
     return try
         getfield(MTKBASE, name) === getfield(Catalyst, name)
