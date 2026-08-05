@@ -121,7 +121,7 @@ function test_edgeorder(rn)
 
     img, rxorder = CGME.ComplexGraphWrap(rn)
 
-    # Label iteration order is given by edgelist[rxorder]. Actual edge drawing iteration order is given by edges(g)
+    # Label iteration order is given by edgelist[rxorder]. Actual edge drawing iteration order is given by edges(g).
     @test edgelist[rxorder] == Graphs.edges(img)
     return rxorder
 end
