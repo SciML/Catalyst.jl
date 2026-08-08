@@ -2,7 +2,6 @@
 
 # Fetch packages.
 using Catalyst, JumpProcesses, OrdinaryDiffEq, StochasticDiffEq, Statistics, Test
-using Symbolics: unwrap
 import SymbolicIndexingInterface as SII
 
 # Mock integrator type for testing generated VRJ affect functions.
@@ -218,7 +217,7 @@ let
     rs = @reaction_network begin
         @parameters k
         @variables V(t)
-        k, X --> V*Y
+        k, X --> V * Y
     end
 
     # The jump System should have explicit affects (no equations after mtkcompile)
@@ -231,11 +230,8 @@ let
     @test occursin("Pre(V(t))", affect_str)
 
     # Verify it creates an explicit affect (empty equations after mtkcompile)
-    iv = unwrap(t)
-    aff = ModelingToolkitBase.AffectSystem(js[1].affect!; iv)
-    affsys = ModelingToolkitBase.system(aff)
-    eqs = ModelingToolkitBase.equations(ModelingToolkitBase.unhack_system(affsys))
-    @test isempty(eqs)  # Should be explicit, not implicit
+    compiled_jsys = ModelingToolkitBase.mtkcompile(jsys)
+    @test isempty(ModelingToolkitBase.equations(compiled_jsys))
 end
 
 # Tests symbolic stoichiometries in simulations.

@@ -1,9 +1,9 @@
 ### Reaction Complex Handling ###
 
-# Checks if a reaction has integer stoichiometry. Used to detect and error on 
+# Checks if a reaction has integer stoichiometry. Used to detect and error on
 # non-integer stoichiometry in network analysis functions.
 function has_integer_stoichiometry(rx::Reaction)
-    (eltype(rx.substoich) <: Integer) && (eltype(rx.prodstoich) <: Integer)
+    return (eltype(rx.substoich) <: Integer) && (eltype(rx.prodstoich) <: Integer)
 end
 
 # Helper function to check all reactions for integer stoichiometry and throw an informative error.
@@ -12,13 +12,15 @@ function check_integer_stoichiometry(rn::ReactionSystem)
     nonint_rxs = filter(!has_integer_stoichiometry, rxs)
     if !isempty(nonint_rxs)
         rx_strs = ["  $rx" for rx in nonint_rxs]
-        error("Network analysis functions require integer stoichiometric coefficients, " *
-              "but the following reaction(s) have non-integer stoichiometry:\n" *
-              join(rx_strs, "\n") *
-              "\n\nNon-integer stoichiometry is not currently supported for " *
-              "network analysis functions.")
+        error(
+            "Network analysis functions require integer stoichiometric coefficients, " *
+                "but the following reaction(s) have non-integer stoichiometry:\n" *
+                join(rx_strs, "\n") *
+                "\n\nNon-integer stoichiometry is not currently supported for " *
+                "network analysis functions."
+        )
     end
-    nothing
+    return nothing
 end
 
 # get the species indices and stoichiometry while filtering out constant species.
@@ -38,7 +40,7 @@ function filter_constspecs(specs, stoich::AbstractVector{V}, smap) where {V <: I
         ids = map(Base.Fix1(getindex, smap), specs)
         filtered_stoich = copy(stoich)
     end
-    ids, filtered_stoich
+    return ids, filtered_stoich
 end
 
 """
@@ -89,7 +91,7 @@ function reactioncomplexmap(rn::ReactionSystem)
             complextorxsmap[prodrc] = [i => 1]
         end
     end
-    complextorxsmap
+    return complextorxsmap
 end
 
 @doc raw"""
@@ -121,17 +123,19 @@ function reactioncomplexes(rn::ReactionSystem; sparse = false)
     if isempty(nps.complexes) || (sparse != issparse(nps.complexes))
         complextorxsmap = reactioncomplexmap(rn)
         nps.complexes,
-        nps.incidencemat = if sparse
+            nps.incidencemat = if sparse
             reactioncomplexes(SparseMatrixCSC{Int, Int}, rn, complextorxsmap)
         else
             reactioncomplexes(Matrix{Int}, rn, complextorxsmap)
         end
     end
-    nps.complexes, nps.incidencemat
+    return nps.complexes, nps.incidencemat
 end
 
-function reactioncomplexes(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem,
-        complextorxsmap)
+function reactioncomplexes(
+        ::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem,
+        complextorxsmap
+    )
     complexes = collect(keys(complextorxsmap))
     Is = Int[]
     Js = Int[]
@@ -144,7 +148,7 @@ function reactioncomplexes(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem
         end
     end
     B = sparse(Is, Js, Vs, length(complexes), numreactions(rn))
-    complexes, B
+    return complexes, B
 end
 
 function reactioncomplexes(::Type{Matrix{Int}}, rn::ReactionSystem, complextorxsmap)
@@ -155,7 +159,7 @@ function reactioncomplexes(::Type{Matrix{Int}}, rn::ReactionSystem, complextorxs
             B[i, j] = σ
         end
     end
-    complexes, B
+    return complexes, B
 end
 
 """
@@ -190,7 +194,7 @@ function complexstoichmat(rn::ReactionSystem; sparse = false)
             complexstoichmat(Matrix{Int}, rn, keys(reactioncomplexmap(rn)))
         end
     end
-    nps.complexstoichmat
+    return nps.complexstoichmat
 end
 
 function complexstoichmat(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem, rcs)
@@ -204,7 +208,7 @@ function complexstoichmat(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem,
             push!(Vs, rcel.speciesstoich)
         end
     end
-    Z = sparse(Is, Js, Vs, numspecies(rn), length(rcs))
+    return Z = sparse(Is, Js, Vs, numspecies(rn), length(rcs))
 end
 
 function complexstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem, rcs)
@@ -214,7 +218,7 @@ function complexstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem, rcs)
             Z[rcel.speciesid, i] = rcel.speciesstoich
         end
     end
-    Z
+    return Z
 end
 
 @doc raw"""
@@ -229,7 +233,7 @@ Returns a symbolic matrix by default, but will return a numerical matrix if para
 function laplacianmat(rn::ReactionSystem, pmap::Dict = Dict(); sparse = false)
     D = incidencemat(rn; sparse)
     K = fluxmat(rn, pmap; sparse)
-    D * K
+    return D * K
 end
 
 @doc raw"""
@@ -277,7 +281,7 @@ function fluxmat(::Type{SparseMatrixCSC{T, Int}}, rcmap, rates) where {T}
             end
         end
     end
-    Z = sparse(Is, Js, Vs, length(rates), length(rcmap))
+    return Z = sparse(Is, Js, Vs, length(rates), length(rcmap))
 end
 
 function fluxmat(::Type{Matrix{T}}, rcmap, rates) where {T}
@@ -289,17 +293,17 @@ function fluxmat(::Type{Matrix{T}}, rcmap, rates) where {T}
             dir == -1 && (K[rx, i] = rates[rx])
         end
     end
-    K
+    return K
 end
 
 function fluxmat(rn::ReactionSystem, pmap::Vector)
     pdict = Dict(pmap)
-    fluxmat(rn, pdict)
+    return fluxmat(rn, pdict)
 end
 
 function fluxmat(rn::ReactionSystem, pmap::Tuple)
     pdict = Dict(pmap)
-    fluxmat(rn, pdict)
+    return fluxmat(rn, pdict)
 end
 
 # Helper to substitute values into a (vector of) symbolic expressions. The syms are the symbols to substitute and the symexprs are the expressions to substitute into.
@@ -308,7 +312,7 @@ function substitutevals(rn::ReactionSystem, map::Dict, syms, symexprs)
         error("Incorrect number of parameter-value pairs were specified.")
     map = symmap_to_varmap(rn, map)
     map = Dict(value(k) => v for (k, v) in map)
-    vals = [value(substitute(expr, map)) for expr in symexprs]
+    return vals = [value(substitute(expr, map)) for expr in symexprs]
 end
 
 """
@@ -322,8 +326,10 @@ If the `combinatoric_ratelaws` option is set, will include prefactors for that (
 
 **Warning**: Unlike other Catalyst functions, the `massactionvector` function will return a `Vector{Num}` in the symbolic case. This is to allow easier computation of the matrix decomposition of the ODEs.
 """
-function massactionvector(rn::ReactionSystem, scmap::Dict = Dict();
-        combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn))
+function massactionvector(
+        rn::ReactionSystem, scmap::Dict = Dict();
+        combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn)
+    )
     r = numreactions(rn)
     rxs = reactions(rn)
     sm = speciesmap(rn)
@@ -354,19 +360,23 @@ function massactionvector(rn::ReactionSystem, scmap::Dict = Dict();
         push!(Φ, maprod)
     end
 
-    Φ
+    return Φ
 end
 
-function massactionvector(rn::ReactionSystem, scmap::Tuple;
-        combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn))
+function massactionvector(
+        rn::ReactionSystem, scmap::Tuple;
+        combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn)
+    )
     sdict = Dict(scmap)
-    massactionvector(rn, sdict; combinatoric_ratelaws)
+    return massactionvector(rn, sdict; combinatoric_ratelaws)
 end
 
-function massactionvector(rn::ReactionSystem, scmap::Vector;
-        combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn))
+function massactionvector(
+        rn::ReactionSystem, scmap::Vector;
+        combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rn)
+    )
     sdict = Dict(scmap)
-    massactionvector(rn, sdict; combinatoric_ratelaws)
+    return massactionvector(rn, sdict; combinatoric_ratelaws)
 end
 
 @doc raw"""
@@ -398,7 +408,7 @@ function complexoutgoingmat(rn::ReactionSystem; sparse = false)
             complexoutgoingmat(Matrix{Int}, rn, B)
         end
     end
-    nps.complexoutgoingmat
+    return nps.complexoutgoingmat
 end
 
 function complexoutgoingmat(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem, B)
@@ -420,7 +430,7 @@ function complexoutgoingmat(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSyste
             end
         end
     end
-    sparse(Is, Js, Vs, size(B, 1), size(B, 2))
+    return sparse(Is, Js, Vs, size(B, 1), size(B, 2))
 end
 
 function complexoutgoingmat(::Type{Matrix{Int}}, rn::ReactionSystem, B)
@@ -428,7 +438,7 @@ function complexoutgoingmat(::Type{Matrix{Int}}, rn::ReactionSystem, B)
     for (I, b) in pairs(Δ)
         (b == 1) && (Δ[I] = 0)
     end
-    Δ
+    return Δ
 end
 
 """
@@ -452,7 +462,7 @@ function incidencematgraph(rn::ReactionSystem)
         isempty(nps.incidencemat) && reactioncomplexes(rn)
         nps.incidencegraph = incidencematgraph(nps.incidencemat)
     end
-    nps.incidencegraph
+    return nps.incidencegraph
 end
 
 function incidencematgraph(incidencemat::Matrix{Int})
@@ -519,13 +529,13 @@ function species_reaction_graph(rn::ReactionSystem)
     edgelist = Graphs.Edge[]
     for (i, rx) in enumerate(rxs)
         for spec in rx.substrates
-            push!(edgelist, Graphs.Edge(sm[spec], s+i))
+            push!(edgelist, Graphs.Edge(sm[spec], s + i))
         end
         for spec in rx.products
-            push!(edgelist, Graphs.Edge(s+i, sm[spec]))
+            push!(edgelist, Graphs.Edge(s + i, sm[spec]))
         end
     end
-    srg = Graphs.SimpleDiGraphFromIterator(edgelist)
+    return srg = Graphs.SimpleDiGraphFromIterator(edgelist)
 end
 
 ### Linkage, Deficiency, Reversibility ###
@@ -557,7 +567,7 @@ function linkageclasses(rn::ReactionSystem)
     if isempty(nps.linkageclasses)
         nps.linkageclasses = linkageclasses(incidencematgraph(rn))
     end
-    nps.linkageclasses
+    return nps.linkageclasses
 end
 
 linkageclasses(incidencegraph) = Graphs.connected_components(incidencegraph)
@@ -565,15 +575,28 @@ linkageclasses(incidencegraph) = Graphs.connected_components(incidencegraph)
 """
     stronglinkageclasses(rn::ReactionSystem)
 
-    Return the strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes such that every complex is reachable from every other one in the sub-group).
-"""
+Return the strongly connected components of a reaction network's incidence
+graph.
 
+Each returned vector contains the indices of reaction complexes for which every
+complex in the component is reachable from every other complex in that
+component.
+
+# Examples
+```julia
+rn = @reaction_network begin
+    (k1, k2), A <--> B
+    k3, B --> C
+end
+stronglinkageclasses(rn)
+```
+"""
 function stronglinkageclasses(rn::ReactionSystem)
     nps = get_networkproperties(rn)
     if isempty(nps.stronglinkageclasses)
         nps.stronglinkageclasses = stronglinkageclasses(incidencematgraph(rn))
     end
-    nps.stronglinkageclasses
+    return nps.stronglinkageclasses
 end
 
 stronglinkageclasses(incidencegraph) = Graphs.strongly_connected_components(incidencegraph)
@@ -581,9 +604,20 @@ stronglinkageclasses(incidencegraph) = Graphs.strongly_connected_components(inci
 """
     terminallinkageclasses(rn::ReactionSystem)
 
-    Return the terminal strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes that are 1) strongly connected and 2) every outgoing reaction from a complex in the component produces a complex also in the component).
-"""
+Return the terminal strong linkage classes of a reaction network.
 
+A terminal linkage class is strongly connected and has no outgoing reaction to a
+complex outside the class.
+
+# Examples
+```julia
+rn = @reaction_network begin
+    (k1, k2), A <--> B
+    k3, B --> C
+end
+terminallinkageclasses(rn)
+```
+"""
 function terminallinkageclasses(rn::ReactionSystem)
     nps = get_networkproperties(rn)
     if isempty(nps.terminallinkageclasses)
@@ -591,7 +625,7 @@ function terminallinkageclasses(rn::ReactionSystem)
         tslcs = filter(lc -> isterminal(lc, rn), slcs)
         nps.terminallinkageclasses = tslcs
     end
-    nps.terminallinkageclasses
+    return nps.terminallinkageclasses
 end
 
 # Helper function for terminallinkageclasses. Given a linkage class and a reaction network, say whether the linkage class is terminal,
@@ -609,7 +643,7 @@ function isterminal(lc::Vector, rn::ReactionSystem)
             p in Set(lc) ? continue : return false
         end
     end
-    true
+    return true
 end
 
 function isforestlike(rn::ReactionSystem)
@@ -622,7 +656,7 @@ function isforestlike(rn::ReactionSystem)
         nps = get_networkproperties(subnet)
         isempty(nps.incidencemat) && reactioncomplexes(subnet; sparse = sparseig)
     end
-    all(Graphs.is_tree ∘ SimpleGraph ∘ incidencematgraph, subnets)
+    return all(Graphs.is_tree ∘ SimpleGraph ∘ incidencematgraph, subnets)
 end
 
 @doc raw"""
@@ -657,13 +691,19 @@ function deficiency(rn::ReactionSystem)
         r = nps.rank
         nps.deficiency = Graphs.nv(ig) - length(lc) - r
     end
-    nps.deficiency
+    return nps.deficiency
 end
 
 # Used in the subsequent function.
 function subnetworkmapping(linkageclass, allrxs, complextorxsmap, p)
-    rxinds = sort!(collect(Set(rxidx for rcidx in linkageclass
-    for rxidx in complextorxsmap[rcidx])))
+    rxinds = sort!(
+        collect(
+            Set(
+                rxidx for rcidx in linkageclass
+                    for rxidx in complextorxsmap[rcidx]
+            )
+        )
+    )
     rxs = allrxs[rxinds]
     specset = Set(s for rx in rxs for s in rx.substrates if !isconstant(s))
     for rx in rxs
@@ -677,7 +717,7 @@ function subnetworkmapping(linkageclass, allrxs, complextorxsmap, p)
         Symbolics.get_variables!(newps, rx.rate, p)
     end
     newps_vec = collect(newps)
-    rxs, specs, newps_vec   # reactions and species involved in reactions of subnetwork
+    return rxs, specs, newps_vec   # reactions and species involved in reactions of subnetwork
 end
 
 """
@@ -706,10 +746,12 @@ function subnetworks(rs::ReactionSystem)
     for i in 1:length(lcs)
         reacs, specs, newps = subnetworkmapping(lcs[i], rxs, complextorxsmap, p)
         newname = Symbol(nameof(rs), "_", i)
-        push!(subnetworks,
-            ReactionSystem(reacs, t, specs, newps; name = newname, spatial_ivs))
+        push!(
+            subnetworks,
+            ReactionSystem(reacs, t, specs, newps; name = newname, spatial_ivs)
+        )
     end
-    subnetworks
+    return subnetworks
 end
 
 """
@@ -735,7 +777,7 @@ function linkagedeficiencies(rs::ReactionSystem)
         nps = get_networkproperties(subnet)
         δ[i] = length(lcs[i]) - 1 - nps.rank
     end
-    δ
+    return δ
 end
 
 """
@@ -754,7 +796,7 @@ isreversible(sir)
 """
 function isreversible(rn::ReactionSystem)
     ig = incidencematgraph(rn)
-    Graphs.reverse(ig) == ig
+    return Graphs.reverse(ig) == ig
 end
 
 """
@@ -783,7 +825,7 @@ function isweaklyreversible(rn::ReactionSystem, subnets)
     end
 
     # A network is weakly reversible if all of its subnetworks are strongly connected
-    all(Graphs.is_strongly_connected ∘ incidencematgraph, subnets)
+    return all(Graphs.is_strongly_connected ∘ incidencematgraph, subnets)
 end
 
 ### Conservation Laws ###
@@ -803,7 +845,7 @@ function isconserved(x, default = false)
     if iscall(x) && operation(x) === getindex
         x = first(arguments(x))
     end
-    Symbolics.getmetadata(x, ConservedParameter, default)
+    return Symbolics.getmetadata(x, ConservedParameter, default)
 end
 
 """
@@ -833,7 +875,7 @@ gives
 function conservedequations(rn::ReactionSystem)
     conservationlaws(rn)
     nps = get_networkproperties(rn)
-    nps.conservedeqs
+    return nps.conservedeqs
 end
 
 """
@@ -863,7 +905,7 @@ gives
 function conservationlaw_constants(rn::ReactionSystem)
     conservationlaws(rn)
     nps = get_networkproperties(rn)
-    nps.constantdefs
+    return nps.constantdefs
 end
 
 """
@@ -874,7 +916,7 @@ conservation laws, each represented as a row in the output.
 """
 function conservationlaws(nsm::Matrix; col_order = nothing)
     conslaws = positive_nullspace(nsm'; col_order = col_order)
-    Matrix(conslaws)
+    return Matrix(conslaws)
 end
 
 # Used in the subsequent function.
@@ -891,13 +933,13 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     rhs_terms = Vector{SymbolicT}(undef, nullity)
     for (i, depidx) in enumerate(depidxs)
         scaleby = (N[i, depidx] != 1) ? N[i, depidx] : one(eltype(N))
-        (scaleby != 0) || 
+        (scaleby != 0) ||
             error("Error, found a zero in the conservation law matrix where one was not expected.")
         coefs = @view N[i, indepidxs]
         rhs_terms[i] = sum(p -> p[1] / scaleby * p[2], zip(coefs, indepspecs))
     end
 
-    # Declare the conservation constant parameters 
+    # Declare the conservation constant parameters
     #`using guesses is for consistency and possibly faster initialisation
     guesses = [Initial(depspecs[i] + rhs_terms[i]) for i in 1:nullity]
     Γs = @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] = missing [conserved = true, guess = guesses]
@@ -917,7 +959,7 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     nps.constantdefs = constantdefs
     nps.conservedconst = constants
 
-    nothing
+    return nothing
 end
 
 """
@@ -936,7 +978,7 @@ function conservationlaws(rs::ReactionSystem)
     nsm = netstoichmat(rs)
     nps.conservationmat = conservationlaws(nsm; col_order = nps.col_order)
     cache_conservationlaw_eqs!(rs, nps.conservationmat, nps.col_order)
-    nps.conservationmat
+    return nps.conservationmat
 end
 
 """
@@ -988,7 +1030,7 @@ end
 Constructively compute whether a kinetic system (a reaction network with a set of rate constants) will admit detailed-balanced equilibrium
 solutions, using the Wegscheider conditions, [Feinberg, 1989](https://www.sciencedirect.com/science/article/pii/0009250989851243). A detailed-balanced solution is one for which the rate of every forward reaction exactly equals its reverse reaction. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...].
 """
-function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 0, reltol = 1e-9)
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 0, reltol = 1.0e-9)
     if length(parametermap) != numparams(rs)
         error("Incorrect number of parameters specified.")
     elseif !isreversible(rs)
@@ -1032,10 +1074,18 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict; abstol = 0, 
 
         for i in 1:size(sols, 2)
             α = sols[:, i]
-            fwd = prod([K[Graphs.src(e), Graphs.dst(e)]^α[i]
-                        for (e, i) in zip(spanning_forest, 1:length(α))])
-            rev = prod([K[Graphs.dst(e), Graphs.src(e)]^α[i]
-                        for (e, i) in zip(spanning_forest, 1:length(α))])
+            fwd = prod(
+                [
+                    K[Graphs.src(e), Graphs.dst(e)]^α[i]
+                        for (e, i) in zip(spanning_forest, 1:length(α))
+                ]
+            )
+            rev = prod(
+                [
+                    K[Graphs.dst(e), Graphs.src(e)]^α[i]
+                        for (e, i) in zip(spanning_forest, 1:length(α))
+                ]
+            )
             isapprox(fwd, rev; atol = abstol, rtol = reltol) ? continue : return false
         end
     end
@@ -1053,12 +1103,12 @@ end
 
 function isdetailedbalanced(rs::ReactionSystem, parametermap::Vector{<:Pair})
     pdict = Dict(parametermap)
-    isdetailedbalanced(rs, pdict)
+    return isdetailedbalanced(rs, pdict)
 end
 
 function isdetailedbalanced(rs::ReactionSystem, parametermap::Tuple{<:Pair})
     pdict = Dict(parametermap)
-    isdetailedbalanced(rs, pdict)
+    return isdetailedbalanced(rs, pdict)
 end
 
 function isdetailedbalanced(rs::ReactionSystem, parametermap)
@@ -1102,12 +1152,12 @@ end
 
 function iscomplexbalanced(rs::ReactionSystem, parametermap::Vector{<:Pair})
     pdict = Dict(parametermap)
-    iscomplexbalanced(rs, pdict)
+    return iscomplexbalanced(rs, pdict)
 end
 
 function iscomplexbalanced(rs::ReactionSystem, parametermap::Tuple)
     pdict = Dict(parametermap)
-    iscomplexbalanced(rs, pdict)
+    return iscomplexbalanced(rs, pdict)
 end
 
 function iscomplexbalanced(rs::ReactionSystem, parametermap)
@@ -1165,7 +1215,7 @@ function adjacencymat(::Type{SparseMatrixCSC{T, Int}}, D, rates) where {T}
         push!(Js, p)
         push!(Vs, rates[r])
     end
-    A = sparse(Is, Js, Vs, nc, nc)
+    return A = sparse(Is, Js, Vs, nc, nc)
 end
 
 function adjacencymat(::Type{Matrix{T}}, D, rates) where {T}
@@ -1177,17 +1227,17 @@ function adjacencymat(::Type{Matrix{T}}, D, rates) where {T}
         p = findfirst(==(1), @view D[:, r])
         A[s, p] = rates[r]
     end
-    A
+    return A
 end
 
 function adjacencymat(rn::ReactionSystem, pmap::Vector{<:Pair}; sparse = false)
     pdict = Dict(pmap)
-    adjacencymat(rn, pdict; sparse)
+    return adjacencymat(rn, pdict; sparse)
 end
 
 function adjacencymat(rn::ReactionSystem, pmap::Tuple; sparse = false)
     pdict = Dict(pmap)
-    adjacencymat(rn, pdict; sparse)
+    return adjacencymat(rn, pdict; sparse)
 end
 
 function adjacencymat(rn::ReactionSystem, pmap)
@@ -1238,7 +1288,7 @@ function treeweight(t::SimpleDiGraph, g::SimpleDiGraph, distmx::Matrix)
         t = Graphs.dst(e)
         prod *= distmx[s, t]
     end
-    prod
+    return prod
 end
 
 """
@@ -1253,11 +1303,11 @@ function cycles(rs::ReactionSystem)
     nsm = netstoichmat(rs)
     !isempty(nps.cyclemat) && return nps.cyclemat
     nps.cyclemat = cycles(nsm; col_order = nps.col_order)
-    nps.cyclemat
+    return nps.cyclemat
 end
 
 function cycles(nsm::Matrix; col_order = nothing)
-    positive_nullspace(nsm; col_order)
+    return positive_nullspace(nsm; col_order)
 end
 
 function positive_nullspace(M::T; col_order = nothing) where {T <: AbstractMatrix}
@@ -1270,11 +1320,13 @@ function positive_nullspace(M::T; col_order = nothing) where {T <: AbstractMatri
     end
 
     # check we haven't overflowed
-    iszero(M * N) || error("Calculation of the cycle matrix was inaccurate, "
-          * "likely due to numerical overflow. Please use a larger integer "
-          * "type like Int128 or BigInt for the net stoichiometry matrix.")
+    iszero(M * N) || error(
+        "Calculation of the cycle matrix was inaccurate, "
+            * "likely due to numerical overflow. Please use a larger integer "
+            * "type like Int128 or BigInt for the net stoichiometry matrix."
+    )
 
-    T(N)
+    return T(N)
 end
 
 """
@@ -1283,7 +1335,7 @@ end
     See documentation for [`cycles`](@ref).
 """
 function fluxvectors(rs::ReactionSystem)
-    cycles(rs)
+    return cycles(rs)
 end
 
 ### Deficiency one
@@ -1307,7 +1359,7 @@ function satisfiesdeficiencyone(rn::ReactionSystem)
     #   1) the deficiency of each individual linkage class is at most 1;
     #   2) the sum of the linkage deficiencies is the total deficiency, and
     #   3) there is only one terminal linkage class per linkage class.
-    all(<=(1), δ_l) && (sum(δ_l) == δ) && (length(lcs) == length(tslcs))
+    return all(<=(1), δ_l) && (sum(δ_l) == δ) && (length(lcs) == length(tslcs))
 end
 
 """
@@ -1319,7 +1371,7 @@ function satisfiesdeficiencyzero(rn::ReactionSystem)
     all(r -> ismassaction(r, rn), reactions(rn)) ||
         error("The deficiency zero theorem is only valid for reaction networks that are mass action.")
     δ = deficiency(rn)
-    δ == 0 && isweaklyreversible(rn, subnetworks(rn))
+    return δ == 0 && isweaklyreversible(rn, subnetworks(rn))
 end
 
 """
@@ -1365,5 +1417,5 @@ function robustspecies(rn::ReactionSystem)
         nps.robustspecies = robust_species
     end
 
-    nps.robustspecies
+    return nps.robustspecies
 end

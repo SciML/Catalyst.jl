@@ -2,6 +2,7 @@
 
 # Fetch packages.
 using Catalyst, JumpProcesses, ModelingToolkitBase, OrdinaryDiffEq, Statistics, Test
+using SciMLBase
 using SymbolicIndexingInterface: setp
 
 # Sets stable rng number.

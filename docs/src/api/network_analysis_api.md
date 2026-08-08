@@ -15,6 +15,8 @@ conservationlaws
 conservedquantities
 conservedequations
 conservationlaw_constants
+steady_state_jac
+steady_state_stability
 ReactionComplexElement
 ReactionComplex
 reactioncomplexmap
@@ -28,6 +30,8 @@ adjacencymat
 laplacianmat
 massactionvector
 linkageclasses
+stronglinkageclasses
+terminallinkageclasses
 deficiency
 linkagedeficiencies
 satisfiesdeficiencyone
