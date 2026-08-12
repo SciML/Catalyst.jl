@@ -206,7 +206,7 @@ plot(res, petab_problem, label = "Fitted solution")
 ```
 
 The calibration result can also be found in `res.xmin`, however, note that PEtab
-automatically ([unless a linear scale is selected](@ref petab*parameters_scales)) converts
+automatically ([unless a linear scale is selected](@ref petab_parameters_scales)) converts
 parameters to logarithmic scale, so typically `exp10.(res.xmin)` are the values of interest.
 If you investigate the result from this example you might note, that even if PEtab.jl has
 found the global optimum (which fits the data well), this does not actually correspond to
@@ -697,7 +697,7 @@ run to be saved in that folder:
 
 ```@example petab1
 res_ms = PEtabMultistartResult("OptimisationRuns"; which_run = 2)
-rm("OptimisationRuns", recursive = true) # hide
+try rm("OptimisationRuns", recursive = true) catch end # hide
 nothing # hide
 ```
 
