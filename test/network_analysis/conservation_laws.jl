@@ -131,7 +131,7 @@ let
         nprob1 = NonlinearProblem{true}(nsys, merge(Dict(u0), Dict(p)))
         nprob1b = NonlinearProblem{true}(nsys_ss, merge(Dict(u0), Dict(p)))
         nprob2 = NonlinearProblem(rn, u0, p; remove_conserved = true)
-        nprob2b = NonlinearProblem(rn, u0, p; remove_conserved = true, strucmtkcompiletural_simplify = true)
+        nprob2b = NonlinearProblem(rn, u0, p; remove_conserved = true, mtkcompile = true)
         nsol1 = solve(nprob1, NewtonRaphson(); abstol = 1e-8)
         nsol1b = solve(nprob1b, NewtonRaphson(); abstol = 1e-8)
         nsol2 = solve(nprob2, NewtonRaphson(); abstol = 1e-8)
