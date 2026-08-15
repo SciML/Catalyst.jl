@@ -80,7 +80,7 @@ StructuralIdentifiability = "0.5.11"
 SymbolicIndexingInterface = "0.3"
 SymbolicUtils = "4.9.1"
 Symbolics = "7.13.0"
-SciMLTesting = "2.4"
+SciMLTesting = "2.10"
 julia = "1.10"
 
 [extras]
