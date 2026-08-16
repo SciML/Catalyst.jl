@@ -38,4 +38,11 @@ jobs:
       julia-version: "${{ matrix.version }}"
       group: "${{ matrix.group }}"
       coverage: false
+      # QA on Julia 1 resolves JET 0.11, whose `report_package` sweep of Catalyst peaks
+      # at ~22 GB with 4 analysis threads and kills the runner (#1527). One thread on a
+      # 16 GB GitHub-hosted runner is the only configuration measured to survive; the
+      # `ubuntu-24.04` label is what forces GitHub-hosted, since the 8 GB self-hosted
+      # pool squats `ubuntu-latest`. lts (JET 0.9) and pre (JET skipped) are unaffected.
+      num-threads: "${{ (matrix.group == 'QA' && matrix.version == '1') && '1' || 'auto' }}"
+      runner: "${{ (matrix.group == 'QA' && matrix.version == '1') && '[\"ubuntu-24.04\"]' || '' }}"
     secrets: "inherit"
