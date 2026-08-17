@@ -80,9 +80,11 @@ StructuralIdentifiability = "0.5.11"
 SymbolicIndexingInterface = "0.3"
 SymbolicUtils = "4.9.1"
 Symbolics = "7.13.0"
+SciMLTesting = "2.10"
 julia = "1.10"
 
 [extras]
+SciMLTesting = "09d9d899-5365-40a9-917a-5f67fddea283"
 DataInterpolations = "82cc6244-b520-54b8-b5a6-8a565e85f1d0"
 DiffEqCallbacks = "459566f4-90b8-5000-8ac3-15dfb0a30def"
 DiffEqNoiseProcess = "77a26b50-5914-5dd7-bc55-306e6241c503"
