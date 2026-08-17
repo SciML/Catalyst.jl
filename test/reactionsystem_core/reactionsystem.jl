@@ -713,7 +713,7 @@ end
 
 ### Specialised ReactionSystem Fields ###
 
-# Checks that correct bindings and (default) iniital conditions are created and stored in various ways and conversions.
+# Checks that correct bindings and (default) initial conditions are created and stored in various ways and conversions.
 let
     # Declare time differential.
     D = default_time_deriv()
@@ -1054,7 +1054,7 @@ let
     @test issetequal(parameters(rs), [k, b])
 end
 
-# Test parameteric initial conditions.
+# Test parametric initial conditions.
 let
     @parameters d X0
     @species X(t) = X0
@@ -1191,7 +1191,7 @@ let
     @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs1))), MiscSystemData, nothing) == nothing
     @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs2))), MiscSystemData, nothing) == π
 
-    # Check metadata for `ReactionSystem`s where metadata has been udpated
+    # Check metadata for `ReactionSystem`s where metadata has been updated
     rs1 = ModelingToolkitBase.setmetadata(rs1, MiscSystemData, "Metadata")
     rs2 = ModelingToolkitBase.setmetadata(rs2, MiscSystemData, ones(2, 3))
     @test ModelingToolkitBase.getmetadata(rs1, MiscSystemData, nothing) == "Metadata"
@@ -1283,7 +1283,7 @@ end
 # there are several places in the code where the `reactionsystem_uptodate` function is called, here
 # the code might need adaptation to take the updated reaction system into account.
 let
-    @test_nowarn Catalyst.reactionsystem_uptodate_check() # Will fix this once most things are actually workin.
+    @test_nowarn Catalyst.reactionsystem_uptodate_check() # Will fix this once most things are actually working.
 end
 
 # Test that functions using the incidence matrix properly cache it

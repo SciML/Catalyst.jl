@@ -275,7 +275,7 @@ let
     u0_guess = [:A => 1., :B => 1.]
     p_start = [:k => 2.]
 
-    # Computes bifurcation diagram and checks that it can be sucesfully plotted.
+    # Computes bifurcation diagram and checks that it can be successfully plotted.
     bprob = BifurcationProblem(rn, u0_guess, p_start, :k; plot_var = :A, u0 = [:A => 5., :B => 3.])
     p_span = (0.1, 6.0)
     opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
