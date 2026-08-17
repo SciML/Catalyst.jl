@@ -33,7 +33,7 @@ const LEGACY_DEPENDENCY_REEXPORTS = (
     :AnalysisPoint, :AssignmentAffect, :BS, :BipartiteGraph, :CartesianGrid, :CartesianGridRej, :CasADiCollocation, :CasADiDynamicOptProblem, :Clock, :CompilerOptions, :Connection, :Differential,
     :DiscreteFunction, :DiscreteProblem, :DiscreteSystem, :DynamicOptSolution, :Equation, :EvalAt, :Flow, :Girsanov_transform, :GlobalScope, :Hold, :HomotopyContinuationProblem, :IRStructure,
     :ImplicitDiscreteFunction, :ImplicitDiscreteProblem, :ImplicitDiscreteSystem, :Inequality, :InfiniteOptCollocation, :InfiniteOptDynamicOptProblem, :Initial, :InitializationProblem, :Integral, :IntervalNonlinearFunction, :IntervalNonlinearProblem, :JuMPCollocation,
-    :JuMPDynamicOptProblem, :JumpProblem, :JumpSystem, :LocalScope, :MTKParameters, :MiscSystemData, :MissingGuessValue, :ModelingToolkitBase, :NonlinearFunction, :NonlinearProblem, :NonlinearSystem, :Num,
+    :JuMPDynamicOptProblem, :JumpProblem, :JumpSystem, :LocalScope, :MTKParameters, :MissingGuessValue, :ModelingToolkitBase, :NonlinearFunction, :NonlinearProblem, :NonlinearSystem, :Num,
     :ODEFunction, :ODEProblem, :ODESystem, :OptimizationProblem, :OptimizationSystem, :PDESystem, :ParentScope, :Pre, :PyomoCollocation, :PyomoDynamicOptProblem, :Rewriters, :RuleSet,
     :SDEFunction, :SDEProblem, :SDESystem, :SafeReal, :Sample, :SampleTime, :Shift, :ShiftIndex, :SolverStepClock, :SteadyStateProblem, :Stream, :SymReal,
     :SymScope, :SymStruct, :SymbolicLinearODE, :SymbolicMassActionJump, :SymbolicUtils, :Symbolics, :SymbolicsSparsityDetector, :System, :Term, :TimeDomain, :TreeReal, :UnPack,
