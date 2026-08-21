@@ -5,6 +5,8 @@ using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEq, StochasticDiffEq, 
 const MT = ModelingToolkitBase
 using ModelingToolkitBase: Pre, unwrap
 
+abstract type TestSystemData end
+
 # Sets stable rng number.
 using StableRNGs
 rng = StableRNG(12345)
@@ -1165,39 +1167,39 @@ let
     @species X(t)
     @parameters d
     @named rs1 = ReactionSystem([Reaction(d, [X], nothing)], t)
-    @named rs2 = ReactionSystem([Reaction(d, [X], nothing)], t; metadata = [MiscSystemData => π])
+    @named rs2 = ReactionSystem([Reaction(d, [X], nothing)], t; metadata = [TestSystemData => π])
 
     # Check metadata for `ReactionSystem`s.
-    @test ModelingToolkitBase.getmetadata(rs1, MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(rs2, MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(complete(rs1), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(complete(rs2), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(rs1, TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(rs2, TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(rs1), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(rs2), TestSystemData, nothing) == π
 
     # Check metadata for converted `ReactionSystem`s.
-    @test ModelingToolkitBase.getmetadata(ode_model(complete(rs1)), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(ode_model(complete(rs2)), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(complete(ode_model(complete(rs1))), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(complete(ode_model(complete(rs2))), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(sde_model(complete(rs1)), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(sde_model(complete(rs2)), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(complete(sde_model(complete(rs1))), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(complete(sde_model(complete(rs2))), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(jump_model(complete(rs1)), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(jump_model(complete(rs2)), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(complete(jump_model(complete(rs1))), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(complete(jump_model(complete(rs2))), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(ss_ode_model(complete(rs1)), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(ss_ode_model(complete(rs2)), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs1))), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs2))), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(ode_model(complete(rs1)), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(ode_model(complete(rs2)), TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(ode_model(complete(rs1))), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(ode_model(complete(rs2))), TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(sde_model(complete(rs1)), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(sde_model(complete(rs2)), TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(sde_model(complete(rs1))), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(sde_model(complete(rs2))), TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(jump_model(complete(rs1)), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(jump_model(complete(rs2)), TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(jump_model(complete(rs1))), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(jump_model(complete(rs2))), TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(ss_ode_model(complete(rs1)), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(ss_ode_model(complete(rs2)), TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs1))), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs2))), TestSystemData, nothing) == π
 
     # Check metadata for `ReactionSystem`s where metadata has been updated
-    rs1 = ModelingToolkitBase.setmetadata(rs1, MiscSystemData, "Metadata")
-    rs2 = ModelingToolkitBase.setmetadata(rs2, MiscSystemData, ones(2, 3))
-    @test ModelingToolkitBase.getmetadata(rs1, MiscSystemData, nothing) == "Metadata"
-    @test ModelingToolkitBase.getmetadata(rs2, MiscSystemData, nothing) == ones(2, 3)
-    @test ModelingToolkitBase.getmetadata(complete(rs1), MiscSystemData, nothing) == "Metadata"
-    @test ModelingToolkitBase.getmetadata(complete(rs2), MiscSystemData, nothing) == ones(2, 3)
+    rs1 = ModelingToolkitBase.setmetadata(rs1, TestSystemData, "Metadata")
+    rs2 = ModelingToolkitBase.setmetadata(rs2, TestSystemData, ones(2, 3))
+    @test ModelingToolkitBase.getmetadata(rs1, TestSystemData, nothing) == "Metadata"
+    @test ModelingToolkitBase.getmetadata(rs2, TestSystemData, nothing) == ones(2, 3)
+    @test ModelingToolkitBase.getmetadata(complete(rs1), TestSystemData, nothing) == "Metadata"
+    @test ModelingToolkitBase.getmetadata(complete(rs2), TestSystemData, nothing) == ones(2, 3)
 end
 
 # Tests u0_map and parameter_map system-level metadata.
@@ -1431,7 +1433,7 @@ let
     discrete_events = (X == 1) => [V ~ V / 2]
 
     # Define metadata
-    metadata = [MiscSystemData => "Comprehensive test system"]
+    metadata = [TestSystemData => "Comprehensive test system"]
 
     # Define initial conditions and parameters
     u0 = Dict([A => 1.0, B => 2.0, C => 3.0, E => 4.0, V => 5.0])

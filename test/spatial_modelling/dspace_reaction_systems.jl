@@ -3,6 +3,8 @@
 # Fetch packages.
 using Catalyst, Graphs, OrdinaryDiffEq, Test
 
+abstract type TestSystemData end
+
 # Fetch test networks.
 include("../spatial_test_networks.jl")
 
@@ -140,7 +142,7 @@ let
         Reaction(kB, [X], [X2], [2], [1])
         Reaction(kD, [X2], [X], [1], [2])
     ]
-    @named rs = ReactionSystem(rxs, t; metadata = [MiscSystemData => "Metadata string"])
+    @named rs = ReactionSystem(rxs, t; metadata = [TestSystemData => "Metadata string"])
     rs = complete(rs)
     tr = @transport_reaction D X2
     dsrs = DiscreteSpaceReactionSystem(rs, [tr], small_2d_cartesian_grid)
@@ -151,7 +153,7 @@ let
     @test isequal(ModelingToolkitBase.get_iv(dsrs), t)
     @test isequal(equations(dsrs), rxs)
     @test isequal(unknowns(dsrs), [X, X2])
-    @test isequal(ModelingToolkitBase.getmetadata(dsrs, MiscSystemData, nothing), "Metadata string")
+    @test isequal(ModelingToolkitBase.getmetadata(dsrs, TestSystemData, nothing), "Metadata string")
     @test isequal(ModelingToolkitBase.get_eqs(dsrs), rxs)
     @test isequal(ModelingToolkitBase.get_unknowns(dsrs), [X, X2])
     @test isequal(ModelingToolkitBase.get_ps(dsrs), [p, d, kB, kD])

@@ -6,6 +6,8 @@ using Catalyst: get_rxs
 using ModelingToolkitBase: getdefault, getdescription, get_metadata
 using Symbolics: getmetadata
 
+abstract type TestSystemData end
+
 # Creates missing getters for MTK metadata (can be removed once added to MTK).
 getmisc(x) = getmetadata(Symbolics.unwrap(x), ModelingToolkitBase.VariableMisc, nothing)
 getinput(x) = getmetadata(Symbolics.unwrap(x), ModelingToolkitBase.VariableInput, nothing)
@@ -160,8 +162,8 @@ let
         Reaction(d2 + D2, [V2], [], metadata = [:misc => dict_md])
         Reaction(e2 + E2, [W2], [], metadata = [:misc => mat_md])
     ]
-    @named rs2 = ReactionSystem(rxs2, t; metadata = [MiscSystemData => dict_md])
-    @named rs1 = ReactionSystem(rxs1, t; systems = [rs2], metadata = [MiscSystemData => mat_md])
+    @named rs2 = ReactionSystem(rxs2, t; metadata = [TestSystemData => dict_md])
+    @named rs1 = ReactionSystem(rxs1, t; systems = [rs2], metadata = [TestSystemData => mat_md])
     rs = complete(rs1)
 
     # Loads the model and checks that it is correct. Removes the saved file
@@ -209,8 +211,8 @@ let
     @test isequal(Catalyst.getmisc(get_rxs(rs_loaded.rs2)[5]), mat_md)
 
     # Checks that `ReactionSystem` metadata fields are correct.
-    @test isequal(ModelingToolkitBase.getmetadata(rs_loaded, MiscSystemData, nothing), mat_md)
-    @test isequal(ModelingToolkitBase.getmetadata(rs_loaded.rs2, MiscSystemData, nothing), dict_md)
+    @test isequal(ModelingToolkitBase.getmetadata(rs_loaded, TestSystemData, nothing), mat_md)
+    @test isequal(ModelingToolkitBase.getmetadata(rs_loaded.rs2, TestSystemData, nothing), dict_md)
 end
 
 # Checks systems where parameters/species/variables have complicated interdependency are correctly
@@ -339,18 +341,26 @@ let
     ]
 
     # Creates the systems.
-    @named rs_4 = ReactionSystem(eqs_4, t; continuous_events = continuous_events_4,
-                                discrete_events = discrete_events_4, spatial_ivs = sivs,
-                                metadata = [MiscSystemData => "System 4"], systems = [])
-    @named rs_2 = ReactionSystem(eqs_2, t; continuous_events = continuous_events_2,
-                                discrete_events = discrete_events_2, spatial_ivs = sivs,
-                                metadata = [MiscSystemData => "System 2"], systems = [])
-    @named rs_3 = ReactionSystem(eqs_3, t; continuous_events = continuous_events_3,
-                                discrete_events = discrete_events_3, spatial_ivs = sivs,
-                                metadata = [MiscSystemData => "System 3"], systems = [rs_4])
-    @named rs_1 = ReactionSystem(eqs_1, t; continuous_events = continuous_events_1,
-                                discrete_events = discrete_events_1, spatial_ivs = sivs,
-                                metadata = [MiscSystemData => "System 1"], systems = [rs_2, rs_3])
+    @named rs_4 = ReactionSystem(
+        eqs_4, t; continuous_events = continuous_events_4,
+        discrete_events = discrete_events_4, spatial_ivs = sivs,
+        metadata = [TestSystemData => "System 4"], systems = []
+    )
+    @named rs_2 = ReactionSystem(
+        eqs_2, t; continuous_events = continuous_events_2,
+        discrete_events = discrete_events_2, spatial_ivs = sivs,
+        metadata = [TestSystemData => "System 2"], systems = []
+    )
+    @named rs_3 = ReactionSystem(
+        eqs_3, t; continuous_events = continuous_events_3,
+        discrete_events = discrete_events_3, spatial_ivs = sivs,
+        metadata = [TestSystemData => "System 3"], systems = [rs_4]
+    )
+    @named rs_1 = ReactionSystem(
+        eqs_1, t; continuous_events = continuous_events_1,
+        discrete_events = discrete_events_1, spatial_ivs = sivs,
+        metadata = [TestSystemData => "System 1"], systems = [rs_2, rs_3]
+    )
     rs = complete(rs_1)
 
     # Checks that the correct system is saved (both complete and incomplete ones).
