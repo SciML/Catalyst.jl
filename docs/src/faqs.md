@@ -370,7 +370,7 @@ rn = @reaction_network begin
     (p*V,d), 0 <--> X
 end
 ```
-Here, the left-hand side of the differential contains the differential's name only. The right-hand side is `Differential(t)`, where `t` is the default [time independent variable](@ref ref) used within Catalyst. If you wish to declare a differential with respect to another independent variable, replace `t` with its symbol. If you need to declare multiple differentials, this can be done by providing a `begin ... end` block (with one differential declaration on each line) to the `@differential` option.
+Here, the left-hand side of the differential contains the differential's name only. The right-hand side is `Differential(t)`, where `t` is the default [time independent variable](@ref dsl_advanced_options_ivs) used within Catalyst. If you wish to declare a differential with respect to another independent variable, replace `t` with its symbol. If you need to declare multiple differentials, this can be done by providing a `begin ... end` block (with one differential declaration on each line) to the `@differential` option.
 
 In [programmatic modelling](@ref programmatic_CRN_construction), we typically assign the default time differential to the symbol `D`:
 ```@example faq_custom_differentials
