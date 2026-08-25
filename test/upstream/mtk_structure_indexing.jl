@@ -3,7 +3,7 @@
 # Fetch packages
 using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEq, Plots, SteadyStateDiffEq, StochasticDiffEq, Test
 using SciMLBase
-import ModelingToolkitBase: getp, getu, setp, setu
+import SymbolicIndexingInterface: getp, getu, setp, setu
 
 # Sets rnd number.
 using StableRNGs
