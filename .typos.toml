@@ -2,6 +2,8 @@
 # Catalyst specific
 systemes = "systemes"
 Hass = "Hass"
+oint = "oint"
+Lamba = "Lamba"
 
 # Julia-specific functions
 indexin = "indexin"
