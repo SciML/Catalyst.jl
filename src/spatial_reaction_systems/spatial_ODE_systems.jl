@@ -317,7 +317,7 @@ function build_odefunction(
 
     # Extracts the `Symbol` form for parameters (but not species). Creates and returns the `ODEFunction`.
     paramsyms = [MT.getname(p) for p in parameters(dsrs)]
-    sys = SciMLBase.SymbolCache([], paramsyms, [])
+    sys = SymbolicIndexingInterface.SymbolCache([], paramsyms, [])
     return ODEFunction(f; jac = J, jac_prototype, sys)
 end
 

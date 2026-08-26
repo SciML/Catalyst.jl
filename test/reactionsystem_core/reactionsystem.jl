@@ -4,6 +4,7 @@
 using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEq, StochasticDiffEq, Test
 const MT = ModelingToolkitBase
 using ModelingToolkitBase: Pre, unwrap
+using SymbolicIndexingInterface: SymbolCache
 
 abstract type TestSystemData end
 
@@ -508,7 +509,7 @@ let
     oprob1 = ODEProblem(osys, [u0map; pmap], tspan)
     sts = [B, D, E, C]
     syms = [:B, :D, :E, :C]
-    ofun = ODEFunction(f!; sys = MT.SymbolCache(syms))
+    ofun = ODEFunction(f!; sys = SymbolCache(syms))
     oprob2 = ODEProblem(ofun, u0, tspan, p)
     saveat = tspan[2] / 50
     abstol = 1.0e-10
