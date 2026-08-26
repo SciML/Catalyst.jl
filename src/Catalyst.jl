@@ -197,7 +197,7 @@ export iscomplexbalanced, isdetailedbalanced, robustspecies
 # Documented cycle/flux basis helper (public, not exported).
 @public cycles
 
-# Containes the `nullspace` function required for conservation law elimination.
+# Contains the `nullspace` function required for conservation law elimination.
 include("mtk_nullspace_function.jl")
 
 # registers CRN specific functions using Symbolics.jl
