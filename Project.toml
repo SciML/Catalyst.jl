@@ -36,12 +36,13 @@ HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 NetworkLayout = "46757867-2c16-5918-afeb-47bfcb05e46a"
 StructuralIdentifiability = "220ca800-aa68-49bb-acd8-6037fa93a544"
+TermInterface = "8ea1fca8-c5ef-4a55-8b96-4e9afe9c9a3c"
 
 [extensions]
 CatalystBifurcationKitExtension = "BifurcationKit"
-CatalystCairoMakieExtension = "CairoMakie"
+CatalystCairoMakieExtension = ["CairoMakie", "Makie"]
 CatalystGraphMakieExtension = ["GraphMakie", "NetworkLayout", "Makie"]
-CatalystHomotopyContinuationExtension = ["DynamicPolynomials", "HomotopyContinuation"]
+CatalystHomotopyContinuationExtension = ["DynamicPolynomials", "HomotopyContinuation", "TermInterface"]
 CatalystStructuralIdentifiabilityExtension = "StructuralIdentifiability"
 
 [compat]
@@ -81,6 +82,7 @@ SymbolicIndexingInterface = "0.3"
 SymbolicUtils = "4.9.1"
 Symbolics = "7.13.0"
 SciMLTesting = "2.10"
+TermInterface = "2"
 julia = "1.10"
 
 [extras]
