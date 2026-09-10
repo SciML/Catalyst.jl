@@ -1,5 +1,13 @@
 using SciMLTesting, Catalyst, Test
 
+# ExplicitImports only checks an extension module once it exists, and an extension module
+# only exists once every one of its trigger weakdeps has been loaded. Without these
+# `using`s `Base.get_extension` returns `nothing` for all of them and QA scans no
+# extension code at all. Every Catalyst weakdep is loadable here, so all five extensions
+# are covered.
+using BifurcationKit, CairoMakie, DynamicPolynomials, GraphMakie, HomotopyContinuation,
+    Makie, NetworkLayout, StructuralIdentifiability, TermInterface
+
 # JET is a SciMLTesting weak dependency: `using JET` registers it and turns the JET
 # check on. JET 0.11 crashes (UndefRefError in `collect_callee_reports!`) when run
 # under the Julia 1.13 prerelease `Compiler.jl`, so only load it on the Julia versions
@@ -36,24 +44,38 @@ const LEGACY_DEPENDENCY_REEXPORTS = (
     :JuMPDynamicOptProblem, :JumpProblem, :JumpSystem, :LocalScope, :MTKParameters, :MiscSystemData, :MissingGuessValue, :ModelingToolkitBase, :NonlinearFunction, :NonlinearProblem, :NonlinearSystem, :Num,
     :ODEFunction, :ODEProblem, :ODESystem, :OptimizationProblem, :OptimizationSystem, :PDESystem, :ParentScope, :Pre, :PyomoCollocation, :PyomoDynamicOptProblem, :Rewriters, :RuleSet,
     :SDEFunction, :SDEProblem, :SDESystem, :SafeReal, :Sample, :SampleTime, :Shift, :ShiftIndex, :SolverStepClock, :SteadyStateProblem, :Stream, :SymReal,
-    :SymScope, :SymStruct, :SymbolicLinearODE, :SymbolicMassActionJump, :SymbolicUtils, :Symbolics, :SymbolicsSparsityDetector, :System, :Term, :TimeDomain, :TreeReal, :UnPack,
+    :SymScope, :SymStruct, :SymbolicLinearODE, :SymbolicMassActionJump, :SymbolicUtils, :Symbolics, :SymbolicsSparsityDetector, :System, :Term, :TimeDomain, :TreeReal, :UnPack, :Unknown,
     :add_accumulations, :alg_equations, :analytically_integrated, :approximation_function, :arguments, :asdigraph, :asgraph, :bindings, :bound_parameters, :brownians, :build_explicit_observed_function, :build_function, :calculate_control_jacobian,
-    :calculate_cost_gradient, :calculate_cost_hessian, :calculate_hessian, :calculate_jacobian, :calculate_massmatrix, :calculate_tgrad, :change_independent_variable, :change_of_variables, :complete, :compose, :connect, :constraints,
+    :calculate_cost_gradient, :calculate_cost_hessian, :calculate_hessian, :calculate_jacobian, :calculate_massmatrix, :calculate_paramjac, :calculate_tgrad, :change_independent_variable, :change_of_variables, :complete, :compose, :connect, :constraints,
     :continuous_events, :convert_system_indepvar, :cost, :debug_system, :diff_equations, :discrete_events, :domain_connect, :eqeq_dependencies, :equation_dependencies, :equations, :expand, :expand_connections,
     :expand_derivatives, :extend, :factors, :flatten, :flatten_fractions, :fractional_to_ordinary, :full_equations, :gather_factor, :generate_W, :generate_control_jacobian, :generate_cost, :generate_cost_gradient,
-    :generate_control_function, :generate_cost_hessian, :generate_custom_function, :generate_diffusion_function, :generate_initializesystem, :generate_jacobian, :generate_rhs, :generate_trajectory, :generate_tgrad, :get_alg_eqs, :get_canonical_expr, :get_diff_eqs, :get_reachability, :get_variables,
+    :generate_control_function, :generate_cost_hessian, :generate_custom_function, :generate_diffusion_function, :generate_initializesystem, :generate_jacobian, :generate_paramjac, :generate_rhs, :generate_trajectory, :generate_tgrad, :get_alg_eqs, :get_canonical_expr, :get_diff_eqs, :get_reachability, :get_variables,
     :getbounds, :getconnect, :getdist, :getguess, :getmetadata, :getnominal, :getunit, :groebner_basis, :guesses, :has_alg_eqs, :has_alg_equations, :has_diff_eqs,
     :has_diff_equations, :has_inverse, :has_left_inverse, :has_right_inverse, :hasbounds, :hasconnect, :hasdist, :hasguess, :hasmetadata, :hasnominal, :hasunit, :hierarchy,
     :homotopy, :ifelse_branching, :ifelse_eager, :independent_variable, :independent_variables, :infimum, :initial_conditions, :initialization_equations, :instream, :inverse, :inverse_laplace, :irreducibles, :is_derivative,
     :is_groebner_basis, :iscall, :isdisturbance, :isinitial, :isinput, :isirreducible, :isoutput, :istree, :istunable, :jumps, :left_continuous_function, :left_inverse,
     :laplace, :laplace_solve_ode, :limit, :linear_fractional_to_ordinary, :liouville_transform, :majorization_function, :maybe_zeros, :minorization_function, :modelingtoolkitize, :mtkcompile, :noise_to_brownians, :observables, :observed, :open_loop,
     :operation, :parameters, :parse_expr_to_symbolic, :partial_frac_decomposition, :polynomial_coeffs, :populate_ir!, :print_ir, :quick_cancel, :reorder_dimension_by_tunables, :reorder_dimension_by_tunables!, :respecialize, :right_continuous_function, :right_inverse,
-    :rootfunction, :semilinear_form, :semipolynomial_form, :semiquadratic_form, :series, :set_defaults, :setmetadata, :setnominal, :simplify, :simplify_fractions, :solve, :solve_for,
+    :rootfunction, :scalarize, :semilinear_form, :semipolynomial_form, :semiquadratic_form, :series, :set_defaults, :setmetadata, :setnominal, :shape, :simplify, :simplify_fractions, :solve, :solve_for,
     :solve_linear_ode_system, :solve_symbolic_IVP, :sorted_arguments, :state_priorities, :state_priority, :stochastic_integral_transform, :structural_simplify, :subset_tunables, :substitute, :substitute_in_deriv, :substitute_in_deriv_and_depvar, :supremum,
     :symbolic_linear_solve, :symbolic_solve, :symbolic_solve_ode, :symbolics_to_sympy, :symbolics_to_sympy_pythoncall, :sympy_algebraic_solve, :sympy_integrate, :sympy_limit, :sympy_linear_solve, :sympy_ode_solve, :sympy_pythoncall_algebraic_solve, :sympy_pythoncall_integrate,
     :sympy_pythoncall_limit, :sympy_pythoncall_linear_solve, :sympy_pythoncall_ode_solve, :sympy_pythoncall_simplify, :sympy_pythoncall_to_symbolics, :sympy_simplify, :sympy_to_symbolics, :taylor, :taylor_coeff, :term, :terms, :toexpr,
-    :toggle_namespacing, :tosymbol, :tunable_parameters, :unknowns, :unwrap_const, :variable_dependencies, :vartype, :varvar_dependencies, :≲, :≳,
+    :toggle_namespacing, :tosymbol, :tunable_parameters, :unknowns, :unwrap, :unwrap_const, :variable_dependencies, :vartype, :varvar_dependencies, :≲, :≳,
 )
+
+# ExplicitImports silently skips an extension that fails to load, so assert the
+# extension modules actually exist rather than trusting a green `run_qa`.
+@testset "Extensions loaded" begin
+    for ext in (
+            :CatalystBifurcationKitExtension,
+            :CatalystCairoMakieExtension,
+            :CatalystGraphMakieExtension,
+            :CatalystHomotopyContinuationExtension,
+            :CatalystStructuralIdentifiabilityExtension,
+        )
+        @test Base.get_extension(Catalyst, ext) !== nothing
+    end
+end
 
 run_qa(
     Catalyst;
