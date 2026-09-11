@@ -30,10 +30,10 @@ let
         rx6 = Reaction(rate, [X], [x], [n1], [1])
 
         # Check `Reaction` types.
-        @test rx1 isa Reaction{SymbolicT,Int64}
+        @test rx1 isa Reaction{SymbolicT,Int}
         @test rx2 isa Reaction{SymbolicT,Float64}
         @test rx3 isa Reaction{SymbolicT,Any}
-        @test rx4 isa Reaction{SymbolicT,Rational{Int64}}
+        @test rx4 isa Reaction{SymbolicT,Rational{Int}}
         @test rx5 isa Reaction{SymbolicT,Any}
         @test rx6 isa Reaction{SymbolicT,Any}
 
