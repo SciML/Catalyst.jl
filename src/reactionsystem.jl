@@ -1056,7 +1056,7 @@ function reactions(network)
     rxs = get_rxs(network)
     systems = filter_nonrxsys(network)
     isempty(systems) && (return rxs)
-    return [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
+    return [rxs; reduce(vcat, namespace_reactions.(systems))]
 end
 
 """
@@ -1125,7 +1125,7 @@ function MT.equations(sys::ReactionSystem)
     if !isempty(systems)
         eqs = CatalystEqType[
             eqs;
-            reduce(vcat, MT.namespace_equations.(systems); init = CatalystEqType[])
+            reduce(vcat, MT.namespace_equations.(systems))
         ]
         return sort!(eqs; by = eqsortby)
     end
