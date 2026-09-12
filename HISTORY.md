@@ -2,6 +2,14 @@
 
 ## Unreleased (on master)
 
+- Catalyst no longer re-exports the entire `ModelingToolkitBase` API via
+  `@reexport`. `using Catalyst` now brings only the dependency-owned names that
+  Catalyst's documentation and tests exercise (e.g. `@parameters`, `@variables`,
+  `System`, `Equation`, `Differential`, `mtkcompile`, `complete`). Code that
+  relied on other `ModelingToolkitBase`/`Symbolics` names being available
+  through `using Catalyst` should add `using ModelingToolkitBase` (or `Symbolics`)
+  explicitly.
+
 ## Catalyst 16.1
 
 - Added `use_jump_ratelaws` keyword argument to `ode_model`, `sde_model`, `hybrid_model`,
