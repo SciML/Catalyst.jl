@@ -4,7 +4,7 @@ $(DocStringExtensions.README)
 module Catalyst
 
 using DocStringExtensions
-using SparseArrays, DiffEqBase, Reexport, Setfield, EnumX
+using SparseArrays, DiffEqBase, Setfield, EnumX
 import SciMLBase
 using LaTeXStrings, Latexify
 using LinearAlgebra, Combinatorics
@@ -17,7 +17,6 @@ using ModelingToolkitBase
 const MT = ModelingToolkitBase
 using DynamicQuantities
 
-@reexport using ModelingToolkitBase
 using Symbolics
 using LinearAlgebra
 using RuntimeGeneratedFunctions
@@ -46,6 +45,7 @@ import ModelingToolkitBase: check_variables, check_parameters,
     check_equations, iscomplete
 
 # Import from owner module (SymbolicUtils) per ExplicitImports.jl audit
+import SymbolicUtils
 import SymbolicUtils: _iszero, unwrap
 
 import Base: ==, hash, size, getindex, setindex, isless, Sort.defalg, length, show
@@ -59,6 +59,18 @@ import Symbolics: wrap
 import Symbolics.RewriteHelpers: hasnode, replacenode
 import SymbolicUtils: getmetadata, hasmetadata, setmetadata
 import SciMLPublic: @public
+
+# Dependency-owned names that Catalyst intentionally re-exports: the subset of the
+# ModelingToolkitBase/Symbolics API that Catalyst's documentation and tests exercise
+# through `using Catalyst` (the full `@reexport using ModelingToolkitBase` facade was
+# removed to stop leaking hundreds of unrelated names).
+export @brownians, @discretes, @independent_variables, @mtkcomplete, @named,
+    @nonamespace, @parameters, @poissonians, @register_symbolic, @unpack, @variables
+export ModelingToolkitBase, Symbolics, SymbolicUtils
+export Differential, Equation, GlobalScope, Initial, ParentScope, Pre, System
+export complete, compose, continuous_events, equations, extend, full_equations,
+    getmetadata, hasmetadata, independent_variables, isinitial, mtkcompile, observed,
+    operation, parameters, setmetadata, simplify, substitute, unknowns
 
 # globals for the modulate
 """
