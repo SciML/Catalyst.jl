@@ -1399,7 +1399,7 @@ function robustspecies(rn::ReactionSystem)
 
         # Find the complexes that do not belong to a terminal linkage class
         nonterminal_complexes = deleteat!([1:length(complexes);], vcat(tslcs...))
-        robust_species = Int64[]
+        robust_species = Int[]
 
         for (c_s, c_p) in Combinatorics.combinations(nonterminal_complexes, 2)
             # Check the difference of all the combinations of complexes. The support is the set of indices that are non-zero
