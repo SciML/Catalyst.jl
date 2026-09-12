@@ -160,6 +160,23 @@ end
 ```
 contain [conservation laws](@ref conservation_laws) (in this case $Γ = X1 + X2$, where $Γ = X1(0) + X2(0)$ is a constant). Because the presence of such conservation laws makes structural identifiability analysis prohibitively computationally expensive (for all but the simplest of cases), these are automatically eliminated by Catalyst. This is handled internally, and should not be noticeable to the user. The exception is the `make_si_ode` function. For each conservation law, its output will have one ODE removed, and instead have a conservation parameter (of the form `Γ[i]`) added to its equations. This feature can be disabled through the `remove_conserved = false` option.
 
+## [Systems with algebraic equations](@id structural_identifiability_daes)
+`ReactionSystem`s [coupled with algebraic equations](@ref coupled_models_algeqs) must be structurally simplified (using `mtkcompile`) before StructuralIdentifiability can be applied to them. This is done by setting the `mtkcompile = true` option (analogously to how `ODEProblem`s are created from such models):
+```@example structural_identifiability_dae
+using Catalyst, Logging, StructuralIdentifiability # hide
+rs = @reaction_network begin
+    @parameters k c1 c2
+    @variables C(t)
+    @equations begin
+        D(V) ~ k*X - V
+        C ~ (c1 + c2) * X/V
+    end
+    (p/V,d/V), 0 <--> X
+end
+assess_identifiability(rs; measured_quantities = [:X, :V, :C], mtkcompile = true, loglevel = Logging.Error)
+```
+Variables that are eliminated by `mtkcompile` (here `C`, which is defined by an algebraic equation) can still be used in the `measured_quantities` and `funcs_to_check` options, and are still included in the output.
+
 ## [Systems with exponent parameters](@id structural_identifiability_exp_params)
 Structural identifiability cannot currently be applied to systems with parameters (or species) in exponents. E.g. this
 ```julia
