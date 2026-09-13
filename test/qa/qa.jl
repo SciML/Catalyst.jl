@@ -30,37 +30,20 @@ const EI_ALLOW_UNANALYZABLE = (Catalyst, Catalyst.PhysicalScale)
 # compile-time `@static` choice that matches the JET-load gate above.
 const JET_BROKEN = VERSION >= v"1.12-"
 
-# Legacy Catalyst releases expose this compatibility facade through
-# `@reexport using ModelingToolkitBase` and direct imports from its owner packages.
-# Keep the exact approved surface version-controlled: changing it is a public-API
-# decision, not a consequence of a dependency adding a new public binding.
+# Catalyst intentionally re-exports only the dependency-owned names that its
+# documentation and tests exercise through `using Catalyst` (see the `export`
+# block in src/Catalyst.jl). Keep the exact approved surface version-controlled:
+# changing it is a public-API decision, not a consequence of a dependency adding
+# a new public binding.
 const LEGACY_DEPENDENCY_REEXPORTS = (
-    Symbol("@acrule"), Symbol("@arrayop"), Symbol("@brownian"), Symbol("@brownians"), Symbol("@component"), Symbol("@connector"), Symbol("@constants"), Symbol("@derivative_rule"), Symbol("@derivatives"), Symbol("@discretes"), Symbol("@independent_variables"), Symbol("@makearray"),
-    Symbol("@mtkbuild"), Symbol("@mtkcompile"), Symbol("@mtkcomplete"), Symbol("@named"), Symbol("@namespace"), Symbol("@nonamespace"), Symbol("@pack!"), Symbol("@parameters"), Symbol("@poissonians"), Symbol("@register_array_symbolic"), Symbol("@register_derivative"), Symbol("@register_discontinuity"),
-    Symbol("@register_inverse"), Symbol("@register_symbolic"), Symbol("@rule"), Symbol("@symbolic_wrap"), Symbol("@syms"), Symbol("@symstruct"), Symbol("@unpack"), Symbol("@variables"), Symbol("@wrapped"), :AbstractCollocation, :AbstractDynamicOptProblem, :AbstractNonlinearProblem,
-    :AnalysisPoint, :AssignmentAffect, :BS, :BipartiteGraph, :CartesianGrid, :CartesianGridRej, :CasADiCollocation, :CasADiDynamicOptProblem, :Clock, :CompilerOptions, :Connection, :Differential,
-    :DiscreteFunction, :DiscreteProblem, :DiscreteSystem, :DynamicOptSolution, :Equation, :EvalAt, :Flow, :Girsanov_transform, :GlobalScope, :Hold, :HomotopyContinuationProblem, :IRStructure,
-    :ImplicitDiscreteFunction, :ImplicitDiscreteProblem, :ImplicitDiscreteSystem, :Inequality, :InfiniteOptCollocation, :InfiniteOptDynamicOptProblem, :Initial, :InitializationProblem, :Integral, :IntervalNonlinearFunction, :IntervalNonlinearProblem, :JuMPCollocation,
-    :JuMPDynamicOptProblem, :JumpProblem, :JumpSystem, :LocalScope, :MTKParameters, :MiscSystemData, :MissingGuessValue, :ModelingToolkitBase, :NonlinearFunction, :NonlinearProblem, :NonlinearSystem, :Num,
-    :ODEFunction, :ODEProblem, :ODESystem, :OptimizationProblem, :OptimizationSystem, :PDESystem, :ParentScope, :Pre, :PyomoCollocation, :PyomoDynamicOptProblem, :Rewriters, :RuleSet,
-    :SDEFunction, :SDEProblem, :SDESystem, :SafeReal, :Sample, :SampleTime, :Shift, :ShiftIndex, :SolverStepClock, :SteadyStateProblem, :Stream, :SymReal,
-    :SymScope, :SymStruct, :SymbolicLinearODE, :SymbolicMassActionJump, :SymbolicUtils, :Symbolics, :SymbolicsSparsityDetector, :System, :Term, :TimeDomain, :TreeReal, :UnPack, :Unknown,
-    :add_accumulations, :alg_equations, :analytically_integrated, :approximation_function, :arguments, :asdigraph, :asgraph, :bindings, :bound_parameters, :brownians, :build_explicit_observed_function, :build_function, :calculate_control_jacobian,
-    :calculate_cost_gradient, :calculate_cost_hessian, :calculate_hessian, :calculate_jacobian, :calculate_massmatrix, :calculate_paramjac, :calculate_tgrad, :change_independent_variable, :change_of_variables, :complete, :compose, :connect, :constraints,
-    :continuous_events, :convert_system_indepvar, :cost, :debug_system, :diff_equations, :discrete_events, :domain_connect, :eqeq_dependencies, :equation_dependencies, :equations, :expand, :expand_connections,
-    :expand_derivatives, :extend, :factors, :flatten, :flatten_fractions, :fractional_to_ordinary, :full_equations, :gather_factor, :generate_W, :generate_control_jacobian, :generate_cost, :generate_cost_gradient,
-    :generate_control_function, :generate_cost_hessian, :generate_custom_function, :generate_diffusion_function, :generate_initializesystem, :generate_jacobian, :generate_paramjac, :generate_rhs, :generate_trajectory, :generate_tgrad, :get_alg_eqs, :get_canonical_expr, :get_diff_eqs, :get_reachability, :get_variables,
-    :getbounds, :getconnect, :getdist, :getguess, :getmetadata, :getnominal, :getunit, :groebner_basis, :guesses, :has_alg_eqs, :has_alg_equations, :has_diff_eqs,
-    :has_diff_equations, :has_inverse, :has_left_inverse, :has_right_inverse, :hasbounds, :hasconnect, :hasdist, :hasguess, :hasmetadata, :hasnominal, :hasunit, :hierarchy,
-    :homotopy, :ifelse_branching, :ifelse_eager, :independent_variable, :independent_variables, :infimum, :initial_conditions, :initialization_equations, :instream, :inverse, :inverse_laplace, :irreducibles, :is_derivative,
-    :is_groebner_basis, :iscall, :isdisturbance, :isinitial, :isinput, :isirreducible, :isoutput, :istree, :istunable, :jumps, :left_continuous_function, :left_inverse,
-    :laplace, :laplace_solve_ode, :limit, :linear_fractional_to_ordinary, :liouville_transform, :majorization_function, :maybe_zeros, :minorization_function, :modelingtoolkitize, :mtkcompile, :noise_to_brownians, :observables, :observed, :open_loop,
-    :operation, :parameters, :parse_expr_to_symbolic, :partial_frac_decomposition, :polynomial_coeffs, :populate_ir!, :print_ir, :quick_cancel, :reorder_dimension_by_tunables, :reorder_dimension_by_tunables!, :respecialize, :right_continuous_function, :right_inverse,
-    :rootfunction, :scalarize, :semilinear_form, :semipolynomial_form, :semiquadratic_form, :series, :set_defaults, :setmetadata, :setnominal, :shape, :simplify, :simplify_fractions, :solve, :solve_for,
-    :solve_linear_ode_system, :solve_symbolic_IVP, :sorted_arguments, :state_priorities, :state_priority, :stochastic_integral_transform, :structural_simplify, :subset_tunables, :substitute, :substitute_in_deriv, :substitute_in_deriv_and_depvar, :supremum,
-    :symbolic_linear_solve, :symbolic_solve, :symbolic_solve_ode, :symbolics_to_sympy, :symbolics_to_sympy_pythoncall, :sympy_algebraic_solve, :sympy_integrate, :sympy_limit, :sympy_linear_solve, :sympy_ode_solve, :sympy_pythoncall_algebraic_solve, :sympy_pythoncall_integrate,
-    :sympy_pythoncall_limit, :sympy_pythoncall_linear_solve, :sympy_pythoncall_ode_solve, :sympy_pythoncall_simplify, :sympy_pythoncall_to_symbolics, :sympy_simplify, :sympy_to_symbolics, :taylor, :taylor_coeff, :term, :terms, :toexpr,
-    :toggle_namespacing, :tosymbol, :tunable_parameters, :unknowns, :unwrap, :unwrap_const, :variable_dependencies, :vartype, :varvar_dependencies, :≲, :≳,
+    Symbol("@brownians"), Symbol("@discretes"), Symbol("@independent_variables"), Symbol("@mtkcomplete"), Symbol("@named"), Symbol("@nonamespace"),
+    Symbol("@parameters"), Symbol("@poissonians"), Symbol("@register_symbolic"), Symbol("@unpack"), Symbol("@variables"), :CartesianGrid,
+    :CartesianGridRej, :Differential, :Equation, :GlobalScope, :Initial, :JumpProblem,
+    :ModelingToolkitBase, :NonlinearProblem, :ODEProblem, :ParentScope, :Pre, :SDEProblem,
+    :SteadyStateProblem, :SymbolicUtils, :Symbolics, :System, :complete, :compose,
+    :continuous_events, :equations, :extend, :full_equations, :getmetadata, :hasmetadata,
+    :independent_variables, :isinitial, :mtkcompile, :observed, :operation, :parameters, :setmetadata,
+    :simplify, :substitute, :unknowns,
 )
 
 # ExplicitImports silently skips an extension that fails to load, so assert the
@@ -91,9 +74,7 @@ run_qa(
     #   - ambiguities:       55 method ambiguities across the API surface
     #   - unbound_args:      GridLattice `Union{Array{Bool,N}, CartesianGridRej{N,T}}`
     #                        methods leave `T` unbound on the Array branch
-    #   - undefined_exports: `Variable` is reexported (via `@reexport using
-    #                        ModelingToolkitBase`) but no longer defined upstream
-    aqua_broken = (:ambiguities, :unbound_args, :undefined_exports),
+    aqua_broken = (:ambiguities, :unbound_args),
     # Pre-existing JET typo-mode findings tracked in SciML/Catalyst.jl#1496. They are
     # latent on master (reproduce byte-identical on the unmodified base) and were never
     # caught before because Catalyst had no JET check. JET surfaces them only on the
