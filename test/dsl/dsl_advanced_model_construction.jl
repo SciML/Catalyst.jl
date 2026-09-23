@@ -122,6 +122,31 @@ let
     @test Catalyst.isequivalent(rn, rn2)
 end
 
+# Tests interpolation of namespaced (dotted) references into rates, and module-qualified
+# function calls in rates (both carry a `QuoteNode`; issue #1564).
+let
+    sub = @network_component sub begin
+        @parameters V
+        @species A(t) = 0.0
+    end
+    rn = @network_component rn begin
+        @parameters k
+        k / $(sub.V), $(sub.A) --> 0
+        k * $(sub.V), $(sub.A) => 0
+    end
+    rn2 = ReactionSystem([Reaction(k / sub.V, [sub.A], nothing),
+                          Reaction(k * sub.V, [sub.A], nothing; only_use_rate = true)], t; name = :rn)
+    @test Catalyst.isequivalent(complete(rn), complete(rn2))
+
+    rn = @reaction_network rn begin
+        @parameters k
+        @species A(t)
+        k * Base.exp(-A), A --> 0
+    end
+    rn2 = complete(ReactionSystem([Reaction(k * exp(-A), [A], nothing)], t; name = :rn))
+    @test Catalyst.isequivalent(rn, rn2)
+end
+
 # Miscellaneous interpolation tests. Unsure what they do here (not related to DSL).
 let
     rx = @reaction k*h, A + 2*B --> 3*C + D

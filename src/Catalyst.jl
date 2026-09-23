@@ -106,7 +106,9 @@ export default_t, default_time_deriv
 ### Package Constants ###
 
 # Union type of types that can occur in expressions.
-const ExprValues = Union{Expr, Symbol, Float64, Int, Bool}
+# `QuoteNode` appears as the field of a dotted reference such as `$(sys.p)` or `Base.exp`,
+# which the recursive expression walkers must be able to pass through (issue #1564).
+const ExprValues = Union{Expr, Symbol, Float64, Int, Bool, QuoteNode}
 
 # The symbol used for conserved quantities in conservation law eliminations.
 const CONSERVED_CONSTANT_SYMBOL = :Γ
