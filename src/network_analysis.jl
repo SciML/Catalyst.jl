@@ -529,10 +529,10 @@ function species_reaction_graph(rn::ReactionSystem)
     edgelist = Graphs.Edge[]
     for (i, rx) in enumerate(rxs)
         for spec in rx.substrates
-            push!(edgelist, Graphs.Edge(sm[spec], s + i))
+            !isconstant(spec) && push!(edgelist, Graphs.Edge(sm[spec], s + i))
         end
         for spec in rx.products
-            push!(edgelist, Graphs.Edge(s + i, sm[spec]))
+            !isconstant(spec) && push!(edgelist, Graphs.Edge(s + i, sm[spec]))
         end
     end
     return srg = Graphs.SimpleDiGraphFromIterator(edgelist)

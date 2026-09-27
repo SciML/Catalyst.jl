@@ -65,6 +65,19 @@ let
     rm("fig.png")
 end
 
+let
+    rn = @reaction_network begin
+        @parameters X [isconstantspecies = true]
+        k, X + Y --> XY
+    end
+
+    srg = Catalyst.species_reaction_graph(rn)
+    @test nv(srg) == 3
+    @test Set(edges(srg)) == Set([Graphs.Edge(1, 3), Graphs.Edge(3, 2)])
+
+    @test_nowarn plot_network(rn)
+end
+
 CGME = Base.get_extension(parentmodule(ReactionSystem), :CatalystGraphMakieExtension)
 # Test that rate edges are inferred correctly. We should see two for the following reaction network.
 let
