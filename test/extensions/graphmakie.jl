@@ -78,6 +78,21 @@ let
     @test_nowarn plot_network(rn)
 end
 
+# Trailing reaction with only constant species must still allocate its vertex.
+let
+    rn = @reaction_network begin
+        @parameters X [isconstantspecies = true]
+        k1, Y --> Z
+        k2, X --> 0
+    end
+
+    # State species Y,Z are vertices 1,2; reactions are 3,4. X is constant so
+    # k2 contributes no edges, but vertex 4 must still exist (nv == 4).
+    srg = Catalyst.species_reaction_graph(rn)
+    @test nv(srg) == 4
+    @test Set(edges(srg)) == Set([Graphs.Edge(1, 3), Graphs.Edge(3, 2)])
+end
+
 CGME = Base.get_extension(parentmodule(ReactionSystem), :CatalystGraphMakieExtension)
 # Test that rate edges are inferred correctly. We should see two for the following reaction network.
 let

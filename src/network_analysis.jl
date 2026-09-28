@@ -526,16 +526,17 @@ function species_reaction_graph(rn::ReactionSystem)
     sm = speciesmap(rn)
     s = length(specs)
 
-    edgelist = Graphs.Edge[]
+    # Pre-size so isolated reaction vertices (no non-constant participants) remain.
+    srg = Graphs.SimpleDiGraph(s + numreactions(rn))
     for (i, rx) in enumerate(rxs)
         for spec in rx.substrates
-            !isconstant(spec) && push!(edgelist, Graphs.Edge(sm[spec], s + i))
+            !isconstant(spec) && Graphs.add_edge!(srg, sm[spec], s + i)
         end
         for spec in rx.products
-            !isconstant(spec) && push!(edgelist, Graphs.Edge(s + i, sm[spec]))
+            !isconstant(spec) && Graphs.add_edge!(srg, s + i, sm[spec])
         end
     end
-    return srg = Graphs.SimpleDiGraphFromIterator(edgelist)
+    return srg
 end
 
 ### Linkage, Deficiency, Reversibility ###
