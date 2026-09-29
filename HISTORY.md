@@ -2,6 +2,17 @@
 
 ## Unreleased (on master)
 
+- `plot_network` now supports networks with constant species (previously it errored).
+  Constant species are drawn as grey nodes. A constant species that is a substrate, or that
+  appears in a rate expression, is connected to the reaction by a red arrow (like other
+  species that the rate depends on but that are not consumed), and a constant product by a
+  grey arrow (as it does not affect the dynamics).
+- Reactions in which every substrate and product is a constant species (e.g. `k, X --> 0`
+  with `X` a constant species) now throw an `ArgumentError` on construction. Such reactions
+  are equivalent to `∅ --> ∅`. Previously they were ignored by ODE and SDE models, but caused
+  errors when creating jump models or calling `plot_complexes`, and gave an incorrect complex
+  incidence matrix.
+
 ## Catalyst 16.1
 
 - Added `use_jump_ratelaws` keyword argument to `ode_model`, `sde_model`, `hybrid_model`,

@@ -74,6 +74,19 @@ let
     # Neither substrates nor products.
     @test_throws ArgumentError Reaction(k*A, [], [])
 
+    # Only constant species as substrates and products (equivalent to ∅ --> ∅).
+    @parameters x1 [isconstantspecies = true] x2 [isconstantspecies = true]
+    @test_throws ArgumentError Reaction(k, [x1], [])
+    @test_throws ArgumentError Reaction(k, [], [x1])
+    @test_throws ArgumentError Reaction(k, [x1], [x2])
+    @test_throws ArgumentError Reaction(k*A, [x1, x2], [x1], [2, 1], [3])
+    @test_throws ArgumentError @reaction k, $x1 --> 0
+    @test_throws ArgumentError @reaction_network begin
+        @parameters X [isconstantspecies = true]
+        k1, Y --> Z
+        k2, X --> 0
+    end
+
     # Substrate vector not of equal length to substrate stoichiometry vector.
     @test_throws ArgumentError Reaction(k*A, [X, X, Z], [], [1, 2], [])
 
