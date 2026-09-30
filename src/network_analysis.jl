@@ -510,7 +510,13 @@ an edge from a reaction *r* to a species *s* indicates that *s* is a product of 
 default, the species vertices are listed first, so the first *n* indices correspond to
 species nodes.
 
-Note: this is equivalent to the Petri net representation of a chemical reaction network.
+Notes:
+- This is equivalent to the Petri net representation of a chemical reaction network.
+- The graph always has `numspecies(rn) + numreactions(rn)` vertices, with vertex
+  `numspecies(rn) + i` corresponding to the `i`th reaction of `reactions(rn)`.
+- Constant species are not included in the graph, as their contribution is treated as part
+  of the rate constant. i.e. if species `A` is constant then the reaction `A + B --> C`
+  contributes the same edges as `B --> C`.
 
 For example,
 ```julia
@@ -519,6 +525,7 @@ sir = @reaction_network SIR begin
     ν, I --> R
 end
 species_reaction_graph(sir)
+```
 """
 function species_reaction_graph(rn::ReactionSystem)
     specs = species(rn)
@@ -526,16 +533,17 @@ function species_reaction_graph(rn::ReactionSystem)
     sm = speciesmap(rn)
     s = length(specs)
 
-    edgelist = Graphs.Edge[]
+    # Pre-size so that there is always a vertex for every species and reaction.
+    srg = Graphs.SimpleDiGraph(s + numreactions(rn))
     for (i, rx) in enumerate(rxs)
         for spec in rx.substrates
-            push!(edgelist, Graphs.Edge(sm[spec], s + i))
+            !isconstant(spec) && Graphs.add_edge!(srg, sm[spec], s + i)
         end
         for spec in rx.products
-            push!(edgelist, Graphs.Edge(s + i, sm[spec]))
+            !isconstant(spec) && Graphs.add_edge!(srg, s + i, sm[spec])
         end
     end
-    return srg = Graphs.SimpleDiGraphFromIterator(edgelist)
+    return srg
 end
 
 ### Linkage, Deficiency, Reversibility ###

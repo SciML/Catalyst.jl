@@ -18,29 +18,100 @@ struct MultiGraphWrap{T} <: Graphs.AbstractGraph{T}
     edgeorder::Vector{Int64}
 end
 
-# Create the SimpleDiGraph corresponding to the species and reactions, the species-reaction graph
+# The kinds of edges in the species-reaction graph plot, and the colour each is drawn with:
+# - `:substrate`/`:product`: a (non-constant) species consumed/produced by the reaction.
+# - `:rate`: a species or constant species that the reaction's rate law depends on, but that
+#   the reaction does not consume. This includes species appearing in the rate expression, and
+#   constant substrates (whose mass action terms are part of the rate law).
+# - `:noeffect`: a constant species that does not affect the dynamics, i.e. a constant product,
+#   or a constant substrate of an `only_use_rate = true` reaction that does not appear in the
+#   rate expression. These are only drawn to reflect the reaction as written.
+const SRG_EDGE_COLORS = Dict(:substrate => :black, :product => :black, :rate => :red,
+    :noeffect => :grey)
+
+# Create the SimpleDiGraph corresponding to the species and reactions, the species-reaction
+# graph. Constant species are not part of `species_reaction_graph`, so any constant species that
+# appear in the reactions (as substrates, products, or within rates) are given vertices after the
+# reaction vertices. Returns the graph, the constant species (in vertex order), and the kind (see
+# `SRG_EDGE_COLORS`) and label of each edge, ordered as in `edges(srg)`.
 function SRGraphWrap(rn::ReactionSystem)
     srg = species_reaction_graph(rn)
-    multiedges = Vector{Graphs.SimpleEdge{Int}}()
     sm = speciesmap(rn)
     specs = species(rn)
+    ns = length(specs)
 
+    # Gets the vertex of a constant species, adding one if it does not have one yet.
+    constspecs = empty(specs)
+    csm = Dict{eltype(specs), Int}()
+    function constvertex!(s)
+        get!(csm, s) do
+            push!(constspecs, s)
+            add_vertex!(srg)
+            nv(srg)
+        end
+    end
+    conststoichlabel(stoich) = isequal(stoich, 1) ? "" : string(stoich)
+
+    # The (kind, label) of each edge of `srg`, and of each multiedge (a rate edge from a
+    # species that is also a substrate, which is drawn in addition to the substrate edge).
+    edgeinfo = Dict{Graphs.SimpleEdge{Int}, Tuple{Symbol, String}}()
+    multiedges = Vector{Graphs.SimpleEdge{Int}}()
+    multiinfo = Vector{Tuple{Symbol, String}}()
     deps = Set()
+    constdeps = Set()
     for (i, rx) in enumerate(reactions(rn))
+        rxv = ns + i
         empty!(deps)
         get_variables!(deps, rx.rate, specs)
-        if !isempty(deps)
-            for spec in deps
-                specidx = sm[spec]
-                has_edge(srg, specidx, i + length(specs)) ?
-                push!(multiedges, Graphs.SimpleEdge(specidx, i + length(specs))) :
-                add_edge!(srg, Graphs.SimpleEdge(specidx, i + length(specs)))
+        empty!(constdeps)
+        get_variables!(constdeps, rx.rate)
+        filter!(isconstant, constdeps)
+
+        for (spec, stoich) in zip(rx.substrates, rx.substoich)
+            if isconstant(spec)
+                e = Edge(constvertex!(spec), rxv)
+                add_edge!(srg, e)
+                kind = (rx.only_use_rate && !(spec in constdeps)) ? :noeffect : :rate
+                edgeinfo[e] = (kind, conststoichlabel(stoich))
+            else
+                edgeinfo[Edge(sm[spec], rxv)] = (:substrate, string(stoich))
+            end
+        end
+        for (spec, stoich) in zip(rx.products, rx.prodstoich)
+            if isconstant(spec)
+                e = Edge(rxv, constvertex!(spec))
+                add_edge!(srg, e)
+                edgeinfo[e] = (:noeffect, conststoichlabel(stoich))
+            else
+                edgeinfo[Edge(rxv, sm[spec])] = (:product, string(stoich))
+            end
+        end
+
+        for spec in deps
+            e = Edge(sm[spec], rxv)
+            if has_edge(srg, e)
+                push!(multiedges, e)
+                push!(multiinfo, (:rate, ""))
+            else
+                add_edge!(srg, e)
+                edgeinfo[e] = (:rate, "")
+            end
+        end
+
+        # A constant substrate already has a (single) rate edge.
+        for spec in constdeps
+            e = Edge(constvertex!(spec), rxv)
+            if !has_edge(srg, e)
+                add_edge!(srg, e)
+                edgeinfo[e] = (:rate, "")
             end
         end
     end
-    edgelist = vcat(collect(Graphs.edges(srg)), multiedges)
-    edgeorder = sortperm(edgelist)
-    MultiGraphWrap(srg, multiedges, edgeorder)
+
+    simpleedges = collect(Graphs.edges(srg))
+    edgeorder = sortperm(vcat(simpleedges, multiedges))
+    info = vcat([edgeinfo[e] for e in simpleedges], multiinfo)[edgeorder]
+    return MultiGraphWrap(srg, multiedges, edgeorder), constspecs, first.(info), last.(info)
 end
 
 # Automatically set edge drawing order if not supplied
@@ -142,9 +213,13 @@ end
 
 # Convert a species to a string label, handling array species properly.
 # For regular species X(t), returns "X". For array species S(t)[1], returns "S[1]".
+# Constant species are parameters, so are either plain symbols (X gives "X") or array
+# elements (x[1] gives "x[1]").
 function species_label(s)
     name = string(getname(s))
-    args = sorted_arguments(unwrap(s))
+    x = unwrap(s)
+    iscall(x) || return name
+    args = sorted_arguments(x)
     if length(args) <= 1
         return name
     else
@@ -157,8 +232,9 @@ end
     plot_network(rn::ReactionSystem; kwargs...)
 
 Converts a [`ReactionSystem`](@ref) into a GraphMakie plot of the species reaction graph
-(or Petri net representation). Reactions correspond to small green circles, and 
-species to blue circles.
+(or Petri net representation). Reactions correspond to small green circles, and
+species to blue circles. Constant species that appear in the reactions correspond to grey
+circles (placed after the reactions in the plot's node ordering).
 
 Notes:
 - Black arrows from species to reactions indicate reactants, and are labelled
@@ -169,39 +245,27 @@ Notes:
   rate expression. For example, in the reaction `k*A, B --> C`, there would be a
   red arrow from `A` to the reaction node. In `k*A, A+B --> C`, there would be
   red and black arrows from `A` to the reaction node.
+- Constant species are not consumed or produced by reactions. A constant substrate
+  contributes to the reaction's rate law, and so is connected to the reaction node by a red
+  arrow (labelled with its stoichiometry if this is not one). For example, if `A` is a
+  constant species, `k, A + B --> C` and `k*A, B --> C` are drawn the same way. A constant
+  species that is both a substrate and used within the rate expression gets a single red
+  arrow.
+- Grey arrows from reactions to constant species indicate constant products. These do not
+  affect the dynamics, and are only drawn to reflect the reaction as written. Likewise, a
+  constant substrate of a reaction with `only_use_rate = true` (i.e. using `=>`) that does
+  not appear in the rate expression is connected to the reaction by a grey arrow.
 
 For a list of accepted keyword arguments to the graph plot, please see the [GraphMakie documentation](https://graph.makie.org/stable/#The-graphplot-Recipe).
 """
 function Catalyst.plot_network(rn::ReactionSystem; kwargs...)
-    srg = SRGraphWrap(rn)
-    ns = length(species(rn))
-    nodecolors = vcat([:skyblue3 for i in 1:ns],
-        [:green for i in (ns + 1):nv(srg)])
-    ilabels = vcat(map(species_label, species(rn)),
-        ["R$i" for i in 1:(nv(srg) - ns)])
-
-    ssm = substoichmat(rn)
-    psm = prodstoichmat(rn)
-    # Get stoichiometry of reaction
-    edgelabels = map(Graphs.edges(srg.g)) do e
-        string(src(e) > ns ?
-               psm[dst(e), src(e) - ns] :
-               ssm[src(e), dst(e) - ns])
-    end
-    edgecolors = [:black for i in 1:ne(srg)]
-
-    num_e = ne(srg.g)
-    # Handle the rate edges
-    for i in 1:length(srg.edgeorder)
-        # If there are stoichiometry and rate edges from the same species to reaction
-        if srg.edgeorder[i] > num_e
-            edgecolors[i] = :red
-            insert!(edgelabels, i, "")
-        elseif edgelabels[i] == "0"
-            edgecolors[i] = :red
-            edgelabels[i] = ""
-        end
-    end
+    srg, constspecs, edgekinds, edgelabels = SRGraphWrap(rn)
+    ns = numspecies(rn)
+    nr = numreactions(rn)
+    nodecolors = vcat(fill(:skyblue3, ns), fill(:green, nr), fill(:grey, length(constspecs)))
+    ilabels = String[map(species_label, species(rn)); ["R$i" for i in 1:nr];
+        map(species_label, constspecs)]
+    edgecolors = [SRG_EDGE_COLORS[kind] for kind in edgekinds]
 
     layout = if !haskey(kwargs, :layout)
         Stress()

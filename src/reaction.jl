@@ -140,6 +140,8 @@ Notes:
   In this case the corresponding stoichiometry vector should also be set to `nothing`.
 - The three-argument form assumes all reactant and product stoichiometric coefficients
   are one.
+- At least one substrate or product must be a non-constant species. Reactions in which
+  every reactant is a constant species are equivalent to `∅ --> ∅`, and are not allowed.
 - Pass `unit_checks = true` to validate unit consistency at construction time. When
   enabled, checks that all substrates and products share the same units, and that the
   rate expression has internally consistent additive terms. Default is `false`.
@@ -224,6 +226,10 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     if !(all(isvalidreactant, subs) && all(isvalidreactant, prods))
         badsts = union(filter(!isvalidreactant, subs), filter(!isvalidreactant, prods))
         throw(ArgumentError("""To be a valid substrate or product, non-constant species must be declared via @species, while constant species must be parameters with the isconstantspecies metadata. The following reactants do not follow this convention:\n $badsts"""))
+    end
+    if all(isconstant, subs) && all(isconstant, prods)
+        throw(ArgumentError("A reaction must have at least one non-constant species as a substrate or product; " *
+            "reactions in which every reactant is a constant species are equivalent to ∅ --> ∅ and are not allowed."))
     end
 
     ns = if netstoich === nothing

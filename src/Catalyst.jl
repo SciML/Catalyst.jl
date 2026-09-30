@@ -289,6 +289,11 @@ This extension function is available after loading GraphMakie.jl and
 NetworkLayout.jl. Keyword arguments are forwarded to the GraphMakie plotting
 recipe.
 
+Species are drawn as blue nodes and reactions as green nodes. Constant species that
+appear in the reactions are drawn as grey nodes, with red arrows to the reactions whose
+rate laws they contribute to (as substrates or within rate expressions), and grey arrows
+from the reactions that have them as products (which does not affect the dynamics).
+
 # Examples
 ```julia
 using Catalyst, GraphMakie, CairoMakie

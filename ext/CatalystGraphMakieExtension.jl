@@ -2,17 +2,17 @@ module CatalystGraphMakieExtension
 
 # Fetch packages.
 using Catalyst: Catalyst, DiscreteSpaceReactionSystem, ReactionSystem, incidencemat,
-    prodstoichmat, reactioncomplexes, reactions, spat_getu, species, speciesmap,
-    substoichmat
+    isconstant, numreactions, numspecies, reactioncomplexes, reactions, spat_getu, species,
+    speciesmap
 using GraphMakie: graphplot
-using Graphs: Graphs, AbstractGraph, Edge, SimpleDiGraph, SimpleGraph, add_edge!, dst,
-    edges, edgetype, has_edge, has_vertex, inneighbors, is_connected, is_directed, ne,
-    nv, outneighbors, src, vertices
+using Graphs: Graphs, AbstractGraph, Edge, SimpleDiGraph, SimpleGraph, add_edge!,
+    add_vertex!, dst, edges, edgetype, has_edge, has_vertex, inneighbors, is_connected,
+    is_directed, nv, outneighbors, src, vertices
 using Makie: Makie, DataAspect, hidedecorations!, hidespines!, record
 using NetworkLayout: Stress
 using SparseArrays: nonzeros, nzrange, rowvals
 using SymbolicUtils: unwrap
-using Symbolics: get_variables!, sorted_arguments
+using Symbolics: get_variables!, iscall, sorted_arguments
 import Catalyst: species_reaction_graph, incidencematgraph, dspace_plot, dspace_animation
 import SymbolicIndexingInterface: getname
 
