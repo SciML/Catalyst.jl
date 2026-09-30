@@ -2,6 +2,8 @@
 
 ## Unreleased (on master)
 
+## Catalyst 16.5
+
 - `plot_network` now supports networks with constant species (previously it errored).
   Constant species are drawn as grey nodes. A constant species that is a substrate, or that
   appears in a rate expression, is connected to the reaction by a red arrow (like other
