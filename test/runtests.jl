@@ -6,10 +6,7 @@ using SafeTestsets, Test, Pkg
 # Required for running parallel test groups (copied from ModelingToolkit).
 const GROUP = get(ENV, "GROUP", "All")
 
-# The in-tree project files are read-only when Catalyst is installed as a
-# package, but Pkg.develop records a `[sources]` entry in the active project, so
-# activate a writable copy instead. Copy contents, not the file: `cp` would
-# preserve the read-only mode.
+# Pkg.develop writes [sources] into the active project; installed packages are read-only, so activate a writable copy.
 function activate_test_env(dir)
     env = mktempdir()
     write(
