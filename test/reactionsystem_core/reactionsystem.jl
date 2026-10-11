@@ -263,13 +263,13 @@ let
         unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(js)))
         jprob = JumpProblem(js, merge(Dict(u0map), Dict(pmap)), (0.0, 1.0))
         mtkpars = jprob.prob.p
-        jspmapper = MT.JumpSysMajParamMapper(js, mtkpars)
         symbolic_majs = MassActionJump[MT.jumps(js)[i] for i in midxs]
+        jspmapper = MT.JumpSysMajParamMapper(js, symbolic_majs)
         symmaj = MT.assemble_maj(symbolic_majs, unknownoid, jspmapper)
-        maj = MassActionJump(
-            symmaj.param_mapper(mtkpars), symmaj.reactant_stoch, symmaj.net_stoch,
-            symmaj.param_mapper, scale_rates = false
-        )
+        # The mapper fills the rate constants at the given parameters in place.
+        rates = zeros(length(symbolic_majs))
+        symmaj.param_mapper(rates, symmaj, mtkpars)
+        maj = MassActionJump(rates, symmaj.reactant_stoch, symmaj.net_stoch; scale_rates = false)
         for i in midxs
             @test abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100 * eps()
             @test jumps[i].reactant_stoch == maj.reactant_stoch[i]
@@ -603,12 +603,12 @@ let
     rn = complete(rn)
     jprob = JumpProblem(
         rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
-        [k1 => 1.0]; rng, save_positions = (false, false)
+        [k1 => 1.0]; save_positions = (false, false)
     )
     umean = zeros(4)
     Nsims = 40000
     for i in 1:Nsims
-        sol = solve(jprob, SSAStepper(), saveat = 10.0)
+        sol = solve(jprob, SSAStepper(), saveat = 10.0; rng)
         umean += sol(10.0, idxs = [B1, B2, B3, C])
     end
     umean /= Nsims
@@ -890,11 +890,11 @@ let
     @named rs = ReactionSystem(rxs, t, [S, I], [])
     rs = complete(rs)
     js = complete(jump_model(rs))
-    jprob = JumpProblem(js, [S => 1, I => 1], (0.0, 10.0); rng)
-    sol = solve(jprob, SSAStepper())
+    jprob = JumpProblem(js, [S => 1, I => 1], (0.0, 10.0))
+    sol = solve(jprob, SSAStepper(); rng)
 
     # Test for https://github.com/SciML/ModelingToolkit.jl/issues/1042.
-    jprob = JumpProblem(rs, [S => 1, I => 1], (0.0, 10.0), []; aggregator = Direct(), rng, save_positions = (false, false))
+    jprob = JumpProblem(rs, [S => 1, I => 1], (0.0, 10.0), []; aggregator = Direct(), save_positions = (false, false))
 
     @parameters k1 k2
     @species R(t)

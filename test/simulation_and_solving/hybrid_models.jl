@@ -15,16 +15,16 @@ let
     rn = @reaction_network begin
         k*(1 + sin(t)), 0 --> A
     end
-    jprob = JumpProblem(rn, [:A => 0], (0.0, 10.0), [:k => .5]; rng)
-    sol = solve(jprob, Tsit5())
+    jprob = JumpProblem(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+    sol = solve(jprob, Tsit5(); rng)
     @test sol(10.0; idxs = :A) > 0
 
     # Constant rate -> MassActionJump (can use SSAStepper)
     rn = @reaction_network begin
         k, 0 --> A
     end
-    jprob = JumpProblem(rn, [:A => 0], (0.0, 10.0), [:k => .5]; rng)
-    sol = solve(jprob, SSAStepper())
+    jprob = JumpProblem(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+    sol = solve(jprob, SSAStepper(); rng)
     @test sol(10.0; idxs = :A) > 0
 
     # Hybrid model with ODE equations and events - requires HybridProblem
@@ -37,8 +37,8 @@ let
         end
     end
     # JumpProblem no longer supports ODE equations - use HybridProblem instead
-    jprob = HybridProblem(rn, [:A => 0, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4]; rng)
-    sol = solve(jprob, Tsit5())
+    jprob = HybridProblem(rn, [:A => 0, :V => 1.0], (0.0, 10.0), [:k => 1.0, :λ => .4])
+    sol = solve(jprob, Tsit5(); rng)
 end
 
 # solution correctness tests
@@ -55,7 +55,7 @@ let
     u0map = [:X => p.X₀, :Y => p.Y₀]
     pmap = [:α => p.α, :β => p.β]
     tspan = (0.0, 20.0)
-    jprob = HybridProblem(rn, u0map, tspan, pmap; save_positions = (false, false), rng)
+    jprob = HybridProblem(rn, u0map, tspan, pmap; save_positions = (false, false))
     times = range(0.0, tspan[2], length = 100)
     Nsims = 4000
     Xv = zeros(length(times))
@@ -99,7 +99,7 @@ let
     @named rn2 = ReactionSystem([], t; continuous_events = cevents)
     rn = complete(extend(rn2, rn))
     tspan = (0.0, 200.0)
-    jprob = HybridProblem(rn, u0map, tspan, pmap; save_positions = (false, false), rng)
+    jprob = HybridProblem(rn, u0map, tspan, pmap; save_positions = (false, false))
     Xsamp = 0.0
     Nsims = 4000
     for n in 1:Nsims
@@ -144,13 +144,13 @@ let
     ps_hybrid = [ps_ode; ps_jump]
     tspan = (0.0, 10000.0)
     ode_prob = ODEProblem(rn_ode, u0_ode, tspan, ps_ode)
-    jump_prob = JumpProblem(rn_jump, u0_jump, tspan, ps_jump; save_positions = (false, false), rng)
-    hybrid_prob = HybridProblem(rn_hybrid, u0_hybrid, tspan, ps_hybrid; save_positions = (false, false), rng)
+    jump_prob = JumpProblem(rn_jump, u0_jump, tspan, ps_jump; save_positions = (false, false))
+    hybrid_prob = HybridProblem(rn_hybrid, u0_hybrid, tspan, ps_hybrid; save_positions = (false, false))
 
     # Performs simulations. Checks that ODE parts are identical. Check that jump parts have similar statistics.
     ode_sol = solve(ode_prob, Tsit5(); saveat = 1.0, abstol = 1e-10, reltol = 1e-10)
-    jump_sol = solve(jump_prob, SSAStepper(); saveat = 1.0)
-    hybrid_sol = solve(hybrid_prob, Tsit5(); saveat = 1.0, abstol = 1e-10, reltol = 1e-10)
+    jump_sol = solve(jump_prob, SSAStepper(); saveat = 1.0, rng)
+    hybrid_sol = solve(hybrid_prob, Tsit5(); saveat = 1.0, abstol = 1e-10, reltol = 1e-10, rng)
     @test ode_sol[:Y] ≈ hybrid_sol[:Y] atol = 1e-4 rtol = 1e-4
     @test mean(jump_sol[:V]) ≈ mean(hybrid_sol[:V]) atol = 1e-1 rtol = 1e-1
     @test mean(jump_sol[:W]) ≈ mean(hybrid_sol[:W]) atol = 1e-1 rtol = 1e-1
@@ -377,14 +377,14 @@ let
     times = 0.0:1.0:10.0
 
     # With save_positions=(false, false), saveat should give exactly the specified times.
-    prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
-    sol = solve(prob, SSAStepper(); saveat = times)
+    prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false))
+    sol = solve(prob, SSAStepper(); saveat = times, rng)
     @test length(sol.t) == length(times)
     @test sol.t ≈ collect(times)
 
     # With default save_positions (true, true), there will be extra points from jump times.
-    prob_default = JumpProblem(rn, u0, tspan, ps; rng)
-    sol_default = solve(prob_default, SSAStepper(); saveat = times)
+    prob_default = JumpProblem(rn, u0, tspan, ps)
+    sol_default = solve(prob_default, SSAStepper(); saveat = times, rng)
     @test length(sol_default.t) > length(times)
 
     # Verify the aggregator has correct save_positions setting.
@@ -408,14 +408,14 @@ let
     times = 0.0:1.0:10.0
 
     # With save_positions=(false, false), saveat should control the number of output points.
-    prob = HybridProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
-    sol = solve(prob, Tsit5(); saveat = times)
+    prob = HybridProblem(rn, u0, tspan, ps; save_positions = (false, false))
+    sol = solve(prob, Tsit5(); saveat = times, rng)
     @test length(sol.t) == length(times)
     @test sol.t ≈ collect(times)
 
     # With default save_positions (true, true), there will be extra points from jump times.
-    prob_default = HybridProblem(rn, u0, tspan, ps; rng)
-    sol_default = solve(prob_default, Tsit5(); saveat = times)
+    prob_default = HybridProblem(rn, u0, tspan, ps)
+    sol_default = solve(prob_default, Tsit5(); saveat = times, rng)
     @test length(sol_default.t) > length(times)
 
     # Verify the aggregator has correct save_positions setting.
@@ -439,8 +439,8 @@ let
     times = 0.0:1.0:10.0
 
     # With save_positions=(false, false), the ContinuousCallback for VRJ should not save.
-    prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
-    sol = solve(prob, Tsit5(); saveat = times)
+    prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false))
+    sol = solve(prob, Tsit5(); saveat = times, rng)
 
     # With save_positions=(false, false), saveat should give exactly the specified times.
     @test length(sol.t) == length(times)
@@ -451,7 +451,7 @@ let
     @test cc.save_positions == [false, false]
 
     # With default save_positions, ContinuousCallback should save.
-    prob_default = JumpProblem(rn, u0, tspan, ps; rng)
+    prob_default = JumpProblem(rn, u0, tspan, ps)
     cc_default = prob_default.jump_callback.continuous_callbacks[1]
     @test cc_default.save_positions == [true, true]
 end
@@ -471,8 +471,8 @@ let
     times = 0.0:1.0:10.0
 
     # With save_positions=(false, false), both mass action and VRJ should not save at jump times.
-    prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
-    sol = solve(prob, Tsit5(); saveat = times)
+    prob = JumpProblem(rn, u0, tspan, ps; save_positions = (false, false))
+    sol = solve(prob, Tsit5(); saveat = times, rng)
 
     # With save_positions=(false, false), saveat should give exactly the specified times.
     @test length(sol.t) == length(times)
@@ -498,10 +498,10 @@ let
     times = 0.0:1.0:10.0
 
     # Create problem with save_positions=(false, false).
-    prob = HybridProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
+    prob = HybridProblem(rn, u0, tspan, ps; save_positions = (false, false))
 
     # Solve with saveat.
-    sol_saveat = solve(prob, Tsit5(); saveat = times)
+    sol_saveat = solve(prob, Tsit5(); saveat = times, rng)
 
     # Verify we can access solution values correctly.
     @test length(sol_saveat[:X]) == length(times)
@@ -527,14 +527,14 @@ let
     times = 0.0:1.0:10.0
 
     # With save_positions=(false, false), saveat should control output times.
-    prob = HybridProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
-    sol = solve(prob, SRIW1(); saveat = times)
+    prob = HybridProblem(rn, u0, tspan, ps; save_positions = (false, false))
+    sol = solve(prob, SRIW1(); saveat = times, rng)
     @test length(sol.t) == length(times)
     @test sol.t ≈ collect(times)
 
     # With default save_positions (true, true), there will be extra points from jump times.
-    prob_default = HybridProblem(rn, u0, tspan, ps; rng)
-    sol_default = solve(prob_default, SRIW1(); saveat = times)
+    prob_default = HybridProblem(rn, u0, tspan, ps)
+    sol_default = solve(prob_default, SRIW1(); saveat = times, rng)
     @test length(sol_default.t) > length(times)
 
     # Verify the aggregator has correct save_positions setting.
@@ -558,8 +558,8 @@ let
     times = 0.0:1.0:10.0
 
     # With save_positions=(false, false), both SDE and VRJ should not save at event times.
-    prob = HybridProblem(rn, u0, tspan, ps; save_positions = (false, false), rng)
-    sol = solve(prob, SRIW1(); saveat = times)
+    prob = HybridProblem(rn, u0, tspan, ps; save_positions = (false, false))
+    sol = solve(prob, SRIW1(); saveat = times, rng)
 
     # With save_positions=(false, false), saveat should give exactly the specified times.
     @test length(sol.t) == length(times)
@@ -570,7 +570,7 @@ let
     @test cc.save_positions == [false, false]
 
     # With default save_positions, ContinuousCallback should save.
-    prob_default = HybridProblem(rn, u0, tspan, ps; rng)
+    prob_default = HybridProblem(rn, u0, tspan, ps)
     cc_default = prob_default.jump_callback.continuous_callbacks[1]
     @test cc_default.save_positions == [true, true]
 end
@@ -903,7 +903,7 @@ let
         k2, X --> 0, [physical_scale = PhysicalScale.Jump]
     end
     cat_prob = HybridProblem(rn, [:X => X0], tspan, [:k1 => k1, :k2 => k2];
-        save_positions = (false, false), rng)
+        save_positions = (false, false))
 
     # --- Manually coded version using JumpProcesses + StochasticDiffEq ---
     f_manual!(du, u, p, t) = (du[1] = p[1])  # drift: k1
@@ -912,14 +912,14 @@ let
     affect_manual!(integrator) = (integrator.u[1] -= 1)
     jump_manual = VariableRateJump(rate_manual, affect_manual!; save_positions = (false, false))
     sde_prob = SciMLBase.SDEProblem(f_manual!, g_manual!, [X0], tspan, [k1, k2])
-    manual_prob = JumpProblem(sde_prob, Direct(), jump_manual; rng, save_positions = (false, false))
+    manual_prob = JumpProblem(sde_prob, Direct(), jump_manual; save_positions = (false, false))
 
     # Run simulations and collect values at all time points
     cat_samples = zeros(N, length(times))
     manual_samples = zeros(N, length(times))
     for i in 1:N
-        cat_sol = solve(cat_prob, SRIW1(); saveat = times)
-        manual_sol = solve(manual_prob, SRIW1(); saveat = times)
+        cat_sol = solve(cat_prob, SRIW1(); saveat = times, rng)
+        manual_sol = solve(manual_prob, SRIW1(); saveat = times, rng)
         cat_samples[i, :] .= cat_sol[:X]
         manual_samples[i, :] .= manual_sol[1, :]  # numeric index for manual problem
     end
@@ -956,12 +956,12 @@ let
     end
 
     prob = HybridProblem(rn, [:S => 1.0, :P => P0], tspan, [:k1 => k1, :k2 => k2];
-        save_positions = (false, false), rng)
+        save_positions = (false, false))
 
     # Run simulations and collect values at all time points
     Pv = zeros(length(times))
     for i in 1:N
-        sol = solve(prob, SRIW1(); saveat = times)
+        sol = solve(prob, SRIW1(); saveat = times, rng)
         Pv .+= sol[:P]
     end
     Pv ./= N
@@ -1005,7 +1005,7 @@ let
     end
     cat_prob = HybridProblem(rn, [:A => A0, :B => B0, :C => C0, :D => D0], tspan,
         [:k1 => k1, :k2 => k2, :k3 => k3, :k4 => k4, :k5 => k5];
-        save_positions = (false, false), rng)
+        save_positions = (false, false))
 
     # --- Manually coded version ---
     # Species order: [A, B, C, D]
@@ -1053,7 +1053,7 @@ let
 
     sde_prob = SciMLBase.SDEProblem(f_manual!, g_manual!, [A0, B0, C0, D0], tspan,
         [k1, k2, k3, k4, k5])
-    manual_prob = JumpProblem(sde_prob, Direct(), jump1, jump2, jump3, jump4; rng,
+    manual_prob = JumpProblem(sde_prob, Direct(), jump1, jump2, jump3, jump4;
         save_positions = (false, false))
 
     # Run simulations and collect values
@@ -1067,8 +1067,8 @@ let
     manual_D = zeros(N, length(times))
 
     for i in 1:N
-        cat_sol = solve(cat_prob, SRIW1(); saveat = times)
-        manual_sol = solve(manual_prob, SRIW1(); saveat = times)
+        cat_sol = solve(cat_prob, SRIW1(); saveat = times, rng)
+        manual_sol = solve(manual_prob, SRIW1(); saveat = times, rng)
         cat_A[i, :] .= cat_sol[:A]
         cat_B[i, :] .= cat_sol[:B]
         cat_C[i, :] .= cat_sol[:C]
@@ -1226,12 +1226,14 @@ let
     T = 10.0
     n_trials = 500
 
-    # Create problem once; the RNG state advances across solves giving different trajectories.
+    # Create problem once; the solves' shared RNG advances across solves, giving different
+    # trajectories.
     prob = HybridProblem(rn, [:X => 0.0], (0.0, T), [:λ => λ_val];
-        save_positions = (false, false), rng = StableRNG(12345))
+        save_positions = (false, false))
     # Pure poissonian system: D(X) ~ dN becomes D(X) ~ 0 after extraction,
     # mtkcompile reduces to DiscreteProblem → use SSAStepper.
-    final_vals = [solve(prob, SSAStepper(); saveat = T)[X, end] for _ in 1:n_trials]
+    trial_rng = StableRNG(12345)
+    final_vals = [solve(prob, SSAStepper(); saveat = T, rng = trial_rng)[X, end] for _ in 1:n_trials]
 
     # E[X(T)] = λ*T = 50.0, Var[X(T)] = λ*T = 50.0.
     @test isapprox(mean(final_vals), λ_val * T; rtol = 0.1)
@@ -1260,14 +1262,15 @@ let
     T = 10.0
     n_trials = 500
 
-    # Create problem once; the RNG state advances across solves.
+    # Create problem once; the solves' shared RNG advances across solves.
     prob = HybridProblem(rn, [:S => 10.0, :X => 0.0], (0.0, T),
         [:λ => λ_val, :k => 1.0, :d => 0.1];
-        save_positions = (false, false), rng = StableRNG(12345))
+        save_positions = (false, false))
     @test prob isa JumpProblem
 
     # Has ODE equations (reactions + D(X) ~ 0 after extraction), so needs ODE solver.
-    final_X = [solve(prob, Tsit5(); saveat = T)[X, end] for _ in 1:n_trials]
+    trial_rng = StableRNG(12345)
+    final_X = [solve(prob, Tsit5(); saveat = T, rng = trial_rng)[X, end] for _ in 1:n_trials]
 
     # E[X(T)] = λ*T = 20.0, Var[X(T)] = λ*T = 20.0.
     @test isapprox(mean(final_X), λ_val * T; rtol = 0.1)
@@ -1295,16 +1298,18 @@ let
     λ_val = 3.0
     σ_val = 1.0
     T = 10.0
-    # Brownian trajectories use the task RNG, so use enough samples to stabilize their variance.
+    # Use enough samples to stabilize the variance estimate of the combined Brownian and jump
+    # noise, which both draw from the RNG passed to `solve`.
     n_trials = 1500
 
-    # Create problem once; the RNG state advances across solves.
+    # Create problem once; the solves' shared RNG advances across solves.
     prob = HybridProblem(rn, [:X => 0.0], (0.0, T),
         [:λ => λ_val, :σ => σ_val];
-        save_positions = (false, false), rng = StableRNG(12345))
+        save_positions = (false, false))
     @test prob isa JumpProblem
 
-    final_vals = [solve(prob, SRIW1(); saveat = T)[X, end] for _ in 1:n_trials]
+    trial_rng = StableRNG(12345)
+    final_vals = [solve(prob, SRIW1(); saveat = T, rng = trial_rng)[X, end] for _ in 1:n_trials]
 
     # E[X(T)] = λ*T = 30.0, Var[X(T)] = σ²*T + λ*T = 10 + 30 = 40.0.
     @test isapprox(mean(final_vals), λ_val * T; rtol = 0.1)
@@ -1333,12 +1338,13 @@ let
     n_trials = 500
 
     # State-dependent rate → VariableRateJump → needs ODE solver.
-    # Create problem once; the RNG state advances across solves.
+    # Create problem once; the solves' shared RNG advances across solves.
     prob = HybridProblem(rn, [:X => X0], (0.0, T), [:k => k_val];
-        save_positions = (false, false), rng = StableRNG(12345))
+        save_positions = (false, false))
     @test prob isa JumpProblem
 
-    final_vals = [solve(prob, Tsit5(); saveat = T)[X, end] for _ in 1:n_trials]
+    trial_rng = StableRNG(12345)
+    final_vals = [solve(prob, Tsit5(); saveat = T, rng = trial_rng)[X, end] for _ in 1:n_trials]
 
     # For a Yule process: E[X(T)] = X₀*exp(k*T) = exp(2) ≈ 7.389.
     @test isapprox(mean(final_vals), X0 * exp(k_val * T); rtol = 0.1)
@@ -1364,13 +1370,14 @@ let
     T = 10.0
     n_trials = 500
 
-    # Create problem once; the RNG state advances across solves.
+    # Create problem once; the solves' shared RNG advances across solves.
     prob = HybridProblem(rn, [:X => 0.0], (0.0, T), [:λ => λ_val];
-        save_positions = (false, false), rng = StableRNG(12345))
+        save_positions = (false, false))
     @test prob isa JumpProblem
 
     # Pure poissonian: D(X) ~ dN becomes D(X) ~ 0 → DiscreteProblem → SSAStepper.
-    final_vals = [solve(prob, SSAStepper(); saveat = T)[X, end] for _ in 1:n_trials]
+    trial_rng = StableRNG(12345)
+    final_vals = [solve(prob, SSAStepper(); saveat = T, rng = trial_rng)[X, end] for _ in 1:n_trials]
 
     # E[X(T)] = λ*T = 30.0, Var[X(T)] = λ*T = 30.0.
     @test isapprox(mean(final_vals), λ_val * T; rtol = 0.1)

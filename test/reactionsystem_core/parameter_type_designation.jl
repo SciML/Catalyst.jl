@@ -73,12 +73,12 @@ let
     # Creates problems, integrators, and solutions.
     oprob = ODEProblem(rs, u0, (0.0, 1.0), p_alts[1])
     sprob = SDEProblem(rs, u0, (0.0, 1.0), p_alts[1])
-    jprob = JumpProblem(rs, u0, (0.0, 1.0), p_alts[1]; rng)
+    jprob = JumpProblem(rs, u0, (0.0, 1.0), p_alts[1])
     nprob = NonlinearProblem(rs, u0, p_alts[1])
 
     oinit = init(oprob, Tsit5())
     sinit = init(sprob, ImplicitEM())
-    jinit = init(jprob, SSAStepper())
+    jinit = init(jprob, SSAStepper(); rng)
     ninit = init(nprob, NewtonRaphson())
 
     osol = solve(oprob, Tsit5())

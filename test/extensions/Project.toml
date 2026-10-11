@@ -16,6 +16,11 @@ SteadyStateDiffEq = "9672c7b4-1e72-59bd-8a11-6ac3964bc41f"
 StructuralIdentifiability = "220ca800-aa68-49bb-acd8-6037fa93a544"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
+[sources]
+# Temporary: test against the JumpProcesses 10 branch (SciML/JumpProcesses.jl#680). Remove once
+# it is registered.
+JumpProcesses = {url = "https://github.com/isaacsas/DiffEqJump.jl.git", rev = "integration/v10-master-2026-09-22"}
+
 [compat]
 BifurcationKit = "0.8.0"
 CairoMakie = "0.15.11"

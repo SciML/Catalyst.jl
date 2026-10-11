@@ -366,7 +366,7 @@ let
     # Simulates the model for conditions where it *definitely* will cross `X = 1000.0`
     u0 = [:X => 999]
     ps = [:p => 10.0, :d => 0.001]
-    jprob = JumpProblem(rn, u0, (0.0, 2.0), ps; rng)
+    jprob = JumpProblem(rn, u0, (0.0, 2.0), ps)
     sol = solve(jprob, SSAStepper(); seed)
 
     # Checks that all `e` parameters have been updated properly.
@@ -442,7 +442,7 @@ let
     # Note that periodic discrete events are currently broken for jump processes (and unlikely to be fixed soon due to have events are implemented).
     callback = CallbackSet(cb_disc_1, cb_disc_2, cb_disc_3)
     jprob = JumpProblem(rn, u0, tspan, ps)
-    jprob_events = JumpProblem(rn_dics_events, u0, tspan, ps; rng)
+    jprob_events = JumpProblem(rn_dics_events, u0, tspan, ps)
     sol = solve(jprob, SSAStepper(); seed, callback)
     sol_events = solve(jprob_events, SSAStepper(); seed)
     @test_broken sol == sol_events  # Plotting the solutions, they seem similar but are not identical. Potentially the test should be redesigned anyway. Also, periodic events are to general work here.
@@ -680,8 +680,8 @@ let
         @discrete_events (t == t_event) => [X => X + 10000]
         (10.0, 0.01), 0 <--> X
     end
-    jprob = JumpProblem(rn, [:X => 0], (0.0, 5.0); rng)
-    sol = solve(jprob, SSAStepper())
+    jprob = JumpProblem(rn, [:X => 0], (0.0, 5.0))
+    sol = solve(jprob, SSAStepper(); rng)
 
     @test sol.t[end] == 5.0
     @test 3.0 ∈ sol.t
@@ -718,8 +718,8 @@ let
         0.01, X --> 0, [physical_scale = Catalyst.PhysicalScale.ODE]
         1.0, X --> 0, [physical_scale = Catalyst.PhysicalScale.Jump]
     end
-    hprob = HybridProblem(rn, [:X => 100.0], (0.0, 5.0); rng)
-    sol = solve(hprob, Tsit5())
+    hprob = HybridProblem(rn, [:X => 100.0], (0.0, 5.0))
+    sol = solve(hprob, Tsit5(); rng)
 
     @test sol.t[end] == 5.0
     @test 3.0 ∈ sol.t

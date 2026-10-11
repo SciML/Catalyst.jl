@@ -133,7 +133,7 @@ end
 # Perform jump simulations (singular and ensemble).
 let
     # Creates normal and ensemble problems.
-    base_jprob = JumpProblem(model, u0_alts[1], tspan, p_alts[1]; rng)
+    base_jprob = JumpProblem(model, u0_alts[1], tspan, p_alts[1])
     base_sol = solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
     base_eprob = EnsembleProblem(base_jprob)
     base_esol = solve(base_eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
@@ -324,7 +324,7 @@ end
 # Perform jump simulations (singular and ensemble).
 let
     # Creates normal and ensemble problems.
-    base_jprob = JumpProblem(model_vec, u0_alts_vec[1], tspan, p_alts_vec[1]; rng)
+    base_jprob = JumpProblem(model_vec, u0_alts_vec[1], tspan, p_alts_vec[1])
     base_sol = solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
     base_eprob = EnsembleProblem(base_jprob)
     base_esol = solve(base_eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)

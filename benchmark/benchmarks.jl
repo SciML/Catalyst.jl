@@ -47,9 +47,8 @@ SUITE["problem"]["jumpproblem"] = @benchmarkable JumpProblem(
 SUITE["solve"] = BenchmarkGroup()
 
 odeprob = ODEProblem(rn_complete, u0, tspan, p)
-jprob = JumpProblem(
-    rn_complete, u0, tspan, p; aggregator = Direct(), rng = StableRNG(12345)
-)
+jprob = JumpProblem(rn_complete, u0, tspan, p; aggregator = Direct())
 
 SUITE["solve"]["ode_tsit5"] = @benchmarkable solve($odeprob, Tsit5())
-SUITE["solve"]["jump_direct"] = @benchmarkable solve($jprob, SSAStepper())
+# Each sample simulates the same trajectory, from a fresh RNG.
+SUITE["solve"]["jump_direct"] = @benchmarkable solve($jprob, SSAStepper(); rng) setup=(rng = StableRNG(12345)) evals=1
