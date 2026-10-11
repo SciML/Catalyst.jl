@@ -2,6 +2,50 @@
 
 ## Unreleased (on master)
 
+#### BREAKING: Updated to JumpProcesses 10
+
+Catalyst now requires JumpProcesses 10, and a ModelingToolkitBase release that supports it.
+The changes most relevant to Catalyst users are summarized below; see the [JumpProcesses
+HISTORY.md](https://github.com/SciML/JumpProcesses.jl/blob/master/HISTORY.md) for the
+complete list.
+
+- **The random number generator is now passed to `solve`, not to `JumpProblem`.** Passing
+  `rng` to `JumpProblem`, or to a `HybridProblem` with jumps, now throws an `ArgumentError`.
+
+  **Before:**
+  ```julia
+  jprob = JumpProblem(rn, u0, tspan, ps; rng = StableRNG(1234))
+  sol = solve(jprob, SSAStepper())
+  ```
+
+  **After:**
+  ```julia
+  jprob = JumpProblem(rn, u0, tspan, ps)
+  sol = solve(jprob, SSAStepper(); rng = StableRNG(1234))
+  ```
+  `solve` and `init` also accept a `seed`. If neither is given, Julia's default random
+  number generator is used.
+- **Jumps draw their random numbers from the generator passed to `solve`.** Creating a new
+  generator with the same seed for every `solve`, e.g. `solve(jprob, SSAStepper(); rng =
+  StableRNG(1))` inside a loop, therefore gives the same trajectory every time. To draw
+  independent but reproducible samples, create one generator and pass it to every `solve`.
+- **A `JumpProblem` supports one solve at a time.** Each solve reuses, rather than copies,
+  the problem's internal jump state, and problems created with `remake` share the
+  original's jump state. Solving a problem repeatedly in serial is safe. For parallel
+  simulations use an `EnsembleProblem`, which copies the problem as needed, or give each
+  thread or task its own `deepcopy` of the problem. See the JumpProcesses [ensembles and
+  problem reuse
+  tutorial](https://docs.sciml.ai/JumpProcesses/stable/tutorials/ensembles_and_problem_reuse/)
+  for details.
+- **Mass-action rate constants are recomputed from the current parameter values** at
+  every `solve`/`init`, and whenever `reset_aggregated_jumps!(integrator)` is called. Changes
+  made with `remake`, by setting parameters on the problem (e.g. `jprob.ps[:k] = 2.0`), or
+  by Catalyst events, therefore take effect without further action. Callbacks written
+  directly with DiffEqCallbacks or SciMLBase that change parameters must still call
+  `reset_aggregated_jumps!(integrator)`, whose `update_jump_params` keyword has been
+  removed. For Catalyst-generated problems, `jprob.massaction_jump.scaled_rates` no longer
+  holds the rate constants.
+
 ## Catalyst 16.5
 
 - `plot_network` now supports networks with constant species (previously it errored).
