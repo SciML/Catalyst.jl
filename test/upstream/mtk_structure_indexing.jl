@@ -57,7 +57,7 @@ begin
     # Creates solutions.
     osol = solve(oprob, Tsit5())
     ssol = solve(sprob, ImplicitEM(); seed)
-    jsol = solve(jprob, SSAStepper(); seed)
+    jsol = solve(jprob, SSAStepper(); rng = StableRNG(seed))
     nsol = solve(nprob, NewtonRaphson())
     sssol = solve(nprob, DynamicSS(Tsit5()))
     sols = [osol, ssol, jsol, nsol, sssol]

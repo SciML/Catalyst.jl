@@ -83,7 +83,7 @@ let
 
     osol = solve(oprob, Tsit5())
     ssol = solve(sprob, ImplicitEM(); seed)
-    jsol = solve(jprob, SSAStepper(); seed)
+    jsol = solve(jprob, SSAStepper(); rng = StableRNG(seed))
     nsol = solve(nprob, NewtonRaphson())
 
     # Checks all stored parameters.

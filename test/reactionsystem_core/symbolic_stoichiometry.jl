@@ -294,8 +294,8 @@ let
     # Test Jump simulations with integer coefficients.
     jprob_int = JumpProblem(rs_int, u0_int, tspan_stoch, ps_int; save_positions = (false, false))
     jprob_int_ref = JumpProblem(rs_ref_int, u0_int, tspan_stoch, ps_int; save_positions = (false, false))
-    jsol_int = solve(jprob_int, SSAStepper(); seed, saveat = 1.0)
-    jsol_int_ref = solve(jprob_int_ref, SSAStepper(); seed, saveat = 1.0)
+    jsol_int = solve(jprob_int, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
+    jsol_int_ref = solve(jprob_int_ref, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
     @test mean(jsol_int[:X1]) ≈ mean(jsol_int_ref[:X1]) atol = 1e-2 rtol = 1e-2
 end
 

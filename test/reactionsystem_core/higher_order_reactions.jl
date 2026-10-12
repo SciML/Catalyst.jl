@@ -101,9 +101,9 @@ let
     jprob_alt2 = JumpProblem(dprob_alt2, Direct(), higher_order_network_alt2...)
 
     # Simulates the models.
-    sol_base = solve(jprob_base, SSAStepper(); seed, saveat = 1.0)
-    sol_alt1 = solve(jprob_alt1, SSAStepper(); seed, saveat = 1.0)
-    sol_alt2 = solve(jprob_alt2, SSAStepper(); seed, saveat = 1.0)
+    sol_base = solve(jprob_base, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
+    sol_alt1 = solve(jprob_alt1, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
+    sol_alt2 = solve(jprob_alt2, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
 
     # Checks that species means in the simulations are similar
     @test mean(sol_base[:X10]) ≈ mean(sol_alt1[:X10]) atol = 1e-1 rtol = 1e-1

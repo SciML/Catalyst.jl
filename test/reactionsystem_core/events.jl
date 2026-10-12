@@ -367,7 +367,7 @@ let
     u0 = [:X => 999]
     ps = [:p => 10.0, :d => 0.001]
     jprob = JumpProblem(rn, u0, (0.0, 2.0), ps)
-    sol = solve(jprob, SSAStepper(); seed)
+    sol = solve(jprob, SSAStepper(); rng = StableRNG(seed))
 
     # Checks that all `e` parameters have been updated properly.
     @test sol.ps[:e1][2] == 1
@@ -444,7 +444,7 @@ let
     jprob = JumpProblem(rn, u0, tspan, ps)
     jprob_events = JumpProblem(rn_dics_events, u0, tspan, ps)
     sol = solve(jprob, SSAStepper(); seed, callback)
-    sol_events = solve(jprob_events, SSAStepper(); seed)
+    sol_events = solve(jprob_events, SSAStepper(); rng = StableRNG(seed))
     @test_broken sol == sol_events  # Plotting the solutions, they seem similar but are not identical. Potentially the test should be redesigned anyway. Also, periodic events are to general work here.
 end
 

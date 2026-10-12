@@ -44,7 +44,6 @@ end
 # solution correctness tests
 let
     seed = 1111
-    Random.seed!(rng, seed)
     rn = @reaction_network begin
         β, X --> 0
         β, Y --> 0
@@ -61,7 +60,7 @@ let
     Xv = zeros(length(times))
     Yv = zeros(length(times))
     for n in 1:Nsims
-        sol = solve(jprob, Tsit5(); saveat = times, seed)
+        sol = solve(jprob, Tsit5(); saveat = times, rng = StableRNG(seed))
         Xv .+= sol[:X]
         Yv .+= sol[:Y]
         seed += 1
@@ -103,7 +102,7 @@ let
     Xsamp = 0.0
     Nsims = 4000
     for n in 1:Nsims
-        sol = solve(jprob, Tsit5(); saveat = tspan[2], seed)
+        sol = solve(jprob, Tsit5(); saveat = tspan[2], rng = StableRNG(seed))
         @test SciMLBase.successful_retcode(sol)
         Xsamp += sol[1, end]
         seed += 1

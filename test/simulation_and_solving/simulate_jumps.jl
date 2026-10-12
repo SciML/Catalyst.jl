@@ -133,11 +133,11 @@ let
 
         # Simulates the Catalyst-created model.
         jprob_1 = JumpProblem(rn_catalyst, u0_1, (0.0, 10000.0), ps_1; aggregator = Direct())
-        sol1 = solve(jprob_1, SSAStepper(); seed, saveat = 1.0)
+        sol1 = solve(jprob_1, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
 
         # simulate using auto-alg
         jprob_1b = JumpProblem(rn_catalyst, u0_1, (0.0, 10000.0), ps_1)
-        sol1b = solve(jprob_1; seed, saveat = 1.0)
+        sol1b = solve(jprob_1; rng = StableRNG(seed), saveat = 1.0)
         @test mean(sol1[sp]) ≈ mean(sol1b[sp]) rtol = 1e-1
 
         # Simulates the manually written model
@@ -145,7 +145,7 @@ let
         ps_2 = map_to_vec(ps_1, ps_sym)
         dprob_2 = DiscreteProblem(u0_2, (0.0, 10000.0), ps_2)
         jprob_2 = JumpProblem(dprob_2, Direct(), rn_manual...)
-        sol2 = solve(jprob_2, SSAStepper(); seed, saveat = 1.0)
+        sol2 = solve(jprob_2, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
 
         # Checks that the means are similar (the test have been check that it holds across a large
         # number of simulates, even without seed).
@@ -702,16 +702,18 @@ end
 
     # sequential solves of one problem
     for seed in 1:3
-        sol = solve(jprob, SSAStepper(); saveat, seed)
+        sol = solve(jprob, SSAStepper(); saveat, rng = StableRNG(seed))
         @test SciMLBase.successful_retcode(sol)
-        @test same_paths(sol, solve(reference(v1), SSAStepper(); saveat, seed))
+        ref = solve(reference(v1), SSAStepper(); saveat, rng = StableRNG(seed))
+        @test same_paths(sol, ref)
     end
 
     # a remade problem is initialized from its own parameters
     jprob2 = remake(jprob; p = params(v2))
     @test init_rates(jprob2) == scaled_rates(v2)
-    sol = solve(jprob2, SSAStepper(); saveat, seed = 4)
-    @test same_paths(sol, solve(reference(v2), SSAStepper(); saveat, seed = 4))
+    sol = solve(jprob2, SSAStepper(); saveat, rng = StableRNG(4))
+    ref = solve(reference(v2), SSAStepper(); saveat, rng = StableRNG(4))
+    @test same_paths(sol, ref)
 
     # ensembles, serial and threaded
     trajectories = 8
@@ -719,21 +721,24 @@ end
     ref_default = EnsembleProblem(reference(v1))
     ref_varying = EnsembleProblem(
         reference(v1); prob_func = (prob, ctx) -> reference(vs[ctx.sim_id]))
+    # per-trajectory StableRNGs, seeded from the ensemble's master StableRNG
+    rng_func = ctx -> StableRNG(ctx.sim_seed)
     for alg in (EnsembleSerial(), EnsembleThreads())
         # the default `prob_func` reuses the problem, or one copy per task
         sols = solve(EnsembleProblem(jprob), SSAStepper(), alg; trajectories, saveat,
-            seed = 6)
+            rng = StableRNG(6), rng_func)
         refs = solve(ref_default, SSAStepper(), EnsembleSerial(); trajectories, saveat,
-            seed = 6)
+            rng = StableRNG(6), rng_func)
         @test all(SciMLBase.successful_retcode, sols.u)
         @test all(map(same_paths, sols.u, refs.u))
 
         # per-trajectory parameters through `remake`
         eprob = EnsembleProblem(
             jprob; prob_func = (prob, ctx) -> remake(prob; p = params(vs[ctx.sim_id])))
-        sols = solve(eprob, SSAStepper(), alg; trajectories, saveat, seed = 7)
+        sols = solve(eprob, SSAStepper(), alg; trajectories, saveat,
+            rng = StableRNG(7), rng_func)
         refs = solve(ref_varying, SSAStepper(), EnsembleSerial(); trajectories, saveat,
-            seed = 7)
+            rng = StableRNG(7), rng_func)
         @test all(SciMLBase.successful_retcode, sols.u)
         @test all(map(same_paths, sols.u, refs.u))
     end
