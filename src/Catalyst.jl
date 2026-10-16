@@ -60,10 +60,9 @@ import Symbolics.RewriteHelpers: hasnode, replacenode
 import SymbolicUtils: getmetadata, hasmetadata, setmetadata
 import SciMLPublic: @public
 
-# Dependency-owned names that Catalyst intentionally re-exports: the subset of the
-# ModelingToolkitBase/Symbolics API that Catalyst's documentation and tests exercise
-# through `using Catalyst` (the full `@reexport using ModelingToolkitBase` facade was
-# removed to stop leaking hundreds of unrelated names).
+# Dependency-owned names that Catalyst re-exports. This is an explicit list rather than
+# `@reexport using ModelingToolkitBase` so that new upstream exports do not silently
+# become part of Catalyst's public API.
 export @brownians, @discretes, @independent_variables, @mtkcomplete, @named,
     @nonamespace, @parameters, @poissonians, @register_symbolic, @unpack, @variables
 export ModelingToolkitBase, Symbolics, SymbolicUtils
