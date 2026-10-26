@@ -195,6 +195,7 @@ Here follows a list of solver options which might be of interest to the user.
 - `save_idxs`: Provides a vector of species whose values should be saved during the simulation. E.g. for `save_idxs = [:X1]`, only the value of species $X1$ is saved.
 - `maxiters`: The maximum number of time steps of the simulation. If this number is reached, the simulation is terminated.
 - `seed`: Sets a seed for stochastic simulations. Stochastic simulations with the same seed generate identical results.
+- `rng`: Sets the random number generator used by stochastic simulations, e.g. `rng = Xoshiro(1)`. For jump simulations, pass it here rather than to `JumpProblem`.
 
 A full list of solver options can be found [here](https://docs.sciml.ai/DiffEqDocs/stable/basics/common_solver_opts/).
 

@@ -33,7 +33,7 @@ begin
     # Creates problems.
     oprob = ODEProblem(model, u0_vals, tspan, p_vals)
     sprob = SDEProblem(model,u0_vals, tspan, p_vals)
-    jprob = JumpProblem(model, u0_vals, tspan, p_vals; rng)
+    jprob = JumpProblem(model, u0_vals, tspan, p_vals)
     nprob = NonlinearProblem(model, u0_vals, p_vals)
     ssprob = SteadyStateProblem(model, u0_vals, p_vals)
     problems = [oprob, sprob, jprob, nprob, ssprob]
@@ -49,7 +49,7 @@ begin
     # Creates integrators.
     oint = init(oprob, Tsit5(); save_everystep = false)
     sint = init(sprob, ImplicitEM(); save_everystep = false)
-    jint = init(jprob, SSAStepper())
+    jint = init(jprob, SSAStepper(); rng)
     nint = init(nprob, NewtonRaphson(); save_everystep = false)
     ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep = false)
     integrators = [oint, sint, jint, nint]
@@ -57,7 +57,7 @@ begin
     # Creates solutions.
     osol = solve(oprob, Tsit5())
     ssol = solve(sprob, ImplicitEM(); seed)
-    jsol = solve(jprob, SSAStepper(); seed)
+    jsol = solve(jprob, SSAStepper(); rng = StableRNG(seed))
     nsol = solve(nprob, NewtonRaphson())
     sssol = solve(nprob, DynamicSS(Tsit5()))
     sols = [osol, ssol, jsol, nsol, sssol]
@@ -420,6 +420,8 @@ end
 ### Mass Action Jump Rate Updating Correctness ###
 
 # Checks that the rates of mass action jumps are correctly updated after parameter values are changed.
+# The rates live in the jump aggregator, filled from the current parameters at `init` and at
+# `reset_aggregated_jumps!`.
 let
     # Creates the model.
     rn = @reaction_network begin
@@ -427,65 +429,72 @@ let
     end
     @unpack p1, p2 = rn
 
-    # Creates a JumpProblem and integrator. Checks that the initial mass action rate is correct.
+    # Creates a JumpProblem. Checks that the initial mass action rate is correct.
     u0 = [:A => 1, :B => 2, :C => 3]
     ps = [:p1 => 3.0, :p2 => 2.0]
     jprob = JumpProblem(rn, u0, (0.0, 1.0), ps)
-    jint = init(jprob, SSAStepper())
-    @test jprob.massaction_jump.scaled_rates[1] == 6.0
+    function init_rate(prob)
+        init(prob, SSAStepper())
+        return prob.discrete_jump_aggregation.maj_rates[1]
+    end
+    @test init_rate(jprob) == 6.0
 
-    # Checks that the mass action rate is correctly updated after normal indexing.
+    # Checks that the mass action rate follows parameters updated through normal indexing.
     jprob.ps[p1] = 4.0
-    @test jprob.massaction_jump.scaled_rates[1] == 8.0
+    @test init_rate(jprob) == 8.0
     jprob.ps[rn.p1] = 5.0
-    @test jprob.massaction_jump.scaled_rates[1] == 10.0
+    @test init_rate(jprob) == 10.0
     jprob.ps[:p1] = 6.0
-    @test jprob.massaction_jump.scaled_rates[1] == 12.0
+    @test init_rate(jprob) == 12.0
     setp(jprob, p1)(jprob, 7.0)
-    @test jprob.massaction_jump.scaled_rates[1] == 14.0
+    @test init_rate(jprob) == 14.0
     setp(jprob, rn.p1)(jprob, 8.0)
-    @test jprob.massaction_jump.scaled_rates[1] == 16.0
+    @test init_rate(jprob) == 16.0
     setp(jprob, :p1)(jprob, 3.0)
-    @test jprob.massaction_jump.scaled_rates[1] == 6.0
+    @test init_rate(jprob) == 6.0
 
     # Check that the mass action rate is correctly updated when `remake` is used.
     # Checks both when partial and full parameter vectors are provided to `remake`.
-    @test remake(jprob; p = [p1 => 4.0]).massaction_jump.scaled_rates[1] == 8.0
-    @test remake(jprob; p = [rn.p1 => 5.0]).massaction_jump.scaled_rates[1] == 10.0
-    @test remake(jprob; p = [:p1 => 6.0]).massaction_jump.scaled_rates[1] == 12.0
-    @test remake(jprob; p = [p1 => 4.0, p2 => 3.0]).massaction_jump.scaled_rates[1] == 12.0
-    @test remake(jprob; p = [rn.p1 => 5.0, rn.p2 => 4.0]).massaction_jump.scaled_rates[1] == 20.0
-    @test remake(jprob; p = [:p1 => 6.0, :p2 => 5.0]).massaction_jump.scaled_rates[1] == 30.0
+    @test init_rate(remake(jprob; p = [p1 => 4.0])) == 8.0
+    @test init_rate(remake(jprob; p = [rn.p1 => 5.0])) == 10.0
+    @test init_rate(remake(jprob; p = [:p1 => 6.0])) == 12.0
+    @test init_rate(remake(jprob; p = [p1 => 4.0, p2 => 3.0])) == 12.0
+    @test init_rate(remake(jprob; p = [rn.p1 => 5.0, rn.p2 => 4.0])) == 20.0
+    @test init_rate(remake(jprob; p = [:p1 => 6.0, :p2 => 5.0])) == 30.0
 
-    # Checks that updating an integrators parameter values does not affect mass action rate until after
-    # `reset_aggregated_jumps!` have been applied as well (wt which point the correct rate is achieved).
+    # Checks that updating an integrator's parameter values does not affect the mass action rate
+    # until `reset_aggregated_jumps!` has been applied (at which point the correct rate is
+    # achieved). The integrator is created last: problems made by `remake` share the original's
+    # jump state, so only one integrator may use it at a time.
+    jint = init(jprob, SSAStepper())
+    @test jint.cb.condition.maj_rates[1] == 6.0
     jint.ps[p1] = 4.0
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 30.0
+    @test jint.cb.condition.maj_rates[1] == 6.0
     reset_aggregated_jumps!(jint)
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 8.0
+    @test jint.cb.condition.maj_rates[1] == 8.0
 
     jint.ps[rn.p1] = 5.0
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 8.0
+    @test jint.cb.condition.maj_rates[1] == 8.0
     reset_aggregated_jumps!(jint)
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 10.0
+    @test jint.cb.condition.maj_rates[1] == 10.0
 
     jint.ps[:p1] = 6.0
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 10.0
+    @test jint.cb.condition.maj_rates[1] == 10.0
     reset_aggregated_jumps!(jint)
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 12.0
+    @test jint.cb.condition.maj_rates[1] == 12.0
 
     setp(jint, p1)(jint, 7.0)
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 12.0
+    @test jint.cb.condition.maj_rates[1] == 12.0
     reset_aggregated_jumps!(jint)
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 14.0
+    @test jint.cb.condition.maj_rates[1] == 14.0
 
     setp(jint, rn.p1)(jint, 8.0)
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 14.0
+    @test jint.cb.condition.maj_rates[1] == 14.0
     reset_aggregated_jumps!(jint)
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 16.0
+    @test jint.cb.condition.maj_rates[1] == 16.0
 
     setp(jint, :p1)(jint, 3.0)
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 16.0
+    @test jint.cb.condition.maj_rates[1] == 16.0
     reset_aggregated_jumps!(jint)
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 6.0
+    @test jint.cb.condition.maj_rates[1] == 6.0
 end
