@@ -2,6 +2,8 @@
 
 ## Unreleased (on master)
 
+## Catalyst 17.0
+
 #### BREAKING: Updated to JumpProcesses 10
 
 Catalyst now requires JumpProcesses 10, and a ModelingToolkitBase release that supports it.
