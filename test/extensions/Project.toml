@@ -17,7 +17,7 @@ StructuralIdentifiability = "220ca800-aa68-49bb-acd8-6037fa93a544"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
-BifurcationKit = "0.8.0"
+BifurcationKit = "0.8.9"
 CairoMakie = "0.15.11"
 Catalyst = "17"
 GraphMakie = "0.6.3"
