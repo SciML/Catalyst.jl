@@ -2,6 +2,10 @@
 
 ## Unreleased (on master)
 
+- `Reaction` now throws a `MethodError` when given an unsupported keyword argument.
+  Previously such keywords were silently ignored, so a misspelling like `use_only_rate =
+  true` (instead of `only_use_rate = true`) gave a mass-action reaction with no warning.
+
 ## Catalyst 17.0
 
 #### BREAKING: Updated to JumpProcesses 10
