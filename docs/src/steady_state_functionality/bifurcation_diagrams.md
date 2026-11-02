@@ -42,10 +42,10 @@ nothing # hide
 
 Finally, we compute our bifurcation diagram using:
 ```@example ex1
-bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
+bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = Val(true))
 nothing # hide
 ```
-Where `PALC()` designates that we wish to use the pseudo-arclength continuation method to track our solution. The third argument (`2`) designates the maximum number of recursions when branches of branches are computed (branches appear as continuation encounters certain bifurcation points). For diagrams with highly branched structures (rare for many common small chemical reaction networks) this input is important. Finally, `bothside = true` designates that we wish to perform continuation on both sides of the initial point (which is typically the case). 
+Where `PALC()` designates that we wish to use the pseudo-arclength continuation method to track our solution. The third argument (`2`) designates the maximum number of recursions when branches of branches are computed (branches appear as continuation encounters certain bifurcation points). For diagrams with highly branched structures (rare for many common small chemical reaction networks) this input is important. Finally, `bothside = Val(true)` designates that we wish to perform continuation on both sides of the initial point (which is typically the case). 
 
 We can plot our bifurcation diagram using the Plots.jl package:
 ```@example ex1
@@ -58,7 +58,7 @@ Here, the steady state concentration of $X$ is shown as a function of $k1$'s val
 Most of the options required by the `bifurcationdiagram` function are provided through the `ContinuationPar` structure. For full details, please read the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.ContinuationPar). However, a few common options, and how they affect the continuation computation, are described here:
 - `p_min` and `p_max`: Set the interval over which the bifurcation diagram is computed (with the continuation stopping if it reaches these bounds).
 - `dsmin` and `dsmax`: The minimum and maximum length of the continuation steps (in the bifurcation parameter's value).
-- `ds`: The initial length of the continuation steps. This is especially important when `bothside = true` *is not* used, as the sign of `ds` determines the direction from the initial point in which the continuation will proceed.
+- `ds`: The initial length of the continuation steps. This is especially important when `bothside = Val(true)` *is not* used, as the sign of `ds` determines the direction from the initial point in which the continuation will proceed.
 - `max_steps`: The maximum number of continuation steps. If a bifurcation diagram looks incomplete, try increasing this value.
 - `newton_options`: Options for the Newton's method that BifurcationKit uses to find steady states. This can be created using `NewtonPar(tol = 1e-9, max_iterations = 100)` which here sets the tolerance (to `1e-9`) and the maximum number of newton iterations (to `100`).
 
@@ -68,7 +68,7 @@ p_span = (2.0, 20.0)
 newton_options = NewtonPar(tol = 1e-9, max_iterations = 20)
 opts_br = ContinuationPar(; p_min = p_span[1], p_max = p_span[2], ds = 0.005, 
                           dsmin = 0.001, dsmax = 0.01, max_steps = 1000, newton_options)
-bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
+bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = Val(true))
 nothing # hide
 ```
 (In this case, however, these additional settings have no significant effect on the result)
@@ -78,7 +78,7 @@ Let's consider the previous case, but instead compute the bifurcation diagram ov
 ```@example ex1
 p_span = (8.0, 15.0)
 opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2])
-bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
+bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = Val(true))
 plot(bif_dia; ylimit = (0.0, 17.0), xguide = bif_par, yguide = plot_var, branchlabel = "Steady state concentration")
 ```
 Here, in the bistable region, we only see a single branch. The reason is that the continuation algorithm starts at our initial guess (here made at $k1 = 8.0$ for $(X,Y) = (5.0,2.0)$) and tracks the diagram from there. However, with the upper bound set at $k1 = 15.0$ the bifurcation diagram has a disjoint branch structure, preventing the full diagram from being computed by continuation alone. In this case it could be solved by increasing the bound from $k1 = 15.0$, however, this is not possible in all cases. Here we will describe a more general solution, the use of *deflation* to find multiple steady states.
@@ -120,7 +120,7 @@ bprob = BifurcationProblem(kinase_model, u_guess, p_start, :d; plot_var = :Xp, u
 
 p_span = (0.1, 10.0)
 opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2])
-bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
+bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = Val(true))
 plot(bif_dia; xguide = "d", yguide = "Xp")
 ```
 This bifurcation diagram does not contain any interesting features (such as bifurcation points), and only shows how the steady state concentration of $Xp$ is reduced as $d$ increases. 

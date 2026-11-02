@@ -36,7 +36,7 @@ let
     bprob = BifurcationProblem(extended_brusselator, u0_guess, p_start, :B; plot_var = :V, u0 = [:V => 1.0, :W => 2.0])
     p_span = (0.1, 6.0)
     opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
-    bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
+    bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = Val(true))
 
     # Checks computed V values are correct (Formula: V = k2*(V0+W0)/(k1*Y+k2), where Y=2*B.)
     B_vals = getfield.(bif_dia.γ.branch, :param)
@@ -124,25 +124,25 @@ let
         # Checks top layer.
         bprob = BifurcationProblem(rn, u0_guess, p_start, d; plot_var = X)
         opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
-        bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
+        bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = Val(true))
         @test bif_dia.γ.branch[end].x ≈ 1.0/6
 
         # Checks second layer (1).
         bprob = BifurcationProblem(rn, u0_guess, p_start, rn2.d; plot_var = rn2.X)
         opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
-        bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
+        bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = Val(true))
         @test bif_dia.γ.branch[end].x ≈ 2.0/6
 
         # Checks second layer (2).
         bprob = BifurcationProblem(rn, u0_guess, p_start, rn3.d; plot_var = rn3.X)
         opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
-        bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
+        bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = Val(true))
         @test bif_dia.γ.branch[end].x ≈ 3.0/6
 
         # Checks third layer.
         bprob = BifurcationProblem(rn, u0_guess, p_start, rn3.rn4.d; plot_var = rn3.rn4.X)
         opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
-        bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
+        bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = Val(true))
         @test bif_dia.γ.branch[end].x ≈ 4.0/6
     end
 end
@@ -171,7 +171,7 @@ let
     p_span = (0.2, 5.0)
     bprob = BifurcationProblem(rn, u_guess, p_start, k1; plot_var = X1, u0)
     opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
-    bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
+    bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = Val(true))
 
     # Checks that the bifurcation diagram is correct.
     xs = getfield.(bif_dia.γ.branch, :x)
@@ -204,7 +204,7 @@ let
     Γ = Catalyst.get_networkproperties(rs).conservedconst
     bprob = BifurcationProblem(rs, u0_guess, p_start, Γ[1]; plot_var = X1, u0)
     opts_br = ContinuationPar(p_min = 0.1, p_max = 6.0)
-    bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br, bothside = true)
+    bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br, bothside = Val(true))
 
     # Checks that the stored values are correct.
     X1s = getfield.(bif_dia.γ.branch, :x)
@@ -234,7 +234,7 @@ let
     bprob = BifurcationProblem(rs, u0_guess, p_start, :p; plot_var = :C)
     p_span = (0.1, 6.0)
     opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
-    bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
+    bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = Val(true))
     @test all(getfield.(bif_dia.γ.branch, :x) .≈ 0.2)
 end
 
@@ -279,7 +279,7 @@ let
     bprob = BifurcationProblem(rn, u0_guess, p_start, :k; plot_var = :A, u0 = [:A => 5., :B => 3.])
     p_span = (0.1, 6.0)
     opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
-    bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = true)
+    bif_dia = bifurcationdiagram(bprob, PALC(), 2, opts_br; bothside = Val(true))
     plot(bif_dia, xlabel = "k", ylabel = "A", xlims = (0, 6), ylims=(0,8))
 
     # Checks that the correct values are computed in the bifurcation diagram.

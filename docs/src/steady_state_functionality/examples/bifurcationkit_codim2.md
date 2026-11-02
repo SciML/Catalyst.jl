@@ -44,7 +44,7 @@ We compute the bifurcation diagram using the `bifurcationdiagram` function. We w
 ```@example bifurcationkit_codim2
 v_span = (0.0, 20.0)
 opts_br = ContinuationPar(p_min = v_span[1], p_max = v_span[2])
-bifdia = bifurcationdiagram(bprob, PALC(), 3, opts_br; bothside = true)
+bifdia = bifurcationdiagram(bprob, PALC(), 3, opts_br; bothside = Val(true))
 nothing # hide
 ```
 Finally, we plot the bifurcation diagram.
@@ -83,7 +83,7 @@ nothing # hide
 Now we can compute the continuation of the Hopf bifurcation. First we must extract a branch from our bifurcation diagram (using [`get_branch`](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/library/#BifurcationKit.get_branch)), as `continuation` cannot work on bifurcation diagrams directly (our bifurcation diagram consists of a single branch, which we here extract). Next, we can call `continuation` on it, designating that we wish to perform continuation from the second point on the branch (which corresponds to the Hopf bifurcation, the first point is one of the branch's two endpoints).
 ```@example bifurcationkit_codim2
 branch = get_branch(bifdia, ()).γ
-cont_hopf = continuation(branch, 2, (@optic _[K_idx]), opts_br_2; start_with_eigen = true, bothside = true)
+cont_hopf = continuation(branch, 2, (@optic _[K_idx]), opts_br_2; start_with_eigen = true, bothside = Val(true))
 nothing # hide
 ```
 We can now plot how the position of the bifurcation point changes with $K$. Here, we use `vars = (v_sym, :x)` to designate that we wish to plot (across the continuation branch) the plotting variable ($X$, which we designated when we created our `BifurcationProblem`) against the first parameter ($v$).
@@ -99,7 +99,7 @@ We can confirm that the new line corresponds to the Hopf Bifurcation point by re
 ```@example bifurcationkit_codim2
 p_start_2 = [:v => 10.0, :K => 10.0, :n => 3, :d => 0.2]
 bprob_2 = BifurcationProblem(repressilator, u_guess, p_start_2, bif_par; plot_var)
-bifdia_2 = bifurcationdiagram(bprob_2, PALC(), 3, opts_br; bothside = true)
+bifdia_2 = bifurcationdiagram(bprob_2, PALC(), 3, opts_br; bothside = Val(true))
 plot!(bifdia_2; xguide = bif_par, yguide = plot_var, branchlabel = "Continuation of steady state w.r.t. v, (K = 10)",
     linewidthstable = 6, linewidthunstable = 3, markersize = 5)
 ```
