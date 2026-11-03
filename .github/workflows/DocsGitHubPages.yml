@@ -8,7 +8,9 @@ name: Docs GitHub Pages
 # e.g. of an older version picked in the version menu, is a small redirect to the same page on
 # docs.sciml.ai. This workflow only reads gh-pages, so it does not affect docs.sciml.ai.
 #
-# Requires Settings > Pages > Source to be set to "GitHub Actions".
+# Requires Settings > Pages > Source to be set to "GitHub Actions". To retry a failed deploy,
+# start a new run with "Run workflow": re-running the failed run uploads a second `github-pages`
+# artifact to it, and deploy-pages then refuses to choose between them.
 
 on:
   workflow_run:
@@ -33,7 +35,11 @@ jobs:
     concurrency:
       group: docs-github-pages
       cancel-in-progress: false
-    runs-on: ubuntu-latest
+    # A GitHub-hosted runner: SciML's self-hosted pool also takes `ubuntu-latest` jobs, and
+    # deploy-pages' OIDC token request timed out there. That pool does not carry the
+    # `ubuntu-24.04` label (SciML's shared workflows pin it for the same reason). When GitHub
+    # retires this image, switch to the next GitHub-hosted Ubuntu label.
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pages: write
