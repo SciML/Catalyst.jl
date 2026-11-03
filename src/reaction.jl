@@ -145,6 +145,10 @@ Notes:
 - Pass `unit_checks = true` to validate unit consistency at construction time. When
   enabled, checks that all substrates and products share the same units, and that the
   rate expression has internally consistent additive terms. Default is `false`.
+- The `metadata` vector may be stored in the `Reaction` without being copied, so it should
+  not be modified after the `Reaction` is created. If it contains an `:only_use_rate`
+  entry, that entry is removed from the passed vector, and its value is used for
+  `only_use_rate` unless that keyword is given explicitly.
 """
 struct Reaction{S, T}
     """The rate function (excluding mass action terms)."""
@@ -175,7 +179,7 @@ end
 function Reaction(rate, subs, prods, substoich, prodstoich;
         netstoich = nothing, metadata = Pair{Symbol, Any}[],
         only_use_rate = metadata_only_use_rate_check(metadata),
-        unit_checks::Bool = false, kwargs...)
+        unit_checks::Bool = false)
     # Handles empty/nothing vectors.
     isnothing(subs) || isempty(subs) && (subs = nothing)
     isnothing(prods) || isempty(prods) && (prods = nothing)
