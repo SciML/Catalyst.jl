@@ -4,9 +4,9 @@ name: Docs GitHub Pages
 # https://sciml.github.io/Catalyst.jl/ after each docs deploy, so they are up to date within
 # minutes of a release or a push to master. docs.sciml.ai, the canonical site that also hosts
 # every older version, only syncs gh-pages nightly. All of gh-pages is too large for GitHub
-# Pages (over its 1 GB limit), so only the current docs are published here, and a 404 page
-# sends every other path, e.g. an older version picked in the version menu, to the same page
-# on docs.sciml.ai. This workflow only reads gh-pages, so it does not affect docs.sciml.ai.
+# Pages (over its 1 GB limit), so only the current docs are published here; every other page,
+# e.g. of an older version picked in the version menu, is a small redirect to the same page on
+# docs.sciml.ai. This workflow only reads gh-pages, so it does not affect docs.sciml.ai.
 #
 # Requires Settings > Pages > Source to be set to "GitHub Actions".
 
@@ -19,17 +19,20 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: docs-github-pages
-  cancel-in-progress: false
-
 jobs:
   deploy:
-    # Documenter deploys to gh-pages on pushes to master (dev) and on tags (stable).
+    # Documenter deploys to gh-pages only from SciML/Catalyst.jl, on pushes to master (dev)
+    # and on tags (stable).
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
+      (github.repository == 'SciML/Catalyst.jl' &&
+      github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push')
+    # On the job, not the workflow, so that only runs that deploy compete for the slot: a
+    # skipped run (e.g. after a PR docs build) must not replace a pending deployment.
+    concurrency:
+      group: docs-github-pages
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -60,23 +63,15 @@ jobs:
           git sparse-checkout add "/$target/" /dev/
           mkdir _site
           cp -R dev "$target" versions.js index.html _site/
-          # Publish `stable` and the other aliases of the latest release (e.g. `v17` and
-          # `v17.0`), so that the newest version in the version menu works here before
-          # docs.sciml.ai has synced it. upload-pages-artifact dereferences the links.
-          for link in *; do
-            if [[ -L "$link" && "$(readlink "$link")" == "$target" ]]; then
-              ln -s "$target" "_site/$link"
-            fi
-          done
+          # Sends a path that is not published here to the same page on docs.sciml.ai.
           cat > _site/404.html <<'EOF'
           <!DOCTYPE html>
           <html lang="en">
           <head>
           <meta charset="utf-8">
+          <meta name="robots" content="noindex">
           <title>Catalyst.jl documentation</title>
           <script>
-            // Only the current docs are published here; send every other path, e.g. an older
-            // version picked in the version menu, to the same page on docs.sciml.ai.
             var path = window.location.pathname.replace(/^\/Catalyst\.jl/i, "");
             window.location.replace("https://docs.sciml.ai/Catalyst" + path +
               window.location.search + window.location.hash);
@@ -87,8 +82,25 @@ jobs:
           </body>
           </html>
           EOF
-          echo "Publishing $target as stable:"
-          ls -la _site
+          # When switching versions, Documenter's version menu only keeps the current page
+          # (and anchor) if a HEAD request finds that page in the chosen version on this
+          # site; otherwise it goes to the version's home page. So publish a copy of the
+          # redirect at each page of the older versions.
+          n=0
+          while IFS= read -r page; do
+            [[ "${page%%/*}" == "$target" ]] && continue
+            mkdir -p "_site/${page%/*}"
+            cp _site/404.html "_site/$page"
+            n=$((n + 1))
+          done < <(git ls-tree -r --name-only HEAD | grep -E '^v[0-9][^/]*/.*\.html$')
+          # Version aliases (`stable`, `vX`, `vX.Y`) link to their version directories, so the
+          # latest release's aliases get its full docs. upload-pages-artifact dereferences them.
+          for link in *; do
+            if [[ -L "$link" && -d "_site/$(readlink "$link")" ]]; then
+              ln -s "$(readlink "$link")" "_site/$link"
+            fi
+          done
+          echo "Publishing $target as stable, with redirects for $n older-version pages"
       - name: Upload the site
         uses: actions/upload-pages-artifact@v5
         with:
