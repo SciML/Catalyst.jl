@@ -1,0 +1,98 @@
+name: Docs GitHub Pages
+
+# Publishes the current docs (stable and dev) from the gh-pages branch to
+# https://sciml.github.io/Catalyst.jl/ after each docs deploy, so they are up to date within
+# minutes of a release or a push to master. docs.sciml.ai, the canonical site that also hosts
+# every older version, only syncs gh-pages nightly. All of gh-pages is too large for GitHub
+# Pages (over its 1 GB limit), so only the current docs are published here, and a 404 page
+# sends every other path, e.g. an older version picked in the version menu, to the same page
+# on docs.sciml.ai. This workflow only reads gh-pages, so it does not affect docs.sciml.ai.
+#
+# Requires Settings > Pages > Source to be set to "GitHub Actions".
+
+on:
+  workflow_run:
+    workflows: [Documentation]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-github-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Documenter deploys to gh-pages on pushes to master (dev) and on tags (stable).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out the gh-pages root files
+        uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/*/
+      - name: Assemble the site
+        run: |
+          set -euo pipefail
+          # `stable` links to the latest release's directory, e.g. `v17.0.1`.
+          target=$(readlink stable)
+          if [[ ! "$target" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Unexpected target of the stable symlink: $target"
+            exit 1
+          fi
+          git sparse-checkout add "/$target/" /dev/
+          mkdir _site
+          cp -R dev "$target" versions.js index.html _site/
+          # Publish `stable` and the other aliases of the latest release (e.g. `v17` and
+          # `v17.0`), so that the newest version in the version menu works here before
+          # docs.sciml.ai has synced it. upload-pages-artifact dereferences the links.
+          for link in *; do
+            if [[ -L "$link" && "$(readlink "$link")" == "$target" ]]; then
+              ln -s "$target" "_site/$link"
+            fi
+          done
+          cat > _site/404.html <<'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+          <meta charset="utf-8">
+          <title>Catalyst.jl documentation</title>
+          <script>
+            // Only the current docs are published here; send every other path, e.g. an older
+            // version picked in the version menu, to the same page on docs.sciml.ai.
+            var path = window.location.pathname.replace(/^\/Catalyst\.jl/i, "");
+            window.location.replace("https://docs.sciml.ai/Catalyst" + path +
+              window.location.search + window.location.hash);
+          </script>
+          </head>
+          <body>
+          <p>Redirecting to <a href="https://docs.sciml.ai/Catalyst/stable/">docs.sciml.ai/Catalyst</a>.</p>
+          </body>
+          </html>
+          EOF
+          echo "Publishing $target as stable:"
+          ls -la _site
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
