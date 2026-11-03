@@ -63,6 +63,14 @@ jobs:
           git sparse-checkout add "/$target/" /dev/
           mkdir _site
           cp -R dev "$target" versions.js index.html _site/
+          # The copied docs must not contain links: upload-pages-artifact dereferences them,
+          # so a link could publish files from outside the docs. The only links in the site
+          # are the version aliases created below.
+          first_link=$(find _site -type l -print -quit)
+          if [[ -n "$first_link" ]]; then
+            printf 'Refusing to publish symlink: %s\n' "$first_link" >&2
+            exit 1
+          fi
           # Sends a path that is not published here to the same page on docs.sciml.ai.
           cat > _site/404.html <<'EOF'
           <!DOCTYPE html>
