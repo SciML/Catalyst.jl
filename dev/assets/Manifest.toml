@@ -613,9 +613,9 @@ weakdeps = ["BifurcationKit", "CairoMakie", "DynamicPolynomials", "GraphMakie", 
 
 [[deps.ChainRules]]
 deps = ["Adapt", "ChainRulesCore", "Distributed", "GPUArraysCore", "IrrationalConstants", "LinearAlgebra", "Random", "RealDot", "SparseArrays", "SparseInverseSubset", "Statistics", "StructArrays"]
-git-tree-sha1 = "7f6cff0df4f383cd200dc2608b70df1d9b1f22c9"
+git-tree-sha1 = "e2edcfab267ffb92f0e8136ffcfdf1ae78bbb4e6"
 uuid = "082447d4-558c-5d27-93f4-14fc19e9eca2"
-version = "1.74.8"
+version = "1.74.10"
 
 [[deps.ChainRulesCore]]
 deps = ["LinearAlgebra"]
@@ -1453,9 +1453,9 @@ version = "301.600.1+0"
 
 [[deps.FastBroadcast]]
 deps = ["ArrayInterface", "LinearAlgebra", "PrecompileTools"]
-git-tree-sha1 = "b90aee4f191474eeda3dfa0cb588635f80820cf1"
+git-tree-sha1 = "093bf5e9ea63b36032240033ec2f149088fc0926"
 uuid = "7034ab61-46d4-4ed7-9d0f-46aef9175898"
-version = "1.5.0"
+version = "1.5.1"
 
     [deps.FastBroadcast.extensions]
     FastBroadcastPolyesterExt = "Polyester"
