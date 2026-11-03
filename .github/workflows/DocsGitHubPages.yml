@@ -85,19 +85,27 @@ jobs:
           # When switching versions, Documenter's version menu only keeps the current page
           # (and anchor) if a HEAD request finds that page in the chosen version on this
           # site; otherwise it goes to the version's home page. So publish a copy of the
-          # redirect at each page of the older versions.
+          # redirect at each page of the older versions. The listing goes to a file (so that a
+          # failure stops the step) and is NUL-delimited (so that Git does not quote paths).
+          version_re='^v[0-9][^/]*$'
+          pages=$(mktemp)
+          git ls-tree -rz --name-only HEAD > "$pages"
           n=0
-          while IFS= read -r page; do
-            [[ "${page%%/*}" == "$target" ]] && continue
+          while IFS= read -r -d '' page; do
+            dir=${page%%/*}
+            [[ "$dir" =~ $version_re && "$dir" != "$target" && "$page" == */*.html ]] || continue
             mkdir -p "_site/${page%/*}"
             cp _site/404.html "_site/$page"
             n=$((n + 1))
-          done < <(git ls-tree -r --name-only HEAD | grep -E '^v[0-9][^/]*/.*\.html$')
-          # Version aliases (`stable`, `vX`, `vX.Y`) link to their version directories, so the
-          # latest release's aliases get its full docs. upload-pages-artifact dereferences them.
+          done < "$pages"
+          # Version aliases (`stable`, `vX`, `vX.Y`) link to version directories. Only follow
+          # links to the version directories created above: upload-pages-artifact dereferences
+          # them, which gives the latest release's aliases its full docs.
           for link in *; do
-            if [[ -L "$link" && -d "_site/$(readlink "$link")" ]]; then
-              ln -s "$(readlink "$link")" "_site/$link"
+            [[ -L "$link" && ( "$link" == stable || "$link" =~ $version_re ) ]] || continue
+            dest=$(readlink "$link")
+            if [[ "$dest" =~ $version_re && -d "_site/$dest" && ! -L "_site/$dest" ]]; then
+              ln -s "$dest" "_site/$link"
             fi
           done
           echo "Publishing $target as stable, with redirects for $n older-version pages"
