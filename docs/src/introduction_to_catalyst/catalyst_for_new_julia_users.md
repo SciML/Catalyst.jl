@@ -5,6 +5,8 @@ Julia can be downloaded [here](https://julialang.org/downloads/). Generally, it 
 
 *Users who are already familiar with Julia can skip to the [Introduction to Catalyst](@ref introduction_to_catalyst) tutorial.*
 
+Also see the [Common Mistakes](@ref common_mistakes) page once you have tried a few models.
+
 ## Basic Julia usage
 On the surface, Julia has many similarities to languages like MATLAB, Python, and R.
 

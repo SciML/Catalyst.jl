@@ -394,6 +394,11 @@ Especially for large systems, the choice of aggregator can dramatically impact
 simulation performance.
 
 ### [Jump simulations where some rate depends on time](@id simulation_intro_jumps_variableratejumps)
+!!! tip
+    Long simulations that use callbacks or `VariableRateJump`s can save far more
+    trajectory data than intended. See
+    [Common Mistakes: saving controls](@ref common_mistakes_save_positions).
+
 For some models, the rate terms of reactions may explicitly depend on time. E.g. consider the following [circadian clock (inspired) model](https://en.wikipedia.org/wiki/Circadian_rhythm), where the production rate of some protein ($P$) depends on a sinusoid function:
 ```@example simulation_intro_jumps
 circadian_model = @reaction_network begin

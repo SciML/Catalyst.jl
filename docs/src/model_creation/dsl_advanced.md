@@ -511,6 +511,10 @@ plot(sol)
     Just like when using `@parameters` and `@species`, `@unpack` will overwrite any variables in the current scope which share name with the imported quantities.
 
 ### [Interpolating variables into the DSL](@id dsl_advanced_options_symbolics_and_DSL_interpolation)
+!!! tip
+    See [Common Mistakes: interpolation](@ref common_mistakes_interpolation) for
+    when `$` is unnecessary, and for the incomplete-interpolation pitfall.
+
 Catalyst's DSL allows Julia variables to be interpolated for the network name, within rate constant expressions, or for species/stoichiometries within reactions. Using the lower-level symbolic interface we can then define symbolic variables and parameters outside of `@reaction_network`, which can then be used within expressions in the DSL. 
 
 Interpolation is carried out by pre-appending the interpolating variable with a `$`. For example, here we declare the parameters and species of a birth-death model, and interpolate these into the model:

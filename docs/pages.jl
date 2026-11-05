@@ -3,7 +3,8 @@ pages = Any[
 "Introduction to Catalyst" => Any[
     "introduction_to_catalyst/catalyst_for_new_julia_users.md",
     "introduction_to_catalyst/introduction_to_catalyst.md",
-    "introduction_to_catalyst/math_models_intro.md"
+    "introduction_to_catalyst/math_models_intro.md",
+    "introduction_to_catalyst/common_mistakes.md"
 ],
 "Model creation and properties" => Any[
     "model_creation/dsl_basics.md",

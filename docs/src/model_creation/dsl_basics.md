@@ -1,4 +1,9 @@
 # [The Catalyst DSL - Introduction](@id dsl_description)
+
+!!! tip
+    New users should also read [Common Mistakes](@ref common_mistakes),
+    especially the sections on declaring species/parameters outside the DSL
+    and on `$` interpolation.
 ```@raw html
 <details><summary><strong>Environment setup and package installation</strong></summary>
 ```
