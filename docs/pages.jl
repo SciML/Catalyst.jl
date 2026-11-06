@@ -3,8 +3,7 @@ pages = Any[
 "Introduction to Catalyst" => Any[
     "introduction_to_catalyst/catalyst_for_new_julia_users.md",
     "introduction_to_catalyst/introduction_to_catalyst.md",
-    "introduction_to_catalyst/math_models_intro.md",
-    "introduction_to_catalyst/common_mistakes.md"
+    "introduction_to_catalyst/math_models_intro.md"
 ],
 "Model creation and properties" => Any[
     "model_creation/dsl_basics.md",
@@ -79,6 +78,7 @@ pages = Any[
     "spatial_modelling/spatial_ode_simulations.md",
     "spatial_modelling/spatial_jump_simulations.md"
 ],
+"Common Mistakes" => "introduction_to_catalyst/common_mistakes.md",
 "FAQs" => "faqs.md",
 "API" => Any[
     "api/core_api.md",
