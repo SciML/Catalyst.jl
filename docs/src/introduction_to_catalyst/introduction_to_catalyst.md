@@ -357,12 +357,6 @@ and the ODE model
 
 A more detailed summary of the precise mathematical equations Catalyst can generate is available in the [Mathematical Models Catalyst can Generate](@ref math_models_in_catalyst) documentation.
 
-!!! tip
-    Before digging deeper, skim the [Common Mistakes](@ref common_mistakes) page
-    and the [FAQs](@ref). They cover recurring pitfalls with `@species`/`@parameters`
-    declared outside the DSL, `$` interpolation, and jump/callback saving that
-    fills memory.
-
 ---
 ## Notes
 1. For each of the preceding models we converted the `ReactionSystem` to, i.e.,
@@ -382,6 +376,12 @@ A more detailed summary of the precise mathematical equations Catalyst can gener
    and
    [`SDEProblem`s](https://docs.sciml.ai/ModelingToolkit/stable/).
 
+!!! tip
+    Before digging deeper, skim the [Common Mistakes](@ref common_mistakes) page
+    and the [FAQs](@ref). They cover recurring pitfalls with `@species`/`@parameters`
+    declared outside the DSL, `$` interpolation, and jump/callback saving that
+    fills memory.
+    
 ---
 ## References
 1. [Torkel E. Loman, Yingbo Ma, Vasily Ilin, Shashi Gowda, Niklas Korsbo, Nikhil Yewale, Chris Rackauckas, Samuel A. Isaacson, *Catalyst: Fast and flexible modeling of reaction networks*, PLOS Computational Biology (2023).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530)
