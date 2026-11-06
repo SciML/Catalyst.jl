@@ -6,17 +6,20 @@ using SafeTestsets, Test, Pkg
 # Required for running parallel test groups (copied from ModelingToolkit).
 const GROUP = get(ENV, "GROUP", "All")
 
-function activate_extensions_env()
-    Pkg.activate("extensions")
+# Pkg.develop writes [sources] into the active project; installed packages are read-only, so activate a writable copy.
+function activate_test_env(dir)
+    env = mktempdir()
+    write(
+        joinpath(env, "Project.toml"),
+        read(joinpath(@__DIR__, dir, "Project.toml"), String)
+    )
+    Pkg.activate(env)
     Pkg.develop(PackageSpec(path = dirname(@__DIR__)))
-    Pkg.instantiate()
+    return Pkg.instantiate()
 end
 
-function activate_qa_env()
-    Pkg.activate("qa")
-    Pkg.develop(PackageSpec(path = dirname(@__DIR__)))
-    Pkg.instantiate()
-end
+activate_extensions_env() = activate_test_env("extensions")
+activate_qa_env() = activate_test_env("qa")
 
 ### Run Tests ###
 @time begin
