@@ -358,9 +358,10 @@ and the ODE model
 A more detailed summary of the precise mathematical equations Catalyst can generate is available in the [Mathematical Models Catalyst can Generate](@ref math_models_in_catalyst) documentation.
 
 !!! tip
-    Before digging deeper, skim the [Common Mistakes](@ref common_mistakes) page.
-    It covers recurring pitfalls with `@species`/`@parameters` declared outside
-    the DSL, `$` interpolation, and jump/callback saving that fills memory.
+    Before digging deeper, skim the [Common Mistakes](@ref common_mistakes) page
+    and the [FAQs](@ref). They cover recurring pitfalls with `@species`/`@parameters`
+    declared outside the DSL, `$` interpolation, and jump/callback saving that
+    fills memory.
 
 ---
 ## Notes

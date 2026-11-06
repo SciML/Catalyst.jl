@@ -221,13 +221,3 @@ length(sol.t)
 See also [Jump simulations where some rate depends on time](@ref simulation_intro_jumps_variableratejumps)
 and the DifferentialEquations.jl docs on
 [Event Handling and Callback Functions](https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/).
-
-## [Quick checklist](@id common_mistakes_checklist)
-- Prefer declaring species/parameters **inside** `@reaction_network`, or
-  interpolate outside ones with `$`.
-- Do not assume outside `@species` / `@parameters` / `t` are wired into a network
-  you create later.
-- Only use `$` interpolation when you intentionally share symbols or
-  expressions; interpolate **every** outside symbol you need to be identical.
-- For long jump simulations with callbacks or variable-rate jumps, set
-  `save_positions = (false, false)` unless you truly need the full path.
