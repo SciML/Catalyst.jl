@@ -1,7 +1,7 @@
 # Catalyst.jl
 
-[![Latest Release (for users)](https://img.shields.io/badge/docs-latest_release_(for_users)-blue.svg)](https://docs.sciml.ai/Catalyst/stable/)
-[![Master (for developers)](https://img.shields.io/badge/docs-master_branch_(for_devs)-blue.svg)](https://docs.sciml.ai/Catalyst/dev/)
+[![Latest Release (for users)](https://img.shields.io/badge/docs-latest_release_(for_users)-blue.svg)](https://sciml.github.io/Catalyst.jl/stable/)
+[![Master (for developers)](https://img.shields.io/badge/docs-master_branch_(for_devs)-blue.svg)](https://sciml.github.io/Catalyst.jl/dev/)
 <!--[![API Latest Release (for users)](https://img.shields.io/badge/API-latest_release_(for_users)-blue.svg)](https://docs.sciml.ai/Catalyst/stable/api/)
 [![API Master (for developers](https://img.shields.io/badge/API-master_branch_(for_devs)-blue.svg)](https://docs.sciml.ai/Catalyst/dev/api/)
 [![Join the chat at https://julialang.zulipchat.com #sciml-bridged](https://img.shields.io/static/v1?label=Zulip&message=chat&color=9558b2&labelColor=389826)](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged)-->
@@ -14,7 +14,7 @@
 [![SciML Code Style](https://img.shields.io/static/v1?label=code%20style&message=SciML&color=9558b2&labelColor=389826)](https://github.com/SciML/SciMLStyle)
 [![Citation](https://img.shields.io/badge/Publication-389826)](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530)
 
-Catalyst.jl is a symbolic modeling package for analysis and high-performance simulation of chemical reaction networks and related dynamical systems. Models can be specified using an intuitive [domain-specific language (DSL)](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_basics/) or constructed [programmatically](https://docs.sciml.ai/Catalyst/stable/model_creation/programmatic_CRN_construction/). Catalyst supports ODE, steady-state ODE, SDE, stochastic chemical kinetics (jump), and [hybrid](https://docs.sciml.ai/Catalyst/stable/model_simulation/simulation_introduction/) simulations, including models that couple reactions with differential equations, events, and external noise (via Brownian Motions and/or Poisson Processes).
+Catalyst.jl is a symbolic modeling package for analysis and high-performance simulation of chemical reaction networks and related dynamical systems. Models can be specified using an intuitive [domain-specific language (DSL)](https://sciml.github.io/Catalyst.jl/stable/model_creation/dsl_basics/) or constructed [programmatically](https://sciml.github.io/Catalyst.jl/stable/model_creation/programmatic_CRN_construction/). Catalyst supports ODE, steady-state ODE, SDE, stochastic chemical kinetics (jump), and [hybrid](https://sciml.github.io/Catalyst.jl/stable/model_simulation/simulation_introduction/) simulations, including models that couple reactions with differential equations, events, and external noise (via Brownian Motions and/or Poisson Processes).
 
 Built on [ModelingToolkitBase.jl](https://github.com/SciML/ModelingToolkit.jl/tree/master/lib/ModelingToolkitBase) and [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl), Catalyst leverages symbolic computation for sparsity exploitation, Jacobian construction, dependency graph analysis, and parallelism. Generated models integrate with the broader Julia and [SciML](https://sciml.ai) ecosystems for sensitivity analysis, parameter estimation, bifurcation analysis, and more.
 
@@ -45,22 +45,22 @@ Highlights:
 
 ## Tutorials and documentation
 
-The latest tutorials and information on using Catalyst are available in the [stable documentation](https://docs.sciml.ai/Catalyst/stable/). The [in-development documentation](https://docs.sciml.ai/Catalyst/dev/) describes unreleased features in the current master branch.
+The latest tutorials and information on using Catalyst are available in the [stable documentation](https://sciml.github.io/Catalyst.jl/stable/). The [in-development documentation](https://sciml.github.io/Catalyst.jl/dev/) describes unreleased features in the current master branch.
 
 An overview of the package, its features, and comparative benchmarking (as of version 13) can also be found in its corresponding research paper, [Catalyst: Fast and flexible modeling of reaction networks](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530).
 
 ## Features
 
-- [**DSL for reaction networks**](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_basics/) — a readable, concise format for specifying models using chemical reaction notation.
-- [**Multiple simulation types**](https://docs.sciml.ai/Catalyst/stable/model_simulation/simulation_introduction/) — generate and simulate ODE, steady-state ODE, SDE, jump, and hybrid models from a single `ReactionSystem`.
-- [**Coupled models**](https://docs.sciml.ai/Catalyst/stable/model_creation/coupled_non_crn_models/) — combine reactions with differential equations, [events](https://docs.sciml.ai/Catalyst/stable/model_creation/events/), Brownian noise (`@brownians`), and Poisson jumps (`@poissonians`).
-- [**Network analysis**](https://docs.sciml.ai/Catalyst/stable/network_analysis/crn_theory/) — compute linkage classes, deficiencies, reversibility, and other network properties.
-- [**Compositional modeling**](https://docs.sciml.ai/Catalyst/stable/model_creation/compositional_modeling/) — build models hierarchically using `@network_component`, `compose`, and `extend`.
-- [**Spatial modeling**](https://docs.sciml.ai/Catalyst/stable/spatial_modelling/discrete_space_reaction_systems/) — simulate reaction networks on discrete spatial domains.
-- [**Steady state analysis**](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/homotopy_continuation/) — find and analyze steady states, stability, and bifurcation diagrams.
-- [**Inverse problems**](https://docs.sciml.ai/Catalyst/stable/inverse_problems/optimization_ode_param_fitting/) — parameter estimation, sensitivity analysis, and structural identifiability.
-- [**Model I/O**](https://docs.sciml.ai/Catalyst/stable/model_creation/model_file_loading_and_export/) — import from SBML and BioNetGen `.net` files, export to LaTeX and other formats.
-- [**Visualization**](https://docs.sciml.ai/Catalyst/stable/model_creation/model_visualisation/) — reaction network graphs and LaTeX rendering.
+- [**DSL for reaction networks**](https://sciml.github.io/Catalyst.jl/stable/model_creation/dsl_basics/) — a readable, concise format for specifying models using chemical reaction notation.
+- [**Multiple simulation types**](https://sciml.github.io/Catalyst.jl/stable/model_simulation/simulation_introduction/) — generate and simulate ODE, steady-state ODE, SDE, jump, and hybrid models from a single `ReactionSystem`.
+- [**Coupled models**](https://sciml.github.io/Catalyst.jl/stable/model_creation/coupled_non_crn_models/) — combine reactions with differential equations, [events](https://sciml.github.io/Catalyst.jl/stable/model_creation/events/), Brownian noise (`@brownians`), and Poisson jumps (`@poissonians`).
+- [**Network analysis**](https://sciml.github.io/Catalyst.jl/stable/network_analysis/crn_theory/) — compute linkage classes, deficiencies, reversibility, and other network properties.
+- [**Compositional modeling**](https://sciml.github.io/Catalyst.jl/stable/model_creation/compositional_modeling/) — build models hierarchically using `@network_component`, `compose`, and `extend`.
+- [**Spatial modeling**](https://sciml.github.io/Catalyst.jl/stable/spatial_modelling/discrete_space_reaction_systems/) — simulate reaction networks on discrete spatial domains.
+- [**Steady state analysis**](https://sciml.github.io/Catalyst.jl/stable/steady_state_functionality/homotopy_continuation/) — find and analyze steady states, stability, and bifurcation diagrams.
+- [**Inverse problems**](https://sciml.github.io/Catalyst.jl/stable/inverse_problems/optimization_ode_param_fitting/) — parameter estimation, sensitivity analysis, and structural identifiability.
+- [**Model I/O**](https://sciml.github.io/Catalyst.jl/stable/model_creation/model_file_loading_and_export/) — import from SBML and BioNetGen `.net` files, export to LaTeX and other formats.
+- [**Visualization**](https://sciml.github.io/Catalyst.jl/stable/model_creation/model_visualisation/) — reaction network graphs and LaTeX rendering.
 
 ## Quick examples
 
@@ -154,11 +154,11 @@ plot(sol; xguide = "Time (au)", lw = 2)
 ![Elaborate SDE simulation](docs/src/assets/readme_elaborate_sde_plot.svg)
 
 Some features used here:
-- [Coupled differential equations](https://docs.sciml.ai/Catalyst/stable/model_creation/coupled_non_crn_models/) modeled the cell volume alongside the reaction network.
-- [Events](https://docs.sciml.ai/Catalyst/stable/model_creation/events/) triggered cell division when the volume reached a threshold.
-- [`@brownians`](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_basics/) added environmental noise to the volume equation.
-- Specific [solver and solver options](https://docs.sciml.ai/Catalyst/stable/model_simulation/simulation_introduction/) were selected for the SDE simulation.
-- The simulation was [plotted using Plots.jl](https://docs.sciml.ai/Catalyst/stable/model_simulation/simulation_plotting/).
+- [Coupled differential equations](https://sciml.github.io/Catalyst.jl/stable/model_creation/coupled_non_crn_models/) modeled the cell volume alongside the reaction network.
+- [Events](https://sciml.github.io/Catalyst.jl/stable/model_creation/events/) triggered cell division when the volume reached a threshold.
+- [`@brownians`](https://sciml.github.io/Catalyst.jl/stable/model_creation/dsl_basics/) added environmental noise to the volume equation.
+- Specific [solver and solver options](https://sciml.github.io/Catalyst.jl/stable/model_simulation/simulation_introduction/) were selected for the SDE simulation.
+- The simulation was [plotted using Plots.jl](https://sciml.github.io/Catalyst.jl/stable/model_simulation/simulation_plotting/).
 
 ## Ecosystem
 

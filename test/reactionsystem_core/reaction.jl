@@ -102,6 +102,10 @@ let
     # Non-valid reactants (parameter or variable).
     @test_throws ArgumentError Reaction(k*A, [], [A])
     @test_throws ArgumentError Reaction(k*A, [], [k])
+
+    # Unsupported keyword arguments (e.g. misspelling `only_use_rate`, see issue #1578).
+    @test_throws MethodError Reaction(k, [X], [Y]; use_only_rate = true)
+    @test_throws MethodError Reaction(k, [X], [Y], [1], [1]; use_only_rate = true)
 end
 
 

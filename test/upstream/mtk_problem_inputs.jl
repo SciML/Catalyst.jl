@@ -133,17 +133,18 @@ end
 # Perform jump simulations (singular and ensemble).
 let
     # Creates normal and ensemble problems.
-    base_jprob = JumpProblem(model, u0_alts[1], tspan, p_alts[1]; rng)
-    base_sol = solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
+    base_jprob = JumpProblem(model, u0_alts[1], tspan, p_alts[1])
+    base_sol = solve(base_jprob, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
     base_eprob = EnsembleProblem(base_jprob)
-    base_esol = solve(base_eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
+    rng_func = ctx -> StableRNG(ctx.sim_seed)  # per-trajectory StableRNGs
+    base_esol = solve(base_eprob, SSAStepper(); rng = StableRNG(seed), rng_func, trajectories = 2, saveat = 1.0)
 
     # Simulates problems for all input types, checking that identical solutions are found.
     for u0 in u0_alts, p in p_alts
         jprob = remake(base_jprob; u0, p)
-        @test base_sol == solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
+        @test base_sol == solve(base_jprob, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
         eprob = remake(base_eprob; u0, p)
-        @test base_esol == solve(eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
+        @test base_esol == solve(eprob, SSAStepper(); rng = StableRNG(seed), rng_func, trajectories = 2, saveat = 1.0)
     end
 end
 
@@ -324,17 +325,18 @@ end
 # Perform jump simulations (singular and ensemble).
 let
     # Creates normal and ensemble problems.
-    base_jprob = JumpProblem(model_vec, u0_alts_vec[1], tspan, p_alts_vec[1]; rng)
-    base_sol = solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
+    base_jprob = JumpProblem(model_vec, u0_alts_vec[1], tspan, p_alts_vec[1])
+    base_sol = solve(base_jprob, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
     base_eprob = EnsembleProblem(base_jprob)
-    base_esol = solve(base_eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
+    rng_func = ctx -> StableRNG(ctx.sim_seed)  # per-trajectory StableRNGs
+    base_esol = solve(base_eprob, SSAStepper(); rng = StableRNG(seed), rng_func, trajectories = 2, saveat = 1.0)
 
     # Simulates problems for all input types, checking that identical solutions are found.
     for u0 in u0_alts_vec, p in p_alts_vec
         jprob = remake(base_jprob; u0, p)
-        @test base_sol == solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
+        @test base_sol == solve(base_jprob, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
         eprob = remake(base_eprob; u0, p)
-        @test base_esol == solve(eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
+        @test base_esol == solve(eprob, SSAStepper(); rng = StableRNG(seed), rng_func, trajectories = 2, saveat = 1.0)
     end
 end
 

@@ -15,7 +15,7 @@ pages = Any[
     "model_creation/conservation_laws.md",
     "model_creation/parametric_stoichiometry.md",
     "model_creation/functional_parameters.md",
-    "model_creation/model_file_loading_and_export.md",
+    # "model_creation/model_file_loading_and_export.md", # Wait for SBMLImporter support for JumpProcesses 10.
     "model_creation/model_visualisation.md",
     "model_creation/reactionsystem_content_accessing.md",
     "model_creation/chemistry_related_functionality.md",
@@ -60,11 +60,11 @@ pages = Any[
     ]
 ],
 "Inverse problems" => Any[
-    "inverse_problems/petab_ode_param_fitting.md",
+    # "inverse_problems/petab_ode_param_fitting.md", # Wait for PEtab/SBMLImporter support for JumpProcesses 10.
     "inverse_problems/optimization_ode_param_fitting.md",
     "inverse_problems/behaviour_optimisation.md",
     "inverse_problems/structural_identifiability.md",
-    "inverse_problems/likelihood_profiler.md",
+    # "inverse_problems/likelihood_profiler.md", # Wait for PEtab/SBMLImporter support for JumpProcesses 10.
     "inverse_problems/global_sensitivity_analysis.md",
     "inverse_problems/turing_ode_param_fitting.md",
     "Examples" => Any[
