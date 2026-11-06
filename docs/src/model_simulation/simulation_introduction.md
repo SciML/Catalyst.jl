@@ -412,6 +412,11 @@ sol = solve(jprob, Tsit5())  # use the Tsit5 ODE solver to time-step
 plot(sol; idxs = :P, lw = 2)
 ```
 
+!!! tip
+    Long simulations that use callbacks or `VariableRateJump`s can save far more
+    trajectory data than intended. See
+    [Common Mistakes: saving controls](@ref common_mistakes_save_positions).
+
 ---
 ## [Citation](@id simulation_intro_citation)
 When you simulate Catalyst models in your research, please cite the corresponding paper(s) to support the simulation package authors. For ODE simulations:

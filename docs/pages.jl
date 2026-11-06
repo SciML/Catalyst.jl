@@ -79,6 +79,7 @@ pages = Any[
     "spatial_modelling/spatial_jump_simulations.md"
 ],
 "FAQs" => "faqs.md",
+"Common Mistakes" => "introduction_to_catalyst/common_mistakes.md",
 "API" => Any[
     "api/core_api.md",
     "api/network_analysis_api.md"
