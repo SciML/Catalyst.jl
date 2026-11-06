@@ -38,8 +38,6 @@ The Catalyst documentation is separated into sections describing Catalyst's vari
 
 New users are recommended to start with either the [Introduction to Catalyst and Julia for New Julia users](@ref catalyst_for_new_julia_users) or [Introduction to Catalyst](@ref introduction_to_catalyst) sections (depending on whether they are familiar with Julia programming or not). This should be enough to carry out many basic Catalyst workflows.
 
-After working through an introductory tutorial, the [Common Mistakes](@ref common_mistakes) page is a short checklist of recurring pitfalls.
-
 This documentation contains code which is dynamically run whenever it is built. If you copy the code and run it in your Julia environment it should work. The exact Julia environment that is used in this documentation can be found [here](@ref doc_index_reproducibility).
 
 For most code blocks in this documentation, the output of the last line of code is printed at the of the block, e.g.
