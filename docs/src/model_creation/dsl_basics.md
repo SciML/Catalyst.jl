@@ -1,9 +1,5 @@
 # [The Catalyst DSL - Introduction](@id dsl_description)
 
-!!! tip
-    New users should also read [Common Mistakes](@ref common_mistakes),
-    especially the sections on declaring species/parameters outside the DSL
-    and on `$` interpolation.
 ```@raw html
 <details><summary><strong>Environment setup and package installation</strong></summary>
 ```
@@ -420,3 +416,8 @@ It should be noted that the following symbols are *not permitted* to be used as 
 - `im` (used in Julia to represent [complex numbers](https://docs.julialang.org/en/v1/manual/complex-and-rational-numbers/#Complex-Numbers)).
 - `nothing` (used in Julia to denote [nothing](https://docs.julialang.org/en/v1/base/constants/#Core.nothing)).
 - `Γ` (used by Catalyst to represent [conserved quantities](@ref conservation_laws)).
+
+!!! tip
+    New users should also read [Common Mistakes](@ref common_mistakes),
+    especially the sections on declaring species/parameters outside the DSL
+    and on `$` interpolation.

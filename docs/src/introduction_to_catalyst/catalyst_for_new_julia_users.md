@@ -5,8 +5,6 @@ Julia can be downloaded [here](https://julialang.org/downloads/). Generally, it 
 
 *Users who are already familiar with Julia can skip to the [Introduction to Catalyst](@ref introduction_to_catalyst) tutorial.*
 
-Also see the [Common Mistakes](@ref common_mistakes) page once you have tried a few models.
-
 ## Basic Julia usage
 On the surface, Julia has many similarities to languages like MATLAB, Python, and R.
 
@@ -246,6 +244,7 @@ Some additional useful Pkg commands are:
 !!! note
     A useful feature of Julia's environment system is that enables the exact definition of what packages and versions were used to execute a script. This supports e.g. reproducibility in academic research. Here, by providing the corresponding Project.toml and Manifest.toml files, you can enable someone to reproduce the exact program used to perform some set of analyses.
 
+Also see the [Common Mistakes](@ref common_mistakes) page once you have tried a few models.
 
 ---
 ## Feedback

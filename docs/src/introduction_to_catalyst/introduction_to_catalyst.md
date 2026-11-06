@@ -9,11 +9,6 @@ abstract mathematical models Catalyst reaction models can be converted to,
 but please note it assumes one has already read this tutorial as a
 prerequisite.
 
-!!! tip
-    Before digging deeper, skim the [Common Mistakes](@ref common_mistakes) page.
-    It covers recurring pitfalls with `@species`/`@parameters` declared outside
-    the DSL, `$` interpolation, and jump/callback saving that fills memory.
-
 We begin by installing Catalyst and any needed packages into a new environment.
 This step can be skipped if you have already installed them in your current,
 active environment:
@@ -361,6 +356,11 @@ and the ODE model
 ```
 
 A more detailed summary of the precise mathematical equations Catalyst can generate is available in the [Mathematical Models Catalyst can Generate](@ref math_models_in_catalyst) documentation.
+
+!!! tip
+    Before digging deeper, skim the [Common Mistakes](@ref common_mistakes) page.
+    It covers recurring pitfalls with `@species`/`@parameters` declared outside
+    the DSL, `$` interpolation, and jump/callback saving that fills memory.
 
 ---
 ## Notes
