@@ -29,9 +29,9 @@ version = "0.0.1"
 
 [[deps.AbstractAlgebra]]
 deps = ["Compat", "LinearAlgebra", "MacroTools", "PrecompileTools", "Preferences", "Random", "RandomExtensions", "SparseArrays"]
-git-tree-sha1 = "0aa1b711b49aa207ac3d8fa6f2a78225e3130c0e"
+git-tree-sha1 = "0cf4d60ca84d298ab63f45230e1f340077dc1e2b"
 uuid = "c3fe647b-3220-5bb0-a1ea-a7954cac585d"
-version = "0.50.4"
+version = "0.50.5"
 
     [deps.AbstractAlgebra.extensions]
     IJuliaExt = "IJulia"
@@ -599,7 +599,7 @@ version = "0.5.2"
 
 [[deps.Catalyst]]
 deps = ["Combinatorics", "DataStructures", "DiffEqBase", "DocStringExtensions", "DynamicQuantities", "EnumX", "Graphs", "JumpProcesses", "LaTeXStrings", "Latexify", "LinearAlgebra", "MacroTools", "ModelingToolkitBase", "Parameters", "Reexport", "RuntimeGeneratedFunctions", "SciMLBase", "SciMLPublic", "Setfield", "SparseArrays", "SymbolicIndexingInterface", "SymbolicUtils", "Symbolics"]
-path = "/home/runner/_work/Catalyst.jl/Catalyst.jl"
+path = "/home/runner/work/Catalyst.jl/Catalyst.jl"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
 version = "17.0.1"
 weakdeps = ["BifurcationKit", "CairoMakie", "DynamicPolynomials", "GraphMakie", "HomotopyContinuation", "Makie", "NetworkLayout", "StructuralIdentifiability", "TermInterface"]
@@ -5323,9 +5323,9 @@ version = "1.5.7+1"
 
 [[deps.Zygote]]
 deps = ["AbstractFFTs", "ChainRules", "ChainRulesCore", "DiffRules", "Distributed", "FillArrays", "ForwardDiff", "GPUArraysCore", "IRTools", "InteractiveUtils", "LinearAlgebra", "LogExpFunctions", "MacroTools", "NaNMath", "PrecompileTools", "Random", "SparseArrays", "SpecialFunctions", "Statistics", "ZygoteRules"]
-git-tree-sha1 = "b6bb65f9d868585a33d76917cf81a222c69f1d30"
+git-tree-sha1 = "2da80a46522b8e4152deb4b6596d4f3eca0b0111"
 uuid = "e88e6eb3-aa80-5325-afca-941959d7151f"
-version = "0.7.15"
+version = "0.7.16"
 
     [deps.Zygote.extensions]
     ZygoteAtomExt = "Atom"
