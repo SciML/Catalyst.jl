@@ -10,6 +10,8 @@
   reactions alone, through its random time change representation `Xᵢ(t) = Xᵢ(0) + ∑ⱼ νᵢⱼ
   Rⱼ(∫₀ᵗ aⱼ(s) ds)`, with `aⱼ` the propensity of reaction `j` and `Rⱼ` independent unit-rate
   Poisson processes.
+- `latexify` with the `:reactions` and `:ode` forms no longer throws an `UndefVarError` after
+  `copy_to_clipboard(true)`.
 
 ## Catalyst 17.0.1
 

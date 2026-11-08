@@ -77,9 +77,7 @@ function chemical_arrows(rn::ReactionSystem;
     rxs = reactions(rn)
     nonrxs = filter(eq -> eq isa Equation, equations(rn))
     if isempty(rxs) && isempty(nonrxs)
-        latexstr = Latexify.LaTeXString("ReactionSystem $(MT.nameof(rn)) has no reactions or equations.")
-        Latexify.COPY_TO_CLIPBOARD && clipboard(latexstr)
-        return latexstr
+        return Latexify.LaTeXString("ReactionSystem $(MT.nameof(rn)) has no reactions or equations.")
     end
 
     str = starred ? "\\begin{align*}\n" : "\\begin{align}\n"
@@ -173,9 +171,8 @@ function chemical_arrows(rn::ReactionSystem;
         str = "\$\$\n" * str * "\$\$"
     end
 
-    latexstr = Latexify.LaTeXString(str)
-    Latexify.COPY_TO_CLIPBOARD && clipboard(latexstr)
-    return latexstr
+    # `latexify` copies the result to the clipboard itself when `copy_to_clipboard(true)`.
+    return Latexify.LaTeXString(str)
 end
 
 ### SDE and Jump Forms ###
