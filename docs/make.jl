@@ -1,4 +1,23 @@
 using Documenter
+using DocumenterInterLinks
+
+links = InterLinks(
+    "JumpProcesses" => "https://docs.sciml.ai/JumpProcesses/stable/",
+    "ModelingToolkit" => "https://docs.sciml.ai/ModelingToolkit/stable/",
+)
+
+# Refs inside docstrings reused from JumpProcesses (`JumpProblem`) and
+# ModelingToolkitBase (`mtkcompile`) point at objects documented in those packages.
+fallbacks = ExternalFallbacks(
+    "ConstantRateJump" => "@extref JumpProcesses `JumpProcesses.ConstantRateJump`",
+    "MassActionJump" => "@extref JumpProcesses `JumpProcesses.MassActionJump`",
+    "Direct" => "@extref JumpProcesses `JumpProcesses.Direct`",
+    "JumpSet" => "@extref JumpProcesses `JumpProcesses.JumpSet`",
+    "SSAStepper" => "@extref JumpProcesses `JumpProcesses.SSAStepper`",
+    "System" => "@extref ModelingToolkit `ModelingToolkitBase.System`",
+    "homotopy" => "@extref ModelingToolkit `ModelingToolkitBase.homotopy`",
+    "strip_homotopy" => "@extref ModelingToolkit `ModelingToolkitBase.strip_homotopy`",
+)
 using Catalyst, ModelingToolkitBase, SymbolicIndexingInterface
 using JumpProcesses, SciMLBase
 # Add packages for plotting
@@ -50,6 +69,7 @@ makedocs(
         JumpProcesses, SciMLBase,
         Base.get_extension(Catalyst, :CatalystGraphMakieExtension),
     ],
+    plugins = [links, fallbacks],
     doctest = false,
     clean = true,
     pages = pages,
