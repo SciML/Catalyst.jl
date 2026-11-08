@@ -10,6 +10,11 @@
   reactions alone, through its random time change representation `Xᵢ(t) = Xᵢ(0) + ∑ⱼ νᵢⱼ
   Rⱼ(∫₀ᵗ aⱼ(s) ds)`, with `aⱼ` the propensity of reaction `j` and `Rⱼ` independent unit-rate
   Poisson processes.
+- In every `latexify` form, the factors of a product now put the numeric coefficient first,
+  then parameters and the time variable, then species and other unknowns: `k X Y` rather than
+  `X Y k`, and `\frac{v X^{n}}{K^{n} + X^{n}}` rather than `\frac{X^{n} v}{K^{n} + X^{n}}`.
+  This also applies inside `sqrt`, `exp`, `log`, `abs` and the trigonometric and hyperbolic
+  functions, but not inside other function calls.
 - `latexify` with the `:reactions` and `:ode` forms no longer throws an `UndefVarError` after
   `copy_to_clipboard(true)`.
 

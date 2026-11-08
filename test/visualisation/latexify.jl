@@ -126,7 +126,7 @@ let
 # Latexify.@generate_test latexify(rn)
 @test latexify(rn) == replace(
 raw"\begin{align*}
-\varnothing &\xrightleftharpoons[d_{a}]{\frac{B^{n} p_{a}}{B^{n} + k^{n}}} \mathrm{A} \\
+\varnothing &\xrightleftharpoons[d_{a}]{\frac{p_{a} B^{n}}{B^{n} + k^{n}}} \mathrm{A} \\
 \varnothing &\xrightleftharpoons[d_{b}]{p_{b}} \mathrm{B} \\
 3 \mathrm{B} &\xrightleftharpoons[r_{b}]{r_{a}} \mathrm{A}  
  \end{align*}
@@ -135,7 +135,7 @@ raw"\begin{align*}
 # Latexify.@generate_test latexify(rn, mathjax = false)
 @test latexify(rn, mathjax = false) == replace(
 raw"\begin{align*}
-\varnothing &\xrightleftharpoons[d_{a}]{\frac{B^{n} p_{a}}{B^{n} + k^{n}}} \mathrm{A} \\
+\varnothing &\xrightleftharpoons[d_{a}]{\frac{p_{a} B^{n}}{B^{n} + k^{n}}} \mathrm{A} \\
 \varnothing &\xrightleftharpoons[d_{b}]{p_{b}} \mathrm{B} \\
 3 \mathrm{B} &\xrightleftharpoons[r_{b}]{r_{a}} \mathrm{A}  
  \end{align*}
@@ -250,7 +250,7 @@ let
  # Latexify.@generate_test latexify(rn)
 @test latexify(rn) == replace(
 raw"\begin{align*}
-\mathrm{Y} &\xrightarrow{Y k} \varnothing  
+\mathrm{Y} &\xrightarrow{k Y} \varnothing  
  \end{align*}
 ", "\r\n"=>"\n")
 end

@@ -99,6 +99,7 @@ function chemical_arrows(rn::ReactionSystem;
     else
         subber = SymbolicUtils.Substituter{true}([s => processsym(s) for s in syms], SymbolicUtils.default_substitute_filter)
     end
+    isvar = _unknown_predicate(rn)
 
     lastidx = length(rxs)
     for (i, r) in enumerate(rxs)
@@ -125,12 +126,12 @@ function chemical_arrows(rn::ReactionSystem;
             rate_backwards = (rxs[i + 1].rate isa SymbolicT && !show_time_arg) ? subber(rxs[i + 1].rate) :
                              rxs[i + 1].rate
             str *= " &" * rev_arrow
-            str *= "[" * latexraw(rate_backwards; kwargs...) * "]"
-            str *= "{" * latexraw(rate; kwargs...) * "} "
+            str *= "[" * _latex_ordered(rate_backwards, isvar; kwargs...) * "]"
+            str *= "{" * _latex_ordered(rate, isvar; kwargs...) * "} "
             backwards_reaction = true
         else
             ### Uni-directional arrows
-            str *= " &\\xrightarrow{" * latexraw(rate; kwargs...) * "} "
+            str *= " &\\xrightarrow{" * _latex_ordered(rate, isvar; kwargs...) * "} "
         end
 
         ### Generate formatted string of products
@@ -149,7 +150,8 @@ function chemical_arrows(rn::ReactionSystem;
     end
 
     if !isempty(nonrxs)
-        eqstrs = [latexraw(eq; kwargs...) for eq in nonrxs]
+        eqstrs = [latexraw(eq.lhs; kwargs...) * " = " *
+                  _latex_ordered(eq.rhs, isvar; kwargs...) for eq in nonrxs]
         if !show_time_arg
             iv_latex = latexraw(get_iv(rn))
             eqstrs = [replace(s, "\\left( $iv_latex \\right)" => "") for s in eqstrs]
@@ -195,7 +197,8 @@ function cle_equations(w::LatexCLE; double_linebreak = LATEX_DEFS.double_linebre
     (isempty(rxs) && isempty(nonrxs)) && return _no_equations_latex(w.rs)
 
     subber = show_time_arg ? identity : _latex_subber(rs)
-    tex(x) = latexraw(subber(x); kwargs...)
+    isvar = _unknown_predicate(rs)
+    tex(x) = _latex_ordered(subber(x), isvar; kwargs...)
     targ = show_time_arg ? "\\left( " * latexraw(get_iv(rs); kwargs...) * " \\right)" : ""
 
     # The drift and noise terms that the reactions give each species.
@@ -260,7 +263,8 @@ function time_change_equations(w::LatexTimeChange;
     s = _integration_variable(rs)
     at_s = Dict{SymbolicT, SymbolicT}(x => Symbolics.operation(x)(s) for x in species(rs))
     at_s[iv] = s
-    tex(x) = latexraw(x; kwargs...)
+    isvar = _unknown_predicate(rs)
+    tex(x) = _latex_ordered(x, isvar; kwargs...)
     integral_tail = " \\, \\mathrm{d}" * tex(s) * " \\right)"
 
     _, ispcs = get_indep_sts(rs)
@@ -341,6 +345,109 @@ function _latex_align(lines; starred, double_linebreak, math_delimiters)
     str = replace(str, r"\\mathtt\{([^}]*)\}" => s"\1")
     math_delimiters && (str = "\$\$\n" * str * "\$\$")
     return Latexify.LaTeXString(str)
+end
+
+### Factor Order ###
+
+# Renders `x` with the factors of each product in one order: the numeric coefficient, then
+# the factors without unknowns (parameters, the independent variable), then those with
+# unknowns, so that rate constants come before species. Symbolics orders the factors of a
+# product by name instead (with powers first). So the arithmetic (+, *, /, ^) and a few
+# elementary functions are turned into an `Expr` here, and the rest (variables, parameters,
+# other function calls, numbers) is rendered by Symbolics. `isvar(f)` tells whether the
+# factor `f` contains an unknown.
+function _latex_ordered(x, isvar; kwargs...)
+    x isa SymbolicT || return latexraw(x; kwargs...)
+    return latexraw(_ordered_expr(x, isvar; kwargs...); kwargs...)
+end
+
+# Whether an expression contains an unknown of `rs`, by name, so that it holds whether the
+# unknowns appear as X(t), as the variables `processsym` gives, or at another time.
+function _unknown_predicate(rs)
+    names = Set(MT.getname(u) for u in unknowns(rs))
+    return f -> any(v -> MT.getname(v) in names, Symbolics.get_variables(f))
+end
+
+# A real number constant's value (other constants are rendered by Symbolics), or `nothing`.
+_latex_number(x) = (v = Symbolics.value(x); v isa Real ? v : nothing)
+
+const LATEX_ORDERED_FUNCTIONS = (sqrt, exp, log, abs, sin, cos, tan, sinh, cosh, tanh)
+
+# A number as Symbolics renders it (e.g. 1//2 as \frac{1}{2}); integers as they are.
+function _number_leaf(c; kwargs...)
+    c isa Integer && return c
+    c < 0 && return Expr(:call, :-, _number_leaf(-c; kwargs...))
+    return isone(c) ? 1 : LaTeXString(latexraw(Num(c); kwargs...))
+end
+
+_product_expr(factors) = isempty(factors) ? 1 :
+                         (length(factors) == 1 ? only(factors) : Expr(:call, :*, factors...))
+
+function _is_negative_power(x)
+    iscall(x) && Symbolics.operation(x) === (^) || return false
+    e = _latex_number(Symbolics.arguments(x)[2])
+    return e !== nothing && e < 0
+end
+
+function _ordered_expr(x, isvar; kwargs...)
+    x = unwrap(x)
+    c = _latex_number(x)
+    c === nothing || return _number_leaf(c; kwargs...)
+    leaf(y) = LaTeXString(latexraw(y; kwargs...))
+    iscall(x) || return leaf(x)
+    op = Symbolics.operation(x)
+    args = sorted_arguments(x)
+    ordered(y) = _ordered_expr(y, isvar; kwargs...)
+    if op === (+)
+        return Expr(:call, :+, map(ordered, args)...)
+    elseif op === (*)
+        coef = 1
+        params, vars, denom = Any[], Any[], Any[]
+        for a in map(unwrap, args)
+            ac = _latex_number(a)
+            if ac !== nothing
+                coef *= ac
+            elseif _is_negative_power(a)
+                b, e = Symbolics.arguments(a)
+                push!(denom, ordered(b^(-_latex_number(e))))
+            else
+                group = isvar(a) ? vars : params
+                # as Symbolics does, powers first within each group
+                if iscall(a) && Symbolics.operation(a) === (^)
+                    pushfirst!(group, ordered(a))
+                else
+                    push!(group, ordered(a))
+                end
+            end
+        end
+        numer = vcat(isone(abs(coef)) ? Any[] : Any[_number_leaf(abs(coef); kwargs...)],
+            params, vars)
+        num = _product_expr(numer)
+        ex = isempty(denom) ? num : Expr(:call, :/, num, _product_expr(denom))
+        return coef < 0 ? Expr(:call, :-, ex) : ex
+    elseif op === (/)
+        num, den = ordered(args[1]), ordered(args[2])
+        # a negated numerator goes in front of the fraction
+        if Meta.isexpr(num, :call) && num.args[1] === :- && length(num.args) == 2
+            return Expr(:call, :-, Expr(:call, :/, num.args[2], den))
+        end
+        return Expr(:call, :/, num, den)
+    elseif op === (^)
+        base, e = args
+        if _is_negative_power(x)
+            return Expr(:call, :/, 1, ordered(base^(-_latex_number(e))))
+        end
+        # parenthesize a call (e.g. X(t) or a function) used as a base, as Symbolics does
+        b = (iscall(base) &&
+             !(Symbolics.operation(base) in (+, *, /, ^, LATEX_ORDERED_FUNCTIONS...))) ?
+            LaTeXString("\\left( " * leaf(base) * " \\right)") : ordered(base)
+        return Expr(:call, :^, b, ordered(e))
+    elseif op in LATEX_ORDERED_FUNCTIONS
+        # functions that Latexify renders itself (as Symbolics would), with their arguments
+        # ordered too
+        return Expr(:call, nameof(op), map(ordered, args)...)
+    end
+    return leaf(x)
 end
 
 ### Utility ###

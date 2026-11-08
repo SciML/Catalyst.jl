@@ -143,6 +143,29 @@ let
     @test_throws ErrorException latexify(rn; form = :jump)
 end
 
+# In products, numbers and parameters (and the time variable) come before species, in every
+# form; also inside elementary functions such as `exp`.
+let
+    rn = @reaction_network begin
+        k * t, X + Y --> 0
+        d, X --> 0
+        A * exp(-E / (R * T)), Y --> 0
+        b * X, 0 --> Z
+    end
+    # the rate shown on the last arrow
+    @test occursin(r"\\xrightarrow\{b\s*X\}", string(latexify(rn)))
+    for form in (:ode, :sde)
+        tex = string(latexify(rn; form))
+        @test occursin(r"k\s*t\s*X\s*Y", tex)
+        @test occursin(r"d\s*X", tex)
+        @test !occursin(r"X\s*d\b", tex)
+        @test occursin(r"A\s*e\^\{\s*-\s*\\frac\{E\}\{R\s*T\}\}\s*Y", tex)
+    end
+    tex = string(latexify(rn; form = :jump))
+    @test occursin(r"k\s*s\s*X\\left\( s \\right\)\s*Y\\left\( s \\right\)", tex)
+    @test occursin(r"d\s*X\\left\( s \\right\)", tex)
+end
+
 # Options shared with the other forms, an empty system, and an unknown form.
 let
     rn = @reaction_network begin
