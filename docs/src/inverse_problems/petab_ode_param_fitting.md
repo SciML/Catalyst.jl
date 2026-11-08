@@ -210,7 +210,7 @@ automatically ([unless a linear scale is selected](@ref petab_parameters_scales)
 parameters to logarithmic scale, so typically `exp10.(res.xmin)` are the values of interest.
 If you investigate the result from this example you might note, that even if PEtab.jl has
 found the global optimum (which fits the data well), this does not actually correspond to
-the true parameter set. This phenomenon is related to the concept of \_identifiability\*,
+the true parameter set. This phenomenon is related to the concept of \_identifiability*,
 which is very important for parameter fitting.
 
 ### Final notes
@@ -836,6 +836,8 @@ package (currently there is no article associated with this package) and the PEt
 
 ## References
 
-[^1]: [Schmiester, L et al. _PEtab—Interoperable specification of parameter estimation problems in systems biology_, PLOS Computational Biology (2021).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008646)
+[^1]:
+    [Schmiester, L et al. _PEtab—Interoperable specification of parameter estimation problems in systems biology_, PLOS Computational Biology (2021).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008646)
 
-[^2]: [Hass, H et al. _Benchmark problems for dynamic modeling of intracellular processes_, Bioinformatics (2019).](https://academic.oup.com/bioinformatics/article/35/17/3073/5280731?login=false)
+[^2]:
+    [Hass, H et al. _Benchmark problems for dynamic modeling of intracellular processes_, Bioinformatics (2019).](https://academic.oup.com/bioinformatics/article/35/17/3073/5280731?login=false)
