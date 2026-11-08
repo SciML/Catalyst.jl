@@ -45,7 +45,21 @@ latexify(brusselator; form = :ode)
 latexify(brusselator; form = :ode, math_delimiters = true) # hide
 ```
 !!! note
-    Internally, `latexify(brusselator; form = :ode)` generates the corresponding ODE equations from the model and renders them through Catalyst's LaTeX display pipeline. The same can be done for SDEs using `form = :sde`.
+    Internally, `latexify(brusselator; form = :ode)` generates the corresponding ODE equations from the model and renders them through Catalyst's LaTeX display pipeline.
+
+Similarly, `form = :sde` displays the chemical Langevin equation (CLE), the SDE model of the network:
+```@example visualisation_latex
+latexify(brusselator; form = :sde)
+latexify(brusselator; form = :sde, math_delimiters = true) # hide
+```
+Here the $W_j$ are independent Brownian motions, one per reaction: reaction $j$ contributes $\nu_{ij} \sqrt{a_j} \, \mathrm{d}W_j$ to the equation of species $i$, where $a_j$ is the reaction's rate law and $\nu_{ij}$ its net stoichiometric coefficient for species $i$ (with $\sqrt{a_j}$ multiplied by the reaction's noise scaling, if it has one).
+
+Finally, `form = :jump` displays the jump process model of the network, through its random time change representation:
+```@example visualisation_latex
+latexify(brusselator; form = :jump)
+latexify(brusselator; form = :jump, math_delimiters = true) # hide
+```
+Here the $R_j$ are independent unit-rate Poisson processes, one per reaction, and the integrand inside $R_j$ is the propensity (the jump rate law) of reaction $j$. The `:jump` form can only display networks made of reactions alone, without coupled equations.
 
 If you wish to copy the output to your [clipboard](https://en.wikipedia.org/wiki/Clipboard_(computing)) (e.g. so that you can paste it into a LaTeX document), run `copy_to_clipboard(true)` before you run `latexify`. A more throughout description of Latexify's features can be found in [its documentation](https://korsbo.github.io/Latexify.jl/stable/).
 

@@ -2,6 +2,15 @@
 
 ## Unreleased (on master)
 
+- `latexify(rs; form = :sde)` now displays the chemical Langevin equation, with a noise term
+  `νᵢⱼ √aⱼ dWⱼ` from each reaction `j` in the equation of each species `i` it changes (`Wⱼ`
+  independent Brownian motions, one per reaction). It used to display only the drift, the
+  same equations as `form = :ode`.
+- New `latexify(rs; form = :jump)` displays the jump process model of a network made of
+  reactions alone, through its random time change representation `Xᵢ(t) = Xᵢ(0) + ∑ⱼ νᵢⱼ
+  Rⱼ(∫₀ᵗ aⱼ(s) ds)`, with `aⱼ` the propensity of reaction `j` and `Rⱼ` independent unit-rate
+  Poisson processes.
+
 ## Catalyst 17.0.1
 
 - `Reaction` now throws a `MethodError` when given an unsupported keyword argument.

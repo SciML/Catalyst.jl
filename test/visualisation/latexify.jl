@@ -191,8 +191,8 @@ let
     ode_expected = "\\begin{align*}\n\\frac{\\mathrm{d} X}{\\mathrm{d}t} &= p - d X + 2 kD \\mathrm{X2} - \\left( X \\right)^{2} kB \\\\\n\\frac{\\mathrm{d} \\mathrm{X2}}{\\mathrm{d}t} &=  - kD \\mathrm{X2} + \\frac{1}{2} \\left( X \\right)^{2} kB  \n \\end{align*}\n"
     @test latexify(rn; form = :ode) == replace(ode_expected, "\r\n"=>"\n")
 
-    # SDE form currently renders identically to ODE form (noise terms not yet shown).
-    @test latexify(rn; form = :sde) == latexify(rn; form = :ode)
+    # The SDE form adds the noise terms (tested in latexify_forms.jl).
+    @test latexify(rn; form = :sde) != latexify(rn; form = :ode)
 
     # Tests that `show_time_arg = true` preserves (t) in equation/rate output.
     @test occursin("\\left( t \\right)", string(latexify(rn; form = :ode, show_time_arg = true)))
