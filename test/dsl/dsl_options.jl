@@ -1830,6 +1830,58 @@ let
     @test isequal(Catalyst.expand_registered_functions(equations(rn4)[1]), D(A) ~ v*(A^n))
 end
 
+# Test that user-defined functions are escaped in event conditions and affects (issue #1587).
+let
+    ev_halve(n) = n / 2
+    @register_symbolic ev_halve(n)
+    ev_thresh(t) = 10.0 + t
+    @register_symbolic ev_thresh(t)
+    ev_double(n) = 2 * n # Unregistered, so it is traced through.
+
+    @species X(t)
+    @parameters k
+    rxs = [Reaction(k, nothing, [X])]
+
+    # Continuous events: user functions in the affect and in the condition.
+    rn_c = @reaction_network rn_ev begin
+        @continuous_events begin
+            [X ~ 10.0] => [X => ev_halve(X)]
+            [X ~ ev_thresh(t)] => [X => ev_double(X)]
+        end
+        k, 0 --> X
+    end
+    cevents = [
+        [X ~ 10.0] => [X ~ Pre(ev_halve(X))],
+        [X ~ ev_thresh(t)] => [X ~ Pre(ev_double(X))],
+    ]
+    @named rn_ev = ReactionSystem(rxs, t; continuous_events = cevents)
+    @test Catalyst.isequivalent(rn_c, complete(rn_ev))
+
+    # Discrete events: user functions in the affect and in the condition.
+    rn_d = @reaction_network rn_ev begin
+        @discrete_events begin
+            (X > 10.0) => [X => ev_halve(X)]
+            (X > ev_thresh(t)) => [X => ev_double(X)]
+        end
+        k, 0 --> X
+    end
+    devents = [
+        (X > 10.0) => [X ~ Pre(ev_halve(X))],
+        (X > ev_thresh(t)) => [X ~ Pre(ev_double(X))],
+    ]
+    @named rn_ev = ReactionSystem(rxs, t; discrete_events = devents)
+    @test Catalyst.isequivalent(rn_d, complete(rn_ev))
+
+    # Explicit `Pre` alongside a user function is still handled.
+    rn_p = @reaction_network rn_ev begin
+        @continuous_events [X ~ 10.0] => [X => ev_halve(Pre(X))]
+        k, 0 --> X
+    end
+    cevents = [[X ~ 10.0] => [X ~ ev_halve(Pre(X))]]
+    @named rn_ev = ReactionSystem(rxs, t; continuous_events = cevents)
+    @test Catalyst.isequivalent(rn_p, complete(rn_ev))
+end
+
 # Erroneous `@default_noise_scaling` declaration (other noise scaling tests are mostly in the SDE file).
 let
     # Default noise scaling with multiple entries.
