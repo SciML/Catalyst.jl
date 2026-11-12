@@ -251,8 +251,9 @@ end
 # species X,
 #   X(t) = X(0) + ∑ⱼ νⱼ Rⱼ(∫₀ᵗ aⱼ(s′) ds′),
 # with aⱼ the jump rate law (propensity) of reaction j, νⱼ its net stoichiometry of X, and Rⱼ
-# independent unit-rate Poisson processes, one per reaction. The time arguments are always
-# shown, since the integrands need them.
+# independent unit-rate Poisson processes, one per reaction, written `\mathcal{R}_j` so that
+# they can't be confused with names in the model. The time arguments are always shown,
+# since the integrands need them.
 function time_change_equations(w::LatexTimeChange;
         double_linebreak = LATEX_DEFS.double_linebreak, starred = LATEX_DEFS.starred,
         math_delimiters = false, show_time_arg = false, mathrm = true,
@@ -278,8 +279,8 @@ function time_change_equations(w::LatexTimeChange;
     species_to_idx = Dict(x => i for (i, x) in enumerate(ispcs))
     for (j, rx) in enumerate(rxs)
         rl = jumpratelaw(rx; combinatoric_ratelaw = crl, expand_catalyst_funs = false)
-        Rj = "R_{$j}\\left( \\int_{0}^{" * tex(iv) * "} " * tex(substitute(rl, at_s)) *
-             integral_tail
+        Rj = "\\mathcal{R}_{$j}\\left( \\int_{0}^{" * tex(iv) * "} " *
+             tex(substitute(rl, at_s)) * integral_tail
         for (spec, stoich) in rx.netstoich
             drop_dynamics(spec) && continue
             push!(terms[species_to_idx[spec]], _coef_summand(stoich, Rj, tex; kwargs...))

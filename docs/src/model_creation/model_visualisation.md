@@ -59,7 +59,7 @@ Finally, `form = :jump` displays the jump process model of the network, through 
 latexify(brusselator; form = :jump)
 latexify(brusselator; form = :jump, math_delimiters = true) # hide
 ```
-Here the $R_j$ are independent unit-rate Poisson processes, one per reaction, and the integrand inside $R_j$ is the propensity (the jump rate law) of reaction $j$. The `:jump` form can only display networks made of reactions alone, without coupled equations.
+Here the $\mathcal{R}_j$ are independent unit-rate Poisson processes, one per reaction, written in calligraphic type like the $\mathcal{W}_j$, and the integrand inside $\mathcal{R}_j$ is the propensity (the jump rate law) of reaction $j$. The `:jump` form can only display networks made of reactions alone, without coupled equations.
 
 If you wish to copy the output to your [clipboard](https://en.wikipedia.org/wiki/Clipboard_(computing)) (e.g. so that you can paste it into a LaTeX document), run `copy_to_clipboard(true)` before you run `latexify`. A more throughout description of Latexify's features can be found in [its documentation](https://korsbo.github.io/Latexify.jl/stable/).
 

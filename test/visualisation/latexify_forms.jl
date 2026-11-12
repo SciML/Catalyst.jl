@@ -4,7 +4,7 @@
 using Catalyst, Latexify, Test
 
 # These tests check the structure of the `:sde` and `:jump` forms: which equations there are,
-# and which noise (d𝒲ⱼ) and Poisson process (Rⱼ) terms each has, with what sign and
+# and which noise (d𝒲ⱼ) and Poisson process (ℛⱼ) terms each has, with what sign and
 # coefficient. They don't compare whole strings, whose details depend on how Latexify and
 # Symbolics print expressions (which made the string comparisons in latexify.jl fragile).
 
@@ -42,7 +42,7 @@ function term_with(row, marker)
 end
 
 dW(j) = "\\mathrm{d}\\mathcal{W}_{$j}"
-R(j) = "R_{$j}\\left( \\int_{0}^{t}"
+R(j) = "\\mathcal{R}_{$j}\\left( \\int_{0}^{t}"
 
 ### Tests ###
 
@@ -89,13 +89,13 @@ let
 
     # X(t) = X(0) + R₁(…) - R₂(…) - 2R₃(…).
     @test summands(rows[1])[1] == "+ X\\left( 0 \\right)"
-    @test startswith(term_with(rows[1], R(1)), "+ R_{1}")
-    @test startswith(term_with(rows[1], R(2)), "- R_{2}")
-    @test startswith(term_with(rows[1], R(3)), "- 2 R_{3}")
+    @test startswith(term_with(rows[1], R(1)), "+ \\mathcal{R}_{1}")
+    @test startswith(term_with(rows[1], R(2)), "- \\mathcal{R}_{2}")
+    @test startswith(term_with(rows[1], R(3)), "- 2 \\mathcal{R}_{3}")
     @test length(summands(rows[1])) == 4
 
     # X2(t) = X2(0) + R₃(…).
-    @test startswith(term_with(rows[2], R(3)), "+ R_{3}")
+    @test startswith(term_with(rows[2], R(3)), "+ \\mathcal{R}_{3}")
     @test length(summands(rows[2])) == 2
 
     # The integrands are in s′, with the species at s′.
@@ -119,7 +119,7 @@ let
 
     # A parameter named `s` doesn't clash with the integration variable s′.
     rows = latex_rows(latexify(rn; form = :jump))
-    @test startswith(term_with(rows[1], R(1)), "- m R_{1}")
+    @test startswith(term_with(rows[1], R(1)), "- m \\mathcal{R}_{1}")
     @test occursin("\\mathrm{d}s'", term_with(rows[1], R(1)))
     @test occursin("A\\left( s' \\right)", term_with(rows[1], R(1)))
 end
