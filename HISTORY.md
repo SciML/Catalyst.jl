@@ -14,7 +14,14 @@
   then parameters and the time variable, then species and other unknowns: `k X Y` rather than
   `X Y k`, and `\frac{v X^{n}}{K^{n} + X^{n}}` rather than `\frac{X^{n} v}{K^{n} + X^{n}}`.
   This also applies inside `sqrt`, `exp`, `log`, `abs` and the trigonometric and hyperbolic
-  functions, but not inside other function calls.
+  functions, but not inside other function calls. Sums start with a positive term (`X - 1`
+  rather than `-1 + X`), and a factor that is a sum comes after the other factors with
+  unknowns (`X (X - 1)` rather than `(X - 1) X`).
+- In every `latexify` form, names of more than one letter, such as `kp`, `v0` or `X2`, are now
+  upright (`\mathrm{kp}`) and set off from the factors next to them by a thin space, so that
+  `kp X2` can't be read as a product of single letters. They used to be plain italic, and
+  species names were italic in some forms and upright in others. Single letters, Greek
+  letters and letters with a subscript stay italic.
 - `latexify` with the `:reactions` and `:ode` forms no longer throws an `UndefVarError` after
   `copy_to_clipboard(true)`.
 

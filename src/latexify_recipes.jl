@@ -62,7 +62,8 @@ function processsym(s)
         idxs = args[2:end]
         var = value(Symbolics.variable(MT.getname(s), idxs...))
     end
-    _has_latex_wrapper(var) || (var = _set_latex_wrapper(var, string))
+    # Rendered as Latexify renders the name, with multi-letter names then made upright by
+    # `_upright_names`, as for unknowns that keep their time argument.
     var
 end
 
@@ -164,8 +165,8 @@ function chemical_arrows(rn::ReactionSystem;
 
     str *= starred ? "\\end{align*}\n" : "\\end{align}\n"
 
-    # Strip \mathtt{} wrapping so multi-character names render as plain math italic.
-    str = replace(str, r"\\mathtt\{([^}]*)\}" => s"\1")
+    # Multi-letter names upright, single letters italic.
+    str = _upright_names(str)
 
     # Optionally wrap in $$ delimiters for renderers (Documenter, MathJax) that require
     # explicit math delimiters. Not valid standard LaTeX, but needed for web rendering.
@@ -311,11 +312,13 @@ function _at_time(x, iv, τ)
     return Symbolics.operation(x)(map(a -> _at_time(a, iv, τ), Symbolics.arguments(x))...)
 end
 
-# One SDE: "\mathrm{d}X &= \left( drift \right) \mathrm{d}t + noise terms", with `t` the
-# independent variable `ivtex`, leaving out a zero drift, and "0" if there is nothing.
+# One SDE: "\mathrm{d}X &= drift \mathrm{d}t + noise terms", with `t` the independent
+# variable `ivtex` and the drift in parentheses only if it is a sum, leaving out a zero
+# drift, and "0" if there is nothing.
 function _sde_line(x, drift, noise, tex, ivtex)
+    dt = "\\mathrm{d}" * ivtex
     summands = _iszero(drift) ? noise :
-               vcat(" + \\left( " * tex(drift) * " \\right) \\, \\mathrm{d}" * ivtex, noise)
+               vcat(_coef_summand(unwrap(drift), dt, tex; sep = " \\, "), noise)
     return "\\mathrm{d}" * x * " &= " * _join_summands(summands)
 end
 
@@ -356,10 +359,43 @@ function _latex_align(lines; starred, double_linebreak, math_delimiters)
     str = starred ? "\\begin{align*}\n" : "\\begin{align}\n"
     str *= join(lines, " $eol") * "  \n "
     str *= starred ? "\\end{align*}\n" : "\\end{align}\n"
-    # Strip \mathtt{} wrapping so multi-character names render as plain math italic.
-    str = replace(str, r"\\mathtt\{([^}]*)\}" => s"\1")
+    str = _upright_names(str)
     math_delimiters && (str = "\$\$\n" * str * "\$\$")
     return Latexify.LaTeXString(str)
+end
+
+# Latexify writes multi-character names as `\mathtt{name}` (and a function call's name, such
+# as that of X2(t), as `\mathrm{\mathtt{X2}}`). They are made upright, `\mathrm{name}`, so
+# that a name like `kp` or `v0` can't be read as a product, while a single (Greek) letter,
+# with or without a subscript, is left in italics.
+function _upright_names(str)
+    out = IOBuffer()
+    i = firstindex(str)
+    while (r = findnext("\\mathtt{", str, i)) !== nothing
+        close = _closing_brace(str, last(r))
+        name = str[nextind(str, last(r)):prevind(str, close)]
+        print(out, str[i:prevind(str, first(r))])
+        print(out, occursin(LATEX_ITALIC_NAME, name) ? name : "\\mathrm{" * name * "}")
+        i = nextind(str, close)
+    end
+    print(out, str[i:end])
+    str = String(take!(out))
+    return replace(str, r"\\mathrm\{\\mathrm\{([^{}]*)\}\}" => s"\\mathrm{\1}")
+end
+
+# A single letter or Greek letter, possibly with a subscript.
+const LATEX_ITALIC_NAME = r"^(\\[A-Za-z]+|[A-Za-z])(_\{[^{}]*\}|_[A-Za-z0-9])?$"
+
+# The index of the `}` that closes the `{` at index `open` of `str`.
+function _closing_brace(str, open)
+    depth = 0
+    i = open
+    while i <= lastindex(str)
+        str[i] == '{' && (depth += 1)
+        str[i] == '}' && (depth -= 1) == 0 && return i
+        i = nextind(str, i)
+    end
+    error("Unbalanced braces in LaTeX output: $str")
 end
 
 ### Factor Order ###
@@ -395,8 +431,37 @@ function _number_leaf(c; kwargs...)
     return isone(c) ? 1 : LaTeXString(latexraw(Num(c); kwargs...))
 end
 
-_product_expr(factors) = isempty(factors) ? 1 :
-                         (length(factors) == 1 ? only(factors) : Expr(:call, :*, factors...))
+# The product of `factors`, with a thin space on either side of a multi-letter name, so that
+# e.g. `k1 X2` doesn't run together as `k1X2`.
+function _product_expr(factors)
+    isempty(factors) && return 1
+    length(factors) == 1 && return only(factors)
+    ex = Expr(:call, :*, first(factors))
+    for i in 2:length(factors)
+        if _is_word(factors[i - 1]) || _is_word(factors[i])
+            push!(ex.args, LATEX_THIN_SPACE)
+        end
+        push!(ex.args, factors[i])
+    end
+    return ex
+end
+
+const LATEX_THIN_SPACE = LaTeXString("\\,")
+
+# Whether a rendered factor is a multi-letter name (or a power of one), which
+# `_upright_names` will make upright.
+function _is_word(f)
+    Meta.isexpr(f, :call) && f.args[1] === :^ && return _is_word(f.args[2])
+    f isa AbstractString || return false
+    return any(m -> !occursin(LATEX_ITALIC_NAME, m.captures[1]),
+        eachmatch(r"\\mathtt\{([^{}]*)\}", f))
+end
+
+# Whether an ordered term is negated: a negative number or `-(…)`.
+function _is_negated(ex)
+    (ex isa Real && ex < 0) && return true
+    return Meta.isexpr(ex, :call) && ex.args[1] === :- && length(ex.args) == 2
+end
 
 function _is_negative_power(x)
     iscall(x) && Symbolics.operation(x) === (^) || return false
@@ -414,10 +479,14 @@ function _ordered_expr(x, isvar; kwargs...)
     args = sorted_arguments(x)
     ordered(y) = _ordered_expr(y, isvar; kwargs...)
     if op === (+)
-        return Expr(:call, :+, map(ordered, args)...)
+        terms = Any[ordered(a) for a in args]
+        # start with a positive term when there is one: X - 1 rather than -1 + X
+        k = findfirst(!_is_negated, terms)
+        (k === nothing || k == 1) || pushfirst!(terms, popat!(terms, k))
+        return Expr(:call, :+, terms...)
     elseif op === (*)
         coef = 1
-        params, vars, denom = Any[], Any[], Any[]
+        params, vars, var_sums, denom = Any[], Any[], Any[], Any[]
         for a in map(unwrap, args)
             ac = _latex_number(a)
             if ac !== nothing
@@ -425,6 +494,9 @@ function _ordered_expr(x, isvar; kwargs...)
             elseif _is_negative_power(a)
                 b, e = Symbolics.arguments(a)
                 push!(denom, ordered(b^(-_latex_number(e))))
+            elseif isvar(a) && iscall(a) && Symbolics.operation(a) === (+)
+                # sums with unknowns after the other factors: X (X - 1), not (X - 1) X
+                push!(var_sums, ordered(a))
             else
                 group = isvar(a) ? vars : params
                 # as Symbolics does, powers first within each group
@@ -436,7 +508,7 @@ function _ordered_expr(x, isvar; kwargs...)
             end
         end
         coef_factor = isone(abs(coef)) ? Any[] : Any[_number_leaf(abs(coef); kwargs...)]
-        num = _product_expr(vcat(coef_factor, params, vars))
+        num = _product_expr(vcat(coef_factor, params, vars, var_sums))
         ex = isempty(denom) ? num : Expr(:call, :/, num, _product_expr(denom))
         return coef < 0 ? Expr(:call, :-, ex) : ex
     elseif op === (/)
