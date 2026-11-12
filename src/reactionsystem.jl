@@ -1714,7 +1714,7 @@ Check that all species in the [`ReactionSystem`](@ref) have the same units, and 
 rate laws of all reactions reduce to units of (species units) / (time units). Also validates
 unit consistency of non-reaction equations.
 
-Uses [`catalyst_get_unit`](@ref) for SymbolicDimensions-preserving unit inference, avoiding
+Uses `catalyst_get_unit` for SymbolicDimensions-preserving unit inference, avoiding
 the floating-point precision loss that occurs with MTKBase's `get_unit` when using non-SI
 units like M or μM.
 
