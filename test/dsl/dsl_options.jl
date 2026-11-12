@@ -2019,4 +2019,40 @@ let
     end
 end
 
+# Tests that @tstops accepts arrays of time points, numeric or symbolic, alongside periods
+# (#1589), and that the symbols in an array are inferred as parameters.
+let
+    rn = @reaction_network begin
+        @tstops [1.0, 1.5]
+        d, X --> 0
+    end
+    @test isequal(ModelingToolkitBase.get_tstops(rn), Any[[1.0, 1.5]])
+
+    rn_dsl = @reaction_network rn begin
+        @tstops begin
+            0.25
+            [t1, 2 * t2, 5.0]
+        end
+        d, X --> 0
+    end
+    @parameters d t1 t2
+    @species X(t)
+    rxs = [Reaction(d, [X], nothing)]
+    rn_prog = complete(ReactionSystem(rxs, t; name = :rn,
+        tstops = Any[0.25, [t1, 2 * t2, 5.0]]))
+    @test Catalyst.isequivalent(rn_dsl, rn_prog)
+    @test issetequal(parameters(rn_dsl), [d, t1, t2])
+end
+
+# Tests that @require_declaration also checks the symbols in an array of time points.
+let
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters d
+        @species X(t)
+        @tstops [t1, 2.0]
+        d, X --> 0
+    end
+end
+
 nothing

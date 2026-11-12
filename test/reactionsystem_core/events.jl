@@ -775,3 +775,104 @@ let
         k, 0 --> X
     end
 end
+
+### Array Tstops Tests ###
+
+# A scalar tstop is a period; an array tstop is a set of time points (#1589).
+
+# Tests that tstops can be arrays of time points, numeric or symbolic, alongside periods,
+# and that the parameters in an array are discovered.
+let
+    @species X(t)
+    @parameters k t1 t2
+    rxs = [Reaction(k, nothing, [X])]
+    rs = ReactionSystem(rxs, t; tstops = Any[0.5, [t1, 2.0], [1.0, 1.5]], name = :rs)
+    @test isequal(ModelingToolkitBase.get_tstops(rs), Any[0.5, [t1, 2.0], [1.0, 1.5]])
+    @test issetequal(parameters(rs), [k, t1])
+    rs = ReactionSystem(rxs, t, [X], [k, t1, t2]; tstops = [[t1, t2]], name = :rs)
+    @test isequal(ModelingToolkitBase.get_tstops(rs), Any[[t1, t2]])
+end
+
+# Tests that each time point of an array tstop is checked for unknowns and `t`.
+let
+    @parameters k
+    @species X(t)
+    rxs = [Reaction(k, nothing, [X])]
+    @test_throws ArgumentError ReactionSystem(rxs, t; tstops = [[1.0, X]], name = :rs)
+    @test_throws ArgumentError ReactionSystem(rxs, t, [X], [k]; tstops = [[1.0, t + 1]],
+        name = :rs)
+    @test_throws ArgumentError @eval @reaction_network begin
+        @tstops [1.0, X]
+        k, 0 --> X
+    end
+end
+
+# Tests that an ODE solve stops at every multiple of a period (counted from the initial
+# time) and at each time point of an array, with symbolic time points taken from the
+# parameter values.
+let
+    rn = @reaction_network begin
+        @parameters t1=0.13 t2=0.71
+        @tstops begin
+            0.3
+            [t1, t2, 0.42]
+        end
+        d, X --> 0
+    end
+    stops_at(sol, τ) = any(s -> isapprox(s, τ; atol = 1e-12), sol.t)
+    u0 = [:X => 10.0]
+
+    sol = solve(ODEProblem(rn, u0, (0.0, 1.0), [:d => 1.0]), Tsit5())
+    @test all(τ -> stops_at(sol, τ), [0.3, 0.6, 0.9, 0.13, 0.71, 0.42])
+    sol = solve(ODEProblem(rn, u0, (1.0, 2.0), [:d => 1.0]), Tsit5())
+    @test all(τ -> stops_at(sol, τ), [1.3, 1.6, 1.9])
+    sol = solve(ODEProblem(rn, u0, (0.0, 1.0), [:d => 1.0, :t1 => 0.27, :t2 => 0.55]),
+        Tsit5())
+    @test all(τ -> stops_at(sol, τ), [0.27, 0.55, 0.42])
+    @test !stops_at(sol, 0.13) && !stops_at(sol, 0.71)
+end
+
+# Tests that a jump simulation stops at each time point of an array tstop.
+let
+    rn = @reaction_network begin
+        @parameters t1=1.3
+        @tstops [t1, 2.7]
+        (10.0, 0.01), 0 <--> X
+    end
+    jprob = JumpProblem(rn, [:X => 0], (0.0, 5.0))
+    sol = solve(jprob, SSAStepper(); rng)
+    @test 1.3 ∈ sol.t
+    @test 2.7 ∈ sol.t
+end
+
+# Tests that array tstops are namespaced by `flatten`, merged by `extend`, compared by
+# `isequivalent`, and kept through conversion to and from a `System`.
+let
+    @species X(t) Y(t)
+    @parameters k t1 t2
+    inner = ReactionSystem([Reaction(k, [X], nothing)], t; tstops = [[t1, 0.5]], name = :inner)
+    outer = ReactionSystem([Reaction(k, nothing, [Y])], t; systems = [inner],
+        tstops = [0.25], name = :outer)
+    @test isequal(ModelingToolkitBase.get_tstops(Catalyst.flatten(outer)),
+        Any[0.25, [inner.t1, 0.5]])
+
+    # Set equality by `isequal` (`issetequal` hashes, and a `Num` hashes differently from
+    # the unwrapped expression stored in the system).
+    same_set(a, b) = length(a) == length(b) && all(x -> any(isequal(x), b), a) &&
+                     all(x -> any(isequal(x), a), b)
+    rs1 = ReactionSystem([Reaction(k, [X], nothing)], t; tstops = [[t1, 2.0]], name = :rs1)
+    rs2 = ReactionSystem([Reaction(k, nothing, [Y])], t; tstops = Any[0.5, [t2]], name = :rs2)
+    @test same_set(ModelingToolkitBase.get_tstops(Catalyst.extend(rs1, rs2)),
+        Any[[t1, 2.0], 0.5, [t2]])
+
+    rxs = [Reaction(k, [X], nothing)]
+    rs_a = ReactionSystem(rxs, t; tstops = [[t1, 2.0]], name = :rs)
+    rs_b = ReactionSystem(rxs, t; tstops = [[t1, 2.0]], name = :rs)
+    rs_c = ReactionSystem(rxs, t; tstops = [[t1, 3.0]], name = :rs)
+    @test Catalyst.isequivalent(rs_a, rs_b)
+    @test !Catalyst.isequivalent(rs_a, rs_c)
+
+    rs = complete(ReactionSystem(rxs, t; tstops = Any[0.5, [t1, 2.0]], name = :rs))
+    rs_back = Catalyst.system_to_reactionsystem(ode_model(rs); name = :roundtrip)
+    @test isequal(ModelingToolkitBase.get_tstops(rs_back), Any[0.5, [t1, 2.0]])
+end
