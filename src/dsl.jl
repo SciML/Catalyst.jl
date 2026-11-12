@@ -1103,7 +1103,7 @@ function read_tstops_option(options, ps_inferred, all_syms; requiredec = false)
     # Extract unknown symbols from tstop expressions and infer them as parameters.
     new_ps = OrderedSet{Union{Symbol, Expr}}()
     for arg in tstop_args
-        add_syms_from_expr!(new_ps, arg, all_syms)
+        add_tstop_syms!(new_ps, arg, all_syms)
     end
     if requiredec && !isempty(new_ps)
         throw(UndeclaredSymbolicError("Unrecognized symbol(s) $(join(new_ps, ", ")) detected in @tstops expression. Since the flag @require_declaration is declared, all parameters must be explicitly declared with the @parameters option."))
@@ -1116,6 +1116,20 @@ function read_tstops_option(options, ps_inferred, all_syms; requiredec = false)
         push!(tstops_expr.args, arg)
     end
     return (tstops_expr, ps_inferred)
+end
+
+# Adds the symbols in a tstop expression to `new_ps`. `add_syms_from_expr!` skips an
+# expression's first argument (a call's function), so the elements of an array of time points
+# (e.g. `[t1, 2.0]`) are passed to it one by one.
+function add_tstop_syms!(new_ps, ex, all_syms)
+    if ex isa Expr && ex.head in (:vect, :vcat, :hcat, :row)
+        for el in ex.args
+            add_tstop_syms!(new_ps, el, all_syms)
+        end
+    else
+        add_syms_from_expr!(new_ps, ex, all_syms)
+    end
+    return nothing
 end
 
 # Returns the `default_reaction_metadata` output. Technically Catalyst's code could have been made
