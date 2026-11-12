@@ -8,9 +8,12 @@ using Catalyst, Latexify, Test
 # coefficient. They don't compare whole strings, whose details depend on how Latexify and
 # Symbolics print expressions (which made the string comparisons in latexify.jl fragile).
 
+# The LaTeX string, without the `\mathopen{}`s, which only adjust spacing before arguments.
+tex_of(ltx) = replace(string(ltx), "\\mathopen{}" => "")
+
 # The rows of a latexified `align*` environment.
 function latex_rows(ltx)
-    body = split(split(string(ltx), "\\begin{align*}\n")[2], "\\end{align*}")[1]
+    body = split(split(tex_of(ltx), "\\begin{align*}\n")[2], "\\end{align*}")[1]
     return strip.(split(body, "\\\\\n"))
 end
 
@@ -155,13 +158,13 @@ let
     # the rate shown on the last arrow
     @test occursin(r"\\xrightarrow\{b\s*X\}", string(latexify(rn)))
     for form in (:ode, :sde)
-        tex = string(latexify(rn; form))
+        tex = tex_of(latexify(rn; form))
         @test occursin(r"k\s*t\s*X\s*Y", tex)
         @test occursin(r"d\s*X", tex)
         @test !occursin(r"X\s*d\b", tex)
         @test occursin(r"A\s*e\^\{\s*-\s*\\frac\{E\}\{R\s*T\}\}\s*Y", tex)
     end
-    tex = string(latexify(rn; form = :jump))
+    tex = tex_of(latexify(rn; form = :jump))
     @test occursin(r"k\s*s'\s*X\\left\( s' \\right\)\s*Y\\left\( s' \\right\)", tex)
     @test occursin(r"d\s*X\\left\( s' \\right\)", tex)
 end

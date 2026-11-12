@@ -151,12 +151,15 @@ function chemical_arrows(rn::ReactionSystem;
     end
 
     if !isempty(nonrxs)
-        eqstrs = [latexraw(eq.lhs; kwargs...) * " = " *
-                  _latex_ordered(eq.rhs, isvar; kwargs...) for eq in nonrxs]
-        if !show_time_arg
-            iv_latex = latexraw(get_iv(rn))
-            eqstrs = [replace(s, "\\left( $iv_latex \\right)" => "") for s in eqstrs]
-        end
+        # Without time arguments, the unknowns on the right-hand side are replaced by
+        # variables without them, as in the rates, so that e.g. `sin(t)` keeps its argument;
+        # the left-hand side (e.g. dX(t)/dt) only drops the time argument of its unknown.
+        iv_latex = latexraw(get_iv(rn))
+        lhs_str(lhs) = show_time_arg ? latexraw(lhs; kwargs...) :
+                       replace(latexraw(lhs; kwargs...), "\\left( $iv_latex \\right)" => "")
+        rhs_of(eq) = (show_time_arg || !(eq.rhs isa SymbolicT)) ? eq.rhs : subber(eq.rhs)
+        eqstrs = [lhs_str(eq.lhs) * " = " * _latex_ordered(rhs_of(eq), isvar; kwargs...)
+                  for eq in nonrxs]
         eqstr_list = replace.(eqstrs, "=" => "&=")
         newstr = join(eqstr_list, " $eol")
         str *= newstr
@@ -165,8 +168,8 @@ function chemical_arrows(rn::ReactionSystem;
 
     str *= starred ? "\\end{align*}\n" : "\\end{align}\n"
 
-    # Multi-letter names upright, single letters italic.
-    str = _upright_names(str)
+    # Multi-letter names upright, single letters italic; no gap before a call's arguments.
+    str = _tight_calls(_upright_names(str))
 
     # Optionally wrap in $$ delimiters for renderers (Documenter, MathJax) that require
     # explicit math delimiters. Not valid standard LaTeX, but needed for web rendering.
@@ -359,7 +362,7 @@ function _latex_align(lines; starred, double_linebreak, math_delimiters)
     str = starred ? "\\begin{align*}\n" : "\\begin{align}\n"
     str *= join(lines, " $eol") * "  \n "
     str *= starred ? "\\end{align*}\n" : "\\end{align}\n"
-    str = _upright_names(str)
+    str = _tight_calls(_upright_names(str))
     math_delimiters && (str = "\$\$\n" * str * "\$\$")
     return Latexify.LaTeXString(str)
 end
@@ -383,8 +386,14 @@ function _upright_names(str)
     return replace(str, r"\\mathrm\{\\mathrm\{([^{}]*)\}\}" => s"\\mathrm{\1}")
 end
 
-# A single letter or Greek letter, possibly with a subscript.
-const LATEX_ITALIC_NAME = r"^(\\[A-Za-z]+|[A-Za-z])(_\{[^{}]*\}|_[A-Za-z0-9])?$"
+# A single letter or Greek letter, possibly with subscripts and superscripts (from unicode
+# ones, e.g. `X₁₂`, `k₋` or `X²`).
+const LATEX_ITALIC_NAME = r"^(\\[A-Za-z]+|[A-Za-z])([_^](\{[^{}]*\}|[^{}\s\\]))*$"
+
+# Latexify writes a call's arguments as `X\left( t \right)`, and TeX puts a thin space
+# between a name and a `\left( … \right)` group, giving `X (t)`. `\mathopen{}` removes that
+# gap. A `\left(` that starts a factor of a product follows a space, so is left alone.
+_tight_calls(str) = replace(str, r"([A-Za-z0-9}'])\\left\(" => s"\1\\mathopen{}\\left(")
 
 # The index of the `}` that closes the `{` at index `open` of `str`.
 function _closing_brace(str, open)

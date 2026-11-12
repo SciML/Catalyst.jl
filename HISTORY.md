@@ -17,11 +17,17 @@
   functions, but not inside other function calls. Sums start with a positive term (`X - 1`
   rather than `-1 + X`), and a factor that is a sum comes after the other factors with
   unknowns (`X (X - 1)` rather than `(X - 1) X`).
-- In every `latexify` form, names of more than one letter, such as `kp`, `v0` or `X2`, are now
-  upright (`\mathrm{kp}`) and set off from the factors next to them by a thin space, so that
-  `kp X2` can't be read as a product of single letters. They used to be plain italic, and
-  species names were italic in some forms and upright in others. Single letters, Greek
-  letters and letters with a subscript stay italic.
+- In every `latexify` form, names of more than one letter, such as `kp`, `v0` or `X2`, are
+  now upright (`\mathrm{kp}`) and set off from the factors next to them by a thin space, so
+  that `kp X2` can't be read as a product of single letters. They used to be plain italic,
+  and species names were italic in some forms and upright in others. Single letters and
+  Greek letters stay italic, also with subscripts or superscripts (including those written
+  with unicode characters, such as `X₁`, `k₋` or `X²`).
+- In every `latexify` form, a call's arguments follow its name without a gap: `X(t)` rather
+  than `X (t)`.
+- `latexify` with the `:ode` form no longer drops the time argument of functions such as
+  `sin(t)`, nor shows a power of a species as `(X)^{n}`; only the unknowns lose their time
+  arguments, as in the `:reactions` form.
 - `latexify` with the `:reactions` and `:ode` forms no longer throws an `UndefVarError` after
   `copy_to_clipboard(true)`.
 
