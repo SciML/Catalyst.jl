@@ -75,12 +75,10 @@ run_qa(
     # latent on master (reproduce byte-identical on the unmodified base) and were never
     # caught before because Catalyst had no JET check. JET surfaces them only on the
     # Julia 1 lane (JET 0.11 on Julia 1.12); the lts lane runs JET 0.9 and does not
-    # flag them. `report_package(Catalyst; mode = :typo)` reports 5 names:
+    # flag them. `report_package(Catalyst; mode = :typo)` reports 3 names:
     #   - `metadata_entries` (src/dsl.jl:436) and `reaction`
     #     (src/chemistry_functionality.jl:400): wrong variable names interpolated into
     #     `error(...)` strings on already-error paths (should be `metadata_i` / `rx`).
-    #   - `clipboard` x2 (src/latexify_recipes.jl:65, 161): `clipboard` (InteractiveUtils)
-    #     is not imported; only reachable when `Latexify.COPY_TO_CLIPBOARD` is set.
     #   - `V` (src/reactionsystem.jl:78): the unparameterised `NetworkProperties()`
     #     `@kwdef` keyword constructor references the type parameter `V` in its
     #     `Set{V}()`/`Dict{V,Int}()` defaults; that bare constructor is never called

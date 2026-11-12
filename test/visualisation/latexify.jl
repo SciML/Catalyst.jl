@@ -126,7 +126,7 @@ let
 # Latexify.@generate_test latexify(rn)
 @test latexify(rn) == replace(
 raw"\begin{align*}
-\varnothing &\xrightleftharpoons[d_{a}]{\frac{B^{n} p_{a}}{B^{n} + k^{n}}} \mathrm{A} \\
+\varnothing &\xrightleftharpoons[d_{a}]{\frac{p_{a} B^{n}}{B^{n} + k^{n}}} \mathrm{A} \\
 \varnothing &\xrightleftharpoons[d_{b}]{p_{b}} \mathrm{B} \\
 3 \mathrm{B} &\xrightleftharpoons[r_{b}]{r_{a}} \mathrm{A}  
  \end{align*}
@@ -135,7 +135,7 @@ raw"\begin{align*}
 # Latexify.@generate_test latexify(rn, mathjax = false)
 @test latexify(rn, mathjax = false) == replace(
 raw"\begin{align*}
-\varnothing &\xrightleftharpoons[d_{a}]{\frac{B^{n} p_{a}}{B^{n} + k^{n}}} \mathrm{A} \\
+\varnothing &\xrightleftharpoons[d_{a}]{\frac{p_{a} B^{n}}{B^{n} + k^{n}}} \mathrm{A} \\
 \varnothing &\xrightleftharpoons[d_{b}]{p_{b}} \mathrm{B} \\
 3 \mathrm{B} &\xrightleftharpoons[r_{b}]{r_{a}} \mathrm{A}  
  \end{align*}
@@ -191,8 +191,8 @@ let
     ode_expected = "\\begin{align*}\n\\frac{\\mathrm{d} X}{\\mathrm{d}t} &= p - d X + 2 kD \\mathrm{X2} - \\left( X \\right)^{2} kB \\\\\n\\frac{\\mathrm{d} \\mathrm{X2}}{\\mathrm{d}t} &=  - kD \\mathrm{X2} + \\frac{1}{2} \\left( X \\right)^{2} kB  \n \\end{align*}\n"
     @test latexify(rn; form = :ode) == replace(ode_expected, "\r\n"=>"\n")
 
-    # SDE form currently renders identically to ODE form (noise terms not yet shown).
-    @test latexify(rn; form = :sde) == latexify(rn; form = :ode)
+    # The SDE form adds the noise terms (tested in latexify_forms.jl).
+    @test latexify(rn; form = :sde) != latexify(rn; form = :ode)
 
     # Tests that `show_time_arg = true` preserves (t) in equation/rate output.
     @test occursin("\\left( t \\right)", string(latexify(rn; form = :ode, show_time_arg = true)))
@@ -250,7 +250,7 @@ let
  # Latexify.@generate_test latexify(rn)
 @test latexify(rn) == replace(
 raw"\begin{align*}
-\mathrm{Y} &\xrightarrow{Y k} \varnothing  
+\mathrm{Y} &\xrightarrow{k Y} \varnothing  
  \end{align*}
 ", "\r\n"=>"\n")
 end

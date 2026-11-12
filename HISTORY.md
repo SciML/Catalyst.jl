@@ -2,6 +2,35 @@
 
 ## Unreleased (on master)
 
+- `latexify(rs; form = :sde)` now displays the chemical Langevin equation, with a noise term
+  `νᵢⱼ √aⱼ d𝒲ⱼ` from each reaction `j` in the equation of each species `i` it changes (`𝒲ⱼ`,
+  written `\mathcal{W}_j`, independent Brownian motions, one per reaction). It used to
+  display only the drift, the same equations as `form = :ode`.
+- New `latexify(rs; form = :jump)` displays the jump process model of a network made of
+  reactions alone, through its random time change representation `Xᵢ(t) = Xᵢ(0) + ∑ⱼ νᵢⱼ
+  ℛⱼ(∫₀ᵗ aⱼ(s′) ds′)`, with `aⱼ` the propensity of reaction `j` and `ℛⱼ`, written
+  `\mathcal{R}_j`, independent unit-rate Poisson processes.
+- In every `latexify` form, the factors of a product now put the numeric coefficient first,
+  then parameters and the time variable, then species and other unknowns: `k X Y` rather than
+  `X Y k`, and `\frac{v X^{n}}{K^{n} + X^{n}}` rather than `\frac{X^{n} v}{K^{n} + X^{n}}`.
+  This also applies inside `sqrt`, `exp`, `log`, `abs` and the trigonometric and hyperbolic
+  functions, but not inside other function calls. Sums start with a positive term (`X - 1`
+  rather than `-1 + X`), and a factor that is a sum comes after the other factors with
+  unknowns (`X (X - 1)` rather than `(X - 1) X`).
+- In every `latexify` form, names of more than one letter, such as `kp`, `v0` or `X2`, are
+  now upright (`\mathrm{kp}`) and set off from the factors next to them by a thin space, so
+  that `kp X2` can't be read as a product of single letters. They used to be plain italic,
+  and species names were italic in some forms and upright in others. Single letters and
+  Greek letters stay italic, also with subscripts or superscripts (including those written
+  with unicode characters, such as `X₁`, `k₋` or `X²`).
+- In every `latexify` form, a call's arguments follow its name without a gap: `X(t)` rather
+  than `X (t)`.
+- `latexify` with the `:ode` form no longer drops the time argument of functions such as
+  `sin(t)`, nor shows a power of a species as `(X)^{n}`; only the unknowns lose their time
+  arguments, as in the `:reactions` form.
+- `latexify` with the `:reactions` and `:ode` forms no longer throws an `UndefVarError` after
+  `copy_to_clipboard(true)`.
+
 ## Catalyst 17.0.1
 
 - `Reaction` now throws a `MethodError` when given an unsupported keyword argument.
