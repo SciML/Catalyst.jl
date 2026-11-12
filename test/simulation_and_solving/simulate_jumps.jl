@@ -192,11 +192,12 @@ let
 
     # the direct method needs no dep graphs so is good as a baseline for comparison
     jprobdm = JumpProblem(rn, u0map, tspan, pmap; aggregator = Direct(), save_positions = (false, false))
+    # The aggregators keep the dependency maps in a `JumpDependencies` (JumpProcesses 10.2).
     jprobsd = JumpProblem(rn, u0map, tspan, pmap; aggregator = SortingDirect(), save_positions = (false, false))
-    @test issetequal(jprobsd.discrete_jump_aggregation.dep_gr, [[1,2],[2]])
+    @test jprobsd.discrete_jump_aggregation.dependencies.dep_graph == [[1,2],[2]]
     jprobrssa = JumpProblem(rn, u0map, tspan, pmap; aggregator = RSSA(), save_positions = (false, false))
-    @test issetequal(jprobrssa.discrete_jump_aggregation.vartojumps_map, [[],[],[],[1],[2],[]])
-    @test issetequal(jprobrssa.discrete_jump_aggregation.jumptovars_map, [[5],[5,6]])
+    @test jprobrssa.discrete_jump_aggregation.dependencies.vartojumps_map == [[],[],[],[1],[2],[]]
+    @test jprobrssa.discrete_jump_aggregation.dependencies.jumptovars_map == [[5],[5,6]]
     N = 4000  # number of simulations to run
     function getmean(N, prob)
         m1 = 0.0
