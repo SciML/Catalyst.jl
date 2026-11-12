@@ -4,7 +4,7 @@
 using Catalyst, Latexify, Test
 
 # These tests check the structure of the `:sde` and `:jump` forms: which equations there are,
-# and which noise (dWⱼ) and Poisson process (Rⱼ) terms each has, with what sign and
+# and which noise (d𝒲ⱼ) and Poisson process (Rⱼ) terms each has, with what sign and
 # coefficient. They don't compare whole strings, whose details depend on how Latexify and
 # Symbolics print expressions (which made the string comparisons in latexify.jl fragile).
 
@@ -35,13 +35,13 @@ function summands(row)
     return [startswith(t, r"[+-] ") ? t : "+ " * t for t in terms if !isempty(t)]
 end
 
-# The summand of a row containing `marker` (e.g. "\mathrm{d}W_{2}"), or `nothing`.
+# The summand of a row containing `marker` (e.g. "\mathrm{d}\mathcal{W}_{2}"), or `nothing`.
 function term_with(row, marker)
     idx = findall(t -> occursin(marker, t), summands(row))
     return isempty(idx) ? nothing : summands(row)[only(idx)]
 end
 
-dW(j) = "\\mathrm{d}W_{$j}"
+dW(j) = "\\mathrm{d}\\mathcal{W}_{$j}"
 R(j) = "R_{$j}\\left( \\int_{0}^{t}"
 
 ### Tests ###
@@ -73,7 +73,7 @@ let
     @test latexify(rn; form = :sde) != latexify(rn; form = :ode)
     @test !occursin("\\left( t \\right)", string(latexify(rn; form = :sde)))
     rows_t = latex_rows(latexify(rn; form = :sde, show_time_arg = true))
-    @test occursin("\\mathrm{d}W_{1}\\left( t \\right)", rows_t[1])
+    @test occursin("\\mathrm{d}\\mathcal{W}_{1}\\left( t \\right)", rows_t[1])
     @test startswith(rows_t[1], "\\mathrm{d}X\\left( t \\right)")
 end
 
@@ -98,9 +98,9 @@ let
     @test startswith(term_with(rows[2], R(3)), "+ R_{3}")
     @test length(summands(rows[2])) == 2
 
-    # The integrands are in s, with the species at s.
-    @test occursin("X\\left( s \\right)", term_with(rows[1], R(2)))
-    @test occursin("\\, \\mathrm{d}s \\right)", term_with(rows[1], R(2)))
+    # The integrands are in s′, with the species at s′.
+    @test occursin("X\\left( s' \\right)", term_with(rows[1], R(2)))
+    @test occursin("\\, \\mathrm{d}s' \\right)", term_with(rows[1], R(2)))
     @test !occursin("X\\left( t \\right)", term_with(rows[1], R(2)))
 end
 
@@ -117,11 +117,11 @@ let
     @test startswith(term_with(rows[2], dW(1)), "+ 2 \\sqrt{")
     @test occursin("\\eta", term_with(rows[2], dW(2)))
 
-    # With a parameter named `s`, the integration variable is τ.
+    # A parameter named `s` doesn't clash with the integration variable s′.
     rows = latex_rows(latexify(rn; form = :jump))
     @test startswith(term_with(rows[1], R(1)), "- m R_{1}")
-    @test occursin("\\mathrm{d}\\tau", term_with(rows[1], R(1)))
-    @test occursin("A\\left( \\tau \\right)", term_with(rows[1], R(1)))
+    @test occursin("\\mathrm{d}s'", term_with(rows[1], R(1)))
+    @test occursin("A\\left( s' \\right)", term_with(rows[1], R(1)))
 end
 
 # A coupled differential equation with a brownian: shown in the SDE form with its noise term;
@@ -162,8 +162,8 @@ let
         @test occursin(r"A\s*e\^\{\s*-\s*\\frac\{E\}\{R\s*T\}\}\s*Y", tex)
     end
     tex = string(latexify(rn; form = :jump))
-    @test occursin(r"k\s*s\s*X\\left\( s \\right\)\s*Y\\left\( s \\right\)", tex)
-    @test occursin(r"d\s*X\\left\( s \\right\)", tex)
+    @test occursin(r"k\s*s'\s*X\\left\( s' \\right\)\s*Y\\left\( s' \\right\)", tex)
+    @test occursin(r"d\s*X\\left\( s' \\right\)", tex)
 end
 
 # Options shared with the other forms, an empty system, and an unknown form.

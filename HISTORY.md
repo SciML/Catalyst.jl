@@ -3,13 +3,13 @@
 ## Unreleased (on master)
 
 - `latexify(rs; form = :sde)` now displays the chemical Langevin equation, with a noise term
-  `νᵢⱼ √aⱼ dWⱼ` from each reaction `j` in the equation of each species `i` it changes (`Wⱼ`
-  independent Brownian motions, one per reaction). It used to display only the drift, the
-  same equations as `form = :ode`.
+  `νᵢⱼ √aⱼ d𝒲ⱼ` from each reaction `j` in the equation of each species `i` it changes (`𝒲ⱼ`,
+  written `\mathcal{W}_j`, independent Brownian motions, one per reaction). It used to
+  display only the drift, the same equations as `form = :ode`.
 - New `latexify(rs; form = :jump)` displays the jump process model of a network made of
   reactions alone, through its random time change representation `Xᵢ(t) = Xᵢ(0) + ∑ⱼ νᵢⱼ
-  Rⱼ(∫₀ᵗ aⱼ(s) ds)`, with `aⱼ` the propensity of reaction `j` and `Rⱼ` independent unit-rate
-  Poisson processes.
+  Rⱼ(∫₀ᵗ aⱼ(s′) ds′)`, with `aⱼ` the propensity of reaction `j` and `Rⱼ` independent
+  unit-rate Poisson processes.
 - In every `latexify` form, the factors of a product now put the numeric coefficient first,
   then parameters and the time variable, then species and other unknowns: `k X Y` rather than
   `X Y k`, and `\frac{v X^{n}}{K^{n} + X^{n}}` rather than `\frac{X^{n} v}{K^{n} + X^{n}}`.

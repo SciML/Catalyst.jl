@@ -182,14 +182,16 @@ end
 # The chemical Langevin equation of a `ReactionSystem`: for each species X,
 #   dX = (∑ⱼ νⱼ aⱼ) dt + ∑ⱼ νⱼ √aⱼ dWⱼ,
 # with aⱼ the ODE rate law of reaction j (√aⱼ times its noise scaling, if any), νⱼ its net
-# stoichiometry of X, and Wⱼ independent Brownian motions, one per reaction. Non-reaction
+# stoichiometry of X, and Wⱼ independent Brownian motions, one per reaction, written
+# `\mathcal{W}_j` so that they can't be confused with brownians of the model. Non-reaction
 # differential equations are shown in the same form, with the terms of any brownians they
 # contain; other equations as they are.
 function cle_equations(w::LatexCLE; double_linebreak = LATEX_DEFS.double_linebreak,
         starred = LATEX_DEFS.starred, math_delimiters = false, show_time_arg = false,
         mathrm = true, mathjax = LATEX_DEFS.mathjax, kwargs...)
     rs = Catalyst.flatten(w.rs)
-    # `MT.poissonians` is not public in ModelingToolkitBase (`sde_model` uses it the same way).
+    # `MT.poissonians` is not public in ModelingToolkitBase, unlike `MT.brownians` and
+    # `MT.jumps`, an oversight (SciML/ModelingToolkit.jl#5389). `sde_model` uses it too.
     (isempty(MT.jumps(rs)) && isempty(MT.poissonians(rs))) ||
         error("The SDE form can not display a ReactionSystem with coupled jumps or poissonians.")
     rxs = reactions(rs)
@@ -199,7 +201,8 @@ function cle_equations(w::LatexCLE; double_linebreak = LATEX_DEFS.double_linebre
     subber = show_time_arg ? identity : _latex_subber(rs)
     isvar = _unknown_predicate(rs)
     tex(x) = _latex_ordered(subber(x), isvar; kwargs...)
-    targ = show_time_arg ? "\\left( " * latexraw(get_iv(rs); kwargs...) * " \\right)" : ""
+    ivtex = latexraw(get_iv(rs); kwargs...)
+    targ = show_time_arg ? "\\left( " * ivtex * " \\right)" : ""
 
     # The drift and noise terms that the reactions give each species.
     _, ispcs = get_indep_sts(rs)
@@ -211,13 +214,14 @@ function cle_equations(w::LatexCLE; double_linebreak = LATEX_DEFS.double_linebre
     for (j, rx) in enumerate(rxs)
         amp = sqrt(oderatelaw(rx; combinatoric_ratelaw = crl, expand_catalyst_funs = false))
         hasnoisescaling(rx) && (amp *= getnoisescaling(rx))
-        dW = tex(amp) * " \\, \\mathrm{d}W_{$j}" * targ
+        dW = tex(amp) * " \\, \\mathrm{d}\\mathcal{W}_{$j}" * targ
         for (spec, stoich) in rx.netstoich
             drop_dynamics(spec) && continue
             push!(noise[species_to_idx[spec]], _coef_summand(stoich, dW, tex; kwargs...))
         end
     end
-    lines = [_sde_line(tex(x), drift[i], noise[i], tex) for (i, x) in enumerate(ispcs)]
+    lines = [_sde_line(tex(x), drift[i], noise[i], tex, ivtex)
+             for (i, x) in enumerate(ispcs)]
 
     # Non-reaction equations, with the terms of any brownians in differential equations.
     browns = MT.brownians(rs)
@@ -229,12 +233,13 @@ function cle_equations(w::LatexCLE; double_linebreak = LATEX_DEFS.double_linebre
             for B in browns
                 coef, rest, islinear = Symbolics.linear_expansion(rhs, B)
                 (islinear && !_iszero(coef)) || continue
-                dB = "\\, \\mathrm{d}" * latexraw(B; kwargs...) * targ
-                push!(eqnoise, _coef_summand(unwrap(coef), dB, tex; kwargs...))
+                dB = "\\mathrm{d}" * latexraw(B; kwargs...) * targ
+                summand = _coef_summand(unwrap(coef), dB, tex; sep = " \\, ", kwargs...)
+                push!(eqnoise, summand)
                 rhs = unwrap(rest)
             end
             x = only(Symbolics.arguments(eq.lhs))
-            push!(lines, _sde_line(tex(x), rhs, eqnoise, tex))
+            push!(lines, _sde_line(tex(x), rhs, eqnoise, tex, ivtex))
         else
             push!(lines, tex(eq.lhs) * " &= " * tex(eq.rhs))
         end
@@ -244,7 +249,7 @@ end
 
 # The random time change representation of the jump process of a `ReactionSystem`: for each
 # species X,
-#   X(t) = X(0) + ∑ⱼ νⱼ Rⱼ(∫₀ᵗ aⱼ(s) ds),
+#   X(t) = X(0) + ∑ⱼ νⱼ Rⱼ(∫₀ᵗ aⱼ(s′) ds′),
 # with aⱼ the jump rate law (propensity) of reaction j, νⱼ its net stoichiometry of X, and Rⱼ
 # independent unit-rate Poisson processes, one per reaction. The time arguments are always
 # shown, since the integrands need them.
@@ -258,10 +263,10 @@ function time_change_equations(w::LatexTimeChange;
     rxs = reactions(rs)
     isempty(rxs) && return _no_equations_latex(w.rs)
 
-    # The rate laws are shown at the integration variable `s`: X(t) becomes X(s), and t s.
+    # The rate laws are shown at the integration variable `s′`: X(t) becomes X(s′), t s′.
     iv = get_iv(rs)
-    s = _integration_variable(rs)
-    at_s = Dict{SymbolicT, SymbolicT}(x => Symbolics.operation(x)(s) for x in species(rs))
+    s = _integration_variable()
+    at_s = Dict{SymbolicT, SymbolicT}(x => _at_time(x, iv, s) for x in species(rs))
     at_s[iv] = s
     isvar = _unknown_predicate(rs)
     tex(x) = _latex_ordered(x, isvar; kwargs...)
@@ -280,7 +285,7 @@ function time_change_equations(w::LatexTimeChange;
             push!(terms[species_to_idx[spec]], _coef_summand(stoich, Rj, tex; kwargs...))
         end
     end
-    lines = [tex(x) * " &= " * tex(Symbolics.operation(x)(0)) * join(terms[i])
+    lines = [tex(x) * " &= " * tex(_at_time(x, iv, 0)) * join(terms[i])
              for (i, x) in enumerate(ispcs)]
     return _latex_align(lines; starred, double_linebreak, math_delimiters)
 end
@@ -293,17 +298,23 @@ function _latex_subber(rs)
         SymbolicUtils.default_substitute_filter)
 end
 
-# `s`, or `τ` if the system already uses the name `s`.
-function _integration_variable(rs)
-    names = Set(MT.getname(x) for x in vcat(unknowns(rs), parameters(rs)))
-    return unwrap(Symbolics.variable((:s in names) ? :τ : :s))
+# The jump form's integration variable, `s′`, displayed as `s'`: a name that models are
+# unlikely to use.
+_integration_variable() = _set_latex_wrapper(unwrap(Symbolics.variable(:s′)), _ -> "s'")
+
+# `x` with the independent variable `iv` replaced by `τ`: `X(t)` becomes `X(τ)`, an indexed
+# species `X(t)[i]` becomes `X(τ)[i]`, and `X(t, x)` becomes `X(τ, x)`.
+function _at_time(x, iv, τ)
+    isequal(x, iv) && return τ
+    iscall(x) || return x
+    return Symbolics.operation(x)(map(a -> _at_time(a, iv, τ), Symbolics.arguments(x))...)
 end
 
-# One SDE: "\mathrm{d}X &= \left( drift \right) \mathrm{d}t + noise terms", leaving out a zero
-# drift, and "0" if there is nothing.
-function _sde_line(x, drift, noise, tex)
+# One SDE: "\mathrm{d}X &= \left( drift \right) \mathrm{d}t + noise terms", with `t` the
+# independent variable `ivtex`, leaving out a zero drift, and "0" if there is nothing.
+function _sde_line(x, drift, noise, tex, ivtex)
     summands = _iszero(drift) ? noise :
-               vcat(" + \\left( " * tex(drift) * " \\right) \\, \\mathrm{d}t", noise)
+               vcat(" + \\left( " * tex(drift) * " \\right) \\, \\mathrm{d}" * ivtex, noise)
     return "\\mathrm{d}" * x * " &= " * _join_summands(summands)
 end
 
@@ -316,19 +327,22 @@ end
 
 # The summand `coef term`, starting with " + " or " - ". A numeric coefficient gives the sign
 # and is left out when its magnitude is one; a symbolic sum is put in parentheses, and a
-# negated symbolic coefficient gives the sign.
-function _coef_summand(coef, term, tex; kwargs...)
+# negated symbolic coefficient gives the sign. A symbolic constant (e.g. the 1 that
+# `linear_expansion` gives) counts as a number. `sep` goes between a coefficient and `term`.
+function _coef_summand(coef, term, tex; sep = " ", kwargs...)
+    (coef isa SymbolicT && SymbolicUtils.isconst(coef)) &&
+        (coef = SymbolicUtils.unwrap_const(coef))
     if !(coef isa SymbolicT)
         mag = abs(coef)
-        str = isone(mag) ? term : latexraw(mag; kwargs...) * " " * term
+        str = isone(mag) ? term : latexraw(mag; kwargs...) * sep * term
         return (coef < zero(coef) ? " - " : " + ") * str
     end
     cstr = tex(coef)
     if iscall(coef) && Symbolics.operation(coef) === (+)
-        return " + \\left( " * cstr * " \\right) " * term
+        return " + \\left( " * cstr * " \\right)" * sep * term
     end
-    startswith(lstrip(cstr), "-") && return " - " * tex(-coef) * " " * term
-    return " + " * cstr * " " * term
+    startswith(lstrip(cstr), "-") && return " - " * tex(-coef) * sep * term
+    return " + " * cstr * sep * term
 end
 
 function _no_equations_latex(rs)
@@ -420,9 +434,8 @@ function _ordered_expr(x, isvar; kwargs...)
                 end
             end
         end
-        numer = vcat(isone(abs(coef)) ? Any[] : Any[_number_leaf(abs(coef); kwargs...)],
-            params, vars)
-        num = _product_expr(numer)
+        coef_factor = isone(abs(coef)) ? Any[] : Any[_number_leaf(abs(coef); kwargs...)]
+        num = _product_expr(vcat(coef_factor, params, vars))
         ex = isempty(denom) ? num : Expr(:call, :/, num, _product_expr(denom))
         return coef < 0 ? Expr(:call, :-, ex) : ex
     elseif op === (/)

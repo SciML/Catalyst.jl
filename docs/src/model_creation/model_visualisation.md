@@ -52,7 +52,7 @@ Similarly, `form = :sde` displays the chemical Langevin equation (CLE), the SDE 
 latexify(brusselator; form = :sde)
 latexify(brusselator; form = :sde, math_delimiters = true) # hide
 ```
-Here the $W_j$ are independent Brownian motions, one per reaction: reaction $j$ contributes $\nu_{ij} \sqrt{a_j} \, \mathrm{d}W_j$ to the equation of species $i$, where $a_j$ is the reaction's rate law and $\nu_{ij}$ its net stoichiometric coefficient for species $i$ (with $\sqrt{a_j}$ multiplied by the reaction's noise scaling, if it has one).
+Here the $\mathcal{W}_j$ are independent Brownian motions, one per reaction, written in calligraphic type so that they can't be confused with any brownians of the model: reaction $j$ contributes $\nu_{ij} \sqrt{a_j} \, \mathrm{d}\mathcal{W}_j$ to the equation of species $i$, where $a_j$ is the reaction's rate law and $\nu_{ij}$ its net stoichiometric coefficient for species $i$ (with $\sqrt{a_j}$ multiplied by the reaction's noise scaling, if it has one).
 
 Finally, `form = :jump` displays the jump process model of the network, through its random time change representation:
 ```@example visualisation_latex
