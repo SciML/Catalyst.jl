@@ -11,8 +11,9 @@ Pkg.add("DataFrames")
 Pkg.add("Distributions")
 Pkg.add("Lux")
 Pkg.add("ModelingToolkitNeuralNets")
-Pkg.add("OrdinaryDiffEq")
+Pkg.add("Optim")
 Pkg.add("Optimisers")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("PEtab")
 Pkg.add("Plots")
 ```
@@ -53,9 +54,9 @@ plot!(sample_t, sample_Y, seriestype = :scatter, label = "Y (data)", color = 2, 
 # Create a UDE using Lux and ModelingToolkitNeuralNets.
 using ModelingToolkitNeuralNets, Lux
 nn_arch = Lux.Chain(
-    Lux.Dense(1 => 3, Lux.softplus, use_bias = false),
-    Lux.Dense(3 => 3, Lux.softplus, use_bias = false),
-    Lux.Dense(3 => 1, Lux.softplus, use_bias = false),
+    Lux.Dense(1 => 3, Lux.softplus),
+    Lux.Dense(3 => 3, Lux.softplus),
+    Lux.Dense(3 => 1, Lux.softplus),
 )
 @SymbolicNeuralNetwork U, θ = nn_arch
 A(z) = U(z, θ)[1]
@@ -75,10 +76,9 @@ measurements = vcat(dfX, dfY)
 petab_model = PEtabModel(rn_ude, observables, measurements, ps_est; speciemap = u0)
 petab_prob = PEtabODEProblem(petab_model)
 
-# Fit the unknown function and parameters using 5 independent starts of 10,000 Adam iterations.
-using Optimisers
-options = OptimisersOptions(iterations = 10000)
-@time res = calibrate_multistart(petab_prob, Optimisers.Adam(1e-3), 5; options)
+# Fit the unknown function and parameters using 5 independent L-BFGS-B runs.
+using Optim
+res = calibrate_multistart(petab_prob, Optim.LBFGSB(), 5)
 
 # Plot the fitted simulation and the recovered activation functions.
 plot(res, petab_prob)
@@ -140,10 +140,12 @@ sol_true = solve(oprob_true)
 # Generate normally distributed noisy measurements with a fixed standard deviation.
 t_measurement = range(0.0, tend; length = 20)
 σ = 0.1
+using Random # hide
+Random.seed!(1234) # hide
 X_observed = [rand(Normal(X, σ)) for X in sol_true(t_measurement; idxs = :X)]
 Y_observed = [rand(Normal(Y, σ)) for Y in sol_true(t_measurement; idxs = :Y)]
 
-# Plots the true simulation and the synthetic data.
+# Plot the true simulation and the synthetic data.
 plot(sol_true; lw = 4, label = ["X (true)" "Y (true)"])
 plot!(t_measurement, X_observed; seriestype = :scatter, label = "X (data)", color = 1, ms = 5)
 plot!(t_measurement, Y_observed; seriestype = :scatter, label = "Y (data)", color = 2, ms = 5)
@@ -160,9 +162,9 @@ simulations. A full list of available activation functions can be found
 ```@example ude_rate_based
 using Lux
 nn_arch = Lux.Chain(
-    Lux.Dense(1 => 3, Lux.softplus, use_bias = false),
-    Lux.Dense(3 => 3, Lux.softplus, use_bias = false),
-    Lux.Dense(3 => 1, Lux.softplus, use_bias = false)
+    Lux.Dense(1 => 3, Lux.softplus),
+    Lux.Dense(3 => 3, Lux.softplus),
+    Lux.Dense(3 => 1, Lux.softplus)
 )
 ```
 We now generate a `SymbolicNeuralNetwork` using ModelingToolkitNeuralNets. This embeds the
@@ -171,7 +173,7 @@ Lux model in a symbolic format that is compatible with Catalyst (and ModelingToo
 using ModelingToolkitNeuralNets
 @SymbolicNeuralNetwork U, θ = nn_arch
 ```
-Here, `U` represents the neural network structure, and `θ` represents its parameters. Additional options for using the `@SymbolicNeuralNetwork` macro are described [here](https://sciml.github.io/ModelingToolkitNeuralNets.jl/stable/api/#ModelingToolkitNeuralNets.@SymbolicNeuralNetwork) and [here](https://sciml.github.io/ModelingToolkitNeuralNets.jl/stable/symbolic_ude_tutorial/). Next, using  the following syntax, we can [interpolate](@ref dsl_advanced_options_symbolics_and_DSL_interpolation) this function approximator as  a Catalyst model rate.
+Here, `U` represents the neural network structure, and `θ` represents its parameters. Additional options for using the `@SymbolicNeuralNetwork` macro are described [here](https://sciml.github.io/ModelingToolkitNeuralNets.jl/stable/api/#ModelingToolkitNeuralNets.@SymbolicNeuralNetwork) and [here](https://sciml.github.io/ModelingToolkitNeuralNets.jl/stable/symbolic_ude_tutorial/). Next, using the following syntax, we can [interpolate](@ref dsl_advanced_options_symbolics_and_DSL_interpolation) this function approximator as a Catalyst model rate.
 ```@example ude_rate_based
 A(z) = U(z, θ)[1]
 rn_ude = @reaction_network begin
@@ -185,16 +187,14 @@ We can inspect the parameters contained within this model:
 parameters(rn_ude)
 ```
 In addition to the mechanistic parameter $d$, the neural network parameters $θ$ have also
-been incorporated into the model. The neural network architecture, $U$, is also represented
-as a parameter, but in practice this parameter is fixed and can be ignored.
+been incorporated into the model. The neural network architecture, $U$, is also stored as a
+parameter; it holds the network itself and is not fitted.
 
 Now, we use PEtab to simultaneously fit $d$ and $θ$. The workflow is almost identical to
 the standard [PEtab parameter fitting workflow](@ref petab_parameter_fitting). The main
-differences are that we declare $θ$ as a `PEtabMLParameter` (rather than a
-`PEtabParameter`), and that we choose an optimisation algorithm better suited to neural
-network training. We begin by declaring the parameters we wish to fit, the observables (and
-their noise formulas), and the measurements, and then use these to generate a
-`PEtabODEProblem`.
+difference is that we declare $θ$ as a `PEtabMLParameter` (rather than a `PEtabParameter`).
+We begin by declaring the parameters we wish to fit, the observables (and their noise
+formulas), and the measurements, and then use these to generate a `PEtabODEProblem`.
 ```@example ude_rate_based
 using DataFrames, PEtab
 ps_est = [PEtabMLParameter(:θ), PEtabParameter(:d)]
@@ -211,14 +211,22 @@ simplest settings. These options are described further in the [Catalyst-specific
 tutorial](@ref petab_parameter_fitting), and in
 [PEtab's documentation](https://sebapersson.github.io/PEtab.jl/stable/).
 
-The UDE model can now be fitted to the data. Here, we use the Adam implementation from the
-[Optimisers.jl](https://github.com/FluxML/Optimisers.jl) package, running 5 independent starts 
-with 10,000 iterations/epochs each.
+The UDE model can now be fitted to the data. Since our neural network is small (22
+parameters), we use the quasi-Newton method L-BFGS-B from
+[Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl), which typically converges quickly. We run 5 independent starts.
 ```@example ude_rate_based
+using Optim
+Random.seed!(1234) # hide
+res = calibrate_multistart(petab_prob, Optim.LBFGSB(), 5)
+nothing # hide
+```
+For more difficult fitting problems, such as when larger neural networks are used, Adam is typically preferred. It is available through the [Optimisers.jl](https://github.com/FluxML/Optimisers.jl) package,
+and are used through the same `calibrate_multistart` interface. Unlike L-BFGS-B, Adam runs
+for a fixed number of iterations (epochs), which we designate through `OptimisersOptions`:
+```julia
 using Optimisers
 options = OptimisersOptions(iterations = 10000)
-@time res = calibrate_multistart(petab_prob, Optimisers.Adam(1e-3), 5; options)
-nothing # hide
+res_adam = calibrate_multistart(petab_prob, Optimisers.Adam(1e-3), 5; options)
 ```
 
 PEtab's plot recipes can be applied to fitted UDE models without adaptation. Here, we plot
@@ -242,7 +250,7 @@ function:
 true_f(Y) = Catalyst.hill(Y, 1.1, 2.0, 3.0)
 plot!(true_f, 0.1, 3.8, linestyle = :dash, lw = 3, color = :blue, label = "True activation function")
 ```
-This lets us check whether the correct function has been correctly recovered.
+This lets us check whether the correct function has been recovered.
 
 When carrying out multistart calibration, PEtab also provides the
 `plot_type = :function_ensemble` option, which plots the functional forms found by each
@@ -253,7 +261,9 @@ loss value to the best run:
 plot(res, petab_prob; plot_type = :function_ensemble, lw = 4, xlimit = (0.0, 3.8), loss_thres = res.fmin + 2.0)
 ```
 Here, we can see that all optimisation runs achieving a good model-to-data fit converge to
-the same functional form. In practice, this can be used as a simple form of
+the same functional form, with small differences only at low values of $Y$. The system
+passes through this region quickly, so the data contain little information about it. In
+practice, ensemble plots can be used as a simple form of
 [*identifiability analysis*](@ref likelihood_profiler_practical_identifiability), assessing
 the extent to which a single functional form can reliably be recovered from the data[^2].
 
@@ -268,13 +278,13 @@ fitted_f(1.0)
 
 ### [Neural networks with multiple inputs or outputs](@id udes_nn_multi_ins_or_outs)
 
-It is possible to use neural networks with multiple inputs. To do this, simply list all inputs in the symbolic neural network function's arguments, while also ensuring that the declared Lux chain have the correct number of inputs in the first layer. Here we use this approach to declare a feedforward loop where the production rate of $Z$ is an unknown function of both $X$ and $Y$.
+It is possible to use neural networks with multiple inputs. To do this, simply list all inputs in the symbolic neural network function's arguments, while also ensuring that the declared Lux chain has the correct number of inputs in the first layer. Here we use this approach to declare a feedforward loop where the production rate of $Z$ is an unknown function of both $X$ and $Y$.
 ```@example ude_multi_ins_or_outs
 using Catalyst, ModelingToolkitNeuralNets, Lux
 nn_arch = Lux.Chain(
-    Lux.Dense(2 => 3, Lux.softplus, use_bias = false),
-    Lux.Dense(3 => 3, Lux.softplus, use_bias = false),
-    Lux.Dense(3 => 1, Lux.softplus, use_bias = false),
+    Lux.Dense(2 => 3, Lux.softplus),
+    Lux.Dense(3 => 3, Lux.softplus),
+    Lux.Dense(3 => 1, Lux.softplus),
 )
 @SymbolicNeuralNetwork U, θ = nn_arch
 f(x, y) = U(x, y, θ)[1]
@@ -285,12 +295,12 @@ multi_input_ude = @reaction_network begin
 end
 ```
 
-It is also possible to declare neural networks with multiple output. Generally, this is equivalent to fitting two unknown functions, however, if the two fitted functions are expected to have similar forms, declaring them as a single neural network with multiple outputs can be numerically advantageous. Below, we use this approach to declare a model where a single species $X$ activates the production of two different species ($Y$ and $Z$) according to two different unknown functions that are approximated using a single, two-output, neural network.
+It is also possible to declare neural networks with multiple outputs. Generally, this is equivalent to fitting two unknown functions, however, if the two fitted functions are expected to have similar forms, declaring them as a single neural network with multiple outputs can be numerically advantageous. Below, we use this approach to declare a model where a single species $X$ activates the production of two different species ($Y$ and $Z$) according to two different unknown functions that are approximated using a single, two-output, neural network.
 ```@example ude_multi_ins_or_outs
 nn_arch = Lux.Chain(
-    Lux.Dense(1 => 3, Lux.softplus, use_bias = false),
-    Lux.Dense(3 => 3, Lux.softplus, use_bias = false),
-    Lux.Dense(3 => 2, Lux.softplus, use_bias = false),
+    Lux.Dense(1 => 3, Lux.softplus),
+    Lux.Dense(3 => 3, Lux.softplus),
+    Lux.Dense(3 => 2, Lux.softplus),
 )
 @SymbolicNeuralNetwork U, θ = nn_arch
 f1(x) = U(x, θ)[1]
@@ -317,9 +327,9 @@ t = default_t()
 @species X(t) Y(t)
 @parameters d
 nn_arch = Lux.Chain(
-    Lux.Dense(1 => 3, Lux.softplus, use_bias = false),
-    Lux.Dense(3 => 3, Lux.softplus, use_bias = false),
-    Lux.Dense(3 => 1, Lux.softplus, use_bias = false),
+    Lux.Dense(1 => 3, Lux.softplus),
+    Lux.Dense(3 => 3, Lux.softplus),
+    Lux.Dense(3 => 1, Lux.softplus),
 )
 @SymbolicNeuralNetwork U, θ = nn_arch
 rxs = [
@@ -340,17 +350,16 @@ Above, we described how a neural network can be used to learn an unknown rate fu
 However, symbolic neural networks created using `@SymbolicNeuralNetwork` are highly
 flexible: they act as normal functions and can be used wherever such functions can be used.
 For example, neural networks can be inserted into [coupled equations](@ref coupled_models_diffeqs).
-Here, we use this to model a cell growing in a nutrient ($N$). The rate at which the nutrient is
+Here, we use this to model a cell consuming a nutrient ($N$). The rate at which the nutrient is
 consumed is modelled as an unknown function of both a nutrient-activated protein's active form ($Xₐ$)
-and the nutrient's concentration. Note that the unknown function has two input variables, which is
-straightforward to handle.
+and the nutrient's concentration.
 ```@example ude_equations
 # Create a symbolic neural network depending on two input variables.
 using ModelingToolkitNeuralNets, Lux
 nn_arch = Lux.Chain(
-    Lux.Dense(2 => 3, Lux.softplus, use_bias = false),
-    Lux.Dense(3 => 3, Lux.softplus, use_bias = false),
-    Lux.Dense(3 => 1, Lux.softplus, use_bias = false),
+    Lux.Dense(2 => 3, Lux.softplus),
+    Lux.Dense(3 => 3, Lux.softplus),
+    Lux.Dense(3 => 1, Lux.softplus),
 )
 @SymbolicNeuralNetwork U, θ = nn_arch
 C(z1, z2) = U(z1, z2, θ)[1]
@@ -372,9 +381,9 @@ and `SDEProblem`s can be generated from Catalyst UDEs using the standard syntax,
 # Create the UDE.
 using Catalyst, ModelingToolkitNeuralNets, Lux
 nn_arch = Lux.Chain(
-    Lux.Dense(1 => 3, Lux.softplus, use_bias = false),
-    Lux.Dense(3 => 3, Lux.softplus, use_bias = false),
-    Lux.Dense(3 => 1, Lux.softplus, use_bias = false)
+    Lux.Dense(1 => 3, Lux.softplus),
+    Lux.Dense(3 => 3, Lux.softplus),
+    Lux.Dense(3 => 1, Lux.softplus)
 )
 @SymbolicNeuralNetwork U, θ = nn_arch
 A(z) = U(z, θ)[1]
@@ -446,8 +455,8 @@ please cite the following papers to support the authors of the Lux.jl and PEtab.
 
 ---
 
-## References
+## [References](@id udes_references)
 
-[^1]: [Rackauckas, R et al. _Universal differential equations for scientific machine learning_, arXiv (2020).](https://arxiv.org/abs/2001.04385)
+[^1]: [Rackauckas, C et al. _Universal differential equations for scientific machine learning_, arXiv (2020).](https://arxiv.org/abs/2001.04385)
 
-[^2]: [Loman, T and R, Baker. _Functional and parametric identifiability for universal differential equations applied to chemical reaction networks_, arXiv (2025).](https://arxiv.org/abs/2510.14140)
+[^2]: [Loman, T and Baker, R. _Functional and parametric identifiability for universal differential equations applied to chemical reaction networks_, arXiv (2025).](https://arxiv.org/abs/2510.14140)
