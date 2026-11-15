@@ -86,7 +86,7 @@ function optimize_p(pinit, tend,
     # optimize for the parameters that minimize the loss
     optf = OptimizationFunction(loss, AutoZygote())
     optprob = OptimizationProblem(optf, pinit, (set_p, prob, sample_times, sample_vals))
-    sol = solve(optprob, ADAM(0.1); maxiters = 100)
+    sol = solve(optprob, Optimisers.ADAM(0.1); maxiters = 100)
 
     # return the parameters we found
     return sol.u

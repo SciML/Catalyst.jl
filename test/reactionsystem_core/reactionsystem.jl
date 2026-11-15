@@ -4,6 +4,9 @@
 using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEq, StochasticDiffEq, Test
 const MT = ModelingToolkitBase
 using ModelingToolkitBase: Pre, unwrap
+using SymbolicIndexingInterface: SymbolCache
+
+abstract type TestSystemData end
 
 # Sets stable rng number.
 using StableRNGs
@@ -260,13 +263,13 @@ let
         unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(js)))
         jprob = JumpProblem(js, merge(Dict(u0map), Dict(pmap)), (0.0, 1.0))
         mtkpars = jprob.prob.p
-        jspmapper = MT.JumpSysMajParamMapper(js, mtkpars)
         symbolic_majs = MassActionJump[MT.jumps(js)[i] for i in midxs]
+        jspmapper = MT.JumpSysMajParamMapper(js, symbolic_majs)
         symmaj = MT.assemble_maj(symbolic_majs, unknownoid, jspmapper)
-        maj = MassActionJump(
-            symmaj.param_mapper(mtkpars), symmaj.reactant_stoch, symmaj.net_stoch,
-            symmaj.param_mapper, scale_rates = false
-        )
+        # The mapper fills the rate constants at the given parameters in place.
+        rates = zeros(length(symbolic_majs))
+        symmaj.param_mapper(rates, symmaj, mtkpars)
+        maj = MassActionJump(rates, symmaj.reactant_stoch, symmaj.net_stoch; scale_rates = false)
         for i in midxs
             @test abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100 * eps()
             @test jumps[i].reactant_stoch == maj.reactant_stoch[i]
@@ -506,7 +509,7 @@ let
     oprob1 = ODEProblem(osys, [u0map; pmap], tspan)
     sts = [B, D, E, C]
     syms = [:B, :D, :E, :C]
-    ofun = ODEFunction(f!; sys = MT.SymbolCache(syms))
+    ofun = ODEFunction(f!; sys = SymbolCache(syms))
     oprob2 = ODEProblem(ofun, u0, tspan, p)
     saveat = tspan[2] / 50
     abstol = 1.0e-10
@@ -600,12 +603,12 @@ let
     rn = complete(rn)
     jprob = JumpProblem(
         rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
-        [k1 => 1.0]; rng, save_positions = (false, false)
+        [k1 => 1.0]; save_positions = (false, false)
     )
     umean = zeros(4)
     Nsims = 40000
     for i in 1:Nsims
-        sol = solve(jprob, SSAStepper(), saveat = 10.0)
+        sol = solve(jprob, SSAStepper(), saveat = 10.0; rng)
         umean += sol(10.0, idxs = [B1, B2, B3, C])
     end
     umean /= Nsims
@@ -713,7 +716,7 @@ end
 
 ### Specialised ReactionSystem Fields ###
 
-# Checks that correct bindings and (default) iniital conditions are created and stored in various ways and conversions.
+# Checks that correct bindings and (default) initial conditions are created and stored in various ways and conversions.
 let
     # Declare time differential.
     D = default_time_deriv()
@@ -887,11 +890,11 @@ let
     @named rs = ReactionSystem(rxs, t, [S, I], [])
     rs = complete(rs)
     js = complete(jump_model(rs))
-    jprob = JumpProblem(js, [S => 1, I => 1], (0.0, 10.0); rng)
-    sol = solve(jprob, SSAStepper())
+    jprob = JumpProblem(js, [S => 1, I => 1], (0.0, 10.0))
+    sol = solve(jprob, SSAStepper(); rng)
 
     # Test for https://github.com/SciML/ModelingToolkit.jl/issues/1042.
-    jprob = JumpProblem(rs, [S => 1, I => 1], (0.0, 10.0), []; aggregator = Direct(), rng, save_positions = (false, false))
+    jprob = JumpProblem(rs, [S => 1, I => 1], (0.0, 10.0), []; aggregator = Direct(), save_positions = (false, false))
 
     @parameters k1 k2
     @species R(t)
@@ -1054,7 +1057,7 @@ let
     @test issetequal(parameters(rs), [k, b])
 end
 
-# Test parameteric initial conditions.
+# Test parametric initial conditions.
 let
     @parameters d X0
     @species X(t) = X0
@@ -1165,39 +1168,39 @@ let
     @species X(t)
     @parameters d
     @named rs1 = ReactionSystem([Reaction(d, [X], nothing)], t)
-    @named rs2 = ReactionSystem([Reaction(d, [X], nothing)], t; metadata = [MiscSystemData => π])
+    @named rs2 = ReactionSystem([Reaction(d, [X], nothing)], t; metadata = [TestSystemData => π])
 
     # Check metadata for `ReactionSystem`s.
-    @test ModelingToolkitBase.getmetadata(rs1, MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(rs2, MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(complete(rs1), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(complete(rs2), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(rs1, TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(rs2, TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(rs1), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(rs2), TestSystemData, nothing) == π
 
     # Check metadata for converted `ReactionSystem`s.
-    @test ModelingToolkitBase.getmetadata(ode_model(complete(rs1)), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(ode_model(complete(rs2)), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(complete(ode_model(complete(rs1))), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(complete(ode_model(complete(rs2))), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(sde_model(complete(rs1)), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(sde_model(complete(rs2)), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(complete(sde_model(complete(rs1))), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(complete(sde_model(complete(rs2))), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(jump_model(complete(rs1)), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(jump_model(complete(rs2)), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(complete(jump_model(complete(rs1))), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(complete(jump_model(complete(rs2))), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(ss_ode_model(complete(rs1)), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(ss_ode_model(complete(rs2)), MiscSystemData, nothing) == π
-    @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs1))), MiscSystemData, nothing) == nothing
-    @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs2))), MiscSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(ode_model(complete(rs1)), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(ode_model(complete(rs2)), TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(ode_model(complete(rs1))), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(ode_model(complete(rs2))), TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(sde_model(complete(rs1)), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(sde_model(complete(rs2)), TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(sde_model(complete(rs1))), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(sde_model(complete(rs2))), TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(jump_model(complete(rs1)), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(jump_model(complete(rs2)), TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(jump_model(complete(rs1))), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(jump_model(complete(rs2))), TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(ss_ode_model(complete(rs1)), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(ss_ode_model(complete(rs2)), TestSystemData, nothing) == π
+    @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs1))), TestSystemData, nothing) == nothing
+    @test ModelingToolkitBase.getmetadata(complete(ss_ode_model(complete(rs2))), TestSystemData, nothing) == π
 
-    # Check metadata for `ReactionSystem`s where metadata has been udpated
-    rs1 = ModelingToolkitBase.setmetadata(rs1, MiscSystemData, "Metadata")
-    rs2 = ModelingToolkitBase.setmetadata(rs2, MiscSystemData, ones(2, 3))
-    @test ModelingToolkitBase.getmetadata(rs1, MiscSystemData, nothing) == "Metadata"
-    @test ModelingToolkitBase.getmetadata(rs2, MiscSystemData, nothing) == ones(2, 3)
-    @test ModelingToolkitBase.getmetadata(complete(rs1), MiscSystemData, nothing) == "Metadata"
-    @test ModelingToolkitBase.getmetadata(complete(rs2), MiscSystemData, nothing) == ones(2, 3)
+    # Check metadata for `ReactionSystem`s where metadata has been updated
+    rs1 = ModelingToolkitBase.setmetadata(rs1, TestSystemData, "Metadata")
+    rs2 = ModelingToolkitBase.setmetadata(rs2, TestSystemData, ones(2, 3))
+    @test ModelingToolkitBase.getmetadata(rs1, TestSystemData, nothing) == "Metadata"
+    @test ModelingToolkitBase.getmetadata(rs2, TestSystemData, nothing) == ones(2, 3)
+    @test ModelingToolkitBase.getmetadata(complete(rs1), TestSystemData, nothing) == "Metadata"
+    @test ModelingToolkitBase.getmetadata(complete(rs2), TestSystemData, nothing) == ones(2, 3)
 end
 
 # Tests u0_map and parameter_map system-level metadata.
@@ -1283,7 +1286,7 @@ end
 # there are several places in the code where the `reactionsystem_uptodate` function is called, here
 # the code might need adaptation to take the updated reaction system into account.
 let
-    @test_nowarn Catalyst.reactionsystem_uptodate_check() # Will fix this once most things are actually workin.
+    @test_nowarn Catalyst.reactionsystem_uptodate_check() # Will fix this once most things are actually working.
 end
 
 # Test that functions using the incidence matrix properly cache it
@@ -1431,7 +1434,7 @@ let
     discrete_events = (X == 1) => [V ~ V / 2]
 
     # Define metadata
-    metadata = [MiscSystemData => "Comprehensive test system"]
+    metadata = [TestSystemData => "Comprehensive test system"]
 
     # Define initial conditions and parameters
     u0 = Dict([A => 1.0, B => 2.0, C => 3.0, E => 4.0, V => 5.0])

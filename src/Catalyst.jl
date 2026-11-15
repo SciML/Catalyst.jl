@@ -106,7 +106,9 @@ export default_t, default_time_deriv
 ### Package Constants ###
 
 # Union type of types that can occur in expressions.
-const ExprValues = Union{Expr, Symbol, Float64, Int, Bool}
+# `QuoteNode` appears as the field of a dotted reference such as `$(sys.p)` or `Base.exp`,
+# which the recursive expression walkers must be able to pass through (issue #1564).
+const ExprValues = Union{Expr, Symbol, Float64, Int, Bool, QuoteNode}
 
 # The symbol used for conserved quantities in conservation law eliminations.
 const CONSERVED_CONSTANT_SYMBOL = :Γ
@@ -135,6 +137,10 @@ include("reaction.jl")
 export isspecies
 export Reaction, PhysicalScale
 
+# Documented `Reaction` predicates and metadata accessors (public, not exported).
+@public isbc, isconstant, isvalidreactant
+@public hasnoisescaling, getnoisescaling
+
 # Union type for `Reaction`s and `Equation`s.
 const CatalystEqType = Union{Reaction, Equation}
 
@@ -149,6 +155,10 @@ export isautonomous
 export reactionrates
 export set_default_noise_scaling
 export ode_model, sde_model, jump_model, ss_ode_model, hybrid_model
+
+# Documented `ReactionSystem`/`ReactionComplex` types and accessors (public, not exported).
+@public ReactionComplex, ReactionComplexElement
+@public get_species, get_rxs, get_networkproperties, reset_networkproperties!
 
 # Mark unit validation APIs as public without exporting them.
 @public validate_units, assert_valid_units, unit_validation_report
@@ -165,6 +175,9 @@ include("reactionsystem_conversions.jl")
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem,
     SteadyStateProblem, HybridProblem
 export ismassaction, oderatelaw, jumpratelaw
+
+# Documented symbolic-map helper (public, not exported).
+@public symmap_to_varmap
 
 # reaction_network macro
 include("expression_utils.jl")
@@ -183,7 +196,10 @@ export conservationlaws, conservedquantities, conservedequations, conservationla
 export satisfiesdeficiencyone, satisfiesdeficiencyzero
 export iscomplexbalanced, isdetailedbalanced, robustspecies
 
-# Containes the `nullspace` function required for conservation law elimination.
+# Documented cycle/flux basis helper (public, not exported).
+@public cycles
+
+# Contains the `nullspace` function required for conservation law elimination.
 include("mtk_nullspace_function.jl")
 
 # registers CRN specific functions using Symbolics.jl
@@ -272,6 +288,11 @@ Plot the species-reaction graph of `rn`.
 This extension function is available after loading GraphMakie.jl and
 NetworkLayout.jl. Keyword arguments are forwarded to the GraphMakie plotting
 recipe.
+
+Species are drawn as blue nodes and reactions as green nodes. Constant species that
+appear in the reactions are drawn as grey nodes, with red arrows to the reactions whose
+rate laws they contribute to (as substrates or within rate expressions), and grey arrows
+from the reactions that have them as products (which does not affect the dynamics).
 
 # Examples
 ```julia
@@ -365,6 +386,10 @@ export CartesianGrid, CartesianGridRej # (Implemented in JumpProcesses)
 export has_cartesian_dspace, has_masked_dspace, has_grid_dspace, has_graph_dspace,
     grid_dims, grid_size
 export make_edge_p_values, make_directed_edge_values
+
+# Documented `DiscreteSpaceReactionSystem` accessors (public, not exported).
+@public reactionsystem, spatial_reactions, num_verts, num_edges, num_species
+@public dspace, edge_iterator, is_transport_system
 
 # Specific spatial problem types.
 include("spatial_reaction_systems/spatial_ODE_systems.jl")

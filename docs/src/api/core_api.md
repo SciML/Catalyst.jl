@@ -178,6 +178,7 @@ Catalyst.get_species
 nonspecies
 reactions
 Catalyst.get_rxs
+Catalyst.get_networkproperties
 nonreactions
 numspecies
 numparams
@@ -320,6 +321,7 @@ hc_steady_states
 make_si_ode
 ModelingToolkitBase.mtkcompile
 set_default_noise_scaling
+Catalyst.symmap_to_varmap
 ```
 
 ## Chemistry-related functionalities

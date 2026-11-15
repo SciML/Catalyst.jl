@@ -72,7 +72,7 @@ end
 plot_network(brusselator)
 ```
 
-The species-reaction graph (or network graph) represents species as blue nodes and reactions as green dots. Black arrows from species to reactions indicate substrates, and are labelled with their respective stoichiometries. Similarly, black arrows from reactions to species indicate products (also labelled with their respective stoichiometries). If there are any reactions where a species affect the rate, but does not participate as a reactant, this is displayed with a dashed red arrow. This can be seen in the following [Repressilator model](@ref basic_CRN_library_repressilator):
+The species-reaction graph (or network graph) represents species as blue nodes and reactions as green dots. Black arrows from species to reactions indicate substrates, and are labelled with their respective stoichiometries. Similarly, black arrows from reactions to species indicate products (also labelled with their respective stoichiometries). If there are any reactions where a species affect the rate, but does not participate as a reactant, this is displayed with a red arrow. This can be seen in the following [Repressilator model](@ref basic_CRN_library_repressilator):
 ```@example visualisation_graphs
 repressilator = @reaction_network begin
     hillr(Z,v,K,n), ∅ --> X
@@ -81,6 +81,16 @@ repressilator = @reaction_network begin
     d, (X, Y, Z) --> ∅
 end
 plot_network(repressilator)
+```
+
+[Constant species](@ref dsl_advanced_options_constant_species) are displayed as grey nodes. As a constant species is not consumed by the reactions it is a substrate of, but does contribute to their rates, it is connected to these by red arrows (labelled with its stoichiometry whenever this is not one). Hence, if `X` is a constant species, `k, X + Y --> Z` and `k*X, Y --> Z` are displayed the same way. Arrows from reactions to their constant products are grey, as these do not affect the dynamics (and are only drawn to reflect the reactions as written). Here we consider a model where an enzyme, `E`, is present in such excess that it is modelled as a constant species:
+```@example visualisation_graphs
+enzyme_model = @reaction_network begin
+    @parameters E [isconstantspecies = true]
+    kB, S + E --> SE
+    kP, SE --> P + E
+end
+plot_network(enzyme_model)
 ```
 
 A generated graph can be saved using Makie's `save` function. 

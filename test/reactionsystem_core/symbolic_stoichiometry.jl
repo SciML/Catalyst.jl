@@ -292,10 +292,10 @@ let
     @test mean(ssol_dec[:X1]) ≈ mean(ssol_dec_ref[:X1]) atol = 2*1e0
 
     # Test Jump simulations with integer coefficients.
-    jprob_int = JumpProblem(rs_int, u0_int, tspan_stoch, ps_int; rng, save_positions = (false, false))
-    jprob_int_ref = JumpProblem(rs_ref_int, u0_int, tspan_stoch, ps_int; rng, save_positions = (false, false))
-    jsol_int = solve(jprob_int, SSAStepper(); seed, saveat = 1.0)
-    jsol_int_ref = solve(jprob_int_ref, SSAStepper(); seed, saveat = 1.0)
+    jprob_int = JumpProblem(rs_int, u0_int, tspan_stoch, ps_int; save_positions = (false, false))
+    jprob_int_ref = JumpProblem(rs_ref_int, u0_int, tspan_stoch, ps_int; save_positions = (false, false))
+    jsol_int = solve(jprob_int, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
+    jsol_int_ref = solve(jprob_int_ref, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
     @test mean(jsol_int[:X1]) ≈ mean(jsol_int_ref[:X1]) atol = 1e-2 rtol = 1e-2
 end
 
@@ -326,14 +326,14 @@ let
     @test solve(oprob, Tsit5()) ≈ solve(oprob_ref, Tsit5())
 
     # Jumps. First ensemble problems for each systems is created.
-    jprob = JumpProblem(sir, u0, tspan, ps; rng, save_positions = (false, false))
-    jprob_ref = JumpProblem(sir_ref, u0, tspan, ps_ref; rng, save_positions = (false, false))
+    jprob = JumpProblem(sir, u0, tspan, ps; save_positions = (false, false))
+    jprob_ref = JumpProblem(sir_ref, u0, tspan, ps_ref; save_positions = (false, false))
     eprob = EnsembleProblem(jprob)
     eprob_ref = EnsembleProblem(jprob_ref)
 
     # Simulates both ensemble problems. Checks that the distribution of values at the simulation ends is similar.
-    sols = solve(eprob, SSAStepper(); trajectories = 10000)
-    sols_ref = solve(eprob_ref, SSAStepper(); trajectories = 10000)
+    sols = solve(eprob, SSAStepper(); trajectories = 10000, rng)
+    sols_ref = solve(eprob_ref, SSAStepper(); trajectories = 10000, rng)
     end_vals = [[sol[s][end] for sol in sols.u] for s in species(sir)]
     end_vals_ref = [[sol[s][end] for sol in sols_ref.u] for s in species(sir_ref)]
     @test mean.(end_vals_ref) ≈ mean.(end_vals) atol=1e-1 rtol = 1e-1

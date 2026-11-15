@@ -202,7 +202,7 @@ let
     masked_grid_2d = reshape(masked_grid_1d,8,1)
     masked_grid_3d = reshape(masked_grid_1d,1,8,1)
 
-    # Creaets a base solution to which we will compare all simulations.
+    # Creates a base solution to which we will compare all simulations.
     dsrs_base = DiscreteSpaceReactionSystem(SIR_system, SIR_srs_1, masked_grid_1d)
     oprob_base = ODEProblem(dsrs_base, [:S => S_vals, :I => I_val, :R => R_val], (0.0, 100.0), [:α => α_vals, :β => β_val, :dS => dS_val])
     sol_base = solve(oprob_base, Tsit5(); saveat = 1.0, abstol = 1e-9, reltol = 1e-9)

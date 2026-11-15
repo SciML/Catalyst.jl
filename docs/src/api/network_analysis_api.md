@@ -26,6 +26,7 @@ incidencematgraph
 complexstoichmat
 complexoutgoingmat
 fluxmat
+Catalyst.cycles
 adjacencymat
 laplacianmat
 massactionvector

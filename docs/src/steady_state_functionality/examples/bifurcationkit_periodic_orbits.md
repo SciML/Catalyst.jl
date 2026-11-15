@@ -43,7 +43,7 @@ We compute the bifurcation diagram using the `bifurcationdiagram` function. We w
 ```@example bifurcationkit_periodic_orbits
 v_span = (0.0, 20.0)
 opts_br = ContinuationPar(p_min = v_span[1], p_max = v_span[2])
-bifdia = bifurcationdiagram(bprob, PALC(), 3, opts_br; bothside = true)
+bifdia = bifurcationdiagram(bprob, PALC(), 3, opts_br; bothside = Val(true))
 nothing # hide
 ```
 Finally, we plot the bifurcation diagram.

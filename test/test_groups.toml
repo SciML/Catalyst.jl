@@ -1,0 +1,23 @@
+[Modeling]
+versions = ["lts", "1", "pre"]
+
+["Modeling 32-bit"]
+group = "Modeling"
+versions = ["1"]
+os = ["ubuntu-latest"]
+arch = "x86"
+
+[Simulation]
+versions = ["lts", "1", "pre"]
+
+[Hybrid]
+versions = ["lts", "1", "pre"]
+
+[Misc]
+versions = ["lts", "1", "pre"]
+
+[Spatial]
+versions = ["lts", "1", "pre"]
+
+[QA]
+versions = ["lts", "1", "pre"]

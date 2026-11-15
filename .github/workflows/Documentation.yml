@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # # Install all required X11 and OpenGL libraries
       # # These are needed for GLMakie to work in a headless environment
@@ -66,7 +66,7 @@ jobs:
         run: xvfb-run julia --project=docs --color=yes --code-coverage=user docs/make.jl
 
       - name: Upload site as artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: docs-artifact
           path: ./docs/build

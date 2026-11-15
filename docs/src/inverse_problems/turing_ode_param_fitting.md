@@ -202,7 +202,7 @@ I_observed[idx] ~ truncated(Normal(sol[:I][idx], σI), 0.0, Inf)
 to create a version of our normal distribution that is truncated at *0* and infinity.
 
 ### [Accessing posterior information](@id turing_parameter_fitting_basic_example_output_interfacing)
-Say that we want to sample a parameter set from the computed posterior distribution. Here, we first use `draw = rand(chain; parameters_only = true)` to sample a random parameter set from teh posterior. next, we can use e.g. `draw[@varname(γ)]` to access the parameter $γ$'s value from that sample.
+Say that we want to sample a parameter set from the computed posterior distribution. Here, we first use `draw = rand(chain; parameters_only = true)` to sample a random parameter set from the posterior. next, we can use e.g. `draw[@varname(γ)]` to access the parameter $γ$'s value from that sample.
 ```@example turing_paramfit
 draw = rand(chain; parameters_only = true)
 draw[@varname(γ)]

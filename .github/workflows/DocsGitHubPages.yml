@@ -1,0 +1,132 @@
+name: Docs GitHub Pages
+
+# Publishes the current docs (stable and dev) from the gh-pages branch to
+# https://sciml.github.io/Catalyst.jl/ after each docs deploy, so they are up to date within
+# minutes of a release or a push to master. docs.sciml.ai, the canonical site that also hosts
+# every older version, only syncs gh-pages nightly. All of gh-pages is too large for GitHub
+# Pages (over its 1 GB limit), so only the current docs are published here; every other page,
+# e.g. of an older version picked in the version menu, is a small redirect to the same page on
+# docs.sciml.ai. This workflow only reads gh-pages, so it does not affect docs.sciml.ai.
+#
+# Requires Settings > Pages > Source to be set to "GitHub Actions". To retry a failed deploy,
+# start a new run with "Run workflow": re-running the failed run uploads a second `github-pages`
+# artifact to it, and deploy-pages then refuses to choose between them.
+
+on:
+  workflow_run:
+    workflows: [Documentation]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # Documenter deploys to gh-pages only from SciML/Catalyst.jl, on pushes to master (dev)
+    # and on tags (stable).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.repository == 'SciML/Catalyst.jl' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push')
+    # On the job, not the workflow, so that only runs that deploy compete for the slot: a
+    # skipped run (e.g. after a PR docs build) must not replace a pending deployment.
+    concurrency:
+      group: docs-github-pages
+      cancel-in-progress: false
+    # A GitHub-hosted runner: SciML's self-hosted pool also takes `ubuntu-latest` jobs, and
+    # deploy-pages' OIDC token request timed out there. That pool does not carry the
+    # `ubuntu-24.04` label (SciML's shared workflows pin it for the same reason). When GitHub
+    # retires this image, switch to the next GitHub-hosted Ubuntu label.
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out the gh-pages root files
+        uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/*/
+      - name: Assemble the site
+        run: |
+          set -euo pipefail
+          # `stable` links to the latest release's directory, e.g. `v17.0.1`.
+          target=$(readlink stable)
+          if [[ ! "$target" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Unexpected target of the stable symlink: $target"
+            exit 1
+          fi
+          git sparse-checkout add "/$target/" /dev/
+          mkdir _site
+          cp -R dev "$target" versions.js index.html _site/
+          # The copied docs must not contain links: upload-pages-artifact dereferences them,
+          # so a link could publish files from outside the docs. The only links in the site
+          # are the version aliases created below.
+          first_link=$(find _site -type l -print -quit)
+          if [[ -n "$first_link" ]]; then
+            printf 'Refusing to publish symlink: %s\n' "$first_link" >&2
+            exit 1
+          fi
+          # Sends a path that is not published here to the same page on docs.sciml.ai.
+          cat > _site/404.html <<'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+          <meta charset="utf-8">
+          <meta name="robots" content="noindex">
+          <title>Catalyst.jl documentation</title>
+          <script>
+            var path = window.location.pathname.replace(/^\/Catalyst\.jl/i, "");
+            window.location.replace("https://docs.sciml.ai/Catalyst" + path +
+              window.location.search + window.location.hash);
+          </script>
+          </head>
+          <body>
+          <p>Redirecting to <a href="https://docs.sciml.ai/Catalyst/stable/">docs.sciml.ai/Catalyst</a>.</p>
+          </body>
+          </html>
+          EOF
+          # When switching versions, Documenter's version menu only keeps the current page
+          # (and anchor) if a HEAD request finds that page in the chosen version on this
+          # site; otherwise it goes to the version's home page. So publish a copy of the
+          # redirect at each page of the older versions. The listing goes to a file (so that a
+          # failure stops the step) and is NUL-delimited (so that Git does not quote paths).
+          version_re='^v[0-9][^/]*$'
+          pages=$(mktemp)
+          git ls-tree -rz --name-only HEAD > "$pages"
+          n=0
+          while IFS= read -r -d '' page; do
+            dir=${page%%/*}
+            [[ "$dir" =~ $version_re && "$dir" != "$target" && "$page" == */*.html ]] || continue
+            mkdir -p "_site/${page%/*}"
+            cp _site/404.html "_site/$page"
+            n=$((n + 1))
+          done < "$pages"
+          # Version aliases (`stable`, `vX`, `vX.Y`) link to version directories. Only follow
+          # links to the version directories created above: upload-pages-artifact dereferences
+          # them, which gives the latest release's aliases its full docs.
+          for link in *; do
+            [[ -L "$link" && ( "$link" == stable || "$link" =~ $version_re ) ]] || continue
+            dest=$(readlink "$link")
+            if [[ "$dest" =~ $version_re && -d "_site/$dest" && ! -L "_site/$dest" ]]; then
+              ln -s "$dest" "_site/$link"
+            fi
+          done
+          echo "Publishing $target as stable, with redirects for $n older-version pages"
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

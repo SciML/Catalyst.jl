@@ -1056,7 +1056,7 @@ function reactions(network)
     rxs = get_rxs(network)
     systems = filter_nonrxsys(network)
     isempty(systems) && (return rxs)
-    return [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
+    return [rxs; reduce(vcat, namespace_reactions.(systems))]
 end
 
 """
@@ -1125,7 +1125,7 @@ function MT.equations(sys::ReactionSystem)
     if !isempty(systems)
         eqs = CatalystEqType[
             eqs;
-            reduce(vcat, MT.namespace_equations.(systems); init = CatalystEqType[])
+            reduce(vcat, MT.namespace_equations.(systems))
         ]
         return sort!(eqs; by = eqsortby)
     end
@@ -1714,7 +1714,7 @@ Check that all species in the [`ReactionSystem`](@ref) have the same units, and 
 rate laws of all reactions reduce to units of (species units) / (time units). Also validates
 unit consistency of non-reaction equations.
 
-Uses [`catalyst_get_unit`](@ref) for SymbolicDimensions-preserving unit inference, avoiding
+Uses `catalyst_get_unit` for SymbolicDimensions-preserving unit inference, avoiding
 the floating-point precision loss that occurs with MTKBase's `get_unit` when using non-SI
 units like M or μM.
 

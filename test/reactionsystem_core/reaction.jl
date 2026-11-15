@@ -30,10 +30,10 @@ let
         rx6 = Reaction(rate, [X], [x], [n1], [1])
 
         # Check `Reaction` types.
-        @test rx1 isa Reaction{SymbolicT,Int64}
+        @test rx1 isa Reaction{SymbolicT,Int}
         @test rx2 isa Reaction{SymbolicT,Float64}
         @test rx3 isa Reaction{SymbolicT,Any}
-        @test rx4 isa Reaction{SymbolicT,Rational{Int64}}
+        @test rx4 isa Reaction{SymbolicT,Rational{Int}}
         @test rx5 isa Reaction{SymbolicT,Any}
         @test rx6 isa Reaction{SymbolicT,Any}
 
@@ -74,6 +74,19 @@ let
     # Neither substrates nor products.
     @test_throws ArgumentError Reaction(k*A, [], [])
 
+    # Only constant species as substrates and products (equivalent to ∅ --> ∅).
+    @parameters x1 [isconstantspecies = true] x2 [isconstantspecies = true]
+    @test_throws ArgumentError Reaction(k, [x1], [])
+    @test_throws ArgumentError Reaction(k, [], [x1])
+    @test_throws ArgumentError Reaction(k, [x1], [x2])
+    @test_throws ArgumentError Reaction(k*A, [x1, x2], [x1], [2, 1], [3])
+    @test_throws ArgumentError @reaction k, $x1 --> 0
+    @test_throws ArgumentError @reaction_network begin
+        @parameters X [isconstantspecies = true]
+        k1, Y --> Z
+        k2, X --> 0
+    end
+
     # Substrate vector not of equal length to substrate stoichiometry vector.
     @test_throws ArgumentError Reaction(k*A, [X, X, Z], [], [1, 2], [])
 
@@ -89,6 +102,10 @@ let
     # Non-valid reactants (parameter or variable).
     @test_throws ArgumentError Reaction(k*A, [], [A])
     @test_throws ArgumentError Reaction(k*A, [], [k])
+
+    # Unsupported keyword arguments (e.g. misspelling `only_use_rate`, see issue #1578).
+    @test_throws MethodError Reaction(k, [X], [Y]; use_only_rate = true)
+    @test_throws MethodError Reaction(k, [X], [Y], [1], [1]; use_only_rate = true)
 end
 
 
