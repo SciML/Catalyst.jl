@@ -697,7 +697,7 @@ run to be saved in that folder:
 
 ```@example petab1
 res_ms = PEtabMultistartResult("OptimisationRuns"; which_run = 2)
-rm("OptimisationRuns", recursive = true) # hide
+try rm("OptimisationRuns", recursive = true) catch end # hide
 nothing # hide
 ```
 
