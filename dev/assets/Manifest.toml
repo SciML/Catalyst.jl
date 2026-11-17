@@ -2,7 +2,7 @@
 
 julia_version = "1.12.7"
 manifest_format = "2.0"
-project_hash = "713d905bfa36691b07137425efb74354ca0e8546"
+project_hash = "c742014a42529888c08921d998a758d527cc57d3"
 
 [[deps.ADTypes]]
 deps = ["PrecompileTools"]
@@ -310,21 +310,13 @@ version = "1.11.0"
 
 [[deps.Atomix]]
 deps = ["UnsafeAtomics"]
-git-tree-sha1 = "1bbcf97714051f302b3beafab65bcdeb6044c4df"
+git-tree-sha1 = "0aa371c875e24cf773c87b2f50ab03e4545748af"
 uuid = "a9b6321e-bd34-4604-b9c9-b65b8de01458"
-version = "1.2.1"
-
-    [deps.Atomix.extensions]
-    AtomixCUDAExt = "CUDA"
-    AtomixMetalExt = "Metal"
-    AtomixOpenCLExt = "OpenCL"
-    AtomixoneAPIExt = "oneAPI"
+version = "1.7.0"
 
     [deps.Atomix.weakdeps]
     CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
-    Metal = "dde4c033-4e86-420c-a63e-0dd931031962"
-    OpenCL = "08131aa3-fb12-5dee-8b74-c09406e224a2"
-    oneAPI = "8f75cd03-7ff8-4ecb-9b8f-daf728133b1b"
+    CUDACore = "bd0ed864-bdfe-4181-a5ed-ce625a5fdea2"
 
 [[deps.Attractors]]
 deps = ["BijectiveHilbert", "BlackBoxOptim", "Clustering", "ComplexityMeasures", "Distances", "Distributions", "DynamicalSystemsBase", "LinearAlgebra", "Mmap", "NearestNeighbors", "Neighborhood", "OhMyThreads", "Optim", "ProgressMeter", "Random", "Reexport", "StateSpaceSets"]
@@ -1376,9 +1368,9 @@ version = "1.0.7"
 
 [[deps.Enzyme]]
 deps = ["CEnum", "EnzymeCore", "Enzyme_jll", "GPUCompiler", "InteractiveUtils", "LLVM", "Libdl", "LinearAlgebra", "ObjectFile", "PrecompileTools", "Preferences", "Printf", "Random", "ScopedValues", "SparseArrays"]
-git-tree-sha1 = "a23bd3bdbb0ad41937b6ff9540fd1c425fa77dc7"
+git-tree-sha1 = "1bcf1132ee15e79a3202304ea67b6c87c04fae3a"
 uuid = "7da242da-08ed-463a-9acd-ee780be4f1d9"
-version = "0.13.220"
+version = "0.13.221"
 
     [deps.Enzyme.extensions]
     EnzymeBFloat16sExt = "BFloat16s"
@@ -1835,15 +1827,17 @@ version = "0.2.2"
 
 [[deps.GPUCompiler]]
 deps = ["CompilerCaching", "ExprTools", "InteractiveUtils", "LLVM", "Libdl", "Logging", "PrecompileTools", "Preferences", "REPL", "ScopedValues", "TOML", "Tracy", "UUIDs", "tree_sitter_gcn_jll", "tree_sitter_llvm_jll", "tree_sitter_ptx_jll", "tree_sitter_spirv_jll"]
-git-tree-sha1 = "6bf1aeb555d3b5dcf3d2af4b867945eb334498a7"
+git-tree-sha1 = "2a66558ca5eddcdaa1a25ffb307c9e12f5df8028"
 uuid = "61eb1bfa-7361-4325-ad38-22787b887f55"
-version = "2.10.0"
+version = "2.22.2"
 
     [deps.GPUCompiler.extensions]
+    CthulhuExt = "Cthulhu"
     HighlightsExt = "Highlights"
 
     [deps.GPUCompiler.weakdeps]
     AMDGPU_LLVM_Backend_jll = "cc5c0156-bd05-5a77-8a68-bb0aafb29019"
+    Cthulhu = "f68482b8-f384-11e8-15f7-abe071a5a75f"
     Highlights = "eafb193a-b7ab-5a9e-9068-77385905fa72"
     LLVMDowngrader_jll = "f52de702-fb25-5922-94ba-81dd59b07444"
     NVPTX_LLVM_Backend_jll = "ef6e0fe3-e6ef-59c0-bde6-4989574699e0"
@@ -2027,9 +2021,9 @@ weakdeps = ["Plots"]
 
 [[deps.HomotopyContinuation]]
 deps = ["Arblib", "DelimitedFiles", "DynamicPolynomials", "ElasticArrays", "FiniteDiff", "IntervalTrees", "IterTools", "LRUCache", "LinearAlgebra", "LoopVectorization", "MixedSubdivisions", "MultivariatePolynomials", "Parameters", "PrettyTables", "Printf", "ProgressMeter", "ProjectiveVectors", "Random", "Reexport", "SemialgebraicSets", "SimpleGraphs", "StructArrays", "SymEngine_jll"]
-git-tree-sha1 = "54a8d504fa5e7fb8a7162cb3a2ce113c7917d2c3"
+git-tree-sha1 = "93c31ba8f1d0e9cfbbb1359345aac3d4819686bc"
 uuid = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
-version = "2.23.0"
+version = "2.24.0"
 
 [[deps.HostCPUFeatures]]
 deps = ["BitTwiddlingConvenienceFunctions", "IfElse", "Libdl", "Preferences", "Static"]
@@ -2394,20 +2388,20 @@ version = "2.2.2"
     SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[deps.LLVM]]
-deps = ["CEnum", "LLVMExtra_jll", "Libdl", "PrecompileTools", "Preferences", "Printf", "Unicode"]
-git-tree-sha1 = "3bcfa5cd59aecfc0680d8b5b8ea38237b009f112"
+deps = ["CEnum", "LLVMExtra_jll", "Libdl", "PrecompileTools", "Preferences", "Printf", "ScopedValues", "Unicode"]
+git-tree-sha1 = "41c2ce7ec5a14c89b93dc6a5853bf2a91d7a8583"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "9.13.2"
+version = "10.4.3"
 weakdeps = ["BFloat16s"]
 
     [deps.LLVM.extensions]
     BFloat16sExt = "BFloat16s"
 
 [[deps.LLVMExtra_jll]]
-deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "d77aea19c9a71059a021acd99b0a4343e9661d94"
+deps = ["Artifacts", "JLLWrappers", "Libdl", "TOML"]
+git-tree-sha1 = "39def0b4521e0ef2bf26960d8965729f496bb4ec"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.47+0"
+version = "0.0.56+0"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -5415,13 +5409,14 @@ weakdeps = ["ConstructionBase", "ForwardDiff", "InverseFunctions", "LaTeXStrings
     PrintfExt = "Printf"
 
 [[deps.UnsafeAtomics]]
-git-tree-sha1 = "21b39bfb1fab6156b61fbcba4c86c57b6216d2c3"
+deps = ["LLVM"]
+git-tree-sha1 = "74ac5e0e702972da953ffc981094617070be582d"
 uuid = "013be700-e6cd-48c3-b4a1-df204f14c38f"
-version = "0.3.2"
-weakdeps = ["LLVM"]
+version = "0.4.0"
+weakdeps = ["GPUCompiler"]
 
     [deps.UnsafeAtomics.extensions]
-    UnsafeAtomicsLLVM = ["LLVM"]
+    UnsafeAtomicsGPUCompilerExt = "GPUCompiler"
 
 [[deps.Unzip]]
 git-tree-sha1 = "ca0969166a028236229f63514992fc073799bb78"

@@ -79,31 +79,31 @@ for n = 1:nr
 end
 @named rs = ReactionSystem(rx, t, collect(X), [k])
 rs = complete(rs)</code></pre><p class="math-container">\[ \begin{align*}
-2 \mathrm{X₁} &amp;\xrightarrow{k_{1}} \mathrm{X₂} \\
-\mathrm{X₁} + \mathrm{X₂} &amp;\xrightarrow{k_{2}} \mathrm{X₃} \\
-\mathrm{X₁} + \mathrm{X₃} &amp;\xrightarrow{k_{3}} \mathrm{X₄} \\
-2 \mathrm{X₂} &amp;\xrightarrow{k_{4}} \mathrm{X₄} \\
-\mathrm{X₁} + \mathrm{X₄} &amp;\xrightarrow{k_{5}} \mathrm{X₅} \\
-\mathrm{X₂} + \mathrm{X₃} &amp;\xrightarrow{k_{6}} \mathrm{X₅} \\
-\mathrm{X₁} + \mathrm{X₅} &amp;\xrightarrow{k_{7}} \mathrm{X₆} \\
-\mathrm{X₂} + \mathrm{X₄} &amp;\xrightarrow{k_{8}} \mathrm{X₆} \\
-2 \mathrm{X₃} &amp;\xrightarrow{k_{9}} \mathrm{X₆} \\
-\mathrm{X₁} + \mathrm{X₆} &amp;\xrightarrow{k_{10}} \mathrm{X₇} \\
-\mathrm{X₂} + \mathrm{X₅} &amp;\xrightarrow{k_{11}} \mathrm{X₇} \\
-\mathrm{X₃} + \mathrm{X₄} &amp;\xrightarrow{k_{12}} \mathrm{X₇} \\
-\mathrm{X₁} + \mathrm{X₇} &amp;\xrightarrow{k_{13}} \mathrm{X₈} \\
-\mathrm{X₂} + \mathrm{X₆} &amp;\xrightarrow{k_{14}} \mathrm{X₈} \\
-\mathrm{X₃} + \mathrm{X₅} &amp;\xrightarrow{k_{15}} \mathrm{X₈} \\
-2 \mathrm{X₄} &amp;\xrightarrow{k_{16}} \mathrm{X₈} \\
-\mathrm{X₁} + \mathrm{X₈} &amp;\xrightarrow{k_{17}} \mathrm{X₉} \\
-\mathrm{X₂} + \mathrm{X₇} &amp;\xrightarrow{k_{18}} \mathrm{X₉} \\
-\mathrm{X₃} + \mathrm{X₆} &amp;\xrightarrow{k_{19}} \mathrm{X₉} \\
-\mathrm{X₄} + \mathrm{X₅} &amp;\xrightarrow{k_{20}} \mathrm{X₉} \\
-\mathrm{X₁} + \mathrm{X₉} &amp;\xrightarrow{k_{21}} \mathrm{X₁₀} \\
-\mathrm{X₂} + \mathrm{X₈} &amp;\xrightarrow{k_{22}} \mathrm{X₁₀} \\
-\mathrm{X₃} + \mathrm{X₇} &amp;\xrightarrow{k_{23}} \mathrm{X₁₀} \\
-\mathrm{X₄} + \mathrm{X₆} &amp;\xrightarrow{k_{24}} \mathrm{X₁₀} \\
-2 \mathrm{X₅} &amp;\xrightarrow{k_{25}} \mathrm{X₁₀}  
+2 \mathrm{X_1} &amp;\xrightarrow{k_{1}} \mathrm{X_2} \\
+\mathrm{X_1} + \mathrm{X_2} &amp;\xrightarrow{k_{2}} \mathrm{X_3} \\
+\mathrm{X_1} + \mathrm{X_3} &amp;\xrightarrow{k_{3}} \mathrm{X_4} \\
+2 \mathrm{X_2} &amp;\xrightarrow{k_{4}} \mathrm{X_4} \\
+\mathrm{X_1} + \mathrm{X_4} &amp;\xrightarrow{k_{5}} \mathrm{X_5} \\
+\mathrm{X_2} + \mathrm{X_3} &amp;\xrightarrow{k_{6}} \mathrm{X_5} \\
+\mathrm{X_1} + \mathrm{X_5} &amp;\xrightarrow{k_{7}} \mathrm{X_6} \\
+\mathrm{X_2} + \mathrm{X_4} &amp;\xrightarrow{k_{8}} \mathrm{X_6} \\
+2 \mathrm{X_3} &amp;\xrightarrow{k_{9}} \mathrm{X_6} \\
+\mathrm{X_1} + \mathrm{X_6} &amp;\xrightarrow{k_{10}} \mathrm{X_7} \\
+\mathrm{X_2} + \mathrm{X_5} &amp;\xrightarrow{k_{11}} \mathrm{X_7} \\
+\mathrm{X_3} + \mathrm{X_4} &amp;\xrightarrow{k_{12}} \mathrm{X_7} \\
+\mathrm{X_1} + \mathrm{X_7} &amp;\xrightarrow{k_{13}} \mathrm{X_8} \\
+\mathrm{X_2} + \mathrm{X_6} &amp;\xrightarrow{k_{14}} \mathrm{X_8} \\
+\mathrm{X_3} + \mathrm{X_5} &amp;\xrightarrow{k_{15}} \mathrm{X_8} \\
+2 \mathrm{X_4} &amp;\xrightarrow{k_{16}} \mathrm{X_8} \\
+\mathrm{X_1} + \mathrm{X_8} &amp;\xrightarrow{k_{17}} \mathrm{X_9} \\
+\mathrm{X_2} + \mathrm{X_7} &amp;\xrightarrow{k_{18}} \mathrm{X_9} \\
+\mathrm{X_3} + \mathrm{X_6} &amp;\xrightarrow{k_{19}} \mathrm{X_9} \\
+\mathrm{X_4} + \mathrm{X_5} &amp;\xrightarrow{k_{20}} \mathrm{X_9} \\
+\mathrm{X_1} + \mathrm{X_9} &amp;\xrightarrow{k_{21}} \mathrm{X_{1 0}} \\
+\mathrm{X_2} + \mathrm{X_8} &amp;\xrightarrow{k_{22}} \mathrm{X_{1 0}} \\
+\mathrm{X_3} + \mathrm{X_7} &amp;\xrightarrow{k_{23}} \mathrm{X_{1 0}} \\
+\mathrm{X_4} + \mathrm{X_6} &amp;\xrightarrow{k_{24}} \mathrm{X_{1 0}} \\
+2 \mathrm{X_5} &amp;\xrightarrow{k_{25}} \mathrm{X_{1 0}}  
  \end{align*}
  \]</p><p>We now convert the <a href="../../../api/core_api/#Catalyst.ReactionSystem"><code>ReactionSystem</code></a> into a ModelingToolkitBase jump <code>System</code>, and solve it using Gillespie&#39;s direct method. For details on other possible solvers (SSAs), see the <a href="https://docs.sciml.ai/DiffEqDocs/stable/types/jump_types/">DifferentialEquations.jl</a> documentation</p><pre><code class="language-julia hljs"># solving the system
 jprob = JumpProblem(rs, u₀map, tspan; save_positions = (false, false))
@@ -137,4 +137,4 @@ plot!(ϕ, sol[2,:] / Nₒ, line = (:dot, 4, :orange), label = &quot;Analytical s
 
 scatter!(ϕ, jsol(t)[3,:] / uₒ, label = &quot;X3 (trimers)&quot;, markercolor = :purple)
 plot!(ϕ, sol[3,:] / Nₒ, line = (:dot, 4, :purple), label = &quot;Analytical sol--X3&quot;,
-      ylabel = &quot;Normalized Concentration&quot;)</code></pre><img src="e3692e92.svg" alt="Example block output"/><hr/><h2 id="References"><a class="docs-heading-anchor" href="#References">References</a><a id="References-1"></a><a class="docs-heading-anchor-permalink" href="#References" title="Permalink"></a></h2><ol><li><a href="https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation">https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation</a></li><li>Scott, W. T. (1968). Analytic Studies of Cloud Droplet Coalescence I, Journal of Atmospheric Sciences, 25(1), 54-65. Retrieved Feb 18, 2021, from https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml</li><li>Ian J. Laurenzi, John D. Bartels, Scott L. Diamond, A General Algorithm for Exact Simulation of Multicomponent Aggregation Processes, Journal of Computational Physics, Volume 177, Issue 2, 2002, Pages 418-449, ISSN 0021-9991, https://doi.org/10.1006/jcph.2002.7017.</li></ol></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../hodgkin_huxley_equation/">« Hodgkin-Huxley Equation</a><a class="docs-footer-nextpage" href="../noise_modelling_approaches/">Approaches for modelling system noise »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.20.0 on <span class="colophon-date" title="Tuesday 17 November 2026 18:42">Tuesday 17 November 2026</span>. Using Julia version 1.12.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+      ylabel = &quot;Normalized Concentration&quot;)</code></pre><img src="cf558a51.svg" alt="Example block output"/><hr/><h2 id="References"><a class="docs-heading-anchor" href="#References">References</a><a id="References-1"></a><a class="docs-heading-anchor-permalink" href="#References" title="Permalink"></a></h2><ol><li><a href="https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation">https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation</a></li><li>Scott, W. T. (1968). Analytic Studies of Cloud Droplet Coalescence I, Journal of Atmospheric Sciences, 25(1), 54-65. Retrieved Feb 18, 2021, from https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml</li><li>Ian J. Laurenzi, John D. Bartels, Scott L. Diamond, A General Algorithm for Exact Simulation of Multicomponent Aggregation Processes, Journal of Computational Physics, Volume 177, Issue 2, 2002, Pages 418-449, ISSN 0021-9991, https://doi.org/10.1006/jcph.2002.7017.</li></ol></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../hodgkin_huxley_equation/">« Hodgkin-Huxley Equation</a><a class="docs-footer-nextpage" href="../noise_modelling_approaches/">Approaches for modelling system noise »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.20.0 on <span class="colophon-date" title="Tuesday 17 November 2026 21:57">Tuesday 17 November 2026</span>. Using Julia version 1.12.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
