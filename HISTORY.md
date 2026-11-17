@@ -2,6 +2,21 @@
 
 ## Unreleased (on master)
 
+- `tstops` (the `ReactionSystem` keyword argument and the `@tstops` DSL option) now accept
+  arrays of time points, which previously threw a `MethodError`. As in ModelingToolkitBase, a
+  scalar is a period (the integrator stops at `t0 + period`, `t0 + 2period`, ...), while an
+  array gives the time points themselves. Both can be numbers or expressions of parameters,
+  and the DSL infers undeclared symbols in an array as parameters.
+  ```julia
+  rn = @reaction_network begin
+      @tstops begin
+          0.5          # every 0.5 time units
+          [t1, 2.0]    # at t1 and at 2.0
+      end
+      d, X --> 0
+  end
+  ```
+
 ## Catalyst 17.0.1
 
 - `Reaction` now throws a `MethodError` when given an unsupported keyword argument.

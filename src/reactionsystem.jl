@@ -217,7 +217,8 @@ end
 
 # Validates that tstop expressions only contain parameters and constants (no unknowns or
 # independent variable). Tstops must be computable before the solve starts, so they cannot
-# depend on dynamic state.
+# depend on dynamic state. A tstop is either a scalar (a period) or an array of time points;
+# each element of an array is checked.
 function check_tstops(tstops, unknowns, iv)
     isempty(tstops) && return nothing
     unknowns_set = Set(unknowns)
@@ -225,24 +226,44 @@ function check_tstops(tstops, unknowns, iv)
     found_us = OrderedSet{SymT}()
     found_ps = OrderedSet{SymT}()
     for ts in tstops
-        tsu = Symbolics.value(ts)
-        # Numeric literals are always valid tstops — skip symbolic checks.
-        (tsu isa Real) && continue
-        # Check that the independent variable does not appear in the tstop expression.
-        if isequal(tsu, iv) || hasnode(x -> isequal(x, iv), tsu)
-            throw(ArgumentError("Tstop expression `$ts` depends on the independent variable `$iv`. Tstops must be computable before the solve starts."))
+        check_tstop(ts, unknowns_set, iv, found_us, found_ps)
+    end
+    return nothing
+end
+
+function check_tstop(ts, unknowns_set, iv, found_us, found_ps)
+    tsu = Symbolics.value(ts)
+    # An array of time points: check each one.
+    if tsu isa AbstractArray
+        for x in tsu
+            check_tstop(x, unknowns_set, iv, found_us, found_ps)
         end
-        # Check that no unknowns (species/variables) appear in the tstop expression.
-        empty!(found_us)
-        empty!(found_ps)
-        MT.collect_vars!(found_us, found_ps, tsu, iv)
-        for v in found_us
-            if v in unknowns_set
-                throw(ArgumentError("Tstop expression `$ts` contains unknown `$v`. Tstops must only depend on parameters and constants, not dynamic state."))
-            end
+        return nothing
+    end
+    # Numeric literals are always valid tstops — skip symbolic checks.
+    (tsu isa Real) && return nothing
+    # Check that the independent variable does not appear in the tstop expression.
+    if isequal(tsu, iv) || hasnode(x -> isequal(x, iv), tsu)
+        throw(ArgumentError("Tstop expression `$ts` depends on the independent variable `$iv`. Tstops must be computable before the solve starts."))
+    end
+    # Check that no unknowns (species/variables) appear in the tstop expression.
+    empty!(found_us)
+    empty!(found_ps)
+    MT.collect_vars!(found_us, found_ps, tsu, iv)
+    for v in found_us
+        if v in unknowns_set
+            throw(ArgumentError("Tstop expression `$ts` contains unknown `$v`. Tstops must only depend on parameters and constants, not dynamic state."))
         end
     end
     return nothing
+end
+
+# Normalizes a tstop via `Symbolics.value`: unwraps `Num`s to symbolic expressions and gets
+# plain numbers from numeric literals that array promotion turned into `Num`s (e.g. the 5.0
+# in `[p, 5.0]`). The elements of an array of time points are normalized one by one.
+function value_tstop(ts)
+    tsu = Symbolics.value(ts)
+    return (tsu isa AbstractArray) ? map(Symbolics.value, tsu) : tsu
 end
 
 ### ReactionSystem Structure ###
@@ -300,8 +321,10 @@ Keyword Arguments:
   the `ReactionSystem`.
 - `balanced_bc_check = true`, sets whether to check that BC species appearing in reactions
   are balanced (i.e appear as both a substrate and a product with the same stoichiometry).
-- `tstops = []`, a vector of extra time points for the integrator to stop at. These can be
-  numeric values or symbolic expressions of parameters and time.
+- `tstops = []`, a vector of extra times for the integrator to stop at. Each entry is either
+  a scalar, a period (the integrator stops at `t0 + period`, `t0 + 2period`, ... up to the
+  end of the time span), or an array of time points. Both can be numeric values or symbolic
+  expressions of parameters.
 - `brownians`, vector of Brownian variables for non-reaction SDE noise (created via
   `@brownians`). Auto-discovered from equations in the two-argument constructor.
 - `poissonians`, vector of Poissonian variables for Poisson jump noise (created via
@@ -361,8 +384,9 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """
     discrete_events::Vector{MT.SymbolicDiscreteCallback}
     """
-    tstops: A `Vector{Any}` of extra time points for the integrator to stop at.
-    These can be numeric values or symbolic expressions of parameters and time.
+    tstops: A `Vector{Any}` of extra times for the integrator to stop at. Each entry is
+    either a scalar (a period) or an array of time points, given as numeric values or
+    symbolic expressions of parameters.
     """
     tstops::Vector{Any}
     """Brownian variables for non-reaction noise, created via @brownians."""
@@ -546,10 +570,8 @@ function ReactionSystem(
     brownians′ = isempty(brownians) ? SymbolicT[] : unwrap.(brownians)
     poissonians′ = isempty(poissonians) ? SymbolicT[] : unwrap.(poissonians)
     jumps′ = isempty(jumps) ? JumpType[] : collect(jumps)
-    # Normalize tstops via `Symbolics.value`: unwraps Num to BasicSymbolic for symbolic
-    # parameters, and extracts plain numeric values for literal constants (e.g. 5.0 that
-    # got promoted to Num by array promotion in `[param, 5.0]`).
-    tstops′ = Any[Symbolics.value(ts) for ts in tstops]
+    # Normalize tstops via `Symbolics.value` (see `value_tstop`).
+    tstops′ = Any[value_tstop(ts) for ts in tstops]
 
     return ReactionSystem(
         eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
