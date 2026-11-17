@@ -166,12 +166,14 @@ nn_arch = Lux.Chain(
     Lux.Dense(3 => 3, Lux.softplus),
     Lux.Dense(3 => 1, Lux.softplus)
 )
+nothing # hide
 ```
 We now generate a `SymbolicNeuralNetwork` using ModelingToolkitNeuralNets. This embeds the
 Lux model in a symbolic format that is compatible with Catalyst (and ModelingToolkit).
 ```@example ude_rate_based
 using ModelingToolkitNeuralNets
 @SymbolicNeuralNetwork U, θ = nn_arch
+nothing # hide
 ```
 Here, `U` represents the neural network structure, and `θ` represents its parameters. Additional options for using the `@SymbolicNeuralNetwork` macro are described [here](https://sciml.github.io/ModelingToolkitNeuralNets.jl/stable/api/#ModelingToolkitNeuralNets.@SymbolicNeuralNetwork) and [here](https://sciml.github.io/ModelingToolkitNeuralNets.jl/stable/symbolic_ude_tutorial/). Next, using the following syntax, we can [interpolate](@ref dsl_advanced_options_symbolics_and_DSL_interpolation) this function approximator as a Catalyst model rate.
 ```@example ude_rate_based
@@ -221,7 +223,7 @@ res = calibrate_multistart(petab_prob, Optim.LBFGSB(), 5)
 nothing # hide
 ```
 For more difficult fitting problems, such as when larger neural networks are used, Adam is typically preferred. It is available through the [Optimisers.jl](https://github.com/FluxML/Optimisers.jl) package,
-and are used through the same `calibrate_multistart` interface. Unlike L-BFGS-B, Adam runs
+and is used through the same `calibrate_multistart` interface. Unlike L-BFGS-B, Adam runs
 for a fixed number of iterations (epochs), which we designate through `OptimisersOptions`:
 ```julia
 using Optimisers
