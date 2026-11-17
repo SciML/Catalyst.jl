@@ -74,6 +74,7 @@ end
         @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
         # BROKEN
         #@time @safetestset "Latexify" begin include("visualisation/latexify.jl") end # https://github.com/SciML/Catalyst.jl/issues/1352
+        @time @safetestset "Latexify SDE and Jump Forms" begin include("visualisation/latexify_forms.jl") end
     end
 
     # Quality assurance (Aqua, JET, ExplicitImports) via the SciMLTesting harness.
