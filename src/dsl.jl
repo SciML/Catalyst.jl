@@ -1118,15 +1118,18 @@ function read_tstops_option(options, ps_inferred, all_syms; requiredec = false)
     return (tstops_expr, ps_inferred)
 end
 
-# Adds the symbols in a tstop expression to `new_ps`. `add_syms_from_expr!` skips an
-# expression's first argument (a call's function), so the elements of an array of time points
-# (e.g. `[t1, 2.0]`) are passed to it one by one.
+# Adds the symbols in a tstop expression to `new_ps`. Like `add_syms_from_expr!`, it skips an
+# expression's first argument (a call's function, or a `$` interpolation), except where every
+# argument is a value: array literals such as `[t1, 2.0]`, tuples (e.g. the arguments of a
+# broadcast call `f.(x)`) and keyword arguments. It recurses itself, so that arrays inside
+# calls, as in `vcat([a], [b])` or `[a, b] .+ shift`, are scanned in the same way.
 function add_tstop_syms!(new_ps, ex, all_syms)
-    if ex isa Expr && ex.head in (:vect, :vcat, :hcat, :row)
-        for el in ex.args
-            add_tstop_syms!(new_ps, el, all_syms)
+    if ex isa Expr
+        first_arg = ex.head in (:vect, :vcat, :hcat, :row, :tuple, :parameters) ? 1 : 2
+        for arg in ex.args[first_arg:end]
+            add_tstop_syms!(new_ps, arg, all_syms)
         end
-    else
+    elseif ex isa Symbol
         add_syms_from_expr!(new_ps, ex, all_syms)
     end
     return nothing

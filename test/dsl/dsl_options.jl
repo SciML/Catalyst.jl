@@ -2055,4 +2055,27 @@ let
     end
 end
 
+# Tests that the symbols in arrays inside calls (`vcat([a], [b])`, `[c, 2.0] .+ shift`) are
+# inferred as parameters, and checked by @require_declaration.
+let
+    rn = @reaction_network begin
+        @tstops begin
+            vcat([a], [b])
+            [c, 2.0] .+ shift
+        end
+        d, X --> 0
+    end
+    @parameters a b c shift d
+    @test issetequal(parameters(rn), [a, b, c, shift, d])
+    @test isequal(ModelingToolkitBase.get_tstops(rn), Any[[a, b], [c + shift, 2.0 + shift]])
+
+    @test_throws UndeclaredSymbolicError @macroexpand @reaction_network begin
+        @require_declaration
+        @parameters d
+        @species X(t)
+        @tstops vcat([a], [b])
+        d, X --> 0
+    end
+end
+
 nothing
