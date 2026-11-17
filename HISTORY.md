@@ -2,6 +2,8 @@
 
 ## Unreleased (on master)
 
+## Catalyst 17.0.2
+
 - `tstops` (the `ReactionSystem` keyword argument and the `@tstops` DSL option) now accept
   arrays of time points, which previously threw a `MethodError`. As in ModelingToolkitBase, a
   scalar is a period (the integrator stops at `t0 + period`, `t0 + 2period`, ...), while an
