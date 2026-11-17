@@ -194,8 +194,6 @@ function cle_equations(w::LatexCLE; double_linebreak = LATEX_DEFS.double_linebre
         starred = LATEX_DEFS.starred, math_delimiters = false, show_time_arg = false,
         mathrm = true, mathjax = LATEX_DEFS.mathjax, kwargs...)
     rs = Catalyst.flatten(w.rs)
-    # `MT.poissonians` is not public in ModelingToolkitBase, unlike `MT.brownians` and
-    # `MT.jumps`, an oversight (SciML/ModelingToolkit.jl#5389). `sde_model` uses it too.
     (isempty(MT.jumps(rs)) && isempty(MT.poissonians(rs))) ||
         error("The SDE form can not display a ReactionSystem with coupled jumps or poissonians.")
     rxs = reactions(rs)
@@ -422,9 +420,13 @@ function _latex_ordered(x, isvar; kwargs...)
 end
 
 # Whether an expression contains an unknown of `rs`, by name, so that it holds whether the
-# unknowns appear as X(t), as the variables `processsym` gives, or at another time.
+# unknowns appear as X(t), as the variables `processsym` gives, or at another time. An
+# indexed unknown `X(t)[1]` has the name of its array, `X`, but `processsym` names its
+# variable `X₁`, so both names count.
 function _unknown_predicate(rs)
-    names = Set(MT.getname(u) for u in unknowns(rs))
+    us = unknowns(rs)
+    names = Set{Symbol}(MT.getname(u) for u in us)
+    union!(names, MT.getname(processsym(u)) for u in us)
     return f -> any(v -> MT.getname(v) in names, Symbolics.get_variables(f))
 end
 
