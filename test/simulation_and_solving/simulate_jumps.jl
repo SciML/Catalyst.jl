@@ -131,26 +131,43 @@ let
     for (rn_catalyst, rn_manual, u0_sym, ps_sym, u0_1, ps_1, sp) in
             zip(catalyst_networks, manual_networks, u0_syms, ps_syms, u0s, ps, sps)
 
-        # Simulates the Catalyst-created model.
-        jprob_1 = JumpProblem(rn_catalyst, u0_1, (0.0, 10000.0), ps_1; aggregator = Direct())
+        # Simulates the Catalyst-created model. Only the `saveat` points are saved (here and for
+        # the manually written model), so the means below are time averages.
+        jprob_1 = JumpProblem(rn_catalyst, u0_1, (0.0, 10000.0), ps_1; aggregator = Direct(),
+            save_positions = (false, false))
         sol1 = solve(jprob_1, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
 
-        # simulate using auto-alg
+        # Checks the aggregator chosen by default (`Direct` for fewer than 20 jumps).
         jprob_1b = JumpProblem(rn_catalyst, u0_1, (0.0, 10000.0), ps_1)
-        sol1b = solve(jprob_1b; rng = StableRNG(seed), saveat = 1.0)
-        @test mean(sol1[sp]) ≈ mean(sol1b[sp]) rtol = 1e-1
+        @test jprob_1b.aggregator isa Direct
 
         # Simulates the manually written model
         u0_2 = map_to_vec(u0_1, u0_sym)
         ps_2 = map_to_vec(ps_1, ps_sym)
         dprob_2 = DiscreteProblem(u0_2, (0.0, 10000.0), ps_2)
-        jprob_2 = JumpProblem(dprob_2, Direct(), rn_manual...)
+        jprob_2 = JumpProblem(dprob_2, Direct(), rn_manual...; save_positions = (false, false))
         sol2 = solve(jprob_2, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
 
         # Checks that the means are similar (the test have been check that it holds across a large
         # number of simulates, even without seed).
         @test mean(sol1[sp]) ≈ mean(sol2[findfirst(u0_sym .== sp),:]) rtol = 1e-1
     end
+end
+
+# Checks the aggregator chosen by default for a network with at least 20 (mass action) reactions,
+# and that it simulates the network correctly. Each species is a birth-death process with
+# stationary mean `p/d`.
+let
+    rn = @reaction_network begin
+        p, 0 --> (X1, X2, X3, X4, X5, X6, X7, X8, X9, X10)
+        d, (X1, X2, X3, X4, X5, X6, X7, X8, X9, X10) --> 0
+    end
+    u0 = [sp => 10 for sp in species(rn)]
+    jprob = JumpProblem(rn, u0, (0.0, 1000.0), [:p => 10.0, :d => 1.0];
+        save_positions = (false, false))
+    @test jprob.aggregator isa RSSA
+    sol = solve(jprob, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
+    @test mean(mean(sol[sp]) for sp in species(rn)) ≈ 10.0 rtol = 0.05
 end
 
 # Checks that simulations for a large number of potential systems are completed (and don't error).
