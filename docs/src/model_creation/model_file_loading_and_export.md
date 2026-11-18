@@ -105,7 +105,7 @@ plot(sol; idxs = [:mTetR, :mLacI, :mCI])
 ```
 ![Repressilator Simulation](../assets/repressilator_sim_ReactionNetworkImporters.svg)
 
-Note that, as all initial conditions and parameters have default values, we can provide empty vectors for these into our `ODEProblem`. To load these values from the model, the `get_u0_map(rn)` and `get_parameter_map(rn)` functions can be used.
+Note that, as all initial conditions and parameters have default values, we can provide empty vectors for these into our `ODEProblem`. To load these values from the model, the `Catalyst.get_u0_map(rn)` and `Catalyst.get_parameter_map(rn)` functions can be used.
 
 !!! note
     It should be noted that .net files support a wide range of potential model features, not all of which are currently supported by ReactionNetworkImporters. Hence, there might be some .net files which `loadrxnetwork` will not be able to load.
@@ -123,12 +123,12 @@ using SBMLImporter
 rn, cbs = load_SBML("brusselator.xml", massaction = true)
 ```
 
-`load_SBML` returns two outputs: a `ReactionSystem` (`rn`) and a `CallbackSet` (`cbs`). The `CallbackSet` contains SBML events and callbacks generated from any SBML `piecewise` expressions. While `rn` can be used to create problems, when we simulate them, we must also supply `cbs`. The SBML file also contains simulation initial condition and parameter values. These are saved within the `rn` and can be extracted using the `get_u0_map` and `get_parameter_map` functions. Here we simulate the loaded brusselator model, providing `u0`, `ps`, and `cb` as described.
+`load_SBML` returns two outputs: a `ReactionSystem` (`rn`) and a `CallbackSet` (`cbs`). The `CallbackSet` contains SBML events and callbacks generated from any SBML `piecewise` expressions. While `rn` can be used to create problems, when we simulate them, we must also supply `cbs`. The SBML file also contains simulation initial condition and parameter values. These are saved within the `rn` and can be extracted using the `Catalyst.get_u0_map` and `Catalyst.get_parameter_map` functions. Here we simulate the loaded brusselator model, providing `u0`, `ps`, and `cbs` as described.
 ```julia
 using Catalyst, OrdinaryDiffEq, Plots
 tspan = (0.0, 50.0)
-u0 = get_u0_map(rn)
-ps = get_parameter_map(rn)
+u0 = Catalyst.get_u0_map(rn)
+ps = Catalyst.get_parameter_map(rn)
 oprob = ODEProblem(rn, u0, tspan, ps)
 sol = solve(oprob; callback = cbs)
 plot(sol)
@@ -137,7 +137,7 @@ plot(sol)
 ![Brusselator Simulation](../assets/brusselator_sim_SBMLImporter.svg)
 
 !!! note 
-    While ReactionNetworkImporters saves parameters (`ps`) and species values (`u0`) as default to the imported model, SBMLImporter does not do this. These must hence be explicitly loaded through `get_u0_map` and `get_parameter_map` and then provided to the `ODEProblem`.
+    While ReactionNetworkImporters saves parameters (`ps`) and species values (`u0`) as default to the imported model, SBMLImporter does not do this. These must hence be explicitly loaded through `Catalyst.get_u0_map` and `Catalyst.get_parameter_map` and then provided to the `ODEProblem`.
 
 A more detailed description of SBMLImporter's features can be found in its [documentation](https://sebapersson.github.io/SBMLImporter.jl/stable/).
 
@@ -155,7 +155,7 @@ The advantage of these forms is that they offer a compact and very general way t
 
 
 ---
-## [Citations](@id petab_citations)
+## [Citations](@id model_file_import_export_citations)
 If you use any of this functionality in your research, [in addition to Catalyst](@ref doc_index_citation), please cite the paper(s) corresponding to whichever package(s) you used:
 ```bibtex
 @software{2022ReactionNetworkImporters,
