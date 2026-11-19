@@ -16,3 +16,12 @@ updates:
       all-julia-packages:
         patterns:
           - "*"
+    ignore:
+      # ModelingToolkitBase's compat for its BifurcationKit extension stops at 0.8, so 0.9 can't
+      # be installed or tested yet.
+      - dependency-name: "BifurcationKit"
+        versions: [">= 0.9"]
+      # SciMLBase, ModelingToolkitBase, JumpProcesses and Symbolics, among others, only allow
+      # DocStringExtensions up to 0.9.
+      - dependency-name: "DocStringExtensions"
+        versions: [">= 0.10"]
