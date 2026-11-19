@@ -2,7 +2,7 @@
 
 julia_version = "1.12.7"
 manifest_format = "2.0"
-project_hash = "1765d448f3e40e69661966cfc8f88f04c90be55b"
+project_hash = "89d72628468f74c9bf547af1793f5d56d995eea0"
 
 [[deps.ADTypes]]
 deps = ["PrecompileTools"]
@@ -608,7 +608,7 @@ version = "0.5.2"
 
 [[deps.Catalyst]]
 deps = ["Combinatorics", "DataStructures", "DiffEqBase", "DocStringExtensions", "DynamicQuantities", "EnumX", "Graphs", "JumpProcesses", "LaTeXStrings", "Latexify", "LinearAlgebra", "MacroTools", "ModelingToolkitBase", "Parameters", "Reexport", "RuntimeGeneratedFunctions", "SciMLBase", "SciMLPublic", "Setfield", "SparseArrays", "SymbolicIndexingInterface", "SymbolicUtils", "Symbolics"]
-path = "/home/runner/work/Catalyst.jl/Catalyst.jl"
+path = "/home/runner/_work/Catalyst.jl/Catalyst.jl"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
 version = "17.0.2"
 weakdeps = ["BifurcationKit", "CairoMakie", "DynamicPolynomials", "GraphMakie", "HomotopyContinuation", "Makie", "NetworkLayout", "StructuralIdentifiability", "TermInterface"]
@@ -2021,9 +2021,9 @@ weakdeps = ["Plots"]
 
 [[deps.HomotopyContinuation]]
 deps = ["Arblib", "DelimitedFiles", "DynamicPolynomials", "ElasticArrays", "FiniteDiff", "IntervalTrees", "IterTools", "LRUCache", "LinearAlgebra", "LoopVectorization", "MixedSubdivisions", "MultivariatePolynomials", "Parameters", "PrettyTables", "Printf", "ProgressMeter", "ProjectiveVectors", "Random", "Reexport", "SemialgebraicSets", "SimpleGraphs", "StructArrays", "SymEngine_jll"]
-git-tree-sha1 = "93c31ba8f1d0e9cfbbb1359345aac3d4819686bc"
+git-tree-sha1 = "f1abf376e512ee93ee898d7605024d27bcb11556"
 uuid = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
-version = "2.24.0"
+version = "2.24.1"
 
 [[deps.HostCPUFeatures]]
 deps = ["BitTwiddlingConvenienceFunctions", "IfElse", "Libdl", "Preferences", "Static"]
@@ -2389,9 +2389,9 @@ version = "2.2.2"
 
 [[deps.LLVM]]
 deps = ["CEnum", "LLVMExtra_jll", "Libdl", "PrecompileTools", "Preferences", "Printf", "ScopedValues", "Unicode"]
-git-tree-sha1 = "41c2ce7ec5a14c89b93dc6a5853bf2a91d7a8583"
+git-tree-sha1 = "cbb4c47c69648d9f80d01001111d942e0d11337a"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "10.4.3"
+version = "10.5.1"
 weakdeps = ["BFloat16s"]
 
     [deps.LLVM.extensions]
@@ -2399,9 +2399,9 @@ weakdeps = ["BFloat16s"]
 
 [[deps.LLVMExtra_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "TOML"]
-git-tree-sha1 = "39def0b4521e0ef2bf26960d8965729f496bb4ec"
+git-tree-sha1 = "13ddec415e5875204f0314bff5d8b82a9c1d8b2a"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.56+0"
+version = "0.0.57+0"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2633,9 +2633,9 @@ version = "0.2.11"
 
 [[deps.LinearMaps]]
 deps = ["LinearAlgebra"]
-git-tree-sha1 = "7f6be2e4cdaaf558623d93113d6ddade7b916209"
+git-tree-sha1 = "68cc46ead8b16271078f190201a979c9bea00be0"
 uuid = "7a12625a-238d-50fd-b39a-03d52299707e"
-version = "3.11.4"
+version = "3.11.5"
 weakdeps = ["ChainRulesCore", "SparseArrays", "Statistics"]
 
     [deps.LinearMaps.extensions]
@@ -4897,9 +4897,9 @@ version = "1.8.0"
 
 [[deps.StatsBase]]
 deps = ["AliasTables", "DataAPI", "DataStructures", "IrrationalConstants", "LinearAlgebra", "LogExpFunctions", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
-git-tree-sha1 = "adb9da019510162e67a4493fc235c23203d8b09e"
+git-tree-sha1 = "85faad09701372d7cbd37f3d1acdc06986d495dc"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-version = "0.34.13"
+version = "0.34.14"
 
 [[deps.StatsFuns]]
 deps = ["HypergeometricFunctions", "IrrationalConstants", "LogExpFunctions", "Reexport", "Rmath", "SpecialFunctions"]
@@ -5052,9 +5052,9 @@ version = "2.12.1"
 
 [[deps.StructuralIdentifiability]]
 deps = ["AbstractAlgebra", "Combinatorics", "DataStructures", "Dates", "Groebner", "IterTools", "LinearAlgebra", "Logging", "MacroTools", "Nemo", "ParamPunPam", "PrecompileTools", "Primes", "Random", "RationalFunctionFields", "TimerOutputs"]
-git-tree-sha1 = "12225c855065ae2241e6e76675c2682aea60c072"
+git-tree-sha1 = "531d4e1549c3c9b8555e06fb4b6a3325fc496579"
 uuid = "220ca800-aa68-49bb-acd8-6037fa93a544"
-version = "0.5.36"
+version = "0.6.0"
 weakdeps = ["ModelingToolkitBase", "SymbolicUtils", "Symbolics"]
 
     [deps.StructuralIdentifiability.extensions]
