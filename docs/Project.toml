@@ -58,7 +58,7 @@ Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [compat]
 BenchmarkTools = "1.5"
-BifurcationKit = "0.8.9, 0.9"
+BifurcationKit = "0.8.9"
 CairoMakie = "0.15"
 Catalyst = "17"
 DataFrames = "1.6"
