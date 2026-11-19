@@ -2,7 +2,7 @@
 
 julia_version = "1.12.7"
 manifest_format = "2.0"
-project_hash = "c742014a42529888c08921d998a758d527cc57d3"
+project_hash = "1765d448f3e40e69661966cfc8f88f04c90be55b"
 
 [[deps.ADTypes]]
 deps = ["PrecompileTools"]
@@ -608,7 +608,7 @@ version = "0.5.2"
 
 [[deps.Catalyst]]
 deps = ["Combinatorics", "DataStructures", "DiffEqBase", "DocStringExtensions", "DynamicQuantities", "EnumX", "Graphs", "JumpProcesses", "LaTeXStrings", "Latexify", "LinearAlgebra", "MacroTools", "ModelingToolkitBase", "Parameters", "Reexport", "RuntimeGeneratedFunctions", "SciMLBase", "SciMLPublic", "Setfield", "SparseArrays", "SymbolicIndexingInterface", "SymbolicUtils", "Symbolics"]
-path = "/home/runner/_work/Catalyst.jl/Catalyst.jl"
+path = "/home/runner/work/Catalyst.jl/Catalyst.jl"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
 version = "17.0.2"
 weakdeps = ["BifurcationKit", "CairoMakie", "DynamicPolynomials", "GraphMakie", "HomotopyContinuation", "Makie", "NetworkLayout", "StructuralIdentifiability", "TermInterface"]
@@ -1469,9 +1469,9 @@ version = "9.0.2+0"
 
 [[deps.FFTA]]
 deps = ["AbstractFFTs", "DocStringExtensions", "LinearAlgebra", "MuladdMacro", "Primes", "Random", "Reexport"]
-git-tree-sha1 = "65e55303b72f4a567a51b174dd2c47496efeb95a"
+git-tree-sha1 = "f4d904e7ff5aadd8e7fe9ab8544a0a295dfa8904"
 uuid = "b86e33f2-c0db-4aa1-a6e0-ab43e668529e"
-version = "0.3.1"
+version = "0.3.3"
 
 [[deps.FFTW]]
 deps = ["AbstractFFTs", "FFTW_jll", "Libdl", "LinearAlgebra", "MKL_jll", "Preferences", "Reexport"]
@@ -1827,9 +1827,9 @@ version = "0.2.2"
 
 [[deps.GPUCompiler]]
 deps = ["CompilerCaching", "ExprTools", "InteractiveUtils", "LLVM", "Libdl", "Logging", "PrecompileTools", "Preferences", "REPL", "ScopedValues", "TOML", "Tracy", "UUIDs", "tree_sitter_gcn_jll", "tree_sitter_llvm_jll", "tree_sitter_ptx_jll", "tree_sitter_spirv_jll"]
-git-tree-sha1 = "2a66558ca5eddcdaa1a25ffb307c9e12f5df8028"
+git-tree-sha1 = "3a0cd93954ebbaa9fb219dba95d5929972f11374"
 uuid = "61eb1bfa-7361-4325-ad38-22787b887f55"
-version = "2.22.2"
+version = "2.23.3"
 
     [deps.GPUCompiler.extensions]
     CthulhuExt = "Cthulhu"
@@ -2758,9 +2758,9 @@ version = "2.2.1"
 
 [[deps.LogDensityProblemsAD]]
 deps = ["DocStringExtensions", "LogDensityProblems"]
-git-tree-sha1 = "7b83f3ad0a8105f79a067cafbfd124827bb398d0"
+git-tree-sha1 = "db3f8b794305414537ca49f8b3d5ad5e10a22922"
 uuid = "996a588d-648d-4e1f-a8f0-a84b347e47b1"
-version = "1.13.1"
+version = "1.13.2"
 
     [deps.LogDensityProblemsAD.extensions]
     LogDensityProblemsADADTypesExt = "ADTypes"
@@ -4245,6 +4245,12 @@ git-tree-sha1 = "1fe4e616752a0c4818ae88a504fc59b0fb016659"
 uuid = "a3311ec8-5e00-46d5-b541-4f83e724a433"
 version = "0.1.26"
 
+[[deps.ReactionNetworkImporters]]
+deps = ["Catalyst", "HypergeometricFunctions", "ModelingToolkitBase", "OrderedCollections", "PrecompileTools", "SciMLPublic", "SparseArrays", "SymbolicUtils", "Symbolics", "TermInterface"]
+git-tree-sha1 = "49137fdaa1979a3b435e0ab95cb0fca3b5583de6"
+uuid = "b4db0fb7-de2a-5028-82bf-5021f5cfa881"
+version = "1.5.3"
+
 [[deps.ReadOnlyArrays]]
 git-tree-sha1 = "e6f7ddf48cf141cb312b078ca21cb2d29d0dc11d"
 uuid = "988b38a3-91fc-5605-94a2-ee2116b3bd83"
@@ -5484,10 +5490,10 @@ uuid = "e3aaa7dc-3e4b-44e0-be63-ffb868ccd7c1"
 version = "0.1.3"
 
 [[deps.WeightInitializers]]
-deps = ["ConcreteStructs", "GPUArraysCore", "LinearAlgebra", "Random", "SpecialFunctions", "Statistics"]
-git-tree-sha1 = "e78129ba44a459b6cb7d906f6f4bb5937705bbf5"
+deps = ["GPUArraysCore", "LinearAlgebra", "Random", "SpecialFunctions"]
+git-tree-sha1 = "464831ecc865e429f1261e3725506e4573e0db94"
 uuid = "d49dbf32-c5c2-4618-8acc-27bb2598ef2d"
-version = "1.3.7"
+version = "1.3.8"
 
     [deps.WeightInitializers.extensions]
     AMDGPUExt = "AMDGPU"
