@@ -422,15 +422,14 @@ let
         jumps = [MassActionJump([k], [[A => 1]], [[A => -1]])], aliases = [k ~ k2], name = :rs))
 end
 
-# Spatial systems and serialization give clear errors.
+# Serialization gives a clear error (spatial systems are tested in
+# spatial_modelling/dspace_reaction_systems.jl).
 let
     rn = @reaction_network begin
         @aliases A ~ B
         (k1, k2), A <--> B2
         k3, B --> 0
     end
-    tr = @transport_reaction dB B
-    @test_throws ArgumentError DiscreteSpaceReactionSystem(rn, [tr], CartesianGrid((2,)))
     @test_throws Exception save_reactionsystem(joinpath(mktempdir(), "rn.jl"), rn)
 end
 
