@@ -174,7 +174,7 @@ include("reactionsystem_metadata.jl")
 
 # Alias classification, validation, resolution, and elimination.
 include("alias_elimination.jl")
-export alias_map, uneliminated_unknowns, uneliminated_parameters
+export alias_map, uneliminated_parameters
 
 # Conversions of the `ReactionSystem` structure.
 include("reactionsystem_conversions.jl")

@@ -456,8 +456,9 @@ Return a `Dict` mapping each symbol eliminated by an alias, when `rs` was comple
 it was replaced by (with alias chains followed to the end). Empty if no symbol was eliminated, e.g.
 if `rs` isn't complete (its aliases are then not resolved yet).
 
-`remake` does not translate eliminated symbols, so use the remaining symbols with it; see also
-[`uneliminated_unknowns`](@ref) and [`uneliminated_parameters`](@ref).
+`remake` does not translate eliminated symbols, so use the remaining symbols with it: the
+unknowns of the completed system (eliminated unknowns are observables, not unknowns) and
+[`uneliminated_parameters`](@ref).
 """
 function alias_map(rs::ReactionSystem)
     maps = get_alias_maps(rs)
@@ -466,22 +467,13 @@ function alias_map(rs::ReactionSystem)
 end
 
 """
-    uneliminated_unknowns(rs::ReactionSystem)
-
-Return the unknowns of `rs` that remain after the elimination of its aliases (which happens when
-`rs` is completed): the ones to give initial conditions for, and to use with `remake`. Eliminated
-unknowns become observables, so these are `unknowns(rs)`. For a system that isn't complete, they
-include the unknowns that its aliases will eliminate.
-"""
-uneliminated_unknowns(rs::ReactionSystem) = unknowns(rs)
-
-"""
     uneliminated_parameters(rs::ReactionSystem)
 
 Return the parameters of `rs` that remain after the elimination of its aliases (which happens when
 `rs` is completed): the ones to give values for, and to use with `remake`. Eliminated parameters
 stay parameters of `rs`, bound to the parameters that replaced them (so they can be read, but not
 given values), and are left out. For a system that isn't complete, these are `parameters(rs)`.
+(Eliminated unknowns become observables, so the remaining unknowns are just `unknowns(rs)`.)
 """
 function uneliminated_parameters(rs::ReactionSystem)
     maps = get_alias_maps(rs)

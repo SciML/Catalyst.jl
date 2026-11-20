@@ -300,10 +300,11 @@ Reactions are never removed by alias elimination, so they keep their indices (e.
 ### Updating problems with `remake`
 Problems created from a `ReactionSystem` accept the eliminated names in their initial conditions
 and parameter values. `remake` does not translate eliminated names, and may silently ignore
-them, so when updating a problem use the symbols that remain after elimination. These are given
-by [`uneliminated_unknowns`](@ref) and [`uneliminated_parameters`](@ref):
+them, so when updating a problem use the symbols that remain after elimination: the model's
+unknowns (eliminated unknowns are observables, not unknowns), and the parameters given by
+[`uneliminated_parameters`](@ref):
 ```@example ex_alias
-uneliminated_unknowns(cell)
+unknowns(cell)
 ```
 ```@example ex_alias
 oprob = remake(oprob; u0 = [cell.X => 3.0])

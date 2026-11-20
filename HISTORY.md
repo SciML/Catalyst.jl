@@ -16,21 +16,22 @@
   @named cell = compose(synthesis, [uptake]; aliases = [uptake.Y ~ synthesis.X])
   cell = complete(cell)   # reactions: p, 0 --> X and uptake₊k, X --> uptake₊Z
   ```
-  An alias `X ~ Y` eliminates `X` in favor of `Y`. Species, non-species variables and
-  parameters can be aliased (each only with symbols of its own kind), and aliases can form
-  chains. Aliases are resolved when a system is completed (`flatten`, `compose` and `extend`
-  keep them), which is also when invalid aliases are reported. An eliminated unknown becomes an
-  observable, and an eliminated parameter a parameter bound to the one replacing it, so both can
-  still be read from problems and solutions, and given values when problems are created from a
-  `ReactionSystem` (giving conflicting values to two names of the same symbol is an error). `remake` needs the
-  remaining symbols, which the new `uneliminated_unknowns` and `uneliminated_parameters` list.
-  The new `alias_map` gives the symbol each eliminated symbol was replaced by, and the new
-  `aliases` (with the public `Catalyst.get_aliases` and `Catalyst.aliases_present`) the declared
-  aliases. Merged species add their stoichiometries (with `A ~ B`, `2A + B --> C` becomes
-  `3B --> C`, with that reaction's rate law), and an alias that leaves a reaction with no net
-  change is an error. The HomotopyContinuation, BifurcationKit and StructuralIdentifiability
-  extensions, and `steady_state_stability`, support aliases, while spatial models and
-  `save_reactionsystem` give an error for systems with aliases.
+  An alias `X ~ Y` eliminates `X` in favor of `Y`. Species, non-species variables and parameters
+  can be aliased (each only with symbols of its own kind), and aliases can form chains. Aliases
+  are resolved when a system is completed (`flatten`, `compose` and `extend` keep them), which
+  is also when invalid aliases are reported. An eliminated unknown becomes an observable, and an
+  eliminated parameter a parameter bound to the one replacing it, so both can still be read from
+  problems and solutions, and given values when problems are created from a `ReactionSystem`
+  (giving conflicting values to two names of the same symbol is an error). `remake` needs the
+  remaining symbols: the unknowns, and the parameters listed by the new
+  `uneliminated_parameters`. The new `alias_map` gives the symbol each eliminated symbol was
+  replaced by, and the new `aliases` (with the public `Catalyst.get_aliases` and
+  `Catalyst.aliases_present`) the declared aliases. Merged species add their stoichiometries
+  (with `A ~ B`, `2A + B --> C` becomes `3B --> C`, with that reaction's rate law), and an alias
+  that leaves a reaction with no net change is an error. The HomotopyContinuation,
+  BifurcationKit and StructuralIdentifiability extensions, and `steady_state_stability`, support
+  aliases, while spatial models and `save_reactionsystem` give an error for systems with
+  aliases.
 - `flatten` now keeps the bindings of subsystems, `extend` those of both systems, and
   `sde_model` those of networks without constraint equations or Brownian variables (all used to
   drop them).

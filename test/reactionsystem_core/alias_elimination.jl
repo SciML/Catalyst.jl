@@ -126,7 +126,7 @@ let
         name = :base)
     @named sub = ReactionSystem([Reaction(k3, [C], nothing)], t)
     @test isempty(alias_map(base))
-    @test issetequal(uneliminated_unknowns(base), [A, B, X])
+    @test issetequal(unknowns(base), [A, B, X])
     @test isequal(alias_map(complete(base)), Dict(unwrap(A) => unwrap(B)))
 
     composed = compose(base, [sub]; aliases = [base.B ~ sub.C])
@@ -136,7 +136,7 @@ let
     @test length(aliases(composed)) == 2
     rs = complete(composed)
     @test isequal(alias_map(rs), Dict(unwrap(A) => sub_C, unwrap(B) => sub_C))
-    @test issetequal(uneliminated_unknowns(rs), [unwrap(X), sub_C])
+    @test issetequal(unknowns(rs), [unwrap(X), sub_C])
     @test isempty(aliases(rs))
 end
 
@@ -388,7 +388,7 @@ let
 
     # remake with the surviving symbols.
     prob = ODEProblem(rn, [rn.A => 3.0, rn.C => 1.0], tspan, ps)
-    @test issetequal(uneliminated_unknowns(rn), [rn.B, rn.C])
+    @test issetequal(unknowns(rn), [rn.B, rn.C])
     @test remake(prob; u0 = [rn.B => 5.0])[rn.B] == 5.0
 
     # The two-stage workflow (an MTK problem constructor) takes the surviving symbols.

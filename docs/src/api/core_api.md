@@ -274,7 +274,6 @@ aliases
 Catalyst.get_aliases
 Catalyst.aliases_present
 alias_map
-uneliminated_unknowns
 uneliminated_parameters
 ```
 
