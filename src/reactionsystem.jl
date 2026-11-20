@@ -196,9 +196,23 @@ function find_event_vars!(ps, us, event::MT.AbstractCallback, t)
     return MT.collect_vars!(us, ps, event.affect.affect, t)
 end
 
+# ModelingToolkitBase only supports symbolic jumps. Throws an informative error for a
+# `ConstantRateJump` or `VariableRateJump` whose rate or affect is a Julia function (instead
+# of the `MethodError` ModelingToolkitBase throws when collecting its variables).
+function check_jumps_symbolic(jumps)
+    for (i, jump) in enumerate(jumps)
+        (jump isa ConstantRateJump || jump isa VariableRateJump) || continue
+        if jump.rate isa Function || jump.affect! isa Function
+            throw(ArgumentError("Jump $i is a $(nameof(typeof(jump))) with a Julia function as its rate or affect. `ReactionSystem`s only support symbolic jumps: give the rate as a symbolic expression and the affect as a vector of equations, e.g. `ConstantRateJump(k * X, [X ~ Pre(X) + 1])`."))
+        end
+    end
+    return nothing
+end
+
 # Loops through all jumps, adding all unknowns and parameters found to their respective vectors.
 # Uses MT.collect_vars! which has dispatches for MassActionJump, ConstantRateJump, and VariableRateJump.
 function find_jump_vars!(ps, us, jumps::Vector, t)
+    check_jumps_symbolic(jumps)
     for jump in jumps
         MT.collect_vars!(us, ps, jump, t)
     end
@@ -536,6 +550,7 @@ function ReactionSystem(
         csts = filter(isconstant, unknowns′)
         throw(ArgumentError("Found one or more constant species among the unknowns; this is not allowed. Move: $csts to be parameters."))
     end
+    check_jumps_symbolic(jumps)
     # If there are BC species, check they are balanced in their reactions.
     if balanced_bc_check && any(isbc, unknowns′)
         for rx in eqs

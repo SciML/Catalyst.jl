@@ -673,6 +673,31 @@ let
     @test_throws Exception rs = ReactionSystem([Reaction(k1, [X1], [])], t, [X1, x], [k1])
 end
 
+# Checks that jumps with a Julia function as their rate or affect give an informative error,
+# through both the inferring and the explicit constructor.
+let
+    @parameters k
+    @species X(t)
+    rx = Reaction(k, [X], [])
+    rate(u, p, t) = p[1]
+    affect!(integrator) = (integrator.u[1] += 1; nothing)
+    fn_jumps = [
+        ConstantRateJump(rate, affect!),
+        ConstantRateJump(rate, [X ~ Pre(X) + 1]),
+        ConstantRateJump(k, affect!),
+        VariableRateJump(rate, affect!),
+    ]
+    for jump in fn_jumps
+        @test_throws ArgumentError ReactionSystem([rx], t; jumps = [jump], name = :rs)
+        @test_throws ArgumentError ReactionSystem([rx], t, [X], [k]; jumps = [jump], name = :rs)
+    end
+
+    # Symbolic jumps are still accepted.
+    jump = ConstantRateJump(k * X, [X ~ Pre(X) + 1])
+    @test ReactionSystem([rx], t; jumps = [jump], name = :rs) isa ReactionSystem
+    @test ReactionSystem([rx], t, [X], [k]; jumps = [jump], name = :rs) isa ReactionSystem
+end
+
 # Tests various erroneous `convert` calls.
 let
     # Conversion of non-autonomous `ReactionSystem` to nonlinear `System`.
