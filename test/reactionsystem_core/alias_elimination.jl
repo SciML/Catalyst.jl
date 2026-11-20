@@ -118,55 +118,51 @@ let
     @test issetequal(unknowns(sys2), [sys2.sub1.B, sys2.sub2.C, sys2.sub2.X])
 end
 
-# Alias chains, and querying aliases before and after composing.
+# Alias chains, and querying aliases before and after completing (nothing is eliminated before).
 let
     @species A(t) B(t) C(t) X(t)
     @parameters k1 k2 k3
     base = ReactionSystem([Reaction(k1, [A], [X]), Reaction(k2, [B], [X])], t; aliases = [A ~ B],
         name = :base)
     @named sub = ReactionSystem([Reaction(k3, [C], nothing)], t)
-    @test isequal(alias_map(base), Dict(unwrap(A) => unwrap(B)))
+    @test isempty(alias_map(base))
+    @test issetequal(uneliminated_unknowns(base), [A, B, X])
+    @test isequal(alias_map(complete(base)), Dict(unwrap(A) => unwrap(B)))
 
     composed = compose(base, [sub]; aliases = [base.B ~ sub.C])
     sub_C = unwrap(sub.C)
-    @test isequal(alias_map(composed), Dict(unwrap(A) => sub_C, unwrap(B) => sub_C))
-    @test isequal(alias_map(base), Dict(unwrap(A) => unwrap(B)))
-    @test issetequal(uneliminated_unknowns(composed), [unwrap(X), sub_C])
+    @test isempty(alias_map(composed))
     @test issetequal(species(composed), [unwrap(A), unwrap(B), unwrap(X), sub_C])
     @test length(aliases(composed)) == 2
-    @test isempty(aliases(complete(composed)))
+    rs = complete(composed)
+    @test isequal(alias_map(rs), Dict(unwrap(A) => sub_C, unwrap(B) => sub_C))
+    @test issetequal(uneliminated_unknowns(rs), [unwrap(X), sub_C])
+    @test isempty(aliases(rs))
 end
 
-# A component whose aliases are resolved (by `flatten`) before it is composed keeps its eliminated
-# names, also when the parent aliases the symbol that replaced them.
+# `flatten` keeps aliases (namespaced); completing the flattened system resolves them as
+# completing the hierarchical one does.
 let
     @species A(t) B(t) C(t) X(t)
     @parameters k1 k2 p
     @named sub = ReactionSystem([Reaction(k1, [A], [C]), Reaction(k2, [B], [C])], t;
         aliases = [A ~ B, k1 ~ k2])
-    sub = Catalyst.flatten(sub)
-    @test Catalyst.has_resolved_aliases(sub) && !Catalyst.aliases_present(sub)
-
     @named parent = ReactionSystem([Reaction(p, nothing, [X])], t; systems = [sub])
-    @test Catalyst.has_resolved_aliases(parent)
+    flatparent = Catalyst.flatten(parent)
+    @test isempty(MT.get_systems(flatparent))
+    @test issetequal(Catalyst.get_aliases(flatparent), [sub.A ~ sub.B, sub.k1 ~ sub.k2])
+    @test isempty(alias_map(flatparent))
+
     rs = complete(parent)
     @test isequal(alias_map(rs), Dict(unwrap(rs.sub.A) => unwrap(rs.sub.B), unwrap(rs.sub.k1) => unwrap(rs.sub.k2)))
+    @test isequal(alias_map(complete(flatparent)), alias_map(rs))
     prob = ODEProblem(rs, [rs.sub.A => 2.0, rs.sub.C => 0.0, rs.X => 0.0], 1.0, [rs.sub.k1 => 1.0, rs.p => 1.0])
     @test prob[rs.sub.B] == 2.0
     @test prob.ps[rs.sub.k2] == 1.0
-    @test_throws ArgumentError ODEProblem(rs, [rs.sub.A => 2.0, rs.sub.B => 1.0, rs.sub.C => 0.0, rs.X => 0.0],
-        1.0, [rs.sub.k2 => 1.0, rs.p => 1.0])
-
-    @named parent2 = ReactionSystem([Reaction(p, nothing, [X])], t)
-    rs2 = complete(compose(parent2, [sub]; aliases = [sub.B ~ X]))
-    @test isequal(alias_map(rs2), Dict(unwrap(rs2.sub.A) => unwrap(rs2.X), unwrap(rs2.sub.B) => unwrap(rs2.X),
-        unwrap(rs2.sub.k1) => unwrap(rs2.sub.k2)))
-    @test issetequal(unknowns(rs2), [rs2.X, rs2.sub.C])
-    prob2 = ODEProblem(rs2, [rs2.sub.A => 2.0, rs2.sub.C => 0.0], 1.0, [rs2.sub.k1 => 1.0, rs2.p => 1.0])
-    @test prob2[rs2.X] == prob2[rs2.sub.A] == prob2[rs2.sub.B] == 2.0
 end
 
-# Extending a system whose aliases were resolved keeps its eliminated names (in either order).
+# A flattened system keeps its aliases when extended, and they are resolved when completing (in
+# either order).
 let
     @species C(t) D(t)
     @parameters p q r
@@ -445,6 +441,24 @@ let
     @test Catalyst.aliases_present(nc)
     @test_throws ArgumentError conservationlaws(nc)
     @test size(conservationlaws(complete(nc)), 1) == 1
+end
+
+# A system completed without flattening keeps its aliases; simulating it resolves them, also
+# accepting eliminated names.
+let
+    @species A(t) B(t) C(t)
+    @parameters k1 k2
+    @named sub = ReactionSystem([Reaction(k1, [A], [C])], t)
+    @named rs = ReactionSystem([Reaction(k2, [B], [C])], t; systems = [sub], aliases = [sub.A ~ B])
+    crs = complete(rs; flatten = false)
+    @test Catalyst.aliases_present(crs)
+    @test isempty(alias_map(crs))
+    u0 = [crs.sub.A => 2.0, crs.sub.C => 0.0, crs.C => 0.0]
+    ps = [crs.sub.k1 => 1.0, crs.k2 => 3.0]
+    prob = ODEProblem(crs, u0, 1.0, ps)
+    @test prob[crs.B] == 2.0
+    sol = solve(prob, Tsit5(); abstol = 1e-10, reltol = 1e-10)
+    @test sol[crs.B][end] ≈ 2.0 * exp(-4.0)
 end
 
 # Invalid aliases are reported when the system is completed.

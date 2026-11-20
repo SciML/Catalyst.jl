@@ -265,8 +265,8 @@ Catalyst.flatten
 
 ## [Aliases](@id api_aliases)
 [Aliases](@ref compositional_modeling_aliases) declare that two symbols of a network (two
-species, two non-species variables, or two parameters) are the same. They are resolved by
-[`Catalyst.flatten`](@ref), and hence when a network is completed. The following functions give
+species, two non-species variables, or two parameters) are the same. They are resolved when a
+network is completed (and kept by [`Catalyst.flatten`](@ref)). The following functions give
 a network's alias equations, and the symbols that are eliminated, or kept, when its aliases are
 resolved.
 ```@docs

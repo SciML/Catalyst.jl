@@ -174,8 +174,9 @@ function make_osys(rs::ReactionSystem; remove_conserved = true, mtkcompile::Bool
     if !ModelingToolkitBase.iscomplete(rs)
         error("Identifiability should only be computed for complete systems. A ReactionSystem can be marked as complete using the `complete` function.")
     end
+    rs = Catalyst.flatten_resolved(rs)
     submap = Catalyst.alias_map(rs)
-    rs = complete(Catalyst.expand_registered_functions(flatten(rs)))
+    rs = complete(Catalyst.expand_registered_functions(rs))
     osys = ode_model(rs; remove_conserved)
     if mtkcompile
         osys = ModelingToolkitBase.mtkcompile(osys)

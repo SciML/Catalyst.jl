@@ -331,8 +331,8 @@ Keyword Arguments:
   `@poissonians`). Auto-discovered from equations in the two-argument constructor.
 - `jumps`, vector of non-reaction jump processes.
 - `aliases = Equation[]`, alias equations `X ~ Y`, each declaring that `X` and `Y` are the same
-  symbol. `X` is eliminated in favor of `Y` when the system is flattened (and hence when it is
-  completed); see [`Catalyst.flatten`](@ref) and [`alias_map`](@ref).
+  symbol. `X` is eliminated in favor of `Y` when the system is completed; see
+  [`alias_map`](@ref).
 """
 struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
     """The equations (reactions and algebraic/differential) defining the system."""
@@ -1224,7 +1224,9 @@ function MT.complete(sys::ReactionSystem; flatten = true, kwargs...)
     # `GlobalScope`d unknowns will be picked up and added there
     @set! sys.ps = unique!(vcat(get_ps(sys), collect(newparams)))
     if flatten
-        newsys = Catalyst.flatten(sys)
+        # Completion is where aliases are resolved (`flatten` keeps them), so that they are
+        # resolved once the model is fully assembled (completed systems can't be composed).
+        newsys = eliminate_aliases(Catalyst.flatten(sys))
         if MT.has_parent(newsys) && MT.get_parent(sys) === nothing
             @set! newsys.parent = complete(sys; split = false, flatten = false)
         end
@@ -1624,7 +1626,7 @@ is_allowed_subsystem(sys::ReactionSystem) = true
 is_allowed_subsystem(sys::MT.AbstractSystem) = false
 
 """
-    ModelingToolkitBase.flatten(rs::ReactionSystem; name = nameof(rs), eliminate_aliases = true)
+    ModelingToolkitBase.flatten(rs::ReactionSystem)
 
 Merges all subsystems of the given [`ReactionSystem`](@ref) up into `rs`.
 
@@ -1637,17 +1639,11 @@ Notes:
 - `rs.networkproperties` is reset upon flattening.
 - The default value of `combinatoric_ratelaws` will be the logical or of all
   `ReactionSystem`s.
-- With `eliminate_aliases = true` (the default), the aliases of `rs` and its subsystems are
-  resolved: each eliminated symbol is replaced by the symbol it aliases throughout the system,
-  eliminated unknowns become observables, and eliminated parameters become parameters bound to
-  the parameters that replace them. Invalid aliases are reported here. As `complete` calls
-  `flatten`, this happens when a system is completed (e.g. by `@reaction_network`).
+- The aliases of `rs` and its subsystems are kept (namespaced). They are resolved when the
+  system is completed (see [`alias_map`](@ref)).
 """
-function MT.flatten(rs::ReactionSystem; name = nameof(rs), eliminate_aliases = true)
-    if isempty(get_systems(rs))
-        (eliminate_aliases && !isempty(get_aliases(rs))) || return rs
-        return Catalyst.eliminate_aliases(rs; name)
-    end
+function MT.flatten(rs::ReactionSystem; name = nameof(rs))
+    isempty(get_systems(rs)) && return rs
 
     # Only ReactionSystems are allowed as subsystems
     isnothing(get_systems(rs)) || all(is_allowed_subsystem, get_systems(rs)) ||
@@ -1656,7 +1652,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs), eliminate_aliases = t
     # Note: brownians are 5th positional arg; poissonians and jumps are kwargs.
     # MT.brownians(rs), MT.poissonians(rs), and MT.jumps(rs) are recursive accessors
     # that collect from all subsystems.
-    flatrs = ReactionSystem(
+    return ReactionSystem(
         equations(rs), get_iv(rs), unknowns(rs), parameters(rs), MT.brownians(rs);
         poissonians = MT.poissonians(rs),
         jumps = MT.jumps(rs),
@@ -1672,9 +1668,8 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs), eliminate_aliases = t
         continuous_events = MT.continuous_events(rs),
         discrete_events = MT.discrete_events(rs),
         tstops = MT.symbolic_tstops(rs),
-        metadata = flattened_alias_metadata(rs)
+        metadata = MT.get_metadata(rs)
     )
-    return eliminate_aliases ? Catalyst.eliminate_aliases(flatrs) : flatrs
 end
 
 function complete_check(sys, method)
@@ -1697,7 +1692,7 @@ Notes:
 - Brownians and jumps from subsystems are collected at flatten time via recursive accessors.
 - `aliases` are alias equations `X ~ Y` added to the new system, written with the symbols as seen
   from `sys` (e.g. `sys.A ~ subsys.B`). Each says that `X` and `Y` are the same symbol, and `X`
-  is eliminated in favor of `Y` when the composed system is flattened or completed.
+  is eliminated in favor of `Y` when the composed system is completed.
 """
 function MT.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(sys),
         aliases = Equation[])
@@ -1786,10 +1781,7 @@ function MT.extend(
     new_jumps = union(MT.get_jumps(rs), MT.get_jumps(sys))
     new_aliases = union(get_aliases(rs), get_aliases(sys))
 
-    # Bindings (including those of parameters eliminated by aliases already resolved in either
-    # system) and the maps of such aliases.
     bindings = merge(MT.get_bindings(rs), MT.get_bindings(sys)) # prefer `sys`
-    metadata = extended_alias_metadata(rs, sys)
 
     return ReactionSystem(
         eqs, t, sts, ps, collect(new_brownians);
@@ -1807,8 +1799,7 @@ function MT.extend(
         spatial_ivs = sivs,
         continuous_events,
         discrete_events,
-        tstops,
-        metadata
+        tstops
     )
 end
 

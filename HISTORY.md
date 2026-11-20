@@ -18,12 +18,11 @@
   ```
   An alias `X ~ Y` eliminates `X` in favor of `Y`. Species, non-species variables and
   parameters can be aliased (each only with symbols of its own kind), and aliases can form
-  chains. Aliases are resolved by `flatten` (through its new `eliminate_aliases = true`
-  keyword), and hence when a system is completed, which is also when invalid aliases are
-  reported. An eliminated unknown becomes an observable, and an eliminated parameter a
-  parameter bound to the one replacing it, so both can still be read from problems and
-  solutions, and given values when problems are created from a `ReactionSystem` (giving
-  conflicting values to two names of the same symbol is an error). `remake` needs the
+  chains. Aliases are resolved when a system is completed (`flatten`, `compose` and `extend`
+  keep them), which is also when invalid aliases are reported. An eliminated unknown becomes an
+  observable, and an eliminated parameter a parameter bound to the one replacing it, so both can
+  still be read from problems and solutions, and given values when problems are created from a
+  `ReactionSystem` (giving conflicting values to two names of the same symbol is an error). `remake` needs the
   remaining symbols, which the new `uneliminated_unknowns` and `uneliminated_parameters` list.
   The new `alias_map` gives the symbol each eliminated symbol was replaced by, and the new
   `aliases` (with the public `Catalyst.get_aliases` and `Catalyst.aliases_present`) the declared

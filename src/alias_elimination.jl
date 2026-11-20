@@ -1,10 +1,12 @@
 ### Alias Elimination ###
 
 # An alias `A ~ B` declares that `A` and `B` are the same entity: `A` is eliminated in favor of
-# `B`. `flatten` (and so `complete`, which calls it) resolves a system's aliases: it validates
-# them, substitutes the surviving symbol for each eliminated one throughout the system, keeps
-# eliminated unknowns as observables (`A ~ B`) and eliminated parameters as bindings (`k1 => k2`),
-# and stores the eliminated-to-surviving map in the resolved system's metadata.
+# `B`. `complete` resolves a system's aliases once the model is assembled (after flattening it;
+# `flatten` itself keeps them): it validates them, substitutes the surviving symbol for each
+# eliminated one throughout the system, keeps eliminated unknowns as observables (`A ~ B`) and
+# eliminated parameters as bindings (`k1 => k2`), and stores the eliminated-to-surviving map in the
+# resolved system's metadata. Completed systems can't be composed, so a system whose aliases were
+# resolved never takes part in further model assembly.
 
 ### Alias Classes ###
 
@@ -369,57 +371,15 @@ struct AliasSubstitutionMaps end
 # The maps `(; unknown_map, param_map)` stored on `rs` itself, or `nothing`.
 get_alias_maps(rs) = MT.getmetadata(rs, AliasSubstitutionMaps, nothing)
 
-# The maps stored on `rs` and (namespaced) on its subsystems, which may have had their aliases
-# resolved before being composed.
-function collect_alias_maps(rs::ReactionSystem)
-    unknown_map = Dict{SymbolicT, SymbolicT}()
-    param_map = Dict{SymbolicT, SymbolicT}()
-    maps = get_alias_maps(rs)
-    if maps !== nothing
-        merge!(unknown_map, maps.unknown_map)
-        merge!(param_map, maps.param_map)
-    end
-    for sys in get_systems(rs)
-        sys_maps = collect_alias_maps(sys)
-        ns(x) = unwrap(MT.renamespace(nameof(sys), x))
-        for (k, v) in sys_maps.unknown_map
-            unknown_map[ns(k)] = ns(v)
-        end
-        for (k, v) in sys_maps.param_map
-            param_map[ns(k)] = ns(v)
-        end
-    end
-    return (; unknown_map, param_map)
-end
-
-# Whether the aliases of the system or of one of its subsystems were already resolved
-# (eliminating at least one symbol).
+# Whether the system's aliases were resolved (eliminating at least one symbol).
 function has_resolved_aliases(rs::ReactionSystem)
-    maps = collect_alias_maps(rs)
-    return !(isempty(maps.unknown_map) && isempty(maps.param_map))
-end
-
-# The metadata for `extend(sys, rs)`: the merged maps of the two systems, if either has any (their
-# subsystems' maps are collected from the subsystems). `MetadataT` is not public in
-# ModelingToolkitBase.
-function extended_alias_metadata(rs::ReactionSystem, sys::ReactionSystem)
-    maps = filter(!isnothing, [get_alias_maps(rs), get_alias_maps(sys)])
-    isempty(maps) && return MT.MetadataT()
-    unknown_map = merge(Dict{SymbolicT, SymbolicT}(), (m.unknown_map for m in maps)...)
-    param_map = merge(Dict{SymbolicT, SymbolicT}(), (m.param_map for m in maps)...)
-    return Base.ImmutableDict(MT.MetadataT(), AliasSubstitutionMaps => (; unknown_map, param_map))
-end
-
-# The metadata of `rs` for its flattened system, which keeps the maps of `rs` and its subsystems.
-function flattened_alias_metadata(rs::ReactionSystem)
-    metadata = MT.get_metadata(rs)
-    has_resolved_aliases(rs) || return metadata
-    return Base.ImmutableDict(metadata, AliasSubstitutionMaps => collect_alias_maps(rs))
+    maps = get_alias_maps(rs)
+    return maps !== nothing && !(isempty(maps.unknown_map) && isempty(maps.param_map))
 end
 
 ### Main Resolution Function ###
 
-# Resolves the aliases of a flattened system (see the top of this file). Called by `flatten`.
+# Resolves the aliases of a flattened system (see the top of this file). Called by `complete`.
 function eliminate_aliases(rs::ReactionSystem; name = nameof(rs))
     isempty(get_systems(rs)) || error("Internal error: aliases can only be resolved on a flattened system.")
     alias_eqs = get_aliases(rs)
@@ -473,16 +433,9 @@ function eliminate_aliases(rs::ReactionSystem; name = nameof(rs))
     ps = resolve_symbol_defaults(
         [haskey(res.param_map, p) ? clear_default(p) : p for p in get_ps(rs)], submap)
 
-    # The maps also keep the symbols eliminated earlier (e.g. in a subsystem whose aliases were
-    # resolved before it was composed), with the symbols that replaced them resolved in turn.
     # `MetadataT` is not public in ModelingToolkitBase.
-    old_maps = something(get_alias_maps(rs), (; unknown_map = Dict{SymbolicT, SymbolicT}(),
-        param_map = Dict{SymbolicT, SymbolicT}()))
-    unknown_map = merge(Dict{SymbolicT, SymbolicT}(k => get(submap, v, v) for (k, v) in old_maps.unknown_map),
-        res.unknown_map)
-    param_map = merge(Dict{SymbolicT, SymbolicT}(k => get(submap, v, v) for (k, v) in old_maps.param_map),
-        res.param_map)
-    metadata = Base.ImmutableDict(MT.get_metadata(rs), AliasSubstitutionMaps => (; unknown_map, param_map))
+    metadata = Base.ImmutableDict(MT.get_metadata(rs),
+        AliasSubstitutionMaps => (; unknown_map = res.unknown_map, param_map = res.param_map))
 
     new_rs = ReactionSystem(
         CatalystEqType[rxs; noneqs], get_iv(rs), unknowns, ps, MT.get_brownians(rs);
@@ -496,43 +449,58 @@ end
 
 ### Querying Aliases ###
 
-# The system with its aliases resolved (itself if they already are).
-alias_resolved_system(rs::ReactionSystem) = aliases_present(rs) ? flatten(rs) : rs
-
 """
     alias_map(rs::ReactionSystem)
 
-Return a `Dict` mapping each symbol eliminated by an alias to the symbol it was replaced by (with
-alias chains followed to the end). Empty if `rs` has no aliases.
+Return a `Dict` mapping each symbol eliminated by an alias, when `rs` was completed, to the symbol
+it was replaced by (with alias chains followed to the end). Empty if no symbol was eliminated, e.g.
+if `rs` isn't complete (its aliases are then not resolved yet).
 
-`remake` does not translate eliminated symbols, so use the surviving symbols with it; see also
+`remake` does not translate eliminated symbols, so use the remaining symbols with it; see also
 [`uneliminated_unknowns`](@ref) and [`uneliminated_parameters`](@ref).
 """
 function alias_map(rs::ReactionSystem)
-    maps = collect_alias_maps(alias_resolved_system(rs))
+    maps = get_alias_maps(rs)
+    maps === nothing && return Dict{SymbolicT, SymbolicT}()
     return merge(maps.unknown_map, maps.param_map)
 end
 
 """
     uneliminated_unknowns(rs::ReactionSystem)
 
-Return the unknowns of `rs` that remain after its aliases are eliminated: the ones to give initial
-conditions for, and to use with `remake`.
+Return the unknowns of `rs` that remain after the elimination of its aliases (which happens when
+`rs` is completed): the ones to give initial conditions for, and to use with `remake`. Eliminated
+unknowns become observables, so these are `unknowns(rs)`. For a system that isn't complete, they
+include the unknowns that its aliases will eliminate.
 """
-uneliminated_unknowns(rs::ReactionSystem) = unknowns(alias_resolved_system(rs))
+uneliminated_unknowns(rs::ReactionSystem) = unknowns(rs)
 
 """
     uneliminated_parameters(rs::ReactionSystem)
 
-Return the parameters of `rs` that remain after its aliases are eliminated (eliminated parameters
-stay readable, bound to the parameter that replaced them, but can't be given values): the ones to
-give values for, and to use with `remake`.
+Return the parameters of `rs` that remain after the elimination of its aliases (which happens when
+`rs` is completed): the ones to give values for, and to use with `remake`. Eliminated parameters
+stay parameters of `rs`, bound to the parameters that replaced them (so they can be read, but not
+given values), and are left out. For a system that isn't complete, these are `parameters(rs)`.
 """
 function uneliminated_parameters(rs::ReactionSystem)
-    resolved = alias_resolved_system(rs)
-    param_map = collect_alias_maps(resolved).param_map
-    return filter(p -> !haskey(param_map, unwrap(p)), parameters(resolved))
+    maps = get_alias_maps(rs)
+    maps === nothing && return parameters(rs)
+    return filter(p -> !haskey(maps.param_map, unwrap(p)), parameters(rs))
 end
+
+### Resolution for Simulation ###
+
+# The flattened system with its aliases resolved. The conversion functions use it, as a system
+# completed with `flatten = false` may still have unresolved aliases.
+function flatten_resolved(rs::ReactionSystem)
+    flatrs = flatten(rs)
+    return aliases_present(flatrs) ? eliminate_aliases(flatrs) : flatrs
+end
+
+# The map of the symbols eliminated by the aliases of `rs`, resolving them first if needed (for a
+# system completed with `flatten = false`).
+resolved_alias_map(rs::ReactionSystem) = alias_map(aliases_present(rs) ? flatten_resolved(rs) : rs)
 
 ### Problem Inputs ###
 
@@ -543,7 +511,7 @@ function remap_alias_inputs(input, rs::ReactionSystem)
     (input isa Union{AbstractDict, Tuple, AbstractVector}) || return input
     isempty(input) && return input
     all(x -> x isa Pair, input) || return input
-    submap = alias_map(rs)
+    submap = resolved_alias_map(rs)
     isempty(submap) && return input
 
     # Each key as a symbolic variable (a `Symbol` that names none in `rs` is kept as is), so that

@@ -206,9 +206,9 @@ eliminates `X` in favor of `Y`. The aliases of a system and its subsystems are g
 ```@example ex_alias
 aliases(cell)
 ```
-They are *resolved* when the system is flattened by [`Catalyst.flatten`](@ref), and hence when it
-is completed (`complete` flattens a system). The eliminated symbol is then replaced by the one it
-aliases throughout the model:
+They are *resolved* when the system is completed, i.e. once the model is fully assembled
+(completed systems can't be composed further). The eliminated symbol is then replaced by the one
+it aliases throughout the model:
 ```@example ex_alias
 cell = complete(cell)
 reactions(cell)
@@ -318,13 +318,13 @@ the `ReactionSystem`, but only the remaining one for the systems made by the con
 (and the problems made from a `ReactionSystem`), as an eliminated parameter is not an independent
 parameter of the model.
 
-### Keeping aliases unresolved
-`complete(rs; flatten = false)` and `Catalyst.flatten(rs; eliminate_aliases = false)` keep the
-aliases of `rs` unresolved, as does `@network_component` (which does not complete the system).
-Basic queries, such as `species` and `parameters`, then list both names of each aliased symbol.
-Functions that need the aliases resolved, such as [`conservationlaws`](@ref), give an error asking
-to flatten the system first. Spatial models and the serialization of `ReactionSystem`s do not
-support aliases yet.
+### Systems with unresolved aliases
+Until a system is completed, its aliases are only declarations: `@network_component`,
+`compose`, `extend` and [`Catalyst.flatten`](@ref) keep them (`flatten` namespaces those of
+subsystems). Basic queries, such as `species` and `parameters`, then list both names of each
+aliased symbol, while [`alias_map`](@ref) is empty, as nothing has been eliminated yet. Functions that need the aliases
+resolved, such as [`conservationlaws`](@ref), give an error asking to complete the system first.
+Spatial models and the serialization of `ReactionSystem`s do not support aliases yet.
 
 ## Compartment-based models
 Finally, let's see how we can make a compartment-based model. Let's create a

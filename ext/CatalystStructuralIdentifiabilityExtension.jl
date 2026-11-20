@@ -3,7 +3,7 @@ module CatalystStructuralIdentifiabilityExtension
 # Fetch packages.
 using Catalyst: Catalyst, ReactionSystem, conservationlaw_constants, conservedequations,
     ode_model
-using ModelingToolkitBase: ModelingToolkitBase, System, complete, flatten, observed,
+using ModelingToolkitBase: ModelingToolkitBase, System, complete, observed,
     parameters, unknowns
 using SymbolicUtils: substitute
 using Symbolics: Equation, @variables
