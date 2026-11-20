@@ -101,6 +101,7 @@ of all options currently available.
 - `discretes`: Creates *discrete parameters*, i.e. time-dependent parameters.
 - [`combinatoric_ratelaws`](@ref faq_combinatoric_ratelaws): Takes a single option (`true` or `false`), which sets whether to use combinatorial rate laws.
 - `unit_checks`: Takes a single option (`true` or `false`) controlling whether unit validation runs during DSL construction (`false` by default).
+- [`aliases`](@ref compositional_modeling_aliases): Allows the declaration of aliases (`X ~ Y`), i.e. pairs of symbols that are the same. `X` is eliminated in favor of `Y` when the network is completed (as `@reaction_network` does when creating it).
 
 ## [ModelingToolkitBase and Catalyst accessor functions](@id api_accessor_functions)
 A [`ReactionSystem`](@ref) is an instance of a
@@ -260,6 +261,21 @@ Catalyst.set_parameter_map
 ModelingToolkitBase.extend
 ModelingToolkitBase.compose
 Catalyst.flatten
+```
+
+## [Aliases](@id api_aliases)
+[Aliases](@ref compositional_modeling_aliases) declare that two symbols of a network (two
+species, two non-species variables, or two parameters) are the same. They are resolved by
+[`Catalyst.flatten`](@ref), and hence when a network is completed. The following functions give
+a network's alias equations, and the symbols that are eliminated, or kept, when its aliases are
+resolved.
+```@docs
+aliases
+Catalyst.get_aliases
+Catalyst.aliases_present
+alias_map
+uneliminated_unknowns
+uneliminated_parameters
 ```
 
 ## [Network visualization](@id network_visualization)

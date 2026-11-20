@@ -181,6 +181,151 @@ signal Catalyst that these variables will come from parallel systems in the tree
 that have the same parent as the system being constructed (in this case the
 top-level `repressilator` system).
 
+## [Connecting components with aliases](@id compositional_modeling_aliases)
+The symbols of each subsystem are namespaced, so composed components share no species or
+parameters by default. Instead of building a component around the symbols of another (as with
+`ParentScope` above), components can be built on their own, and then connected by *aliases*:
+equations `X ~ Y` declaring that two symbols are the same. Here, a component that synthesizes a
+species `X` is connected to a component that takes up a species `Y` and converts it to `Z`, with
+`X` and `Y` being the same species:
+```@example ex_alias
+using Catalyst
+synthesis = @network_component synthesis begin
+    p, 0 --> X
+end
+uptake = @network_component uptake begin
+    k, Y --> Z
+    d, Z --> 0
+end
+@named cell = compose(synthesis, [uptake]; aliases = [uptake.Y ~ synthesis.X])
+```
+Aliases are written with the symbols as seen from the composed system, e.g. `synthesis.X` for
+the `X` of `synthesis` and `uptake.Y` for the `Y` of its subsystem `uptake`. An alias `X ~ Y`
+eliminates `X` in favor of `Y`. The aliases of a system and its subsystems are given by
+[`aliases`](@ref):
+```@example ex_alias
+aliases(cell)
+```
+They are *resolved* when the system is flattened by [`Catalyst.flatten`](@ref), and hence when it
+is completed (`complete` flattens a system). The eliminated symbol is then replaced by the one it
+aliases throughout the model:
+```@example ex_alias
+cell = complete(cell)
+reactions(cell)
+```
+The eliminated species, `uptake.Y`, is no longer one of the model's species, but remains as an
+observable equal to `X`, so it can be used to give initial conditions and to read solutions:
+```@example ex_alias
+using OrdinaryDiffEq
+u0 = [cell.uptake.Y => 0.0, cell.uptake.Z => 0.0]
+ps = [cell.p => 1.0, cell.uptake.k => 2.0, cell.uptake.d => 0.5]
+oprob = ODEProblem(cell, u0, 10.0, ps)
+sol = solve(oprob)
+sol[cell.uptake.Y] == sol[cell.X]
+```
+Giving different values to two names of the same symbol is an error. [`alias_map`](@ref) gives
+the symbol each eliminated symbol was replaced by:
+```@example ex_alias
+alias_map(cell)
+```
+
+Aliases can also be declared through the `@aliases` option of the DSL (in `@reaction_network` and
+`@network_component`):
+```@example ex_alias
+rn = @reaction_network begin
+    @aliases k2 ~ k1
+    k1, A --> B
+    k2, B --> C
+end
+reactions(rn)
+```
+An eliminated parameter is kept as a parameter of the model, bound to the parameter that
+replaced it, so it can be read (e.g. `oprob.ps[:k2]`), and its value can be given through either
+name when a problem is created. Several aliases can be given in a `begin ... end` block, as for
+other options. Aliases can also be given to the [`ReactionSystem`](@ref) constructor through its
+`aliases` keyword argument.
+
+### Which symbols can be aliased
+Only symbols of the same kind can be aliased: species with species, boundary condition species
+with boundary condition species, constant species with constant species, non-species variables
+with non-species variables, and parameters with parameters. Units must match. Compound species,
+observables, Brownian and Poissonian variables, and bound parameters can't be aliased. Aliases can
+form chains (`X ~ Y` and `Y ~ Z` eliminate both `X` and `Y` in favor of `Z`), but not cycles.
+
+Invalid aliases are reported when the aliases are resolved, i.e. when a network is completed (for
+example, when `@reaction_network` creates it), and not when they are declared:
+```@example ex_alias
+try
+    @reaction_network begin
+        @aliases X ~ p
+        p, 0 --> X
+    end
+catch e
+    println(sprint(showerror, e))
+end
+```
+
+### How reactions change
+Aliasing two species of a reaction merges them, which changes its rate law: with `A ~ B`, the
+reaction `2A + B --> C` becomes `3B --> C`,
+```@example ex_alias
+rn = @reaction_network begin
+    @aliases A ~ B
+    k, 2A + B --> C
+end
+reactions(rn)
+```
+whose (combinatoric) mass action rate law is that of three identical molecules, `k*B^3/6`, and
+not `k*B^3/2`, which replacing `A` by `B` in the rate law of `2A + B --> C`, `k*A^2*B/2`, would
+give:
+```@example ex_alias
+oderatelaw(reactions(rn)[1])
+```
+An alias that turns a reaction into one with no net change (such as `A --> B` with `A ~ B`) is an
+error, as it most likely indicates a mistake:
+```@example ex_alias
+try
+    @reaction_network begin
+        @aliases A ~ B
+        k1, A --> B
+        k2, B --> C
+    end
+catch e
+    println(sprint(showerror, e))
+end
+```
+Reactions are never removed by alias elimination, so they keep their indices (e.g. for the
+`physical_scales` argument of [`hybrid_model`](@ref)).
+
+### Updating problems with `remake`
+Problems created from a `ReactionSystem` accept the eliminated names in their initial conditions
+and parameter values. `remake` does not translate eliminated names, and may silently ignore
+them, so when updating a problem use the symbols that remain after elimination. These are given
+by [`uneliminated_unknowns`](@ref) and [`uneliminated_parameters`](@ref):
+```@example ex_alias
+uneliminated_unknowns(cell)
+```
+```@example ex_alias
+oprob = remake(oprob; u0 = [cell.X => 3.0])
+oprob[cell.X]
+```
+Likewise, use the remaining symbols when creating a problem from a system made by a conversion
+function (e.g. `ODEProblem(complete(ode_model(cell)), ...)`) rather than from the
+`ReactionSystem` itself.
+
+Similarly, `ModelingToolkitBase.tunable_parameters` lists both names of an aliased parameter for
+the `ReactionSystem`, but only the remaining one for the systems made by the conversion functions
+(and the problems made from a `ReactionSystem`), as an eliminated parameter is not an independent
+parameter of the model.
+
+### Keeping aliases unresolved
+`complete(rs; flatten = false)` and `Catalyst.flatten(rs; eliminate_aliases = false)` keep the
+aliases of `rs` unresolved, as does `@network_component` (which does not complete the system).
+Basic queries, such as `species` and `parameters`, then list both names of each aliased symbol.
+Functions that need the aliases resolved, such as [`conservationlaws`](@ref), give an error asking
+to flatten the system first. Spatial models and the serialization of `ReactionSystem`s do not
+support aliases yet.
+
 ## Compartment-based models
 Finally, let's see how we can make a compartment-based model. Let's create a
 simple eukaryotic gene expression model with negative feedback by protein

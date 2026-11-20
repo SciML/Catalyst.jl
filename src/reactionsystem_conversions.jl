@@ -988,7 +988,7 @@ function ss_ode_model(
     )
 
     # Comoutes the correct initial conditions and bindings.
-    initial_conditions, bindings = MT.convert_bindings_for_time_independent_system(rs)
+    initial_conditions, bindings = MT.convert_bindings_for_time_independent_system(fullrs)
     initial_conditions = merge(initial_conditions, ics)
 
     # Throws a warning if there are differential equations in non-standard format.
@@ -1121,6 +1121,7 @@ function sde_model(
             noise_eqs = noiseeqs,
             observed = obs,
             name,
+            bindings = MT.get_bindings(flatrs),
             initial_conditions = merge(initial_conditions, ics),
             checks,
             continuous_events = MT.get_continuous_events(flatrs),
@@ -1337,6 +1338,9 @@ function DiffEqBase.ODEProblem(
         osys = complete(osys)
     end
 
+    # Replace symbols eliminated by aliases with the symbols that replace them.
+    u0 = remap_alias_inputs(u0, rs)
+    p = remap_alias_inputs(p, rs)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any, Any}(u0), Dict{Any, Any}(p))
     return ODEProblem(osys, prob_cond, tspan, args...; check_length, kwargs...)
 end
@@ -1390,6 +1394,9 @@ function DiffEqBase.NonlinearProblem(
         remove_conserved, expand_catalyst_funs
     )
     nlsys = mtkcompile ? MT.mtkcompile(nlsys) : complete(nlsys)
+    # Replace symbols eliminated by aliases with the symbols that replace them.
+    u0 = remap_alias_inputs(u0, rs)
+    p = remap_alias_inputs(p, rs)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any, Any}(u0), Dict{Any, Any}(p))
     return NonlinearProblem(
         nlsys, prob_cond, args...; check_length,
@@ -1467,6 +1474,9 @@ function DiffEqBase.SDEProblem(
         has_user_brownians ||
         has_constraints
 
+    # Replace symbols eliminated by aliases with the symbols that replace them.
+    u0 = remap_alias_inputs(u0, rs)
+    p = remap_alias_inputs(p, rs)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any, Any}(u0), Dict{Any, Any}(p))
 
     if needs_mtkcompile
@@ -1569,6 +1579,9 @@ function JumpProcesses.JumpProblem(
         )
     )
     # Use Dict{Any,Any} to prevent type promotion during merge (MTK converts to this anyway).
+    # Replace symbols eliminated by aliases with the symbols that replace them.
+    u0 = remap_alias_inputs(u0, rs)
+    p = remap_alias_inputs(p, rs)
     op = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any, Any}(u0), Dict{Any, Any}(p))
 
     # Auto-detect integer u0 and set u0_eltype if not already provided.
@@ -1685,6 +1698,9 @@ function HybridProblem(
 
     # Build problem conditions (u0 + p merged).
     # Use Dict{Any,Any} to prevent type promotion during merge (MTK converts to this anyway).
+    # Replace symbols eliminated by aliases with the symbols that replace them.
+    u0 = remap_alias_inputs(u0, rs)
+    p = remap_alias_inputs(p, rs)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any, Any}(u0), Dict{Any, Any}(p))
 
     if has_jump
@@ -1779,6 +1795,9 @@ function DiffEqBase.SteadyStateProblem(
         osys = complete(osys)
     end
 
+    # Replace symbols eliminated by aliases with the symbols that replace them.
+    u0 = remap_alias_inputs(u0, rs)
+    p = remap_alias_inputs(p, rs)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any, Any}(u0), Dict{Any, Any}(p))
     return SteadyStateProblem(osys, prob_cond, args...; check_length, kwargs...)
 end

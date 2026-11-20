@@ -112,6 +112,9 @@ struct DiscreteSpaceReactionSystem{Q, R, S, T} <: MT.AbstractSystem
         if !iscomplete(rs)
             throw(ArgumentError("A non-complete `ReactionSystem` was used as input, this is not permitted."))
         end
+        if aliases_present(rs) || has_resolved_aliases(rs)
+            throw(ArgumentError("The `ReactionSystem` used as input has aliases, which are not yet supported for spatial (discrete space) systems."))
+        end
         if length(reactions(rs)) != length(equations(rs))
             throw(ArgumentError("The `ReactionSystem` used as input contain equations (in addition to reactions). This is not permitted."))
         end

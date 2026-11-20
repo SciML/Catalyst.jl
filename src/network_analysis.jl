@@ -981,6 +981,7 @@ Notes:
   be fast.
 """
 function conservationlaws(rs::ReactionSystem)
+    aliases_present(rs) && throw(ArgumentError("$(nameof(rs)) has aliases that are not resolved yet, so its conservation laws can't be computed. Call `flatten` (or `complete`) on it first."))
     nps = get_networkproperties(rs)
     !isempty(nps.conservationmat) && (return nps.conservationmat)
     nsm = netstoichmat(rs)

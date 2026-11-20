@@ -3,6 +3,7 @@
 # Creates a BifurcationProblem, using a ReactionSystem as an input.
 function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
         plot_var = nothing, record_from_solution = BK.record_sol_default, jac = true, u0 = [], kwargs...)
+    Catalyst.aliases_present(rs) && (rs = complete(rs))
     if !isautonomous(rs)
         error("Attempting to create a `BifurcationProblem` for a non-autonomous system (e.g. where some rate depend on $(get_iv(rs))). This is not possible.")
     end
@@ -18,6 +19,16 @@ function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
     end
     if (u0 isa Vector{<:Pair{Symbol, <:Any}}) || (u0 isa Dict{Symbol, <:Any})
         u0 = Catalyst.symmap_to_varmap(rs, u0)
+    end
+
+    # Symbols eliminated by aliases are replaced by the symbols that replace them.
+    submap = Catalyst.alias_map(rs)
+    if !isempty(submap)
+        bif_par = get(submap, Symbolics.unwrap(bif_par), bif_par)
+        isnothing(plot_var) || (plot_var = get(submap, Symbolics.unwrap(plot_var), plot_var))
+        u0_bif = Catalyst.remap_alias_inputs(u0_bif, rs)
+        ps = Catalyst.remap_alias_inputs(ps, rs)
+        u0 = Catalyst.remap_alias_inputs(u0, rs)
     end
 
     # Creates nonlinear System. If there are conservation laws, these are manually added as 
