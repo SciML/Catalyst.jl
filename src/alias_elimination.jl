@@ -343,6 +343,9 @@ function resolve_symbol_defaults(syms, submap)
     end
 end
 
+# Removes the default value stored in a symbol's metadata.
+clear_default(sym) = MT.hasdefault(sym) ? setmetadata(sym, Symbolics.VariableDefaultValue, nothing) : sym
+
 # Moves initial conditions from eliminated symbols to surviving ones. Values are resolved before
 # comparing, so `X => k1` and `Y => k2` agree for `X ~ Y` and `k1 ~ k2`.
 function resolve_initial_conditions(ics, submap)
@@ -394,6 +397,17 @@ end
 function has_resolved_aliases(rs::ReactionSystem)
     maps = collect_alias_maps(rs)
     return !(isempty(maps.unknown_map) && isempty(maps.param_map))
+end
+
+# The metadata for `extend(sys, rs)`: the merged maps of the two systems, if either has any (their
+# subsystems' maps are collected from the subsystems). `MetadataT` is not public in
+# ModelingToolkitBase.
+function extended_alias_metadata(rs::ReactionSystem, sys::ReactionSystem)
+    maps = filter(!isnothing, [get_alias_maps(rs), get_alias_maps(sys)])
+    isempty(maps) && return MT.MetadataT()
+    unknown_map = merge(Dict{SymbolicT, SymbolicT}(), (m.unknown_map for m in maps)...)
+    param_map = merge(Dict{SymbolicT, SymbolicT}(), (m.param_map for m in maps)...)
+    return Base.ImmutableDict(MT.MetadataT(), AliasSubstitutionMaps => (; unknown_map, param_map))
 end
 
 # The metadata of `rs` for its flattened system, which keeps the maps of `rs` and its subsystems.
@@ -450,10 +464,14 @@ function eliminate_aliases(rs::ReactionSystem; name = nameof(rs))
     tstops = Any[subs_alias(ts, submap) for ts in MT.get_tstops(rs)]
     ics = resolve_initial_conditions(MT.get_initial_conditions(rs), submap)
 
-    # Unknowns lose the eliminated ones; eliminated parameters stay (as bound parameters).
+    # Unknowns lose the eliminated ones; eliminated parameters stay (as bound parameters). The
+    # default values of eliminated parameters, moved to the parameters replacing them with the
+    # initial conditions above, are removed from their metadata (which the `ReactionSystem`
+    # constructor reads again), as bound parameters can't have initial conditions.
     unknowns = resolve_symbol_defaults(
         filter(u -> !haskey(res.unknown_map, u), get_unknowns(rs)), submap)
-    ps = resolve_symbol_defaults(collect(get_ps(rs)), submap)
+    ps = resolve_symbol_defaults(
+        [haskey(res.param_map, p) ? clear_default(p) : p for p in get_ps(rs)], submap)
 
     # The maps also keep the symbols eliminated earlier (e.g. in a subsystem whose aliases were
     # resolved before it was composed), with the symbols that replaced them resolved in turn.

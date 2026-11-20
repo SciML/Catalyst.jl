@@ -166,6 +166,36 @@ let
     @test prob2[rs2.X] == prob2[rs2.sub.A] == prob2[rs2.sub.B] == 2.0
 end
 
+# Extending a system whose aliases were resolved keeps its eliminated names (in either order).
+let
+    @species C(t) D(t)
+    @parameters p q r
+    @named base = ReactionSystem([Reaction(p, [C], nothing), Reaction(q, [D], nothing)], t;
+        aliases = [C ~ D, p ~ q])
+    @named extra = ReactionSystem([Reaction(r, nothing, [D])], t)
+    flatbase = Catalyst.flatten(base)
+    for rs in (complete(extend(flatbase, extra)), complete(extend(extra, flatbase)))
+        @test isequal(alias_map(rs), Dict(unwrap(C) => unwrap(D), unwrap(p) => unwrap(q)))
+        prob = ODEProblem(rs, [C => 1.0], 1.0, [p => 1.0, r => 1.0])
+        @test prob[D] == 1.0
+        @test prob.ps[q] == prob.ps[p] == 1.0
+    end
+end
+
+# Aliases given to `compose` may name the symbols of the composing system's existing subsystems
+# through its name.
+let
+    @species E(t) F(t) G(t)
+    @parameters p q r
+    @named a = ReactionSystem([Reaction(p, [E], nothing)], t)
+    @named b = ReactionSystem([Reaction(q, [F], nothing)], t)
+    @named root = ReactionSystem([Reaction(r, nothing, [G])], t; systems = [a])
+    for alias in (root.a.E ~ b.F, a.E ~ b.F)
+        rs = complete(compose(root, [b]; aliases = [alias]))
+        @test isequal(alias_map(rs), Dict(unwrap(rs.a.E) => unwrap(rs.b.F)))
+    end
+end
+
 
 ### Kinds of Aliased Symbols ###
 
@@ -314,6 +344,19 @@ let
     @test isequal(MT.initial_conditions(rs)[unwrap(Y)], unwrap(k2))
     @test_throws ArgumentError complete(ReactionSystem([Reaction(d, [Y], nothing)], t, [X, Y], [d];
         aliases = [X ~ Y], initial_conditions = Dict(X => 1.0, Y => 2.0), name = :rs))
+end
+
+# A default value of an eliminated parameter moves to the parameter replacing it (the eliminated
+# parameter, now bound, keeps none); different defaults for the two are an error.
+let
+    @species X(t)
+    @parameters k1 = 0.5 k2 k3 = 0.7
+    rxs = [Reaction(k1, [X], nothing), Reaction(k2, nothing, [X])]
+    rs = complete(ReactionSystem(rxs, t; aliases = [k1 ~ k2], name = :rs))
+    prob = ODEProblem(rs, [X => 1.0], 1.0)
+    @test prob.ps[k1] == prob.ps[k2] == 0.5
+    @test remake(prob; p = [k2 => 2.0]).ps[k1] == 2.0
+    @test_throws ArgumentError complete(ReactionSystem(rxs, t; aliases = [k1 ~ k3], name = :rs))
 end
 
 

@@ -32,8 +32,9 @@
   change is an error. The HomotopyContinuation, BifurcationKit and StructuralIdentifiability
   extensions, and `steady_state_stability`, support aliases, while spatial models and
   `save_reactionsystem` give an error for systems with aliases.
-- `flatten` now keeps the bindings of subsystems, and `sde_model` keeps those of networks
-  without constraint equations or Brownian variables (both used to drop them).
+- `flatten` now keeps the bindings of subsystems, `extend` those of both systems, and
+  `sde_model` those of networks without constraint equations or Brownian variables (all used to
+  drop them).
 - `latexify(rs; form = :sde)` now displays the chemical Langevin equation, with a noise term
   `νᵢⱼ √aⱼ d𝒲ⱼ` from each reaction `j` in the equation of each species `i` it changes (`𝒲ⱼ`,
   written `\mathcal{W}_j`, independent Brownian motions, one per reaction). It used to

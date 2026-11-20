@@ -1709,11 +1709,12 @@ function MT.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(s
         s isa ReactionSystem || error("ReactionSystems can only be composed with other ReactionSystems. Got $(typeof(s)).")
     end
 
-    # Aliases are given as seen from the composed system: its own symbols may be referred to
-    # through its name (`sys.A`), which is removed here, as flattening keeps them unnamespaced.
+    # Aliases are given as seen from the composed system: its own symbols, and those of its
+    # existing subsystems, may be referred to through its name (`sys.A`, `sys.sub.B`), which is
+    # removed here, as flattening keeps them without it (`A`, `sub₊B`).
     if !isempty(aliases)
         own_ns = Dict{SymbolicT, SymbolicT}(
-            unwrap(MT.renamespace(nameof(sys), x)) => x for x in [get_unknowns(sys); get_ps(sys)])
+            unwrap(MT.renamespace(nameof(sys), x)) => x for x in [unknowns(sys); parameters(sys)])
         strip_own_ns(x) = get(own_ns, unwrap(x), unwrap(x))
         @set! sys.aliases = [get_aliases(sys); [strip_own_ns(eq.lhs) ~ strip_own_ns(eq.rhs) for eq in aliases]]
     end
@@ -1785,6 +1786,11 @@ function MT.extend(
     new_jumps = union(MT.get_jumps(rs), MT.get_jumps(sys))
     new_aliases = union(get_aliases(rs), get_aliases(sys))
 
+    # Bindings (including those of parameters eliminated by aliases already resolved in either
+    # system) and the maps of such aliases.
+    bindings = merge(MT.get_bindings(rs), MT.get_bindings(sys)) # prefer `sys`
+    metadata = extended_alias_metadata(rs, sys)
+
     return ReactionSystem(
         eqs, t, sts, ps, collect(new_brownians);
         poissonians = collect(new_poissonians),
@@ -1793,6 +1799,7 @@ function MT.extend(
         aliases = collect(new_aliases),
         systems = syss,
         name,
+        bindings,
         initial_conditions = defs,
         checks = false,
         combinatoric_ratelaws,
@@ -1800,7 +1807,8 @@ function MT.extend(
         spatial_ivs = sivs,
         continuous_events,
         discrete_events,
-        tstops
+        tstops,
+        metadata
     )
 end
 
