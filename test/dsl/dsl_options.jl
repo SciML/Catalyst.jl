@@ -1830,6 +1830,117 @@ let
     @test isequal(Catalyst.expand_registered_functions(equations(rn4)[1]), D(A) ~ v*(A^n))
 end
 
+# Test that user-defined functions are escaped in event conditions and affects (issue #1587).
+let
+    ev_halve(n) = n / 2
+    @register_symbolic ev_halve(n)
+    ev_thresh(t) = 10.0 + t
+    @register_symbolic ev_thresh(t)
+    ev_double(n) = 2 * n # Unregistered, so it is traced through.
+
+    @species X(t)
+    @parameters k
+    rxs = [Reaction(k, nothing, [X])]
+
+    # Continuous events: user functions in the affect and in the condition.
+    rn_c = @reaction_network rn_ev begin
+        @continuous_events begin
+            [X ~ 10.0] => [X => ev_halve(X)]
+            [X ~ ev_thresh(t)] => [X => ev_double(X)]
+        end
+        k, 0 --> X
+    end
+    cevents = [
+        [X ~ 10.0] => [X ~ Pre(ev_halve(X))],
+        [X ~ ev_thresh(t)] => [X ~ Pre(ev_double(X))],
+    ]
+    @named rn_ev = ReactionSystem(rxs, t; continuous_events = cevents)
+    @test Catalyst.isequivalent(rn_c, complete(rn_ev))
+
+    # Discrete events: user functions in the affect and in the condition.
+    rn_d = @reaction_network rn_ev begin
+        @discrete_events begin
+            (X > 10.0) => [X => ev_halve(X)]
+            (X > ev_thresh(t)) => [X => ev_double(X)]
+        end
+        k, 0 --> X
+    end
+    devents = [
+        (X > 10.0) => [X ~ Pre(ev_halve(X))],
+        (X > ev_thresh(t)) => [X ~ Pre(ev_double(X))],
+    ]
+    @named rn_ev = ReactionSystem(rxs, t; discrete_events = devents)
+    @test Catalyst.isequivalent(rn_d, complete(rn_ev))
+
+    # Explicit `Pre` alongside a user function is still handled.
+    rn_p = @reaction_network rn_ev begin
+        @continuous_events [X ~ 10.0] => [X => ev_halve(Pre(X))]
+        k, 0 --> X
+    end
+    cevents = [[X ~ 10.0] => [X ~ ev_halve(Pre(X))]]
+    @named rn_ev = ReactionSystem(rxs, t; continuous_events = cevents)
+    @test Catalyst.isequivalent(rn_p, complete(rn_ev))
+end
+
+# Simulates models whose events use user-defined functions, checking against a known
+# analytic solution and against the same model with the functions written inline (issue #1587).
+let
+    ev_scale(x, s) = s * x
+    @register_symbolic ev_scale(x, s)
+    ev_bound(t) = 4.0 + 0.5 * t
+    @register_symbolic ev_bound(t)
+    ev_bump(x) = x + 0.5 # Unregistered, so it is traced through.
+
+    # Sawtooth: X is produced at rate 1 from X(0) = 0, and is halved each time it reaches 4.
+    # Events trigger at t = 4, 6, 8, ..., so X(3) = X(5) = X(9) = 3.
+    rn_saw = @reaction_network begin
+        @continuous_events [X ~ 4.0] => [X => ev_scale(X, 0.5)]
+        k, 0 --> X
+    end
+    oprob_saw = ODEProblem(rn_saw, [:X => 0.0], (0.0, 9.0), [:k => 1.0])
+    sol_saw = solve(oprob_saw, Tsit5(); abstol = 1e-10, reltol = 1e-10)
+    @test sol_saw(3.0; idxs = rn_saw.X) ≈ 3.0 atol = 1e-6
+    @test sol_saw(5.0; idxs = rn_saw.X) ≈ 3.0 atol = 1e-6
+    @test sol_saw(9.0; idxs = rn_saw.X) ≈ 3.0 atol = 1e-6
+
+    # Model with user-defined functions in continuous/discrete conditions and affects
+    # (including an affect updating a parameter), compared to the same model written inline.
+    rn_fun = @reaction_network rn begin
+        @continuous_events begin
+            [X ~ ev_bound(t)] => [X => ev_scale(X, 0.5)]
+        end
+        @discrete_events begin
+            [2.0, 6.0] => [p => ev_scale(p, 2.0)]
+            (Y > ev_bound(t)) => [Y => ev_bump(Y) - 1.0]
+        end
+        (p, d), 0 <--> X
+        (p, d), 0 <--> Y
+    end
+    rn_inl = @reaction_network rn begin
+        @continuous_events begin
+            [X ~ 4.0 + 0.5 * t] => [X => 0.5 * X]
+        end
+        @discrete_events begin
+            [2.0, 6.0] => [p => 2.0 * p]
+            (Y > 4.0 + 0.5 * t) => [Y => (Y + 0.5) - 1.0]
+        end
+        (p, d), 0 <--> X
+        (p, d), 0 <--> Y
+    end
+    u0 = [:X => 1.0, :Y => 5.0]
+    ps = [:p => 1.0, :d => 0.1]
+    tspan = (0.0, 20.0)
+    sol_fun = solve(ODEProblem(rn_fun, u0, tspan, ps), Tsit5(); abstol = 1e-10, reltol = 1e-10)
+    sol_inl = solve(ODEProblem(rn_inl, u0, tspan, ps), Tsit5(); abstol = 1e-10, reltol = 1e-10)
+    @test SciMLBase.successful_retcode(sol_fun)
+    @test sol_fun.t ≈ sol_inl.t
+    @test sol_fun.u ≈ sol_inl.u
+
+    # Checks that the events actually triggered (so the comparison is meaningful).
+    @test minimum(diff(sol_fun[rn_fun.X])) < 0
+    @test minimum(diff(sol_fun[rn_fun.Y])) < 0
+end
+
 # Erroneous `@default_noise_scaling` declaration (other noise scaling tests are mostly in the SDE file).
 let
     # Default noise scaling with multiple entries.
