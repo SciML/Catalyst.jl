@@ -418,6 +418,13 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
         )
 
         # Structural checks (fast, always on by default).
+        # Completed systems don't namespace their symbols, so they can't be subsystems (as for
+        # `compose`, `extend` and ModelingToolkitBase's `System`).
+        if checks
+            for sys in systems
+                MT.iscomplete(sys) && throw(ArgumentError("Subsystem $(nameof(sys)) is complete, so it can't be used as a subsystem (a completed system doesn't namespace its symbols). Use the system from before `complete` is called on it, e.g. one created with `@network_component` rather than `@reaction_network`."))
+            end
+        end
         if checks && isempty(sivs)
             check_variables(unknowns, iv)
             check_parameters(ps, iv)

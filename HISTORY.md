@@ -2,6 +2,11 @@
 
 ## Unreleased (on master)
 
+- The `ReactionSystem` constructor now errors when a completed system (e.g. one created by
+  `@reaction_network`) is given as a subsystem through `systems`, as `compose` and `extend`
+  already did. A completed system doesn't namespace its symbols, so such models were silently
+  broken (e.g. `rs.sub.p` gave the subsystem's un-namespaced `p`). Use the system from before
+  `complete` is called on it instead, e.g. one created with `@network_component`.
 - `latexify(rs; form = :sde)` now displays the chemical Langevin equation, with a noise term
   `νᵢⱼ √aⱼ d𝒲ⱼ` from each reaction `j` in the equation of each species `i` it changes (`𝒲ⱼ`,
   written `\mathcal{W}_j`, independent Brownian motions, one per reaction). It used to
