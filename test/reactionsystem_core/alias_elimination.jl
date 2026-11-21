@@ -331,7 +331,32 @@ let
     @test isequal(MT.getpoissonianrate(only(MT.get_poissonians(rn))), unwrap(1 + rn.Y))
 end
 
-# Initial conditions: values are resolved before being compared.
+# An event or jump affect that the aliases make assign the same symbol twice is an error.
+let
+    @species X(t) Y(t)
+    @parameters k
+    rx = Reaction(k, [X], nothing)
+    ev = MT.SymbolicDiscreteCallback([1.0] => [X ~ 2.0, Y ~ 3.0])
+    @test_throws "assign Y(t) twice" complete(ReactionSystem([rx], t, [X, Y], [k];
+        aliases = [X ~ Y], discrete_events = [ev], name = :rs))
+    jump = ConstantRateJump(k, [X ~ Pre(X) + 1, Y ~ Pre(Y) - 1])
+    @test_throws "assign Y(t) twice" complete(ReactionSystem([rx], t, [X, Y], [k];
+        aliases = [X ~ Y], jumps = [jump], name = :rs))
+end
+
+# A compound species' component can't be eliminated.
+let
+    @test_throws ArgumentError @reaction_network begin
+        @species X(t) Y(t)
+        @compounds begin
+            XY ~ X + Y
+        end
+        @aliases X ~ Y
+        k, X + Y --> XY
+    end
+end
+
+# Initial conditions: values are resolved before being compared, also inside keys (`D(V)`).
 let
     @species X(t) Y(t)
     @parameters k1 k2 d
@@ -340,6 +365,14 @@ let
     @test isequal(MT.initial_conditions(rs)[unwrap(Y)], unwrap(k2))
     @test_throws ArgumentError complete(ReactionSystem([Reaction(d, [Y], nothing)], t, [X, Y], [d];
         aliases = [X ~ Y], initial_conditions = Dict(X => 1.0, Y => 2.0), name = :rs))
+
+    @variables V(t) W(t)
+    @test_throws ArgumentError complete(ReactionSystem([D(D(V)) ~ -V], t; aliases = [V ~ W],
+        initial_conditions = Dict(D(V) => 10.0, D(W) => 2.0), name = :rs))
+    rs2 = complete(ReactionSystem([D(D(V)) ~ -V], t; aliases = [V ~ W],
+        initial_conditions = Dict(D(V) => 10.0), name = :rs))
+    @test haskey(MT.initial_conditions(rs2), unwrap(D(W)))
+    @test !haskey(MT.initial_conditions(rs2), unwrap(D(V)))
 end
 
 # A default value of an eliminated parameter moves to the parameter replacing it (the eliminated
@@ -379,8 +412,9 @@ let
             Dict(:A => 3.0, :B => 2.0, :C => 1.0))
         @test_throws ArgumentError ODEProblem(rn, u0, tspan, ps)
     end
-    @test ODEProblem(rn, [rn.A => 3.0, rn.B => 3.0, rn.C => 1.0], tspan, ps)[rn.B] == 3.0
-    @test ODEProblem(rn, [:A => 3.0, :B => 3.0, :C => 1.0], tspan, ps)[rn.B] == 3.0
+    @test_throws ArgumentError ODEProblem(rn, [rn.A => 3.0, rn.B => 3.0, rn.C => 1.0], tspan, ps)
+    @test_throws ArgumentError ODEProblem(rn, [:A => 3.0, :B => 3.0, :C => 1.0], tspan, ps)
+    @test_throws ArgumentError ODEProblem(rn, [:A => 3.0, :C => 1.0, :k1 => 1.0], tspan, ps)
 
     # Tuples keep their value types (integers for the species here).
     jprob = JumpProblem(rn, (rn.A => 3, rn.C => 1), tspan, (rn.k1 => 1.0, rn.k2 => 2.0))
@@ -415,6 +449,24 @@ let
     @test sol.ps[rn.d2] == [1.0, 3.0]
     @test sol.ps[rn.d1] == 3.0
 
+    # A parameter may be replaced by a time-dependent one, but not the reverse.
+    rn2 = @reaction_network begin
+        @discretes d(t)
+        @parameters k
+        @aliases k ~ d
+        @discrete_events [1.0] => [d => 3.0]
+        k, X --> 0
+    end
+    sol2 = solve(ODEProblem(rn2, [:X => 1.0], (0.0, 2.0), [:d => 1.0]), Tsit5(); abstol = 1e-10, reltol = 1e-10)
+    @test sol2[rn2.X][end] ≈ exp(-4.0)
+    @test_throws "time-dependent" @reaction_network begin
+        @discretes d(t)
+        @parameters k
+        @aliases d ~ k
+        @discrete_events [1.0] => [d => 3.0]
+        d, X --> 0
+    end
+
     @species X(t)
     @parameters a b c
     @named sub = ReactionSystem([Reaction(a, [X], nothing), Reaction(b + c, nothing, [X])], t, [X], [a, b, c];
@@ -425,6 +477,19 @@ let
     for sys in (ode_model(rs), sde_model(rs), jump_model(rs), ss_ode_model(rs))
         @test length(MT.bindings(sys)) == 2
     end
+end
+
+
+# Only parameters eliminated by aliases are left out of `uneliminated_parameters`; a parameter
+# and its alias can't be given values in `u0` and `p` both.
+let
+    @species X(t)
+    @parameters k q r
+    rs = complete(ReactionSystem([Reaction(k, [X], nothing), Reaction(r, nothing, [X])], t,
+        [X], [k, q, r]; aliases = [k ~ q], bindings = [r => 2q], name = :rs))
+    @test issetequal(uneliminated_parameters(rs), [q, r])
+    @test ODEProblem(rs, [X => 1.0], 1.0, [q => 2.0]).ps[r] == 4.0
+    @test_throws ArgumentError ODEProblem(rs, [X => 1.0, k => 2.0], 1.0, [q => 7.0])
 end
 
 
@@ -464,6 +529,9 @@ let
     parent = MT.get_parent(crs)
     @test Catalyst.aliases_present(parent)
     @test issetequal(MT.getname.(species(parent)), [:B, :C, :sub₊A, :sub₊C])
+    @test_throws "not resolved" ode_model(parent)
+    @test_throws "not resolved" ODEProblem(parent, [:B => 1.0, :C => 0.0, :sub₊C => 0.0], 1.0,
+        [:k1 => 1.0, :k2 => 1.0])
 end
 
 # An incomplete system can't be converted or simulated, with or without (valid) aliases: the
@@ -484,7 +552,7 @@ let
         (p, d), 0 <--> B
     end
     @test_throws "must be complete" ode_model(nc2)
-    @test_throws Exception steady_state_stability([1.0], nc2, [:p => 1.0, :d => 1.0])
+    @test_throws "complete" steady_state_stability([1.0, 1.0], nc2, [:p => 1.0, :d => 1.0])
 end
 
 # Invalid aliases are reported when the system is completed.

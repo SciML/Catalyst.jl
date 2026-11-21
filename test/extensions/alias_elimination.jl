@@ -69,6 +69,12 @@ let
     @test isequal(collect(keys(out_local)), [rn.k5, rn.k1, rn.k3])
     @test collect(values(out_local)) == collect(values(out_local_merged))
 
+    # Both names of an aliased parameter get their result.
+    out_both = assess_local_identifiability(rn; measured_quantities = [:X], known_p = [:k5],
+        funcs_to_check = [rn.k5, rn.k4, rn.k1], loglevel)
+    @test isequal(collect(keys(out_both)), [rn.k5, rn.k4, rn.k1])
+    @test collect(values(out_both)) == collect(values(out_local))[[1, 1, 2]]
+
     # The identifiable functions are given in the surviving symbols, which are named as in the
     # hand-merged network.
     funcs = find_identifiable_functions(rn; measured_quantities = [:X], known_p = [:k5], loglevel)

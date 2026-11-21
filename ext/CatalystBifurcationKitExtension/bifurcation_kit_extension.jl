@@ -25,9 +25,8 @@ function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
     if !isempty(submap)
         bif_par = get(submap, Symbolics.unwrap(bif_par), bif_par)
         isnothing(plot_var) || (plot_var = get(submap, Symbolics.unwrap(plot_var), plot_var))
-        u0_bif = Catalyst.remap_alias_inputs(u0_bif, rs)
-        ps = Catalyst.remap_alias_inputs(ps, rs)
-        u0 = Catalyst.remap_alias_inputs(u0, rs)
+        u0_bif, ps = Catalyst.remap_problem_inputs(rs, u0_bif, ps)
+        u0 = only(Catalyst.remap_problem_inputs(rs, u0))
     end
 
     # Creates nonlinear System. If there are conservation laws, these are manually added as 

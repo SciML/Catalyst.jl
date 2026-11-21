@@ -23,8 +23,8 @@
   system with aliases, so every completed system has its aliases resolved). An eliminated
   unknown becomes an observable, and an eliminated parameter a parameter bound to the one
   replacing it, so both can still be read from problems and solutions, and given values when
-  problems are created from a `ReactionSystem` (giving conflicting values to two names of the
-  same symbol is an error). `remake` needs the remaining symbols: the unknowns, and the
+  problems are created from a `ReactionSystem` (giving values to both names of the same symbol
+  is an error). `remake` needs the remaining symbols: the unknowns, and the
   parameters listed by the new `uneliminated_parameters`. The new `alias_map` gives the symbol
   each eliminated symbol was replaced by, and the new `aliases` (with the public
   `Catalyst.get_aliases` and `Catalyst.aliases_present`) the declared aliases. Merged species
@@ -33,6 +33,10 @@
   HomotopyContinuation, BifurcationKit and StructuralIdentifiability extensions, and
   `steady_state_stability`, support aliases, while spatial models and `save_reactionsystem` give
   an error for systems with aliases.
+- Problem constructors (`ODEProblem`, `SDEProblem`, `JumpProblem`, `HybridProblem`,
+  `NonlinearProblem` and `SteadyStateProblem`) called with a `ReactionSystem` now error when a
+  symbol is given more than one value, e.g. both in `u0` and in `p`, or both as a `Symbol` and
+  as a symbolic variable. Previously one of the values was silently used.
 - `flatten` now keeps the bindings of subsystems, `extend` those of both systems, and
   `sde_model` those of networks without constraint equations or Brownian variables (all used to
   drop them).

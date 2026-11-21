@@ -261,13 +261,12 @@ end
 # Processes the outputs to a better form.
 # SI keys its output by the functions it was given (`si_funcs_to_check`). These are mapped back
 # to the user-requested functions (`funcs_to_check`), so that e.g. Γ or eliminated variables
-# are not displayed, and sorted according to their input order.
+# are not displayed, and sorted according to their input order. Each requested function gets its
+# result, also when several give the same function to SI (e.g. both names of an aliased symbol).
 function make_output(out, funcs_to_check, si_funcs_to_check, consconsts)
     si_keys = vector_subs(si_funcs_to_check, consconsts)
-    out_keys = vector_subs(keys(out), consconsts)
-    key_to_idx = Dict(k => i for (i, k) in enumerate(si_keys))
-    return OrderedDict(funcs_to_check[key_to_idx[k]] => v
-    for (k, v) in zip(out_keys, values(out)))
+    results = Dict(zip(vector_subs(keys(out), consconsts), values(out)))
+    return OrderedDict(f => results[k] for (f, k) in zip(funcs_to_check, si_keys))
 end
 
 # For a vector of expressions and a conservation law, substitutes the law into every equation.

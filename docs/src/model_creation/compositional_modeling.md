@@ -223,7 +223,7 @@ oprob = ODEProblem(cell, u0, 10.0, ps)
 sol = solve(oprob)
 sol[cell.uptake.Y] == sol[cell.X]
 ```
-Giving different values to two names of the same symbol is an error. [`alias_map`](@ref) gives
+Giving values to both names of the same symbol is an error. [`alias_map`](@ref) gives
 the symbol each eliminated symbol was replaced by:
 ```@example ex_alias
 alias_map(cell)

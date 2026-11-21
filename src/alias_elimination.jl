@@ -99,8 +99,8 @@ end
 
 ### Validation ###
 
-# Checks that the two sides of an alias have matching units and, for parameters, matching
-# time dependence and type.
+# Checks that the two sides of an alias have matching units and, for parameters, matching type,
+# and that a time-dependent parameter isn't replaced by one that isn't.
 function check_alias_metadata(lhs, rhs, class)
     lhs_unit = catalyst_get_unit(lhs)
     rhs_unit = catalyst_get_unit(rhs)
@@ -108,9 +108,11 @@ function check_alias_metadata(lhs, rhs, class)
         throw(ArgumentError("Unit mismatch in alias $lhs ~ $rhs: $lhs has unit $lhs_unit, but $rhs has unit $rhs_unit."))
     class in PARAMETER_ALIAS_CLASSES || return nothing
 
-    # `iscalledparameter` is not public in ModelingToolkitBase.
-    if MT.iscalledparameter(lhs) != MT.iscalledparameter(rhs)
-        throw(ArgumentError("Cannot alias $lhs ~ $rhs: one is a time-dependent (discrete) parameter and the other is not."))
+    # A time-dependent (discrete) parameter is a call, such as `d(t)`. Replacing it by a parameter
+    # that isn't would make the events that update it update a constant. (The reverse is fine:
+    # the eliminated parameter is then bound to the time-dependent one.)
+    if iscall(lhs) && !iscall(rhs)
+        throw(ArgumentError("Cannot alias $lhs ~ $rhs: $lhs is a time-dependent (discrete) parameter, so it can only be replaced by another time-dependent parameter."))
     end
     lhs_type = MT.symtype(unwrap(lhs))
     rhs_type = MT.symtype(unwrap(rhs))
@@ -198,6 +200,15 @@ function resolve_aliases(alias_eqs::Vector{Equation}, rs::ReactionSystem)
         graph = (lhs_class in PARAMETER_ALIAS_CLASSES) ? param_graph : unknown_graph
         graph[lhs] = rhs
         alias_of[lhs] = eq
+    end
+
+    # A compound species' components must stay species of the system.
+    for sp in ctx.species_set
+        iscompound(sp) || continue
+        for c in unwrap.(components(sp))
+            haskey(alias_of, c) &&
+                throw(ArgumentError("Cannot alias `$(alias_of[c])`: $c is a component of the compound species $sp, so it can't be eliminated."))
+        end
     end
     return AliasResolution(resolve_chains(unknown_graph), resolve_chains(param_graph), alias_of)
 end
@@ -287,10 +298,24 @@ function resolve_reaction(rx::Reaction, idx, submap, res::AliasResolution)
     return Reaction(rate, subs, prods, substoich, prodstoich; only_use_rate = rx.only_use_rate, metadata)
 end
 
+# Errors if the aliases make two of the affect equations `eqs` (substituted from `orig_eqs`)
+# assign the same symbol (their left-hand side). Equations that already assigned the same symbol
+# before substitution are left alone, as ModelingToolkitBase accepts those.
+function check_assignment_conflicts(orig_eqs, eqs, what)
+    first_eq = Dict{Any, Int}()
+    for (i, eq) in enumerate(eqs)
+        j = get!(first_eq, unwrap(eq.lhs), i)
+        (j == i || isequal(orig_eqs[j].lhs, orig_eqs[i].lhs)) && continue
+        throw(ArgumentError("The aliases make the $what assign $(eq.lhs) twice, through `$(orig_eqs[j])` and `$(orig_eqs[i])`. Remove one of the assignments or keep the symbols distinct."))
+    end
+    return nothing
+end
+
 # Substitutes through an event affect; only symbolic affects are supported.
 subs_affect(::Nothing, submap) = nothing
 function subs_affect(aff::MT.SymbolicAffect, submap)
     eqs = Equation[subs_alias(eq, submap) for eq in aff.affect]
+    check_assignment_conflicts(aff.affect, eqs, "event affect")
     discretes = SymbolicT[get(submap, p, p) for p in aff.discrete_parameters]
     return MT.SymbolicAffect(eqs, discretes)
 end
@@ -317,8 +342,10 @@ end
 
 # Substitutes through a (symbolic) jump, keeping its other fields.
 function resolve_jump(j::Union{ConstantRateJump, VariableRateJump}, submap)
+    affect = Equation[subs_alias(eq, submap) for eq in j.affect!]
+    check_assignment_conflicts(j.affect!, affect, "jump affect")
     @set! j.rate = subs_alias(j.rate, submap)
-    @set! j.affect! = Equation[subs_alias(eq, submap) for eq in j.affect!]
+    @set! j.affect! = affect
     return j
 end
 function resolve_jump(j::MassActionJump, submap)
@@ -348,12 +375,13 @@ end
 # Removes the default value stored in a symbol's metadata.
 clear_default(sym) = MT.hasdefault(sym) ? setmetadata(sym, Symbolics.VariableDefaultValue, nothing) : sym
 
-# Moves initial conditions from eliminated symbols to surviving ones. Values are resolved before
-# comparing, so `X => k1` and `Y => k2` agree for `X ~ Y` and `k1 ~ k2`.
+# Moves initial conditions from eliminated symbols to surviving ones (also inside keys, e.g.
+# `D(X)`). Values are resolved before comparing, so `X => k1` and `Y => k2` agree for `X ~ Y` and
+# `k1 ~ k2`.
 function resolve_initial_conditions(ics, submap)
     new_ics = Dict{SymbolicT, Any}()
     for (key, val) in ics
-        new_key = get(submap, key, key)
+        new_key = subs_alias(key, submap)
         new_val = subs_alias(val, submap)
         if haskey(new_ics, new_key) && !isequal(new_ics[new_key], new_val)
             throw(ArgumentError("Conflicting initial conditions for aliased symbols: $new_key would get both $(new_ics[new_key]) and $new_val."))
@@ -447,6 +475,18 @@ function eliminate_aliases(rs::ReactionSystem; name = nameof(rs))
     return MT.iscomplete(rs) ? complete(new_rs; flatten = false) : new_rs
 end
 
+### Conversion ###
+
+# Flattens a system for conversion. Every completed system has its aliases resolved, except the
+# unflattened parent stored by `complete` (and systems built with `checks = false`), which can't
+# be converted.
+function flatten_for_conversion(rs::ReactionSystem)
+    MT.iscomplete(rs) || error(COMPLETENESS_ERROR)
+    aliases_present(rs) &&
+        throw(ArgumentError("$(nameof(rs)) has aliases that are not resolved, so it can't be converted or simulated. Use the system returned by `complete` (with `flatten = true`, the default)."))
+    return flatten(rs)
+end
+
 ### Querying Aliases ###
 
 """
@@ -473,7 +513,9 @@ Return the parameters of `rs` that remain after the elimination of its aliases (
 `rs` is completed): the ones to give values for, and to use with `remake`. Eliminated parameters
 stay parameters of `rs`, bound to the parameters that replaced them (so they can be read, but not
 given values), and are left out. For a system that isn't complete, these are `parameters(rs)`.
-(Eliminated unknowns become observables, so the remaining unknowns are just `unknowns(rs)`.)
+Only parameters eliminated by aliases are left out: other bound parameters (e.g. `r` declared
+as `r = 2q`) are included, though they can't be given values either. (Eliminated unknowns become
+observables, so the remaining unknowns are just `unknowns(rs)`.)
 """
 function uneliminated_parameters(rs::ReactionSystem)
     maps = get_alias_maps(rs)
@@ -483,32 +525,43 @@ end
 
 ### Problem Inputs ###
 
-# Remaps eliminated symbols in a problem's `u0` or `p` input to the symbols that replaced them,
-# keeping the input's form (a `Tuple` stays a `Tuple`, so values keep their types). Errors if
-# two entries give an eliminated symbol and its replacement different values.
-function remap_alias_inputs(input, rs::ReactionSystem)
-    (input isa Union{AbstractDict, Tuple, AbstractVector}) || return input
-    isempty(input) && return input
-    all(x -> x isa Pair, input) || return input
+# Whether a problem input (e.g. `u0` or `p`) is a collection of `Pair`s, such as a symbolic map.
+function is_pair_input(input)
+    return (input isa Union{AbstractDict, Tuple, AbstractVector}) && !isempty(input) &&
+        all(x -> x isa Pair, input)
+end
+
+# The keys of a pair input as symbolic variables (a `Symbol` that names none in `rs` is kept as
+# is), so that a `Symbol` and a symbolic key for the same symbol are recognized as such.
+function input_vars(input, rs)
+    return [(key isa Symbol) ? _try_symbol_to_var(rs, key) : unwrap(key) for (key, _) in input]
+end
+
+# Remaps the symbols eliminated by aliases in a problem's inputs (e.g. `u0` and `p`) to the
+# symbols that replaced them, keeping each input's form (a `Tuple` stays a `Tuple`, so values
+# keep their types). Errors if a symbol is given more than one value, across all the inputs and
+# counting both names of an aliased symbol.
+function remap_problem_inputs(rs::ReactionSystem, inputs...)
     submap = alias_map(rs)
-    isempty(submap) && return input
-
-    # Each key as a symbolic variable (a `Symbol` that names none in `rs` is kept as is), so that
-    # a `Symbol` and a symbolic key for the same symbol are recognized as such.
-    pairs = collect(input)
-    vars = map(((key, _),) -> (key isa Symbol) ? _try_symbol_to_var(rs, key) : unwrap(key), pairs)
-    any(var -> haskey(submap, var), vars) || return input
-
-    # The symbol each entry gives a value for. Entries for the same symbol must agree, and the
-    # first of them is kept.
-    targets = [get(submap, var, var) for var in vars]
-    first_entry = Dict{Any, Int}()
-    for (i, target) in enumerate(targets)
-        j = get!(first_entry, target, i)
-        (j == i || isequal(last(pairs[j]), last(pairs[i]))) && continue
-        throw(ArgumentError("Conflicting values for aliased symbols: $(first(pairs[j])) is given $(last(pairs[j])) and $(first(pairs[i])) is given $(last(pairs[i])), but both refer to $target."))
+    given_by = Dict{Any, Any}()
+    for input in inputs
+        is_pair_input(input) || continue
+        for ((key, _), var) in zip(input, input_vars(input, rs))
+            target = get(submap, var, var)
+            haskey(given_by, target) &&
+                throw(ArgumentError("$target is given more than one value, by `$(given_by[target])` and by `$key`."))
+            given_by[target] = key
+        end
     end
-    remapped = [targets[i] => last(pairs[i]) for i in sort!(collect(values(first_entry)))]
+    return map(input -> remap_input(input, rs, submap), inputs)
+end
+
+# Replaces the eliminated symbols among the keys of a problem input (unchanged if it has none).
+function remap_input(input, rs, submap)
+    (isempty(submap) || !is_pair_input(input)) && return input
+    vars = input_vars(input, rs)
+    any(var -> haskey(submap, var), vars) || return input
+    remapped = [get(submap, var, var) => val for (var, (_, val)) in zip(vars, input)]
     input isa Tuple && return Tuple(remapped)
     input isa AbstractDict && return Dict(remapped)
     return remapped
