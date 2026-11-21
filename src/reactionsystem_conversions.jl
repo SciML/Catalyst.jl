@@ -910,11 +910,10 @@ function system_to_reactionsystem(
     # Mark non-BC species as BC species so D(species) is allowed in equations.
     # The ReactionSystem constructor rejects differentials of non-BC species, but ODE/SDE
     # equations naturally contain D(species). BC metadata is added to both the unknowns
-    # vector and inside equation expressions (which hold separate symbolic references).
-    us = [
-        isspecies(u) && !isbc(u) ? MT.setmetadata(u, VariableBCSpecies, true) : u
-            for u in us
-    ]
+    # vector and inside equation expressions (which hold separate symbolic references), in the
+    # same way, so that they agree (for an element of an array species, such as `X[1]`, the
+    # flag is set on the array, from which `isbc` reads it).
+    us = [replacenode(u, _mark_species_bc) for u in us]
     eqs = [
         replacenode(eq.lhs, _mark_species_bc) ~ replacenode(eq.rhs, _mark_species_bc)
             for eq in eqs

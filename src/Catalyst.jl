@@ -46,7 +46,7 @@ import ModelingToolkitBase: check_variables, check_parameters,
     check_equations, iscomplete
 
 # Import from owner module (SymbolicUtils) per ExplicitImports.jl audit
-import SymbolicUtils: _iszero, unwrap
+import SymbolicUtils: _iszero, symtype, unwrap
 
 import Base: ==, hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
