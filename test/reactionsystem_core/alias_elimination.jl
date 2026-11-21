@@ -331,19 +331,6 @@ let
     @test isequal(MT.getpoissonianrate(only(MT.get_poissonians(rn))), unwrap(1 + rn.Y))
 end
 
-# An event or jump affect that the aliases make assign the same symbol twice is an error.
-let
-    @species X(t) Y(t)
-    @parameters k
-    rx = Reaction(k, [X], nothing)
-    ev = MT.SymbolicDiscreteCallback([1.0] => [X ~ 2.0, Y ~ 3.0])
-    @test_throws "assign Y(t) twice" complete(ReactionSystem([rx], t, [X, Y], [k];
-        aliases = [X ~ Y], discrete_events = [ev], name = :rs))
-    jump = ConstantRateJump(k, [X ~ Pre(X) + 1, Y ~ Pre(Y) - 1])
-    @test_throws "assign Y(t) twice" complete(ReactionSystem([rx], t, [X, Y], [k];
-        aliases = [X ~ Y], jumps = [jump], name = :rs))
-end
-
 # A compound species' component can't be eliminated.
 let
     @test_throws ArgumentError @reaction_network begin

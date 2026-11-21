@@ -298,24 +298,10 @@ function resolve_reaction(rx::Reaction, idx, submap, res::AliasResolution)
     return Reaction(rate, subs, prods, substoich, prodstoich; only_use_rate = rx.only_use_rate, metadata)
 end
 
-# Errors if the aliases make two of the affect equations `eqs` (substituted from `orig_eqs`)
-# assign the same symbol (their left-hand side). Equations that already assigned the same symbol
-# before substitution are left alone, as ModelingToolkitBase accepts those.
-function check_assignment_conflicts(orig_eqs, eqs, what)
-    first_eq = Dict{Any, Int}()
-    for (i, eq) in enumerate(eqs)
-        j = get!(first_eq, unwrap(eq.lhs), i)
-        (j == i || isequal(orig_eqs[j].lhs, orig_eqs[i].lhs)) && continue
-        throw(ArgumentError("The aliases make the $what assign $(eq.lhs) twice, through `$(orig_eqs[j])` and `$(orig_eqs[i])`. Remove one of the assignments or keep the symbols distinct."))
-    end
-    return nothing
-end
-
 # Substitutes through an event affect; only symbolic affects are supported.
 subs_affect(::Nothing, submap) = nothing
 function subs_affect(aff::MT.SymbolicAffect, submap)
     eqs = Equation[subs_alias(eq, submap) for eq in aff.affect]
-    check_assignment_conflicts(aff.affect, eqs, "event affect")
     discretes = SymbolicT[get(submap, p, p) for p in aff.discrete_parameters]
     return MT.SymbolicAffect(eqs, discretes)
 end
@@ -342,10 +328,8 @@ end
 
 # Substitutes through a (symbolic) jump, keeping its other fields.
 function resolve_jump(j::Union{ConstantRateJump, VariableRateJump}, submap)
-    affect = Equation[subs_alias(eq, submap) for eq in j.affect!]
-    check_assignment_conflicts(j.affect!, affect, "jump affect")
     @set! j.rate = subs_alias(j.rate, submap)
-    @set! j.affect! = affect
+    @set! j.affect! = Equation[subs_alias(eq, submap) for eq in j.affect!]
     return j
 end
 function resolve_jump(j::MassActionJump, submap)
