@@ -215,6 +215,20 @@ function find_tstop_vars!(ps, us, tstops::Vector, t)
     return
 end
 
+# The unknowns with each array unknown (e.g. `X` from `@species X(t)[1:2]`) replaced by its
+# elements, without duplicates. The DSL scalarizes the unknowns it declares, and reactions refer
+# to array species through their elements, but array unknowns can still be given to the explicit
+# constructor or found in array equations. ModelingToolkitBase doesn't handle unscalarized array
+# unknowns correctly in jumps and events (SciML/ModelingToolkit.jl#5428).
+function scalarize_unknowns(unknowns)
+    us = SymbolicT[]
+    for u in unknowns
+        su = Symbolics.scalarize(unwrap(u))
+        su isa AbstractArray ? append!(us, unwrap.(vec(su))) : push!(us, unwrap(su))
+    end
+    return unique!(us)
+end
+
 # Validates that tstop expressions only contain parameters and constants (no unknowns or
 # independent variable). Tstops must be computable before the solve starts, so they cannot
 # depend on dynamic state. A tstop is either a scalar (a period) or an array of time points;
@@ -499,7 +513,7 @@ function ReactionSystem(
         unwrap.(spatial_ivs)
     end
 
-    unknowns′ = isempty(unknowns) ? SymbolicT[] : sort!(unwrap.(unknowns), by = !isspecies)
+    unknowns′ = isempty(unknowns) ? SymbolicT[] : sort!(scalarize_unknowns(unknowns), by = !isspecies)
     spcs = filter(isspecies, unknowns′)
     ps′ = isempty(ps) ? SymbolicT[] : unwrap.(ps)
 

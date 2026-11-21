@@ -2,6 +2,16 @@
 
 ## Unreleased (on master)
 
+- Array species and variables (e.g. from `@species X(t)[1:2]`) given to the explicit
+  `ReactionSystem(eqs, t, unknowns, ps)` constructor, or found in an equation for a whole array
+  (such as `D(V) ~ -V`), are now scalarized into their elements, as the DSL and the constructor
+  inferring the unknowns from reactions already did. The explicit constructor used to keep them
+  as arrays, so `netstoichmat`, `ODEProblem` and other functions failed for array species, and
+  jump and event results were silently wrong whenever an array unknown came before other
+  unknowns (ModelingToolkitBase indexes the state by position in `unknowns` there,
+  SciML/ModelingToolkit.jl#5428). For example, an event changing a variable `W` declared after
+  an array variable `V` changed `V[2]` instead. `unknowns(rs)` now lists the elements; giving
+  values for a whole array (`X => [1.0, 2.0]`) and reading it (`sol[rs.X]`) work as before.
 - `latexify(rs; form = :sde)` now displays the chemical Langevin equation, with a noise term
   `νᵢⱼ √aⱼ d𝒲ⱼ` from each reaction `j` in the equation of each species `i` it changes (`𝒲ⱼ`,
   written `\mathcal{W}_j`, independent Brownian motions, one per reaction). It used to
