@@ -2,6 +2,8 @@
 
 ## Unreleased (on master)
 
+## Catalyst 17.0.3
+
 - Array species and variables (e.g. from `@species X(t)[1:2]`) given to the explicit
   `ReactionSystem(eqs, t, unknowns, ps)` constructor are now scalarized into their elements (each
   array's in column-major order), as the DSL and the constructor inferring the unknowns from
