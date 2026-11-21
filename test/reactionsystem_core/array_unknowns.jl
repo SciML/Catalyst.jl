@@ -119,18 +119,24 @@ let
     crj = ConstantRateJump(kB, [B ~ Pre(B) + 1])
     aggregators = (Direct(), NRM(), SortingDirect(), RDirect(), DirectCR(), RSSA(), RSSACR())
 
-    # Reactions only (mass action jumps), with the explicit constructor.
-    rs = complete(ReactionSystem(jrxs, t, [X, A], [k, k0]; name = :rs))
+    # The states the system can be in (`X[2]` and `A`): the dependency maps must not let both
+    # reactions occur, and a jump mustn't change the wrong species.
+    valid_states = ((1, 0), (0, 0), (0, 1))
+
+    # Reactions only (mass action jumps), with the explicit constructor: the reproducer of
+    # SciML/ModelingToolkit.jl#5428.
+    rs = complete(ReactionSystem(jrxs[1:2], t, [X, A], [k]; name = :rs))
     @test !any(is_array_symbolic, unknowns(jump_model(rs)))
     for aggregator in aggregators
-        jprob = JumpProblem(rs, [X => [20, 1], A => 0], (0.0, 20.0), [k => 1.0, k0 => 0.0];
-            aggregator)
+        jprob = JumpProblem(rs, [X => [20, 1], A => 0], (0.0, 20.0), [k => 1.0]; aggregator)
+        nconsumed = 0
         for _ in 1:10
             sol = solve(jprob, SSAStepper(); rng)
-            @test minimum(sol[rs.X[2]]) >= 0
-            @test all(sol[rs.X[2]] .+ sol[rs.A] .<= 1)
+            @test all(in(valid_states), zip(sol[rs.X[2]], sol[rs.A]))
             @test all(==(20), sol[rs.X[1]])
+            nconsumed += (sol[rs.X[2]][end] == 0)
         end
+        @test nconsumed > 0
     end
 
     # With a non-reaction jump as well, with the explicit and the inferring constructors.
@@ -142,13 +148,15 @@ let
         @test !any(is_array_symbolic, unknowns(rs))
         jprob = JumpProblem(rs, [X => [20, 1], A => 0, B => 0], (0.0, 20.0),
             [k => 1.0, k0 => 0.0, kB => 5.0]; aggregator)
+        nconsumed = 0
         for _ in 1:10
             sol = solve(jprob, SSAStepper(); rng)
-            @test minimum(sol[rs.X[2]]) >= 0
-            @test all(sol[rs.X[2]] .+ sol[rs.A] .<= 1)
+            @test all(in(valid_states), zip(sol[rs.X[2]], sol[rs.A]))
             @test all(==(20), sol[rs.X[1]])
             @test sol[rs.B][end] > 0 # (the jump fires at rate 5 over time 20)
+            nconsumed += (sol[rs.X[2]][end] == 0)
         end
+        @test nconsumed > 0
     end
 
     # The same reactions with the DSL (which has no option for non-reaction jumps).
@@ -162,12 +170,14 @@ let
     for aggregator in aggregators
         jprob = JumpProblem(rs, [:X => [20, 1], :A => 0], (0.0, 20.0), [:k => 1.0, :k0 => 0.0];
             aggregator)
+        nconsumed = 0
         for _ in 1:10
             sol = solve(jprob, SSAStepper(); rng)
-            @test minimum(sol[rs.X[2]]) >= 0
-            @test all(sol[rs.X[2]] .+ sol[rs.A] .<= 1)
+            @test all(in(valid_states), zip(sol[rs.X[2]], sol[rs.A]))
             @test all(==(20), sol[rs.X[1]])
+            nconsumed += (sol[rs.X[2]][end] == 0)
         end
+        @test nconsumed > 0
     end
 end
 
@@ -204,11 +214,10 @@ end
 let
     @species C(t) M(t)[1:2, 1:2]
     @parameters p
-    mrxs = [Reaction(p, [M[1, 2]], [C]), Reaction(p, [M[2, 1]], [C])]
+    mrxs = [Reaction(p, [M[1, 2]], [C])]
     rs_dsl = @reaction_network rs begin
         @species C(t) M(t)[1:2, 1:2]
         p, M[1, 2] --> C
-        p, M[2, 1] --> C
     end
     rs_explicit = complete(ReactionSystem(mrxs, t, [C, M], [p]; name = :rs))
     @test isequal(unknowns(rs_explicit), [C, M[1, 1], M[2, 1], M[1, 2], M[2, 2]])
@@ -218,7 +227,8 @@ let
         @test prob[rs.M] == [1.0 2.0; 3.0 4.0]
         @test prob[rs.M[2, 1]] == 3.0
         sol = solve(prob, Tsit5(); abstol = 1e-10, reltol = 1e-10)
-        @test sol[rs.C][end] ≈ 5.0 * (1 - exp(-1.0))
+        @test sol[rs.C][end] ≈ 2.0 * (1 - exp(-1.0))
+        @test sol[rs.M][end] ≈ [1.0 2exp(-1.0); 3.0 4.0]
     end
 end
 
@@ -245,6 +255,11 @@ let
     @test !any(is_array_symbolic, unknowns(rs))
     @test issetequal(unknowns(rs), [rs.child.A, V[1], V[2]])
     @test isequal(Symbolics.unwrap(rs.V), Symbolics.unwrap(V))
+
+    # Completed without flattening, the conversions flatten it (through the explicit constructor).
+    hier = complete(compose(parent, [child]); flatten = false)
+    @test !any(is_array_symbolic, unknowns(ode_model(hier)))
+    @test issetequal(unknowns(ode_model(hier)), [hier.child.A, V[1], V[2]])
     sol = solve(ODEProblem(rs, [V => [1.0, 2.0], rs.child.A => 0.0], 1.0, [rs.child.p => 1.0]),
         Tsit5(); abstol = 1e-10, reltol = 1e-10)
     @test sol[rs.V][end] ≈ [exp(-1.0), 2exp(-1.0)]

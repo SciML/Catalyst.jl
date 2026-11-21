@@ -4,7 +4,7 @@
 
 - Array species and variables (e.g. from `@species X(t)[1:2]`) given to the explicit
   `ReactionSystem(eqs, t, unknowns, ps)` constructor, or found in an equation for a whole array
-  (such as `D(V) ~ -V`), are now scalarized into their elements (in column-major order), as the
+  (such as `D(V) ~ -V`), are now scalarized into their elements (each array's in column-major order), as the
   DSL and the constructor inferring the unknowns from reactions already did. The explicit
   constructor used to keep them as arrays, so `netstoichmat`, `ODEProblem` and other functions
   failed for array species, and jumps and events could read or change the wrong state entries
