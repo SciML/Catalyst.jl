@@ -323,8 +323,12 @@ parameter of the model.
 Until a system is completed, its aliases are only declarations: `@network_component`,
 `compose`, `extend` and [`Catalyst.flatten`](@ref) keep them (`flatten` namespaces those of
 subsystems). Basic queries, such as `species` and `parameters`, then list both names of each
-aliased symbol, while [`alias_map`](@ref) is empty, as nothing has been eliminated yet. Functions that need the aliases
-resolved, such as [`conservationlaws`](@ref), give an error asking to complete the system first.
+aliased symbol, while [`alias_map`](@ref) is empty, as nothing has been eliminated yet. Functions
+that need the aliases resolved, such as [`conservationlaws`](@ref), give an error asking to
+complete the system first. Resolving aliases requires flattening a system, so completing a system
+that has aliases without flattening it (`complete(rs; flatten = false)`) is an error. Hence every
+completed system, the only kind that can be converted or simulated, has its aliases resolved, and
+its unknowns and [`uneliminated_parameters`](@ref) are the names its problems and `remake` take.
 Spatial models and the serialization of `ReactionSystem`s do not support aliases yet.
 
 ## Compartment-based models

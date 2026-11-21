@@ -52,9 +52,7 @@ function steady_state_stability(u::Vector, rs::ReactionSystem, ps;
         error("Attempting to compute stability for a non-autonomous system (e.g. where some rate depend on $(get_iv(rs))). This is not possible.")
     end
 
-    # A system with unresolved aliases is resolved, so that `u` and `ps` follow its unknowns and
-    # parameters (`remake` does not translate eliminated names).
-    aliases_present(rs) && (rs = complete(rs))
+    # Symbols eliminated by aliases may be used in `u` and `ps` (`remake` does not translate them).
     ps = remap_alias_inputs(ps, rs)
 
     # If `u` is a vector of values, we convert it to a map. Also, if there are conservation laws,
@@ -118,7 +116,6 @@ function steady_state_jac(rs::ReactionSystem; u0 = [sp => 0.0 for sp in unknowns
     # If u0 is a vector of values, must be converted to something MTK understands.
 
     # Converts u0 to values MTK understands, and checks that potential conservation laws are accounted for.
-    aliases_present(rs) && (rs = complete(rs))
     u0 = remap_alias_inputs(steady_state_u_conversion(u0, rs), rs)
     conservationlaw_errorcheck(rs, u0)
 

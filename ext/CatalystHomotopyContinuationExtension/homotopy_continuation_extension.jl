@@ -37,9 +37,7 @@ Notes:
   """
 function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative = true,
         neg_thres = -1e-15, u0 = [], kwargs...)
-    # Uses the system with its aliases resolved throughout (unknowns, conservation laws and the
-    # order of the returned states); symbols eliminated by aliases may be used in the inputs.
-    Catalyst.aliases_present(rs) && (rs = complete(rs))
+    # Symbols eliminated by aliases may be used in the inputs.
     ps = Catalyst.remap_alias_inputs(ps, rs)
     u0 = Catalyst.remap_alias_inputs(u0, rs)
     if !isautonomous(rs)

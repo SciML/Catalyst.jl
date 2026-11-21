@@ -1216,6 +1216,18 @@ function MT.unknowns(sys::ReactionSystem)
 end
 
 function MT.complete(sys::ReactionSystem; flatten = true, kwargs...)
+    # Aliases are resolved when a system is completed, which requires flattening it. Rejecting
+    # unflattened completion of systems with aliases ensures that every completed system (which
+    # the conversion functions and problem constructors require) has its aliases resolved.
+    if !flatten && aliases_present(sys)
+        throw(ArgumentError("$(nameof(sys)) has aliases, which are resolved when it is completed. This requires flattening it, so it can't be completed with `flatten = false`."))
+    end
+    return complete_reactionsystem(sys; flatten)
+end
+
+# `complete`, without the alias check (for the unflattened parent stored by `complete`, which
+# keeps the declared aliases and names).
+function complete_reactionsystem(sys::ReactionSystem; flatten)
     newunknowns = OrderedSet{SymbolicT}()
     newparams = OrderedSet{SymbolicT}()
     iv = get_iv(sys)
@@ -1228,7 +1240,7 @@ function MT.complete(sys::ReactionSystem; flatten = true, kwargs...)
         # resolved once the model is fully assembled (completed systems can't be composed).
         newsys = eliminate_aliases(Catalyst.flatten(sys))
         if MT.has_parent(newsys) && MT.get_parent(sys) === nothing
-            @set! newsys.parent = complete(sys; split = false, flatten = false)
+            @set! newsys.parent = complete_reactionsystem(sys; flatten = false)
         end
         sys = newsys
     end

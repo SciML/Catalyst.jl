@@ -481,19 +481,6 @@ function uneliminated_parameters(rs::ReactionSystem)
     return filter(p -> !haskey(maps.param_map, unwrap(p)), parameters(rs))
 end
 
-### Resolution for Simulation ###
-
-# The flattened system with its aliases resolved. The conversion functions use it, as a system
-# completed with `flatten = false` may still have unresolved aliases.
-function flatten_resolved(rs::ReactionSystem)
-    flatrs = flatten(rs)
-    return aliases_present(flatrs) ? eliminate_aliases(flatrs) : flatrs
-end
-
-# The map of the symbols eliminated by the aliases of `rs`, resolving them first if needed (for a
-# system completed with `flatten = false`).
-resolved_alias_map(rs::ReactionSystem) = alias_map(aliases_present(rs) ? flatten_resolved(rs) : rs)
-
 ### Problem Inputs ###
 
 # Remaps eliminated symbols in a problem's `u0` or `p` input to the symbols that replaced them,
@@ -503,7 +490,7 @@ function remap_alias_inputs(input, rs::ReactionSystem)
     (input isa Union{AbstractDict, Tuple, AbstractVector}) || return input
     isempty(input) && return input
     all(x -> x isa Pair, input) || return input
-    submap = resolved_alias_map(rs)
+    submap = alias_map(rs)
     isempty(submap) && return input
 
     # Each key as a symbolic variable (a `Symbol` that names none in `rs` is kept as is), so that

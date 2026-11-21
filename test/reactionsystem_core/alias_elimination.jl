@@ -443,22 +443,48 @@ let
     @test size(conservationlaws(complete(nc)), 1) == 1
 end
 
-# A system completed without flattening keeps its aliases; simulating it resolves them, also
-# accepting eliminated names.
+# Every completed system has its aliases resolved: completing without flattening is an error for
+# a system with aliases (also only in a subsystem), while the unflattened parent stored by
+# `complete` keeps the declared aliases and names.
 let
     @species A(t) B(t) C(t)
     @parameters k1 k2
     @named sub = ReactionSystem([Reaction(k1, [A], [C])], t)
     @named rs = ReactionSystem([Reaction(k2, [B], [C])], t; systems = [sub], aliases = [sub.A ~ B])
-    crs = complete(rs; flatten = false)
-    @test Catalyst.aliases_present(crs)
-    @test isempty(alias_map(crs))
-    u0 = [crs.sub.A => 2.0, crs.sub.C => 0.0, crs.C => 0.0]
-    ps = [crs.sub.k1 => 1.0, crs.k2 => 3.0]
-    prob = ODEProblem(crs, u0, 1.0, ps)
-    @test prob[crs.B] == 2.0
-    sol = solve(prob, Tsit5(); abstol = 1e-10, reltol = 1e-10)
-    @test sol[crs.B][end] ≈ 2.0 * exp(-4.0)
+    @test_throws ArgumentError complete(rs; flatten = false)
+    @named sub2 = ReactionSystem([Reaction(k1, [A], [C]), Reaction(k2, [B], [C])], t; aliases = [A ~ B])
+    @named rs2 = ReactionSystem(Reaction[], t; systems = [sub2])
+    @test_throws ArgumentError complete(rs2; flatten = false)
+    @test MT.iscomplete(complete(ReactionSystem([Reaction(k2, [B], [C])], t; systems = [sub], name = :rs3);
+        flatten = false))
+
+    crs = complete(rs)
+    @test !Catalyst.aliases_present(crs)
+    @test issetequal(unknowns(crs), [crs.B, crs.C, crs.sub.C])
+    parent = MT.get_parent(crs)
+    @test Catalyst.aliases_present(parent)
+    @test issetequal(MT.getname.(species(parent)), [:B, :C, :sub₊A, :sub₊C])
+end
+
+# An incomplete system can't be converted or simulated, with or without (valid) aliases: the
+# completeness error comes first.
+let
+    nc = @network_component begin
+        @species A(t) B(t)
+        @aliases A ~ k
+        (k, d), 0 <--> B
+    end
+    for f in (() -> ode_model(nc), () -> ODEProblem(nc, [:B => 1.0], 1.0, [:k => 1.0, :d => 1.0]),
+            () -> JumpProblem(nc, [:B => 1], 1.0, [:k => 1.0, :d => 1.0]))
+        @test_throws "must be complete" f()
+    end
+    nc2 = @network_component begin
+        @species A(t)
+        @aliases A ~ B
+        (p, d), 0 <--> B
+    end
+    @test_throws "must be complete" ode_model(nc2)
+    @test_throws Exception steady_state_stability([1.0], nc2, [:p => 1.0, :d => 1.0])
 end
 
 # Invalid aliases are reported when the system is completed.

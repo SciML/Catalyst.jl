@@ -677,7 +677,7 @@ function hybrid_model(
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs, MT.System)
 
-    flatrs = Catalyst.flatten_resolved(rs)
+    flatrs = Catalyst.flatten(rs)
 
     # Resolve scales: _override_all_scales (internal) takes precedence over everything.
     if _override_all_scales !== nothing
@@ -826,7 +826,7 @@ function ode_model(
         kwargs...
     )
     # Error if ReactionSystem has coupled brownians or jumps.
-    flatrs = Catalyst.flatten_resolved(rs)
+    flatrs = Catalyst.flatten(rs)
     if !isempty(MT.brownians(flatrs))
         error(
             """Cannot convert ReactionSystem with coupled brownian noise to a pure ODE system.
@@ -975,7 +975,7 @@ function ss_ode_model(
     isautonomous(rs) || error(is_autonomous_error(get_iv(rs)))
 
     # Generates system equations.
-    fullrs = Catalyst.flatten_resolved(rs)
+    fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, (remove_conserved && !include_cl_as_eqs))
     eqs = assemble_drift(
@@ -1075,7 +1075,7 @@ function sde_model(
     )
 
     # Flatten once upfront and check for constraints.
-    flatrs = Catalyst.flatten_resolved(rs)
+    flatrs = Catalyst.flatten(rs)
 
     # Error if ReactionSystem has coupled jumps or poissonians (SDE + jumps hybrid not supported yet).
     if !isempty(MT.jumps(flatrs))
@@ -1228,7 +1228,7 @@ function jump_model(
 
     # Force all reactions to Jump, only preserving VariableRateJump metadata.
     # ODE/SDE metadata is ignored - use HybridProblem for hybrid systems.
-    flatrs = Catalyst.flatten_resolved(rs)
+    flatrs = Catalyst.flatten(rs)
 
     # Error if ReactionSystem has unprocessed poissonians (jump_model cannot handle them).
     if !isempty(MT.poissonians(flatrs))
@@ -1455,7 +1455,7 @@ function DiffEqBase.SDEProblem(
     )
 
     # Flatten once upfront and pass to sde_model.
-    flatrs = Catalyst.flatten_resolved(rs)
+    flatrs = Catalyst.flatten(rs)
     sde_sys = sde_model(
         flatrs; name, combinatoric_ratelaws, expand_catalyst_funs,
         include_zero_odes, checks, remove_conserved, use_legacy_noise, use_jump_ratelaws
@@ -1676,7 +1676,7 @@ function HybridProblem(
         kwargs...
     )
     # Determine which scale types are present.
-    flatrs = Catalyst.flatten_resolved(rs)
+    flatrs = Catalyst.flatten(rs)
     resolved_scales = merge_physical_scales(reactions(flatrs), physical_scales, default_scale)
     has_ode, has_sde, has_jump = detect_scale_types(resolved_scales)
 
