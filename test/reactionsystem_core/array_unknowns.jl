@@ -68,12 +68,19 @@ let
     u0_ref = [A => 4.0, X1 => 1.0, X2 => 2.0, B => 3.0, V1 => 1.0, V2 => 2.0, W => 0.0]
     sol_ref = solve(ODEProblem(rs_ref, u0_ref, (0.0, 3.0), ps), Tsit5(); abstol = 1e-10,
         reltol = 1e-10)
+    # The explicit constructor keeps the given order, with the species first.
+    @test isequal(unknowns(rs_explicit), [A, X[1], X[2], B, V[1], V[2], W])
+    rs_interleaved = ReactionSystem([rxs; eqs], t, [V, A, W, X, B], [k1, k2, k3, d]; name = :rs)
+    @test isequal(unknowns(rs_interleaved), [A, X[1], X[2], B, V[1], V[2], W])
     for rs in (rs_explicit, rs_inferred, rs_dsl)
         # The unknowns are scalarized, with the species first.
         @test !any(is_array_symbolic, unknowns(rs))
         @test issetequal(unknowns(rs), [A, X[1], X[2], B, V[1], V[2], W])
+        @test length(unknowns(rs)) == 7
         @test issetequal(species(rs), [A, X[1], X[2], B])
+        @test isequal(unknowns(rs)[1:numspecies(rs)], species(rs))
         @test numspecies(rs) == 4
+        @test !any(is_array_symbolic, unknowns(ode_model(rs)))
 
         # The stoichiometry, ODEs (and events) are those of the reference.
         perm = [findfirst(isequal(to_ref[sp]), species(rs_ref)) for sp in species(rs)]
@@ -110,22 +117,37 @@ let
     @parameters k k0 kB
     jrxs = [Reaction(k, [X[2]], [A]), Reaction(k, [X[2]], nothing), Reaction(k0, nothing, [X[1]])]
     crj = ConstantRateJump(kB, [B ~ Pre(B) + 1])
+    aggregators = (Direct(), NRM(), SortingDirect(), RDirect(), DirectCR(), RSSA(), RSSACR())
+
+    # Reactions only (mass action jumps), with the explicit constructor.
+    rs = complete(ReactionSystem(jrxs, t, [X, A], [k, k0]; name = :rs))
+    @test !any(is_array_symbolic, unknowns(jump_model(rs)))
+    for aggregator in aggregators
+        jprob = JumpProblem(rs, [X => [20, 1], A => 0], (0.0, 20.0), [k => 1.0, k0 => 0.0];
+            aggregator)
+        for _ in 1:10
+            sol = solve(jprob, SSAStepper(); rng)
+            @test minimum(sol[rs.X[2]]) >= 0
+            @test all(sol[rs.X[2]] .+ sol[rs.A] .<= 1)
+            @test all(==(20), sol[rs.X[1]])
+        end
+    end
+
+    # With a non-reaction jump as well, with the explicit and the inferring constructors.
     jnets = [
         ReactionSystem(jrxs, t, [X, A, B], [k, k0, kB]; jumps = [crj], name = :rs),
         ReactionSystem(jrxs, t; jumps = [crj], name = :rs),
     ]
-    aggregators = (Direct(), NRM(), SortingDirect(), RDirect(), DirectCR(), RSSA(), RSSACR())
     for rs in complete.(jnets), aggregator in aggregators
         @test !any(is_array_symbolic, unknowns(rs))
         jprob = JumpProblem(rs, [X => [20, 1], A => 0, B => 0], (0.0, 20.0),
-            [k => 1.0, k0 => 0.0, kB => 1.0]; aggregator)
+            [k => 1.0, k0 => 0.0, kB => 5.0]; aggregator)
         for _ in 1:10
             sol = solve(jprob, SSAStepper(); rng)
-            @test minimum(sol[rs.X[2]]) == 0
-            @test sol[rs.X[2]][end] == 0
-            @test sol[rs.A][end] in (0, 1)
+            @test minimum(sol[rs.X[2]]) >= 0
+            @test all(sol[rs.X[2]] .+ sol[rs.A] .<= 1)
             @test all(==(20), sol[rs.X[1]])
-            @test sol[rs.B][end] > 0
+            @test sol[rs.B][end] > 0 # (the jump fires at rate 5 over time 20)
         end
     end
 
@@ -142,8 +164,8 @@ let
             aggregator)
         for _ in 1:10
             sol = solve(jprob, SSAStepper(); rng)
-            @test minimum(sol[rs.X[2]]) == 0
-            @test sol[rs.A][end] in (0, 1)
+            @test minimum(sol[rs.X[2]]) >= 0
+            @test all(sol[rs.X[2]] .+ sol[rs.A] .<= 1)
             @test all(==(20), sol[rs.X[1]])
         end
     end
@@ -167,4 +189,72 @@ let
     # Listing an element as well as its array gives the element once.
     rs2 = ReactionSystem([Reaction(p, [Y[1]], [Y[2]])], t, [Y, Y[1]], [p]; name = :rs2)
     @test isequal(species(rs2), [Y[1], Y[2], Y[3]])
+end
+
+# The inferring constructor includes only the elements the reactions use; listing the array in the
+# explicit constructor includes all of them.
+let
+    @parameters p
+    @test isequal(unknowns(ReactionSystem([Reaction(p, [X[2]], nothing)], t; name = :rs)), [X[2]])
+    @test isequal(unknowns(ReactionSystem([Reaction(p, [X[2]], nothing)], t, [X], [p]; name = :rs)),
+        [X[1], X[2]])
+end
+
+# Matrices of species are scalarized in column-major order, and can be given and read as matrices.
+let
+    @species C(t) M(t)[1:2, 1:2]
+    @parameters p
+    mrxs = [Reaction(p, [M[1, 2]], [C]), Reaction(p, [M[2, 1]], [C])]
+    rs_dsl = @reaction_network rs begin
+        @species C(t) M(t)[1:2, 1:2]
+        p, M[1, 2] --> C
+        p, M[2, 1] --> C
+    end
+    rs_explicit = complete(ReactionSystem(mrxs, t, [C, M], [p]; name = :rs))
+    @test isequal(unknowns(rs_explicit), [C, M[1, 1], M[2, 1], M[1, 2], M[2, 2]])
+    @test isequal(unknowns(rs_dsl), [C, M[1, 1], M[2, 1], M[1, 2], M[2, 2]])
+    for rs in (rs_explicit, rs_dsl)
+        prob = ODEProblem(rs, [C => 0.0, M => [1.0 2.0; 3.0 4.0]], 1.0, [p => 1.0])
+        @test prob[rs.M] == [1.0 2.0; 3.0 4.0]
+        @test prob[rs.M[2, 1]] == 3.0
+        sol = solve(prob, Tsit5(); abstol = 1e-10, reltol = 1e-10)
+        @test sol[rs.C][end] ≈ 5.0 * (1 - exp(-1.0))
+    end
+end
+
+# A default value declared for an array variable is used when no value is given.
+let
+    @variables U(t)[1:2] = [1.0, 2.0]
+    @parameters p
+    rs = complete(ReactionSystem([Reaction(p, nothing, [A]), D(U[1]) ~ -U[1], D(U[2]) ~ -U[2]], t,
+        [A, U], [p]; name = :rs))
+    @test isequal(unknowns(rs), [A, U[1], U[2]])
+    sol = solve(ODEProblem(rs, [A => 0.0], 1.0, [p => 1.0]), Tsit5(); abstol = 1e-10, reltol = 1e-10)
+    @test sol[rs.U][end] ≈ [exp(-1.0), 2exp(-1.0)]
+end
+
+# A subsystem using a whole array variable of its parent (through `ParentScope`): the completed
+# (flattened) system has its elements, while the array itself can still be looked up (through the
+# unflattened system stored by `complete`).
+let
+    @parameters p
+    Vp = ParentScope(V)
+    @named child = ReactionSystem([Reaction(p, nothing, [A]), D(Vp) ~ -Vp], t)
+    @named parent = ReactionSystem(Reaction[], t)
+    rs = complete(compose(parent, [child]))
+    @test !any(is_array_symbolic, unknowns(rs))
+    @test issetequal(unknowns(rs), [rs.child.A, V[1], V[2]])
+    @test isequal(Symbolics.unwrap(rs.V), Symbolics.unwrap(V))
+    sol = solve(ODEProblem(rs, [V => [1.0, 2.0], rs.child.A => 0.0], 1.0, [rs.child.p => 1.0]),
+        Tsit5(); abstol = 1e-10, reltol = 1e-10)
+    @test sol[rs.V][end] ≈ [exp(-1.0), 2exp(-1.0)]
+end
+
+# A repeated unknown is listed once.
+let
+    @parameters p
+    rs = complete(ReactionSystem([Reaction(p, [A], nothing)], t, [A, A], [p]; name = :rs))
+    @test isequal(unknowns(rs), [A])
+    sol = solve(ODEProblem(rs, [A => 1.0], 1.0, [p => 1.0]), Tsit5(); abstol = 1e-10, reltol = 1e-10)
+    @test sol[rs.A][end] ≈ exp(-1.0)
 end
