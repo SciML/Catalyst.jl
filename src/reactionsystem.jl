@@ -229,6 +229,37 @@ function find_tstop_vars!(ps, us, tstops::Vector, t)
     return
 end
 
+# Errors for an equation for a whole array (e.g. `D(V) ~ -V` for an array variable `V`), which
+# isn't supported: equations, like reactions, must refer to arrays through their elements.
+function check_scalar_equations(eqs)
+    for eq in eqs
+        (eq isa Equation) || continue
+        if symtype(unwrap(eq.lhs)) <: AbstractArray || symtype(unwrap(eq.rhs)) <: AbstractArray
+            throw(ArgumentError("The equation `$eq` is for a whole array, which `ReactionSystem`s don't support. Write one equation per element instead (e.g. with `Symbolics.scalarize(eq)`)."))
+        end
+    end
+    return nothing
+end
+
+# The unknowns with each array unknown (e.g. `X` from `@species X(t)[1:2]`) replaced by its
+# elements, without duplicates. Other unknowns, including array elements (`X[1]`), are kept as
+# given. The DSL scalarizes the unknowns it declares, and reactions refer to array species through
+# their elements, but array unknowns can still be given to the explicit constructor.
+# ModelingToolkitBase doesn't handle unscalarized array unknowns correctly in jumps and events
+# (SciML/ModelingToolkit.jl#5428).
+function scalarize_unknowns(unknowns)
+    us = SymbolicT[]
+    for u in unknowns
+        u = unwrap(u)
+        if symtype(u) <: AbstractArray
+            append!(us, unwrap.(vec(Symbolics.scalarize(u))))
+        else
+            push!(us, u)
+        end
+    end
+    return unique!(us)
+end
+
 # Validates that tstop expressions only contain parameters and constants (no unknowns or
 # independent variable). Tstops must be computable before the solve starts, so they cannot
 # depend on dynamic state. A tstop is either a scalar (a period) or an array of time points;
@@ -432,6 +463,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
         )
 
         # Structural checks (fast, always on by default).
+        checks && check_scalar_equations(eqs)
         if checks && isempty(sivs)
             check_variables(unknowns, iv)
             check_parameters(ps, iv)
@@ -513,7 +545,7 @@ function ReactionSystem(
         unwrap.(spatial_ivs)
     end
 
-    unknowns′ = isempty(unknowns) ? SymbolicT[] : sort!(unwrap.(unknowns), by = !isspecies)
+    unknowns′ = isempty(unknowns) ? SymbolicT[] : sort!(scalarize_unknowns(unknowns), by = !isspecies)
     spcs = filter(isspecies, unknowns′)
     ps′ = isempty(ps) ? SymbolicT[] : unwrap.(ps)
 

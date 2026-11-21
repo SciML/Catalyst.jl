@@ -29,6 +29,10 @@ Tests if the given symbolic variable corresponds to a boundary condition species
 """
 isbc(s::Num) = isbc(value(s))
 function isbc(s)
+    # An element of an array species (e.g. `Q[1]`) is one if the array is.
+    if iscall(s) && operation(s) === getindex
+        s = first(arguments(s))
+    end
     MT.getmetadata(s, VariableBCSpecies, false)
 end
 

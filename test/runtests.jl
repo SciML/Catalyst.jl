@@ -31,6 +31,7 @@ end
         @time @safetestset "Coupled CRN/Equation Systems" begin include("reactionsystem_core/coupled_equation_crn_systems.jl") end
         @time @safetestset "Events" begin include("reactionsystem_core/events.jl") end
         @time @safetestset "Functional Parameters" begin include("reactionsystem_core/functional_parameters.jl") end
+        @time @safetestset "Array Unknowns" begin include("reactionsystem_core/array_unknowns.jl") end
 
         # Tests model creation via the @reaction_network DSL.
         @time @safetestset "DSL Basic Model Construction" begin include("dsl/dsl_basic_model_construction.jl") end
