@@ -311,3 +311,18 @@ let
         @test sol[rs.Q][end] ≈ [3.0, 4.0]
     end
 end
+
+# Converting an ODE model back to a `ReactionSystem` marks its species as boundary condition
+# species, in its unknowns and its equations alike, so that they get no second differential
+# equation, also for the elements of an array species.
+let
+    rn = @reaction_network begin
+        @species X(t)[1:2]
+        p, X[1] --> X[2]
+    end
+    rs = complete(Catalyst.system_to_reactionsystem(ode_model(rn)))
+    @test all(Catalyst.isbc, species(rs))
+    sol = solve(ODEProblem(rs, [:X => [1.0, 0.0]], 1.0, [:p => 1.0]), Tsit5(); abstol = 1e-10,
+        reltol = 1e-10)
+    @test sol[rs.X][end] ≈ [exp(-1.0), 1 - exp(-1.0)]
+end
