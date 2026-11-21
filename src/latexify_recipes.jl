@@ -193,6 +193,8 @@ end
 function cle_equations(w::LatexCLE; double_linebreak = LATEX_DEFS.double_linebreak,
         starred = LATEX_DEFS.starred, math_delimiters = false, show_time_arg = false,
         mathrm = true, mathjax = LATEX_DEFS.mathjax, kwargs...)
+    aliases_present(w.rs) &&
+        throw(ArgumentError("$(nameof(w.rs)) has aliases that are not resolved yet, so its SDE form can't be displayed. Call `complete` on it first."))
     rs = Catalyst.flatten(w.rs)
     (isempty(MT.jumps(rs)) && isempty(MT.poissonians(rs))) ||
         error("The SDE form can not display a ReactionSystem with coupled jumps or poissonians.")
@@ -260,6 +262,8 @@ function time_change_equations(w::LatexTimeChange;
         double_linebreak = LATEX_DEFS.double_linebreak, starred = LATEX_DEFS.starred,
         math_delimiters = false, show_time_arg = false, mathrm = true,
         mathjax = LATEX_DEFS.mathjax, kwargs...)
+    aliases_present(w.rs) &&
+        throw(ArgumentError("$(nameof(w.rs)) has aliases that are not resolved yet, so its jump form can't be displayed. Call `complete` on it first."))
     rs = Catalyst.flatten(w.rs)
     (has_nonreactions(rs) || !isempty(MT.brownians(rs)) || !isempty(MT.jumps(rs))) &&
         error("The jump form can only display reactions, but this ReactionSystem has non-reaction equations, brownians, or coupled jumps.")

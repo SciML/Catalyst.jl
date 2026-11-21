@@ -20,6 +20,16 @@ function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
         u0 = Catalyst.symmap_to_varmap(rs, u0)
     end
 
+    # Symbols eliminated by aliases are replaced by the symbols that replace them.
+    submap = Catalyst.alias_map(rs)
+    if !isempty(submap)
+        bif_par = get(submap, Symbolics.unwrap(bif_par), bif_par)
+        isnothing(plot_var) || (plot_var = get(submap, Symbolics.unwrap(plot_var), plot_var))
+        u0_bif = Catalyst.remap_alias_inputs(u0_bif, rs)
+        ps = Catalyst.remap_alias_inputs(ps, rs)
+        u0 = Catalyst.remap_alias_inputs(u0, rs)
+    end
+
     # Creates nonlinear System. If there are conservation laws, these are manually added as 
     # equations, and the conservationlaw parameter values are manually computed and added to `ps`.
     Catalyst.conservationlaw_errorcheck(rs, merge(Dict(ps), Dict(u0)))

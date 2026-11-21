@@ -184,3 +184,22 @@ let
     @test occursin("has no reactions or equations", string(latexify(empty_rn; form = :jump)))
     @test_throws ErrorException latexify(rn; form = :xxx)
 end
+
+# Aliases: a completed system is shown with its aliases resolved, as the hand-merged network is.
+# A system whose aliases aren't resolved yet (not complete) can't be shown in these forms.
+let
+    nc = @network_component begin
+        @species A(t) B(t)
+        @aliases A ~ B
+        p, 0 --> A
+        d, B --> 0
+    end
+    merged = @reaction_network begin
+        p, 0 --> B
+        d, B --> 0
+    end
+    for form in (:sde, :jump)
+        @test tex_of(latexify(complete(nc); form)) == tex_of(latexify(merged; form))
+        @test_throws ArgumentError latexify(nc; form)
+    end
+end

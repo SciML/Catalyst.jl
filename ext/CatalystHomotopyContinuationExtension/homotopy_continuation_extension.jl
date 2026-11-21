@@ -37,6 +37,9 @@ Notes:
   """
 function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative = true,
         neg_thres = -1e-15, u0 = [], kwargs...)
+    # Symbols eliminated by aliases may be used in the inputs.
+    ps = Catalyst.remap_alias_inputs(ps, rs)
+    u0 = Catalyst.remap_alias_inputs(u0, rs)
     if !isautonomous(rs)
         error("Attempting to compute steady state for a non-autonomous system (e.g. where some rate depend on $(get_iv(rs))). This is not possible.")
     end

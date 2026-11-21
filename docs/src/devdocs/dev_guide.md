@@ -53,3 +53,64 @@ To build the Catalyst documentation locally:
 
 ### [Spellchecking in your code](@id devdocs_advice_codespellchecker)
 Especially when writing documentation, but also when writing normal code, it can be useful to have a spellchecker running through your texts. While code can be copied into a spellchecker and checked there (which is still useful to check grammar), it can also be very useful to (for users of VSCode) run the [Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker) extension. This will automatically provide simple spell-checking for code and documentation as you write it.
+
+## [Adding a new field to `ReactionSystem`](@id devdocs_new_field)
+
+When adding a new field to the `ReactionSystem` struct, the following locations
+must all be updated. Missing any of these can cause subtle bugs.
+
+### Core struct and constructors
+- **`reactionsystem_fields` constant** (`src/reactionsystem.jl`) — add the field
+  name in the correct position.
+- **Struct definition** (`src/reactionsystem.jl`) — add the field with docstring.
+- **Inner constructor** (`src/reactionsystem.jl`) — add as positional argument and
+  in the `new{...}(...)` call.
+- **Explicit constructor** `ReactionSystem(eqs, iv, unknowns, ps, ...)`
+  (`src/reactionsystem.jl`) — add as keyword argument with default, pass to inner
+  constructor.
+- **`make_ReactionSystem_internal`** (`src/reactionsystem.jl`) — add as keyword
+  argument, pass through to the explicit constructor.
+
+### Composition and flattening
+- **`flatten`** (`src/reactionsystem.jl`) — collect field from subsystems
+  (recursively if needed) and pass to constructor.
+- **`compose`** (`src/reactionsystem.jl`) — add keyword argument if the field
+  should be settable at compose time; merge via `@set!`.
+- **`extend`** (`src/reactionsystem.jl`) — union/merge field from both systems.
+
+### Accessors
+- **`get_*` accessor** (`src/reactionsystem.jl`) — top-level only (uses `getfield`).
+- **Recursive accessor** (`src/reactionsystem.jl`) — collects from subsystems with
+  namespacing (if applicable).
+- **Exports** (`src/Catalyst.jl`) — export public accessors, or mark them `@public`.
+- **API docs** (`docs/src/api/`) — document public accessors.
+
+### Equality and serialization
+- **`isequivalent`** (`src/reactionsystem.jl`) — add comparison for the field.
+- **`save_reactionsystem`** (`src/reactionsystem_serialisation/serialise_reactionsystem.jl`)
+  — add serialization support or an error guard if not yet supported.
+- **`reactionsystem_uptodate_check`** — compares the struct's fields with
+  `reactionsystem_fields` (warning in `save_reactionsystem` if they differ), so it needs no
+  change once `reactionsystem_fields` is updated.
+
+### Conversion pipeline
+- **`hybrid_model`** (`src/reactionsystem_conversions.jl`) — pass field through to
+  `MT.System` constructor if applicable.
+- **`ss_ode_model`** (`src/reactionsystem_conversions.jl`) — same (separate code path).
+- **`sde_model` legacy path** (`src/reactionsystem_conversions.jl`) — same.
+- **`eliminate_aliases`** (`src/alias_elimination.jl`) — substitute through the
+  field if it contains symbolic expressions.
+
+### DSL
+- **`option_keys`** (`src/dsl.jl`) — add if the field has a DSL option.
+- **`read_*_option`** (`src/dsl.jl`) — implement the option reader.
+- **`make_reaction_system`** (`src/dsl.jl`) — wire into the generated code.
+
+### Other
+- **`system_to_reactionsystem`** (`src/reactionsystem_conversions.jl`) — handle in
+  reverse conversion (or document as lost).
+- **`DiscreteSpaceReactionSystem`**
+  (`src/spatial_reaction_systems/discrete_space_reaction_systems.jl`) — support the field in
+  spatial models, or error if it is used.
+- **Tests** — add to appropriate test file.
+- **HISTORY.md** — document for users.

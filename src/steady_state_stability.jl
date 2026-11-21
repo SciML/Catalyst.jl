@@ -52,9 +52,12 @@ function steady_state_stability(u::Vector, rs::ReactionSystem, ps;
         error("Attempting to compute stability for a non-autonomous system (e.g. where some rate depend on $(get_iv(rs))). This is not possible.")
     end
 
+    # Symbols eliminated by aliases may be used in `u` and `ps` (`remake` does not translate them).
+    ps = remap_alias_inputs(ps, rs)
+
     # If `u` is a vector of values, we convert it to a map. Also, if there are conservation laws,
     # corresponding values must be eliminated from `u`.
-    u = steady_state_u_conversion(u, rs)
+    u = remap_alias_inputs(steady_state_u_conversion(u, rs), rs)
     if length(u) > length(unknowns(ss_jac.f.sys))
         u = filter(u_v -> any(isequal(u_v[1]), unknowns(ss_jac.f.sys)), u)
     end
@@ -113,7 +116,7 @@ function steady_state_jac(rs::ReactionSystem; u0 = [sp => 0.0 for sp in unknowns
     # If u0 is a vector of values, must be converted to something MTK understands.
 
     # Converts u0 to values MTK understands, and checks that potential conservation laws are accounted for.
-    u0 = steady_state_u_conversion(u0, rs)
+    u0 = remap_alias_inputs(steady_state_u_conversion(u0, rs), rs)
     conservationlaw_errorcheck(rs, u0)
 
     # Creates an `ODEProblem` with a Jacobian. Dummy values for `u0` and `ps` must be provided.
