@@ -137,9 +137,12 @@ let
             save_positions = (false, false))
         sol1 = solve(jprob_1, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
 
-        # Checks the aggregator chosen by default (`Direct` for fewer than 20 jumps).
-        jprob_1b = JumpProblem(rn_catalyst, u0_1, (0.0, 10000.0), ps_1)
+        # Checks the aggregator chosen by default (`Direct` for fewer than 20 jumps), and
+        # simulates with the default aggregator and solver.
+        jprob_1b = JumpProblem(rn_catalyst, u0_1, (0.0, 10000.0), ps_1;
+            save_positions = (false, false))
         @test jprob_1b.aggregator isa Direct
+        sol1b = solve(jprob_1b; rng = StableRNG(seed), saveat = 1.0)
 
         # Simulates the manually written model
         u0_2 = map_to_vec(u0_1, u0_sym)
@@ -151,23 +154,27 @@ let
         # Checks that the means are similar (the test have been check that it holds across a large
         # number of simulates, even without seed).
         @test mean(sol1[sp]) ≈ mean(sol2[findfirst(u0_sym .== sp),:]) rtol = 1e-1
+        @test mean(sol1b[sp]) ≈ mean(sol2[findfirst(u0_sym .== sp),:]) rtol = 1e-1
     end
 end
 
 # Checks the aggregator chosen by default for a network with at least 20 (mass action) reactions,
 # and that it simulates the network correctly. Each species is a birth-death process with
-# stationary mean `p/d`.
+# stationary mean `p/d`; starting at 0 and checking each species, a species that never changes
+# fails the test.
 let
     rn = @reaction_network begin
         p, 0 --> (X1, X2, X3, X4, X5, X6, X7, X8, X9, X10)
         d, (X1, X2, X3, X4, X5, X6, X7, X8, X9, X10) --> 0
     end
-    u0 = [sp => 10 for sp in species(rn)]
+    u0 = [sp => 0 for sp in species(rn)]
     jprob = JumpProblem(rn, u0, (0.0, 1000.0), [:p => 10.0, :d => 1.0];
         save_positions = (false, false))
     @test jprob.aggregator isa RSSA
     sol = solve(jprob, SSAStepper(); rng = StableRNG(seed), saveat = 1.0)
-    @test mean(mean(sol[sp]) for sp in species(rn)) ≈ 10.0 rtol = 0.05
+    for sp in species(rn)
+        @test mean(sol[sp]) ≈ 10.0 rtol = 0.1
+    end
 end
 
 # Checks that simulations for a large number of potential systems are completed (and don't error).
