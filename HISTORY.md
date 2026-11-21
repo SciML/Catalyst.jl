@@ -3,17 +3,26 @@
 ## Unreleased (on master)
 
 - Array species and variables (e.g. from `@species X(t)[1:2]`) given to the explicit
-  `ReactionSystem(eqs, t, unknowns, ps)` constructor, or found in an equation for a whole array
-  (such as `D(V) ~ -V`), are now scalarized into their elements (each array's in column-major order), as the
-  DSL and the constructor inferring the unknowns from reactions already did. The explicit
-  constructor used to keep them as arrays, so `netstoichmat`, `ODEProblem` and other functions
-  failed for array species, and jumps and events could read or change the wrong state entries
-  whenever an array unknown came before the unknowns they used (ModelingToolkitBase indexes the
-  state by position in `unknowns` there, SciML/ModelingToolkit.jl#5428). For example, an event
-  changing a variable `W` declared after an array variable `V` changed `V[2]` instead.
-  `unknowns(rs)` now lists the elements, so the positions of the unknowns after an array change;
-  giving values for a whole array (`X => [1.0, 2.0]`) and reading it (`sol[rs.X]`) work as before.
-  A repeated unknown is now listed once.
+  `ReactionSystem(eqs, t, unknowns, ps)` constructor are now scalarized into their elements (each
+  array's in column-major order), as the DSL and the constructor inferring the unknowns from
+  reactions already did. The explicit constructor used to keep them as arrays, so
+  `netstoichmat`, `ODEProblem` and other functions failed for array species, and jumps and events
+  could read or change the wrong state entries whenever an array unknown came before the
+  unknowns they used (ModelingToolkitBase indexes the state by position in `unknowns` there,
+  SciML/ModelingToolkit.jl#5428). For example, an event changing a variable `W` declared after
+  an array variable `V` changed `V[2]` instead. `unknowns(rs)` now lists the elements, so the
+  positions of the unknowns after an array change; giving values for a whole array
+  (`X => [1.0, 2.0]`) and reading it (`sol[rs.X]`) work as before. Array elements given as
+  unknowns (e.g. `X[0]`) are kept as they are, and a repeated unknown is now listed once.
+- Equations for a whole array, such as `D(V) ~ -V` for an array variable `V`, are now rejected
+  when a `ReactionSystem` is created, as they aren't supported: write one equation per element
+  instead (e.g. with `Symbolics.scalarize(D(V) ~ -V)`). They used to bring the unscalarized
+  array into the unknowns, with the jump and event problems described above.
+- The elements of an array of boundary condition species, e.g. from
+  `@species Q(t)[1:2] [isbcspecies = true]`, are now boundary condition species (`isbc(Q[1])` is
+  `true`), as for arrays of constant species. They weren't, so for example a network declaring
+  such an array in the DSL got differential equations for its elements in addition to their
+  constraint equations.
 - `latexify(rs; form = :sde)` now displays the chemical Langevin equation, with a noise term
   `νᵢⱼ √aⱼ d𝒲ⱼ` from each reaction `j` in the equation of each species `i` it changes (`𝒲ⱼ`,
   written `\mathcal{W}_j`, independent Brownian motions, one per reaction). It used to

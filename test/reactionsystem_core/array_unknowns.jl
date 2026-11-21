@@ -94,11 +94,20 @@ let
     end
 end
 
-# An equation for a whole array variable also gives scalarized unknowns.
+# Equations for whole arrays are not supported, and give an error whichever way the system is
+# built; one equation per element (here from `Symbolics.scalarize`) works.
 let
-    rs = complete(ReactionSystem([Reaction(k1, nothing, [A]), D(V) ~ -V, D(W) ~ 1], t;
+    rx = Reaction(k1, nothing, [A])
+    @test_throws "for a whole array" ReactionSystem([rx, D(V) ~ -V], t; name = :rs)
+    @test_throws "for a whole array" ReactionSystem([rx, D(V) ~ -V], t, [A, V], [k1]; name = :rs)
+    @test_throws "for a whole array" @reaction_network begin
+        @variables V(t)[1:2]
+        @equations D(V) ~ -V
+        k1, 0 --> A
+    end
+
+    rs = complete(ReactionSystem([rx; Symbolics.scalarize(D(V) ~ -V); D(W) ~ 1], t;
         discrete_events = [[1.0] => [W ~ Pre(W) + 10]], name = :rs))
-    @test !any(is_array_symbolic, unknowns(rs))
     @test issetequal(unknowns(rs), [A, V[1], V[2], W])
     sol = solve(ODEProblem(rs, [A => 0.0, V => [1.0, 2.0], W => 0.0], (0.0, 2.0), [k1 => 1.0]),
         Tsit5(); abstol = 1e-10, reltol = 1e-10)
@@ -243,26 +252,22 @@ let
     @test sol[rs.U][end] ≈ [exp(-1.0), 2exp(-1.0)]
 end
 
-# A subsystem using a whole array variable of its parent (through `ParentScope`): the completed
-# (flattened) system has its elements, while the array itself can still be looked up (through the
-# unflattened system stored by `complete`).
+# A subsystem using the elements of an array variable of its parent (through `ParentScope`): the
+# completed (flattened) system, and the conversions of one completed without flattening, have them.
 let
     @parameters p
-    Vp = ParentScope(V)
-    @named child = ReactionSystem([Reaction(p, nothing, [A]), D(Vp) ~ -Vp], t)
+    V1p, V2p = ParentScope(V[1]), ParentScope(V[2])
+    @named child = ReactionSystem([Reaction(p, nothing, [A]), D(V1p) ~ -V1p, D(V2p) ~ -2V2p], t)
     @named parent = ReactionSystem(Reaction[], t)
     rs = complete(compose(parent, [child]))
     @test !any(is_array_symbolic, unknowns(rs))
     @test issetequal(unknowns(rs), [rs.child.A, V[1], V[2]])
-    @test isequal(Symbolics.unwrap(rs.V), Symbolics.unwrap(V))
-
-    # Completed without flattening, the conversions flatten it (through the explicit constructor).
     hier = complete(compose(parent, [child]); flatten = false)
     @test !any(is_array_symbolic, unknowns(ode_model(hier)))
     @test issetequal(unknowns(ode_model(hier)), [hier.child.A, V[1], V[2]])
     sol = solve(ODEProblem(rs, [V => [1.0, 2.0], rs.child.A => 0.0], 1.0, [rs.child.p => 1.0]),
         Tsit5(); abstol = 1e-10, reltol = 1e-10)
-    @test sol[rs.V][end] ≈ [exp(-1.0), 2exp(-1.0)]
+    @test sol[V][end] ≈ [exp(-1.0), 2exp(-2.0)]
 end
 
 # A repeated unknown is listed once.
@@ -272,4 +277,37 @@ let
     @test isequal(unknowns(rs), [A])
     sol = solve(ODEProblem(rs, [A => 1.0], 1.0, [p => 1.0]), Tsit5(); abstol = 1e-10, reltol = 1e-10)
     @test sol[rs.A][end] ≈ exp(-1.0)
+end
+
+# Array elements given as unknowns are kept as they are (also with indices not starting at 1),
+# while a whole array gives all its elements.
+let
+    @species Z(t)[0:2]
+    @parameters p
+    rx = Reaction(p, [Z[0]], [Z[2]])
+    @test isequal(unknowns(ReactionSystem([rx], t, [Z[0], Z[2]], [p]; name = :rs)), [Z[0], Z[2]])
+    @test isequal(unknowns(ReactionSystem([rx], t, [Z], [p]; name = :rs)), [Z[0], Z[1], Z[2]])
+end
+
+# The elements of an array of boundary condition species are boundary condition species.
+let
+    @species Q(t)[1:2] [isbcspecies = true]
+    @parameters p
+    @test Catalyst.isbc(Q[1]) && Catalyst.isbc(Q[2])
+    rs_explicit = complete(ReactionSystem([Reaction(p, [Q[1]], [Q[1], A]), Q[1] ~ 3, Q[2] ~ 4], t,
+        [Q, A], [p]; name = :rs))
+    rs_dsl = @reaction_network rs begin
+        @species Q(t)[1:2] [isbcspecies = true] A(t)
+        @equations begin
+            Q[1] ~ 3
+            Q[2] ~ 4
+        end
+        p, Q[1] --> Q[1] + A
+    end
+    for rs in (rs_explicit, rs_dsl)
+        @test issetequal(unknowns(rs), [Q[1], Q[2], A])
+        sol = solve(ODEProblem(rs, [A => 0.0], 1.0, [p => 1.0]; mtkcompile = true), Tsit5())
+        @test sol[rs.A][end] ≈ 3.0
+        @test sol[rs.Q][end] ≈ [3.0, 4.0]
+    end
 end
