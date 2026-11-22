@@ -163,10 +163,14 @@ end
 # Solves a nonlinear problem (EnsembleProblems are not possible for these).
 let
     base_nlprob = NonlinearProblem(model, u0_base, p_base)
-    ref_sol = solve(NonlinearProblem(model, u0_alts[1], p_alts[1]), NewtonRaphson())
+    ref_nlprob = NonlinearProblem(model, u0_alts[1], p_alts[1])
+    ref_sol = solve(ref_nlprob, NewtonRaphson())
     @test solve(base_nlprob, NewtonRaphson()) != ref_sol
+    # The model's steady state doesn't depend on the initial condition, so `u0` is checked directly.
+    @test base_nlprob.u0 != ref_nlprob.u0
     for u0 in u0_alts, p in p_alts
         nlprob = remake(base_nlprob; u0, p)
+        @test nlprob.u0 == ref_nlprob.u0
         @test ref_sol == solve(nlprob, NewtonRaphson())
     end
 end
@@ -180,12 +184,16 @@ let
     ref_sol = solve(ref_ssprob, DynamicSS(Tsit5()))
     ref_esol = solve(EnsembleProblem(ref_ssprob), DynamicSS(Tsit5()); trajectories = 2)
     @test solve(base_ssprob, DynamicSS(Tsit5())) != ref_sol
+    # The model's steady state doesn't depend on the initial condition, so `u0` is checked directly.
+    @test base_ssprob.u0 != ref_ssprob.u0
 
     # Remakes the problems with all input types, checking that the reference solutions are found.
     for u0 in u0_alts, p in p_alts
         ssprob = remake(base_ssprob; u0, p)
+        @test ssprob.u0 == ref_ssprob.u0
         @test ref_sol == solve(ssprob, DynamicSS(Tsit5()))
         eprob = remake(base_eprob; u0, p)
+        @test eprob.prob.u0 == ref_ssprob.u0
         @test ref_esol == solve(eprob, DynamicSS(Tsit5()); trajectories = 2)
     end
 end
@@ -369,9 +377,11 @@ end
 # Solves a nonlinear problem (EnsembleProblems are not possible for these).
 @test_broken let # The first `NonlinearProblem` creation call throws error. Seems something related to vector variables. Need more work to isolate.
     base_nlprob = NonlinearProblem(model_vec, u0_base_vec, p_base_vec)
-    ref_sol = solve(NonlinearProblem(model_vec, u0_alts_vec[1], p_alts_vec[1]), NewtonRaphson())
+    ref_nlprob = NonlinearProblem(model_vec, u0_alts_vec[1], p_alts_vec[1])
+    ref_sol = solve(ref_nlprob, NewtonRaphson())
     for u0 in u0_alts_vec, p in p_alts_vec
         nlprob = remake(base_nlprob; u0, p)
+        @test nlprob.u0 == ref_nlprob.u0
         @test ref_sol == solve(nlprob, NewtonRaphson())
     end
 end
@@ -385,12 +395,16 @@ let
     ref_sol = solve(ref_ssprob, DynamicSS(Tsit5()))
     ref_esol = solve(EnsembleProblem(ref_ssprob), DynamicSS(Tsit5()); trajectories = 2)
     @test solve(base_ssprob, DynamicSS(Tsit5())) != ref_sol
+    # The model's steady state doesn't depend on the initial condition, so `u0` is checked directly.
+    @test base_ssprob.u0 != ref_ssprob.u0
 
     # Remakes the problems with all input types, checking that the reference solutions are found.
     for u0 in u0_alts_vec, p in p_alts_vec
         ssprob = remake(base_ssprob; u0, p)
+        @test ssprob.u0 == ref_ssprob.u0
         @test ref_sol == solve(ssprob, DynamicSS(Tsit5()))
         eprob = remake(base_eprob; u0, p)
+        @test eprob.prob.u0 == ref_ssprob.u0
         @test ref_esol == solve(eprob, DynamicSS(Tsit5()); trajectories = 2)
     end
 end

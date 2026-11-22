@@ -155,6 +155,11 @@ let
         # number of simulates, even without seed).
         @test mean(sol1[sp]) ≈ mean(sol2[findfirst(u0_sym .== sp),:]) rtol = 1e-1
         @test mean(sol1b[sp]) ≈ mean(sol2[findfirst(u0_sym .== sp),:]) rtol = 1e-1
+
+        # Some species start at their mean, so a species that never changes could pass the checks
+        # above. Checks that it changes.
+        @test !allequal(sol1[sp])
+        @test !allequal(sol1b[sp])
     end
 end
 
