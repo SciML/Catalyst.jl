@@ -610,7 +610,7 @@ version = "0.5.2"
 deps = ["Combinatorics", "DataStructures", "DiffEqBase", "DocStringExtensions", "DynamicQuantities", "EnumX", "Graphs", "JumpProcesses", "LaTeXStrings", "Latexify", "LinearAlgebra", "MacroTools", "ModelingToolkitBase", "Parameters", "Reexport", "RuntimeGeneratedFunctions", "SciMLBase", "SciMLPublic", "Setfield", "SparseArrays", "SymbolicIndexingInterface", "SymbolicUtils", "Symbolics"]
 path = "/home/runner/work/Catalyst.jl/Catalyst.jl"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
-version = "17.0.2"
+version = "17.0.3"
 weakdeps = ["BifurcationKit", "CairoMakie", "DynamicPolynomials", "GraphMakie", "HomotopyContinuation", "Makie", "NetworkLayout", "StructuralIdentifiability", "TermInterface"]
 
     [deps.Catalyst.extensions]
@@ -2389,9 +2389,9 @@ version = "2.2.2"
 
 [[deps.LLVM]]
 deps = ["CEnum", "LLVMExtra_jll", "Libdl", "PrecompileTools", "Preferences", "Printf", "ScopedValues", "Unicode"]
-git-tree-sha1 = "1db3bd5e114bea53a70d7ca7f96357cf3b941831"
+git-tree-sha1 = "01951b59532e21e6310e37910191d3f76008a76d"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "10.5.2"
+version = "10.7.0"
 
     [deps.LLVM.extensions]
     BFloat16sExt = "BFloat16s"
@@ -2402,9 +2402,9 @@ version = "10.5.2"
 
 [[deps.LLVMExtra_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "TOML"]
-git-tree-sha1 = "8bb94cb216f49817fb464c509bd240e630807eb8"
+git-tree-sha1 = "7ea32dbedca77131950748e146358d696ca3d98f"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.58+0"
+version = "0.0.60+0"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -3808,10 +3808,10 @@ weakdeps = ["StatsBase"]
     StatsBaseExt = "StatsBase"
 
 [[deps.PEtab]]
-deps = ["ArrayInterface", "CSV", "Catalyst", "ComponentArrays", "DataFrames", "Dates", "Distributed", "Distributions", "ForwardDiff", "HDF5", "LinearAlgebra", "LinearSolve", "ModelingToolkitBase", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqSDIRK", "OrdinaryDiffEqTsit5", "PreallocationTools", "PrecompileTools", "Printf", "ProgressMeter", "QuasiMonteCarlo", "Random", "ReverseDiff", "RuntimeGeneratedFunctions", "SBMLImporter", "SciMLBase", "SciMLLogging", "Setfield", "StatsBase", "StyledStrings", "Sundials", "SymbolicIndexingInterface", "Symbolics", "YAML"]
-git-tree-sha1 = "e3ec7526a3dbedbf3f38b7ed09a4707506f2b3df"
+deps = ["ArrayInterface", "CSV", "Catalyst", "ComponentArrays", "DataFrames", "Dates", "Distributed", "Distributions", "ForwardDiff", "HDF5", "LinearAlgebra", "LinearSolve", "ModelingToolkitBase", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqSDIRK", "OrdinaryDiffEqTsit5", "PreallocationTools", "PrecompileTools", "Printf", "ProgressMeter", "QuasiMonteCarlo", "Random", "ReverseDiff", "RuntimeGeneratedFunctions", "SBMLImporter", "SciMLBase", "SciMLLogging", "Serialization", "Setfield", "StatsBase", "StyledStrings", "Sundials", "SymbolicIndexingInterface", "Symbolics", "YAML"]
+git-tree-sha1 = "bb3ef3b61e34c4117f40bd99a6a6ae6d7922b6b7"
 uuid = "48d54b35-e43e-4a66-a5a1-dde6b987cf69"
-version = "5.6.0"
+version = "5.6.1"
 
     [deps.PEtab.extensions]
     PEtabFidesExtension = ["Fides"]
@@ -5699,9 +5699,9 @@ version = "1.3.1+2"
 
 [[deps.Zstd_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "446b23e73536f84e8037f5dce465e92275f6a308"
+git-tree-sha1 = "576e03404e47aaeb64557d3054d5daef9de85dc2"
 uuid = "3161d3a3-bdf6-5164-811a-617609db77b4"
-version = "1.5.7+1"
+version = "1.5.7+2"
 
 [[deps.Zygote]]
 deps = ["AbstractFFTs", "ChainRules", "ChainRulesCore", "DiffRules", "Distributed", "FillArrays", "ForwardDiff", "GPUArraysCore", "IRTools", "InteractiveUtils", "LinearAlgebra", "LogExpFunctions", "MacroTools", "NaNMath", "PrecompileTools", "Random", "SparseArrays", "SpecialFunctions", "Statistics", "ZygoteRules"]
