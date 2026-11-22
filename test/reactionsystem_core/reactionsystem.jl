@@ -696,6 +696,18 @@ let
     jump = ConstantRateJump(k * X, [X ~ Pre(X) + 1])
     @test ReactionSystem([rx], t; jumps = [jump], name = :rs) isa ReactionSystem
     @test ReactionSystem([rx], t, [X], [k]; jumps = [jump], name = :rs) isa ReactionSystem
+
+    # The error names the offending jump and shows a symbolic alternative.
+    mixed_jumps = [jump, VariableRateJump(rate, affect!)]
+    msg_parts = ["Jump 2 is a VariableRateJump", "only support symbolic jumps",
+        "ConstantRateJump(k * X, [X ~ Pre(X) + 1])"]
+    @test_throws msg_parts ReactionSystem([rx], t; jumps = mixed_jumps, name = :rs)
+    @test_throws msg_parts ReactionSystem([rx], t, [X], [k]; jumps = mixed_jumps, name = :rs)
+
+    # A single-pass `jumps` input keeps its jump.
+    rs = ReactionSystem([rx], t, [X], [k]; jumps = Iterators.Stateful([jump]), name = :rs)
+    @test length(ModelingToolkitBase.get_jumps(rs)) == 1
+    @test ModelingToolkitBase.get_jumps(rs)[1] === jump
 end
 
 # Tests various erroneous `convert` calls.

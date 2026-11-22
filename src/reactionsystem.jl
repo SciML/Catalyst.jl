@@ -582,7 +582,6 @@ function ReactionSystem(
         csts = filter(isconstant, unknowns′)
         throw(ArgumentError("Found one or more constant species among the unknowns; this is not allowed. Move: $csts to be parameters."))
     end
-    check_jumps_symbolic(jumps)
     # If there are BC species, check they are balanced in their reactions.
     if balanced_bc_check && any(isbc, unknowns′)
         for rx in eqs
@@ -617,6 +616,8 @@ function ReactionSystem(
     brownians′ = isempty(brownians) ? SymbolicT[] : unwrap.(brownians)
     poissonians′ = isempty(poissonians) ? SymbolicT[] : unwrap.(poissonians)
     jumps′ = isempty(jumps) ? JumpType[] : collect(jumps)
+    # Checked after collecting, so that a single-pass `jumps` input is only iterated once.
+    check_jumps_symbolic(jumps′)
     # Normalize tstops via `Symbolics.value` (see `value_tstop`).
     tstops′ = Any[value_tstop(ts) for ts in tstops]
 
