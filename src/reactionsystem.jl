@@ -453,7 +453,7 @@ struct ReactionSystem{V <: NetworkProperties} <: MT.AbstractSystem
         # `compose`, `extend` and ModelingToolkitBase's `System`).
         if checks
             for sys in systems
-                MT.iscomplete(sys) && throw(ArgumentError("Subsystem $(nameof(sys)) is complete, so it can't be used as a subsystem (a completed system doesn't namespace its symbols). Use the system from before `complete` is called on it, e.g. one created with `@network_component` rather than `@reaction_network`."))
+                MT.iscomplete(sys) && throw(ArgumentError("Subsystem $(nameof(sys)) is complete, so it can't be used as a subsystem (a completed system doesn't namespace its symbols). Use the system from before `complete` is called on it, e.g. one created with `@network_component` rather than `@reaction_network`. If this error comes from loading a file written by `save_reactionsystem` with Catalyst 17.0.3 or earlier, edit the file to delete the `complete(rs)` line that follows the subsystem's `ReactionSystem(...; name = :$(nameof(sys)))` call (keep the final `complete(rs)` line of the top-level system)."))
             end
         end
         checks && check_scalar_equations(eqs)
