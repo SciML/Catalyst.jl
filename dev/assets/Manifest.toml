@@ -608,7 +608,7 @@ version = "0.5.2"
 
 [[deps.Catalyst]]
 deps = ["Combinatorics", "DataStructures", "DiffEqBase", "DocStringExtensions", "DynamicQuantities", "EnumX", "Graphs", "JumpProcesses", "LaTeXStrings", "Latexify", "LinearAlgebra", "MacroTools", "ModelingToolkitBase", "Parameters", "Reexport", "RuntimeGeneratedFunctions", "SciMLBase", "SciMLPublic", "Setfield", "SparseArrays", "SymbolicIndexingInterface", "SymbolicUtils", "Symbolics"]
-path = "/home/runner/work/Catalyst.jl/Catalyst.jl"
+path = "/home/runner/_work/Catalyst.jl/Catalyst.jl"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
 version = "17.0.3"
 weakdeps = ["BifurcationKit", "CairoMakie", "DynamicPolynomials", "GraphMakie", "HomotopyContinuation", "Makie", "NetworkLayout", "StructuralIdentifiability", "TermInterface"]
@@ -2603,9 +2603,9 @@ version = "0.9.3"
 
 [[deps.LikelihoodProfiler]]
 deps = ["ADTypes", "ComponentArrays", "DataFrames", "Distributed", "Distributions", "LinearAlgebra", "Optimization", "PreallocationTools", "RecipesBase", "Reexport", "SciMLBase", "SimpleUnPack"]
-git-tree-sha1 = "77981e7194b9f4fedfdfca98306144491ea941d8"
+git-tree-sha1 = "dfdeba1fa2152ced2c6c82ebcb218982fc1029fc"
 uuid = "93acb638-a083-5915-8dce-d129bc6a3f59"
-version = "1.6.1"
+version = "1.6.2"
 
     [deps.LikelihoodProfiler.extensions]
     CICOBaseExt = "CICOBase"
@@ -5121,9 +5121,9 @@ version = "1.2.2"
 
 [[deps.SymbolicUtils]]
 deps = ["AbstractTrees", "ArrayInterface", "Combinatorics", "ConstructionBase", "DataStructures", "DocStringExtensions", "DynamicPolynomials", "EnumX", "ExproniconLite", "Graphs", "LinearAlgebra", "MacroTools", "Moshi", "MultivariatePolynomials", "MutableArithmetics", "NaNMath", "OrderedCollections", "PrecompileTools", "ReadOnlyArrays", "SciMLPublic", "Setfield", "SparseArrays", "SpecialFunctions", "StaticArraysCore", "SymbolicIndexingInterface", "TaskLocalValues", "TermInterface", "WeakCacheSets"]
-git-tree-sha1 = "cb115a3e9508b91fef493f12b92af5ba6c067c78"
+git-tree-sha1 = "826fc8793fbe7323d34d1a66f15638fde7c4cab2"
 uuid = "d1185830-fcd6-423d-90d6-eec64667417b"
-version = "4.56.2"
+version = "4.56.3"
 
     [deps.SymbolicUtils.extensions]
     SymbolicUtilsChainRulesCoreExt = "ChainRulesCore"
