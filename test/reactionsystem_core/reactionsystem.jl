@@ -710,6 +710,29 @@ let
     @test ModelingToolkitBase.get_jumps(rs)[1] === jump
 end
 
+# Completed systems can't be subsystems (they don't namespace their symbols).
+let
+    sub = @reaction_network sub begin
+        (p, d), 0 <--> X
+    end
+    @species Y(t)
+    @parameters k
+    rx = Reaction(k, [Y], nothing)
+    @test_throws ArgumentError ReactionSystem([rx], t; systems = [sub], name = :parent)
+    @test_throws ArgumentError ReactionSystem([rx], t, [Y], [k]; systems = [sub], name = :parent)
+    @test_throws ArgumentError ReactionSystem(t; systems = [sub], name = :parent)
+
+    # The incomplete system works, with its symbols namespaced.
+    nc_sub = @network_component sub begin
+        (p, d), 0 <--> X
+    end
+    rs = complete(ReactionSystem([rx], t; systems = [nc_sub], name = :parent))
+    @test ModelingToolkitBase.getname(rs.sub.p) == :sub₊p
+    prob = ODEProblem(rs, [rs.sub.X => 2.0, rs.Y => 3.0], 1.0, [rs.sub.p => 1.0, rs.sub.d => 1.0, rs.k => 1.0])
+    @test prob[rs.sub.X] == 2.0
+    @test prob[rs.Y] == 3.0
+end
+
 # Tests various erroneous `convert` calls.
 let
     # Conversion of non-autonomous `ReactionSystem` to nonlinear `System`.
