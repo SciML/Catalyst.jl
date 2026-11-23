@@ -528,3 +528,52 @@ let
     @test_throws Exception save_reactionsystem(testpath("test_serialisation.jl"), rs)
     rm(testpath("test_serialisation.jl"))
 end
+
+# Files written by Catalyst 17.0.3 or earlier for hierarchies with a completed subsystem no longer
+# load (completed systems can't be subsystems). Checks that the error explains the fix, and that
+# the fixed file loads.
+let
+    old_file_string = """let
+    @independent_variables t
+    ps = @parameters p
+    sps = @species X(t)
+    rxs = [Reaction(p, nothing, [X], nothing, [1])]
+    systems = Vector(undef, 1)
+    systems[1] = let
+    	@independent_variables t
+    	local ps = @parameters k1 k2
+    	local sps = @species A(t) B(t)
+    	local rxs = [
+    		Reaction(k1, [A], [B], [1], [1]),
+    		Reaction(k2, [B], [A], [1], [1])
+    	]
+    	local rs = ReactionSystem(rxs, t, sps, ps; name = :sub)
+    	complete(rs)
+    end
+    rs = ReactionSystem(rxs, t, sps, ps; name = :top, systems)
+    complete(rs)
+    end"""
+    write(testpath("test_serialisation.jl"), old_file_string)
+    err = try
+        include(testpath("test_serialisation.jl"))
+    catch e
+        e
+    end
+    @test err isa LoadError
+    @test err.error isa ArgumentError
+    @test occursin("save_reactionsystem", err.error.msg)
+    @test occursin("name = :sub", err.error.msg)
+
+    # Deleting the subsystem's `complete(rs)` line fixes the file.
+    write(testpath("test_serialisation.jl"), replace(old_file_string, "\tcomplete(rs)\n" => ""))
+    rs_loaded = include(testpath("test_serialisation.jl"))
+    sub = @network_component sub begin
+        (k1, k2), A <--> B
+    end
+    @parameters p
+    @species X(t)
+    rs = complete(ReactionSystem([Reaction(p, nothing, [X])], t; systems = [sub], name = :top))
+    @test Catalyst.isequivalent(rs, rs_loaded)
+    @test isequal(rs_loaded.sub.k1, rs.sub.k1)
+    rm(testpath("test_serialisation.jl"))
+end
