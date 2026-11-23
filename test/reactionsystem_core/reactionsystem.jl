@@ -673,6 +673,43 @@ let
     @test_throws Exception rs = ReactionSystem([Reaction(k1, [X1], [])], t, [X1, x], [k1])
 end
 
+# Checks that jumps with a Julia function as their rate or affect give an informative error,
+# through both the inferring and the explicit constructor.
+let
+    @parameters k
+    @species X(t)
+    rx = Reaction(k, [X], [])
+    rate(u, p, t) = p[1]
+    affect!(integrator) = (integrator.u[1] += 1; nothing)
+    fn_jumps = [
+        ConstantRateJump(rate, affect!),
+        ConstantRateJump(rate, [X ~ Pre(X) + 1]),
+        ConstantRateJump(k, affect!),
+        VariableRateJump(rate, affect!),
+    ]
+    for jump in fn_jumps
+        @test_throws ArgumentError ReactionSystem([rx], t; jumps = [jump], name = :rs)
+        @test_throws ArgumentError ReactionSystem([rx], t, [X], [k]; jumps = [jump], name = :rs)
+    end
+
+    # Symbolic jumps are still accepted.
+    jump = ConstantRateJump(k * X, [X ~ Pre(X) + 1])
+    @test ReactionSystem([rx], t; jumps = [jump], name = :rs) isa ReactionSystem
+    @test ReactionSystem([rx], t, [X], [k]; jumps = [jump], name = :rs) isa ReactionSystem
+
+    # The error names the offending jump and shows a symbolic alternative.
+    mixed_jumps = [jump, VariableRateJump(rate, affect!)]
+    msg_parts = ["Jump 2 is a VariableRateJump", "only support symbolic jumps",
+        "ConstantRateJump(k * X, [X ~ Pre(X) + 1])"]
+    @test_throws msg_parts ReactionSystem([rx], t; jumps = mixed_jumps, name = :rs)
+    @test_throws msg_parts ReactionSystem([rx], t, [X], [k]; jumps = mixed_jumps, name = :rs)
+
+    # A single-pass `jumps` input keeps its jump.
+    rs = ReactionSystem([rx], t, [X], [k]; jumps = Iterators.Stateful([jump]), name = :rs)
+    @test length(ModelingToolkitBase.get_jumps(rs)) == 1
+    @test ModelingToolkitBase.get_jumps(rs)[1] === jump
+end
+
 # Completed systems can't be subsystems (they don't namespace their symbols).
 let
     sub = @reaction_network sub begin
