@@ -2,15 +2,15 @@
 
 ## Unreleased (on master)
 
-- The `ReactionSystem` constructor now errors when a completed system (e.g. one created by
-  `@reaction_network`) is given as a subsystem through `systems`, as `compose` and `extend`
-  already did. Such hierarchies were never supported: a completed system doesn't namespace its
-  symbols, so dot access into it gave wrong symbols (e.g. `rs.sub.p` gave the un-namespaced `p`
-  rather than `sub₊p`), although the model's equations were right. Code that builds such a
-  hierarchy, including files written for one by `save_reactionsystem` in Catalyst 17.0.3 or
-  earlier, now errors. Use the system from before `complete` is called on it instead, e.g. one
-  created with `@network_component` (in a saved file, delete the subsystem's `complete(rs)`
-  line; the error message says which one).
+- **BUGFIX, TECHNICALLY BREAKING:** The `ReactionSystem` constructor now errors when a
+  completed system (e.g. one created by `@reaction_network`) is given as a subsystem through
+  `systems`, as `compose` and `extend` already did. Such hierarchies were never supported: a
+  completed system doesn't namespace its symbols, so dot access into it gave wrong symbols
+  (e.g. `rs.sub.p` gave the un-namespaced `p` rather than `sub₊p`), although the model's
+  equations were right. Code that builds such a hierarchy, including files written for one by
+  `save_reactionsystem` in Catalyst 17.0.3 or earlier, now errors. Use the system from before
+  `complete` is called on it instead, e.g. one created with `@network_component` (in a saved
+  file, delete the subsystem's `complete(rs)` line; the error message says which one).
 
 ## Catalyst 17.0.3
 
