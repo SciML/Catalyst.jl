@@ -2,10 +2,10 @@
 
 ## Unreleased (on master)
 
-- New *aliases* declare that two symbols of a network are the same, e.g. to connect a species of
-  one component to a species of another when composing them. They can be given through the new
-  `@aliases` DSL option, the `aliases` keyword of the `ReactionSystem` constructor, and the new
-  `aliases` keyword of `compose`:
+- **FEATURE:** New *aliases* declare that two symbols of a network are the same, e.g. to
+  connect a species of one component to a species of another when composing them. They can be
+  given through the new `@aliases` DSL option, the `aliases` keyword of the `ReactionSystem`
+  constructor, and the new `aliases` keyword of `compose`:
   ```julia
   synthesis = @network_component synthesis begin
       p, 0 --> X
@@ -33,13 +33,18 @@
   HomotopyContinuation, BifurcationKit and StructuralIdentifiability extensions, and
   `steady_state_stability`, support aliases, while spatial models and `save_reactionsystem` give
   an error for systems with aliases.
-- Problem constructors (`ODEProblem`, `SDEProblem`, `JumpProblem`, `HybridProblem`,
-  `NonlinearProblem` and `SteadyStateProblem`) called with a `ReactionSystem` now error when a
-  symbol is given more than one value, e.g. both in `u0` and in `p`, or both as a `Symbol` and
-  as a symbolic variable. Previously one of the values was silently used.
-- `flatten` now keeps the bindings of subsystems, `extend` those of both systems, and
-  `sde_model` those of networks without constraint equations or Brownian variables (all used to
-  drop them).
+- **BUGFIX, TECHNICALLY BREAKING:** Problem constructors (`ODEProblem`, `SDEProblem`,
+  `JumpProblem`, `HybridProblem`, `NonlinearProblem` and `SteadyStateProblem`) called with a
+  `ReactionSystem` now error when a symbol is given more than one value, e.g. both in `u0` and
+  in `p`, or both as a `Symbol` and as a symbolic variable. Previously one of the values was
+  silently used; give each symbol a single value.
+- **BUGFIX, TECHNICALLY BREAKING:** `flatten` now keeps the bindings of subsystems, `extend`
+  those of both systems, and `sde_model` those of networks without constraint equations or
+  Brownian variables (all used to drop them). In particular, completing a system now keeps the
+  bindings of its subsystems, so a subsystem parameter declared with a binding (e.g.
+  `@parameters p = 2q`) gets its value from it, and giving such a parameter a value when
+  creating a problem now errors, as it already did for the bound parameters of a network
+  without subsystems. Remove such values, or declare the parameter without a binding.
 - The `ReactionSystem` constructor now errors when a completed system (e.g. one created by
   `@reaction_network`) is given as a subsystem through `systems`, as `compose` and `extend`
   already did. Such hierarchies were never supported: a completed system doesn't namespace its
