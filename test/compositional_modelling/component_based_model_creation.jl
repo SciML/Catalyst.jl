@@ -394,12 +394,12 @@ end
 
 # https://github.com/SciML/Catalyst.jl/issues/545
 let
-    rn_AB = @reaction_network AB begin
+    rn_AB = @network_component AB begin
         @parameters k1 n
         k1, A --> n*B
     end
 
-    rn_BC = @reaction_network BC begin
+    rn_BC = @network_component BC begin
         @parameters k2
         k2, B --> C
     end
