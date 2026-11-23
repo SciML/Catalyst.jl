@@ -317,8 +317,8 @@ function make_reaction_system(ex::Expr, name)
 
     # Read options not related to the declaration or inference of symbols.
     discs_inferred = Vector{Symbol}()
-    continuous_events_expr = read_events_option!(options, discs_inferred, ps_inferred, discs_declared, :continuous_events)
-    discrete_events_expr = read_events_option!(options, discs_inferred, ps_inferred, discs_declared, :discrete_events)
+    continuous_events_expr = read_events_option!(options, discs_inferred, ps_inferred, discs_declared, :continuous_events, all_syms)
+    discrete_events_expr = read_events_option!(options, discs_inferred, ps_inferred, discs_declared, :discrete_events, all_syms)
     tstops_expr, ps_inferred = read_tstops_option(options, ps_inferred, all_syms; requiredec)
     default_reaction_metadata = read_default_noise_scaling_option(options)
     combinatoric_ratelaws = read_combinatoric_ratelaws_option(options)
@@ -1019,11 +1019,14 @@ end
 # Read the events (continuous or discrete) provided as options to the DSL. Returns an expression which evaluates to these.
 # Inferred parameters that are updated byu the event should be declared using e.g. `@discretes p(t)`.
 # `read_events_option!` moves these from `ps_inferred` to `discs_inferred`
-function read_events_option!(options, discs_inferred::Vector, ps_inferred::Vector, discs_declared::Vector, event_type::Symbol)
+function read_events_option!(options, discs_inferred::Vector, ps_inferred::Vector, discs_declared::Vector, event_type::Symbol, all_syms = [])
     # Prepares the events, if required to, converts them to block form.
     if event_type ∉ [:continuous_events, :discrete_events]
         error("Trying to read an unsupported event type.")
     end
+    # System symbols (and `Pre`) are never escaped; other function calls are user-defined
+    # and must be escaped (as is done for reaction rates and equations).
+    syms_skip = union(all_syms, [:Pre])
     events_input = haskey(options, event_type) ? get_block_option(options[event_type]) :
         striplines(:(begin end))
     events_input = option_block_form(events_input)
@@ -1066,11 +1069,12 @@ function read_events_option!(options, discs_inferred::Vector, ps_inferred::Vecto
             # If the event updates an inferred parameter or declared discrete, it should be in `discrete_parameters`.
             (affect.args[2] in [discs_inferred; discs_declared]) && push!(disc_ps.args, affect.args[2])
 
-            # Creates the affect RHS (adds `Pre` if it doesn't already contain Pre).
+            # Creates the affect RHS (adds `Pre` if it doesn't already contain Pre). User-defined
+            # functions are escaped so they resolve in the caller's scope, not in Catalyst's.
             rhs = affect.args[3]
-            if !(rhs isa Number) && !expr_contains_pre(rhs)
-                rhs = :(Pre($(rhs)))
-            end
+            add_pre = !(rhs isa Number) && !expr_contains_pre(rhs)
+            rhs = recursive_escape_functions!(rhs, syms_skip)
+            add_pre && (rhs = :(Pre($(rhs))))
             push!(affects.args, :($(affect.args[2]) ~ $rhs))
         end
 
@@ -1079,7 +1083,8 @@ function read_events_option!(options, discs_inferred::Vector, ps_inferred::Vecto
             event_type == :continuous_events ? :(MT.SymbolicContinuousCallback) :
                 :(MT.SymbolicDiscreteCallback)
         )
-        event = :($event_func($(arg.args[2]) => $affects; discrete_parameters = $disc_ps))
+        condition = recursive_escape_functions!(arg.args[2], syms_skip)
+        event = :($event_func($condition => $affects; discrete_parameters = $disc_ps))
         push!(events_expr.args, event)
     end
 
