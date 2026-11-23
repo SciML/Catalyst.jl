@@ -119,6 +119,15 @@ let
         eprob = remake(base_eprob; u0, p)
         @test ref_esol == solve(eprob, Tsit5(); trajectories = 2, saveat = 1.0)
     end
+
+    # The inputs above that give `k2` a value give it its default. Checks that a value given for a
+    # parameter with a default is applied. (`Z` is bound to `Z0`, so it can't be given a value.)
+    u0_defs = [X => 4, Y => 5]
+    ps_defs = [kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.8, Z0 => 10]
+    ref_sol_defs = solve(ODEProblem(model, u0_defs, tspan, ps_defs), Tsit5(); saveat = 1.0)
+    @test ref_sol_defs != ref_sol
+    oprob = remake(base_oprob; u0 = u0_defs, p = ps_defs)
+    @test ref_sol_defs == solve(oprob, Tsit5(); saveat = 1.0)
 end
 
 # Perform SDE simulations (singular and ensemble).
@@ -333,6 +342,15 @@ let
         eprob = remake(base_eprob; u0, p)
         @test ref_esol == solve(eprob, Tsit5(); trajectories = 2, saveat = 1.0)
     end
+
+    # The inputs above that give `Y` and `d` values give them their defaults. Checks that values
+    # given for symbols with defaults are applied.
+    u0_defs = [X => [1.0, 2.0], Y => [11.0, 21.0]]
+    ps_defs = [p => [4.0, 5.0], d => [0.3, 0.6]]
+    ref_sol_defs = solve(ODEProblem(model_vec, u0_defs, tspan, ps_defs), Tsit5(); saveat = 1.0)
+    @test ref_sol_defs != ref_sol
+    oprob = remake(base_oprob; u0 = u0_defs, p = ps_defs)
+    @test ref_sol_defs == solve(oprob, Tsit5(); saveat = 1.0)
 end
 
 # Perform SDE simulations (singular and ensemble).

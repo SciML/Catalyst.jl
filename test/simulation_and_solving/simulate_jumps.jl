@@ -143,6 +143,7 @@ let
             save_positions = (false, false))
         @test jprob_1b.aggregator isa Direct
         sol1b = solve(jprob_1b; rng = StableRNG(seed), saveat = 1.0)
+        @test mean(sol1[sp]) ≈ mean(sol1b[sp]) rtol = 1e-1
 
         # Simulates the manually written model
         u0_2 = map_to_vec(u0_1, u0_sym)
