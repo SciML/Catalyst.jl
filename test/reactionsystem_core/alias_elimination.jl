@@ -695,20 +695,48 @@ let
     @test Dict(MT.getname(k) => MT.getname(v) for (k, v) in alias_map(sys)) == Dict(:A => :B)
 end
 
-# Interpolated symbols in `@aliases`, on either side.
+# Interpolated symbols in `@aliases`: on either side, elements of arrays (species elements on
+# either side, a parameter element replacing a parameter), and namespaced symbols of an existing
+# component (including an element of its array species).
 let
-    @species Y(t) W(t)
-    @parameters kk
+    @species Y(t) W(t) (A(t))[1:2]
+    @parameters kk v[1:2]
     rn = @reaction_network begin
         @aliases begin
             X ~ $Y
             $W ~ Z
             k ~ $kk
+            $(A[1]) ~ B
+            C ~ $(A[2])
+            q ~ $(v[1])
         end
         k, X --> 0
         $kk, $Y --> $W
         d, Z --> 0
+        q, $(A[1]) --> C
+        $(v[2]), $(A[2]) --> B
     end
-    @test Dict(MT.getname(k) => MT.getname(v) for (k, v) in alias_map(rn)) ==
-        Dict(:X => :Y, :W => :Z, :k => :kk)
+    @test issetequal(collect(alias_map(rn)), [unwrap(rn.X) => unwrap(Y), unwrap(W) => unwrap(rn.Z),
+        unwrap(rn.k) => unwrap(kk), unwrap(A[1]) => unwrap(rn.B), unwrap(rn.C) => unwrap(A[2]),
+        unwrap(rn.q) => unwrap(v[1])])
+
+    sub = @network_component sub begin
+        @species (S(t))[1:2]
+        (p, d), 0 <--> V
+        d, S[1] --> S[2]
+    end
+    parent = @network_component parent begin
+        @aliases begin
+            U ~ $(sub.V)
+            kp ~ $(sub.p)
+            $(sub.d) ~ kd
+            $(sub.S[1]) ~ R
+        end
+        kp, U --> 0
+        kd, 0 --> R
+    end
+    sys = complete(compose(parent, [sub]))
+    @test issetequal(collect(alias_map(sys)), [unwrap(sys.U) => unwrap(sub.V),
+        unwrap(sys.kp) => unwrap(sub.p), unwrap(sub.d) => unwrap(sys.kd),
+        unwrap(sub.S[1]) => unwrap(sys.R)])
 end
