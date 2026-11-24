@@ -118,8 +118,9 @@ function steady_state_jac(rs::ReactionSystem; u0 = [sp => 0.0 for sp in unknowns
     conservationlaw_errorcheck(rs, u0)
 
     # Creates an `ODEProblem` with a Jacobian. Dummy values for `u0` and `ps` must be provided
-    # (not for parameters eliminated by aliases, which are bound to the ones replacing them).
-    ps = [p => 0.0 for p in uneliminated_parameters(rs)]
+    # (not for bound parameters, including those eliminated by aliases, which can't be given values).
+    bindings = MT.get_bindings(rs)
+    ps = [p => 0.0 for p in parameters(rs) if !haskey(bindings, unwrap(p))]
     return ODEProblem(rs, u0, 0, ps; jac = true, combinatoric_ratelaws,
         remove_conserved = true)
 end

@@ -251,6 +251,11 @@ with boundary condition species, constant species with constant species, non-spe
 with non-species variables, and parameters with parameters. Units must match. Compound species,
 observables, Brownian and Poissonian variables, and bound parameters can't be aliased. Aliases can
 form chains (`X ~ Y` and `Y ~ Z` eliminate both `X` and `Y` in favor of `Z`), but not cycles.
+Elements of array species and variables can be aliased like any other species or variable. An
+element of an array parameter can replace another parameter (`p ~ v[1]`), but can't be
+eliminated itself, as an eliminated parameter is bound to the one replacing it, and only whole
+array parameters can be bound. Likewise, a symbol replaced by an array element can't have an
+initial condition or default value, as only whole arrays have these.
 
 Invalid aliases are reported when the aliases are resolved, i.e. when a network is completed (for
 example, when `@reaction_network` creates it), and not when they are declared:
@@ -295,7 +300,9 @@ catch e
 end
 ```
 Reactions are never removed by alias elimination, so they keep their indices (e.g. for the
-`physical_scales` argument of [`hybrid_model`](@ref)).
+`physical_scales` argument of [`hybrid_model`](@ref)). The rest of the model, such as its
+equations, observables, events (including those with an `ImperativeAffect`) and jumps, uses the
+remaining symbols too (a `MassActionJump` is not yet supported).
 
 ### Updating problems with `remake`
 Problems created from a `ReactionSystem` accept the eliminated names in their initial conditions

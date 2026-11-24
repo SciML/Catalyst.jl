@@ -249,6 +249,59 @@ let
     @test !any(eq -> occursin("n1", string(eq)), equations(ode_model(rs)))
 end
 
+# A net stoichiometry given explicitly is kept (with merged species) when aliases are resolved,
+# also when only parameters are aliased.
+let
+    @species X(t) Y(t)
+    @parameters p q d
+    rx = Reaction(p, nothing, [X]; netstoich = [unwrap(X) => 2])
+    rs = complete(ReactionSystem([rx, Reaction(q, [X], nothing)], t; aliases = [p ~ q], name = :rs))
+    @test drift_by_unknown(ODEProblem(rs, [X => 0.0], 1.0, [q => 3.0]))[unwrap(X)] == 6.0
+    rs = complete(ReactionSystem([rx, Reaction(d, [Y], nothing)], t; aliases = [X ~ Y], name = :rs))
+    @test isequal(reactions(rs)[1].netstoich, [unwrap(Y) => 2])
+    @test drift_by_unknown(ODEProblem(rs, [Y => 1.0], 1.0, [p => 3.0, d => 1.0]))[unwrap(Y)] == 5.0
+end
+
+# An element of an array parameter can replace a parameter (including an element of a
+# time-dependent array), but can't be eliminated, as ModelingToolkitBase can't bind it. Values can
+# be given through either name, and a value given to the element through its array counts.
+let
+    @species X(t)
+    @parameters p v[1:2]
+    @discretes (w(t))[1:2]
+    rxs = [Reaction(p, nothing, [X]), Reaction(v[1], [X], nothing), Reaction(v[2], [X], nothing)]
+    rs = complete(ReactionSystem(rxs, t; aliases = [p ~ v[1]], name = :rs))
+    @test isequal(alias_map(rs), Dict(unwrap(p) => unwrap(v[1])))
+    @test issetequal(uneliminated_parameters(rs), [v])
+    prob = ODEProblem(rs, [X => 1.0], 1.0, [v => [2.0, 0.5]])
+    @test prob.ps[p] == 2.0
+    @test drift_by_unknown(prob)[unwrap(X)] ≈ -0.5
+    @test ODEProblem(rs, [X => 1.0], 1.0, [p => 3.0, v[2] => 0.5]).ps[v] == [3.0, 0.5]
+    @test_throws ArgumentError ODEProblem(rs, [X => 1.0], 1.0, [p => 3.0, v => [2.0, 0.5]])
+    @test remake(prob; p = [v => [4.0, 1.0]]).ps[p] == 4.0
+    @test_throws "is an element of the array parameter" complete(ReactionSystem(rxs, t;
+        aliases = [v[1] ~ p], name = :rs))
+
+    rxs = [Reaction(p, nothing, [X]), Reaction(w[1] + w[2], [X], nothing)]
+    rs = complete(ReactionSystem(rxs, t; aliases = [p ~ w[1]], name = :rs))
+    @test isequal(alias_map(rs), Dict(unwrap(p) => unwrap(w[1])))
+    @test_throws "is an element of the array parameter" complete(ReactionSystem(rxs, t;
+        aliases = [w[1] ~ p], name = :rs))
+end
+
+# The initial condition (or default value) of a symbol replaced by an array element can't move to
+# the element (only whole arrays have initial conditions).
+let
+    @species X(t) Y(t) = 1.0 (Z(t))[1:2]
+    @parameters q = 0.5 v[1:2] d
+    rxs = [Reaction(q, nothing, [X]), Reaction(v[1] + v[2], [X], nothing)]
+    @test_throws "can only be given to the whole array" complete(ReactionSystem(rxs, t;
+        aliases = [q ~ v[1]], name = :rs))
+    rxs = [Reaction(d, [Y], nothing), Reaction(d, [Z[1]], nothing), Reaction(d, [Z[2]], nothing)]
+    @test_throws "can only be given to the whole array" complete(ReactionSystem(rxs, t;
+        aliases = [Y ~ Z[1]], name = :rs))
+end
+
 
 ### Reactions That Become Self-Loops ###
 
@@ -331,7 +384,24 @@ let
     @test isequal(MT.getpoissonianrate(only(MT.get_poissonians(rn))), unwrap(1 + rn.Y))
 end
 
-# A compound species' component can't be eliminated.
+# An `ImperativeAffect` acts on the surviving symbols: doubling the eliminated `X` at `t = 1`
+# doubles `Y`.
+let
+    @species X(t) Y(t)
+    @parameters p
+    affect = MT.ImperativeAffect(modified = (; x = X)) do m, o, c, i
+        return (; x = 2 * m.x)
+    end
+    rs = complete(ReactionSystem([Reaction(p, nothing, [Y])], t, [X, Y], [p]; aliases = [X ~ Y],
+        discrete_events = [[1.0] => affect], name = :rs))
+    sol = solve(ODEProblem(rs, [Y => 1.0], (0.0, 2.0), [p => 0.0]), Tsit5())
+    @test sol(0.5; idxs = Y) ≈ 1.0
+    @test sol(1.5; idxs = Y) ≈ 2.0
+    @test sol(1.5; idxs = X) ≈ 2.0
+end
+
+# A compound species' component can't be eliminated, also in a subsystem (where the compound's
+# components aren't namespaced).
 let
     @test_throws ArgumentError @reaction_network begin
         @species X(t) Y(t)
@@ -341,6 +411,16 @@ let
         @aliases X ~ Y
         k, X + Y --> XY
     end
+    child = @network_component child begin
+        @species X(t) Y(t)
+        @compounds begin
+            XY ~ X + Y
+        end
+        @aliases X ~ Y
+        k, X + Y --> XY
+    end
+    @named parent = compose(@network_component(parent, begin end), [child])
+    @test_throws "child₊X(t) is a component of the compound species" complete(parent)
 end
 
 # Initial conditions: values are resolved before being compared, also inside keys (`D(V)`).
@@ -416,6 +496,26 @@ let
     osys = complete(ode_model(rn))
     prob = ODEProblem(osys, [rn.B => 3.0, rn.C => 1.0, rn.k1 => 1.0, rn.k2 => 2.0], tspan)
     @test prob[rn.A] == 3.0
+end
+
+# Values given through a derivative (`D(V)` for `V ~ W`) or a whole array (`Z => [...]` for
+# `Z[1] ~ Y`) count as values for the surviving symbols.
+let
+    @variables V(t) W(t)
+    rs = complete(ReactionSystem([D(D(V)) ~ -V], t; aliases = [V ~ W], name = :rs))
+    @test_throws ArgumentError ODEProblem(rs, [W => 0.0, D(V) => 1.0, D(W) => 2.0], (0.0, 1.0);
+        mtkcompile = true)
+    sol = solve(ODEProblem(rs, [W => 0.0, D(V) => 1.0], (0.0, 1.0); mtkcompile = true), Tsit5())
+    @test sol(0.5; idxs = W) ≈ sin(0.5) rtol = 1e-4
+
+    @species (Z(t))[1:2] Y(t)
+    @parameters d
+    rs = complete(ReactionSystem([Reaction(d, [Y], nothing), Reaction(d, [Z[2]], nothing)], t;
+        aliases = [Z[1] ~ Y], name = :rs))
+    @test_throws ArgumentError ODEProblem(rs, [Z => [2.0, 3.0], Y => 11.0], 1.0, [d => 1.0])
+    prob = ODEProblem(rs, [Z => [2.0, 3.0]], 1.0, [d => 1.0])
+    @test prob[Y] == 2.0
+    @test prob[Z[2]] == 3.0
 end
 
 
@@ -568,7 +668,8 @@ let
         (k1, k2), A <--> B2
         k3, B --> 0
     end
-    @test_throws Exception save_reactionsystem(joinpath(mktempdir(), "rn.jl"), rn)
+    @test_throws "Serialization of ReactionSystems with aliases is not yet supported" save_reactionsystem(
+        joinpath(mktempdir(), "rn.jl"), rn)
 end
 
 # Symbols in `@aliases` must be part of the network.

@@ -30,11 +30,11 @@ ps_merged = [:k1 => 3.0, :k2 => 0.5, :k3 => 4.0, :k4 => 6.0]
 ### Tests ###
 
 # HomotopyContinuation: the same steady states, in the resolved system's unknown order (checked
-# by passing each to `steady_state_stability`).
+# by passing each to `steady_state_stability`). A fixed seed makes the solver find all three.
 let
-    sols = sort(hc_steady_states(rn, ps))
-    sols_merged = sort(hc_steady_states(rn_merged, ps_merged))
-    @test length(sols) == 3
+    sols = sort(hc_steady_states(rn, ps; seed = 0x000004d1, show_progress = false))
+    sols_merged = sort(hc_steady_states(rn_merged, ps_merged; seed = 0x000004d1, show_progress = false))
+    @test length(sols) == length(sols_merged) == 3
     @test sols ≈ sols_merged
     for (sol, sol_merged) in zip(sols, sols_merged)
         @test steady_state_stability(sol, rn, ps) == steady_state_stability(sol_merged, rn_merged, ps_merged)

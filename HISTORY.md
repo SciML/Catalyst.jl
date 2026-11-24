@@ -17,7 +17,8 @@
   cell = complete(cell)   # reactions: p, 0 --> X and uptake₊k, X --> uptake₊Z
   ```
   An alias `X ~ Y` eliminates `X` in favor of `Y`. Species, non-species variables and parameters
-  can be aliased (each only with symbols of its own kind), and aliases can form chains. Aliases
+  can be aliased (each only with symbols of its own kind; an element of an array parameter can
+  replace a parameter, but can't be eliminated), and aliases can form chains. Aliases
   are resolved when a system is completed (`flatten`, `compose` and `extend` keep them), which
   is also when invalid aliases are reported (`complete(rs; flatten = false)` is an error for a
   system with aliases, so every completed system has its aliases resolved). An eliminated
@@ -29,7 +30,8 @@
   each eliminated symbol was replaced by, and the new `aliases` (with the public
   `Catalyst.get_aliases` and `Catalyst.aliases_present`) the declared aliases. Merged species
   add their stoichiometries (with `A ~ B`, `2A + B --> C` becomes `3B --> C`, with that
-  reaction's rate law), and an alias that leaves a reaction with no net change is an error. The
+  reaction's rate law), and an alias that leaves a reaction with no net change is an error.
+  Events (including those with an `ImperativeAffect`) act on the remaining symbols. The
   HomotopyContinuation, BifurcationKit and StructuralIdentifiability extensions, and
   `steady_state_stability`, support aliases, while spatial models and `save_reactionsystem` give
   an error for systems with aliases.
@@ -45,6 +47,9 @@
   `@parameters p = 2q`) gets its value from it, and giving such a parameter a value when
   creating a problem now errors, as it already did for the bound parameters of a network
   without subsystems. Remove such values, or declare the parameter without a binding.
+- **BUGFIX:** `steady_state_stability` and `steady_state_jac` now work for networks with bound
+  parameters (e.g. `r` declared by `@parameters r = 2q`), for which they used to fail with an
+  assertion error.
 - **BUGFIX, TECHNICALLY BREAKING:** The `ReactionSystem` constructor now errors when a
   completed system (e.g. one created by `@reaction_network`) is given as a subsystem through
   `systems`, as `compose` and `extend` already did. Such hierarchies were never supported: a
