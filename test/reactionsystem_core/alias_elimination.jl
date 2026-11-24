@@ -694,3 +694,21 @@ let
     @test issetequal(MT.getname.(unknowns(sys)), [:B, :C, Symbol("sub₊Z")])
     @test Dict(MT.getname(k) => MT.getname(v) for (k, v) in alias_map(sys)) == Dict(:A => :B)
 end
+
+# Interpolated symbols in `@aliases`, on either side.
+let
+    @species Y(t) W(t)
+    @parameters kk
+    rn = @reaction_network begin
+        @aliases begin
+            X ~ $Y
+            $W ~ Z
+            k ~ $kk
+        end
+        k, X --> 0
+        $kk, $Y --> $W
+        d, Z --> 0
+    end
+    @test Dict(MT.getname(k) => MT.getname(v) for (k, v) in alias_map(rn)) ==
+        Dict(:X => :Y, :W => :Z, :k => :kk)
+end
