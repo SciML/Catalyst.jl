@@ -97,6 +97,17 @@ let
     @test_throws Exception steady_state_stability(u, rn, p; tol = 1e2)
 end
 
+# Tests stability computation for a network with a bound parameter (`r = 2q`, computed from the
+# parameter it is bound to): `X' = 2q - qX` has the stable steady state `X = 2`.
+let
+    rn = @reaction_network begin
+        @parameters q r = 2q
+        r, 0 --> X
+        q, X --> 0
+    end
+    @test steady_state_stability([2.0], rn, [:q => 2.0])
+end
+
 # Test that stability computation for non-autonomous (t-dependent) systems throws error.
 let
     rn = @reaction_network begin

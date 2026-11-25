@@ -34,6 +34,9 @@ function save_reactionsystem(filename::String, rn::ReactionSystem;
         annotate = true, safety_check = true)
     # Error and warning checks.
     reactionsystem_uptodate_check()
+    if aliases_present(rn) || has_resolved_aliases(rn)
+        error("Serialization of ReactionSystems with aliases is not yet supported.")
+    end
     if !isempty(MT.get_tstops(rn)) || (!isempty(get_systems(rn)) && !isempty(MT.symbolic_tstops(rn)))
         error("Serialization of ReactionSystems with tstops is not yet supported. " *
               "Please remove tstops before saving, or track " *

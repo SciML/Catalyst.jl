@@ -677,7 +677,7 @@ function hybrid_model(
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs, MT.System)
 
-    flatrs = Catalyst.flatten(rs)
+    flatrs = flatten_for_conversion(rs)
 
     # Resolve scales: _override_all_scales (internal) takes precedence over everything.
     if _override_all_scales !== nothing
@@ -826,7 +826,7 @@ function ode_model(
         kwargs...
     )
     # Error if ReactionSystem has coupled brownians or jumps.
-    flatrs = Catalyst.flatten(rs)
+    flatrs = flatten_for_conversion(rs)
     if !isempty(MT.brownians(flatrs))
         error(
             """Cannot convert ReactionSystem with coupled brownian noise to a pure ODE system.
@@ -974,7 +974,7 @@ function ss_ode_model(
     isautonomous(rs) || error(is_autonomous_error(get_iv(rs)))
 
     # Generates system equations.
-    fullrs = Catalyst.flatten(rs)
+    fullrs = flatten_for_conversion(rs)
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, (remove_conserved && !include_cl_as_eqs))
     eqs = assemble_drift(
@@ -987,7 +987,7 @@ function ss_ode_model(
     )
 
     # Comoutes the correct initial conditions and bindings.
-    initial_conditions, bindings = MT.convert_bindings_for_time_independent_system(rs)
+    initial_conditions, bindings = MT.convert_bindings_for_time_independent_system(fullrs)
     initial_conditions = merge(initial_conditions, ics)
 
     # Throws a warning if there are differential equations in non-standard format.
@@ -1074,7 +1074,7 @@ function sde_model(
     )
 
     # Flatten once upfront and check for constraints.
-    flatrs = Catalyst.flatten(rs)
+    flatrs = flatten_for_conversion(rs)
 
     # Error if ReactionSystem has coupled jumps or poissonians (SDE + jumps hybrid not supported yet).
     if !isempty(MT.jumps(flatrs))
@@ -1120,6 +1120,7 @@ function sde_model(
             noise_eqs = noiseeqs,
             observed = obs,
             name,
+            bindings = MT.get_bindings(flatrs),
             initial_conditions = merge(initial_conditions, ics),
             checks,
             continuous_events = MT.get_continuous_events(flatrs),
@@ -1226,7 +1227,7 @@ function jump_model(
 
     # Force all reactions to Jump, only preserving VariableRateJump metadata.
     # ODE/SDE metadata is ignored - use HybridProblem for hybrid systems.
-    flatrs = Catalyst.flatten(rs)
+    flatrs = flatten_for_conversion(rs)
 
     # Error if ReactionSystem has unprocessed poissonians (jump_model cannot handle them).
     if !isempty(MT.poissonians(flatrs))
@@ -1336,6 +1337,9 @@ function DiffEqBase.ODEProblem(
         osys = complete(osys)
     end
 
+    # Replace symbols eliminated by aliases with the symbols that replace them (and check that no
+    # symbol is given two values).
+    u0, p = remap_problem_inputs(rs, u0, p)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any, Any}(u0), Dict{Any, Any}(p))
     return ODEProblem(osys, prob_cond, tspan, args...; check_length, kwargs...)
 end
@@ -1389,6 +1393,9 @@ function DiffEqBase.NonlinearProblem(
         remove_conserved, expand_catalyst_funs
     )
     nlsys = mtkcompile ? MT.mtkcompile(nlsys) : complete(nlsys)
+    # Replace symbols eliminated by aliases with the symbols that replace them (and check that no
+    # symbol is given two values).
+    u0, p = remap_problem_inputs(rs, u0, p)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any, Any}(u0), Dict{Any, Any}(p))
     return NonlinearProblem(
         nlsys, prob_cond, args...; check_length,
@@ -1447,7 +1454,7 @@ function DiffEqBase.SDEProblem(
     )
 
     # Flatten once upfront and pass to sde_model.
-    flatrs = Catalyst.flatten(rs)
+    flatrs = flatten_for_conversion(rs)
     sde_sys = sde_model(
         flatrs; name, combinatoric_ratelaws, expand_catalyst_funs,
         include_zero_odes, checks, remove_conserved, use_legacy_noise, use_jump_ratelaws
@@ -1466,6 +1473,9 @@ function DiffEqBase.SDEProblem(
         has_user_brownians ||
         has_constraints
 
+    # Replace symbols eliminated by aliases with the symbols that replace them (and check that no
+    # symbol is given two values).
+    u0, p = remap_problem_inputs(rs, u0, p)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any, Any}(u0), Dict{Any, Any}(p))
 
     if needs_mtkcompile
@@ -1568,6 +1578,9 @@ function JumpProcesses.JumpProblem(
         )
     )
     # Use Dict{Any,Any} to prevent type promotion during merge (MTK converts to this anyway).
+    # Replace symbols eliminated by aliases with the symbols that replace them (and check that no
+    # symbol is given two values).
+    u0, p = remap_problem_inputs(rs, u0, p)
     op = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any, Any}(u0), Dict{Any, Any}(p))
 
     # Auto-detect integer u0 and set u0_eltype if not already provided.
@@ -1662,7 +1675,7 @@ function HybridProblem(
         kwargs...
     )
     # Determine which scale types are present.
-    flatrs = Catalyst.flatten(rs)
+    flatrs = flatten_for_conversion(rs)
     resolved_scales = merge_physical_scales(reactions(flatrs), physical_scales, default_scale)
     has_ode, has_sde, has_jump = detect_scale_types(resolved_scales)
 
@@ -1684,6 +1697,9 @@ function HybridProblem(
 
     # Build problem conditions (u0 + p merged).
     # Use Dict{Any,Any} to prevent type promotion during merge (MTK converts to this anyway).
+    # Replace symbols eliminated by aliases with the symbols that replace them (and check that no
+    # symbol is given two values).
+    u0, p = remap_problem_inputs(rs, u0, p)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any, Any}(u0), Dict{Any, Any}(p))
 
     if has_jump
@@ -1778,6 +1794,9 @@ function DiffEqBase.SteadyStateProblem(
         osys = complete(osys)
     end
 
+    # Replace symbols eliminated by aliases with the symbols that replace them (and check that no
+    # symbol is given two values).
+    u0, p = remap_problem_inputs(rs, u0, p)
     prob_cond = (p isa DiffEqBase.NullParameters) ? u0 : merge(Dict{Any, Any}(u0), Dict{Any, Any}(p))
     return SteadyStateProblem(osys, prob_cond, args...; check_length, kwargs...)
 end

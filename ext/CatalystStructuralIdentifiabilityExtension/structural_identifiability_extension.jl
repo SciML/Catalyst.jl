@@ -174,6 +174,7 @@ function make_osys(rs::ReactionSystem; remove_conserved = true, mtkcompile::Bool
     if !ModelingToolkitBase.iscomplete(rs)
         error("Identifiability should only be computed for complete systems. A ReactionSystem can be marked as complete using the `complete` function.")
     end
+    submap = Catalyst.alias_map(rs)
     rs = complete(Catalyst.expand_registered_functions(flatten(rs)))
     osys = ode_model(rs; remove_conserved)
     if mtkcompile
@@ -183,7 +184,7 @@ function make_osys(rs::ReactionSystem; remove_conserved = true, mtkcompile::Bool
     else
         osys = complete(osys)
     end
-    vars = [unknowns(rs); parameters(rs)]
+    vars = [unknowns(rs); filter(p -> !haskey(submap, p), parameters(rs))]
 
     # Computes equations for system conservation laws.
     # `conseqs` and `consconsts` must be `Vector{Pair{Any, Any}}`s also when empty.
@@ -200,6 +201,11 @@ function make_osys(rs::ReactionSystem; remove_conserved = true, mtkcompile::Bool
     # `osys`, so any reference to them in measured quantities or functions to check must be
     # replaced by the corresponding observed expression.
     mtkcompile && append!(conseqs, observed_subs(osys, conseqs))
+
+    # Symbols eliminated by aliases are replaced by the symbols that replace them (themselves
+    # substituted as above, as all rules are applied at once).
+    alias_subs = Pair{Any, Any}[k => substitute(v, conseqs) for (k, v) in submap]
+    conseqs = Pair{Any, Any}[alias_subs; conseqs]
 
     return osys, conseqs, consconsts, vars
 end
@@ -255,13 +261,12 @@ end
 # Processes the outputs to a better form.
 # SI keys its output by the functions it was given (`si_funcs_to_check`). These are mapped back
 # to the user-requested functions (`funcs_to_check`), so that e.g. Γ or eliminated variables
-# are not displayed, and sorted according to their input order.
+# are not displayed, and sorted according to their input order. Each requested function gets its
+# result, also when several give the same function to SI (e.g. both names of an aliased symbol).
 function make_output(out, funcs_to_check, si_funcs_to_check, consconsts)
     si_keys = vector_subs(si_funcs_to_check, consconsts)
-    out_keys = vector_subs(keys(out), consconsts)
-    key_to_idx = Dict(k => i for (i, k) in enumerate(si_keys))
-    return OrderedDict(funcs_to_check[key_to_idx[k]] => v
-    for (k, v) in zip(out_keys, values(out)))
+    results = Dict(zip(vector_subs(keys(out), consconsts), values(out)))
+    return OrderedDict(f => results[k] for (f, k) in zip(funcs_to_check, si_keys))
 end
 
 # For a vector of expressions and a conservation law, substitutes the law into every equation.

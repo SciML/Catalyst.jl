@@ -1,0 +1,636 @@
+### Alias Elimination ###
+
+# An alias `A ~ B` declares that `A` and `B` are the same entity: `A` is eliminated in favor of
+# `B`. `complete` resolves a system's aliases once the model is assembled (after flattening it;
+# `flatten` itself keeps them): it validates them, substitutes the surviving symbol for each
+# eliminated one throughout the system, keeps eliminated unknowns as observables (`A ~ B`) and
+# eliminated parameters as bindings (`k1 => k2`), and stores the eliminated-to-surviving map in the
+# resolved system's metadata. Completed systems can't be composed, so a system whose aliases were
+# resolved never takes part in further model assembly.
+
+### Alias Classes ###
+
+"""
+    AliasClass
+
+Internal classification of a symbol for alias validation. An alias is only allowed between two
+symbols of the same supported class.
+"""
+@enumx AliasClass begin
+    Species          # ordinary species (non-BC, non-constant, non-compound)
+    BCSpecies        # boundary condition species
+    ConstantSpecies  # constant species (stored as parameters)
+    CompoundSpecies  # compound species
+    Unknown          # non-species unknowns (variables)
+    Parameter        # ordinary parameters (excluding constant species)
+    Brownian
+    Poissonian
+    Bound            # binding key
+    Observable       # LHS of an observed equation
+    Unsupported      # anything else (e.g. the independent variable, or a symbol not in the system)
+end
+
+# The classes that can be aliased (to a symbol of the same class).
+const ALIASABLE_CLASSES = (
+    AliasClass.Species, AliasClass.BCSpecies, AliasClass.ConstantSpecies,
+    AliasClass.Unknown, AliasClass.Parameter,
+)
+
+# Classes whose aliases are resolved by the parameter map (the others by the unknown map).
+const PARAMETER_ALIAS_CLASSES = (AliasClass.ConstantSpecies, AliasClass.Parameter)
+
+### Classification ###
+
+# Precomputed symbol sets of a flattened system, used to classify alias sides.
+struct AliasClassificationContext
+    species_set::Set{SymbolicT}
+    unknown_set::Set{SymbolicT}
+    param_set::Set{SymbolicT}
+    brownian_set::Set{SymbolicT}
+    poissonian_set::Set{SymbolicT}
+    binding_keys::Set{SymbolicT}
+    obs_lhs_set::Set{SymbolicT}
+end
+
+# Requires a flattened system (uses the non-recursive accessors).
+function AliasClassificationContext(rs::ReactionSystem)
+    return AliasClassificationContext(
+        Set{SymbolicT}(get_species(rs)),
+        Set{SymbolicT}(get_unknowns(rs)),
+        Set{SymbolicT}(get_ps(rs)),
+        Set{SymbolicT}(MT.get_brownians(rs)),
+        Set{SymbolicT}(MT.get_poissonians(rs)),
+        Set{SymbolicT}(keys(MT.get_bindings(rs))),
+        Set{SymbolicT}(eq.lhs for eq in MT.get_observed(rs))
+    )
+end
+
+# Classifies `x`; more specific classes are checked first.
+function alias_class(x, ctx::AliasClassificationContext)
+    x in ctx.binding_keys && return AliasClass.Bound
+    x in ctx.obs_lhs_set && return AliasClass.Observable
+    x in ctx.brownian_set && return AliasClass.Brownian
+    x in ctx.poissonian_set && return AliasClass.Poissonian
+    if x in ctx.species_set
+        isbc(x) && return AliasClass.BCSpecies
+        iscompound(x) && return AliasClass.CompoundSpecies
+        return AliasClass.Species
+    end
+    x in ctx.unknown_set && return AliasClass.Unknown
+    # An element of an array parameter (`v[1]`) is a parameter too (parameters aren't scalarized).
+    if x in ctx.param_set || array_parent(x) in ctx.param_set
+        isconstant(x) && return AliasClass.ConstantSpecies
+        return AliasClass.Parameter
+    end
+    return AliasClass.Unsupported
+end
+
+alias_compatible(lhs_class, rhs_class) = (lhs_class == rhs_class) && (lhs_class in ALIASABLE_CLASSES)
+
+function alias_compatibility_error(lhs, rhs, lhs_class, rhs_class)
+    for (x, class) in ((lhs, lhs_class), (rhs, rhs_class))
+        class == AliasClass.Unsupported &&
+            return ArgumentError("Cannot alias $lhs ~ $rhs: $x is not a species, variable or parameter of the system.")
+    end
+    if lhs_class == rhs_class
+        return ArgumentError("Cannot alias $lhs ~ $rhs: aliasing $(lhs_class) symbols is not supported.")
+    end
+    return ArgumentError("Cannot alias $lhs ($(lhs_class)) to $rhs ($(rhs_class)). Only symbols of the same kind can be aliased: species with species, boundary condition species with boundary condition species, constant species with constant species, variables with variables, and parameters with parameters.")
+end
+
+### Validation ###
+
+# The array that `x` is an element of (`v` for `v[1]`), or `nothing`.
+function array_parent(x)
+    x = unwrap(x)
+    (iscall(x) && Symbolics.operation(x) === getindex) || return nothing
+    return first(Symbolics.arguments(x))
+end
+
+# Whether parameter `p` is time-dependent, i.e. a call such as `d(t)`, or an element of one
+# (`d(t)[1]`). An element of an ordinary array parameter (`v[1]`) is a `getindex` call too, so
+# indexing is looked through.
+function is_time_dependent_parameter(p)
+    parent = array_parent(p)
+    parent === nothing || return is_time_dependent_parameter(parent)
+    return iscall(unwrap(p))
+end
+
+# Checks that the two sides of an alias have matching units and, for parameters, matching type,
+# and that a time-dependent parameter isn't replaced by one that isn't.
+function check_alias_metadata(lhs, rhs, class)
+    lhs_unit = catalyst_get_unit(lhs)
+    rhs_unit = catalyst_get_unit(rhs)
+    _units_match(lhs_unit, rhs_unit) ||
+        throw(ArgumentError("Unit mismatch in alias $lhs ~ $rhs: $lhs has unit $lhs_unit, but $rhs has unit $rhs_unit."))
+    class in PARAMETER_ALIAS_CLASSES || return nothing
+
+    # An eliminated parameter is bound to the one replacing it, and ModelingToolkitBase can't
+    # bind an element of an array parameter (only the whole array).
+    parent = array_parent(lhs)
+    if parent !== nothing
+        throw(ArgumentError("Cannot alias $lhs ~ $rhs: $lhs is an element of the array parameter $parent, so it can't be eliminated. An element of an array parameter can only replace another parameter (e.g. `p ~ $lhs`)."))
+    end
+
+    # Replacing a time-dependent (discrete) parameter by one that isn't would make the events that
+    # update it update a constant. (The reverse is fine: the eliminated parameter is then bound to
+    # the time-dependent one.)
+    if is_time_dependent_parameter(lhs) && !is_time_dependent_parameter(rhs)
+        throw(ArgumentError("Cannot alias $lhs ~ $rhs: $lhs is a time-dependent (discrete) parameter, so it can only be replaced by another time-dependent parameter."))
+    end
+    lhs_type = symtype(unwrap(lhs))
+    rhs_type = symtype(unwrap(rhs))
+    isequal(lhs_type, rhs_type) ||
+        throw(ArgumentError("Type mismatch in alias $lhs ~ $rhs: $lhs has type $lhs_type, but $rhs has type $rhs_type."))
+    return nothing
+end
+
+# Cheap structural checks, run by the `ReactionSystem` constructor (full validation happens
+# when aliases are resolved, as it needs the flattened system).
+function check_aliases(aliases::Vector{Equation})
+    seen_lhs = Set{Any}()
+    for eq in aliases
+        isequal(eq.lhs, eq.rhs) && throw(ArgumentError("Self-alias not allowed: $(eq.lhs) ~ $(eq.rhs)."))
+        (eq.lhs in seen_lhs) &&
+            throw(ArgumentError("Duplicate alias: $(eq.lhs) appears as the left-hand side of several aliases."))
+        push!(seen_lhs, eq.lhs)
+    end
+    return nothing
+end
+
+### Resolution ###
+
+@enum VisitState UNSEEN VISITING DONE
+
+# The resolved aliases of a flattened system.
+struct AliasResolution
+    # Eliminated symbol => surviving symbol (chains resolved), for unknowns and parameters.
+    unknown_map::Dict{SymbolicT, SymbolicT}
+    param_map::Dict{SymbolicT, SymbolicT}
+    # Eliminated symbol => its alias equation (for error messages).
+    alias_of::Dict{SymbolicT, Equation}
+end
+
+# Follows each alias chain to its surviving symbol, with cycle detection.
+function resolve_chains(graph::Dict{SymbolicT, SymbolicT})
+    canonical = Dict{SymbolicT, SymbolicT}()
+    visit_state = Dict{SymbolicT, VisitState}()
+    path = SymbolicT[]
+    for start in keys(graph)
+        haskey(canonical, start) && continue
+        empty!(path)
+        current = start
+        canon = start
+        while true
+            state = get(visit_state, current, UNSEEN)
+            if state == DONE
+                canon = get(canonical, current, current)
+                break
+            elseif state == VISITING
+                cycle = path[findfirst(isequal(current), path):end]
+                throw(ArgumentError("Alias cycle detected involving: $(join(cycle, ", "))."))
+            end
+            visit_state[current] = VISITING
+            push!(path, current)
+            if haskey(graph, current)
+                current = graph[current]
+            else
+                canon = current
+                break
+            end
+        end
+        for node in path
+            visit_state[node] = DONE
+            isequal(node, canon) || (canonical[node] = canon)
+        end
+    end
+    return canonical
+end
+
+# Validates the aliases of a flattened system and resolves their chains.
+function resolve_aliases(alias_eqs::Vector{Equation}, rs::ReactionSystem)
+    check_aliases(alias_eqs)
+    ctx = AliasClassificationContext(rs)
+    unknown_graph = Dict{SymbolicT, SymbolicT}()
+    param_graph = Dict{SymbolicT, SymbolicT}()
+    alias_of = Dict{SymbolicT, Equation}()
+    for eq in alias_eqs
+        lhs, rhs = unwrap(eq.lhs), unwrap(eq.rhs)
+        lhs_class = alias_class(lhs, ctx)
+        rhs_class = alias_class(rhs, ctx)
+        alias_compatible(lhs_class, rhs_class) ||
+            throw(alias_compatibility_error(lhs, rhs, lhs_class, rhs_class))
+        check_alias_metadata(lhs, rhs, lhs_class)
+        graph = (lhs_class in PARAMETER_ALIAS_CLASSES) ? param_graph : unknown_graph
+        graph[lhs] = rhs
+        alias_of[lhs] = eq
+    end
+
+    # A compound species' components must stay species of the system. The components of a
+    # compound from a subsystem aren't namespaced (`X` for `sub₊XY`), so they are matched by name,
+    # with the compound's namespace added.
+    eliminated_by_name = Dict(getname(x) => x for x in keys(alias_of))
+    for sp in ctx.species_set
+        iscompound(sp) || continue
+        name = string(getname(sp))
+        sep = findlast('₊', name)
+        prefix = (sep === nothing) ? "" : name[1:sep]
+        for c in components(sp)
+            x = get(eliminated_by_name, Symbol(prefix, getname(c)), nothing)
+            x === nothing ||
+                throw(ArgumentError("Cannot alias `$(alias_of[x])`: $x is a component of the compound species $sp, so it can't be eliminated."))
+        end
+    end
+    return AliasResolution(resolve_chains(unknown_graph), resolve_chains(param_graph), alias_of)
+end
+
+# The alias equations that lead from `x` to its surviving symbol (for error messages).
+function alias_chain(x, res::AliasResolution)
+    chain = Equation[]
+    while haskey(res.alias_of, x)
+        eq = res.alias_of[x]
+        push!(chain, eq)
+        x = unwrap(eq.rhs)
+    end
+    return chain
+end
+
+### Substitution Helpers ###
+
+# Substitutes through an expression, including inside differentials and other operators.
+subs_alias(x, submap) = Symbolics.substitute(x, submap; filterer = Returns(true))
+subs_alias(x::Number, submap) = x
+subs_alias(x::Num, submap) = Num(subs_alias(unwrap(x), submap))
+subs_alias(::Nothing, submap) = nothing
+subs_alias(eq::Equation, submap) = subs_alias(eq.lhs, submap) ~ subs_alias(eq.rhs, submap)
+
+# Whether a (possibly symbolic) stoichiometric coefficient is provably zero.
+function is_zero_stoich(x)
+    v = Symbolics.value(x)
+    return v isa Number && iszero(v)
+end
+
+# Substitutes and merges duplicate species in a substrate or product list (keeping first-seen
+# order). Stoichiometric coefficients are substituted too (parametric stoichiometry).
+function merge_species_list(species, stoich, submap)
+    merged_species = SymbolicT[]
+    merged_stoich = Any[]
+    seen_index = Dict{SymbolicT, Int}()
+    for (sp, st) in zip(species, stoich)
+        canonical = get(submap, sp, sp)
+        st = subs_alias(st, submap)
+        idx = get(seen_index, canonical, 0)
+        if idx == 0
+            push!(merged_species, canonical)
+            push!(merged_stoich, st)
+            seen_index[canonical] = length(merged_species)
+        else
+            merged_stoich[idx] += st
+        end
+    end
+    # Numeric stoichiometries keep a concrete type; symbolic ones are passed as `Num`s, which the
+    # `Reaction` constructor recognizes as symbolic stoichiometry.
+    isempty(merged_stoich) && return merged_species, eltype(stoich)[]
+    all(st -> st isa Number, merged_stoich) && return merged_species, map(identity, merged_stoich)
+    return merged_species, Num[st for st in merged_stoich]
+end
+
+# Substitutes and merges the species of a reaction's net stoichiometry, adding the coefficients of
+# merged species and dropping those that are provably zero (keeping the coefficient type).
+function merge_netstoich(netstoich::Vector{Pair{S, T}}, submap) where {S, T}
+    merged = OrderedDict{SymbolicT, T}()
+    for (sp, st) in netstoich
+        canonical = get(submap, sp, sp)
+        st = subs_alias(st, submap)
+        merged[canonical] = haskey(merged, canonical) ? merged[canonical] + st : st
+    end
+    return Pair{SymbolicT, T}[sp => st for (sp, st) in merged if !is_zero_stoich(st)]
+end
+
+# Whether a reaction's net stoichiometry was given explicitly (through the `netstoich` keyword),
+# rather than computed from its substrates and products.
+function has_explicit_netstoich(rx::Reaction)
+    default = get_netstoich(rx.substrates, rx.products, rx.substoich, rx.prodstoich)
+    return !issetequal(rx.netstoich, default)
+end
+
+function substitute_reaction_metadata(metadata, submap)
+    return Pair{Symbol, Any}[key => ((val isa Num || val isa SymbolicT) ? subs_alias(val, submap) : val)
+        for (key, val) in metadata]
+end
+
+# Substitutes the aliases through reaction `rx` (the `idx`th reaction). Throws an error if this
+# turns a reaction with a net change into one without (a self-loop).
+function resolve_reaction(rx::Reaction, idx, submap, res::AliasResolution)
+    subs, substoich = merge_species_list(rx.substrates, rx.substoich, submap)
+    prods, prodstoich = merge_species_list(rx.products, rx.prodstoich, submap)
+    netstoich = merge_netstoich(rx.netstoich, submap)
+    if any(p -> !is_zero_stoich(last(p)), rx.netstoich) && isempty(netstoich)
+        involved = filter(sp -> haskey(submap, sp), [rx.substrates; rx.products])
+        chains = unique(reduce(vcat, (alias_chain(sp, res) for sp in involved); init = Equation[]))
+        new_rx = Reaction(rx.rate, subs, prods, substoich, prodstoich; only_use_rate = rx.only_use_rate)
+        throw(ArgumentError("Alias $(join(("`$eq`" for eq in chains), ", ")) collapses reaction $idx, `$rx`, to `$new_rx`, which has no net change. Remove the redundant reaction or keep the species distinct."))
+    end
+    rate = subs_alias(rx.rate, submap)
+    metadata = substitute_reaction_metadata(rx.metadata, submap)
+    # Otherwise, the `Reaction` constructor computes the net stoichiometry from the merged species.
+    netstoich = has_explicit_netstoich(rx) ? netstoich : nothing
+    return Reaction(rate, subs, prods, substoich, prodstoich;
+        netstoich, only_use_rate = rx.only_use_rate, metadata)
+end
+
+# Substitutes through an event's symbolic fields, keeping all its other settings. Its affects
+# (symbolic or `ImperativeAffect`s) are substituted through by ModelingToolkitBase's methods for
+# `SymbolicUtils.Substituter`.
+function resolve_event(evt::MT.SymbolicContinuousCallback, submap)
+    @set! evt.conditions = Equation[subs_alias(c, submap) for c in evt.conditions]
+    @set! evt.affect = subs_alias(evt.affect, submap)
+    @set! evt.affect_neg = subs_alias(evt.affect_neg, submap)
+    @set! evt.initialize = subs_alias(evt.initialize, submap)
+    @set! evt.finalize = subs_alias(evt.finalize, submap)
+    return evt
+end
+function resolve_event(evt::MT.SymbolicDiscreteCallback, submap)
+    (evt.conditions isa SymbolicT) && (@set! evt.conditions = subs_alias(evt.conditions, submap))
+    @set! evt.affect = subs_alias(evt.affect, submap)
+    @set! evt.initialize = subs_alias(evt.initialize, submap)
+    @set! evt.finalize = subs_alias(evt.finalize, submap)
+    return evt
+end
+
+# Substitutes through a (symbolic) jump, keeping its other fields.
+function resolve_jump(j::Union{ConstantRateJump, VariableRateJump}, submap)
+    @set! j.rate = subs_alias(j.rate, submap)
+    @set! j.affect! = Equation[subs_alias(eq, submap) for eq in j.affect!]
+    return j
+end
+function resolve_jump(j::MassActionJump, submap)
+    throw(ArgumentError("Aliases can't yet be resolved in systems with a `MassActionJump` among their jumps. Use a `ConstantRateJump` or `VariableRateJump` instead."))
+end
+
+# Substitutes through a poissonian's rate (stored as metadata on the poissonian;
+# `getpoissonianrate` and `topoissonian` are not public in ModelingToolkitBase).
+function resolve_poissonian(dN, submap)
+    rate = MT.getpoissonianrate(dN)
+    rate === nothing && return dN
+    new_rate = subs_alias(rate, submap)
+    return isequal(new_rate, rate) ? dN : MT.topoissonian(dN, new_rate)
+end
+
+# Substitutes through the default values stored in the metadata of the surviving symbols (the
+# `ReactionSystem` constructor reads these again).
+function resolve_symbol_defaults(syms, submap)
+    return map(syms) do sym
+        MT.hasdefault(sym) || return sym
+        old = MT.getdefault(sym)
+        new = subs_alias(old, submap)
+        return isequal(old, new) ? sym : MT.setdefault(sym, new)
+    end
+end
+
+# Removes the default value stored in a symbol's metadata.
+clear_default(sym) = MT.hasdefault(sym) ? setmetadata(sym, Symbolics.VariableDefaultValue, nothing) : sym
+
+# Moves initial conditions from eliminated symbols to surviving ones (also inside keys, e.g.
+# `D(X)`). Values are resolved before comparing, so `X => k1` and `Y => k2` agree for `X ~ Y` and
+# `k1 ~ k2`.
+function resolve_initial_conditions(ics, submap)
+    new_ics = Dict{SymbolicT, Any}()
+    for (key, val) in ics
+        new_key = subs_alias(key, submap)
+        new_val = subs_alias(val, submap)
+        # ModelingToolkitBase stores initial conditions of arrays for the whole array only.
+        parent = array_parent(new_key)
+        if parent !== nothing && !isequal(new_key, unwrap(key))
+            throw(ArgumentError("The initial condition (or default value) $key => $val would move to $new_key, which replaces $key, but initial conditions can only be given to the whole array $parent. Remove it, or give one to $parent instead."))
+        end
+        if haskey(new_ics, new_key) && !isequal(new_ics[new_key], new_val)
+            throw(ArgumentError("Conflicting initial conditions for aliased symbols: $new_key would get both $(new_ics[new_key]) and $new_val."))
+        end
+        new_ics[new_key] = new_val
+    end
+    return new_ics
+end
+
+### Alias Map Storage ###
+
+# Metadata key for the eliminated-to-surviving maps of a system whose aliases were resolved.
+struct AliasSubstitutionMaps end
+
+# The maps `(; unknown_map, param_map)` stored on `rs` itself, or `nothing`.
+get_alias_maps(rs) = MT.getmetadata(rs, AliasSubstitutionMaps, nothing)
+
+# Whether the system's aliases were resolved (eliminating at least one symbol).
+function has_resolved_aliases(rs::ReactionSystem)
+    maps = get_alias_maps(rs)
+    return maps !== nothing && !(isempty(maps.unknown_map) && isempty(maps.param_map))
+end
+
+### Main Resolution Function ###
+
+# Resolves the aliases of a flattened system (see the top of this file). Called by `complete`.
+function eliminate_aliases(rs::ReactionSystem; name = nameof(rs))
+    isempty(get_systems(rs)) || error("Internal error: aliases can only be resolved on a flattened system.")
+    alias_eqs = get_aliases(rs)
+    isempty(alias_eqs) && return rs
+
+    res = resolve_aliases(alias_eqs, rs)
+    submap = merge(res.unknown_map, res.param_map)
+
+    # Poissonians. One whose rate changes is replaced by a new symbol (the rate is metadata of the
+    # symbol), which then replaces it everywhere else too. (`isequal` ignores metadata, so the
+    # changed ones are found by identity.)
+    poissonians = SymbolicT[resolve_poissonian(dN, submap) for dN in MT.get_poissonians(rs)]
+    for (dN, new_dN) in zip(MT.get_poissonians(rs), poissonians)
+        dN === new_dN || (submap[dN] = new_dN)
+    end
+
+    # Reactions (no reaction is dropped, so reaction indices stay valid).
+    rxs = Reaction[resolve_reaction(rx, idx, submap, res) for (idx, rx) in enumerate(get_rxs(rs))]
+
+    # Non-reaction equations; at most one differential equation per variable. Equations that the
+    # aliases make trivially true (`0 ~ V - W` becomes `0 ~ 0` for `V ~ W`) are dropped, while
+    # ones that already were are kept.
+    noneqs = Equation[]
+    defined = Dict{Any, Equation}()
+    for eq in get_eqs(rs)
+        (eq isa Reaction) && continue
+        new_eq = subs_alias(eq, submap)
+        (isequal(new_eq.lhs, new_eq.rhs) && !isequal(eq.lhs, eq.rhs)) && continue
+        push!(noneqs, new_eq)
+        lhs = unwrap(new_eq.lhs)
+        Symbolics.is_derivative(lhs) || continue
+        var = only(Symbolics.arguments(lhs))
+        if haskey(defined, var)
+            throw(ArgumentError("The aliases give $var two defining equations: `$(defined[var])` and `$eq`. Remove one of them or keep the variables distinct."))
+        end
+        defined[var] = eq
+    end
+
+    # Observables: existing ones are rewritten, eliminated unknowns are added.
+    observed = Equation[eq.lhs ~ subs_alias(eq.rhs, submap) for eq in MT.get_observed(rs)]
+    for (eliminated, surviving) in res.unknown_map
+        push!(observed, eliminated ~ surviving)
+    end
+
+    # Bindings: existing ones are rewritten, eliminated parameters are bound to surviving ones.
+    bindings = Dict{SymbolicT, Any}(k => subs_alias(v, submap) for (k, v) in MT.get_bindings(rs))
+    for (eliminated, surviving) in res.param_map
+        bindings[eliminated] = surviving
+    end
+
+    # Events, jumps, tstops and initial conditions.
+    cevents = [resolve_event(evt, submap) for evt in MT.get_continuous_events(rs)]
+    devents = [resolve_event(evt, submap) for evt in MT.get_discrete_events(rs)]
+    jumps = JumpType[resolve_jump(j, submap) for j in MT.get_jumps(rs)]
+    tstops = Any[subs_alias(ts, submap) for ts in MT.get_tstops(rs)]
+    ics = resolve_initial_conditions(MT.get_initial_conditions(rs), submap)
+
+    # Unknowns lose the eliminated ones; eliminated parameters stay (as bound parameters). The
+    # default values of eliminated parameters, moved to the parameters replacing them with the
+    # initial conditions above, are removed from their metadata (which the `ReactionSystem`
+    # constructor reads again), as bound parameters can't have initial conditions.
+    unknowns = resolve_symbol_defaults(
+        filter(u -> !haskey(res.unknown_map, u), get_unknowns(rs)), submap)
+    ps = resolve_symbol_defaults(
+        [haskey(res.param_map, p) ? clear_default(p) : p for p in get_ps(rs)], submap)
+
+    # `MetadataT` is not public in ModelingToolkitBase.
+    metadata = Base.ImmutableDict(MT.get_metadata(rs),
+        AliasSubstitutionMaps => (; unknown_map = res.unknown_map, param_map = res.param_map))
+
+    new_rs = ReactionSystem(
+        CatalystEqType[rxs; noneqs], get_iv(rs), unknowns, ps, MT.get_brownians(rs);
+        poissonians, jumps, observed, name, bindings, initial_conditions = ics,
+        checks = false, combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        balanced_bc_check = false, spatial_ivs = get_sivs(rs),
+        continuous_events = cevents, discrete_events = devents, tstops, metadata,
+        aliases = Equation[])
+    return MT.iscomplete(rs) ? complete(new_rs; flatten = false) : new_rs
+end
+
+### Conversion ###
+
+# Flattens a system for conversion. Every completed system has its aliases resolved, except the
+# unflattened parent stored by `complete` (and systems built with `checks = false`), which can't
+# be converted.
+function flatten_for_conversion(rs::ReactionSystem)
+    MT.iscomplete(rs) || error(COMPLETENESS_ERROR)
+    aliases_present(rs) &&
+        throw(ArgumentError("$(nameof(rs)) has aliases that are not resolved, so it can't be converted or simulated. Use the system returned by `complete` (with `flatten = true`, the default)."))
+    return flatten(rs)
+end
+
+### Querying Aliases ###
+
+"""
+    alias_map(rs::ReactionSystem)
+
+Return a `Dict` mapping each symbol eliminated by an alias, when `rs` was completed, to the symbol
+it was replaced by (with alias chains followed to the end). Empty if no symbol was eliminated, e.g.
+if `rs` isn't complete (its aliases are then not resolved yet).
+
+`remake` does not translate eliminated symbols, so use the remaining symbols with it: the
+unknowns of the completed system (eliminated unknowns are observables, not unknowns) and
+[`uneliminated_parameters`](@ref).
+"""
+function alias_map(rs::ReactionSystem)
+    maps = get_alias_maps(rs)
+    maps === nothing && return Dict{SymbolicT, SymbolicT}()
+    return merge(maps.unknown_map, maps.param_map)
+end
+
+"""
+    uneliminated_parameters(rs::ReactionSystem)
+
+Return the parameters of `rs` that remain after the elimination of its aliases (which happens when
+`rs` is completed): the ones to give values for, and to use with `remake`. Eliminated parameters
+stay parameters of `rs`, bound to the parameters that replaced them (so they can be read, but not
+given values), and are left out. For a system that isn't complete, these are `parameters(rs)`.
+Only parameters eliminated by aliases are left out: other bound parameters (e.g. `r` declared
+as `r = 2q`) are included, though they can't be given values either. (Eliminated unknowns become
+observables, so the remaining unknowns are just `unknowns(rs)`.)
+"""
+function uneliminated_parameters(rs::ReactionSystem)
+    maps = get_alias_maps(rs)
+    maps === nothing && return parameters(rs)
+    return filter(p -> !haskey(maps.param_map, unwrap(p)), parameters(rs))
+end
+
+### Problem Inputs ###
+
+# Whether a problem input (e.g. `u0` or `p`) is a collection of `Pair`s, such as a symbolic map.
+function is_pair_input(input)
+    return (input isa Union{AbstractDict, Tuple, AbstractVector}) && !isempty(input) &&
+        all(x -> x isa Pair, input)
+end
+
+# The keys of a pair input as symbolic variables (a `Symbol` that names none in `rs` is kept as
+# is), so that a `Symbol` and a symbolic key for the same symbol are recognized as such.
+function input_vars(input, rs)
+    return [(key isa Symbol) ? _try_symbol_to_var(rs, key) : unwrap(key) for (key, _) in input]
+end
+
+# Remaps the symbols eliminated by aliases in a problem's inputs (e.g. `u0` and `p`) to the
+# symbols that replaced them, keeping each input's form (a `Tuple` stays a `Tuple`, so values
+# keep their types). Errors if a symbol is given more than one value, across all the inputs and
+# counting both names of an aliased symbol.
+function remap_problem_inputs(rs::ReactionSystem, inputs...)
+    submap = alias_map(rs)
+    aliased = Set{SymbolicT}(Iterators.flatten((keys(submap), values(submap))))
+    given_by = Dict{Any, Any}()
+    return map(inputs) do input
+        is_pair_input(input) || return input
+        vars = input_vars(input, rs)
+        for ((key, val), var) in zip(input, vars)
+            for target in value_targets(var, val, submap, aliased)
+                haskey(given_by, target) &&
+                    throw(ArgumentError("$target is given more than one value, by `$(given_by[target])` and by `$key`."))
+                given_by[target] = key
+            end
+        end
+        targets = [alias_target(var, submap) for var in vars]
+        all(isequal.(targets, vars)) && return input
+        remapped = [target => val for (target, (_, val)) in zip(targets, input)]
+        input isa Tuple && return Tuple(remapped)
+        input isa AbstractDict && return Dict(remapped)
+        return remapped
+    end
+end
+
+# The symbol that `var` (a symbolic key or a `Symbol`) stands for once the aliases are resolved,
+# with the aliases substituted also inside it (`D(V)` becomes `D(W)` for `V ~ W`).
+function alias_target(var, submap)
+    (isempty(submap) || !(var isa SymbolicT)) && return var
+    return subs_alias(var, submap)
+end
+
+# The symbols that the input entry `var => val` gives values to once the aliases are resolved:
+# `alias_target(var)`, or, for an array with an element involved in an alias (e.g. `Z` for
+# `Z[1] ~ Y`, or `v` for `p ~ v[1]`), the targets of its elements, so that a value given to an
+# element through its array is matched with one given to it directly or through its alias.
+function value_targets(var, val, submap, aliased)
+    elems = aliased_array_elements(var, val, aliased)
+    elems === nothing && return (alias_target(var, submap),)
+    return [alias_target(el, submap) for el in elems]
+end
+
+# The elements of the array-valued key `var` if one of them is involved in an alias and `val` is
+# an array with as many elements, and `nothing` otherwise.
+function aliased_array_elements(var, val, aliased)
+    (isempty(aliased) || !(var isa SymbolicT) || !(val isa AbstractArray)) && return nothing
+    symtype(var) <: AbstractArray || return nothing
+    elems = vec(map(unwrap, Symbolics.scalarize(var)))
+    (length(elems) == length(val) && any(in(aliased), elems)) || return nothing
+    return elems
+end
+
+# `Symbol` key → its symbolic variable in `rs`, or the `Symbol` itself if `rs` has none.
+function _try_symbol_to_var(rs, sym::Symbol)
+    var = try
+        _symbol_to_var(rs, sym)
+    catch
+        return sym
+    end
+    return unwrap(var)
+end

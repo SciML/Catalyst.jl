@@ -2,6 +2,54 @@
 
 ## Unreleased (on master)
 
+- **FEATURE:** New *aliases* declare that two symbols of a network are the same, e.g. to
+  connect a species of one component to a species of another when composing them. They can be
+  given through the new `@aliases` DSL option, the `aliases` keyword of the `ReactionSystem`
+  constructor, and the new `aliases` keyword of `compose`:
+  ```julia
+  synthesis = @network_component synthesis begin
+      p, 0 --> X
+  end
+  uptake = @network_component uptake begin
+      k, Y --> Z
+  end
+  @named cell = compose(synthesis, [uptake]; aliases = [uptake.Y ~ synthesis.X])
+  cell = complete(cell)   # reactions: p, 0 --> X and uptake₊k, X --> uptake₊Z
+  ```
+  An alias `X ~ Y` eliminates `X` in favor of `Y`. Species, non-species variables and parameters
+  can be aliased (each only with symbols of its own kind; an element of an array parameter can
+  replace a parameter, but can't be eliminated), and aliases can form chains. Aliases
+  are resolved when a system is completed (`flatten`, `compose` and `extend` keep them), which
+  is also when invalid aliases are reported (`complete(rs; flatten = false)` is an error for a
+  system with aliases, so every completed system has its aliases resolved). An eliminated
+  unknown becomes an observable, and an eliminated parameter a parameter bound to the one
+  replacing it, so both can still be read from problems and solutions, and given values when
+  problems are created from a `ReactionSystem` (giving values to both names of the same symbol
+  is an error). `remake` needs the remaining symbols: the unknowns, and the
+  parameters listed by the new `uneliminated_parameters`. The new `alias_map` gives the symbol
+  each eliminated symbol was replaced by, and the new `aliases` (with the public
+  `Catalyst.get_aliases` and `Catalyst.aliases_present`) the declared aliases. Merged species
+  add their stoichiometries (with `A ~ B`, `2A + B --> C` becomes `3B --> C`, with that
+  reaction's rate law), and an alias that leaves a reaction with no net change is an error.
+  Events (including those with an `ImperativeAffect`) act on the remaining symbols. The
+  HomotopyContinuation, BifurcationKit and StructuralIdentifiability extensions, and
+  `steady_state_stability`, support aliases, while spatial models and `save_reactionsystem` give
+  an error for systems with aliases.
+- **BUGFIX, TECHNICALLY BREAKING:** Problem constructors (`ODEProblem`, `SDEProblem`,
+  `JumpProblem`, `HybridProblem`, `NonlinearProblem` and `SteadyStateProblem`) called with a
+  `ReactionSystem` now error when a symbol is given more than one value, e.g. both in `u0` and
+  in `p`, or both as a `Symbol` and as a symbolic variable. Previously one of the values was
+  silently used; give each symbol a single value.
+- **BUGFIX, TECHNICALLY BREAKING:** `flatten` now keeps the bindings of subsystems, `extend`
+  those of both systems, and `sde_model` those of networks without constraint equations or
+  Brownian variables (all used to drop them). In particular, completing a system now keeps the
+  bindings of its subsystems, so a subsystem parameter declared with a binding (e.g.
+  `@parameters p = 2q`) gets its value from it, and giving such a parameter a value when
+  creating a problem now errors, as it already did for the bound parameters of a network
+  without subsystems. Remove such values, or declare the parameter without a binding.
+- **BUGFIX:** `steady_state_stability` and `steady_state_jac` now work for networks with bound
+  parameters (e.g. `r` declared by `@parameters r = 2q`), for which they used to fail with an
+  assertion error.
 - **BUGFIX, TECHNICALLY BREAKING:** The `ReactionSystem` constructor now errors when a
   completed system (e.g. one created by `@reaction_network`) is given as a subsystem through
   `systems`, as `compose` and `extend` already did. Such hierarchies were never supported: a

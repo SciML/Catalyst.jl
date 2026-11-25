@@ -13,6 +13,7 @@ using SafeTestsets, Test
     @time @safetestset "HomotopyContinuation Extension" begin include(joinpath(@__DIR__, "extensions", "homotopy_continuation.jl")) end
     @time @safetestset "Structural Identifiability Extension" begin include(joinpath(@__DIR__, "extensions", "structural_identifiability.jl")) end
     @time @safetestset "Steady State Stability Computations" begin include(joinpath(@__DIR__, "extensions", "stability_computation.jl")) end
+    @time @safetestset "Alias Elimination in Extensions" begin include(joinpath(@__DIR__, "extensions", "alias_elimination.jl")) end
 
     # Test spatial plotting, using CairoMakie and GraphMakie
     @time @safetestset "Discrete Space Simulation Plotting" begin include(joinpath(@__DIR__, "extensions", "dspace_simulation_plotting.jl")) end

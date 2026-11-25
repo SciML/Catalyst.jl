@@ -302,6 +302,17 @@ let
     @test_throws ArgumentError DiscreteSpaceReactionSystem(rs2, [tr], CartesianGrid((2,2)))
 end
 
+# Tests for systems with aliases (not yet supported), here already resolved by `@reaction_network`.
+let
+    tr = @transport_reaction dB B
+    rs = @reaction_network begin
+        @aliases A ~ B
+        (k1, k2), A <--> B2
+        k3, B --> 0
+    end
+    @test_throws ArgumentError DiscreteSpaceReactionSystem(rs, [tr], CartesianGrid((2,2)))
+end
+
 ### Tests Grid Vertex and Edge Number Computation ###
 
 # Tests that the correct numbers are computed for num_edges.

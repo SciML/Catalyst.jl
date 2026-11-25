@@ -53,8 +53,9 @@ function steady_state_stability(u::Vector, rs::ReactionSystem, ps;
     end
 
     # If `u` is a vector of values, we convert it to a map. Also, if there are conservation laws,
-    # corresponding values must be eliminated from `u`.
-    u = steady_state_u_conversion(u, rs)
+    # corresponding values must be eliminated from `u`. Symbols eliminated by aliases may be used
+    # in `u` and `ps` (`remake` does not translate them).
+    u, ps = remap_problem_inputs(rs, steady_state_u_conversion(u, rs), ps)
     if length(u) > length(unknowns(ss_jac.f.sys))
         u = filter(u_v -> any(isequal(u_v[1]), unknowns(ss_jac.f.sys)), u)
     end
@@ -113,11 +114,13 @@ function steady_state_jac(rs::ReactionSystem; u0 = [sp => 0.0 for sp in unknowns
     # If u0 is a vector of values, must be converted to something MTK understands.
 
     # Converts u0 to values MTK understands, and checks that potential conservation laws are accounted for.
-    u0 = steady_state_u_conversion(u0, rs)
+    u0 = only(remap_problem_inputs(rs, steady_state_u_conversion(u0, rs)))
     conservationlaw_errorcheck(rs, u0)
 
-    # Creates an `ODEProblem` with a Jacobian. Dummy values for `u0` and `ps` must be provided.
-    ps = [p => 0.0 for p in parameters(rs)]
+    # Creates an `ODEProblem` with a Jacobian. Dummy values for `u0` and `ps` must be provided
+    # (not for bound parameters, including those eliminated by aliases, which can't be given values).
+    bindings = MT.get_bindings(rs)
+    ps = [p => 0.0 for p in parameters(rs) if !haskey(bindings, unwrap(p))]
     return ODEProblem(rs, u0, 0, ps; jac = true, combinatoric_ratelaws,
         remove_conserved = true)
 end
