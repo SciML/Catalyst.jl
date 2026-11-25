@@ -1778,6 +1778,7 @@ function MT.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(s
     # substitution, so that it is also removed inside an element of an array parameter
     # (`sys.v[1]`; array parameters, unlike array unknowns, aren't scalarized).
     if !isempty(aliases)
+        # `renamespace` is not public in ModelingToolkitBase.
         own_ns = Dict{SymbolicT, SymbolicT}(
             unwrap(MT.renamespace(nameof(sys), x)) => x for x in [unknowns(sys); parameters(sys)])
         strip_own_ns(x) = subs_alias(unwrap(x), own_ns)

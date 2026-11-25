@@ -302,7 +302,8 @@ end
 Reactions are never removed by alias elimination, so they keep their indices (e.g. for the
 `physical_scales` argument of [`hybrid_model`](@ref)). The rest of the model, such as its
 equations, observables, events (including those with an `ImperativeAffect`) and jumps, uses the
-remaining symbols too (a `MassActionJump` is not yet supported).
+remaining symbols too (a `MassActionJump` is not yet supported). An equation that an alias makes
+trivially true (such as `0 ~ V - W` for `V ~ W`) is removed.
 
 ### Updating problems with `remake`
 Problems created from a `ReactionSystem` accept the eliminated names in their initial conditions
