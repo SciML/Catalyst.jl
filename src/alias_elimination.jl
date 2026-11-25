@@ -437,13 +437,27 @@ function eliminate_aliases(rs::ReactionSystem; name = nameof(rs))
     res = resolve_aliases(alias_eqs, rs)
     submap = merge(res.unknown_map, res.param_map)
 
+    # Poissonians. One whose rate changes is replaced by a new symbol (the rate is metadata of the
+    # symbol), which then replaces it everywhere else too. (`isequal` ignores metadata, so the
+    # changed ones are found by identity.)
+    poissonians = SymbolicT[resolve_poissonian(dN, submap) for dN in MT.get_poissonians(rs)]
+    for (dN, new_dN) in zip(MT.get_poissonians(rs), poissonians)
+        dN === new_dN || (submap[dN] = new_dN)
+    end
+
     # Reactions (no reaction is dropped, so reaction indices stay valid).
     rxs = Reaction[resolve_reaction(rx, idx, submap, res) for (idx, rx) in enumerate(get_rxs(rs))]
 
-    # Non-reaction equations; at most one differential equation per variable.
-    noneqs = Equation[subs_alias(eq, submap) for eq in get_eqs(rs) if !(eq isa Reaction)]
+    # Non-reaction equations; at most one differential equation per variable. Equations that the
+    # aliases make trivially true (`0 ~ V - W` becomes `0 ~ 0` for `V ~ W`) are dropped, while
+    # ones that already were are kept.
+    noneqs = Equation[]
     defined = Dict{Any, Equation}()
-    for (eq, new_eq) in zip((eq for eq in get_eqs(rs) if !(eq isa Reaction)), noneqs)
+    for eq in get_eqs(rs)
+        (eq isa Reaction) && continue
+        new_eq = subs_alias(eq, submap)
+        (isequal(new_eq.lhs, new_eq.rhs) && !isequal(eq.lhs, eq.rhs)) && continue
+        push!(noneqs, new_eq)
         lhs = unwrap(new_eq.lhs)
         Symbolics.is_derivative(lhs) || continue
         var = only(Symbolics.arguments(lhs))
@@ -465,11 +479,10 @@ function eliminate_aliases(rs::ReactionSystem; name = nameof(rs))
         bindings[eliminated] = surviving
     end
 
-    # Events, jumps, poissonians, tstops and initial conditions.
+    # Events, jumps, tstops and initial conditions.
     cevents = [resolve_event(evt, submap) for evt in MT.get_continuous_events(rs)]
     devents = [resolve_event(evt, submap) for evt in MT.get_discrete_events(rs)]
     jumps = JumpType[resolve_jump(j, submap) for j in MT.get_jumps(rs)]
-    poissonians = SymbolicT[resolve_poissonian(dN, submap) for dN in MT.get_poissonians(rs)]
     tstops = Any[subs_alias(ts, submap) for ts in MT.get_tstops(rs)]
     ics = resolve_initial_conditions(MT.get_initial_conditions(rs), submap)
 

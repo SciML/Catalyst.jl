@@ -192,6 +192,19 @@ let
     end
 end
 
+# Aliases given to `compose` may name elements of the composing system's own arrays through its
+# name (`sys.v[1]` for an array parameter, `sys.A[1]` for an array species).
+let
+    @species (A(t))[1:2] Z(t)
+    @parameters p v[1:2] d
+    @named sys = ReactionSystem([Reaction(p, nothing, [A[1]]), Reaction(v[1] + v[2], [A[1]], [A[2]])], t)
+    @named sub = ReactionSystem([Reaction(d, [Z], nothing)], t)
+    rs = complete(compose(sys, [sub]; aliases = [sys.p ~ sys.v[1]]))
+    @test isequal(alias_map(rs), Dict(unwrap(p) => unwrap(v[1])))
+    rs = complete(compose(sys, [sub]; aliases = [sub.Z ~ sys.A[1]]))
+    @test isequal(alias_map(rs), Dict(unwrap(sub.Z) => unwrap(A[1])))
+end
+
 
 ### Kinds of Aliased Symbols ###
 
@@ -237,6 +250,13 @@ let
     @test any(isequal(D(W) ~ -W), equations(rs))
     @test_throws ArgumentError complete(ReactionSystem(
         [Reaction(k, nothing, [X]), D(V) ~ -V, D(W) ~ 1 - W], t; aliases = [V ~ W], name = :rs))
+
+    # Equations that the aliases make trivially true (`0 ~ 0`, `W ~ W`) are dropped; others are kept.
+    for redundant_eq in (0 ~ V - W, V ~ W)
+        rs = complete(ReactionSystem([Reaction(k, nothing, [X]), D(W) ~ -W, redundant_eq], t;
+            aliases = [V ~ W], name = :rs))
+        @test issetequal(filter(eq -> !(eq isa Reaction), equations(rs)), [D(W) ~ -W])
+    end
 end
 
 # Parametric stoichiometry: aliased stoichiometry parameters are substituted.
@@ -382,6 +402,8 @@ let
         k, Y --> 0
     end
     @test isequal(MT.getpoissonianrate(only(MT.get_poissonians(rn))), unwrap(1 + rn.Y))
+    noneq = only(filter(eq -> !(eq isa Reaction), equations(rn)))
+    @test isequal(MT.getpoissonianrate(noneq.rhs), unwrap(1 + rn.Y))
 end
 
 # An `ImperativeAffect` acts on the surviving symbols: doubling the eliminated `X` at `t = 1`

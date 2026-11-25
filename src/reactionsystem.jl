@@ -996,6 +996,7 @@ function aliases(sys::ReactionSystem)
     systems = get_systems(sys)
     isempty(systems) && return get_aliases(sys)
     alias_eqs = copy(get_aliases(sys))
+    # `renamespace` is not public in ModelingToolkitBase.
     for subsys in systems
         for eq in aliases(subsys)
             push!(alias_eqs, MT.renamespace(nameof(subsys), eq.lhs) ~ MT.renamespace(nameof(subsys), eq.rhs))
@@ -1773,11 +1774,13 @@ function MT.compose(sys::ReactionSystem, systems::AbstractArray; name = nameof(s
 
     # Aliases are given as seen from the composed system: its own symbols, and those of its
     # existing subsystems, may be referred to through its name (`sys.A`, `sys.sub.B`), which is
-    # removed here, as flattening keeps them without it (`A`, `sub₊B`).
+    # removed here, as flattening keeps them without it (`A`, `sub₊B`). The name is removed by
+    # substitution, so that it is also removed inside an element of an array parameter
+    # (`sys.v[1]`; array parameters, unlike array unknowns, aren't scalarized).
     if !isempty(aliases)
         own_ns = Dict{SymbolicT, SymbolicT}(
             unwrap(MT.renamespace(nameof(sys), x)) => x for x in [unknowns(sys); parameters(sys)])
-        strip_own_ns(x) = get(own_ns, unwrap(x), unwrap(x))
+        strip_own_ns(x) = subs_alias(unwrap(x), own_ns)
         @set! sys.aliases = [get_aliases(sys); [strip_own_ns(eq.lhs) ~ strip_own_ns(eq.rhs) for eq in aliases]]
     end
 
